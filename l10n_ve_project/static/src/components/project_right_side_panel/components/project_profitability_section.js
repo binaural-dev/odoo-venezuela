@@ -8,7 +8,7 @@ patch(ProjectProfitabilitySection, {
     props: {
         ...ProjectProfitabilitySection.props,
         currencyId: { type: Number, optional: true },
-        foreignCurrencyId: { type: Number, optional: true },
+        foreignCurrencyId: { type: [Number, Boolean], optional: true },
     },
 });
 

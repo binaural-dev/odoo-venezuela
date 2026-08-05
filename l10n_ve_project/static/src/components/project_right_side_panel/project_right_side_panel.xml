@@ -5,19 +5,9 @@
        t-inherit="project.ProjectRightSidePanel"
        t-inherit-mode="extension">
 
-        <xpath expr="//ProjectProfitability" position="replace">
-            <ProjectProfitability
-                t-if="showProjectProfitability"
-                data="state.data.profitability_items"
-                labels="state.data.profitability_labels"
-                formatMonetary="formatMonetary.bind(this)"
-                onProjectActionClick="onProjectActionClick.bind(this)"
-                onClick="(params) =&gt; this.onProjectActionClick(params)"
-                projectId="projectId"
-                context="context"
-                currencyId="state.data.currency_id"
-                foreignCurrencyId="state.data.foreign_currency_id"
-            />
+        <xpath expr="//ProjectProfitability" position="attributes">
+            <attribute name="currencyId">state.data.currency_id</attribute>
+            <attribute name="foreignCurrencyId">state.data.foreign_currency_id</attribute>
         </xpath>
 
     </t>

@@ -33,18 +33,19 @@ class PurchaseOrder(models.Model):
 
     journal_invoice_id = fields.Many2one(
         "account.journal",
-        domain="[('type', '=', 'purchase')]",
+        check_company=True,
+        domain="[('type', '=', 'purchase'), ('company_id', '=', company_id)]",
     )
 
-    @api.onchange("name")
+    @api.onchange("date_order", "date_approve")
     def onchange_order_line(self):
         """
-        Ensure the foreign_rate and foreign_inverse_rate are computed when the order is still not
-        created.
+        Ensure the foreign_rate and foreign_inverse_rate are computed when the order date
+        changes in the form, before the order is saved.
         """
         self._compute_rate()
 
-    @api.depends("date_order", "date_approve")
+    @api.depends("date_order", "date_approve", "manually_set_rate")
     def _compute_rate(self):
         """
         Compute the rate of the purchase order using the compute_rate method of the
@@ -75,12 +76,12 @@ class PurchaseOrder(models.Model):
         """
         Onchange the foreign rate and compute the foreign inverse rate
         """
+        base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
+            "base.USD", raise_if_not_found=False
+        )
         for purchase in self:
-            base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
-                "base.USD", raise_if_not_found=False
-            )
             if not bool(purchase.foreign_rate):
-                return
+                continue
             purchase.foreign_inverse_rate = (
                 1 / purchase.foreign_rate
                 if purchase.foreign_currency_id.id == base_usd_id

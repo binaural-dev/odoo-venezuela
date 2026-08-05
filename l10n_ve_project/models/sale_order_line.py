@@ -24,7 +24,6 @@ class SaleOrderLine(models.Model):
         'qty_to_invoice',
         'product_uom_qty',
         'invoice_lines',
-        'invoice_lines.move_id.move_type',
         'invoice_lines.parent_state',
         'invoice_lines.foreign_balance',
     )
