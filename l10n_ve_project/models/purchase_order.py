@@ -86,7 +86,3 @@ class PurchaseOrder(models.Model):
                 if purchase.foreign_currency_id.id == base_usd_id
                 else purchase.foreign_rate
             )
-
-    def read(self, fields=None, load="_classic_read"):
-        self.with_context(ignore_rate_with_value=True)._compute_rate()
-        return super().read(fields, load)
