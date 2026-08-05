@@ -800,10 +800,6 @@ class AccountMove(models.Model):
         main_move_payment_concept = ""
         payment_related_move_ids = []
 
-        main_move = {
-            "name": self.name,
-        }
-
         line_ids_ids = self._get_account_move_line_related()
         line_ids = self.env["account.move.line"].browse(line_ids_ids)
         account_analytic_by_line_id = self._account_analytic_by_line_id(line_ids)

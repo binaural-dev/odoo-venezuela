@@ -47,6 +47,16 @@ def migrate(cr, version):
                         cr.execute(sql.SQL("ALTER TABLE {} DROP CONSTRAINT {}").format(tbl, fk_id))
                         _logger.info("    Dropped FK %s on %s.%s", fk_name, table, col)
 
+                cr.execute(
+                    sql.SQL("SELECT count(*) FROM {} WHERE {} IS NOT NULL").format(tbl, col_id)
+                )
+                non_null_count = cr.fetchone()[0]
+                if non_null_count:
+                    _logger.warning(
+                        "    %s.%s had %s non-null row(s) before being dropped",
+                        table, col, non_null_count,
+                    )
+
                 cr.execute(sql.SQL("ALTER TABLE {} DROP COLUMN {}").format(tbl, col_id))
                 _logger.info("    Dropped column %s.%s", table, col)
             else:
