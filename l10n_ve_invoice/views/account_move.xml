@@ -224,7 +224,7 @@
         </field>
     </record>
 
-    <record id="account.action_switch_move_type" model="ir.actions.server">
+    <record id="account.action_move_switch_move_type" model="ir.actions.server">
         <field name="binding_model_id" eval="False"/>
     </record>
 </odoo>
