@@ -292,6 +292,26 @@ msgid "Followers (Partners)"
 msgstr "Seguidores (Contactos)"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__destination_physical_address
+msgid "Destination Address"
+msgstr "Dirección de Destino"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_warehouse__physical_address
+msgid "Physical Address"
+msgstr "Dirección Física"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_warehouse__physical_address
+msgid "Detailed warehouse address (Street, Avenue, Industrial Zone, State, City, etc.)"
+msgstr "Dirección detallada del almacén (Calle, Avenida, Zona Industrial, Estado, Ciudad, etc.)"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__source_physical_address
+msgid "Source Address"
+msgstr "Dirección de Origen"
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_type_icon
 msgid "Font awesome icon e.g. fa-tasks"
 msgstr "Icono Font awesome, por ejemplo fa-tasks"
