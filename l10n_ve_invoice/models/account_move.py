@@ -113,14 +113,6 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
-    def action_switch_move_type(self):
-        for move in self:
-            if move.company_id.account_fiscal_country_id.code == 'VE':
-                raise ValidationError(_(
-                    "Changing between invoice and credit note is not allowed."
-                ))
-        return super().action_switch_move_type()
-
     def action_post(self):
         
         for record in self:
