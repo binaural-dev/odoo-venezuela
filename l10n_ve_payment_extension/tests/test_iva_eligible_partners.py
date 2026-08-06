@@ -182,7 +182,11 @@ class TestIvaEligiblePartners(TransactionCase):
         try:
             invoice.action_post()
         except Exception:
-            pass
+            _logger.debug(
+                "action_post failed for invoice %s, continuing test setup",
+                invoice.id,
+                exc_info=True,
+            )
         if force_posted and invoice.state != "posted":
             self.env.cr.execute(
                 "UPDATE account_move SET state = 'posted' WHERE id = %s",
