@@ -13,12 +13,18 @@ class AccountMoveLine(models.Model):
     )
 
     
-    def action_register_payment(self):
-        """ 
+    def action_register_payment(self, ctx=None):
+        """
         # 1. Validate Unique Partner
         # 2. Validate Unique Currency
         # 3. Optional: Validate Unique Company (Best practice for Multi-company)
-        # If all validations pass, call the original Odoo function"""
+        # If all validations pass, call the original Odoo function
+
+        `ctx` es parte de la firma del core en account.move.line: quien llama
+        mete ahí los defaults del asistente de pago. Omitirlo hacía que este
+        override reventara con TypeError ante cualquier llamada que lo pase
+        --hr_payroll_account lo hace al registrar el pago de un recibo-- y, aun
+        sin reventar, habría descartado esos defaults en silencio."""
 
         partners = self.mapped('partner_id')
         if len(partners) > 1:
@@ -37,4 +43,4 @@ class AccountMoveLine(models.Model):
             raise UserError(_("You cannot register payments for different companies at the same time."))
 
         
-        return super(AccountMoveLine, self).action_register_payment()
+        return super(AccountMoveLine, self).action_register_payment(ctx=ctx)
