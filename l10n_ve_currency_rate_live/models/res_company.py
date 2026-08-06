@@ -74,15 +74,9 @@ class ResCompany(models.Model):
         if not target:
             return {}
 
-        disable_warnings(InsecureRequestWarning)
         for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
             try:
-                response = requests.get(
-                    BCV_URL,
-                    verify=False,
-                    timeout=30,
-                    headers=BCV_HEADERS,
-                )
+                response = self._bcv_http_get(BCV_URL, timeout=30)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, "html.parser")
 
@@ -165,6 +159,16 @@ class ResCompany(models.Model):
             # Expression: (VEF per 1 USD) / (VEF per 1 FOREIGN)
             #           = FOREIGN per 1 USD  ← parsed data convention
             result[currency_code] = (usd_vef / vef_rate, current_date)
+        elif not usd_vef:
+            _logger.warning(
+                "Skipping %s rate: USD/VEF reference rate is missing.",
+                currency_code,
+            )
+        else:
+            _logger.warning(
+                "Skipping %s rate: scraped VEF rate is missing or zero (%s).",
+                currency_code, vef_rate,
+            )
 
     @api.model
     def _get_last_system_rate_for_currency(self, currency_code, current_date):
@@ -328,6 +332,33 @@ class ResCompany(models.Model):
             return None
 
     @api.model
+    def _bcv_http_get(self, url, timeout):
+        """GET a BCV URL, preferring TLS verification; fall back to
+        ``verify=False`` only on an explicit SSL failure, logging it.
+
+        Isolating this here means both scraping call-sites (multi-currency
+        and legacy USD-only) share one auditable TLS-fallback path instead
+        of disabling verification unconditionally.
+
+        :param str url: target URL (``BCV_URL``)
+        :param int timeout: request timeout in seconds
+        :return: ``requests.Response``
+        :raises requests.exceptions.RequestException: on non-TLS failures
+        """
+        try:
+            return requests.get(url, timeout=timeout, headers=BCV_HEADERS)
+        except requests.exceptions.SSLError as exc:
+            _logger.error(
+                "BCV TLS certificate verification failed for %s (%s); "
+                "retrying without verification as a documented fallback.",
+                url, exc,
+            )
+            disable_warnings(InsecureRequestWarning)
+            return requests.get(
+                url, verify=False, timeout=timeout, headers=BCV_HEADERS,
+            )
+
+    @api.model
     def _get_bcv_rate_from_api(self, expected_date=None):
         for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
             try:
@@ -375,15 +406,9 @@ class ResCompany(models.Model):
 
     @api.model
     def _scrape_bcv_rate(self):
-        disable_warnings(InsecureRequestWarning)
         for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
             try:
-                response = requests.get(
-                    BCV_URL,
-                    verify=False,
-                    timeout=30,
-                    headers=BCV_HEADERS,
-                )
+                response = self._bcv_http_get(BCV_URL, timeout=30)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, "html.parser")
 
@@ -478,4 +503,13 @@ class ResCompany(models.Model):
             )
             if already_today:
                 continue
-            company.with_context(suppress_errors=True).update_currency_rates()
+            try:
+                with self.env.cr.savepoint():
+                    company.with_context(suppress_errors=True).update_currency_rates()
+            except Exception:
+                _logger.error(
+                    "BCV rate update failed for company %s (id=%s); "
+                    "continuing with remaining companies.",
+                    company.display_name, company.id,
+                    exc_info=True,
+                )
