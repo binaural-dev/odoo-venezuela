@@ -846,8 +846,6 @@ class AccountMove(models.Model):
                 _("You can only register payments for one foreign rate at a time.")
             )
         res = super().action_register_payment()
-        res["context"]["default_foreign_rate"] = self[0].foreign_rate
-        res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
         return res
 
     def action_update_account_id(self):
