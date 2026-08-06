@@ -223,11 +223,13 @@ class TestIvaEligiblePartners(TransactionCase):
         eligible = self._get_iva_eligible_partners("iva", "in_invoice")
         self.assertNotIn(self.partner, eligible)
 
-    def test_supplier_negative_residual_not_eligible(self):
+    def test_supplier_negative_residual_is_eligible(self):
+        # Aligned with #1005: a credit note's residual is negative, so it must stay
+        # eligible here or its lines become unreachable from this dropdown.
         invoice = self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
         self._force_amount_residual(invoice, -100.0)
         eligible = self._get_iva_eligible_partners("iva", "in_invoice")
-        self.assertNotIn(self.partner, eligible)
+        self.assertIn(self.partner, eligible)
 
     def test_supplier_select_eligible_loads_lines(self):
         self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
@@ -263,10 +265,12 @@ class TestIvaEligiblePartners(TransactionCase):
         eligible = self._get_iva_eligible_partners("iva", "out_invoice")
         self.assertNotIn(self.partner, eligible)
 
-    def test_customer_negative_residual_not_eligible(self):
+    def test_customer_negative_residual_is_eligible(self):
+        # Aligned with #1005: a credit note's residual is negative, so it must stay
+        # eligible here or its lines become unreachable from this dropdown.
         invoice = self._create_invoice("out_invoice", self.tax_sale, self.sale_journal)
         self._force_amount_residual(invoice, -100.0)
         eligible = self._get_iva_eligible_partners("iva", "out_invoice")
-        self.assertNotIn(self.partner, eligible)
+        self.assertIn(self.partner, eligible)
 
     # NOTE: Customer side onchange (select eligible → load lines) is not tested here

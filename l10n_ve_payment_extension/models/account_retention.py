@@ -190,6 +190,7 @@ class AccountRetention(models.Model):
 
     @api.depends("type_retention", "type", "company_id")
     def _compute_iva_eligible_partner_ids(self):
+        Partner = self.env["res.partner"]
         for record in self:
             if record.type_retention == 'iva' and record.type:
                 if record.type in ('in_invoice', 'in_refund'):
@@ -197,7 +198,7 @@ class AccountRetention(models.Model):
                 elif record.type in ('out_invoice', 'out_refund'):
                     move_types = ('out_invoice', 'out_refund')
                 else:
-                    record.iva_eligible_partner_ids = False
+                    record.iva_eligible_partner_ids = Partner
                     continue
 
                 invoices = search_invoices_with_taxes(
@@ -207,19 +208,16 @@ class AccountRetention(models.Model):
                         ('company_id', '=', record.company_id.id),
                         ('state', '=', 'posted'),
                         ('move_type', 'in', move_types),
-                        ('amount_residual', '>', 0),
+                        # Match the criterion in #1005: a credit note's residual is negative,
+                        # so '>' 0 excluded it, making its lines unreachable from this dropdown.
+                        ('amount_residual', '!=', 0),
+                        '!',
+                        ('retention_iva_line_ids.state', 'in', ('draft', 'emitted')),
                     ]
-                )
-                invoices = invoices.filtered(
-                    lambda i: not any(
-                        i.retention_iva_line_ids.filtered(
-                            lambda l: l.state in ('draft', 'emitted')
-                        )
-                    )
                 )
                 record.iva_eligible_partner_ids = invoices.mapped('partner_id')
             else:
-                record.iva_eligible_partner_ids = False
+                record.iva_eligible_partner_ids = Partner
 
     @api.depends("retention_line_ids", "retention_line_ids.move_id")
     def _compute_actual_invoice_ids(self):
