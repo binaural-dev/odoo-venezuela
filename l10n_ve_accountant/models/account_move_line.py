@@ -114,41 +114,76 @@ class AccountMoveLine(models.Model):
             else:
                 line.foreign_price = 0.0
 
-    @api.depends('foreign_price', 'quantity', 'discount', 'price_subtotal', 'price_total')
+    @api.depends(
+        'foreign_price',
+        'quantity',
+        'discount',
+        'tax_ids',
+        'foreign_currency_id',
+        'price_subtotal',
+        'price_total',
+    )
     def _compute_foreign_subtotal(self):
         for move in self.mapped('move_id'):
             lines = self.filtered(lambda l: l.move_id == move and l.display_type not in ('line_section', 'line_note'))
             if not lines:
                 continue
 
-            total_foreign_subtotal_target = sum(l.foreign_price * l.quantity * (1 - l.discount / 100.0) for l in lines)
-            
+            foreign_currency = move.foreign_currency_id or lines[0].foreign_currency_id
+
+            # Unrounded and tax aware amounts: taxes flagged as "included in
+            # price" are extracted from foreign_price instead of added on top.
+            amounts = [line._get_foreign_amounts(round_base=False) for line in lines]
+
+            total_foreign_subtotal_target = sum(subtotal for subtotal, _total in amounts)
+            total_foreign_target = sum(total for _subtotal, total in amounts)
+            if foreign_currency:
+                total_foreign_subtotal_target = foreign_currency.round(total_foreign_subtotal_target)
+                total_foreign_target = foreign_currency.round(total_foreign_target)
+
             accumulated_subtotal = 0.0
             accumulated_total = 0.0
             last_line = lines[-1]
 
-            for line in lines:
-                disc_factor = 1 - (line.discount / 100.0)
-                
+            for line, (subtotal, total) in zip(lines, amounts):
                 if line != last_line:
-                    line.foreign_subtotal = line.foreign_price * disc_factor * line.quantity
-                    
-                    ratio_iva = line.price_total / line.price_subtotal if line.price_subtotal else 1.0
-                    line.foreign_price_total = line.foreign_subtotal * ratio_iva
-                    
+                    line.foreign_subtotal = foreign_currency.round(subtotal) if foreign_currency else subtotal
+                    line.foreign_price_total = foreign_currency.round(total) if foreign_currency else total
+
                     accumulated_subtotal += line.foreign_subtotal
                     accumulated_total += line.foreign_price_total
                 else:
-                   
+                    # The last line absorbs the rounding difference so the sum of
+                    # the lines always matches the totals of the move.
                     line.foreign_subtotal = total_foreign_subtotal_target - accumulated_subtotal
-                    
-                    total_base_move = sum(l.price_total for l in lines)
-                    subtotal_base_move = sum(l.price_subtotal for l in lines)
-                    
-                    global_ratio = total_base_move / subtotal_base_move if subtotal_base_move else 1.0
-                    total_foreign_target = total_foreign_subtotal_target * global_ratio
-                    
                     line.foreign_price_total = total_foreign_target - accumulated_total
+
+    def _get_foreign_amounts(self, round_base=True):
+        """Amounts of the line expressed in the alternate currency.
+
+        Taxes are computed over ``foreign_price``, mirroring what Odoo does with
+        ``price_unit`` in ``_compute_totals``. That way a tax with
+        ``price_include`` is extracted from the alternate price instead of being
+        charged again on top of it.
+
+        :return: tuple (total_excluded, total_included)
+        """
+        self.ensure_one()
+        line_discount_foreign_price = self.foreign_price * (1 - (self.discount / 100.0))
+        subtotal = line_discount_foreign_price * self.quantity
+
+        if not self.tax_ids:
+            return subtotal, subtotal
+
+        taxes_res = self.tax_ids.with_context(round_base=round_base).compute_all(
+            line_discount_foreign_price,
+            quantity=self.quantity,
+            currency=self.foreign_currency_id,
+            product=self.product_id,
+            partner=self.partner_id,
+            is_refund=self.is_refund,
+        )
+        return taxes_res["total_excluded"], taxes_res["total_included"]
 
     @api.depends(
         "debit",

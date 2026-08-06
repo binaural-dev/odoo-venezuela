@@ -429,4 +429,64 @@ class TestAccountant(TransactionCase):
 
             self.assertIn(propiedad, options, f"Opciones de '{field_name}' deben incluir '{propiedad}'")
             self.assertEqual(options[propiedad], expected_value, f"La precisión de '{field_name}' debe ser '{expected_value}'")
+
+    def _create_invoice_with_rate(self, price_unit, taxes, rate):
+        return self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner.id,
+            'journal_id': self.sale_journal.id,
+            'date': fields.Date.today(),
+            'invoice_date': fields.Date.today(),
+            'foreign_currency_id': self.currency_vef.id,
+            'manually_set_rate': True,
+            'foreign_rate': 1 / rate,
+            'foreign_inverse_rate': rate,
+            'invoice_line_ids': [
+                Command.create({
+                    'product_id': self.product.id,
+                    'quantity': 1.0,
+                    'price_unit': price_unit,
+                    'tax_ids': [Command.set(taxes.ids)],
+                })
+            ],
+        })
+
+    def test_foreign_subtotal_with_price_included_tax(self):
+        """El impuesto incluido en el precio no debe duplicarse en moneda alterna.
+
+        Precio bruto 0,20 $ = 146,50 Bs con IVA 16% incluido:
+        el subtotal alterno debe ser la base neta (126,29 Bs) y el total alterno
+        debe mantenerse en 146,50 Bs, sin volver a recargar el IVA.
+        """
+        tax_included = self.env['account.tax'].create({
+            'name': 'IVA 16% incluido',
+            'amount': 16,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'price_include': True,
+            'company_id': self.company.id,
+        })
+
+        rate = 732.5
+        move = self._create_invoice_with_rate(0.20, tax_included, rate)
+        line = move.invoice_line_ids
+
+        # El precio alterno sigue siendo el bruto, igual que price_unit
+        self.assertAlmostEqual(line.foreign_price, 146.50, places=2)
+        # En la moneda base Odoo ya desglosa la base neta
+        self.assertAlmostEqual(line.price_subtotal, 0.17, places=2)
+        # 146,50 / 1,16 -> base imponible neta en Bs
+        self.assertAlmostEqual(line.foreign_subtotal, 126.29, places=2)
+        # El total alterno se mantiene: el IVA no se suma otra vez
+        self.assertAlmostEqual(line.foreign_price_total, 146.50, places=2)
+
+    def test_foreign_subtotal_with_price_excluded_tax(self):
+        """Con impuesto no incluido el total alterno sí suma el IVA por encima."""
+        rate = 732.5
+        move = self._create_invoice_with_rate(0.20, self.tax_iva16, rate)
+        line = move.invoice_line_ids
+
+        self.assertAlmostEqual(line.foreign_price, 146.50, places=2)
+        self.assertAlmostEqual(line.foreign_subtotal, 146.50, places=2)
+        self.assertAlmostEqual(line.foreign_price_total, 169.94, places=2)
         
