@@ -1,8 +1,15 @@
 from odoo import models, fields, api, _
+from odoo.exceptions import UserError
+
+import logging
+
+_logger = logging.getLogger(__name__)
+
+
 class ResCurrency(models.Model):
     _inherit = "res.currency"
 
-    # TDE FIXME: move to l10n_ve_currency_rate_live
+    # Homologación: No permitir eliminar el registro de una moneda, ni modificar, agregar o eliminar sus tasas de cambio, a menos que pertenezca al grupo
     edit_rate = fields.Boolean(
         compute="_compute_edit_rate",
     )
@@ -10,8 +17,13 @@ class ResCurrency(models.Model):
     def _compute_edit_rate(self):
         for record in self:
             record.edit_rate = (
-                record.env.company.currency_provider == "bcv"
-                and record.env.user.has_group(
+                record.env.user.has_group(
                     "l10n_ve_accountant.group_fiscal_config_support"
                 )
             )
+
+    def unlink(self):
+        if not self.env.user.has_group("l10n_ve_accountant.group_fiscal_config_support"):
+            raise UserError(_("It is not possible to delete currency records."))
+        return super(ResCurrency, self).unlink()
+    # Cierre de código homologado. En caso de requerir cambios o ajustes consultar con la Gerencia de Producto
