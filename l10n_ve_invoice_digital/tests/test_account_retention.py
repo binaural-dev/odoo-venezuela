@@ -161,7 +161,7 @@ class TestAccumulatedRate(TransactionCase):
             "move_type": "in_invoice",
             "partner_id": self.partner_a.id,
             "journal_id": self.journal.id,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
             "invoice_line_ids": [
                 (
                     0,
