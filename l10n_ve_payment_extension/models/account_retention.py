@@ -866,6 +866,7 @@ class AccountRetention(models.Model):
         that point.
 
         Returns
+        
         -------
         account.payment recordset
             The payments created for the retention.
