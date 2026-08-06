@@ -182,7 +182,7 @@ class TestIvaEligiblePartners(TransactionCase):
         try:
             invoice.action_post()
         except Exception:
-            _logger.debug(
+            _logger.warning(
                 "action_post failed for invoice %s, continuing test setup",
                 invoice.id,
                 exc_info=True,
