@@ -25,6 +25,89 @@ class PosSession(models.Model):
         """
         return super().load_data(models_to_load)
 
+    def get_pos_ui_product_pricelist_item_by_product(
+        self, product_tmpl_ids, product_ids, config_id
+    ):
+        """Agrega los items de las listas BASE de la cadena.
+
+        El core restringe el dominio a ``config._get_available_pricelists()``
+        (ver ``point_of_sale/models/pos_session.py``). Las listas base de la
+        cadena no están entre las disponibles — no pueden estarlo, porque
+        ``pos.config`` exige que toda lista disponible tenga la moneda del PdV
+        (constraint en ``pos_config.py``) y las listas base están justamente en
+        otra moneda. Resultado: los productos que entran por búsqueda
+        on-demand llegan sin los items donde viven los precios fijos, y
+        ``getPrice()`` cae a ``list_price``.
+
+        Se llama al core y se le suman los items faltantes, en vez de
+        reimplementar el método, para no heredar su mantenimiento.
+
+        KEEP IN SYNC WITH:
+          ``models/product_pricelist.py`` :: ``_load_pos_data_domain``
+          (la carga inicial debe cubrir las mismas listas que esta).
+        """
+        res = super().get_pos_ui_product_pricelist_item_by_product(
+            product_tmpl_ids, product_ids, config_id
+        )
+
+        pos_config = self.env["pos.config"].browse(config_id)
+        available_ids = set(pos_config._get_available_pricelists().ids)
+        chain_ids = self.env["product.pricelist"]._pos_expand_base_pricelists(
+            available_ids
+        )
+        missing_ids = chain_ids - available_ids
+        if not missing_ids:
+            return res
+
+        item_model = self.env["product.pricelist.item"]
+        today = fields.Date.today()
+        # Espejo del dominio del core, cambiando solo el conjunto de listas.
+        item_domain = [
+            "&",
+            ("pricelist_id", "in", list(missing_ids)),
+            *item_model._check_company_domain(self.company_id),
+            "|",
+            "&",
+            ("product_id", "=", False),
+            ("product_tmpl_id", "in", product_tmpl_ids),
+            ("product_id", "in", product_ids),
+            "|",
+            ("date_start", "=", False),
+            ("date_start", "<=", today),
+            "|",
+            ("date_end", "=", False),
+            ("date_end", ">=", today),
+        ]
+        extra_items = item_model.search(item_domain)
+        if not extra_items:
+            return res
+
+        # Dedup por id: si el core alguna vez amplía su propio conjunto de
+        # listas, no queremos entregar el mismo item dos veces.
+        known_item_ids = {item["id"] for item in res.get("product.pricelist.item", [])}
+        extra_items = extra_items.filtered(lambda item: item.id not in known_item_ids)
+        if not extra_items:
+            return res
+
+        item_fields = item_model._load_pos_data_fields(pos_config)
+        res["product.pricelist.item"] += extra_items.read(item_fields, load=False)
+
+        # Las listas base también tienen que viajar: sin el registro de la
+        # lista, el many2one ``base_pricelist_id`` del item no resuelve en el
+        # navegador y volvemos al mismo fallback silencioso.
+        pricelist_model = self.env["product.pricelist"]
+        known_pricelist_ids = {p["id"] for p in res.get("product.pricelist", [])}
+        extra_pricelists = extra_items.pricelist_id.filtered(
+            lambda pricelist: pricelist.id not in known_pricelist_ids
+        )
+        if extra_pricelists:
+            pricelist_fields = pricelist_model._load_pos_data_fields(pos_config)
+            res["product.pricelist"] += extra_pricelists.read(
+                pricelist_fields, load=False
+            )
+
+        return res
+
     def _validate_cross_move(self):
         """Create the moves that clear each foreign-currency payment method's
         transitory account into its real ``cross_journal`` account.
@@ -98,7 +181,7 @@ class PosSession(models.Model):
                     ref=session._cross_move_ref(),
                 )
 
-    def _is_cross_move_eligible(self, payment_method):
+    def _is_cross_move_eligible(self, payment_method, use_suspense=False):
         """Whether ``payment_method`` takes part in the automatic cross move.
 
         ``is_foreign_currency`` is the business marker that drives the whole
@@ -109,47 +192,65 @@ class PosSession(models.Model):
         that plainly needed it.)
 
         A method missing either cross journal is skipped in silence — that
-        configuration is incomplete, not wrong.
+        configuration is incomplete, not wrong. ``use_suspense`` must match
+        whatever will be passed to ``_create_cross_move_for`` — see
+        ``_get_cross_transitory_account``.
         """
         return bool(
             payment_method.is_foreign_currency
             and payment_method.type != "pay_later"
             and payment_method.cross_account_journal
             and payment_method.cross_journal
-            and self._get_cross_transitory_account(payment_method)
+            and self._get_cross_transitory_account(payment_method, use_suspense=use_suspense)
         )
 
-    def _get_cross_transitory_account(self, payment_method):
-        """Return the account the cross move drains — the one where native
-        Odoo parked the money once the session closed.
+    def _get_cross_transitory_account(self, payment_method, use_suspense=False):
+        """Return the account the cross move drains.
 
-        Which account that is depends on the payment method type, because the
-        native pipelines differ:
+        Which account that is depends on *what created the balance being
+        cleared*, not just the payment method type:
 
-        - ``bank``: ``_create_combine_account_payment`` posts an
-          ``account.payment`` with ``force_outstanding_account_id =
-          payment_method.outstanding_account_id`` (native
-          ``pos_session.py:1104``), so the balance sits in the outstanding
-          account.
-        - ``cash``: there is no outstanding account at all —
-          ``outstanding_account_id`` is ``invisible="type != 'bank'"`` in the
-          native view (``point_of_sale/views/pos_payment_method_views.xml:24``),
-          because Odoo routes cash straight to the journal. The statement line
-          debits the journal's own default account and credits the POS
-          receivable (``_get_combine_statement_line_vals``, native line 1452),
-          which leaves the POS receivable squared at zero and the balance in
-          ``journal_id.default_account_id``.
+        - ``use_suspense=False`` (sales, opening/closing differences): the
+          account where native Odoo parked the money once the session
+          closed / the difference was posted.
 
-        Draining the POS receivable for a cash method would therefore unbalance
-        an account already at zero while never touching the cash it was meant
-        to move.
+          - ``bank``: ``_create_combine_account_payment`` posts an
+            ``account.payment`` with ``force_outstanding_account_id =
+            payment_method.outstanding_account_id`` (native
+            ``pos_session.py:1104``), so the balance sits in the outstanding
+            account.
+          - ``cash``: there is no outstanding account at all —
+            ``outstanding_account_id`` is ``invisible="type != 'bank'"`` in
+            the native view
+            (``point_of_sale/views/pos_payment_method_views.xml:24``),
+            because Odoo routes cash straight to the journal. The statement
+            line debits the journal's own default account and credits the
+            POS receivable (``_get_combine_statement_line_vals``, native
+            line 1452) or, for differences, the configured loss/profit
+            account (``_post_foreign_statement_difference``) — either way
+            the leftover balance sits in ``journal_id.default_account_id``.
 
-        The company's default POS receivable account stays on as a last-resort
-        fallback so that an incomplete journal setup degrades into a skipped
-        cross move (see ``_is_cross_move_eligible``) rather than an
-        ``account_move_line_check_accountable_required_fields`` violation from
-        a NULL ``account_id``.
+          The company's default POS receivable account stays on as a
+          last-resort fallback so that an incomplete journal setup degrades
+          into a skipped cross move (see ``_is_cross_move_eligible``) rather
+          than an ``account_move_line_check_accountable_required_fields``
+          violation from a NULL ``account_id``.
+
+        - ``use_suspense=True`` (plain cash in/out, ``binaural_pos_close``'s
+          ``try_cash_in_out``): that flow never sets an explicit
+          ``counterpart_account_id``, so native
+          ``_prepare_move_line_default_vals`` falls back to
+          ``journal_id.suspense_account_id`` — Odoo's own "Cuenta
+          transitoria" field
+          (``account/i18n/es.po``: ``Suspense Account`` → ``Cuenta
+          transitoria``). That is the account actually left unexplained by
+          that flow, not ``default_account_id`` (which already got
+          reconciled by the other cross move, see
+          ``_line_vals_move_cross_incoming``/``_outgoing``'s ``use_suspense``
+          branch for why draining it requires inverting debit/credit too).
         """
+        if use_suspense:
+            return payment_method.journal_id.suspense_account_id
         if payment_method.type == "cash":
             account = payment_method.journal_id.default_account_id
         else:
@@ -159,8 +260,33 @@ class PosSession(models.Model):
             )
         return account or self.company_id.account_default_pos_receivable_account_id
 
+    def _get_cross_real_account(self, payment_method, outbound, use_suspense=False):
+        """Return the ``cross_journal`` account that receives/gives the value.
+
+        ``use_suspense=False`` (sales, opening/closing differences): the
+        journal's own inbound/outbound payment method line account — the
+        confirmed liquidity account, same as the native ``account.payment``/
+        bank pipeline would use.
+
+        ``use_suspense=True`` (cash in/out, ``binaural_pos_close``): lands in
+        ``cross_journal.suspense_account_id`` instead — pending an actual
+        bank statement to reconcile it, the same "not yet confirmed"
+        treatment already applied to the origin leg (see
+        ``_get_cross_transitory_account``). A journal has a single suspense
+        account regardless of direction, so ``outbound`` is unused here.
+        """
+        account_method = payment_method.cross_journal
+        if use_suspense:
+            return account_method.suspense_account_id
+        line_ids = (
+            account_method.outbound_payment_method_line_ids
+            if outbound
+            else account_method.inbound_payment_method_line_ids
+        )
+        return line_ids.payment_account_id
+
     def _line_vals_move_cross_incoming(
-        self, payment_method, amount, foreign_amount, foreign_rate, partner
+        self, payment_method, amount, foreign_amount, foreign_rate, partner, use_suspense=False
     ):
         """Build the cross-move lines for an incoming (amount >= 0) movement.
 
@@ -176,10 +302,20 @@ class PosSession(models.Model):
         (``== 3``, VEF in the original dev database). Fixed to compare
         against ``self.foreign_currency_id`` (the session's configured
         foreign currency), which does not assume a fixed id.
+
+        ``use_suspense`` only changes *which* account
+        ``_get_cross_transitory_account`` resolves — ``_create_cross_move_for``
+        is what inverts debit/credit for that case, by swapping which of
+        ``_line_vals_move_cross_incoming``/``_outgoing`` gets called (see
+        there for why).
         """
-        transitory_account = self._get_cross_transitory_account(payment_method).id
+        transitory_account = self._get_cross_transitory_account(
+            payment_method, use_suspense=use_suspense
+        ).id
         account_method = payment_method.cross_journal
-        real_account = account_method.inbound_payment_method_line_ids.payment_account_id.id
+        real_account = self._get_cross_real_account(
+            payment_method, outbound=False, use_suspense=use_suspense
+        ).id
         line_currency = account_method.currency_id or self.env.company.currency_id
         is_foreign_line_currency = line_currency == self.foreign_currency_id
 
@@ -221,7 +357,7 @@ class PosSession(models.Model):
         ]
 
     def _line_vals_move_cross_outgoing(
-        self, payment_method, amount, foreign_amount, foreign_rate, partner
+        self, payment_method, amount, foreign_amount, foreign_rate, partner, use_suspense=False
     ):
         """Build the cross-move lines for an outgoing (amount < 0) movement.
 
@@ -230,9 +366,13 @@ class PosSession(models.Model):
         and credits the ``cross_journal``'s real bank account, using
         absolute magnitudes.
         """
-        transitory_account = self._get_cross_transitory_account(payment_method).id
+        transitory_account = self._get_cross_transitory_account(
+            payment_method, use_suspense=use_suspense
+        ).id
         account_method = payment_method.cross_journal
-        real_account = account_method.outbound_payment_method_line_ids.payment_account_id.id
+        real_account = self._get_cross_real_account(
+            payment_method, outbound=True, use_suspense=use_suspense
+        ).id
         line_currency = account_method.currency_id or self.env.company.currency_id
         is_foreign_line_currency = line_currency == self.foreign_currency_id
 
@@ -325,7 +465,8 @@ class PosSession(models.Model):
         return partner
 
     def _create_cross_move_for(
-        self, payment_method, amount, foreign_amount, foreign_rate, partner, date, ref
+        self, payment_method, amount, foreign_amount, foreign_rate, partner, date, ref,
+        use_suspense=False,
     ):
         """Create one clearing move for ``payment_method``.
 
@@ -334,14 +475,40 @@ class PosSession(models.Model):
         already the net of the method's payments, so a session whose refunds
         outweigh its sales yields a single outgoing move — the branch the
         legacy combine path never had.
+
+        ``use_suspense=True`` (only ``binaural_pos_close``'s plain cash
+        in/out) clears ``journal_id.suspense_account_id`` instead of
+        ``default_account_id`` — see ``_get_cross_transitory_account``. That
+        account carries the OPPOSITE native polarity from
+        ``default_account_id`` for the same movement (a balanced 2-line
+        entry always splits debit/credit between its two accounts), so
+        clearing it needs the mirror-image entry: same magnitude, opposite
+        role. Rather than duplicating ``_line_vals_move_cross_incoming``/
+        ``_outgoing`` with the roles hand-swapped (and every sign/currency
+        field re-derived), this reuses them as-is by swapping *which one*
+        gets called and negating the amounts fed to it — the already-correct
+        abs()/sign logic in the builder then produces exactly the mirrored
+        entry. Confirmed line-by-line against a manual T-account trace
+        (see ``proposal.md``): for an entrada, calling the *outgoing*
+        builder with ``-amount`` debits the suspense account and credits
+        ``cross_journal`` (draining the placeholder, moving Banco Real
+        opposite to the sales-like direction); for a salida, the mirrored
+        call to the *incoming* builder credits suspense and debits
+        ``cross_journal``.
         """
+        is_outgoing = amount < 0
+        call_amount, call_foreign_amount = amount, foreign_amount
+        if use_suspense:
+            is_outgoing = not is_outgoing
+            call_amount, call_foreign_amount = -amount, -foreign_amount
         line_builder = (
             self._line_vals_move_cross_outgoing
-            if amount < 0
+            if is_outgoing
             else self._line_vals_move_cross_incoming
         )
         line_vals = line_builder(
-            payment_method, amount, foreign_amount, foreign_rate, partner
+            payment_method, call_amount, call_foreign_amount, foreign_rate, partner,
+            use_suspense=use_suspense,
         )
         return self._create_cross_move(
             payment_method, line_vals, foreign_rate, date, ref, partner

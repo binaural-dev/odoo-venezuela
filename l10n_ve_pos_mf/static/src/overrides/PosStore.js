@@ -314,7 +314,9 @@ patch(PosStore.prototype, {
           price_unit: amount,
           discount: line.getDiscount(),
           quantity: Math.abs(line.qty),
-          name: this.normalizeProductName(line.product_id?.display_name),
+          name: this.normalizeProductName(
+            String(line.product_id?.display_name || "").replace(/^\[[^\]]*\]\s*/, "")
+          ),
           code: line.product_id?.default_code,
           tax: fiscalCode,
         };

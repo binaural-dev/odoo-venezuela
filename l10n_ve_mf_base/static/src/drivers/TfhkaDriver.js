@@ -39,6 +39,15 @@ export class TfhkaDriver {
     // Máximo de caracteres por línea que imprime la TFHKA
     static MAX_LINE_LEN = 40;
 
+    // Longitud máxima del campo "Descripción Producto" en el comando de
+    // registro de ítem (Tabla 27, Manual de Protocolos y Comandos V8.5.0 -
+    // Venezuela). Es un límite propio del campo, independiente de
+    // precio/cantidad/código: la impresora hace word-wrap automático en
+    // varias líneas físicas de MAX_LINE_LEN al imprimir. Valor para SRP-812
+    // (único modelo mapeado en getMachineModel/MODEL_MAP); otros modelos
+    // TFHKA van de 116 a 140 según la misma tabla.
+    static MAX_PRODUCT_DESC_LEN = 127;
+
     constructor() {
         this.connection = new SerialConnection();
         this.isConnected = false;
@@ -1206,10 +1215,8 @@ export class TfhkaDriver {
                     .replace(/ñ/g, 'n')
                     .trim();
 
-                const overhead = 1 + price.length + qty.length + code.length;
-                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
-                if (available > 0 && desc.length > available) {
-                    desc = desc.substring(0, available);
+                if (desc.length > TfhkaDriver.MAX_PRODUCT_DESC_LEN) {
+                    desc = desc.substring(0, TfhkaDriver.MAX_PRODUCT_DESC_LEN);
                 }
 
                 phase1Commands.push(`${taxChar}${price}${qty}${code}${desc}`);
@@ -1432,10 +1439,8 @@ export class TfhkaDriver {
                     .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
                     .trim();
 
-                const overhead = 2 + price.length + qty.length + code.length;
-                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
-                if (available > 0 && desc.length > available) {
-                    desc = desc.substring(0, available);
+                if (desc.length > TfhkaDriver.MAX_PRODUCT_DESC_LEN) {
+                    desc = desc.substring(0, TfhkaDriver.MAX_PRODUCT_DESC_LEN);
                 }
 
                 phase1Commands.push(`d${fiscalCode}${price}${qty}${code}${desc}`);
@@ -1627,10 +1632,8 @@ export class TfhkaDriver {
                     .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
                     .trim();
 
-                const overhead = 2 + price.length + qty.length + code.length;
-                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
-                if (available > 0 && desc.length > available) {
-                    desc = desc.substring(0, available);
+                if (desc.length > TfhkaDriver.MAX_PRODUCT_DESC_LEN) {
+                    desc = desc.substring(0, TfhkaDriver.MAX_PRODUCT_DESC_LEN);
                 }
 
                 phase1Commands.push(`\`${fiscalCode}${price}${qty}${code}${desc}`);

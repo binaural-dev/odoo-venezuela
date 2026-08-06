@@ -23,6 +23,13 @@ class PosPayment(models.Model):
     # por el `serializeForORM` del modelo JS de pos.payment.
 
     def _create_payment_moves(self, is_reverse=False):
+        # Reimplementa el metodo completo de l10n_ve_pos en vez de llamar a
+        # super(): el split IGTF necesita una linea de credito extra (hacia
+        # customer_account_igtf_id) con montos calculados aparte, que no
+        # encaja en como l10n_ve_pos/el core arman sus lineas sin una
+        # reescritura mayor. Ver openspec/changes/
+        # l10n-ve-pos-igtf-payment-moves-foreign-rate-fix/proposal.md para el
+        # analisis completo (incluye el bug que esto causo con foreign_rate).
         result = self.env["account.move"]
         for payment in self:
             order = payment.pos_order_id
@@ -164,4 +171,16 @@ class PosPayment(models.Model):
                 [credit_line_vals, debit_line_vals]
             )
             payment_move._post()
+
+            # Sin esto, manually_set_rate queda en False y el create() de
+            # l10n_ve_accountant (account_move.py) dispara _compute_rate(),
+            # que sobreescribe foreign_rate/foreign_inverse_rate con la tasa
+            # del dia en vez de la tasa realmente pactada en el pago. Mismo
+            # write que hace l10n_ve_pos/models/pos_payment.py, que aqui no
+            # se hereda porque este metodo no llama a super().
+            payment_move.write({
+                "foreign_rate": payment.foreign_rate,
+                "foreign_inverse_rate": payment.foreign_rate,
+                "manually_set_rate": True,
+            })
         return result

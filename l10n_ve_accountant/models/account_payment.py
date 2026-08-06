@@ -28,48 +28,13 @@ class AccountPayment(models.Model):
         "res.currency", default=default_alternate_currency
     )
 
-    def default_rate(self):
-        """
-        This method is used to get the rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.foreign_currency_id.id or self.company_id.currency_id,
-            self.date or fields.Date.today(),
-        )
-        rate = rate_values.get("foreign_rate", 0)
-        return rate
-
-    def default_inverse_rate(self):
-        """
-        This method is used to get the inverse rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The inverse rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.foreign_currency_id.id or self.company_id.currency_id,
-            self.date or fields.Date.today(),
-        )
-        rate = rate_values.get("foreign_inverse_rate", 0)
-        return rate
-
-
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        default=default_rate,
         digits="Tasa",
         store=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
-        default=default_inverse_rate,
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
@@ -236,15 +201,20 @@ class AccountPayment(models.Model):
             
 
     def action_cancel(self):
-        """ 
-        Cancel the payments and their related journal entries.
-        
-        Odoo's native behavior physically deletes ('unlink') draft moves 
-        associated with the payment. This override changes that behavior to 
-        ensure fiscal integrity, keeping the journal entries in the system 
-        by moving them to 'cancel' instead of deleting them.
-        
+        """Cancel payments preserving fiscal traceability.
+
+        Odoo's native behavior physically deletes ('unlink') draft moves
+        associated with the payment. This override protects previously
+        posted moves (posted_before=True) by cancelling them instead of
+        letting them be deleted, while handling the rest of the standard
+        flow (posted moves reversal, draft moves cleanup) explicitly.
         """
+        for payment in self:
+            move = payment.move_id
+            if not move:
+                continue
+            if move.state == 'draft' and not move.posted_before:
+                move.unlink()
+            elif move.state != 'cancel':
+                move.button_cancel()
         self.state = 'canceled'
-        draft_moves = self.move_id.filtered(lambda m: m.state == 'draft')
-        draft_moves.button_cancel()
