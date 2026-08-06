@@ -11,6 +11,7 @@
         <field name="inherit_id" ref="l10n_ve_pos.res_config_settings_l10n_ve_pos"/>
         <field name="arch" type="xml">
             <xpath expr="//block[@name='l10n_ve_pos_block']" position="inside">
+                <separator string="Fiscal Printer"/>
                 <!-- Campo: Botón de acceso a MF -->
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_mf_pos_access_button_mf">
                     <div class="o_setting_left_pane">

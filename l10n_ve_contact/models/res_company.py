@@ -17,6 +17,11 @@ class ResCompany(models.Model):
         default = False,
         string='Validate user creation general',
     )
+
+    validate_partner_name_immutable = fields.Boolean(
+        default=True,
+        string="Prevent renaming contacts with transactions",
+    )
     
     @api.model_create_multi
     def create(self, vals_list):
