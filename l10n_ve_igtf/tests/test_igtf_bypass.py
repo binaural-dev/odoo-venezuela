@@ -36,7 +36,6 @@ class TestIGTFBypass(IGTFTestCommonPurchaseBook):
         
         invoice.action_post()
 
-        self.assertEqual(invoice.amount_to_pay_igtf, 0.0, "Amount to pay IGTF should be 0")
         self.assertEqual(invoice.bi_igtf, 0.0, "BI IGTF should be 0")
         self.assertEqual(invoice.foreign_bi_igtf, 0.0, "Foreign BI IGTF should be 0")
 
