@@ -164,5 +164,20 @@ con traza T-account; no se repite acá).
       `default_account_id`/`payment_account_id` para el mismo movimiento
 - [x] 10.4 Spec delta en `pos-cross-account-move/spec.md`: Requirement
       "Modo `use_suspense` para llamadores fuera de ventas"
-- [ ] 10.5 Verificación manual en navegador (pendiente, ver
+- [x] 10.5 Tests directos en `tests/test_pos_session_cross_account_move.py`
+      (hasta este punto solo lo ejercitaban indirectamente los tests de
+      `binaural_pos_close`, vía `try_cash_in_out`): llama
+      `_create_cross_move_for(..., use_suspense=True)` directo con importes
+      planos, sin pasar por `try_cash_in_out` (vive en otro módulo).
+      `test_use_suspense_incoming_uses_both_suspense_accounts` /
+      `test_use_suspense_outgoing_mirrors_incoming`: ninguna pata usa
+      `default_account_id`/`payment_account_id` de `cross_journal`, ambas
+      caen en el `suspense_account_id` de su propio diario, con la
+      polaridad invertida en las dos direcciones.
+      `test_use_suspense_eligibility_requires_journal_suspense_account`:
+      `_is_cross_move_eligible(..., use_suspense=True)` exige
+      `suspense_account_id` en el diario — no le basta con que
+      `default_account_id` esté resuelto (lo único que exige
+      `use_suspense=False`).
+- [ ] 10.6 Verificación manual en navegador (pendiente, ver
       `binaural-pos-close-foreign-cash-cross-move`)
