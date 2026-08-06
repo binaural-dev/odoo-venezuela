@@ -447,6 +447,7 @@ class AccountMoveLine(models.Model):
             
             # Si el balance en Bs es 0 (evitar división por cero)
             if not aml.balance:
+                
                 return 0.0
 
             # CALCULAMOS LA PROPORCIÓN
