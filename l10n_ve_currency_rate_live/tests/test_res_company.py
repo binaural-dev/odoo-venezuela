@@ -1,5 +1,6 @@
-from datetime import date
-from unittest.mock import patch
+import logging
+from datetime import date, timezone
+from unittest.mock import patch, MagicMock
 
 import requests
 
@@ -582,3 +583,185 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         self.company.country_id = self.country_ve
         self.company._compute_currency_provider()
         self.assertEqual(self.company.currency_provider, "bcv")
+
+    # ==================================================================
+    # T17: _bcv_http_get — TLS hardening
+    # ==================================================================
+
+    def test_bcv_http_get_verifies_tls_by_default(self):
+        """_bcv_http_get calls requests.get with verify=True (default)."""
+        mock_response = MockResponse(text="ok")
+        with patch.object(
+            currency_res_company.requests, "get", return_value=mock_response,
+        ) as mock_get:
+            result = self.company._bcv_http_get(
+                currency_res_company.BCV_URL, timeout=30,
+            )
+
+        self.assertIs(result, mock_response)
+        mock_get.assert_called_once_with(
+            currency_res_company.BCV_URL,
+            timeout=30,
+            headers=currency_res_company.BCV_HEADERS,
+        )
+        # verify is not passed → defaults to True in requests.get
+        self.assertNotIn("verify", mock_get.call_args.kwargs)
+
+    def test_bcv_http_get_falls_back_on_ssl_error(self):
+        """_bcv_http_get retries with verify=False when SSLError occurs."""
+        mock_response = MockResponse(text="ok")
+        ssl_error = requests.exceptions.SSLError("CERTIFICATE_VERIFY_FAILED")
+        with patch.object(
+            currency_res_company.requests, "get",
+            side_effect=[ssl_error, mock_response],
+        ) as mock_get, self.assertLogs(
+            "odoo.addons.l10n_ve_currency_rate_live.models.res_company",
+            level=logging.ERROR,
+        ) as cm:
+            result = self.company._bcv_http_get(
+                currency_res_company.BCV_URL, timeout=30,
+            )
+
+        self.assertIs(result, mock_response)
+        self.assertEqual(mock_get.call_count, 2)
+        # Second call must use verify=False
+        second_call = mock_get.call_args_list[1]
+        self.assertFalse(second_call.kwargs.get("verify", True))
+        # Error logged
+        self.assertTrue(
+            any("TLS certificate verification failed" in msg for msg in cm.output)
+        )
+
+    def test_bcv_http_get_propagates_non_ssl_errors(self):
+        """_bcv_http_get does NOT swallow non-SSL RequestExceptions."""
+        timeout_err = requests.exceptions.Timeout("timed out")
+        with patch.object(
+            currency_res_company.requests, "get",
+            side_effect=timeout_err,
+        ):
+            with self.assertRaises(requests.exceptions.Timeout):
+                self.company._bcv_http_get(
+                    currency_res_company.BCV_URL, timeout=30,
+                )
+
+    # ==================================================================
+    # T18: _normalize_currency_rate — logging for silent omissions
+    # ==================================================================
+
+    def test_normalize_currency_rate_logs_when_usd_missing(self):
+        """Warning logged when USD/VEF reference rate is missing from result."""
+        result = {}  # No VEF entry
+        with self.assertLogs(
+            "odoo.addons.l10n_ve_currency_rate_live.models.res_company",
+            level=logging.WARNING,
+        ) as cm:
+            self.company._normalize_currency_rate(result, "EUR", 830.0, date(2026, 7, 15))
+
+        self.assertNotIn("EUR", result)
+        self.assertTrue(
+            any("USD/VEF reference rate is missing" in msg for msg in cm.output)
+        )
+
+    def test_normalize_currency_rate_logs_when_vef_rate_zero(self):
+        """Warning logged when VEF rate for the currency is zero."""
+        result = {"VEF": (725.0, date(2026, 7, 15))}
+        with self.assertLogs(
+            "odoo.addons.l10n_ve_currency_rate_live.models.res_company",
+            level=logging.WARNING,
+        ) as cm:
+            self.company._normalize_currency_rate(result, "EUR", 0.0, date(2026, 7, 15))
+
+        self.assertNotIn("EUR", result)
+        self.assertTrue(
+            any("scraped VEF rate is missing or zero" in msg for msg in cm.output)
+        )
+
+    def test_normalize_currency_rate_succeeds_with_valid_inputs(self):
+        """EUR rate computed correctly from USD/VEF and EUR/VEF."""
+        result = {"VEF": (725.747, date(2026, 7, 15))}
+        self.company._normalize_currency_rate(result, "EUR", 830.63, date(2026, 7, 15))
+
+        self.assertIn("EUR", result)
+        self.assertAlmostEqual(result["EUR"][0], 725.747 / 830.63, places=4)
+        self.assertEqual(result["EUR"][1], date(2026, 7, 15))
+
+    def test_normalize_currency_rate_handles_tuple_vef(self):
+        """VEF entry as tuple is correctly unwrapped."""
+        result = {"VEF": (725.747, date(2026, 7, 15))}
+        self.company._normalize_currency_rate(result, "EUR", 830.63, date(2026, 7, 15))
+
+        self.assertIn("EUR", result)
+        self.assertAlmostEqual(result["EUR"][0], 725.747 / 830.63, places=4)
+
+    # ==================================================================
+    # T19: run_update_bcv_currency — company failure isolation
+    # ==================================================================
+
+    def test_run_update_bcv_currency_isolates_company_failures(self):
+        """One company failing does not prevent the other from being updated."""
+        comp_a = self.company
+        comp_b = self.env["res.company"].create({"name": "BCV Fail Co"})
+
+        # Both companies: BCV provider
+        for comp in (comp_a, comp_b):
+            comp.currency_provider = "bcv"
+
+        vef = self.env["res.currency"].with_context(active_test=False).search(
+            [("name", "=", "VEF")], limit=1,
+        )
+
+        call_log = []
+
+        def fake_update_rates():
+            call_log.append(self.env.company.id)
+            if self.env.company.id == comp_a.id:
+                raise RuntimeError("Simulated BCV failure")
+
+        with patch.object(
+            type(comp_a),
+            "update_currency_rates",
+            side_effect=fake_update_rates,
+        ), patch.object(
+            type(comp_a),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            currency_res_company.fields.Date,
+            "today",
+            return_value=date(2026, 7, 15),
+        ):
+            # Should NOT raise — failure is isolated via savepoint
+            self.company.run_update_bcv_currency()
+
+        # Both companies should have been attempted
+        self.assertEqual(len(call_log), 2)
+
+    # ==================================================================
+    # Mutation-style: _get_bcv_currency_rates rejection guards
+    # ==================================================================
+
+    def test_get_bcv_currency_rates_rejects_zero_rate(self):
+        """EUR rate of zero is omitted from results."""
+        html = self._bcv_multi_html({"EUR": ("euro", " 0,00")})
+        with patch.object(
+            currency_res_company.requests,
+            "get",
+            return_value=MockResponse(text=html),
+        ):
+            result = self.company._get_bcv_currency_rates(["EUR", "USD"])
+
+        self.assertNotIn("EUR", result)
+        self.assertIn("USD", result)
+
+    def test_get_bcv_currency_rates_rejects_negative_rate(self):
+        """EUR rate of -1 is omitted from results (already covered, reinforcement)."""
+        html = self._bcv_multi_html({"EUR": ("euro", " -100,00")})
+        with patch.object(
+            currency_res_company.requests,
+            "get",
+            return_value=MockResponse(text=html),
+        ):
+            result = self.company._get_bcv_currency_rates(["EUR", "USD"])
+
+        self.assertNotIn("EUR", result)
+        self.assertIn("USD", result)
