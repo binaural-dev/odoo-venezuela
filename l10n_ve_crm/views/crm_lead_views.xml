@@ -75,4 +75,39 @@
             </field>
         </field>
     </record>
+
+    <record id="crm_case_kanban_view_leads_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.lead.kanban.lead.foreign.currency</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+        <field name="arch" type="xml">
+            <field name="company_currency" position="after">
+                <field name="foreign_currency_id"/>
+                <field name="expected_revenue_foreign"/>
+                <field name="recurring_revenue_foreign"/>
+            </field>
+            <progressbar position="attributes">
+                <attribute name="sum_field">expected_revenue_foreign</attribute>
+                <attribute name="recurring_revenue_sum_field">recurring_revenue_foreign</attribute>
+            </progressbar>
+            <!-- El div original se deja en el árbol (no se elimina) para no romper
+                 crm.lead.view.kanban.forecast, que también hereda de esta vista y hace su
+                 propio xpath sobre field[@name='expected_revenue']; simplemente se oculta. -->
+            <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]" position="attributes">
+                <attribute name="class" add="d-none" separator=" "/>
+            </xpath>
+            <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]" position="after">
+                <div class="o_kanban_card_crm_lead_revenue">
+                    <t t-if="record.expected_revenue_foreign.raw_value">
+                        <field name="expected_revenue_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+                        <span t-if="record.recurring_revenue_foreign and record.recurring_revenue_foreign.raw_value" groups="crm.group_use_recurring_revenues"> + </span>
+                    </t>
+                    <t t-if="record.recurring_revenue_foreign and record.recurring_revenue_foreign.raw_value">
+                        <field class="me-1" name="recurring_revenue_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}" groups="crm.group_use_recurring_revenues"/>
+                        <field name="recurring_plan" groups="crm.group_use_recurring_revenues"/>
+                    </t>
+                </div>
+            </xpath>
+        </field>
+    </record>
 </odoo>
