@@ -679,18 +679,28 @@ class TestCoverageGaps(TransactionCase):
         action = invoice.action_register_payment()
         context = action.get('context', {})
         self.assertIn('active_ids', context)
-        if 'default_foreign_rate' in context:
-            self.assertAlmostEqual(context['default_foreign_rate'], 50.0, places=2)
+        self.assertNotIn(
+            'default_foreign_rate', context,
+            "action_register_payment must not force the invoice's rate into the wizard",
+        )
 
     def test_payment_register_wizard_uses_current_date_rate_not_invoice_rate(self):
         """
         The payment register wizard must compute foreign_rate from its own
         payment_date (defaulting to today), never from the rate stored on the
         old invoice being paid.
+
+        old_rate > today_rate on purpose: this makes the invoice's own foreign
+        amount (amount_bs / old_rate) the *smaller* of the two sides, so a
+        plain min(foreign_debit_amount, foreign_credit_amount) would wrongly
+        pick the invoice's side. Only the is_invoice()-based branching in
+        _prepare_reconciliation_single_partial picks the payment's side
+        correctly here, so this actually exercises that fix (see
+        test_coverage_gaps.py history / PR #14473 review).
         """
         old_date = fields.Date.today() - timedelta(days=10)
-        old_rate = 30.0
-        today_rate = 65.0
+        old_rate = 65.0
+        today_rate = 30.0
 
         self.env["res.currency.rate"].create({
             "name": old_date, "currency_id": self.currency_usd.id,
@@ -744,7 +754,8 @@ class TestCoverageGaps(TransactionCase):
         )
         self.assertNotAlmostEqual(
             partial.debit_foreign_amount_currency, partial.foreign_amount, places=2,
-            msg="foreign_amount must no longer collapse to the invoice's (lower, older-rate) side",
+            msg="foreign_amount must not collapse to the invoice's side, even though it is the "
+                "smaller value here (old_rate > today_rate) and would be picked by a plain min()",
         )
 
     # ═══════════════════════════════════════════════════════════════
