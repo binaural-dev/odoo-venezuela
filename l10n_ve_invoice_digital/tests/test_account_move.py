@@ -250,7 +250,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             "foreign_inverse_rate": foreign_inverse_rate,
             "manually_set_rate": True,
             "invoice_line_ids": invoice_lines,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
             "journal_id": self.journal.id,
             "correlative": 1,
         }
@@ -821,11 +821,11 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]
         )
         
-        self.invoice.invoice_date_due = datetime.now() - timedelta(days=1)
+        self.invoice.invoice_date_due = fields.Date.context_today(self.env.user) - timedelta(days=1)
 
-        with self.assertRaises(UserError) as e:        
+        with self.assertRaises(UserError) as e:
             self.invoice.generate_document_digital()
-            _logger.info(e.exception)
+        _logger.info(e.exception)
         _logger.info("Test passed: Invalid expiration date validation")
 
     def test_17_is_eligible_for_tfhka_not_digital_journal(self):
@@ -1390,6 +1390,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(series, "")
 
     def test_67_generate_document_digital_non_numeric_last_number(self):
+        self.journal.sequence_id.number_next_actual = 1
         with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.get_last_document_number', return_value="abc"):
             with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.query_numbering', return_value=None):
                 with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api') as mock_call:
