@@ -91,11 +91,8 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         self.assertIsNone(published_date)
         self.assertEqual(mock_get.call_count, currency_res_company.SOURCE_MAX_ATTEMPTS)
 
-    def test_parse_bcv_data_accepts_future_rate_on_weekend_when_habil_days_enabled(
-        self,
-    ):
+    def test_parse_bcv_data_skips_weekend_when_habil_days_enabled(self):
         saturday = date(2026, 6, 20)
-        monday = date(2026, 6, 22)
         self.company.can_update_habil_days = True
 
         with patch.object(
