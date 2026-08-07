@@ -572,7 +572,7 @@ class ResCompany(models.Model):
                 ]
             )
             if already_today:
-                return
+                continue
             try:
                 with self.env.cr.savepoint():
                     company.with_context(suppress_errors=True).update_currency_rates()
