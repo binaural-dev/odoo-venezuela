@@ -542,44 +542,43 @@ class ResCompany(models.Model):
     @api.model
     def run_update_bcv_currency(self):
         try:
-            try:
-                timezone = pytz.timezone(BCV_TIMEZONE)
-            except Exception:
-                timezone = pytz.UTC
+            timezone = pytz.timezone(BCV_TIMEZONE)
+        except Exception:
+            timezone = pytz.UTC
 
-            now_local = datetime.now(timezone)
-            if not self._is_bcv_update_window(now_local):
-                return
+        now_local = datetime.now(timezone)
+        if not self._is_bcv_update_window(now_local):
+            return
 
-            today = fields.Date.to_date(fields.Date.today())
-            Rate = self.env["res.currency.rate"]
-            vef = (
-                self.env["res.currency"]
-                .with_context(active_test=False)
-                .search(
-                    [("name", "=", VEF_CURRENCY_CODE)],
-                    limit=1,
-                )
+        today = fields.Date.to_date(fields.Date.today())
+        Rate = self.env["res.currency.rate"]
+        vef = (
+            self.env["res.currency"]
+            .with_context(active_test=False)
+            .search(
+                [("name", "=", VEF_CURRENCY_CODE)],
+                limit=1,
             )
-            if not vef:
-                return
+        )
+        if not vef:
+            return
 
-            bcv_companies = self.search(
-                [
-                    ("currency_provider", "=", "bcv"),
-                    # Child companies inherit the shared rate through their parent company.
-                    ("parent_id", "=", False),
-                ]
+        bcv_companies = self.search(
+            [
+                ("currency_provider", "=", "bcv"),
+                # Child companies inherit the shared rate through their parent company.
+                ("parent_id", "=", False),
+            ]
+        )
+        if already_today:
+            continue
+        try:
+            with self.env.cr.savepoint():
+                company.with_context(suppress_errors=True).update_currency_rates()
+        except Exception:
+            _logger.error(
+                "BCV rate update failed for company %s (id=%s); "
+                "continuing with remaining companies.",
+                company.display_name, company.id,
+                exc_info=True,
             )
-            if already_today:
-                continue
-            try:
-                with self.env.cr.savepoint():
-                    company.with_context(suppress_errors=True).update_currency_rates()
-            except Exception:
-                _logger.error(
-                    "BCV rate update failed for company %s (id=%s); "
-                    "continuing with remaining companies.",
-                    company.display_name, company.id,
-                    exc_info=True,
-                )
