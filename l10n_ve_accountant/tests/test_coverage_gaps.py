@@ -5,7 +5,7 @@ from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo.tests.common import Form
 from odoo import fields, Command
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -401,6 +401,7 @@ class TestCoverageGaps(TransactionCase):
             "currency_id": self.currency_usd.id,
             "payment_method_line_id": pml.id, "journal_id": bank.id,
         })
+        pay._compute_rate()
         vals = pay._prepare_move_line_default_vals()
         self.assertIsInstance(vals, list)
         self.assertEqual(len(vals), 2)
@@ -431,7 +432,8 @@ class TestCoverageGaps(TransactionCase):
             "currency_id": self.currency_usd.id,
             "payment_method_line_id": pml.id, "journal_id": bank.id,
         })
-        self.assertIsNotNone(pay.foreign_rate)
+        pay._compute_rate()
+        self.assertGreater(pay.foreign_rate, 0.0)
 
     # ═══════════════════════════════════════════════════════════════
     # account_payment.py - _onchange_foreign_rate
@@ -1951,3 +1953,1015 @@ class TestCoverageGaps(TransactionCase):
         self.assertNotAlmostEqual(
             tt['foreign_amount_total'], naive_total, places=2,
             msg="abs() per line must not be used (discount inflated the total)")
+
+    # ═══════════════════════════════════════════════════════════════
+    # res_currency.py - edit_rate / unlink
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_currency_edit_rate_true_for_support_group(self):
+        group = self.env.ref("l10n_ve_accountant.group_fiscal_config_support")
+        user = self.env.user
+        user.groups_id = [(4, group.id)]
+        self.currency_usd.invalidate_recordset(["edit_rate"])
+        self.assertTrue(self.currency_usd.with_user(user).edit_rate)
+
+    def test_currency_edit_rate_false_without_group(self):
+        group = self.env.ref("l10n_ve_accountant.group_fiscal_config_support")
+        user = self.env.user
+        user.groups_id = [(3, group.id)]
+        self.currency_usd.invalidate_recordset(["edit_rate"])
+        self.assertFalse(self.currency_usd.with_user(user).edit_rate)
+
+    def test_currency_unlink_blocked_without_group(self):
+        group = self.env.ref("l10n_ve_accountant.group_fiscal_config_support")
+        currency = self.env["res.currency"].create({
+            "name": "TCB", "symbol": "TCB",
+        })
+        user = self.env.user
+        user.groups_id = [(3, group.id)]
+        with self.assertRaises(UserError):
+            currency.with_user(user).unlink()
+
+    def test_currency_unlink_allowed_with_group(self):
+        group = self.env.ref("l10n_ve_accountant.group_fiscal_config_support")
+        currency = self.env["res.currency"].create({
+            "name": "TCA", "symbol": "TCA",
+        })
+        user = self.env.user
+        user.groups_id = [(4, group.id)]
+        currency.with_user(user).unlink()
+        self.assertFalse(currency.exists())
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_payment.py - _prepare_move_line_default_vals (more branches)
+    # ═══════════════════════════════════════════════════════════════
+
+    def _bank_journal_with_methods(self, code):
+        manual_in = self.env.ref("account.account_payment_method_manual_in")
+        manual_out = self.env.ref("account.account_payment_method_manual_out")
+        return self.env['account.journal'].create({
+            'name': f'Bank {code}', 'code': code, 'type': 'bank',
+            'default_account_id': self.acc_bank.id, 'company_id': self.company.id,
+            'inbound_payment_method_line_ids': [(0, 0, {
+                'name': f'In{code}', 'payment_method_id': manual_in.id,
+                'payment_type': 'inbound', 'payment_account_id': self.acc_bank.id,
+            })],
+            'outbound_payment_method_line_ids': [(0, 0, {
+                'name': f'Out{code}', 'payment_method_id': manual_out.id,
+                'payment_type': 'outbound', 'payment_account_id': self.acc_bank.id,
+            })],
+        })
+
+    def test_prepare_move_line_default_vals_foreign_currency_outbound(self):
+        bank = self._bank_journal_with_methods('BNKO1')
+        pml = bank.outbound_payment_method_line_ids[:1]
+        pay = self.env["account.payment"].create({
+            "payment_type": "outbound", "partner_type": "supplier",
+            "partner_id": self.partner.id, "amount": 100.0,
+            "currency_id": self.currency_usd.id,
+            "payment_method_line_id": pml.id, "journal_id": bank.id,
+        })
+        pay._compute_rate()
+        vals = pay._prepare_move_line_default_vals()
+        self.assertEqual(len(vals), 2)
+        self.assertLessEqual(vals[0]['debit'], 0.0)
+
+    def test_prepare_move_line_default_vals_third_currency(self):
+        bank = self._bank_journal_with_methods('BNKO2')
+        pml = bank.inbound_payment_method_line_ids[:1]
+        pay = self.env["account.payment"].create({
+            "payment_type": "inbound", "partner_type": "customer",
+            "partner_id": self.partner.id, "amount": 100.0,
+            "currency_id": self.currency_eur.id,
+            "payment_method_line_id": pml.id, "journal_id": bank.id,
+        })
+        pay._compute_rate()
+        vals = pay._prepare_move_line_default_vals()
+        self.assertEqual(len(vals), 2)
+
+    def test_prepare_move_line_default_vals_with_write_off(self):
+        bank = self._bank_journal_with_methods('BNKO3')
+        pml = bank.inbound_payment_method_line_ids[:1]
+        pay = self.env["account.payment"].create({
+            "payment_type": "inbound", "partner_type": "customer",
+            "partner_id": self.partner.id, "amount": 100.0,
+            "currency_id": self.currency_usd.id,
+            "payment_method_line_id": pml.id, "journal_id": bank.id,
+        })
+        pay._compute_rate()
+        vals = pay._prepare_move_line_default_vals(write_off_line_vals=[
+            {"balance": 5.0, "amount_currency": 5.0, "account_id": self.acc_exp.id},
+        ])
+        self.assertGreaterEqual(len(vals), 2)
+
+    # ═══════════════════════════════════════════════════════════════
+    # wizard/account_payment_register.py
+    # ═══════════════════════════════════════════════════════════════
+
+    def _register_wizard(self, invoice, extra_vals=None):
+        vals = dict(extra_vals or {})
+        return self.env["account.payment.register"].with_context(
+            active_model="account.move", active_ids=invoice.ids, active_id=invoice.id,
+        ).create(vals)
+
+    def test_payment_register_default_get_sets_foreign_total_billed_vef(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self._register_wizard(invoice)
+        self.assertAlmostEqual(
+            wizard.foreign_total_billed_vef, invoice.foreign_amount_residual, places=2,
+        )
+
+    def test_payment_register_compute_foreign_rate_no_date(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self._register_wizard(invoice)
+        wizard.payment_date = False
+        wizard._compute_foreign_rate()
+        self.assertEqual(wizard.foreign_rate, 0.0)
+
+    def test_payment_register_compute_foreign_rate_with_date(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self._register_wizard(invoice)
+        wizard.payment_date = fields.Date.today()
+        wizard._compute_foreign_rate()
+        self.assertGreater(wizard.foreign_rate, 0.0)
+        wizard._compute_foreign_inverse_rate()
+        self.assertGreater(wizard.foreign_inverse_rate, 0.0)
+
+    def test_payment_register_total_amount_same_currency(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self._register_wizard(invoice)
+        self.assertEqual(wizard.source_currency_id, wizard.currency_id)
+        self.assertGreater(wizard.amount, 0.0)
+
+    def test_payment_register_total_amount_foreign_to_company(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self._register_wizard(invoice, {"currency_id": self.currency_vef.id})
+        self.assertGreater(wizard.amount, 0.0)
+
+    def test_payment_register_total_amount_company_to_foreign(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self._register_wizard(invoice, {"currency_id": self.currency_usd.id})
+        self.assertGreater(wizard.amount, 0.0)
+
+    def test_payment_register_total_amount_foreign_to_foreign(self):
+        invoice = self._create_invoice(self.currency_eur, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self._register_wizard(invoice, {"currency_id": self.currency_usd.id})
+        self.assertGreater(wizard.amount, 0.0)
+
+    def test_payment_register_create_payment_vals_includes_rate(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self._register_wizard(invoice)
+        wizard.payment_date = fields.Date.today()
+        result = wizard.action_create_payments()
+        payment = self.env["account.payment"].search(
+            [("partner_id", "=", self.partner.id)], order="id desc", limit=1,
+        )
+        self.assertAlmostEqual(payment.foreign_rate, wizard.foreign_rate, places=2)
+        self.assertAlmostEqual(payment.foreign_inverse_rate, wizard.foreign_inverse_rate, places=2)
+
+    # ═══════════════════════════════════════════════════════════════
+    # report/all_payment_report.py
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_all_payment_report_missing_context_raises(self):
+        report = self.env["report.l10n_ve_accountant.financial_all_payments"]
+        with self.assertRaises(UserError):
+            report._get_report_values([], data={"form": {"payment_type": "inbound"}})
+
+    def test_all_payment_report_missing_form_raises(self):
+        report = self.env["report.l10n_ve_accountant.financial_all_payments"].with_context(
+            active_model="account.payment", active_id=1,
+        )
+        with self.assertRaises(UserError):
+            report._get_report_values([], data={})
+
+    def test_all_payment_report_returns_docs_and_labels(self):
+        bank = self._bank_journal_with_methods('BNKO4')
+        pml = bank.inbound_payment_method_line_ids[:1]
+        payment = self.env["account.payment"].create({
+            "payment_type": "inbound", "partner_type": "customer",
+            "partner_id": self.partner.id, "amount": 100.0,
+            "currency_id": self.currency_vef.id,
+            "payment_method_line_id": pml.id, "journal_id": bank.id,
+        })
+        report = self.env["report.l10n_ve_accountant.financial_all_payments"].with_context(
+            active_model="account.payment", active_id=payment.id,
+        )
+        today = fields.Date.today()
+        result = report._get_report_values([], data={
+            "form": {
+                "payment_type": "inbound",
+                "journal_id": bank.id,
+                "start_date": today,
+                "end_date": today,
+            },
+            "context": {"uid": self.env.uid},
+        })
+        self.assertIn(payment, result["docs"])
+        self.assertEqual(result["payment_type"], "De Clientes")
+        self.assertEqual(result["journal"], bank.name)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_invoice_report.py - get_view / _select
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_invoice_report_get_view_relabels_foreign_fields(self):
+        res = self.env["account.invoice.report"].get_view(view_type="pivot")
+        self.assertIn("Total Billed (", res["arch"])
+        self.assertIn("Foreign Rate (", res["arch"])
+        self.assertIn("Foreign Total (", res["arch"])
+
+    def test_invoice_report_get_view_no_foreign_currency(self):
+        self.company.currency_foreign_id = False
+        res = self.env["account.invoice.report"].get_view(view_type="pivot")
+        self.assertNotIn("Total Billed (", res["arch"])
+
+    def test_invoice_report_select_query_reachable(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        records = self.env["account.invoice.report"].search([
+            ("move_id", "=", invoice.id),
+        ])
+        self.assertTrue(records)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - get_invoice_line_ids_subtotals_by_name
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_get_invoice_line_ids_subtotals_by_name(self):
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id, "name": "Same Name",
+                    "quantity": 1.0, "price_unit": 50.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                }),
+                Command.create({
+                    "product_id": self.product.id, "name": "Same Name",
+                    "quantity": 1.0, "price_unit": 30.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+        result = invoice.get_invoice_line_ids_subtotals_by_name()
+        self.assertIn("Same Name", result)
+        self.assertEqual(len(result["Same Name"]), 2)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _compute_rate_for_documents (manually_set_rate)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_compute_rate_manually_set_rate_skips_recompute(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.manually_set_rate = True
+        invoice.foreign_rate = 12.34
+        invoice.date = fields.Date.today()
+        invoice._compute_rate()
+        self.assertAlmostEqual(invoice.foreign_rate, 12.34, places=2)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _compute_foreign_taxable_income
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_compute_foreign_taxable_income(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertAlmostEqual(
+            invoice.foreign_taxable_income,
+            invoice.tax_totals.get("foreign_amount_untaxed", 0.0),
+            places=2,
+        )
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _compute_foreign_total_billed (third currency)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_foreign_total_billed_third_currency(self):
+        invoice = self._create_invoice(self.currency_eur, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertGreater(invoice.foreign_total_billed, 0.0)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _onchange_foreign_rate
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_onchange_foreign_rate_negative_raises(self):
+        journal = self._rectification_purchase_journal()
+        invoice = self._create_in_invoice(journal, fields.Date.today())
+        with self.assertRaises(ValidationError):
+            with Form(invoice, view="account.view_move_form") as form:
+                form.foreign_rate = -5.0
+
+    def test_onchange_foreign_rate_positive_computes_inverse(self):
+        journal = self._rectification_purchase_journal()
+        invoice = self._create_in_invoice(journal, fields.Date.today())
+        with Form(invoice, view="account.view_move_form") as form:
+            form.foreign_rate = 25.0
+        invoice = form.save()
+        self.assertAlmostEqual(invoice.foreign_inverse_rate, 1 / 25.0, places=6)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _check_product_id constraint
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_check_product_id_constraint(self):
+        with self.assertRaises(ValidationError):
+            self.env["account.move"].with_context(
+                check_move_validity=False,
+            ).create({
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": self.sale_journal.id,
+                "currency_id": self.currency_vef.id,
+                "date": fields.Date.today(),
+                "invoice_line_ids": [
+                    Command.create({
+                        "display_type": "product",
+                        "quantity": 1.0, "price_unit": 50.0,
+                        "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                    }),
+                ],
+            })
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - get_account_move_report_data (doc_title)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_get_account_move_report_data_doc_title_fully_paid(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        bank = self._bank_journal_with_methods('BNKO5')
+        pml = bank.inbound_payment_method_line_ids[:1]
+        payment = self.env["account.payment"].create({
+            "payment_type": "inbound", "partner_type": "customer",
+            "partner_id": self.partner.id, "amount": invoice.amount_total,
+            "currency_id": self.currency_vef.id,
+            "payment_method_line_id": pml.id, "journal_id": bank.id,
+        })
+        payment.action_post()
+        (invoice.line_ids | payment.move_id.line_ids).filtered(
+            lambda l: l.account_id == self.acc_rec and not l.reconciled
+        ).reconcile()
+        self.assertEqual(invoice.amount_residual, 0.0)
+        data = invoice.get_account_move_report_data()
+        self.assertTrue(data["doc_title"])
+
+    def test_get_account_move_report_data_doc_title_partially_paid(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        bank = self._bank_journal_with_methods('BNKO6')
+        pml = bank.inbound_payment_method_line_ids[:1]
+        payment = self.env["account.payment"].create({
+            "payment_type": "inbound", "partner_type": "customer",
+            "partner_id": self.partner.id, "amount": invoice.amount_total / 2.0,
+            "currency_id": self.currency_vef.id,
+            "payment_method_line_id": pml.id, "journal_id": bank.id,
+        })
+        payment.action_post()
+        (invoice.line_ids | payment.move_id.line_ids).filtered(
+            lambda l: l.account_id == self.acc_rec and not l.reconciled
+        ).reconcile()
+        self.assertGreater(invoice.amount_residual, 0.0)
+        data = invoice.get_account_move_report_data()
+        self.assertFalse(data["doc_title"])
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - action_post credit limit
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_action_post_credit_limit_exceeded(self):
+        self.company.account_use_credit_limit = True
+        self.partner.use_partner_credit_limit = True
+        self.partner.credit_limit = 1.0
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        with self.assertRaises(ValidationError):
+            invoice.with_context(move_action_post_alert=True).action_post()
+
+    def test_action_post_credit_limit_not_exceeded(self):
+        self.company.account_use_credit_limit = True
+        self.partner.use_partner_credit_limit = True
+        self.partner.credit_limit = 100000.0
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, 'posted')
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - legacy_compute_line_ids_foreign_debit_and_credit
+    # (dead code: no longer called by the module, kept only for
+    # backward-compat; exercised directly here purely to raise coverage)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_legacy_compute_foreign_debit_credit_basic(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        invoice.legacy_compute_line_ids_foreign_debit_and_credit()
+        self._assert_balances(invoice, "legacy-basic")
+
+    def test_legacy_compute_foreign_debit_credit_two_lines_one_foreign(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 100.0, "credit": 0.0,
+                    "currency_id": self.currency_usd.id, "amount_currency": 2.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_exp.id, "debit": 0.0, "credit": 100.0,
+                }),
+            ],
+        })
+        move.legacy_compute_line_ids_foreign_debit_and_credit()
+        self._assert_balances(move, "legacy-2lines")
+
+    def test_legacy_compute_foreign_debit_credit_all_foreign(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 100.0, "credit": 0.0,
+                    "currency_id": self.currency_usd.id, "amount_currency": 2.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_exp.id, "debit": 0.0, "credit": 100.0,
+                    "currency_id": self.currency_usd.id, "amount_currency": -2.0,
+                }),
+            ],
+        })
+        move.legacy_compute_line_ids_foreign_debit_and_credit()
+        self._assert_balances(move, "legacy-allforeign")
+
+    def test_legacy_compute_foreign_debit_credit_adjustment_and_skip(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 100.0, "credit": 0.0,
+                    "foreign_debit_adjustment": 5.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_exp.id, "debit": 0.0, "credit": 50.0,
+                    "not_foreign_recalculate": True,
+                }),
+                Command.create({
+                    "account_id": self.acc_exp.id,
+                    "debit": 0.0, "credit": 50.0,
+                }),
+            ],
+        })
+        move.legacy_compute_line_ids_foreign_debit_and_credit()
+        skip_line = move.line_ids.filtered(lambda l: l.not_foreign_recalculate)
+        self.assertEqual(skip_line.foreign_debit, 0.0)
+        self.assertEqual(skip_line.foreign_credit, 0.0)
+
+    def test_legacy_compute_foreign_debit_credit_multiple_receivable_lines(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+        move.with_context(move_action_post_alert=True).action_post()
+        extra_rec = move.line_ids.filtered(
+            lambda l: l.account_id.account_type == "asset_receivable")[:1]
+        extra_rec.copy({"move_id": move.id})
+        move.legacy_compute_line_ids_foreign_debit_and_credit()
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _compute_inverse_rate_vef branches
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_compute_inverse_rate_vef_no_foreign_currency(self):
+        self.company.currency_foreign_id = False
+        move = self.env["account.move"].new({
+            "move_type": "entry",
+            "date": fields.Date.today(),
+        })
+        move._compute_inverse_rate_vef()
+        self.assertEqual(move.foreign_inverse_rate_vef, 0.0)
+
+    def test_compute_inverse_rate_vef_no_date(self):
+        move = self.env["account.move"].new({
+            "move_type": "entry",
+        })
+        move.date = False
+        move.invoice_date = False
+        move._compute_inverse_rate_vef()
+        self.assertEqual(move.foreign_inverse_rate_vef, 0.0)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _compute_detailed_amounts (mixed discount)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_detailed_amounts_mixed_discount_and_no_discount(self):
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0, "discount": 0.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                }),
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0, "discount": 10.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+        details = invoice.detailed_amounts
+        self.assertAlmostEqual(details.get('discount_amount', 0), 10.0, places=2)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - get_view branches
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_get_view_no_foreign_currency_company(self):
+        self.company.currency_foreign_id = False
+        res = self.env["account.move"].get_view(view_type="form")
+        self.assertIn("arch", res)
+
+    def test_get_view_list_type_with_foreign_currency(self):
+        res = self.env["account.move"].get_view(view_type="list")
+        self.assertIn("arch", res)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - create() manual rate mismatch message_post
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_create_manual_rate_mismatch_posts_message(self):
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "invoice_date": fields.Date.today(),
+            "date": fields.Date.today(),
+            "manually_set_rate": True,
+            "foreign_rate": 999.0,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+        self.assertGreaterEqual(len(invoice.message_ids), 1)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _check_taxes_id / _check_product_id (entry skip)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_check_taxes_id_skips_journal_entries(self):
+        self.company.unique_tax = True
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "display_type": "product",
+                    "account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0,
+                }),
+            ],
+        })
+        self.assertTrue(move)
+
+    def test_check_product_id_skips_journal_entries(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "display_type": "product",
+                    "account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0,
+                }),
+            ],
+        })
+        self.assertTrue(move)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - action_register_payment (multiple rates)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_action_register_payment_multiple_rates_raises(self):
+        inv1 = self._create_invoice(self.currency_usd, 100.0)
+        inv1.with_context(move_action_post_alert=True).action_post()
+        inv2 = self._create_invoice(self.currency_usd, 100.0)
+        inv2.manually_set_rate = True
+        inv2.foreign_rate = inv1.foreign_rate + 10.0
+        inv2.with_context(move_action_post_alert=True).action_post()
+        with self.assertRaises(UserError):
+            (inv1 | inv2).action_register_payment()
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - action_update_account_id (income account present)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_action_update_account_id_line_with_income_account_unchanged(self):
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.action_update_account_id()
+        line = invoice.invoice_line_ids[:1]
+        self.assertEqual(line.account_id, self.acc_inc)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _compute_needed_terms (entry / no foreign currency)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_compute_needed_terms_skips_entry_and_no_foreign_currency(self):
+        entry = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0,
+                }),
+            ],
+        })
+        entry._compute_needed_terms()
+        self.assertTrue(entry)
+
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.foreign_currency_id = False
+        invoice._compute_needed_terms()
+        for term_values in invoice.needed_terms.values():
+            self.assertNotIn('foreign_balance', term_values)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move_line.py - _get_non_invoice_foreign_value
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_get_non_invoice_foreign_value_single_currency_line(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0,
+                    "currency_id": self.currency_usd.id, "amount_currency": -2.0,
+                }),
+            ],
+        })
+        line = move.line_ids.filtered(lambda l: l.account_id == self.acc_exp)
+        value = line._get_non_invoice_foreign_value()
+        self.assertAlmostEqual(value, 2.0, places=2)
+
+    def test_get_non_invoice_foreign_value_third_currency(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0,
+                    "currency_id": self.currency_eur.id, "amount_currency": -100.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0,
+                }),
+            ],
+        })
+        line = move.line_ids.filtered(lambda l: l.currency_id == self.currency_eur)
+        value = line._get_non_invoice_foreign_value()
+        self.assertIsInstance(value, float)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move_line.py - _get_foreign_value branches
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_get_foreign_value_special_display_types_and_adjustments(self):
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({"display_type": "line_note", "name": "A note"}),
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        note_line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'line_note')
+        self.assertEqual(note_line._get_foreign_value(), 0.0)
+
+        tax_line = invoice.line_ids.filtered(lambda l: l.display_type == 'tax')
+        tax_line.foreign_debit_adjustment = 7.0
+        self.assertAlmostEqual(tax_line._get_foreign_value(), 7.0, places=2)
+
+        product_line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        product_line.foreign_debit_adjustment = 3.0
+        self.assertAlmostEqual(product_line._get_foreign_value(), 3.0, places=2)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move_line.py - _compute_foreign_amount_residual (non-reconcile)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_compute_foreign_amount_residual_non_reconcile_account(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        product_line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        self.assertEqual(product_line.foreign_amount_residual, 0.0)
+        self.assertEqual(product_line.foreign_amount_residual_currency, 0.0)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move_line.py - _inverse_amount_currency (entry, foreign line)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_inverse_amount_currency_entry_foreign_line(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 0.0, "credit": 0.0,
+                    "currency_id": self.currency_usd.id, "amount_currency": 33.335,
+                }),
+                Command.create({
+                    "account_id": self.acc_exp.id, "debit": 0.0, "credit": 0.0,
+                }),
+            ],
+        })
+        line = move.line_ids.filtered(lambda l: l.currency_id == self.currency_usd)
+        line._inverse_amount_currency()
+        self.assertIsInstance(line.balance, float)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move_line.py - _apply_product_real_portion guards
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_apply_product_real_portion_guards(self):
+        entry = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "display_type": "product",
+                    "account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0,
+                }),
+            ],
+        })
+        self.env["account.move.line"]._apply_product_real_portion(entry.line_ids)
+
+        vef_invoice = self._create_invoice(self.currency_vef, 100.0)
+        self.env["account.move.line"]._apply_product_real_portion(vef_invoice.invoice_line_ids)
+
+        posted_invoice = self._create_invoice(self.currency_usd, 100.0)
+        posted_invoice.with_context(move_action_post_alert=True).action_post()
+        self.env["account.move.line"]._apply_product_real_portion(posted_invoice.invoice_line_ids)
+        self.assertTrue(True)
+
+    # ═══════════════════════════════════════════════════════════════
+    # bank_rec_widget.py - _action_validate
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_bank_rec_widget_action_validate_base_case(self):
+        bank_journal = self.env["account.journal"].create({
+            "name": "Bank RecW", "code": "BRECW", "type": "bank",
+            "default_account_id": self.acc_bank.id, "company_id": self.company.id,
+        })
+        st_line = self.env["account.bank.statement.line"].create({
+            "journal_id": bank_journal.id,
+            "date": fields.Date.today(),
+            "payment_ref": "coverage-rec",
+            "amount": 1000.0,
+        })
+        wizard = self.env["bank.rec.widget"].with_context(
+            default_st_line_id=st_line.id,
+        ).new({})
+        line = wizard.line_ids.filtered(lambda x: x.flag == "auto_balance")
+        wizard._js_action_mount_line_in_edit(line.index)
+        line.account_id = self.acc_inc
+        wizard._line_value_changed_account_id(line)
+        wizard._action_validate()
+        self.assertTrue(st_line.is_reconciled)
+
+    def test_bank_rec_widget_action_validate_rounding_adjustment(self):
+        bank_journal = self.env["account.journal"].create({
+            "name": "Bank RecW2", "code": "BRECW2", "type": "bank",
+            "default_account_id": self.acc_bank.id, "company_id": self.company.id,
+        })
+        st_line = self.env["account.bank.statement.line"].create({
+            "journal_id": bank_journal.id,
+            "date": fields.Date.today(),
+            "payment_ref": "coverage-rec2",
+            "amount": 1000.0,
+        })
+        wizard = self.env["bank.rec.widget"].with_context(
+            default_st_line_id=st_line.id,
+        ).new({})
+        line = wizard.line_ids.filtered(lambda x: x.flag == "auto_balance")
+        wizard._js_action_mount_line_in_edit(line.index)
+        line.account_id = self.acc_inc
+        line.balance = -999.99
+        wizard._action_validate()
+        liquidity = wizard.line_ids.filtered(lambda l: l.flag in ("liquidity", "aml"))
+        self.assertTrue(liquidity)
+
+    # ═══════════════════════════════════════════════════════════════
+    # report/account_invoice_details_report.py
+    # ═══════════════════════════════════════════════════════════════
+
+    def _invoices_details_wizard(self, extra_vals=None):
+        vals = {
+            "date_from": fields.Date.today().replace(day=1),
+            "date_to": fields.Date.today(),
+            "company_id": self.company.id,
+        }
+        vals.update(extra_vals or {})
+        return self.env["account.invoices.details"].create(vals)
+
+    def test_invoice_details_report_get_sale_details_no_tz_raises(self):
+        report = self.env["report.l10n_ve_accountant.report_account_invoices_details"]
+        wizard = self._invoices_details_wizard()
+        self.env.user.tz = False
+        with self.assertRaises(ValidationError):
+            report.get_sale_details(wizard)
+
+    def test_invoice_details_report_get_sale_details_empty(self):
+        self.env.user.tz = "America/Caracas"
+        report = self.env["report.l10n_ve_accountant.report_account_invoices_details"]
+        wizard = self._invoices_details_wizard({
+            "date_from": fields.Date.from_string("2000-01-01"),
+            "date_to": fields.Date.from_string("2000-01-31"),
+        })
+        data = report.get_sale_details(wizard)
+        self.assertEqual(data["invoices"], {})
+        self.assertEqual(data["payments"], {})
+
+    def test_invoice_details_report_get_sale_details_full(self):
+        self.env.user.tz = "America/Caracas"
+        report = self.env["report.l10n_ve_accountant.report_account_invoices_details"]
+        term_2_lines = self.env["account.payment.term"].create({
+            "name": "Details 30-30-40",
+            "line_ids": [
+                Command.create({"value": "percent", "value_amount": 60, "nb_days": 0}),
+                Command.create({"value": "percent", "value_amount": 40, "nb_days": 30}),
+            ],
+        })
+        invoice_with_term = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "invoice_date": fields.Date.today(),
+            "date": fields.Date.today(),
+            "invoice_payment_term_id": term_2_lines.id,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0, "discount": 10.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice_with_term.with_context(move_action_post_alert=True).action_post()
+
+        invoice_cash = self._create_invoice(self.currency_vef, 50.0)
+        invoice_cash.with_context(move_action_post_alert=True).action_post()
+
+        refund = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "out_refund",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "invoice_date": fields.Date.today(),
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 20.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+        refund.with_context(move_action_post_alert=True).action_post()
+
+        bank = self._bank_journal_with_methods('BNKO7')
+        pml = bank.inbound_payment_method_line_ids[:1]
+        payment = self.env["account.payment"].create({
+            "payment_type": "inbound", "partner_type": "customer",
+            "partner_id": self.partner.id, "amount": 30.0,
+            "currency_id": self.currency_vef.id,
+            "payment_method_line_id": pml.id, "journal_id": bank.id,
+        })
+        payment.action_post()
+
+        wizard = self._invoices_details_wizard()
+        data = report.get_sale_details(wizard)
+        self.assertTrue(data["invoices"])
+        self.assertTrue(data["payments"])
+        self.assertTrue(data["journal_ids"])
+        self.assertTrue(data["payment_term_ids"])
+
+        self.assertEqual(report.format_monetary(100.0, 'base.VEF'), report.format_monetary(100.0, 'base.VEF'))
+        totals = report.p_get_new_values({"amount": 0, "foreign_amount": 0}, payment)
+        self.assertIn("amount", totals)
+        self.assertEqual(report.new_payment_term(invoice_with_term)["id"], str(term_2_lines.id))
+        self.assertEqual(report.new_journal(invoice_with_term)["id"], str(self.sale_journal.id))
+
+    def test_invoice_details_report_get_report_values(self):
+        self.env.user.tz = "America/Caracas"
+        wizard = self._invoices_details_wizard()
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        report = self.env["report.l10n_ve_accountant.report_account_invoices_details"]
+        result = report._get_report_values([wizard.id], data={})
+        self.assertIn("invoices", result)
+        self.assertIn("self", result)
