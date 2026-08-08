@@ -831,10 +831,6 @@ class AccountMove(models.Model):
         main_move_payment_concept = ""
         payment_related_move_ids = []
 
-        main_move = {
-            "name": self.name,
-        }
-
         line_ids_ids = self._get_account_move_line_related()
         line_ids = self.env["account.move.line"].browse(line_ids_ids)
         account_analytic_by_line_id = self._account_analytic_by_line_id(line_ids)
@@ -877,8 +873,6 @@ class AccountMove(models.Model):
                 _("You can only register payments for one foreign rate at a time.")
             )
         res = super().action_register_payment()
-        res["context"]["default_foreign_rate"] = self[0].foreign_rate
-        res["context"]["default_foreign_inverse_rate"] = self[0].foreign_inverse_rate
         return res
 
     def action_update_account_id(self):
