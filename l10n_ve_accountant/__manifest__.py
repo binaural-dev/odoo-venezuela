@@ -1,13 +1,46 @@
 {
     "name": "Venezuela - Contabilidad",
-    "summary": """
-       Módulo de Contabilidad Venezuela
-    """,
+    "summary": "Módulo de Contabilidad Venezuela",
+    "description": """
+Propósito
+---------
+Corrige el cálculo del alterno (moneda extranjera) en facturas y pagos:
+el total mostrado al usuario en el wizard de pago no coincidía con el que
+mostraba la cuenta por cobrar/pagar de la factura, por unos centavos de
+diferencia. Ticket: https://binaural.odoo.com/odoo/helpdesk.ticket/14463
+
+Funcionalidades principales
+---------------------------
+* El impuesto alterno de cada línea de la factura se ancla al total del
+  documento (`amount_total x tasa`) en vez de recalcularse por producto,
+  garantizando que la cuenta por cobrar/pagar coincida con el wizard de
+  pago sin importar cuántas líneas o tasas de impuesto tenga el documento.
+* Reparto determinístico de centavos de redondeo entre líneas de impuesto
+  mediante el método del "mayor residuo" (largest remainder), en O(n) para
+  evitar cuelgues cuando el monto a repartir es grande.
+* Corrección de precisión del precio unitario alterno (`foreign_price`),
+  que antes se truncaba a 2 decimales aunque la precisión configurada
+  ("Foreign Product Price") fuera mayor.
+* Ajuste del "real portion" (redondeo entre moneda base y de terceros) para
+  que la diferencia siempre la absorba una línea de producto, nunca una de
+  impuesto.
+* El monto alterno mostrado como "conciliado" en un pago parcial ahora usa
+  la tasa del lado que no es la factura (pago o extracto), no la tasa
+  histórica de la factura.
+
+Cambios en UI / Modelos impactados
+------------------------------------
+* Modifica ``account.move`` (nuevos métodos ``_apportion_largest_remainder``,
+  ``_compute_foreign_tax_balance``, ``_distribute_foreign_pt_residual``,
+  ``_distribute_invoice_real_portion``) y ``account.move.line``
+  (``foreign_price``, ``_prepare_reconciliation_single_partial``).
+* Se elimina la herencia de ``bank_rec_widget`` (dejó de usarse).
+""",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.0.0.58",
+    "version": "17.0.0.0.60",
     "depends": [
         "base",
         "web",

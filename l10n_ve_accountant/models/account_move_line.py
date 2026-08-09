@@ -30,11 +30,11 @@ class AccountMoveLine(models.Model):
         default=False,
         help="Indicates that foreign_price was manually set and should be preserved.",
     )
-    foreign_price = fields.Monetary(
+    foreign_price = fields.Float(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
         inverse="_inverse_foreign_price",
-        currency_field="foreign_currency_id",
+        digits="Foreign Product Price",
         store=True,
         copy=True
     )
@@ -114,13 +114,28 @@ class AccountMoveLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate", "currency_id",
                   "move_id.foreign_inverse_rate")
     def _compute_foreign_price(self):
+        """`foreign_price` is a `Float` with its own "Foreign Product Price"
+        precision, not a `Monetary` -- in this Odoo version `Monetary`
+        ignores the `digits` kwarg entirely (`convert_to_column`/
+        `convert_to_cache` only ever use `currency.decimal_places`, 2 for
+        VEF), which would silently force the alterno unit price down to 2
+        decimals like any other Bs amount regardless of the precision
+        configured for it.
+
+        `round=False` here for the same reason: without it, `_convert`
+        rounds to the CURRENCY's precision (`foreign_currency_id`,
+        typically 2 decimals) before the value reaches the field, wiping
+        out "Foreign Product Price"'s own higher precision even though the
+        `Float` field already rounds itself on save, with ITS precision.
+        """
         for line in self:
             line.foreign_price = line.currency_id._convert(
                 line.price_unit,
                 line.foreign_currency_id,
                 line.company_id,
                 line.move_id.invoice_date or fields.Date.today(),
-                custom_rate=line.foreign_inverse_rate
+                custom_rate=line.foreign_inverse_rate,
+                round=False,
             )
 
     def _inverse_foreign_price(self):
@@ -138,17 +153,17 @@ class AccountMoveLine(models.Model):
             if line.foreign_currency_id.compare_amounts(line.foreign_price, expected) != 0:
                 line.foreign_price_manual = True
 
-    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
+    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit",
+                  "currency_id", "foreign_inverse_rate", "move_id.foreign_inverse_rate")
     def _compute_foreign_subtotal(self):
         for line in self:
-            line_discount_price_unit = line.foreign_price * (
+            foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
-            foreign_subtotal = line_discount_price_unit * line.quantity
-
+            
             if line.tax_ids:
                 taxes_res = line.tax_ids.compute_all(
-                    line_discount_price_unit,
+                    foreign_price_unit_full_precision,
                     quantity=line.quantity,
                     currency=line.foreign_currency_id,
                     product=line.product_id,
@@ -158,6 +173,9 @@ class AccountMoveLine(models.Model):
                 line.foreign_subtotal = taxes_res["total_excluded"]
                 line.foreign_price_total = taxes_res["total_included"]
             else:
+                foreign_subtotal = line.foreign_currency_id.round(
+                    foreign_price_unit_full_precision * line.quantity
+                )
                 line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
 
     def _set_foreign(self, value):
@@ -175,16 +193,14 @@ class AccountMoveLine(models.Model):
         if balance and len(currency_lines) == 1:
             return -balance
 
-        cur = self.currency_id
-        if cur and cur != self.company_id.currency_foreign_id and cur != self.company_id.currency_id:
-            return self.company_id.currency_id._convert(
-                self.debit - self.credit,
-                self.company_id.currency_foreign_id,
-                self.company_id,
-                self.date or fields.Date.context_today(self),
-            )
+        return self.company_id.currency_id._convert(
+            self.debit - self.credit,
+            self.company_id.currency_foreign_id,
+            self.company_id,
+            self.date or fields.Date.context_today(self),
+            custom_rate=self.foreign_inverse_rate or 0.0,
+        )
 
-        return (self.debit - self.credit) * self.foreign_inverse_rate
 
     def _get_foreign_value(self):
         self.ensure_one()
@@ -223,7 +239,13 @@ class AccountMoveLine(models.Model):
             sign = self.move_id.direction_sign * -1
             return -(self.foreign_subtotal * sign)
 
-        return (self.debit - self.credit) * self.foreign_inverse_rate
+        return self.company_id.currency_id._convert(
+            self.debit - self.credit,
+            self.foreign_currency_id,
+            self.company_id,
+            self.date or fields.Date.context_today(self),
+            custom_rate=self.foreign_inverse_rate or 0.0,
+        )
 
     def _skip_foreign_compute(self):
         return (
@@ -428,7 +450,18 @@ class AccountMoveLine(models.Model):
     
     @api.model
     def _prepare_reconciliation_single_partial(self, debit_values, credit_values, shadowed_aml_values=None):
-        # 1. Llamada al método original
+        """Add the alterno (foreign currency) amount reconciled by this
+        partial to the values the base method already computes.
+
+        The alterno amount shown as "reconciled" must reflect the rate of
+        whichever side is NOT the invoice (the payment or bank statement
+        line), not the invoice's historical rate: always taking the minimum
+        of both sides used to almost always pick the invoice's side instead,
+        because with rates rising over time its Bs value is smaller (being
+        dated earlier, at a lower rate). When neither side is clearly "the
+        payment" (e.g. an invoice reconciled against a credit note), the
+        previous minimum-of-both behavior is kept.
+        """
         res = super()._prepare_reconciliation_single_partial(
             debit_values, credit_values, shadowed_aml_values=shadowed_aml_values
         )
@@ -437,42 +470,30 @@ class AccountMoveLine(models.Model):
             return res
 
         partial_vals = res['partial_values']
-        amount_company = partial_vals['amount']  # Monto conciliado en moneda base (Bs)
+        amount_company = partial_vals['amount']
 
         def get_foreign_partial_amount(aml, amount_to_reconcile_bs):
-            f_currency = aml.company_id.currency_foreign_id # Usar la de la compañía
+            """The alterno share of `aml` proportional to the Bs amount
+            being reconciled (rule of three: reconciling 50 Bs of a 100 Bs
+            invoice means reconciling 50% of its alterno balance too)."""
+            f_currency = aml.company_id.currency_foreign_id
             if not f_currency or aml.currency_id == f_currency:
-                # Si la línea ya está en la moneda foránea, Odoo ya tiene amount_currency
                 return abs(aml.amount_currency)
-            
-            # Si el balance en Bs es 0 (evitar división por cero)
             if not aml.balance:
-                
                 return 0.0
 
-            # CALCULAMOS LA PROPORCIÓN
-            # Si estoy conciliando 50 Bs de una factura de 100 Bs, 
-            # debo conciliar el 50% del balance foráneo.
             total_bs = abs(aml.balance)
             total_foreign = abs(aml.foreign_balance)
-            
-            # Regla de 3: (Monto Conciliado Bs * Total Foráneo) / Total Bs
             ratio = amount_to_reconcile_bs / total_bs
             partial_foreign = total_foreign * ratio
-            
             return f_currency.round(partial_foreign)
 
         debit_aml = debit_values['aml']
         credit_aml = credit_values['aml']
 
-        # Calculamos cuánto aporta cada lado a la conciliación en moneda foránea
         foreign_debit_amount = get_foreign_partial_amount(debit_aml, amount_company)
         foreign_credit_amount = get_foreign_partial_amount(credit_aml, amount_company)
 
-        # El monto foráneo mostrado como "lo conciliado" debe reflejar la tasa del lado que no es
-        # la factura (el pago o extracto bancario), no la tasa histórica de la factura. Usar
-        # siempre el mínimo hacía que, con tasas subiendo con el tiempo, casi siempre se eligiera
-        # el lado de la factura (su valor en Bs es menor por ser de una fecha con tasa más baja).
         debit_is_invoice = debit_aml.move_id.is_invoice(include_receipts=True)
         credit_is_invoice = credit_aml.move_id.is_invoice(include_receipts=True)
         if debit_is_invoice and not credit_is_invoice:
@@ -480,8 +501,6 @@ class AccountMoveLine(models.Model):
         elif credit_is_invoice and not debit_is_invoice:
             foreign_amount = foreign_debit_amount
         else:
-            # Ninguno de los dos lados es claramente "el pago" (p.ej. factura contra nota de
-            # crédito): se conserva el comportamiento anterior.
             foreign_amount = min(foreign_debit_amount, foreign_credit_amount)
 
         res['partial_values'].update({
