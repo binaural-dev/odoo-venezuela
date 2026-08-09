@@ -1,9 +1,30 @@
 {
     "name": "Venezuela - Facturación",
-    "summary": """
-        Módulo de Facturación Venezuela
-    """,
-    "version": "17.0.1.0.4",
+    "summary": "Módulo de Facturación Venezuela",
+    "description": """
+Propósito
+---------
+Actualiza los tests del libro de compras internacional tras la
+corrección del cálculo del alterno (moneda extranjera) en
+l10n_ve_accountant/l10n_ve_tax. Ticket:
+https://binaural.odoo.com/odoo/helpdesk.ticket/14463
+
+Funcionalidades principales
+---------------------------
+* Sin cambios funcionales en el módulo. Se relaja la tolerancia de 3
+  tests que comparaban `impuesto alterno == base alterna x tasa` con
+  `places=2`: ahora que el impuesto se ancla al total real del asiento
+  (y ya no se recalcula por separado desde la misma base), una base y un
+  impuesto correctamente redondeados por separado pueden diferir del
+  ideal matemático en unos centavos por orden de redondeo -- se usa
+  `delta=1.0` para reflejar esa realidad en vez de exigir una igualdad
+  que ya no aplica con el nuevo diseño unificado.
+
+Cambios en UI / Modelos impactados
+------------------------------------
+* Solo se modifica un archivo de tests, ningún modelo ni vista.
+""",
+    "version": "17.0.1.0.5",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
