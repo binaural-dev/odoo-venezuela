@@ -1,5 +1,6 @@
 import logging
 import random
+from datetime import timedelta
 
 from odoo.tests import TransactionCase, tagged
 from odoo.tests.common import Form
@@ -678,8 +679,84 @@ class TestCoverageGaps(TransactionCase):
         action = invoice.action_register_payment()
         context = action.get('context', {})
         self.assertIn('active_ids', context)
-        if 'default_foreign_rate' in context:
-            self.assertAlmostEqual(context['default_foreign_rate'], 50.0, places=2)
+        self.assertNotIn(
+            'default_foreign_rate', context,
+            "action_register_payment must not force the invoice's rate into the wizard",
+        )
+
+    def test_payment_register_wizard_uses_current_date_rate_not_invoice_rate(self):
+        """
+        The payment register wizard must compute foreign_rate from its own
+        payment_date (defaulting to today), never from the rate stored on the
+        old invoice being paid.
+
+        old_rate > today_rate on purpose: this makes the invoice's own foreign
+        amount (amount_bs / old_rate) the *smaller* of the two sides, so a
+        plain min(foreign_debit_amount, foreign_credit_amount) would wrongly
+        pick the invoice's side. Only the is_invoice()-based branching in
+        _prepare_reconciliation_single_partial picks the payment's side
+        correctly here, so this actually exercises that fix (see
+        test_coverage_gaps.py history / PR #14473 review).
+        """
+        old_date = fields.Date.today() - timedelta(days=10)
+        old_rate = 65.0
+        today_rate = 30.0
+
+        self.env["res.currency.rate"].create({
+            "name": old_date, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": old_rate, "company_id": self.company.id,
+        })
+        # Overrides the today rate created in setUp (50.0) with a distinct value.
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+            ("name", "=", fields.Date.today()),
+        ]).write({"inverse_company_rate": today_rate})
+
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.write({"date": old_date, "invoice_date": old_date})
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertAlmostEqual(invoice.foreign_rate, old_rate, places=2)
+
+        action = invoice.action_register_payment()
+        self.assertNotIn(
+            "default_foreign_rate", action.get("context", {}),
+            "action_register_payment must not force the invoice's rate into the wizard",
+        )
+
+        wizard_form = Form(
+            self.env["account.payment.register"].with_context(**action["context"])
+        )
+        self.assertEqual(wizard_form.payment_date, fields.Date.today())
+        self.assertAlmostEqual(
+            wizard_form.foreign_rate, today_rate, places=2,
+            msg="Wizard should use today's rate, not the invoice's rate",
+        )
+        self.assertNotAlmostEqual(wizard_form.foreign_rate, old_rate, places=2)
+
+        wizard = wizard_form.save()
+        payments = wizard._create_payments()
+        self.assertAlmostEqual(
+            payments.foreign_rate, today_rate, places=2,
+            msg="_create_payment_vals_from_wizard must persist today's rate, not the invoice's",
+        )
+        self.assertNotAlmostEqual(payments.foreign_rate, old_rate, places=2)
+
+        partial = self.env["account.partial.reconcile"].search([
+            "|", ("debit_move_id", "in", payments.move_id.line_ids.ids),
+            ("credit_move_id", "in", payments.move_id.line_ids.ids),
+        ], limit=1)
+        self.assertTrue(partial, "Payment should be reconciled with the invoice")
+        self.assertAlmostEqual(
+            partial.credit_foreign_amount_currency, partial.foreign_amount, places=2,
+            msg="foreign_amount shown in the payments widget must match the payment's own "
+                "foreign valuation, not the invoice's",
+        )
+        self.assertNotAlmostEqual(
+            partial.debit_foreign_amount_currency, partial.foreign_amount, places=2,
+            msg="foreign_amount must not collapse to the invoice's side, even though it is the "
+                "smaller value here (old_rate > today_rate) and would be picked by a plain min()",
+        )
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - action_post validation

@@ -447,6 +447,7 @@ class AccountMoveLine(models.Model):
             
             # Si el balance en Bs es 0 (evitar división por cero)
             if not aml.balance:
+                
                 return 0.0
 
             # CALCULAMOS LA PROPORCIÓN
@@ -468,10 +469,23 @@ class AccountMoveLine(models.Model):
         foreign_debit_amount = get_foreign_partial_amount(debit_aml, amount_company)
         foreign_credit_amount = get_foreign_partial_amount(credit_aml, amount_company)
 
-        # El monto de la conciliación parcial foránea es el mínimo de ambos lados proporcionalmente
-        # pero usualmente en una conciliación parcial, el 'amount' de la partial es único.
+        # El monto foráneo mostrado como "lo conciliado" debe reflejar la tasa del lado que no es
+        # la factura (el pago o extracto bancario), no la tasa histórica de la factura. Usar
+        # siempre el mínimo hacía que, con tasas subiendo con el tiempo, casi siempre se eligiera
+        # el lado de la factura (su valor en Bs es menor por ser de una fecha con tasa más baja).
+        debit_is_invoice = debit_aml.move_id.is_invoice(include_receipts=True)
+        credit_is_invoice = credit_aml.move_id.is_invoice(include_receipts=True)
+        if debit_is_invoice and not credit_is_invoice:
+            foreign_amount = foreign_credit_amount
+        elif credit_is_invoice and not debit_is_invoice:
+            foreign_amount = foreign_debit_amount
+        else:
+            # Ninguno de los dos lados es claramente "el pago" (p.ej. factura contra nota de
+            # crédito): se conserva el comportamiento anterior.
+            foreign_amount = min(foreign_debit_amount, foreign_credit_amount)
+
         res['partial_values'].update({
-            'foreign_amount': min(foreign_debit_amount, foreign_credit_amount),
+            'foreign_amount': foreign_amount,
             'debit_foreign_amount_currency': foreign_debit_amount,
             'credit_foreign_amount_currency': foreign_credit_amount,
         })
