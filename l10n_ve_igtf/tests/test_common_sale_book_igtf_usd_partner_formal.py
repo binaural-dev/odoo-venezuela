@@ -185,10 +185,9 @@ class IGTFTestCommonSaleBook(TransactionCase):
             'company_id': self.company.id
         })
         self.tax_iva_exent = self.env['account.tax'].create({
-            'name': 'IVA exento', 'amount': 0, 'amount_type': 'percent', 
+            'name': 'IVA exento', 'amount': 0, 'amount_type': 'percent',
             'type_tax_use': 'sale', 'company_id': self.company.id,
-            'tax_group_id': self.tax_group.id,  # <--- Esta es la clave
-            'company_id': self.company.id
+            'tax_group_id': self.tax_group.id,
         })
 
         self.product = self.env["product.product"].create(
@@ -249,7 +248,7 @@ class IGTFTestCommonSaleBook(TransactionCase):
         
         with Form(
             self.env['account.payment.register'].with_context(
-               action_data['context']  
+               **action_data['context']
             )
         ) as pay_form:
             

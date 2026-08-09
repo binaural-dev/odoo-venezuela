@@ -29,10 +29,10 @@ Cambios en UI / Modelos impactados
   registro de pagos y reporte de factura de forma libre.
 """,
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.1.0.3",
+    "version": "17.0.1.0.4",
         "depends": [
         "base",
         "l10n_ve_accountant",
