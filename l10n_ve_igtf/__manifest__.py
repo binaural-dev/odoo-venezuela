@@ -4,21 +4,29 @@
     "description": """
 Propósito
 ---------
-Actualiza los tests de este módulo tras la corrección del cálculo del
-alterno (moneda extranjera) en l10n_ve_accountant/l10n_ve_tax. Ticket:
-https://binaural.odoo.com/odoo/helpdesk.ticket/14463
+Implementa el IGTF (Impuesto a las Grandes Transacciones Financieras):
+el recargo aplicado a los pagos realizados en moneda extranjera (o desde
+cuentas en divisas) según la normativa venezolana.
 
 Funcionalidades principales
 ---------------------------
-* Sin cambios funcionales en el módulo. Se eliminan las asignaciones a
-  `foreign_rate` en el wizard de pago dentro de los tests: ese campo se
-  volvió de solo lectura en un commit anterior de l10n_ve_accountant y su
-  valor ya se calcula correctamente a partir de la moneda alterna y la
-  fecha del pago.
+* Cálculo del IGTF sobre el monto de un pago en moneda extranjera,
+  usando la tasa de la fecha del pago o de la factura según
+  configuración, con utilidades compartidas (``l10n_ve_igtf.utils``).
+* Configuración por compañía: porcentaje del IGTF, cuentas contables de
+  IGTF por cliente/proveedor, y opciones para mostrar/ocultar la base
+  imponible del IGTF en ventas y compras.
+* Integración con el wizard de registro de pagos para sugerir y aplicar
+  el IGTF automáticamente, y con el reporte de factura de forma libre.
+* Marcado de diarios sujetos a IGTF.
 
 Cambios en UI / Modelos impactados
 ------------------------------------
-* Solo se modifican archivos de tests, ningún modelo ni vista.
+* Modifica ``account.journal``, ``account.move``, ``account.payment``,
+  ``account.tax``, ``res.company`` y ``res.partner``; agrega el modelo
+  abstracto ``l10n_ve_igtf.utils``.
+* Vistas del diario contable, ajustes de configuración, wizard de
+  registro de pagos y reporte de factura de forma libre.
 """,
     "license": "LGPL-3",
     "author": "binaural-dev",

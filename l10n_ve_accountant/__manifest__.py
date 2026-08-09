@@ -4,37 +4,38 @@
     "description": """
 Propósito
 ---------
-Corrige el cálculo del alterno (moneda extranjera) en facturas y pagos:
-el total mostrado al usuario en el wizard de pago no coincidía con el que
-mostraba la cuenta por cobrar/pagar de la factura, por unos centavos de
-diferencia. Ticket: https://binaural.odoo.com/odoo/helpdesk.ticket/14463
+Módulo base de contabilidad de la localización venezolana: numeración
+correlativa de comprobantes, unidad tributaria, cálculo y seguimiento del
+monto equivalente en moneda alterna (extranjera) a lo largo de todo el
+ciclo contable (facturas, pagos, extractos bancarios, conciliaciones), y
+los reportes/asistentes contables propios de Venezuela.
 
 Funcionalidades principales
 ---------------------------
-* El impuesto alterno de cada línea de la factura se ancla al total del
-  documento (`amount_total x tasa`) en vez de recalcularse por producto,
-  garantizando que la cuenta por cobrar/pagar coincida con el wizard de
-  pago sin importar cuántas líneas o tasas de impuesto tenga el documento.
-* Reparto determinístico de centavos de redondeo entre líneas de impuesto
-  mediante el método del "mayor residuo" (largest remainder), en O(n) para
-  evitar cuelgues cuando el monto a repartir es grande.
-* Corrección de precisión del precio unitario alterno (`foreign_price`),
-  que antes se truncaba a 2 decimales aunque la precisión configurada
-  ("Foreign Product Price") fuera mayor.
-* Ajuste del "real portion" (redondeo entre moneda base y de terceros) para
-  que la diferencia siempre la absorba una línea de producto, nunca una de
-  impuesto.
-* El monto alterno mostrado como "conciliado" en un pago parcial ahora usa
-  la tasa del lado que no es la factura (pago o extracto), no la tasa
-  histórica de la factura.
+* Numeración de comprobantes única por contacto/diario/estado, y gestión
+  de la Unidad Tributaria (``tax.unit``).
+* Cálculo de la moneda alterna en cada punto del ciclo contable: precio
+  unitario y subtotal de línea, impuestos, términos de pago, extractos
+  bancarios y conciliaciones -- siempre anclado al total real del
+  documento/asiento para que coincida con lo que ve el usuario en el
+  wizard de pago.
+* Distribución del "real portion" (ajuste de redondeo entre la moneda de
+  la compañía y la de terceros) sin afectar nunca las líneas de impuesto.
+* Alerta de límite de crédito del cliente al confirmar una factura de
+  venta, y bloqueo de edición de tasas de cambio salvo para el grupo
+  autorizado.
+* Wizard de registro de pagos con tasa alterna, reportes de detalle de
+  factura y de pagos, y asistente de alerta al publicar un asiento.
 
 Cambios en UI / Modelos impactados
 ------------------------------------
-* Modifica ``account.move`` (nuevos métodos ``_apportion_largest_remainder``,
-  ``_compute_foreign_tax_balance``, ``_distribute_foreign_pt_residual``,
-  ``_distribute_invoice_real_portion``) y ``account.move.line``
-  (``foreign_price``, ``_prepare_reconciliation_single_partial``).
-* Se elimina la herencia de ``bank_rec_widget`` (dejó de usarse).
+* Modifica ``account.move``, ``account.move.line``, ``account.payment``,
+  ``account.bank.statement.line``, ``account.payment.term``,
+  ``res.currency``, ``res.partner`` y ``res.company``; agrega el modelo
+  ``tax.unit``.
+* Vistas de factura, apunte contable, pago, contacto, moneda, ajustes de
+  configuración y el wizard de registro de pagos; reportes de detalle de
+  factura y de pagos.
 """,
     "license": "LGPL-3",
     "author": "Binauraldev",
