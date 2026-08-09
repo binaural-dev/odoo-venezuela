@@ -5,8 +5,9 @@
     "website": "https://binauraldev.com/",
     "category": "Technical",
     "version": "1.0",
-    "depends": ["crm", "l10n_ve_rate"],
+    "depends": ["crm", "sale", "l10n_ve_rate", "l10n_ve_accountant"],
     "data": [
         "views/crm_lead_views.xml",
+        "views/crm_team_views.xml",
     ],
 }

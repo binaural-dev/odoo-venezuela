@@ -39,7 +39,8 @@ class CrmLead(models.Model):
     @api.depends("company_id")
     def _compute_foreign_currency_id(self):
         for lead in self:
-            lead.foreign_currency_id = lead.company_id.foreign_currency_id
+            company = lead.company_id or lead.env.company
+            lead.foreign_currency_id = company.foreign_currency_id
 
     def _convert_foreign_to_company(self, amount_foreign):
         """Convierte un monto en moneda comercial a la moneda de la compañía
