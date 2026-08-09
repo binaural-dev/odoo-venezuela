@@ -2,6 +2,7 @@ import logging
 
 from odoo import Command, fields, models
 from odoo.tests import Form, TransactionCase, tagged
+from odoo.tools import float_compare
 
 _logger = logging.getLogger(__name__)
 
@@ -216,12 +217,13 @@ class TestRetentionCreditNote(TransactionCase):
 
     def test_islr_payment_type_direction_supplier_invoice_and_credit_note(self):
         """
-        Regla original rota:
-            if move_type == "in_refund": payment_type = inbound/outbound
-            if move_type == "out_refund": payment_type = outbound/inbound
-        Sin `else`, un `move_type` "in_invoice" (el caso normal) nunca asignaba
-        `payment_type`, produciendo un UnboundLocalError o reutilizando la
-        direccion de la linea anterior. La correccion asigna siempre.
+        Regla original rota: `payment_type` se inicializaba una sola vez antes
+        del loop y solo se reasignaba dentro de un `if` cuando `move_type` era
+        "in_refund"/"out_refund". Al mezclar factura + nota de credito en la
+        misma retencion, la linea de la NC dejaba `payment_type` en el valor
+        contrario y ningun `if` lo corregia para la siguiente linea de
+        factura, que terminaba heredando la direccion equivocada. La
+        correccion asigna `payment_type` siempre, en cada iteracion.
         """
         invoice = self._create_move(
             "in_invoice", self.partner_supplier, 1000.0, self.purchase_journal, self.tax_iva16
@@ -311,10 +313,12 @@ class TestRetentionCreditNote(TransactionCase):
     def test_iva_customer_retention_loads_credit_note_despite_negative_residual(self):
         """
         `amount_residual > 0` could exclude a credit note whenever its residual
-        is zero or negative (`direction_sign` can flip the reported sign
-        depending on move type and reconciliation state). The fix uses
-        `amount_residual != 0`, so any open (non-reconciled) credit note must
-        still be loaded as an available invoice for the retention.
+        is reported as zero or negative (`direction_sign` can flip the
+        reported sign depending on move type and reconciliation state, even
+        though in this test's data the residual happens to come out positive).
+        The fix uses `amount_residual != 0`, so any open (non-reconciled)
+        credit note must still be loaded as an available invoice for the
+        retention regardless of the sign its residual takes.
         """
         invoice = self._create_move(
             "out_invoice", self.partner_customer, 1000.0, self.sale_journal, self.tax_iva16_sale
@@ -384,9 +388,52 @@ class TestRetentionCreditNote(TransactionCase):
         invoice_line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
         refund_line = retention.retention_line_ids.filtered(lambda l: l.move_id == credit_note)
 
+        self.assertTrue(invoice_line, "The invoice line must have been loaded by the onchange.")
+        self.assertTrue(refund_line, "The credit note line must have been loaded by the onchange.")
+
         self.assertAlmostEqual(retention.total_invoice_amount, 1000.0 - 200.0, places=2)
         self.assertAlmostEqual(
             retention.total_retention_amount,
             invoice_line.retention_amount - refund_line.retention_amount,
             places=2,
+        )
+
+    def test_retention_over_credit_note_reduces_its_residual_end_to_end(self):
+        """
+        End-to-end regression for ticket #11353: factura -> retencion ->
+        nota de credito -> retencion sobre la NC -> conciliacion. Posting a
+        retention over a credit note must create and reconcile a payment
+        against it, so the credit note's outstanding amount_residual moves
+        towards zero instead of staying untouched.
+        """
+        invoice = self._create_move(
+            "in_invoice", self.partner_supplier, 1000.0, self.purchase_journal, self.tax_iva16
+        )
+        invoice_retention = self._build_islr_retention("in_invoice", [invoice])
+        invoice_retention.action_post()
+
+        self.assertLess(
+            float_compare(invoice.amount_residual, 1160.0, precision_digits=2),
+            0,
+            "Posting the retention over the invoice must reduce its residual.",
+        )
+
+        credit_note = self._create_move(
+            "in_refund", self.partner_supplier, 200.0, self.purchase_journal, self.tax_iva16
+        )
+        residual_before = credit_note.amount_residual
+        self.assertNotEqual(residual_before, 0.0)
+
+        credit_note_retention = self._build_islr_retention("in_invoice", [credit_note])
+        credit_note_retention.action_post()
+
+        self.assertTrue(
+            credit_note_retention.payment_ids,
+            "Posting the retention over the credit note must create a payment.",
+        )
+        self.assertLess(
+            abs(credit_note.amount_residual),
+            abs(residual_before),
+            "The credit note's residual must decrease once its retention is "
+            "posted and reconciled, not stay untouched.",
         )

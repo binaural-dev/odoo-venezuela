@@ -178,12 +178,8 @@ class AccountMoveRetention(models.Model):
                 _(
                     "The amount of the retention is greater than the total amount of the invoice %s."
                 )
+                % self.display_name
             )
-        sum_invoice_amount = sum(
-            self.retention_islr_line_ids.filtered(
-                lambda rl: rl.state != "cancel"
-            ).mapped("invoice_amount")
-        )
         self._check_retention_vs_move(islr_retention)
 
         if not self.partner_id.type_person_id:

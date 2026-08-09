@@ -828,7 +828,6 @@ class AccountRetention(models.Model):
         if self.type_retention == "islr":
             self._validate_islr_retention_fields()
 
-        payment_type = "outbound" if self.type == "in_invoice" else "inbound"
         partner_type = "supplier" if self.type == "in_invoice" else "customer"
         payment_vals = []
 
@@ -888,7 +887,7 @@ class AccountRetention(models.Model):
             payment.action_post()
             if payment.partner_type == "supplier":
                 self._reconcile_supplier_payment(payment)
-            if payment.partner_type == "customer":
+            elif payment.partner_type == "customer":
                 self._reconcile_customer_payment(payment)
 
     def _reconcile_supplier_payment(self, payment):
