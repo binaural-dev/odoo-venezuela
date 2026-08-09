@@ -151,9 +151,7 @@ class ResPartner(models.Model):
             elif self.env.company.validate_user_creation_general:
                 error_message = _("A partner with the same email already exists.")
             else:
-                error_message = _(
-                    "A partner with the same email address already exists for this company."
-                )
+                return
 
             existing_partner = self.env["res.partner"].search(domain, limit=1)
             if existing_partner:
