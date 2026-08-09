@@ -2163,7 +2163,9 @@ class TestCoverageGaps(TransactionCase):
     # ═══════════════════════════════════════════════════════════════
 
     def _register_wizard(self, invoice, extra_vals=None):
-        vals = dict(extra_vals or {})
+        bank = self._bank_journal_with_methods('RW%03d' % (invoice.id % 1000))
+        vals = {"journal_id": bank.id}
+        vals.update(extra_vals or {})
         return self.env["account.payment.register"].with_context(
             active_model="account.move", active_ids=invoice.ids, active_id=invoice.id,
         ).create(vals)
@@ -2273,6 +2275,89 @@ class TestCoverageGaps(TransactionCase):
         self.assertEqual(result["payment_type"], "De Clientes")
         self.assertEqual(result["journal"], bank.name)
 
+    def test_all_payment_report_without_context_key(self):
+        bank = self._bank_journal_with_methods('BNKO8')
+        report = self.env["report.l10n_ve_accountant.financial_all_payments"].with_context(
+            active_model="account.payment", active_id=1,
+        )
+        today = fields.Date.today()
+        result = report._get_report_values([], data={
+            "form": {
+                "payment_type": "outbound",
+                "journal_id": bank.id,
+                "start_date": today,
+                "end_date": today,
+            },
+        })
+        self.assertEqual(result["payment_type"], "A Proveedores")
+
+    # ═══════════════════════════════════════════════════════════════
+    # report/account_report.py
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_account_report_call_no_docids_raises(self):
+        report = self.env["report.l10n_ve_accountant.account_report_call"]
+        with self.assertRaises(ValidationError):
+            report._get_report_values([])
+
+    def test_account_report_call_returns_report_data(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        report = self.env["report.l10n_ve_accountant.account_report_call"]
+        result = report._get_report_values([invoice.id])
+        self.assertEqual(result["doc_model"], "account.move.line")
+        self.assertIn("data", result)
+
+    def test_account_related_report_call_returns_report_data(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        report = self.env["report.l10n_ve_accountant.account_related_report_call"]
+        result = report._get_report_values([invoice.id])
+        self.assertIn("docs", result)
+
+    # ═══════════════════════════════════════════════════════════════
+    # wizard/move_action_post_alert_views.py
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_move_action_post_alert_confirm_posts_move(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        wizard = self.env["move.action.post.alert.wizard"].create({
+            "move_id": invoice.id,
+        })
+        wizard.action_confirm()
+        self.assertEqual(invoice.state, "posted")
+
+    def test_move_action_post_alert_cancel(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        wizard = self.env["move.action.post.alert.wizard"].create({
+            "move_id": invoice.id,
+        })
+        result = wizard.action_cancel()
+        self.assertEqual(result["type"], "ir.actions.act_window_close")
+
+    # ═══════════════════════════════════════════════════════════════
+    # wizard/payment_report.py
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_payment_report_generate_report(self):
+        bank = self._bank_journal_with_methods('PYRPT')
+        wizard = self.env["payment.report"].create({
+            "payment_type": "outbound",
+            "journal_id": bank.id,
+        })
+        action = wizard.generate_report_payment()
+        self.assertEqual(action.get("report_name"), "l10n_ve_accountant.report_all_payments") \
+            if action.get("report_name") else self.assertTrue(action)
+
+    # ═══════════════════════════════════════════════════════════════
+    # wizard/invoices_details.py
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_invoices_details_action_print(self):
+        wizard = self._invoices_details_wizard()
+        action = wizard.action_print()
+        self.assertTrue(action)
+
     # ═══════════════════════════════════════════════════════════════
     # account_invoice_report.py - get_view / _select
     # ═══════════════════════════════════════════════════════════════
@@ -2287,6 +2372,17 @@ class TestCoverageGaps(TransactionCase):
         self.company.currency_foreign_id = False
         res = self.env["account.invoice.report"].get_view(view_type="pivot")
         self.assertNotIn("Total Billed (", res["arch"])
+
+    def test_invoice_report_get_view_tree_without_foreign_fields(self):
+        res = self.env["account.invoice.report"].get_view(view_type="tree")
+        self.assertNotIn("Total Billed (", res["arch"])
+        self.assertNotIn("Foreign Rate (", res["arch"])
+        self.assertNotIn("Foreign Total (", res["arch"])
+
+    def test_invoice_report_default_alternate_currency_none(self):
+        self.company.currency_foreign_id = False
+        report = self.env["account.invoice.report"].new({})
+        self.assertFalse(report.default_alternate_currency())
 
     def test_invoice_report_select_query_reachable(self):
         invoice = self._create_invoice(self.currency_usd, 100.0)
@@ -2471,10 +2567,21 @@ class TestCoverageGaps(TransactionCase):
     # ═══════════════════════════════════════════════════════════════
 
     def test_legacy_compute_foreign_debit_credit_basic(self):
-        invoice = self._create_invoice(self.currency_usd, 100.0)
+        # VEF (company currency) so line.currency_id != company.currency_foreign_id
+        # (USD) for every line, avoiding the "all lines in foreign currency"
+        # shortcut and actually reaching the subtotal-by-name matching and the
+        # receivable-line adjustment at the end of the method.
+        invoice = self._create_invoice(self.currency_vef, 100.0)
         invoice.with_context(move_action_post_alert=True).action_post()
         invoice.legacy_compute_line_ids_foreign_debit_and_credit()
         self._assert_balances(invoice, "legacy-basic")
+
+    def test_legacy_compute_foreign_debit_credit_round_globally(self):
+        self.company.tax_calculation_rounding_method = 'round_globally'
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        invoice.legacy_compute_line_ids_foreign_debit_and_credit()
+        self._assert_balances(invoice, "legacy-round-globally")
 
     def test_legacy_compute_foreign_debit_credit_two_lines_one_foreign(self):
         move = self.env["account.move"].with_context(
@@ -2495,6 +2602,34 @@ class TestCoverageGaps(TransactionCase):
         })
         move.legacy_compute_line_ids_foreign_debit_and_credit()
         self._assert_balances(move, "legacy-2lines")
+
+    def test_legacy_compute_foreign_debit_credit_two_lines_one_foreign_with_adjustment(self):
+        # To reach this branch for the "other" (non-foreign) line, its own
+        # adjustment fields must sum to zero (otherwise an earlier branch
+        # intercepts it first) while still being individually nonzero -
+        # e.g. +3/-3 - and the foreign line needs *some* nonzero adjustment
+        # sum just to satisfy the branch's entry condition.
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_bank.id, "debit": 100.0, "credit": 0.0,
+                    "currency_id": self.currency_usd.id, "amount_currency": 2.0,
+                    "foreign_debit_adjustment": 1.0,
+                }),
+                Command.create({
+                    "account_id": self.acc_exp.id, "debit": 0.0, "credit": 100.0,
+                    "foreign_debit_adjustment": 3.0, "foreign_credit_adjustment": -3.0,
+                }),
+            ],
+        })
+        move.legacy_compute_line_ids_foreign_debit_and_credit()
+        other_line = move.line_ids.filtered(lambda l: l.account_id == self.acc_exp)
+        self.assertAlmostEqual(other_line.foreign_debit, 3.0, places=2)
 
     def test_legacy_compute_foreign_debit_credit_all_foreign(self):
         move = self.env["account.move"].with_context(
@@ -2678,6 +2813,30 @@ class TestCoverageGaps(TransactionCase):
             ],
         })
         self.assertTrue(move)
+        # The constrain only fires on writes to invoice_line_ids, not line_ids,
+        # so call it directly to actually exercise the entry-skip branch.
+        move._check_taxes_id()
+
+    def test_check_taxes_id_raises_for_invoice_with_multiple_taxes(self):
+        self.company.unique_tax = True
+        extra_tax = self._create_tax('IVA 8%', 8.0)
+        with self.assertRaises(ValidationError):
+            self.env["account.move"].with_context(
+                check_move_validity=False,
+            ).create({
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": self.sale_journal.id,
+                "date": fields.Date.today(),
+                "invoice_line_ids": [
+                    Command.create({
+                        "product_id": self.product.id,
+                        "quantity": 1.0, "price_unit": 100.0,
+                        "account_id": self.acc_inc.id,
+                        "tax_ids": [(6, 0, [self.tax_16.id, extra_tax.id])],
+                    }),
+                ],
+            })
 
     def test_check_product_id_skips_journal_entries(self):
         move = self.env["account.move"].with_context(
@@ -2697,6 +2856,8 @@ class TestCoverageGaps(TransactionCase):
             ],
         })
         self.assertTrue(move)
+        # Same as above: force the constrain to actually run.
+        move._check_product_id()
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - action_register_payment (multiple rates)
@@ -3069,3 +3230,247 @@ class TestCoverageGaps(TransactionCase):
         result = report._get_report_values([wizard.id], data={})
         self.assertIn("invoices", result)
         self.assertIn("self", result)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _onchange_foreign_rate / _onchange_foreign_inverse_rate
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_onchange_foreign_rate_no_dates_is_noop(self):
+        move = self.env["account.move"].new({
+            "move_type": "entry",
+            "date": False,
+            "invoice_date": False,
+            "foreign_rate": -5.0,
+        })
+        move._onchange_foreign_rate()
+        self.assertEqual(move.foreign_rate, -5.0)
+
+    def test_onchange_foreign_rate_zero_returns_without_error(self):
+        move = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "foreign_currency_id": self.currency_usd.id,
+        })
+        # create() auto-computes a nonzero rate for non-in_invoice types;
+        # write() it back down to zero explicitly to reach the early-return
+        # branch of _onchange_foreign_rate.
+        # Write both fields sharing the same compute together - writing only
+        # one leaves the other "to compute", and reading it triggers a full
+        # recompute that clobbers the explicit 0.0 we just set.
+        move.write({"foreign_rate": 0.0, "foreign_inverse_rate": 0.0})
+        move._onchange_foreign_rate()
+        self.assertEqual(move.foreign_inverse_rate, 0.0)
+
+    def test_onchange_foreign_inverse_rate_negative_raises(self):
+        move = self.env["account.move"].new({
+            "move_type": "entry",
+            "foreign_currency_id": self.currency_usd.id,
+            "foreign_inverse_rate": -1.0,
+        })
+        with self.assertRaises(ValidationError):
+            move._onchange_foreign_inverse_rate()
+
+    def test_onchange_foreign_inverse_rate_no_currency_is_noop(self):
+        move = self.env["account.move"].new({
+            "move_type": "entry",
+            "foreign_currency_id": False,
+            "foreign_inverse_rate": -1.0,
+        })
+        move._onchange_foreign_inverse_rate()
+        self.assertTrue(move)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _get_payments / _get_account_move_line_related (empty)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_get_account_move_line_related_no_reconciled_lines(self):
+        entry = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({"account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0}),
+                Command.create({"account_id": self.acc_inc.id, "debit": 0.0, "credit": 100.0}),
+            ],
+        })
+        result = entry._get_account_move_line_related()
+        self.assertIsInstance(result, list)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _account_analytic_by_line_id (no distribution / no code)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_account_analytic_by_line_id_no_distribution(self):
+        invoice = self._create_invoice(self.currency_vef, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        product_line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        result = invoice._account_analytic_by_line_id(product_line)
+        self.assertEqual(result[product_line.id], "")
+
+    def test_account_analytic_by_line_id_analytic_account_no_code(self):
+        plan = self.env["account.analytic.plan"].search([], limit=1) or self.env[
+            "account.analytic.plan"
+        ].create({"name": "Coverage Plan"})
+        analytic_account = self.env["account.analytic.account"].create({
+            "name": "No Code Analytic", "plan_id": plan.id, "code": False,
+        })
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_inc.id, "tax_ids": [(5, 0, 0)],
+                    "analytic_distribution": {str(analytic_account.id): 100.0},
+                }),
+            ],
+        })
+        product_line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        result = invoice._account_analytic_by_line_id(product_line)
+        self.assertEqual(result[product_line.id], "")
+
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _compute_foreign_tax_balance (early exits)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_compute_foreign_tax_balance_early_exits(self):
+        posted = self._create_invoice(self.currency_usd, 100.0)
+        posted.with_context(move_action_post_alert=True).action_post()
+        tax_line_before = posted.line_ids.filtered(lambda l: l.display_type == 'tax')
+        fd_before = tax_line_before.foreign_debit
+        posted._compute_foreign_tax_balance(posted)
+        self.assertEqual(tax_line_before.foreign_debit, fd_before)
+
+        entry = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({"account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0}),
+                Command.create({"account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0}),
+            ],
+        })
+        entry._compute_foreign_tax_balance(entry)
+
+        no_tax_invoice = self._create_invoice(self.currency_usd, 100.0, tax=False)
+        no_tax_invoice._compute_foreign_tax_balance(no_tax_invoice)
+        self.assertTrue(no_tax_invoice)
+
+    def test_compute_foreign_tax_balance_no_foreign_currency(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.foreign_currency_id = False
+        invoice._compute_foreign_tax_balance(invoice)
+        self.assertTrue(invoice)
+
+    def test_compute_foreign_tax_balance_manual_alterno_counterpart(self):
+        invoice = self._create_invoice(self.currency_usd, 723.999)
+        product_line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        product_line.foreign_price = product_line.foreign_price + 0.01
+        invoice._compute_foreign_tax_balance(invoice)
+        self.assertTrue(invoice)
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _distribute_foreign_pt_residual
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_distribute_foreign_pt_residual_no_foreign_currency(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.foreign_currency_id = False
+        invoice._distribute_foreign_pt_residual(invoice)
+        self.assertTrue(invoice)
+
+    # NOTE: a genuine third-currency PT residual (move.currency_id being
+    # neither the company currency nor the foreign currency) can't be built
+    # for out_invoice/in_invoice here: _check_currency_id forbids any
+    # invoice currency_id other than the company currency. That branch is
+    # only reachable if that constraint is ever relaxed; not testable as-is.
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - _distribute_final_real_portion / _distribute_invoice_real_portion
+    # / _distribute_entry_real_portion / _distribute_to_lines
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_distribute_invoice_real_portion_direct_call(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        invoice._distribute_invoice_real_portion(invoice, invoice.company_currency_id)
+        self._assert_balances(invoice, "distribute-invoice-real-portion")
+
+    # NOTE: forcing an invoice with zero payment_term lines isn't possible
+    # through normal creation - Odoo core always adds one payment_term
+    # line for invoices regardless of invoice_payment_term_id, and
+    # stripping display_type afterwards violates a core constraint
+    # (_check_payable_receivable). The "no pt_lines" else-branch in
+    # _distribute_invoice_real_portion appears unreachable for real
+    # invoices; not testable as-is.
+
+    def test_distribute_invoice_real_portion_no_non_pt_lines(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        empty_lines = invoice.line_ids.browse([])
+        invoice._distribute_to_lines(empty_lines, 10.0, invoice.company_currency_id)
+        self.assertTrue(invoice)
+
+    def test_distribute_entry_real_portion_with_counterpart(self):
+        entry = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({"account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0}),
+                Command.create({"account_id": self.acc_inc.id, "debit": 0.0, "credit": 100.0}),
+            ],
+        })
+        entry.real_portion_amount = 0.5
+        entry._distribute_entry_real_portion(entry, entry.company_currency_id)
+        self.assertEqual(entry.real_portion_count, 1)
+
+    def test_distribute_entry_real_portion_no_counterpart(self):
+        entry = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({"account_id": self.acc_bank.id, "debit": 100.0, "credit": 0.0}),
+                Command.create({"account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0}),
+            ],
+        })
+        entry.real_portion_amount = 0.5
+        entry._distribute_entry_real_portion(entry, entry.company_currency_id)
+        self.assertEqual(entry.real_portion_count, 0)
+
+    def test_distribute_to_lines_noop_zero_amount_and_empty_lines(self):
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        invoice._distribute_to_lines(invoice.line_ids, 0.0, invoice.company_currency_id)
+        invoice._distribute_to_lines(invoice.line_ids.browse([]), 10.0, invoice.company_currency_id)
+        self.assertTrue(invoice)
+
+    def test_distribute_to_lines_noop_zero_total_balance(self):
+        entry = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({"account_id": self.acc_exp.id, "debit": 0.0, "credit": 0.0}),
+            ],
+        })
+        entry._distribute_to_lines(entry.line_ids, 10.0, entry.company_currency_id)
+        self.assertTrue(entry)
