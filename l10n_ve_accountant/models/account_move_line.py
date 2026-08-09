@@ -127,8 +127,21 @@ class AccountMoveLine(models.Model):
         typically 2 decimals) before the value reaches the field, wiping
         out "Foreign Product Price"'s own higher precision even though the
         `Float` field already rounds itself on save, with ITS precision.
+
+        Lines flagged `foreign_price_manual` are skipped entirely: without
+        this, ANY trigger of this compute (e.g. saving/posting the move,
+        which touches `move_id.foreign_inverse_rate` and other
+        dependencies even when the user didn't change anything relevant)
+        silently overwrote a manually-edited alterno price back to the
+        auto-computed value, making the manual override effectively
+        disappear the moment the invoice was confirmed. `write()` below
+        clears the flag (letting this recompute again) specifically when
+        `price_unit` itself changes, since a manual override tied to the
+        OLD native price should not silently survive a new one.
         """
         for line in self:
+            if line.foreign_price_manual:
+                continue
             line.foreign_price = line.currency_id._convert(
                 line.price_unit,
                 line.foreign_currency_id,
@@ -446,6 +459,22 @@ class AccountMoveLine(models.Model):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
         self.foreign_price_manual = False
+
+    def write(self, vals):
+        """Clear `foreign_price_manual` whenever `price_unit` itself is
+        being written, not just from the UI's `_onchange_price_unit` (which
+        never fires for writes coming from code/API, only from a Form). A
+        manual alterno override was tied to the OLD native price; silently
+        keeping it after the native price changes would leave a
+        mismatched, misleading ratio. `_compute_foreign_price` skips
+        recompute entirely while the flag is set, so it must be cleared
+        here for the new price to actually take effect.
+        """
+        if 'price_unit' in vals:
+            manual_lines = self.filtered('foreign_price_manual')
+            if manual_lines:
+                manual_lines.write({'foreign_price_manual': False})
+        return super().write(vals)
     
     
     @api.model

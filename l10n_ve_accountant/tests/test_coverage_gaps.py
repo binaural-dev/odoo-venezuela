@@ -1366,6 +1366,132 @@ class TestCoverageGaps(TransactionCase):
         self.env.invalidate_all()
         self.assertAlmostEqual(line.foreign_price, 1000.0 * rate, places=4)
 
+    def test_manual_alterno_survives_post_stress_many_lines(self):
+        """Reported bug: editing several lines' alterno price by hand and
+        then confirming (posting) the invoice silently reset them back to
+        the auto-computed value, because `_compute_foreign_price` never
+        checked `foreign_price_manual` -- ANY trigger of that compute
+        (posting touches `move_id.foreign_inverse_rate` and other
+        dependencies even without the user changing anything relevant)
+        overwrote the manual edit. Stress case: 12 lines, half of them
+        manually overridden with distinct values, confirm the invoice, and
+        verify every manual line kept EXACTLY its overridden value while
+        every untouched line still reflects price_unit x rate."""
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases ManualStress", "code": "PMST",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        prices = [100.0 + i * 37.5 for i in range(12)]
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0 + (i % 3), "price_unit": price,
+                    "account_id": self.acc_exp.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                })
+                for i, price in enumerate(prices)
+            ],
+        })
+        self.assertEqual(len(inv.invoice_line_ids), 12)
+        rate = inv.foreign_inverse_rate
+        self.assertTrue(rate)
+
+        manual_idx = [1, 3, 5, 7, 9, 11]
+        manual_overrides = {}
+        for i in manual_idx:
+            line = inv.invoice_line_ids[i]
+            overridden = self.env.company.currency_foreign_id.round(
+                line.foreign_price * 1.2345 + i
+            )
+            line.foreign_price = overridden
+            manual_overrides[i] = overridden
+            self.assertTrue(
+                line.foreign_price_manual,
+                f"line {i}: manual flag must be set right after the manual edit")
+
+        # Untouched lines must still reflect price_unit x rate BEFORE posting.
+        for i, price in enumerate(prices):
+            if i in manual_idx:
+                continue
+            line = inv.invoice_line_ids[i]
+            self.assertAlmostEqual(
+                line.foreign_price, price * rate, places=2,
+                msg=f"line {i}: non-manual alterno should track price_unit x rate before posting")
+
+        inv.action_post()
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        for i in manual_idx:
+            line = inv.invoice_line_ids[i]
+            self.assertTrue(
+                line.foreign_price_manual,
+                f"line {i}: manual flag must survive posting")
+            self.assertAlmostEqual(
+                line.foreign_price, manual_overrides[i], places=4,
+                msg=f"line {i}: manually-edited alterno price was reset by posting the invoice")
+
+        for i, price in enumerate(prices):
+            if i in manual_idx:
+                continue
+            line = inv.invoice_line_ids[i]
+            self.assertFalse(line.foreign_price_manual, f"line {i}: must not be flagged manual")
+            self.assertAlmostEqual(
+                line.foreign_price, price * rate, places=2,
+                msg=f"line {i}: non-manual alterno drifted after posting")
+
+    def test_manual_alterno_cleared_when_price_unit_changes_then_post(self):
+        """A manual alterno override tied to the OLD price_unit must reset
+        (not survive) once price_unit itself changes -- the write() hook
+        that clears `foreign_price_manual` on a price_unit write must fire
+        for a plain ORM write (not just a Form onchange), and the
+        subsequent post must not resurrect the stale manual value either.
+        """
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases ManualReinitPost", "code": "PMRP",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": 500.0,
+                "account_id": self.acc_exp.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            })],
+        })
+        line = inv.invoice_line_ids[:1]
+        rate = inv.foreign_inverse_rate
+
+        line.foreign_price = line.foreign_price + 5.0
+        self.assertTrue(line.foreign_price_manual)
+
+        line.price_unit = 900.0
+        self.assertFalse(
+            line.foreign_price_manual,
+            "changing price_unit via a plain write() must clear the manual flag")
+        self.assertAlmostEqual(line.foreign_price, 900.0 * rate, places=4)
+
+        inv.action_post()
+        self.env.flush_all()
+        self.env.invalidate_all()
+        self.assertFalse(line.foreign_price_manual)
+        self.assertAlmostEqual(line.foreign_price, 900.0 * rate, places=4)
+
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - tax_totals ALL keys with foreign values
     # ═══════════════════════════════════════════════════════════════
