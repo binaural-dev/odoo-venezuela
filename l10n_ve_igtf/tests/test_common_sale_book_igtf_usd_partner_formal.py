@@ -102,15 +102,19 @@ class IGTFTestCommonSaleBook(TransactionCase):
             "21601", "liability_current", "Anticipo Proveedores", recon=True
         )
 
-        self.company.write(
-            {
-                "igtf_percentage": 3.0,
-                "customer_account_igtf_id": self.acc_igtf_cli.id,
-                "advance_payment_igtf_journal_id": self.journal_anticipo.id,
-                "advance_customer_account_id": self.acc_advance_customer.id,
-                "advance_supplier_account_id": self.acc_advance_supplier.id,
-            }
-        )
+        company_vals = {
+            "igtf_percentage": 3.0,
+            "customer_account_igtf_id": self.acc_igtf_cli.id,
+        }
+        if "advance_payment_igtf_journal_id" in self.company._fields:
+            company_vals.update(
+                {
+                    "advance_payment_igtf_journal_id": self.journal_anticipo.id,
+                    "advance_customer_account_id": self.acc_advance_customer.id,
+                    "advance_supplier_account_id": self.acc_advance_supplier.id,
+                }
+            )
+        self.company.write(company_vals)
         
         manual_in = self.env.ref("account.account_payment_method_manual_in")
         manual_out = self.env.ref("account.account_payment_method_manual_out") 
