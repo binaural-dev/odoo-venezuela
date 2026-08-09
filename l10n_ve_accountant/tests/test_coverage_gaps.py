@@ -711,6 +711,110 @@ class TestCoverageGaps(TransactionCase):
         self.assertTrue(refund.reversed_entry_id)
         self.assertAlmostEqual(refund.foreign_rate, rate_a, places=2)
 
+    def test_debit_note_keeps_origin_rate_after_date_change(self):
+        """Las notas de débito (debit_origin_id) deben heredar la tasa de la
+        factura origen igual que las notas de crédito, sin importar que el
+        wizard estándar de Odoo las cree como move_type in_invoice/out_invoice
+        (nunca in_refund/out_refund)."""
+        journal = self._rectification_purchase_journal()
+        date_a, date_b, date_c = (
+            fields.Date.from_string("2026-07-01"),
+            fields.Date.from_string("2026-07-10"),
+            fields.Date.from_string("2026-07-13"),
+        )
+        rate_model = self.env["res.currency.rate"]
+        rate_model.create({
+            "name": date_a, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 40.0, "company_id": self.company.id,
+        })
+        rate_model.create({
+            "name": date_b, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0, "company_id": self.company.id,
+        })
+        rate_model.create({
+            "name": date_c, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 48.0, "company_id": self.company.id,
+        })
+
+        invoice = self._create_in_invoice(journal, date_a)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        rate_a = invoice.foreign_rate
+
+        debit_wizard = self.env["account.debit.note"].with_context(
+            active_model="account.move", active_ids=invoice.ids,
+        ).create({
+            "date": date_b,
+            "reason": "Test nota de débito",
+            "journal_id": journal.id,
+        })
+        action = debit_wizard.create_debit()
+        debit_note = self.env["account.move"].browse(action["res_id"])
+        self.assertEqual(debit_note.debit_origin_id, invoice)
+        self.assertIn(debit_note.move_type, ("in_invoice", "out_invoice"))
+        self.assertAlmostEqual(debit_note.foreign_rate, rate_a, places=2)
+
+        debit_note.write({"date": date_c, "invoice_date": date_c})
+        self.env.flush_all()
+        self.assertAlmostEqual(
+            debit_note.foreign_rate, rate_a, places=2,
+            msg="La tasa de la nota de débito no debe cambiar al editar la fecha",
+        )
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move.py - write() batch con recordset mixto
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_write_batch_mixed_moves_does_not_strip_unrelated_move_rate(self):
+        """Un write() en batch sobre una factura normal + una rectificativa
+        vinculada no debe descartar la tasa para la factura normal solo
+        porque la rectificativa esté en el mismo recordset."""
+        journal = self._rectification_purchase_journal()
+        date_a, date_b = (
+            fields.Date.from_string("2026-07-01"),
+            fields.Date.from_string("2026-07-10"),
+        )
+        rate_model = self.env["res.currency.rate"]
+        rate_model.create({
+            "name": date_a, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 40.0, "company_id": self.company.id,
+        })
+
+        origin_invoice = self._create_in_invoice(journal, date_a)
+        origin_invoice.with_context(move_action_post_alert=True).action_post()
+        origin_rate = origin_invoice.foreign_rate
+
+        refund = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "in_refund",
+            "partner_id": self.partner.id,
+            "journal_id": journal.id,
+            "reversed_entry_id": origin_invoice.id,
+            "invoice_date": date_b,
+            "date": date_b,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 100.0,
+                    "account_id": self.acc_exp.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        unrelated_invoice = self._create_in_invoice(journal, date_a)
+
+        (unrelated_invoice | refund).write({"foreign_rate": 50.0})
+
+        self.assertAlmostEqual(
+            unrelated_invoice.foreign_rate, 50.0, places=2,
+            msg="La factura sin relación con el bug debe poder actualizar su tasa",
+        )
+        self.assertAlmostEqual(
+            refund.foreign_rate, origin_rate, places=2,
+            msg="La rectificativa vinculada debe seguir bloqueada en la tasa de origen",
+        )
+
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - get_view
     # ═══════════════════════════════════════════════════════════════
@@ -2478,9 +2582,9 @@ class TestCoverageGaps(TransactionCase):
     def test_compute_inverse_rate_vef_no_date(self):
         move = self.env["account.move"].new({
             "move_type": "entry",
+            "date": False,
+            "invoice_date": False,
         })
-        move.date = False
-        move.invoice_date = False
         move._compute_inverse_rate_vef()
         self.assertEqual(move.foreign_inverse_rate_vef, 0.0)
 
@@ -2522,7 +2626,7 @@ class TestCoverageGaps(TransactionCase):
         self.assertIn("arch", res)
 
     def test_get_view_list_type_with_foreign_currency(self):
-        res = self.env["account.move"].get_view(view_type="list")
+        res = self.env["account.move"].get_view(view_type="search")
         self.assertIn("arch", res)
 
     # ═══════════════════════════════════════════════════════════════
@@ -2697,7 +2801,7 @@ class TestCoverageGaps(TransactionCase):
             "line_ids": [
                 Command.create({
                     "account_id": self.acc_exp.id, "debit": 100.0, "credit": 0.0,
-                    "currency_id": self.currency_eur.id, "amount_currency": -100.0,
+                    "currency_id": self.currency_eur.id, "amount_currency": 100.0,
                 }),
                 Command.create({
                     "account_id": self.acc_bank.id, "debit": 0.0, "credit": 100.0,

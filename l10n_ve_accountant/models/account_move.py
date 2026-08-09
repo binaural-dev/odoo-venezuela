@@ -322,14 +322,13 @@ class AccountMove(models.Model):
         for move in moves:
             if move.move_type != "in_invoice":
                 move._compute_rate()
-            if move.move_type in ("out_refund", "in_refund") and (
-                move.reversed_entry_id or move.debit_origin_id
-            ):
+            else:
                 origin = move.reversed_entry_id or move.debit_origin_id
-                move.with_context(l10n_ve_force_rate_write=True).write({
-                    'foreign_rate': origin.foreign_rate,
-                    'foreign_inverse_rate': origin.foreign_inverse_rate,
-                })
+                if origin:
+                    move.with_context(l10n_ve_force_rate_write=True).write({
+                        'foreign_rate': origin.foreign_rate,
+                        'foreign_inverse_rate': origin.foreign_inverse_rate,
+                    })
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.context_today(self)
@@ -352,16 +351,21 @@ class AccountMove(models.Model):
         if vals has 'journal_id' inside, then call _update_invoice_lines_with_new_journal to update the line_ids to update the account_id.
         """
         if not self.env.context.get('l10n_ve_force_rate_write') and vals.keys() & {"foreign_rate", "foreign_inverse_rate"}:
-            for move in self:
-                if move.move_type in ("out_refund", "in_refund") and (
-                    move.reversed_entry_id or move.debit_origin_id
-                ):
-                    vals = {
-                        k: v
-                        for k, v in vals.items()
-                        if k not in ("foreign_rate", "foreign_inverse_rate")
-                    }
-                    break
+            linked = self.filtered(lambda m: m.reversed_entry_id or m.debit_origin_id)
+            if linked and linked != self:
+                stripped_vals = {
+                    k: v
+                    for k, v in vals.items()
+                    if k not in ("foreign_rate", "foreign_inverse_rate")
+                }
+                linked.write(stripped_vals)
+                return (self - linked).write(vals)
+            if linked:
+                vals = {
+                    k: v
+                    for k, v in vals.items()
+                    if k not in ("foreign_rate", "foreign_inverse_rate")
+                }
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
@@ -674,10 +678,8 @@ class AccountMove(models.Model):
         for move in documents:
             if move.manually_set_rate:
                 continue
-            if move.move_type in ("out_refund", "in_refund") and (
-                move.reversed_entry_id or move.debit_origin_id
-            ):
-                origin = move.reversed_entry_id or move.debit_origin_id
+            origin = move.reversed_entry_id or move.debit_origin_id
+            if origin:
                 move.with_context(l10n_ve_force_rate_write=True).write({
                     'foreign_rate': origin.foreign_rate,
                     'foreign_inverse_rate': origin.foreign_inverse_rate,
