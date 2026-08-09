@@ -4,25 +4,29 @@
     "description": """
 Propósito
 ---------
-Actualiza los tests del libro de compras internacional tras la
-corrección del cálculo del alterno (moneda extranjera) en
-l10n_ve_accountant/l10n_ve_tax. Ticket:
-https://binaural.odoo.com/odoo/helpdesk.ticket/14463
+Provee la facturación electrónica de la localización venezolana: el
+libro de compras y ventas exigido por el SENIAT, la numeración
+correlativa por diario, el formato de factura libre y la integración
+con notas de débito.
 
 Funcionalidades principales
 ---------------------------
-* Sin cambios funcionales en el módulo. Se relaja la tolerancia de 3
-  tests que comparaban `impuesto alterno == base alterna x tasa` con
-  `places=2`: ahora que el impuesto se ancla al total real del asiento
-  (y ya no se recalcula por separado desde la misma base), una base y un
-  impuesto correctamente redondeados por separado pueden diferir del
-  ideal matemático en unos centavos por orden de redondeo -- se usa
-  `delta=1.0` para reflejar esa realidad en vez de exigir una igualdad
-  que ya no aplica con el nuevo diseño unificado.
+* Wizard de reportes contables para generar el libro de compras y el
+  libro de ventas (nacional e internacional), con el desglose de bases
+  imponibles por alícuota y el monto equivalente en moneda alterna.
+* Numeración de secuencias única por diario (``ir.sequence``).
+* Reporte e impresión de factura en formato libre.
+* Integración con notas de débito (``account.debit.note``) propia de la
+  localización.
+* Grupos de seguridad y reglas de acceso específicas del módulo.
 
 Cambios en UI / Modelos impactados
 ------------------------------------
-* Solo se modifica un archivo de tests, ningún modelo ni vista.
+* Modifica ``account.move``, ``account.journal``, ``account.move.line``,
+  ``account.payment``, ``ir.sequence`` y ``account.debit.note``.
+* Vistas de factura, diario, notas de débito, menú y ajustes de
+  configuración; wizard y reportes de libro de compras/ventas y de
+  factura de forma libre.
 """,
     "version": "17.0.1.0.5",
     "license": "LGPL-3",

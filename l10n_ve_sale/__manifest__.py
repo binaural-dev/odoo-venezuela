@@ -4,28 +4,31 @@
     "description": """
 Propósito
 ---------
-Corrige el cálculo del alterno (moneda extranjera) en cotizaciones de
-venta para que el total mostrado coincida con el de la factura resultante
-al confirmarse. Ticket: https://binaural.odoo.com/odoo/helpdesk.ticket/14463
+Adapta las cotizaciones y órdenes de venta a los requerimientos de la
+localización venezolana: seguimiento del monto equivalente en moneda
+alterna (extranjera), validaciones fiscales propias y ajustes al flujo
+de facturación desde la orden.
 
 Funcionalidades principales
 ---------------------------
-* El total alterno de la cotización se ancla a `amount_total x tasa` (el
-  mismo mecanismo que usan las facturas en l10n_ve_accountant/l10n_ve_tax),
-  en vez de recalcularse de forma independiente por línea.
-* Corrección de precisión del precio unitario alterno (`foreign_price`),
-  que antes se truncaba a 2 decimales.
-* El cálculo del alterno delega en `res.currency._convert` (igual que
-  account.move.line), respetando correctamente la conversión cuando la
-  moneda base de la compañía es USD.
-* El subtotal alterno de la línea ahora considera el impuesto asignado
-  (`tax_id`), en vez de ignorarlo.
+* Tasa alterna de la cotización (manual o automática según la fecha) y
+  cálculo del precio, subtotal y total equivalente en esa moneda para
+  cada línea, anclado al total real del documento -- coincide con el de
+  la factura resultante al confirmarse la orden.
+* Validaciones: un único impuesto por línea de producto, y límite máximo
+  de líneas por cotización.
+* Base imponible y total facturado en moneda alterna (``foreign_taxable_income``,
+  ``foreign_total_billed``) para reportes fiscales.
+* Bloqueo de la confirmación de la orden bajo ciertas condiciones de
+  negocio, y ajustes al listado de precios (``product.pricelist.item``).
+* Reporte de documento de venta y tarea programada (cron) propios del
+  módulo.
 
 Cambios en UI / Modelos impactados
 ------------------------------------
-* Modifica ``sale.order.line`` (``foreign_price``, ``_compute_foreign_price``,
-  ``_compute_foreign_subtotal``).
-* No se agregan campos ni vistas nuevas.
+* Modifica ``sale.order`` y ``sale.order.line`` (moneda alterna, tasa,
+  ``foreign_price``, ``foreign_subtotal``) y ``product.pricelist.item``.
+* Vistas de la orden de venta, ajustes de configuración y menús.
 """,
     "license": "LGPL-3",
     "author": "Binauraldev",
