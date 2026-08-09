@@ -91,14 +91,24 @@ class IGTFTestCommonSaleBook(TransactionCase):
                 "code": "ANTICIGTF",
                 "type": "general",
                 "company_id": self.company.id,
-               
+
             }
+        )
+
+        self.acc_advance_customer = self.get_or_create_account(
+            "11201", "asset_current", "Anticipo Clientes (Cuenta)", recon=True
+        )
+        self.acc_advance_supplier = self.get_or_create_account(
+            "21601", "liability_current", "Anticipo Proveedores", recon=True
         )
 
         self.company.write(
             {
                 "igtf_percentage": 3.0,
                 "customer_account_igtf_id": self.acc_igtf_cli.id,
+                "advance_payment_igtf_journal_id": self.journal_anticipo.id,
+                "advance_customer_account_id": self.acc_advance_customer.id,
+                "advance_supplier_account_id": self.acc_advance_supplier.id,
             }
         )
         
@@ -246,7 +256,6 @@ class IGTFTestCommonSaleBook(TransactionCase):
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = reversed_move.foreign_rate
             pay_form.save()
             pay_form.amount = payment_amount
 

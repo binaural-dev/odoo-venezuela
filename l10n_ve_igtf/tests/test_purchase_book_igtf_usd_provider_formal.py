@@ -36,7 +36,6 @@ class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = invoice.foreign_rate
             pay_form.save()
             pay_form.amount = payment_amount
 
