@@ -12,7 +12,7 @@ class TestIGTFPurchasePaymentFields(IGTFTestCommonPurchaseBook):
     def _open_payment_wizard(self, invoice, journal=None):
         journal = journal or self.bank_journal_usd
         ctx = invoice.action_register_payment()['context']
-        return self.env['account.payment.register'].with_context(ctx)
+        return self.env['account.payment.register'].with_context(**ctx)
 
     # ─────────────────────────────────────────────────────────
     # Single invoice full payment (outbound)
@@ -161,7 +161,7 @@ class TestIGTFSalePaymentFields(IGTFTestCommonSaleBook):
     def _open_payment_wizard(self, invoice, journal=None):
         journal = journal or self.bank_journal_usd
         ctx = invoice.action_register_payment()['context']
-        return self.env['account.payment.register'].with_context(ctx)
+        return self.env['account.payment.register'].with_context(**ctx)
 
     # ─────────────────────────────────────────────────────────
     # Single invoice full payment (inbound)

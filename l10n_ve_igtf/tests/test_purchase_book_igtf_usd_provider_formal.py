@@ -29,7 +29,7 @@ class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
         
         with Form(
             self.env['account.payment.register'].with_context(
-               action_data['context']  
+               **action_data['context']
             )
         ) as pay_form:
             
