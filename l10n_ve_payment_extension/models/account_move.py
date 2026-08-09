@@ -176,9 +176,9 @@ class AccountMoveRetention(models.Model):
         if float_compare(abs(sum_invoice_amount), invoice_base, precision_digits=decimal_places) == 1:
             raise UserError(
                 _(
-                    "The amount of the retention is greater than the total amount of the invoice %s."
+                    "The amount of the retention is greater than the total amount of the invoice %s.",
+                    self.display_name,
                 )
-                % self.display_name
             )
         self._check_retention_vs_move(islr_retention)
 
