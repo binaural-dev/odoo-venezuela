@@ -77,7 +77,7 @@ class PurchaseOrder(models.Model):
         Onchange the foreign rate and compute the foreign inverse rate
         """
         base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
-            "base.USD", raise_if_not_found=False
+            "base.USD", raise_if_not_found=True
         )
         for purchase in self:
             if not bool(purchase.foreign_rate):
