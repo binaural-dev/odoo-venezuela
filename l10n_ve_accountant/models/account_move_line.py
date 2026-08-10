@@ -131,11 +131,10 @@ class AccountMoveLine(models.Model):
 
             foreign_currency = lines._get_foreign_currency()
 
-            # Unrounded and tax aware amounts: taxes flagged as "included in
-            # price" are extracted from foreign_price instead of added on top.
+            # Tax aware amounts: taxes flagged as "included in price" are
+            # extracted from foreign_price instead of added on top.
             amounts = [
-                line._get_foreign_amounts(round_base=False, currency=foreign_currency)
-                for line in lines
+                line._get_foreign_amounts(currency=foreign_currency) for line in lines
             ]
 
             total_foreign_subtotal_target = lines._round_foreign(
@@ -147,10 +146,10 @@ class AccountMoveLine(models.Model):
 
             accumulated_subtotal = 0.0
             accumulated_total = 0.0
-            last_line = lines[-1]
+            last_index = len(lines) - 1
 
-            for line, (subtotal, total) in zip(lines, amounts):
-                if line != last_line:
+            for index, (line, (subtotal, total)) in enumerate(zip(lines, amounts)):
+                if index < last_index:
                     line.foreign_subtotal = line._round_foreign(subtotal, foreign_currency)
                     line.foreign_price_total = line._round_foreign(total, foreign_currency)
 
@@ -158,9 +157,16 @@ class AccountMoveLine(models.Model):
                     accumulated_total += line.foreign_price_total
                 else:
                     # The last line absorbs the rounding difference so the sum of
-                    # the lines always matches the totals of the move.
-                    line.foreign_subtotal = total_foreign_subtotal_target - accumulated_subtotal
-                    line.foreign_price_total = total_foreign_target - accumulated_total
+                    # the lines always matches the totals of the move. The
+                    # subtraction is rounded as well to drop the float noise it
+                    # introduces (5085.08 - 635.64 -> 4449.439999999999).
+                    line.foreign_subtotal = line._round_foreign(
+                        total_foreign_subtotal_target - accumulated_subtotal,
+                        foreign_currency,
+                    )
+                    line.foreign_price_total = line._round_foreign(
+                        total_foreign_target - accumulated_total, foreign_currency
+                    )
 
     def _get_foreign_currency(self):
         """Alternate currency to use to round the foreign amounts.
@@ -176,27 +182,39 @@ class AccountMoveLine(models.Model):
         )
 
     def _round_foreign(self, amount, currency=None):
-        """Round ``amount`` to the precision of the alternate currency.
+        """Round ``amount`` using the rounding factor of the alternate currency.
+
+        The precision comes from the currency itself (``rounding``, shown as
+        "Rounding Factor" on the currency form), never from a decimal.precision
+        entry.
 
         ``res.currency.round`` cannot be used here: ``l10n_ve_rate`` overrides it
         to return the amount untouched whenever it carries more than 6 decimals,
-        so a rate such as 756.70786 would leave the value unrounded. On top of
-        that ``models/fields.py`` patches ``Monetary`` so Odoo no longer rounds
-        on write either, meaning the raw value would reach the database and the
-        UI would then round every cell on its own, breaking the balance of the
-        entry. ``float_round`` is not patched, so rounding is done explicitly.
+        so an amount such as 635.6346024 would be left unrounded. On top of that
+        ``models/fields.py`` patches ``Monetary`` so Odoo no longer rounds on
+        write either, meaning the raw value would reach the database and the UI
+        would then round every cell on its own, breaking the balance of the
+        entry. ``float_round`` is the plain Odoo helper and is not patched.
         """
         currency = currency or self._get_foreign_currency()
-        rounding = currency.rounding or 0.01
-        return float_round(amount, precision_rounding=rounding)
+        if not currency:
+            return amount
+        return float_round(amount, precision_rounding=currency.rounding)
 
-    def _get_foreign_amounts(self, round_base=True, currency=None):
+    def _get_foreign_amounts(self, currency=None):
         """Amounts of the line expressed in the alternate currency.
 
         Taxes are computed over ``foreign_price``, mirroring what Odoo does with
         ``price_unit`` in ``_compute_totals``. That way a tax with
         ``price_include`` is extracted from the alternate price instead of being
         charged again on top of it.
+
+        ``round_base`` is deliberately left at its default. Forcing it off mixes
+        an unrounded base with a rounded tax amount, which breaks the guarantee
+        that a price-included tax yields ``total_included == price * quantity``:
+        a line of 2724.14988 x 2 returned 5448.3018 instead of 5448.29976, so
+        the alternate total showed one cent more than the alternate price times
+        the quantity, and the entry no longer balanced.
 
         :return: tuple (total_excluded, total_included)
         """
@@ -208,7 +226,7 @@ class AccountMoveLine(models.Model):
         if not self.tax_ids:
             return subtotal, subtotal
 
-        taxes_res = self.tax_ids.with_context(round_base=round_base).compute_all(
+        taxes_res = self.tax_ids.compute_all(
             line_discount_foreign_price,
             quantity=self.quantity,
             currency=currency,
