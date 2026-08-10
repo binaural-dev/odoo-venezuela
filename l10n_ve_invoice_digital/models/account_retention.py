@@ -43,8 +43,8 @@ class AccountRetention(models.Model):
         headers = {"Authorization": f"Bearer {self.get_token()}"}
 
         try:
-            response = requests.post(url, json=payload, headers=headers, timeout=30)
-
+            response = requests.post(url, json=payload, headers=headers, timeout=10)
+        
             if response.status_code == 200:
                 data = response.json()
                 if data.get("codigo") == "200":
@@ -52,17 +52,17 @@ class AccountRetention(models.Model):
                 elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
                     return 0
                 else:
-                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s", message=data.get('mensaje'), validation=data.get('validaciones')))
+                    _logger.error("Error in the API response: %s \n%s", data.get('mensaje'), data.get('validaciones'))
                     raise UserError(_("Error in the API response: %(message)s \n%(validation)s", message=data.get('mensaje'), validation=data.get('validaciones')))
             if response.status_code == 401:
                 _logger.error(_("Error 401: Invalid or expired token."))
                 self.company_id.generate_token_tfhka()
                 return self.call_tfhka_api(endpoint_key, payload)
             else:
-                _logger.error(_("HTTP error %(status_code)s: %(text)s", status_code=response.status_code, text=response.text))
+                _logger.error("HTTP error %s: %s", response.status_code, response.text)
                 raise UserError(_("HTTP error %(status_code)s: %(text)s", status_code=response.status_code, text=response.text))
         except requests.exceptions.RequestException as e:
-            _logger.error(_("Error connecting to the API: %(error)s", error=e))
+            _logger.error("Error connecting to the API: %s", e)
             raise UserError(_("Error connecting to the API: %(error)s", error=e))
 
     def generate_document_digital(self):
@@ -84,11 +84,7 @@ class AccountRetention(models.Model):
         validation_sequence = self.env.context.get('account_retention_alert', False)
 
         if document_number != current_number and not validation_sequence and self.company_id.sequence_validation_tfhka:
-            message = _(
-                "The document sequence in Odoo (%(odoo_number)s) does not match the sequence in The Factory (%(factory_number)s). Do you want to continue anyway?",
-                odoo_number=current_number,
-                factory_number=document_number,
-            )
+            message = _("The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The Factory (%(factory_seq)s). Do you want to continue anyway?", odoo_seq=current_number, factory_seq=document_number)
             return {
             'type': 'ir.actions.act_window',
             'res_model': 'account.retention.alert.wizard',
@@ -133,7 +129,7 @@ class AccountRetention(models.Model):
                     message_type='comment',
                 )
             self.message_post(
-                body=_("Document successfully digitized on %(date)s", date=emission_date),
+                body=_("Document successfully digitized on %(date)s", date=emission_date),  
                 message_type='comment',
             )
 

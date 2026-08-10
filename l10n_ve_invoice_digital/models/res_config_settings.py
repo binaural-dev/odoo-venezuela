@@ -38,4 +38,5 @@ class ResConfigSettings(models.TransientModel):
             # Instalar el módulo si no está instalado
             if module and module.state != 'installed':
                 module.button_immediate_install()
+
         return res
