@@ -3046,6 +3046,13 @@ class TestCoverageGaps(TransactionCase):
     # ═══════════════════════════════════════════════════════════════
 
     def test_apply_product_real_portion_guards(self):
+        # Each scenario below hits one of _apply_product_real_portion's
+        # early-continue guards. In every case the guard must make the call
+        # a strict no-op, so we snapshot the product line's balance before
+        # calling and assert it's unchanged afterwards - not just that the
+        # call doesn't raise.
+
+        # Guard: not an invoice (move_type == 'entry').
         entry = self.env["account.move"].with_context(
             check_move_validity=False,
         ).create({
@@ -3062,15 +3069,25 @@ class TestCoverageGaps(TransactionCase):
                 }),
             ],
         })
+        entry_line = entry.line_ids.filtered(lambda l: l.account_id == self.acc_exp)
+        entry_balance_before = entry_line.balance
         self.env["account.move.line"]._apply_product_real_portion(entry.line_ids)
+        self.assertEqual(entry_line.balance, entry_balance_before)
 
+        # Guard: move.currency_id == company_currency_id (VEF invoice).
         vef_invoice = self._create_invoice(self.currency_vef, 100.0)
+        vef_line = vef_invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        vef_balance_before = vef_line.balance
         self.env["account.move.line"]._apply_product_real_portion(vef_invoice.invoice_line_ids)
+        self.assertEqual(vef_line.balance, vef_balance_before)
 
+        # Guard: move.state != 'draft' (posted invoice).
         posted_invoice = self._create_invoice(self.currency_usd, 100.0)
         posted_invoice.with_context(move_action_post_alert=True).action_post()
+        posted_line = posted_invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        posted_balance_before = posted_line.balance
         self.env["account.move.line"]._apply_product_real_portion(posted_invoice.invoice_line_ids)
-        self.assertTrue(True)
+        self.assertEqual(posted_line.balance, posted_balance_before)
 
     # ═══════════════════════════════════════════════════════════════
     # bank_rec_widget.py - _action_validate

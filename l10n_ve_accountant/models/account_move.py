@@ -345,10 +345,12 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         """
-        computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
-        the move is edited.
-
-        if vals has 'journal_id' inside, then call _update_invoice_lines_with_new_journal to update the line_ids to update the account_id.
+        Prevents external writes to foreign_rate/foreign_inverse_rate on
+        rectificativas linked to an origin (reversed_entry_id/debit_origin_id),
+        so their rate always stays tied to the origin's. The recordset is
+        split between linked and unlinked moves so a batch write() only
+        strips those fields for the linked subset, leaving unrelated moves
+        in the same call unaffected.
         """
         if not self.env.context.get('l10n_ve_force_rate_write') and vals.keys() & {"foreign_rate", "foreign_inverse_rate"}:
             linked = self.filtered(lambda m: m.reversed_entry_id or m.debit_origin_id)
