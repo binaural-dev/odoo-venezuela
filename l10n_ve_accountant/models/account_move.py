@@ -322,9 +322,13 @@ class AccountMove(models.Model):
         for move in moves:
             if move.move_type != "in_invoice":
                 move._compute_rate()
-            if move.move_type in ("out_refund", "in_refund") and move.reversed_entry_id:
-                move.foreign_rate = move.reversed_entry_id.foreign_rate
-                move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+            else:
+                origin = move.reversed_entry_id or move.debit_origin_id
+                if origin:
+                    move.with_context(l10n_ve_force_rate_write=True).write({
+                        'foreign_rate': origin.foreign_rate,
+                        'foreign_inverse_rate': origin.foreign_inverse_rate,
+                    })
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.context_today(self)
@@ -340,6 +344,30 @@ class AccountMove(models.Model):
         return moves
 
     def write(self, vals):
+        """
+        Prevents external writes to foreign_rate/foreign_inverse_rate on
+        rectificativas linked to an origin (reversed_entry_id/debit_origin_id),
+        so their rate always stays tied to the origin's. The recordset is
+        split between linked and unlinked moves so a batch write() only
+        strips those fields for the linked subset, leaving unrelated moves
+        in the same call unaffected.
+        """
+        if not self.env.context.get('l10n_ve_force_rate_write') and vals.keys() & {"foreign_rate", "foreign_inverse_rate"}:
+            linked = self.filtered(lambda m: m.reversed_entry_id or m.debit_origin_id)
+            if linked and linked != self:
+                stripped_vals = {
+                    k: v
+                    for k, v in vals.items()
+                    if k not in ("foreign_rate", "foreign_inverse_rate")
+                }
+                linked.write(stripped_vals)
+                return (self - linked).write(vals)
+            if linked:
+                vals = {
+                    k: v
+                    for k, v in vals.items()
+                    if k not in ("foreign_rate", "foreign_inverse_rate")
+                }
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
@@ -634,7 +662,7 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat) if move.partner_id.vat else ''
             move.vat = vat.upper()
 
-    @api.depends("invoice_date","foreign_currency_id","date")
+    @api.depends("invoice_date", "foreign_currency_id", "date", "reversed_entry_id", "debit_origin_id")
     def _compute_rate(self):
         self._compute_rate_for_documents(
             self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
@@ -651,6 +679,13 @@ class AccountMove(models.Model):
 
         for move in documents:
             if move.manually_set_rate:
+                continue
+            origin = move.reversed_entry_id or move.debit_origin_id
+            if origin:
+                move.with_context(l10n_ve_force_rate_write=True).write({
+                    'foreign_rate': origin.foreign_rate,
+                    'foreign_inverse_rate': origin.foreign_inverse_rate,
+                })
                 continue
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.context_today(self)
