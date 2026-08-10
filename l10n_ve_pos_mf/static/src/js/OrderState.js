@@ -8,7 +8,7 @@ patch(Order.prototype, {
     super.init_from_JSON(json);
     this.fiscal_machine = json.fiscal_machine || false;
     this.mf_invoice_number = json.mf_invoice_number || false;
-    this.mf_reportz = this.mf_reportz || false;
+    this.mf_reportz = json.mf_reportz || false;
   },
   export_as_JSON() {
     let res = super.export_as_JSON();
