@@ -239,9 +239,6 @@ class ResCompany(models.Model):
             c for c in available_currency_names if c in BCV_CURRENCIES
         }
 
-        if self[:1].can_update_habil_days and current_date.isoweekday() > 5:
-            return result
-
         rate_value, published_date = self._get_bcv_rate(
             expected_date=current_date,
         )
@@ -263,15 +260,31 @@ class ResCompany(models.Model):
 
         result["VEF"] = (rate_value, current_date)
 
-        # Include any other active BCV currencies
+        # Include any other active BCV currencies. The BCV does not publish
+        # rates on weekends, so skip this extra scraping request when the
+        # company only accepts rates on business days.
+        skip_weekend_scraping = (
+            self[:1].can_update_habil_days and current_date.isoweekday() > 5
+        )
         non_usd = [c for c in target_currencies if c != "USD"]
-        if non_usd:
+        if non_usd and not skip_weekend_scraping:
             bc_rates = self._get_bcv_currency_rates(non_usd)
-            for code, (vef_rate, pub_date) in bc_rates.items():
-                if self._is_valid_rate_date(current_date, pub_date):
+            for code in non_usd:
+                vef_rate, pub_date = bc_rates.get(code, (None, None))
+                if vef_rate and self._is_valid_rate_date(current_date, pub_date):
                     self._normalize_currency_rate(
                         result, code, vef_rate, current_date,
                     )
+                else:
+                    fallback_rate = self._get_last_system_rate_for_currency(
+                        code, current_date,
+                    )
+                    if fallback_rate is not None:
+                        result[code] = (fallback_rate, current_date)
+                    else:
+                        _logger.warning(
+                            "No BCV rate or fallback available for %s.", code,
+                        )
 
         return result
 
@@ -571,15 +584,47 @@ class ResCompany(models.Model):
                     ("parent_id", "=", False),
                 ]
             )
-            if already_today:
-                continue
-            try:
-                with self.env.cr.savepoint():
-                    company.with_context(suppress_errors=True).update_currency_rates()
-            except Exception:
-                _logger.error(
-                    "BCV rate update failed for company %s (id=%s); "
-                    "continuing with remaining companies.",
-                    company.display_name, company.id,
-                    exc_info=True,
+            missing_rate = False
+            for company in bcv_companies:
+                already_today = Rate.search_count(
+                    [
+                        ("company_id", "=", company.id),
+                        ("currency_id", "=", vef.id),
+                        ("name", "=", today),
+                    ]
                 )
+                if already_today:
+                    continue
+                try:
+                    with self.env.cr.savepoint():
+                        company.with_context(
+                            suppress_errors=True
+                        ).update_currency_rates()
+                except Exception:
+                    missing_rate = True
+                    _logger.error(
+                        "BCV rate update failed for company %s (id=%s); "
+                        "continuing with remaining companies.",
+                        company.display_name, company.id,
+                        exc_info=True,
+                    )
+                    continue
+                company_updated = Rate.search_count(
+                    [
+                        ("company_id", "=", company.id),
+                        ("currency_id", "=", vef.id),
+                        ("name", "=", today),
+                    ]
+                )
+                if not company_updated:
+                    missing_rate = True
+
+            if missing_rate:
+                retry_at = self._get_next_bcv_retry_time(now_local)
+                if retry_at and self._schedule_bcv_retry(retry_at):
+                    _logger.info(
+                        "Scheduled BCV currency retry for %s",
+                        retry_at.strftime("%Y-%m-%d %H:%M:%S %Z"),
+                    )
+        except Exception:
+            _logger.exception("Unexpected error in BCV currency cron")

@@ -1,6 +1,6 @@
 import logging
-from datetime import date, timezone
-from unittest.mock import patch, MagicMock
+from datetime import date
+from unittest.mock import patch
 
 import requests
 
@@ -105,7 +105,9 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
             "_get_bcv_rate",
             return_value=(36.12, monday),
         ) as mock_get_rate:
-            result = self.company._parse_bcv_data([])
+            result = self.company._parse_bcv_data(
+                self.env["res.currency"].browse([]),
+            )
 
         self.assertEqual(result, {"USD": (1.0, saturday), "VEF": (36.12, saturday)})
         mock_get_rate.assert_called_once_with(expected_date=saturday)
@@ -455,8 +457,6 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         current_date = date(2026, 7, 15)
         self.company.can_update_habil_days = True
 
-        bc_html = self._bcv_multi_html()
-
         with patch.object(
             currency_res_company.fields.Date,
             "context_today",
@@ -518,11 +518,9 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
         )
 
     def test_parse_bcv_data_dolarapi_fallback_bcv_multi(self):
-        """T13: DolarAPI falla, BCV scraping exitoso con EUR+CNY."""
+        """T13: DolarAPI falla, USD cae a scraping BCV, EUR+CNY vía scraping multi-moneda."""
         current_date = date(2026, 7, 15)
         self.company.can_update_habil_days = True
-
-        bc_html = self._bcv_multi_html()
 
         with patch.object(
             currency_res_company.fields.Date,
@@ -530,9 +528,13 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
             return_value=current_date,
         ), patch.object(
             type(self.company),
-            "_get_bcv_rate",
+            "_get_bcv_rate_from_api",
+            return_value=(None, None),
+        ) as mock_api, patch.object(
+            type(self.company),
+            "_scrape_bcv_rate",
             return_value=(725.747, current_date),
-        ), patch.object(
+        ) as mock_scrape, patch.object(
             type(self.company),
             "_get_bcv_currency_rates",
             return_value={
@@ -546,6 +548,9 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
                 ),
             )
 
+        mock_api.assert_called_once()
+        mock_scrape.assert_called_once()
+        self.assertEqual(result["USD"], (1.0, current_date))
         self.assertIn("EUR", result)
         self.assertIn("CNY", result)
         self.assertIn("VEF", result)
@@ -578,6 +583,67 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
             result,
             {"USD": (1.0, current_date), "VEF": (622.2135, current_date)},
         )
+
+    def test_parse_bcv_data_secondary_currency_falls_back_to_last_system_rate(self):
+        """EUR scraping fails but a stored rate exists → fallback is used instead of skipping."""
+        current_date = date(2026, 7, 15)
+        self.company.can_update_habil_days = True
+
+        with patch.object(
+            currency_res_company.fields.Date,
+            "context_today",
+            return_value=current_date,
+        ), patch.object(
+            type(self.company),
+            "_get_bcv_rate",
+            return_value=(725.747, current_date),
+        ), patch.object(
+            type(self.company),
+            "_get_bcv_currency_rates",
+            return_value={},
+        ), patch.object(
+            type(self.company),
+            "_get_last_system_rate_for_currency",
+            return_value=0.8737,
+        ) as mock_fallback:
+            result = self.company._parse_bcv_data(
+                self.env["res.currency"].search(
+                    [("name", "in", ["EUR", "USD"])],
+                ),
+            )
+
+        mock_fallback.assert_called_once_with("EUR", current_date)
+        self.assertEqual(result["EUR"], (0.8737, current_date))
+
+    def test_parse_bcv_data_secondary_currency_skipped_without_fallback(self):
+        """EUR scraping fails and there is no stored rate → EUR is omitted, not crashed."""
+        current_date = date(2026, 7, 15)
+        self.company.can_update_habil_days = True
+
+        with patch.object(
+            currency_res_company.fields.Date,
+            "context_today",
+            return_value=current_date,
+        ), patch.object(
+            type(self.company),
+            "_get_bcv_rate",
+            return_value=(725.747, current_date),
+        ), patch.object(
+            type(self.company),
+            "_get_bcv_currency_rates",
+            return_value={},
+        ), patch.object(
+            type(self.company),
+            "_get_last_system_rate_for_currency",
+            return_value=None,
+        ):
+            result = self.company._parse_bcv_data(
+                self.env["res.currency"].search(
+                    [("name", "in", ["EUR", "USD"])],
+                ),
+            )
+
+        self.assertNotIn("EUR", result)
 
     def test_compute_currency_provider_sets_bcv_for_venezuela(self):
         self.company.country_id = self.country_ve
@@ -735,6 +801,76 @@ class TestCurrencyRateLiveResCompany(TransactionCase):
 
         # Both companies should have been attempted
         self.assertEqual(len(call_log), 2)
+
+    def test_run_update_bcv_currency_schedules_retry_when_rate_missing(self):
+        """A company left without a rate reprograms the BCV cron via ir.cron.trigger."""
+        comp_a = self.company
+        comp_a.currency_provider = "bcv"
+        retry_at = currency_res_company.datetime(2026, 7, 15, 5, 30, 0)
+
+        with patch.object(
+            type(comp_a),
+            "update_currency_rates",
+            side_effect=RuntimeError("Simulated BCV failure"),
+        ), patch.object(
+            type(comp_a),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            currency_res_company.fields.Date,
+            "today",
+            return_value=date(2026, 7, 15),
+        ), patch.object(
+            type(comp_a),
+            "_get_next_bcv_retry_time",
+            return_value=retry_at,
+        ) as mock_get_retry, patch.object(
+            type(comp_a),
+            "_schedule_bcv_retry",
+            return_value=True,
+        ) as mock_schedule:
+            comp_a.run_update_bcv_currency()
+
+        mock_get_retry.assert_called_once()
+        mock_schedule.assert_called_once_with(retry_at)
+
+    def test_run_update_bcv_currency_does_not_schedule_retry_when_rate_updated(self):
+        """No retry is scheduled once every BCV company has today's rate."""
+        comp_a = self.company
+        comp_a.currency_provider = "bcv"
+        vef = self.env["res.currency"].with_context(active_test=False).search(
+            [("name", "=", "VEF")], limit=1,
+        )
+
+        def fake_update_rates():
+            self.env["res.currency.rate"].create(
+                {
+                    "currency_id": vef.id,
+                    "company_id": self.env.company.id,
+                    "name": date(2026, 7, 15),
+                    "company_rate": 100.0,
+                }
+            )
+
+        with patch.object(
+            type(comp_a),
+            "update_currency_rates",
+            side_effect=fake_update_rates,
+        ), patch.object(
+            type(comp_a),
+            "_is_bcv_update_window",
+            return_value=True,
+        ), patch.object(
+            currency_res_company.fields.Date,
+            "today",
+            return_value=date(2026, 7, 15),
+        ), patch.object(
+            type(comp_a),
+            "_schedule_bcv_retry",
+        ) as mock_schedule:
+            comp_a.run_update_bcv_currency()
+
+        mock_schedule.assert_not_called()
 
     # ==================================================================
     # Mutation-style: _get_bcv_currency_rates rejection guards
