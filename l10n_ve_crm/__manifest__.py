@@ -9,5 +9,6 @@
     "data": [
         "views/crm_lead_views.xml",
         "views/crm_lead_forecast_views.xml",
+        "views/crm_lead_pipeline_analysis_views.xml",
     ],
 }
