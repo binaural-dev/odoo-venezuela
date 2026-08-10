@@ -8,5 +8,6 @@
     "depends": ["crm", "l10n_ve_rate"],
     "data": [
         "views/crm_lead_views.xml",
+        "views/crm_lead_forecast_views.xml",
     ],
 }

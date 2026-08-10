@@ -64,3 +64,55 @@ class CrmLead(models.Model):
     def _compute_recurring_revenue(self):
         for lead in self:
             lead.recurring_revenue = lead._convert_foreign_to_company(lead.recurring_revenue_foreign)
+
+    prorated_revenue_foreign = fields.Monetary(
+        compute="_compute_prorated_revenue_foreign",
+        currency_field="foreign_currency_id",
+        store=True,
+    )
+
+    recurring_revenue_monthly_foreign = fields.Monetary(
+        compute="_compute_recurring_revenue_monthly_foreign",
+        currency_field="foreign_currency_id",
+        store=True,
+    )
+
+    recurring_revenue_monthly_prorated_foreign = fields.Monetary(
+        compute="_compute_recurring_revenue_monthly_prorated_foreign",
+        currency_field="foreign_currency_id",
+        store=True,
+    )
+
+    recurring_revenue_prorated_foreign = fields.Monetary(
+        compute="_compute_recurring_revenue_prorated_foreign",
+        currency_field="foreign_currency_id",
+        store=True,
+    )
+
+    @api.depends("expected_revenue_foreign", "probability")
+    def _compute_prorated_revenue_foreign(self):
+        for lead in self:
+            lead.prorated_revenue_foreign = round(
+                (lead.expected_revenue_foreign or 0.0) * (lead.probability or 0) / 100.0, 2
+            )
+
+    @api.depends("recurring_revenue_foreign", "recurring_plan.number_of_months")
+    def _compute_recurring_revenue_monthly_foreign(self):
+        for lead in self:
+            lead.recurring_revenue_monthly_foreign = (
+                lead.recurring_revenue_foreign or 0.0
+            ) / (lead.recurring_plan.number_of_months or 1)
+
+    @api.depends("recurring_revenue_monthly_foreign", "probability")
+    def _compute_recurring_revenue_monthly_prorated_foreign(self):
+        for lead in self:
+            lead.recurring_revenue_monthly_prorated_foreign = (
+                lead.recurring_revenue_monthly_foreign or 0.0
+            ) * (lead.probability or 0) / 100.0
+
+    @api.depends("recurring_revenue_foreign", "probability")
+    def _compute_recurring_revenue_prorated_foreign(self):
+        for lead in self:
+            lead.recurring_revenue_prorated_foreign = (
+                lead.recurring_revenue_foreign or 0.0
+            ) * (lead.probability or 0) / 100.0
