@@ -5,7 +5,7 @@ import { useService } from "@web/core/utils/hooks";
 import { Component, xml, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
-import { getBackendFiscalPrinter, ensureConnected } from "./mf_webserial_service";
+import { getBackendFiscalPrinter, ensurePaired } from "./mf_webserial_service";
 
 export class MfReportsWebSerialButtonComponent extends Component {
     static template = xml`
@@ -51,8 +51,8 @@ export class MfReportsWebSerialButtonComponent extends Component {
 
     async _connectDriver() {
         const driver = getBackendFiscalPrinter();
-        const connected = await ensureConnected(driver);
-        if (!connected) {
+        const paired = await ensurePaired(driver);
+        if (!paired) {
             this.notify(_t("No se pudo conectar con la maquina fiscal"), "danger", true);
             return null;
         }
@@ -205,29 +205,42 @@ export class MfReportsWebSerialButtonComponent extends Component {
                 return;
             }
 
+            // Validar antes de tocar el hardware
+            let dateRange = null;
+            if (this.props.action === "print_resume_date" || this.props.action === "reprint_invoices_date") {
+                dateRange = this._getDateRange();
+            }
+
             const driver = await this._connectDriver();
             if (!driver) {
                 return;
             }
 
+            // withConnection abre el puerto bajo demanda solo por esta
+            // operación (incluida la sincronización de S1 en report_z) y lo
+            // libera al terminar, para no bloquear otras pestañas.
             let result;
-            if (this.props.action === "report_x") {
-                result = await driver.printReportX();
-            } else if (this.props.action === "report_z") {
-                result = await driver.printReportZ();
-                if (result.success) {
-                    await this._syncReportZ(driver);
-                }
-            } else if (this.props.action === "print_resume_date") {
-                const payload = await this._getDateRange();
-                result = await driver.sendCommand(`I2S${payload.date_from}${payload.date_to}`, 30000);
-            } else if (this.props.action === "reprint_invoices_date") {
-                const payload = await this._getDateRange();
-                const from = payload.date_from.padStart(7, "0");
-                const to = payload.date_to.padStart(7, "0");
-                result = await driver.sendCommand(`Rf${from}${to}`, 60000);
-            } else {
-                this.notify(_t("Accion de maquina fiscal desconocida"), "danger", true);
+            try {
+                result = await driver.withConnection(async () => {
+                    if (this.props.action === "report_x") {
+                        return await driver.printReportX();
+                    } else if (this.props.action === "report_z") {
+                        const zResult = await driver.printReportZ();
+                        if (zResult.success) {
+                            await this._syncReportZ(driver);
+                        }
+                        return zResult;
+                    } else if (this.props.action === "print_resume_date") {
+                        return await driver.sendCommand(`I2S${dateRange.date_from}${dateRange.date_to}`, 30000);
+                    } else if (this.props.action === "reprint_invoices_date") {
+                        const from = dateRange.date_from.padStart(7, "0");
+                        const to = dateRange.date_to.padStart(7, "0");
+                        return await driver.sendCommand(`Rf${from}${to}`, 60000);
+                    }
+                    return { success: false, error: _t("Accion de maquina fiscal desconocida") };
+                });
+            } catch (error) {
+                this.notify(this.errorMessage(error), "danger", true);
                 return;
             }
 

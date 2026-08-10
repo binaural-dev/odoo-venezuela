@@ -1,11 +1,11 @@
 /** @odoo-module **/
 
-import { Component, xml, useState } from "@odoo/owl";
+import { Component, xml, useState, onWillUnmount } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { ConfirmationDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
-import { getBackendFiscalPrinter, ensureConnected } from "./mf_webserial_service";
+import { getBackendFiscalPrinter, ensurePaired } from "./mf_webserial_service";
 
 /**
  * Fiscalizador MF - Herramienta técnica para diagnóstico de la máquina fiscal
@@ -83,6 +83,21 @@ export class MfFiscalizadorDialog extends Component {
             command: "",
             log: [],
         });
+        // Sesión interactiva: a diferencia del botón de impresión (que abre
+        // y cierra el puerto por operación vía withConnection), este diálogo
+        // mantiene el puerto abierto mientras esté abierto (acquireConnection/
+        // releaseConnection, mismo contador de referencias que withConnection)
+        // para no reconectar en cada click de la consola — pero SIEMPRE debe
+        // soltarse al cerrar, o el puerto queda bloqueado para otras pestañas.
+        this._connectionAcquired = false;
+        onWillUnmount(() => this._cleanup());
+    }
+
+    _cleanup() {
+        if (this._connectionAcquired) {
+            this._connectionAcquired = false;
+            getBackendFiscalPrinter().releaseConnection();
+        }
     }
 
     log(msg, type = "info") {
@@ -111,19 +126,31 @@ export class MfFiscalizadorDialog extends Component {
 
     async connect() {
         await this.withBusy(async () => {
-            const ok = await ensureConnected(getBackendFiscalPrinter());
-            this.log(
-                ok ? _t("Conexión establecida con la máquina fiscal") : _t("No se pudo conectar"),
-                ok ? "success" : "danger"
-            );
+            const driver = getBackendFiscalPrinter();
+            if (this._connectionAcquired) {
+                this.log(_t("Ya hay una conexión abierta con la máquina fiscal"), "info");
+                return;
+            }
+            const paired = await ensurePaired(driver);
+            if (!paired) {
+                this.log(_t("No se pudo parear con la máquina fiscal"), "danger");
+                return;
+            }
+            try {
+                await driver.acquireConnection();
+                this._connectionAcquired = true;
+                this.log(_t("Conexión establecida con la máquina fiscal"), "success");
+            } catch (error) {
+                this.log(error?.message || _t("No se pudo conectar"), "danger");
+            }
         });
     }
 
     async readStatus() {
         await this.withBusy(async () => {
             const driver = getBackendFiscalPrinter();
-            if (!(await ensureConnected(driver))) {
-                this.log(_t("No se pudo conectar"), "danger");
+            if (!this._connectionAcquired) {
+                this.log(_t('No hay conexión abierta. Presiona "Conectar" primero.'), "danger");
                 return;
             }
             const status = await driver.getStatus();
@@ -143,8 +170,8 @@ export class MfFiscalizadorDialog extends Component {
     async readS1() {
         await this.withBusy(async () => {
             const driver = getBackendFiscalPrinter();
-            if (!(await ensureConnected(driver))) {
-                this.log(_t("No se pudo conectar"), "danger");
+            if (!this._connectionAcquired) {
+                this.log(_t('No hay conexión abierta. Presiona "Conectar" primero.'), "danger");
                 return;
             }
             const result = await driver._readS1Data();
@@ -163,8 +190,8 @@ export class MfFiscalizadorDialog extends Component {
     async readS4() {
         await this.withBusy(async () => {
             const driver = getBackendFiscalPrinter();
-            if (!(await ensureConnected(driver))) {
-                this.log(_t("No se pudo conectar"), "danger");
+            if (!this._connectionAcquired) {
+                this.log(_t('No hay conexión abierta. Presiona "Conectar" primero.'), "danger");
                 return;
             }
             const result = await driver.readS4Data();
@@ -202,8 +229,8 @@ export class MfFiscalizadorDialog extends Component {
     async readIgtfInfo() {
         await this.withBusy(async () => {
             const driver = getBackendFiscalPrinter();
-            if (!(await ensureConnected(driver))) {
-                this.log(_t("No se pudo conectar"), "danger");
+            if (!this._connectionAcquired) {
+                this.log(_t('No hay conexión abierta. Presiona "Conectar" primero.'), "danger");
                 return;
             }
 
@@ -269,8 +296,8 @@ export class MfFiscalizadorDialog extends Component {
     async reportX() {
         await this.withBusy(async () => {
             const driver = getBackendFiscalPrinter();
-            if (!(await ensureConnected(driver))) {
-                this.log(_t("No se pudo conectar"), "danger");
+            if (!this._connectionAcquired) {
+                this.log(_t('No hay conexión abierta. Presiona "Conectar" primero.'), "danger");
                 return;
             }
             const result = await driver.printReportX();
@@ -297,8 +324,8 @@ export class MfFiscalizadorDialog extends Component {
     async _doReportZ() {
         await this.withBusy(async () => {
             const driver = getBackendFiscalPrinter();
-            if (!(await ensureConnected(driver))) {
-                this.log(_t("No se pudo conectar"), "danger");
+            if (!this._connectionAcquired) {
+                this.log(_t('No hay conexión abierta. Presiona "Conectar" primero.'), "danger");
                 return;
             }
 
@@ -348,8 +375,8 @@ export class MfFiscalizadorDialog extends Component {
         }
         await this.withBusy(async () => {
             const driver = getBackendFiscalPrinter();
-            if (!(await ensureConnected(driver))) {
-                this.log(_t("No se pudo conectar"), "danger");
+            if (!this._connectionAcquired) {
+                this.log(_t('No hay conexión abierta. Presiona "Conectar" primero.'), "danger");
                 return;
             }
             this.log(_t("Enviando comando: ") + command);

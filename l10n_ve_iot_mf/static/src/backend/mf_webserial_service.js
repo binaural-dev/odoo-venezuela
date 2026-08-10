@@ -5,8 +5,12 @@ import { TfhkaDriver } from "@l10n_ve_mf_base/drivers/TfhkaDriver";
 /**
  * Singleton del driver fiscal Web Serial para el backend (Facturación/Contabilidad).
  *
- * Se comparte a nivel de pestaña del navegador (window) para no pedir el puerto
- * en cada click. El puerto queda con lock exclusivo mientras la pestaña viva.
+ * Se comparte a nivel de pestaña del navegador (window) para no crear una
+ * instancia nueva en cada click. Esto NO implica mantener el puerto serial
+ * abierto: al igual que en el POS (ver TfhkaDriver.withConnection), el
+ * puerto se abre bajo demanda para cada operación y se libera de inmediato
+ * — de lo contrario una pestaña de backoffice ociosa monopoliza el puerto
+ * COM e impide que el POS (u otra pestaña) hable con la máquina fiscal.
  */
 export function getBackendFiscalPrinter() {
     if (!window.mfWebSerialDriver) {
@@ -16,28 +20,35 @@ export function getBackendFiscalPrinter() {
 }
 
 /**
- * Garantiza que el driver esté conectado y respondiendo.
- * Si no hay puerto autorizado, dispara el prompt de Web Serial
- * (debe invocarse desde un gesto de usuario, ej. click).
+ * Garantiza que el dispositivo esté autorizado (pareado) en este navegador,
+ * SIN dejar el puerto abierto. Si ya hay un pareo previo (`getPorts()` no
+ * vacío) no toca el hardware. Si no lo hay, abre para disparar el prompt de
+ * Web Serial (requiere gesto de usuario, ej. click) y cierra de inmediato —
+ * la apertura real para la operación la hace después `withConnection()`/
+ * `acquireConnection()` bajo demanda.
  *
  * @param {TfhkaDriver} driver
  * @returns {Promise<boolean>}
  */
-export async function ensureConnected(driver) {
-    if (driver.isConnected) {
-        const status = await driver.getStatus();
-        if (status) {
+export async function ensurePaired(driver) {
+    if (driver.isPaired) {
+        return true;
+    }
+    try {
+        const ports = await navigator.serial.getPorts();
+        if (ports.length > 0) {
+            driver.isPaired = true;
             return true;
         }
-        // La conexión quedó zombie (cable desconectado, etc.)
-        driver.isConnected = false;
-        try {
-            await driver.disconnect();
-        } catch (e) {
-            // noop: el puerto pudo haberse perdido físicamente
-        }
+    } catch (error) {
+        // noop: caer al intento de pareo explícito
     }
-    return await driver.connect();
+
+    const connected = await driver.connect({ requestPermission: true });
+    if (connected) {
+        await driver.disconnect();
+    }
+    return driver.isPaired;
 }
 
 /**

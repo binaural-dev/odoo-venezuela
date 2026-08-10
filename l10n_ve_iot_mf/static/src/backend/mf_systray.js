@@ -9,11 +9,18 @@ import { getBackendFiscalPrinter } from "./mf_webserial_service";
 /**
  * Systray item de Máquina Fiscal (Web Serial) para el backend.
  *
- * - Muestra el estado de conexión (desconectada / conectando / conectada / error).
- * - Click: conecta manualmente (prompt de puerto serial) o desconecta si ya está conectada.
+ * - Muestra si el dispositivo está pareado/listo (NO si el puerto está
+ *   físicamente abierto en este instante): bajo el modelo de conexión bajo
+ *   demanda, el puerto solo se abre durante una operación puntual
+ *   (withConnection) y se libera de inmediato, para no monopolizar el
+ *   puerto COM mientras la pestaña de backoffice esté simplemente abierta
+ *   sin imprimir nada (eso bloqueaba al POS u otra pestaña).
+ * - Click: parea (prompt de puerto serial) si hace falta, o hace una prueba
+ *   puntual de comunicación (ENQ) si ya está pareada.
  *
  * Paridad visual/funcional con el botón de máquina fiscal del POS
- * (l10n_ve_pos_mf/static/src/overrides/pos_app.js).
+ * (l10n_ve_pos_mf/static/src/overrides/pos_app.js), que sigue el mismo
+ * modelo de "pareado" vs "puerto abierto ahora mismo".
  */
 export class MfConnectionSystray extends Component {
     static props = {};
@@ -28,14 +35,15 @@ export class MfConnectionSystray extends Component {
     setup() {
         this.notification = useService("notification");
         this.state = useState({
-            status: "disconnected", // disconnected | connecting | connected | error
+            status: "disconnected", // disconnected | connecting | connected(paired) | error
         });
         this._pollId = null;
 
         onMounted(() => {
-            this._autoConnect();
-            // Mantener el badge sincronizado si otro componente conecta/desconecta
-            this._pollId = setInterval(() => this._refreshFromDriver(), 5000);
+            this._refreshPairedStatus();
+            // Sincroniza el badge si el dispositivo se parea desde otra
+            // pestaña — nunca abre el puerto, solo consulta getPorts().
+            this._pollId = setInterval(() => this._refreshPairedStatus(), 10000);
         });
         onWillUnmount(() => {
             if (this._pollId) {
@@ -47,9 +55,9 @@ export class MfConnectionSystray extends Component {
 
     get statusTitle() {
         const titles = {
-            disconnected: _t("Máquina Fiscal: Desconectada (click para conectar)"),
+            disconnected: _t("Máquina Fiscal: No pareada (click para parear)"),
             connecting: _t("Máquina Fiscal: Conectando..."),
-            connected: _t("Máquina Fiscal: Conectada (click para desconectar)"),
+            connected: _t("Máquina Fiscal: Pareada (click para probar comunicación)"),
             error: _t("Máquina Fiscal: Error (click para reintentar)"),
         };
         return titles[this.state.status] || titles.disconnected;
@@ -67,47 +75,21 @@ export class MfConnectionSystray extends Component {
         return `fa ${icon}${spin} ${colors[this.state.status] || "text-muted"}`;
     }
 
-    _refreshFromDriver() {
-        if (this.state.status === "connecting") {
-            return;
-        }
-        const driver = getBackendFiscalPrinter();
-        const connected = Boolean(driver.isConnected);
-        if (connected && this.state.status !== "connected") {
-            this.state.status = "connected";
-        } else if (!connected && this.state.status === "connected") {
-            this.state.status = "disconnected";
-        }
-    }
-
     /**
-     * Reconexión automática silenciosa al cargar el backend
-     * (solo si el puerto ya fue autorizado previamente).
+     * Consulta si el dispositivo ya está autorizado en este navegador SIN
+     * abrir el puerto (`getPorts()` solo lista pareos ya concedidos).
      */
-    async _autoConnect() {
-        if (!("serial" in navigator)) {
-            return;
-        }
-        const driver = getBackendFiscalPrinter();
-        if (driver.isConnected) {
-            this.state.status = "connected";
+    async _refreshPairedStatus() {
+        if (this.state.status === "connecting" || !("serial" in navigator)) {
             return;
         }
         try {
-            this.state.status = "connecting";
-            const connected = await driver.connection.autoConnect();
-            if (connected) {
-                const status = await driver.getStatus();
-                if (status) {
-                    driver.isConnected = true;
-                    this.state.status = "connected";
-                    return;
-                }
-            }
-            this.state.status = "disconnected";
+            const ports = await navigator.serial.getPorts();
+            const driver = getBackendFiscalPrinter();
+            driver.isPaired = ports.length > 0;
+            this.state.status = driver.isPaired ? "connected" : "disconnected";
         } catch (error) {
-            console.warn("MfSystray:: Falló la reconexión automática", error);
-            this.state.status = "disconnected";
+            console.warn("MfSystray:: No se pudo verificar el pareo", error);
         }
     }
 
@@ -127,27 +109,41 @@ export class MfConnectionSystray extends Component {
         const driver = getBackendFiscalPrinter();
 
         if (this.state.status === "connected") {
+            // Web Serial no permite revocar un pareo desde JS (solo el
+            // usuario puede hacerlo desde la configuración del navegador).
+            // El puerto no se mantiene abierto fuera de una operación real,
+            // así que aquí solo hacemos una prueba puntual de comunicación.
             try {
-                await driver.disconnect();
-                this.state.status = "disconnected";
-                this.notification.add(_t("Máquina fiscal desconectada"), {
-                    title: _t("Máquina Fiscal"),
-                    type: "info",
-                });
+                this.state.status = "connecting";
+                const status = await driver.withConnection(() => driver.getStatus());
+                this.state.status = "connected";
+                this.notification.add(
+                    status
+                        ? _t("La máquina fiscal responde correctamente")
+                        : _t("La máquina fiscal no respondió"),
+                    { title: _t("Máquina Fiscal"), type: status ? "success" : "warning" }
+                );
             } catch (error) {
-                console.error("MfSystray:: Error al desconectar", error);
-                this.state.status = "error";
+                console.error("MfSystray:: Error al probar la máquina fiscal", error);
+                this.state.status = "connected";
+                this.notification.add(
+                    error?.message || _t("No se pudo comunicar con la máquina fiscal"),
+                    { title: _t("Máquina Fiscal"), type: "warning" }
+                );
             }
             return;
         }
 
-        // Conectar manualmente (prompt de selección de puerto)
+        // Parear (gesto de usuario, prompt de selección de puerto) y soltar
+        // de inmediato — el ciclo real de conexión lo abre withConnection()
+        // bajo demanda en cada impresión/operación.
         try {
             this.state.status = "connecting";
-            const connected = await driver.connect();
+            const connected = await driver.connect({ requestPermission: true });
             if (connected) {
+                await driver.disconnect();
                 this.state.status = "connected";
-                this.notification.add(_t("Máquina fiscal conectada"), {
+                this.notification.add(_t("Máquina fiscal pareada correctamente"), {
                     title: _t("Máquina Fiscal"),
                     type: "success",
                 });
@@ -159,7 +155,7 @@ export class MfConnectionSystray extends Component {
                 );
             }
         } catch (error) {
-            console.error("MfSystray:: Error al conectar", error);
+            console.error("MfSystray:: Error al parear", error);
             this.state.status = "error";
         }
     }

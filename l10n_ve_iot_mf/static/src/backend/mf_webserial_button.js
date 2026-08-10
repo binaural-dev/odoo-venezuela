@@ -6,7 +6,7 @@ import { Component, xml, useState } from "@odoo/owl";
 import { _t } from "@web/core/l10n/translation";
 import {
     getBackendFiscalPrinter,
-    ensureConnected,
+    ensurePaired,
     toDriverOrder,
     toBackendValues,
 } from "./mf_webserial_service";
@@ -157,17 +157,27 @@ export class MfWebSerialButtonComponent extends Component {
             return;
         }
 
-        // 2. Conectar (requestPort si es necesario) e imprimir
-        this.notifyInfo(_t("Comunicando con la máquina fiscal, por favor espere..."));
-        const connected = await ensureConnected(driver);
-        if (!connected) {
+        // 2. Parear si hace falta (sin dejar el puerto abierto)
+        const paired = await ensurePaired(driver);
+        if (!paired) {
             this.notifyError(_t("No se pudo conectar con la máquina fiscal. Verifica el cable y el puerto."));
             await this.logPrintFailure(_t("Sin conexión con la máquina fiscal"));
             return;
         }
 
+        // 3. Imprimir: withConnection abre el puerto bajo demanda solo por
+        // esta operación y lo libera al terminar, para no bloquear otras
+        // pestañas (POS, otro backoffice) que también hablen con la MF.
+        this.notifyInfo(_t("Comunicando con la máquina fiscal, por favor espere..."));
         const order = toDriverOrder(payload);
-        const response = await driver[driverMethod](order);
+        let response;
+        try {
+            response = await driver.withConnection(() => driver[driverMethod](order));
+        } catch (error) {
+            this.notifyError(this.errorMessage(error));
+            await this.logPrintFailure(error?.message || String(error));
+            return;
+        }
         if (!response.success) {
             this.notifyError(response.error || _t("Error al imprimir el documento fiscal"));
             await this.logPrintFailure(response.error || _t("Error del driver al imprimir"));
@@ -194,18 +204,27 @@ export class MfWebSerialButtonComponent extends Component {
             return;
         }
 
-        this.notifyInfo(_t("Comunicando con la máquina fiscal, por favor espere..."));
-        const connected = await ensureConnected(driver);
-        if (!connected) {
+        const paired = await ensurePaired(driver);
+        if (!paired) {
             this.notifyError(_t("No se pudo conectar con la máquina fiscal. Verifica el cable y el puerto."));
             await this.logPrintFailure(_t("Sin conexión con la máquina fiscal"));
             return;
         }
 
-        const response = await driver.reprintDocument({
-            type: payload.type,
-            number: payload.mf_number,
-        });
+        this.notifyInfo(_t("Comunicando con la máquina fiscal, por favor espere..."));
+        let response;
+        try {
+            response = await driver.withConnection(() =>
+                driver.reprintDocument({
+                    type: payload.type,
+                    number: payload.mf_number,
+                })
+            );
+        } catch (error) {
+            this.notifyError(this.errorMessage(error));
+            await this.logPrintFailure(error?.message || String(error));
+            return;
+        }
         if (!response.success) {
             this.notifyError(response.error || _t("Error al reimprimir el documento fiscal"));
             await this.logPrintFailure(response.error || _t("Error del driver al reimprimir"));
