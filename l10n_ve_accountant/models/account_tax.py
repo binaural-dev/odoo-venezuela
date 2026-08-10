@@ -144,30 +144,44 @@ class AccountTax(models.Model):
                 currency_obj=ves_currency
             )
         foreign_lines = []
-        if record._name == 'account.move':
-            foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
-        elif record._name in ('sale.order','purchase.order'):
-            company_id = (record.company_id or self.env.company)
-            foreign_lines = [
-                line._prepare_foreign_base_line_for_taxes_computation()
-                for line in record.order_line
-                if hasattr(line, '_prepare_foreign_base_line_for_taxes_computation')
-            ]
-            
-            self._add_tax_details_in_base_lines(foreign_lines, company_id)
-            self._round_base_lines_tax_details(foreign_lines, company_id)
-        foreign_res = super()._get_tax_totals_summary(
-            foreign_lines,
-            foreign_currency_id,
-            company,
-            cash_rounding
-        )
-        #amounts in foreign currency
-        res['foreign_currency_id'] = foreign_res['currency_id']
-        res['ves_currency_id'] = self.env.company.currency_id.id
-        res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
-        res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
-        res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
+        foreign_res = {}
+        if not foreign_currency_id:
+            # No foreign currency is configured (neither on the move nor on the company), so
+            # there are no alternate-currency totals to compute. Fill the foreign keys with
+            # neutral values instead of handing an empty res.currency() to the core helpers:
+            # _round_base_lines_tax_details / _get_tax_totals_summary both call currency.round(),
+            # which raises "Expected singleton: res.currency()" on an empty recordset and aborts
+            # any module installation that recomputes sale.order.tax_totals on a fresh database.
+            res['foreign_currency_id'] = False
+            res['ves_currency_id'] = self.env.company.currency_id.id
+            res['base_amount_foreign_currency'] = 0.0
+            res['tax_amount_foreign_currency'] = 0.0
+            res['total_amount_foreign_currency'] = 0.0
+        else:
+            if record._name == 'account.move':
+                foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
+            elif record._name in ('sale.order','purchase.order'):
+                company_id = (record.company_id or self.env.company)
+                foreign_lines = [
+                    line._prepare_foreign_base_line_for_taxes_computation()
+                    for line in record.order_line
+                    if hasattr(line, '_prepare_foreign_base_line_for_taxes_computation')
+                ]
+
+                self._add_tax_details_in_base_lines(foreign_lines, company_id)
+                self._round_base_lines_tax_details(foreign_lines, company_id)
+            foreign_res = super()._get_tax_totals_summary(
+                foreign_lines,
+                foreign_currency_id,
+                company,
+                cash_rounding
+            )
+            #amounts in foreign currency
+            res['foreign_currency_id'] = foreign_res['currency_id']
+            res['ves_currency_id'] = self.env.company.currency_id.id
+            res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
+            res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
+            res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
         #discount amount 
         res['formatted_total_discount'] = formatted_total_discount
         res['formatted_total_discount_ves'] = formatted_total_discount_ves
@@ -354,9 +368,16 @@ class AccountTax(models.Model):
         def load(field, fallback, from_base_line=False):
             return self._get_base_line_field_value_from_record(record, field, kwargs, fallback, from_base_line=from_base_line)
 
+        # Never let this resolve to an empty res.currency(): the core taxes helpers round the
+        # base line against base_line['currency_id'], and an empty recordset raises
+        # "Expected singleton: res.currency()". Callers such as
+        # sale.order.line._prepare_foreign_base_line_for_taxes_computation already pass a safe
+        # currency_id in kwargs, so honour it before falling back to the company currency.
         currency = (
             load('foreign_currency_id', None)
-            or self.env.company.foreign_currency_id)
+            or self.env.company.foreign_currency_id
+            or kwargs.get('currency_id')
+            or self.env.company.currency_id)
         base_line = {
             **kwargs,
             'record': record,
