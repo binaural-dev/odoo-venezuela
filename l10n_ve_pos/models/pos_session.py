@@ -390,22 +390,43 @@ class PosSession(models.Model):
         split_cash_receivable_lines = res.get("split_cash_receivable_lines")
         combine_cash_receivable_lines = res.get("combine_cash_receivable_lines")
 
+        # Emparejar por cuenta destino, no por monto: dos pagos/métodos con el
+        # mismo importe nativo pero distinto foráneo (p.e. distinta tasa o
+        # IGTF aplicado a uno solo) ya no se pisan entre sí. La cuenta se
+        # deriva igual que Odoo base (_get_receivable_account /
+        # property_account_receivable_id vía _find_accounting_partner), que
+        # es la misma cuenta que usan tanto la línea del cierre como la
+        # contrapartida del extracto (_get_combine_receivable_vals /
+        # _get_combine_statement_line_vals y sus pares split). No se puede
+        # emparejar por posición: cuando esa cuenta no es asset_receivable
+        # (cuenta intermediaria), Odoo base filtra esa línea del extracto por
+        # completo y las listas dejan de tener la misma longitud.
         for payment, amounts in split_receivables_cash.items():
-            lines = split_cash_receivable_lines + split_cash_statement_lines
-            for line in lines:
+            accounting_partner = self.env["res.partner"]._find_accounting_partner(
+                payment.partner_id
+            )
+            target_account = accounting_partner.property_account_receivable_id
+            candidate_lines = (
+                split_cash_receivable_lines + split_cash_statement_lines
+            ).filtered(lambda line, account=target_account: line.account_id == account)
+            for line in candidate_lines:
                 self.set_foreign_amount_in_line(
                     line, amounts["foreign_amount"], amounts["amount"]
                 )
 
         for payment_method, amounts in combine_receivables_cash.items():
-            lines = combine_cash_receivable_lines + combine_cash_statement_lines
-            for line in lines:
+            target_account = self._get_receivable_account(payment_method)
+            candidate_lines = (
+                combine_cash_receivable_lines + combine_cash_statement_lines
+            ).filtered(lambda line, account=target_account: line.account_id == account)
+            for line in candidate_lines:
                 self.set_foreign_amount_in_line(
                     line, amounts["foreign_amount"], amounts["amount"]
                 )
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
+        self.ensure_one()
         # La contrapartida solo se propaga en los asientos de extracto de caja
         # (2 líneas). En el asiento de cierre de la sesión la "otra línea" es
         # de otro método de pago (p.e. una cuenta intermediaria) y escribirle

@@ -247,3 +247,82 @@ class TestPosSessionForeignClose(TestPoSCommon):
             msg="El asiento de cierre debe cuadrar en moneda foránea aunque "
             "los montos de la UI difieran de monto × tasa.",
         )
+
+    def test_close_session_split_payments_same_native_amount(self):
+        """Dos pagos split (identifican al cliente) con el mismo monto nativo
+        pero distinto monto foráneo (p.e. tasas o IGTF distintos). El
+        emparejamiento pago -> línea debe ser por posición: comparar por
+        monto nativo (como antes) le asigna a ambas líneas el foráneo del
+        último pago procesado, descuadrando el asiento sin que la
+        contrapartida tenga nada que ver (hallazgo de revisión de PR #1077).
+        """
+        self.open_new_session()
+
+        order_1 = self._add_foreign_ui_fields(
+            self.create_ui_order_data(
+                [(self.product_a, 1)],
+                customer=self.customer,
+                is_invoiced=True,
+                payments=[(self.cash_split_pm1, 100.0)],
+            ),
+            foreign_amounts=[3600.0],
+        )
+        order_2 = self._add_foreign_ui_fields(
+            self.create_ui_order_data(
+                [(self.product_a, 1)],
+                customer=self.other_customer,
+                is_invoiced=True,
+                payments=[(self.cash_split_pm1, 100.0)],
+            ),
+            foreign_amounts=[4000.0],
+        )
+        self.env["pos.order"].create_from_ui([order_1, order_2])
+
+        session = self.pos_session
+        cash_pm = session.payment_method_ids.filtered("is_cash_count")[:1]
+        counted_cash = sum(
+            session.order_ids.payment_ids.filtered(
+                lambda p: p.payment_method_id == cash_pm
+            ).mapped("amount")
+        )
+        session.post_closing_cash_details(counted_cash)
+        session.close_session_from_ui()
+
+        closing_move = session.move_id
+        self.assertFalse(
+            closing_move.line_ids.filtered(
+                lambda l: l.foreign_debit > 0 and l.foreign_credit > 0
+            )
+        )
+        self.assertAlmostEqual(
+            sum(closing_move.line_ids.mapped("foreign_debit")),
+            sum(closing_move.line_ids.mapped("foreign_credit")),
+            places=2,
+            msg="El asiento de cierre debe cuadrar aunque dos pagos split "
+            "compartan el mismo monto nativo.",
+        )
+
+        customer_line = closing_move.line_ids.filtered(
+            lambda l: l.account_id
+            == self.customer.property_account_receivable_id
+        )
+        other_customer_line = closing_move.line_ids.filtered(
+            lambda l: l.account_id
+            == self.other_customer.property_account_receivable_id
+        )
+        self.assertEqual(len(customer_line), 1)
+        self.assertEqual(len(other_customer_line), 1)
+        self.assertAlmostEqual(
+            customer_line.foreign_debit,
+            3600.0,
+            places=2,
+            msg="El pago de self.customer debe llevar su propio foráneo "
+            "(3600), no el del otro pago por compartir el mismo monto en Bs.",
+        )
+        self.assertAlmostEqual(
+            other_customer_line.foreign_debit,
+            4000.0,
+            places=2,
+            msg="El pago de self.other_customer debe llevar su propio "
+            "foráneo (4000), no el del otro pago.",
+        )
