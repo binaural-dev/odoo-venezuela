@@ -129,17 +129,21 @@ class AccountMoveLine(models.Model):
             if not lines:
                 continue
 
-            foreign_currency = move.foreign_currency_id or lines[0].foreign_currency_id
+            foreign_currency = lines._get_foreign_currency()
 
             # Unrounded and tax aware amounts: taxes flagged as "included in
             # price" are extracted from foreign_price instead of added on top.
-            amounts = [line._get_foreign_amounts(round_base=False) for line in lines]
+            amounts = [
+                line._get_foreign_amounts(round_base=False, currency=foreign_currency)
+                for line in lines
+            ]
 
-            total_foreign_subtotal_target = sum(subtotal for subtotal, _total in amounts)
-            total_foreign_target = sum(total for _subtotal, total in amounts)
-            if foreign_currency:
-                total_foreign_subtotal_target = foreign_currency.round(total_foreign_subtotal_target)
-                total_foreign_target = foreign_currency.round(total_foreign_target)
+            total_foreign_subtotal_target = lines._round_foreign(
+                sum(subtotal for subtotal, _total in amounts), foreign_currency
+            )
+            total_foreign_target = lines._round_foreign(
+                sum(total for _subtotal, total in amounts), foreign_currency
+            )
 
             accumulated_subtotal = 0.0
             accumulated_total = 0.0
@@ -147,8 +151,8 @@ class AccountMoveLine(models.Model):
 
             for line, (subtotal, total) in zip(lines, amounts):
                 if line != last_line:
-                    line.foreign_subtotal = foreign_currency.round(subtotal) if foreign_currency else subtotal
-                    line.foreign_price_total = foreign_currency.round(total) if foreign_currency else total
+                    line.foreign_subtotal = line._round_foreign(subtotal, foreign_currency)
+                    line.foreign_price_total = line._round_foreign(total, foreign_currency)
 
                     accumulated_subtotal += line.foreign_subtotal
                     accumulated_total += line.foreign_price_total
@@ -158,7 +162,35 @@ class AccountMoveLine(models.Model):
                     line.foreign_subtotal = total_foreign_subtotal_target - accumulated_subtotal
                     line.foreign_price_total = total_foreign_target - accumulated_total
 
-    def _get_foreign_amounts(self, round_base=True):
+    def _get_foreign_currency(self):
+        """Alternate currency to use to round the foreign amounts.
+
+        ``foreign_currency_id`` is a stored related field, so during ``create``
+        it may still be empty while the computes run, hence the fallbacks.
+        """
+        return (
+            self[:1].foreign_currency_id
+            or self[:1].move_id.foreign_currency_id
+            or self[:1].company_id.currency_foreign_id
+            or self.env.company.currency_foreign_id
+        )
+
+    def _round_foreign(self, amount, currency=None):
+        """Round ``amount`` to the precision of the alternate currency.
+
+        ``res.currency.round`` cannot be used here: ``l10n_ve_rate`` overrides it
+        to return the amount untouched whenever it carries more than 6 decimals,
+        so a rate such as 756.70786 would leave the value unrounded. On top of
+        that ``models/fields.py`` patches ``Monetary`` so Odoo no longer rounds
+        on write either, meaning the raw value would reach the database and the
+        UI would then round every cell on its own, breaking the balance of the
+        entry. ``float_round`` is not patched, so rounding is done explicitly.
+        """
+        currency = currency or self._get_foreign_currency()
+        rounding = currency.rounding or 0.01
+        return float_round(amount, precision_rounding=rounding)
+
+    def _get_foreign_amounts(self, round_base=True, currency=None):
         """Amounts of the line expressed in the alternate currency.
 
         Taxes are computed over ``foreign_price``, mirroring what Odoo does with
@@ -169,6 +201,7 @@ class AccountMoveLine(models.Model):
         :return: tuple (total_excluded, total_included)
         """
         self.ensure_one()
+        currency = currency or self._get_foreign_currency()
         line_discount_foreign_price = self.foreign_price * (1 - (self.discount / 100.0))
         subtotal = line_discount_foreign_price * self.quantity
 
@@ -178,7 +211,7 @@ class AccountMoveLine(models.Model):
         taxes_res = self.tax_ids.with_context(round_base=round_base).compute_all(
             line_discount_foreign_price,
             quantity=self.quantity,
-            currency=self.foreign_currency_id,
+            currency=currency,
             product=self.product_id,
             partner=self.partner_id,
             is_refund=self.is_refund,
@@ -209,7 +242,7 @@ class AccountMoveLine(models.Model):
             if line.foreign_debit_adjustment or line.foreign_credit_adjustment:
                 self._calculate_from_adjustment(line)
 
-             
+
             elif line.display_type in ("line_section", "line_note"):
                 self._calculate_zero(line)
             elif line.display_type in ("payment_term", "tax"):
