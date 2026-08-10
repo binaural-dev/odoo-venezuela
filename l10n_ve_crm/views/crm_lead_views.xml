@@ -97,7 +97,7 @@
                 <attribute name="class" add="d-none" separator=" "/>
             </xpath>
             <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]" position="after">
-                <div class="o_kanban_card_crm_lead_revenue">
+                <div id="o_kanban_card_crm_lead_revenue_foreign" class="o_kanban_card_crm_lead_revenue">
                     <t t-if="record.expected_revenue_foreign.raw_value">
                         <field name="expected_revenue_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
                         <span t-if="record.recurring_revenue_foreign and record.recurring_revenue_foreign.raw_value" groups="crm.group_use_recurring_revenues"> + </span>
