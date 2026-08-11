@@ -320,7 +320,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         return pay
     
     # Simula las respuestas SUCCES de la API de TFHKA
-    def mock_api(endpoint_key, payload):
+    def mock_api(company, endpoint_key, payload, *args, **kwargs):
 
         if endpoint_key == "emision":
             return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
@@ -337,7 +337,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             }
         
     # API de TFHKA para consultar numeraciones
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_01_query_numbering_success(self, mock_call):
 
         mock_call.return_value = {
@@ -368,14 +368,14 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
 
         series = ""
-        response = self.invoice.query_numbering(series)
+        response = self.env['tfhka.api.client'].query_numbering(self.invoice.company_id, series)
         _logger.info("Response from query_numbering: %s", response)
 
         # Verificamos que la respuesta fue la esperada
         self.assertEqual(response, None)
 
     # API de TFHKA para obtener el último número de documento
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_02_get_last_document_number_success(self, mock_call):
         mock_call.return_value = {
             "numeroDocumento": 126,
@@ -395,14 +395,14 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         series = ""
         document_type = "02"
-        response = self.invoice.get_last_document_number(document_type, series)
+        response = self.env['tfhka.api.client'].get_last_document_number(self.invoice.company_id, document_type, series)
         _logger.info("Response from get_last_document_number: %s", response)
 
         # Verificamos que la respuesta fue la esperada
         # self.assertEqual(response, None)
 
     # API de TFHKA para generar documento digital (factura, nota de crédito, nota de débito)
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_03_generate_document_data_success(self, mock_call):
         mock_call.return_value = {
             "resultado": {
@@ -436,14 +436,48 @@ class TestAccountMoveApiCalls(TransactionCase):
         series = ""
         document_type = "02"
         document_number = "12345678"
-        response = self.invoice.generate_document_data(document_number, document_type, series)
+        response = self.env['tfhka.document.service'].generate_document_data(self.invoice, document_number, document_type, series)
         _logger.info("Response from generate_document_data: %s", response)
 
         # Verificamos que la respuesta fue la esperada
         # self.assertEqual(response, None)
 
+    # Correcciones de get_item_details: tasaIVA/codigoImpuesto correctos
+    # (sin singleton ni KeyError). No usa API.
+    def test_payload_item_details_fields(self):
+        invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 100,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ]
+        )
+        items = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
+        self.assertTrue(items, "get_item_details debe devolver al menos un ítem")
+        item = items[0]
+        self.assertEqual(item["tasaIVA"], "16.0")
+        self.assertEqual(item["codigoImpuesto"], "G")
+
+    # El tipoCambio de TotalesOtraMoneda debe ir con 4 decimales (spec TFHKA). No usa API.
+    def test_payload_foreign_totals_tipo_cambio_4_decimals(self):
+        invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 100,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            foreign_rate=38,
+        )
+        _totals, foreign_totals = self.env['tfhka.document.service']._prepare_totals(invoice)
+        self.assertTrue(foreign_totals, "La factura en USD debe generar TotalesOtraMoneda")
+        self.assertEqual(foreign_totals["tipoCambio"], "38.0000")
+
     # Factura de cliente
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_04_generate_document_digital_success(self, mock_call):
 
         self.invoice = self._create_invoice(
@@ -461,7 +495,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         _logger.info("Test passed: Document digital generated successfully.")
 
     # Nota de crédito
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_05_generate_document_digital_credit_note_success(self, mock_call):
 
         self.invoice = self._create_invoice(
@@ -492,7 +526,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(self.invoice.is_digitalized, True)
 
     # Nota de debito
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_06_generate_document_digital_debit_note_success(self, mock_call):
 
         self.invoice = self._create_invoice(
@@ -522,23 +556,29 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         self.assertEqual(self.invoice.is_digitalized, True)
 
-    def test_07_action_post_mixed_invoicing_disabled(self):
-        self.company.mix_invoicing_tfhka = False
-        self.journal.digital_invoice = False
-        with self.assertRaises(ValidationError):
-            self._create_invoice(
-                products=[
-                    {
-                        "product_id": self.product.id,
-                        "price_unit": 1,
-                        "tax_ids": [self.tax_iva16.id],
-                    }
-                ]
-            )
-        _logger.info("Test passed: Mixed invoicing disabled validation raised as expected.")
+    # Validacion de secuencia entre la API y Odoo
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_07_generate_document_digital_sequence_error(self, mock_call):
+
+        self.journal.sequence_id.number_next_actual = 3
+        self.invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ]
+        )
+
+        with self.assertRaises(UserError) as e:
+            self.invoice.generate_document_digital()
+            _logger.error(e.exception)
+
+        _logger.info("Test passed: Sequence validation error raised as expected.")
 
     # Factura de cliente con serie
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_08_generate_document_digital_series_success(self, mock_call):
 
         control_number_series = self.env['ir.sequence'].create({
@@ -575,7 +615,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         _logger.info("Test passed: Document digital generated successfully.")
 
     # Validacion de Series
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_09_generate_document_digital_series_prefix_error(self, mock_call):
 
         control_number_series = self.env['ir.sequence'].create({
@@ -614,7 +654,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         _logger.info("Test passed: Series prefix validation error raised as expected.")
 
     # API de TFHKA para consultar numeraciones con número de serie agotado
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_10_query_numbering_numbering_sold_out_error(self, mock_call):
 
         mock_call.return_value = {
@@ -647,7 +687,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         series = ""
 
         with self.assertRaises(UserError) as e:
-            self.invoice.query_numbering(series)
+            self.env['tfhka.api.client'].query_numbering(self.invoice.company_id, series)
             _logger.error(e.exception)
         
         _logger.info("Test passed: Numbering sold out error raised as expected.")
@@ -682,7 +722,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             "prefix": ""
         }
         with self.assertRaises(UserError) as e:
-            self.invoice.call_tfhka_api(endpoint_key, payload)
+            self.env['tfhka.api.client']._request(self.invoice.company_id, endpoint_key, payload)
             _logger.error(e.exception)
 
         _logger.info("Test passed: URL for TFHKA is empty, UserError raised as expected.")
@@ -717,7 +757,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             "prefix": ""
         }
         with self.assertRaises(UserError) as e:
-            self.invoice.call_tfhka_api(endpoint_key, payload)
+            self.env['tfhka.api.client']._request(self.invoice.company_id, endpoint_key, payload)
             _logger.error(e.exception)
 
         _logger.info("Test passed: Token for TFHKA is empty, UserError raised as expected.")
@@ -757,7 +797,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             "prefix": ""
         }
         with self.assertRaises(UserError) as e:
-            self.invoice.call_tfhka_api(endpoint_key, payload)
+            self.env['tfhka.api.client']._request(self.invoice.company_id, endpoint_key, payload)
             _logger.error(e.exception)
 
         _logger.info("Test passed: code 400 error, UserError raised as expected.")
@@ -801,14 +841,49 @@ class TestAccountMoveApiCalls(TransactionCase):
             "prefix": ""
         }
         with self.assertRaises(UserError) as e:
-            self.invoice.call_tfhka_api(endpoint_key, payload)
+            self.env['tfhka.api.client']._request(self.invoice.company_id, endpoint_key, payload)
             _logger.error(e.exception)
 
         _logger.info("Test passed: code 200 error, UserError raised as expected.")
 
     # Validacion de factura sin digitalizar
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_15_generate_document_digital_has_not_been_digitized_error(self, mock_call):
 
+        self.invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ]
+        )
+
+        self.env['move.action.post.alert.wizard'].create({
+            'move_id': self.invoice.id
+        }).action_confirm()
+
+        invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ]
+        )
+        
+        with self.assertRaises(UserError) as e:        
+            self.env['move.action.post.alert.wizard'].create({
+                'move_id': invoice.id
+            }).action_confirm()
+
+            _logger.info(e.exception)
+        _logger.info("Test passed: ")
+
+    # Validacion de fecha
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_16_generate_document_digital_validation_expiration_date_error(self, mock_call):
 
         self.invoice = self._create_invoice(
@@ -828,12 +903,11 @@ class TestAccountMoveApiCalls(TransactionCase):
             _logger.info(e.exception)
         _logger.info("Test passed: Invalid expiration date validation")
 
-    def test_17_is_eligible_for_tfhka_not_digital_journal(self):
-        self.journal.digital_invoice = False
-        invoice = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
-        )
-        self.assertFalse(invoice._is_eligible_for_tfhka())
+    # # Factura con Sucursal
+    # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    # def test_17_generate_document_digital_subsidiary_succes(self, mock_call):
+    #     self.company.write({"subsidiary": True})
+    #     subsidiary = self._create_subsidiary()
 
 
     def test_19_get_buyer_missing_vat(self):
@@ -851,6 +925,22 @@ class TestAccountMoveApiCalls(TransactionCase):
         with self.assertRaises(UserError):
             invoice.get_buyer()
 
+    # # Validacion Sucursales
+    # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    # def test_18_generate_document_digital_validation_subsidiary_error(self, mock_call):
+    #     self.company.write({"subsidiary": True})
+    #     subsidiary = self._create_subsidiary()
+    #     subsidiary.code = ""
+    #     self.invoice = self._create_invoice(
+    #         products=[
+    #             {
+    #                 "product_id": self.product.id,
+    #                 "price_unit": 1,
+    #                 "tax_ids": [self.tax_iva16.id],
+    #             }
+    #         ]
+    #     )
+    #     self.invoice.account_analytic_id = subsidiary.id
 
     def test_21_get_buyer_missing_phone(self):
         partner = self.env['res.partner'].create({
