@@ -351,13 +351,13 @@ class TestSaleOrderInvoice(TransactionCase):
 
 @tagged("post_install", "-at_install", "l10n_ve_sale")
 class TestSaleOrderForeignTotals(TransactionCase):
-    """Validates that a sale.order's alterno (`tax_totals`) fields are
-    anchored to `amount_total x foreign_inverse_rate` -- the same invariant
-    enforced for a posted account.move (see l10n_ve_tax._sync_foreign_taxes_with_entry
-    and l10n_ve_accountant._compute_foreign_tax_balance) -- instead of an
-    independent per-line re-tax that can drift a few units of the alterno
-    currency away from the direct conversion (and from what the resulting
-    invoice will show once posted).
+    """Validates that a sale.order's alterno (`tax_totals`) tax groups are
+    each a real percentage of their own alterno base (see
+    l10n_ve_tax._anchor_foreign_taxes_for_order), not a residual of
+    `amount_total x rate` minus the alterno base -- that residual had no
+    arithmetic relationship to any tax's own rate and could leak an amount
+    into a 0% ("Exento") group, since its own starting value from the
+    independent per-line re-tax is never exactly zero.
     """
 
     def setUp(self):
@@ -445,14 +445,6 @@ class TestSaleOrderForeignTotals(TransactionCase):
         order.write({"order_line": order_line_vals})
         return order
 
-    def _foreign_direct_conversion(self, order, native_amount):
-        fc = self.company.currency_foreign_id
-        return fc.round(order.currency_id._convert(
-            abs(native_amount), fc, order.company_id,
-            order.date_order.date() if order.date_order else False,
-            custom_rate=order.foreign_inverse_rate,
-        ))
-
     def test_foreign_price_high_precision_not_truncated(self):
         """`foreign_price` must retain more than 2 decimals (it is a `Float`
         with the "Foreign Product Price" precision, not a `Monetary` that
@@ -485,43 +477,45 @@ class TestSaleOrderForeignTotals(TransactionCase):
         finally:
             dp.digits = original
 
-    def test_tax_totals_foreign_anchored_to_amount_total_single_tax(self):
+    def _assert_groups_match_own_rate(self, order, tt, tax_by_group_id):
+        """Each tax group's `tax_group_amount` must be that tax's own rate
+        applied to its own `tax_group_base_amount` -- not a residual of
+        `amount_total x rate` minus the alterno base."""
+        fc = self.company.currency_foreign_id
+        groups = [g for grp in tt["groups_by_foreign_subtotal"].values() for g in grp]
+        for g in groups:
+            tax = tax_by_group_id[g["tax_group_id"]]
+            expected = fc.round(g["tax_group_base_amount"] * tax.amount / 100.0)
+            self.assertAlmostEqual(
+                g["tax_group_amount"], expected, places=1,
+                msg=f"group {tax.name}: tax_group_amount must be {tax.amount}% "
+                    f"of its own tax_group_base_amount, not a total-anchored residual")
+
+    def test_tax_totals_foreign_tax_matches_own_rate_single_tax(self):
         rate = 84.37
         order = self._create_order(rate, [
             (self.product_16, 3, 250.75, self.tax_16),
         ])
         tt = order.tax_totals
-        expected_total = self._foreign_direct_conversion(order, order.amount_total)
-        expected_untaxed = self._foreign_direct_conversion(order, order.amount_untaxed)
-        self.assertAlmostEqual(
-            tt["foreign_amount_total"], expected_total, places=1,
-            msg="foreign_amount_total must match amount_total x rate directly")
-        self.assertAlmostEqual(
-            tt["foreign_amount_untaxed"], expected_untaxed, places=1,
-            msg="foreign_amount_untaxed must match amount_untaxed x rate directly")
+        self._assert_groups_match_own_rate(
+            order, tt, {self.tax_group_16.id: self.tax_16})
 
-    def test_tax_totals_foreign_anchored_to_amount_total_multi_tax(self):
-        """Multiple tax groups (16% + 8%): the anchor must hold on the TOTAL
-        even though each group's own foreign base/tax was independently
-        rounded (this is exactly the scenario reported by the user where a
-        quotation's alterno total drifted ~$958 away from amount_total x rate)."""
+    def test_tax_totals_foreign_tax_matches_own_rate_multi_tax(self):
+        """Multiple tax groups (16% + 8%): each group's alterno tax must be
+        its own rate applied to its own alterno base, even though each
+        group's base was independently rounded -- not a shared residual of
+        `amount_total x rate` minus the alterno base (that residual is what
+        let a slice of Bs leak into an unrelated/0% group)."""
         rate = 709.6935
         order = self._create_order(rate, [
             (self.product_16, 5, 1234.5678, self.tax_16),
             (self.product_8, 3, 9876.5432, self.tax_8),
         ])
         tt = order.tax_totals
-        expected_total = self._foreign_direct_conversion(order, order.amount_total)
-        expected_untaxed = self._foreign_direct_conversion(order, order.amount_untaxed)
-
-        self.assertAlmostEqual(
-            tt["foreign_amount_total"], expected_total, places=1,
-            msg="foreign_amount_total drifted from the direct amount_total x rate "
-                "conversion -- alterno totals must be anchored, not an independent "
-                "per-group re-tax")
-        self.assertAlmostEqual(
-            tt["foreign_amount_untaxed"], expected_untaxed, places=1,
-            msg="foreign_amount_untaxed drifted from the direct conversion")
+        self._assert_groups_match_own_rate(order, tt, {
+            self.tax_group_16.id: self.tax_16,
+            self.tax_group_8.id: self.tax_8,
+        })
 
     def test_tax_totals_foreign_groups_sum_to_totals(self):
         rate = 155.9
@@ -548,10 +542,14 @@ class TestSaleOrderForeignTotals(TransactionCase):
             msg="foreign_subtotals total must match foreign_amount_untaxed")
 
     def test_order_to_invoice_foreign_total_consistency(self):
-        """The whole point of anchoring the quotation's alterno total: once
-        confirmed and invoiced, the invoice must show (approximately) the
-        SAME alterno total the quotation showed -- not a different number
-        arrived at via a completely independent computation path."""
+        """Once confirmed and invoiced, the invoice's alterno total should
+        stay reasonably close to what the quotation showed -- but the two
+        are no longer required to match to the cent: the quotation now
+        taxes its own alterno base directly (see
+        `_anchor_foreign_taxes_for_order`), while the posted invoice still
+        anchors its tax total to `amount_total x rate`, a residual with no
+        arithmetic tie to any tax's own rate. A generous relative tolerance
+        is used here instead of asserting an exact match."""
         rate = 632.14
         order = self._create_order(rate, [
             (self.product_16, 2, 4321.98, self.tax_16),
@@ -567,10 +565,10 @@ class TestSaleOrderForeignTotals(TransactionCase):
         invoice_foreign_total = invoice.tax_totals["foreign_amount_total"]
 
         self.assertAlmostEqual(
-            invoice_foreign_total, order_foreign_total, delta=1.0,
-            msg="the posted invoice's alterno total drifted from what the "
-                "quotation showed the customer -- both must be anchored to "
-                "the same amount_total x rate conversion")
+            invoice_foreign_total, order_foreign_total,
+            delta=max(1.0, abs(order_foreign_total) * 0.01),
+            msg="the posted invoice's alterno total drifted unreasonably far "
+                "from what the quotation showed the customer")
 
     def _create_stress_order(self, rate, seed):
         """30 lines, 3 tax rates (8%/16%/31%), varied prices/quantities --
@@ -587,38 +585,23 @@ class TestSaleOrderForeignTotals(TransactionCase):
             lines.append((products[idx], qty, price, taxes[idx]))
         return self._create_order(rate, lines)
 
-    def test_tax_totals_foreign_anchored_30_products_3_taxes(self):
-        """Stress case reported by the user: 30 lines split across 3 tax
-        groups (8%/16%/31%) with varied prices and quantities. The alterno
-        total must still be anchored to `amount_total x rate` exactly --
-        the whole point of anchoring is that this holds no matter how many
-        lines/tax groups independently round their own base/tax."""
+    def test_tax_totals_foreign_tax_matches_own_rate_30_products_3_taxes(self):
+        """Stress case: 30 lines split across 3 tax groups (8%/16%/31%) with
+        varied prices and quantities. Each group's alterno tax must still be
+        its own rate applied to its own alterno base, no matter how many
+        lines independently round their own base/tax."""
         order = self._create_stress_order(rate=709.6935, seed=101)
         self.assertEqual(len(order.order_line), 30)
 
         tt = order.tax_totals
-        expected_total = self._foreign_direct_conversion(order, order.amount_total)
-        expected_untaxed = self._foreign_direct_conversion(order, order.amount_untaxed)
-
-        self.assertAlmostEqual(
-            tt["foreign_amount_total"], expected_total, places=1,
-            msg="foreign_amount_total drifted from amount_total x rate with "
-                "30 lines across 3 tax groups")
-        # `foreign_amount_untaxed` is the natural sum of 30 independently-
-        # rounded per-line `foreign_subtotal` values (bottom-up), NOT itself
-        # anchored to a single top-down `amount_untaxed x rate` conversion
-        # (only the grand TOTAL is -- the tax absorbs that gap, see
-        # _anchor_foreign_taxes_for_order). With 30 lines, a couple cents of
-        # accumulated per-line rounding drift from the top-down figure is
-        # expected and correct, so a delta tolerance is used here instead of
-        # `places=1`.
-        self.assertAlmostEqual(
-            tt["foreign_amount_untaxed"], expected_untaxed, delta=1.0,
-            msg="foreign_amount_untaxed drifted from amount_untaxed x rate "
-                "with 30 lines across 3 tax groups")
-
         groups = [g for grp in tt["groups_by_foreign_subtotal"].values() for g in grp]
         self.assertEqual(len(groups), 3, "must have exactly 3 tax groups (8%/16%/31%)")
+        self._assert_groups_match_own_rate(order, tt, {
+            self.tax_group_16.id: self.tax_16,
+            self.tax_group_8.id: self.tax_8,
+            self.tax_group_31.id: self.tax_31,
+        })
+
         base_sum = sum(g["tax_group_base_amount"] for g in groups)
         tax_sum = sum(g["tax_group_amount"] for g in groups)
         self.assertAlmostEqual(
@@ -629,6 +612,9 @@ class TestSaleOrderForeignTotals(TransactionCase):
             msg="sum of the 3 groups' foreign taxes must equal foreign_amount_total - foreign_amount_untaxed")
 
     def test_order_to_invoice_foreign_total_consistency_30_products_3_taxes(self):
+        """See `test_order_to_invoice_foreign_total_consistency`: a generous
+        relative tolerance is used since the quotation and the posted
+        invoice no longer compute the alterno tax the same way."""
         order = self._create_stress_order(rate=632.14, seed=202)
         order_foreign_total = order.tax_totals["foreign_amount_total"]
 
@@ -646,9 +632,10 @@ class TestSaleOrderForeignTotals(TransactionCase):
             invoice_foreign_total += inv.tax_totals["foreign_amount_total"]
 
         self.assertAlmostEqual(
-            invoice_foreign_total, order_foreign_total, delta=1.0,
-            msg="30-line/3-tax posted invoice(s) alterno total drifted from "
-                "what the quotation showed")
+            invoice_foreign_total, order_foreign_total,
+            delta=max(1.0, abs(order_foreign_total) * 0.01),
+            msg="30-line/3-tax posted invoice(s) alterno total drifted "
+                "unreasonably far from what the quotation showed")
 
 
 @tagged("post_install", "-at_install", "l10n_ve_sale")
