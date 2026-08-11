@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 
 class CrmLead(models.Model):
@@ -15,6 +16,7 @@ class CrmLead(models.Model):
     expected_revenue_foreign = fields.Monetary(
         string="Ingreso Esperado (Moneda Comercial)",
         currency_field="foreign_currency_id",
+        tracking=True,
         help="Ingreso esperado ingresado en la moneda comercial. Este valor es fijo y nunca se recalcula por cambios de tasa.",
     )
 
@@ -117,3 +119,11 @@ class CrmLead(models.Model):
             lead.recurring_revenue_prorated_foreign = (
                 lead.recurring_revenue_foreign or 0.0
             ) * (lead.probability or 0) / 100.0
+
+    @api.constrains("expected_revenue_foreign", "recurring_revenue_foreign")
+    def _check_foreign_amounts_positive(self):
+        for lead in self:
+            if lead.expected_revenue_foreign <= 0 or lead.recurring_revenue_foreign <= 0:
+                raise ValidationError(
+                    _("El monto en moneda comercial debe ser mayor a 0.")
+                )
