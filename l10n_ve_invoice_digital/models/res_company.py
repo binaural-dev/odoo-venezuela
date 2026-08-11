@@ -78,7 +78,7 @@ class ResCompany(models.Model):
     def _process_tfhka_response_data(self, data):
         if "token" in data:
             self.token_auth_tfhka = data["token"]
-            _logger.info("Token generated successfully: %s.", self.token_auth_tfhka)
+            _logger.info("TFHKA token generated successfully.")
         else:
             _logger.error("The 'token' field is not found in the response: %s", data)
             raise ValidationError(_("TFHKA API response does not contain 'token'."))

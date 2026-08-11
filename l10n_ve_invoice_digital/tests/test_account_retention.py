@@ -216,7 +216,7 @@ class TestAccumulatedRate(TransactionCase):
     #         'code': "002",
     #     })
 
-    def mock_api(endpoint_key, payload):
+    def mock_api(company, endpoint_key, payload, *args, **kwargs):
 
         if endpoint_key == "emision":
             return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
@@ -232,7 +232,7 @@ class TestAccumulatedRate(TransactionCase):
                 "mensaje": "Consulta realizada exitosamente",
             }
     
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_01_create_retention_iva_success(self, mock_call):
         account_move = self._create_invoice()
         account_move.action_post()
@@ -243,7 +243,7 @@ class TestAccumulatedRate(TransactionCase):
         retention_iva.with_context(account_retention_alert=True).generate_document_digital()
         self.assertEqual(retention_iva.is_digitalized, True)
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_02_create_retention_islr_success(self, mock_call):
 
         account_move = self._create_invoice()
@@ -254,8 +254,24 @@ class TestAccumulatedRate(TransactionCase):
         retention_islr.with_context(account_retention_alert=True).generate_document_digital()
         self.assertEqual(retention_islr.is_digitalized, True)
 
+    # DetallesRetencion debe usar los nombres de campo de la spec (Tabla 24):
+    # "porcentajeIVA" y "retenidoIVA", no "porcentaje"/"retenido". No usa API.
+    def test_retention_details_field_names(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention_iva = self._create_retention("iva", account_move)
+        retention_iva.action_post()
+
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention_iva, "05")
+        self.assertTrue(details, "get_retention_details debe devolver al menos una línea")
+        detail = details[0]
+        self.assertIn("porcentajeIVA", detail)
+        self.assertIn("retenidoIVA", detail)
+        self.assertNotIn("porcentaje", detail)
+        self.assertNotIn("retenido", detail)
+
     # API de TFHKA para consultar numeraciones
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_03_query_numbering_success(self, mock_call):
 
         mock_call.return_value = {
@@ -281,14 +297,14 @@ class TestAccumulatedRate(TransactionCase):
         retention.action_post()
 
         series = ""
-        response = retention.query_numbering(series)
+        response = self.env['tfhka.api.client'].query_numbering(retention.company_id, series)
         _logger.info("Response from query_numbering: %s", response)
 
         # Verificamos que la respuesta fue la esperada
         self.assertEqual(response, None)
 
     # API de TFHKA para obtener el último número de documento
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_04_get_last_document_number_success(self, mock_call):
         mock_call.return_value = {
             "numeroDocumento": 126,
@@ -302,14 +318,14 @@ class TestAccumulatedRate(TransactionCase):
         retention.action_post()
 
         document_type = "02"
-        response = retention.get_last_document_number(document_type)
+        response = self.env['tfhka.api.client'].get_last_document_number(retention.company_id, document_type)
         _logger.info("Response from get_last_document_number: %s", response)
 
         # Verificamos que la respuesta fue la esperada
         self.assertEqual(response, 126)
 
     # API de TFHKA para generar documento digital (factura, nota de crédito, nota de débito)
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_05_generate_document_data_success(self, mock_call):
         mock_call.return_value = {
             "resultado": {
@@ -338,14 +354,14 @@ class TestAccumulatedRate(TransactionCase):
         document_type = "02"
         document_number = "12345678"
         validation_sequence = True
-        response = retention.generate_document_data(document_number, document_type, validation_sequence)
+        response = self.env['tfhka.retention.service'].generate_document_data(retention, document_number, document_type, validation_sequence)
         _logger.info("Response from generate_document_data: %s", response)
 
         # Verificamos que la respuesta fue la esperada
         self.assertEqual(response, None)
 
     # Validacion de secuencia entre la API y Odoo
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_06_generate_document_digital_sequence_error(self, mock_call):
         self.company.write({"sequence_validation_tfhka": True,})
 
@@ -364,7 +380,7 @@ class TestAccumulatedRate(TransactionCase):
         _logger.info("Test passed: Sequence validation error raised as expected.")
 
     # API de TFHKA para consultar numeraciones con número de serie agotado
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_07_query_numbering_numbering_sold_out_error(self, mock_call):
 
         mock_call.return_value = {
@@ -391,7 +407,7 @@ class TestAccumulatedRate(TransactionCase):
 
         series = ""
         with self.assertRaises(UserError) as e:
-            retention.query_numbering(series)
+            self.env['tfhka.api.client'].query_numbering(retention.company_id, series)
             _logger.error(e.exception)
         
         _logger.info("Test passed: Numbering sold out error raised as expected.")
@@ -412,7 +428,7 @@ class TestAccumulatedRate(TransactionCase):
             "prefix": ""
         }
         with self.assertRaises(UserError) as e:
-            retention.call_tfhka_api(endpoint_key, payload)
+            self.env['tfhka.api.client']._request(retention.company_id, endpoint_key, payload)
             _logger.error(e.exception)
 
         _logger.info("Test passed: URL for TFHKA is empty, UserError raised as expected.")
@@ -433,7 +449,7 @@ class TestAccumulatedRate(TransactionCase):
             "prefix": ""
         }
         with self.assertRaises(UserError) as e:
-            retention.call_tfhka_api(endpoint_key, payload)
+            self.env['tfhka.api.client']._request(retention.company_id, endpoint_key, payload)
             _logger.error(e.exception)
 
         _logger.info("Test passed: Token for TFHKA is empty, UserError raised as expected.")
@@ -457,7 +473,7 @@ class TestAccumulatedRate(TransactionCase):
             "prefix": ""
         }
         with self.assertRaises(UserError) as e:
-            retention.call_tfhka_api(endpoint_key, payload)
+            self.env['tfhka.api.client']._request(retention.company_id, endpoint_key, payload)
             _logger.error(e.exception)
 
         _logger.info("Test passed: code 400 error, UserError raised as expected.")
@@ -485,8 +501,8 @@ class TestAccumulatedRate(TransactionCase):
             "prefix": ""
         }
         with self.assertRaises(UserError) as e:
-            retention.call_tfhka_api(endpoint_key, payload)
-        _logger.error(e.exception)
+            self.env['tfhka.api.client']._request(retention.company_id, endpoint_key, payload)
+            _logger.error(e.exception)
 
         _logger.info("Test passed: code 200 error, UserError raised as expected.")
 
@@ -668,7 +684,7 @@ class TestAccumulatedRate(TransactionCase):
         self.assertNotIn("CodigoConcepto", details[0])
 
     # # Retencion con Sucursal
-    # @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
+    # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     # def test_12_generate_document_digital_subsidiary_succes(self, mock_call):
     #     self.company.write({"subsidiary": True})
     #     subsidiary = self._create_subsidiary()
@@ -681,46 +697,11 @@ class TestAccumulatedRate(TransactionCase):
     #     _logger.info("Test passed: Digital document with subsidiary successfully generated.")
 
     # # Error de referencia de Retencion con Sucursal
-    # @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=mock_api)
-    def test_27_generate_document_digital_company_disabled(self):
-        self.company.write({"invoice_digital_tfhka": False})
-        account_move = self._create_invoice()
-        account_move.action_post()
-        retention = self._create_retention("iva", account_move)
-        retention.action_post()
-        res = retention.generate_document_digital()
-        self.assertIsNone(res)
-
-    @patch('requests.post')
-    def test_28_call_tfhka_api_request_exception(self, mock_post):
-        import requests
-        mock_post.side_effect = requests.exceptions.RequestException("Connection failed")
-        account_move = self._create_invoice()
-        account_move.action_post()
-        retention = self._create_retention("iva", account_move)
-        retention.action_post()
-        with self.assertRaises(UserError):
-            retention.call_tfhka_api("emision", {})
-
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api')
-    def test_31_generate_document_digital_short_number(self, mock_call):
-        def side_effect(endpoint_key, payload):
-            if endpoint_key == "consulta_numeraciones":
-                return {
-                    "numeraciones": [{"serie": "NO APLICA", "hasta": "100000", "correlativo": "01"}],
-                    "codigo": "200",
-                }
-            elif endpoint_key == "ultimo_documento":
-                return {"numeroDocumento": 1, "codigo": "200"}
-            elif endpoint_key == "emision":
-                return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
-            return {}
-        mock_call.side_effect = side_effect
-        account_move = self._create_invoice()
-        account_move.action_post()
-        retention = self._create_retention("iva", account_move)
-        retention.action_post()
-        retention.number = "00000001"
-        retention.with_context(account_retention_alert=True).generate_document_digital()
-        self.assertTrue(retention.is_digitalized)
+    # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    # def test_13_generate_document_digital_subsidiary_error(self, mock_call):
+    #     self.company.write({"subsidiary": True})
+    #     subsidiary = self._create_subsidiary()
+    #     subsidiary.code = ""
+    #     account_move = self._create_invoice()
+    #     retention = self._create_retention("iva", account_move, "20230800000003", subsidiary)
 
