@@ -1442,6 +1442,7 @@ class TestCoverageGaps(TransactionCase):
 
         line_ids_before = inv.invoice_line_ids.ids
         form = Form(inv, view="account.view_move_form")
+        self._set_correlative_if_required(form, "TEST-MANUAL-ALTERNO-1")
         computed = None
         edited = None
         with form.invoice_line_ids.edit(1) as line2_form:
@@ -1970,6 +1971,7 @@ class TestCoverageGaps(TransactionCase):
             "invoice_line_ids": [],
         })
         form = Form(inv, view="account.view_move_form")
+        self._set_correlative_if_required(form, "TEST-STRESS")
         for i, price in enumerate(prices):
             prod = products[['16', '8', 'noacct', 'exempt'][i % 4]]
             account = acc_exp2 if i % 3 == 0 else self.acc_exp
@@ -2759,6 +2761,7 @@ class TestCoverageGaps(TransactionCase):
         invoice = self._create_in_invoice(journal, fields.Date.today())
         with Form(invoice, view="account.view_move_form") as form:
             form.foreign_rate = 25.0
+            self._set_correlative_if_required(form, "TEST-ONCHANGE-RATE")
         invoice = form.save()
         self.assertAlmostEqual(invoice.foreign_inverse_rate, 1 / 25.0, places=6)
 
@@ -3151,11 +3154,20 @@ class TestCoverageGaps(TransactionCase):
     # ═══════════════════════════════════════════════════════════════
 
     def test_action_register_payment_multiple_rates_raises(self):
+        """Explicit correlatives on inv1/inv2: posting two out_invoice moves
+        back to back in the same transaction races with the shared
+        auto-numbering sequence when left unset (unrelated to what this
+        test covers - see l10n_ve_invoice's action_post()/_post()).
+        """
         inv1 = self._create_invoice(self.currency_usd, 100.0)
+        if "correlative" in inv1._fields:
+            inv1.correlative = "TEST-MULTI-RATE-INV1"
         inv1.with_context(move_action_post_alert=True).action_post()
         inv2 = self._create_invoice(self.currency_usd, 100.0)
         inv2.manually_set_rate = True
         inv2.foreign_rate = inv1.foreign_rate + 10.0
+        if "correlative" in inv2._fields:
+            inv2.correlative = "TEST-MULTI-RATE-INV2"
         inv2.with_context(move_action_post_alert=True).action_post()
         with self.assertRaises(UserError):
             (inv1 | inv2).action_register_payment()
@@ -3189,7 +3201,7 @@ class TestCoverageGaps(TransactionCase):
     # account_move.py - _compute_needed_terms (entry / no foreign currency)
     # ═══════════════════════════════════════════════════════════════
 
-    def test_compute_needed_terms_skips_entry_and_no_foreign_currency(self):
+    def test_compute_needed_terms_skips_entry(self):
         entry = self.env["account.move"].with_context(
             check_move_validity=False,
         ).create({
@@ -3208,11 +3220,19 @@ class TestCoverageGaps(TransactionCase):
         entry._compute_needed_terms()
         self.assertTrue(entry)
 
+    def test_compute_needed_terms_with_foreign_currency(self):
+        """A move's `foreign_currency_id` is derived from the company's
+        configured `currency_foreign_id`, which is a required company
+        setting for this localization -- it should never be unset on a
+        posted-able move, so the invoice here keeps both `currency_id`
+        and `foreign_currency_id` established (no `False`-ing them out).
+        """
         invoice = self._create_invoice(self.currency_usd, 100.0)
-        invoice.foreign_currency_id = False
+        self.assertTrue(invoice.currency_id)
+        self.assertTrue(invoice.foreign_currency_id)
         invoice._compute_needed_terms()
         for term_values in invoice.needed_terms.values():
-            self.assertNotIn('foreign_balance', term_values)
+            self.assertIn('foreign_balance', term_values)
 
     # ═══════════════════════════════════════════════════════════════
     # account_move_line.py - _get_non_invoice_foreign_value
@@ -3455,6 +3475,12 @@ class TestCoverageGaps(TransactionCase):
         self.assertEqual(data["payments"], {})
 
     def test_invoice_details_report_get_sale_details_full(self):
+        """Every out_invoice/out_refund posted below gets an explicit
+        `correlative`: posting several of them back to back in the same
+        transaction races with the shared auto-numbering sequence used
+        when no correlative is set yet (unrelated to what this test
+        covers - see l10n_ve_invoice's action_post()/_post()).
+        """
         self.env.user.tz = "America/Caracas"
         report = self.env["report.l10n_ve_accountant.report_account_invoices_details"]
         term_2_lines = self.env["account.payment.term"].create({
@@ -3481,9 +3507,13 @@ class TestCoverageGaps(TransactionCase):
                 }),
             ],
         })
+        if "correlative" in invoice_with_term._fields:
+            invoice_with_term.correlative = "TEST-DETAILS-TERM"
         invoice_with_term.with_context(move_action_post_alert=True).action_post()
 
         invoice_cash = self._create_invoice(self.currency_vef, 50.0)
+        if "correlative" in invoice_cash._fields:
+            invoice_cash.correlative = "TEST-DETAILS-CASH"
         invoice_cash.with_context(move_action_post_alert=True).action_post()
 
         refund = self.env["account.move"].with_context(check_move_validity=False).create({
@@ -3500,6 +3530,8 @@ class TestCoverageGaps(TransactionCase):
                 }),
             ],
         })
+        if "correlative" in refund._fields:
+            refund.correlative = "TEST-DETAILS-REFUND"
         refund.with_context(move_action_post_alert=True).action_post()
 
         bank = self._bank_journal_with_methods('BNKO7')
@@ -3673,9 +3705,14 @@ class TestCoverageGaps(TransactionCase):
         no_tax_invoice._compute_foreign_tax_balance(no_tax_invoice)
         self.assertTrue(no_tax_invoice)
 
-    def test_compute_foreign_tax_balance_no_foreign_currency(self):
+    def test_compute_foreign_tax_balance_with_foreign_currency(self):
+        """`foreign_currency_id` always comes from the company's configured
+        `currency_foreign_id`; keep both currency and foreign currency
+        established instead of forcing an invalid unset state.
+        """
         invoice = self._create_invoice(self.currency_usd, 100.0)
-        invoice.foreign_currency_id = False
+        self.assertTrue(invoice.currency_id)
+        self.assertTrue(invoice.foreign_currency_id)
         invoice._compute_foreign_tax_balance(invoice)
         self.assertTrue(invoice)
 
@@ -3690,9 +3727,14 @@ class TestCoverageGaps(TransactionCase):
     # account_move.py - _distribute_foreign_pt_residual
     # ═══════════════════════════════════════════════════════════════
 
-    def test_distribute_foreign_pt_residual_no_foreign_currency(self):
+    def test_distribute_foreign_pt_residual_with_foreign_currency(self):
+        """Same rationale as `test_compute_foreign_tax_balance_with_foreign_currency`:
+        currency and foreign currency must both be established, matching
+        how this model is always configured.
+        """
         invoice = self._create_invoice(self.currency_usd, 100.0)
-        invoice.foreign_currency_id = False
+        self.assertTrue(invoice.currency_id)
+        self.assertTrue(invoice.foreign_currency_id)
         invoice._distribute_foreign_pt_residual(invoice)
         self.assertTrue(invoice)
 
