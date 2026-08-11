@@ -15,7 +15,7 @@
                         options="{'currency_field': 'foreign_currency_id'}"
                         class="oe_inline"
                     />
-                    <span class="flex-grow-1">/ Mes</span>
+                    <span class="ms-2 text-nowrap">/ Mes</span>
                 </div>
             </div>
             <div id="invoiced_target" position="attributes">
