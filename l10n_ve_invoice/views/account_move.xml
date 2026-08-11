@@ -4,6 +4,7 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="arch" type="xml">
+
             <field name="invoice_has_outstanding" position="after">
                 <field name="is_contingency" invisible="1" />
                 <field name="entry_in_period" invisible="1" />
@@ -39,6 +40,26 @@
                     required="move_type in ['in_invoice', 'in_refund'] and not is_purchase_international"
                     force_save="1"/>
             </xpath>
+
+            <xpath expr="//form//header" position="inside">
+                <field name="correlative" invisible="1"/>
+                <button
+                    name="print_invoice_free_form" string="Free Form"
+                    type="object" class="o_btn_validate"
+                    invisible="(move_type not in ('out_invoice', 'out_refund')) or state != 'posted' or correlative == False"
+                    confirm="Una vez generada e impresa esta factura, la información del documento legal no sufrirá ningún tipo de modificación ni reajuste posterior. Por favor, asegúrese de que todos los valores, montos e información fiscal sean correctos antes de proceder."
+                />
+            </xpath>
+
+            <xpath expr="//button[@name='action_invoice_sent' and contains(@class, 'oe_highlight')]" position="attributes">
+                <attribute name="confirm">El documento adjunto que se enviará será la versión definitiva de la factura legal y no sufrirá ningún tipo de modificación o reajuste posterior. Por favor, asegúrese de que todos los valores e información fiscal sean correctos antes de proceder.</attribute>
+            </xpath>
+
+            <!-- 2. Segundo botón: Send (Estándar / sin oe_highlight) -->
+            <xpath expr="//button[@name='action_invoice_sent' and not(contains(@class, 'oe_highlight'))]" position="attributes">
+                <attribute name="confirm">El documento adjunto que se enviará será la versión definitiva de la factura legal y no sufrirá ningún tipo de modificación o reajuste posterior. Por favor, asegúrese de que todos los valores e información fiscal sean correctos antes de proceder.</attribute>
+            </xpath>
+
             <xpath expr="//div[@class='d-flex'][1]" position="after">
                 <field name="is_purchase_international" invisible="1"/>
                 <field name="declaration_unique_of_customs" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
