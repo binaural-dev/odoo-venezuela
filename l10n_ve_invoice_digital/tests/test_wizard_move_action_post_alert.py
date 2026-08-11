@@ -86,7 +86,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             inv.action_post()
         return inv
 
-    def mock_api(endpoint_key, payload):
+    def mock_api(company, endpoint_key, payload, *args, **kwargs):
         if endpoint_key == "emision":
             return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
         elif endpoint_key == "ultimo_documento":
@@ -110,9 +110,9 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             wizard.action_confirm()
         self.assertEqual(inv2.state, "draft")
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_01b_wizard_previous_digitized(self, mock_call):
-        def side_effect(endpoint_key, payload):
+        def side_effect(company, endpoint_key, payload, *args, **kwargs):
             if endpoint_key == "consulta_numeraciones":
                 return {
                     "numeraciones": [{"serie": "NO APLICA", "hasta": "100000", "correlativo": "01"}],

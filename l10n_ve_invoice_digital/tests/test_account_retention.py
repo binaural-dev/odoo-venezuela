@@ -526,7 +526,7 @@ class TestAccumulatedRate(TransactionCase):
         retention = self._create_retention("iva", account_move)
         retention.action_post()
         retention.base_currency_is_vef = True
-        total = retention.get_total_retention("05")
+        total = self.env['tfhka.retention.service']._prepare_totals(retention, "05")
         self.assertIn("totalBaseImponible", total)
 
     def test_14_get_retention_details_islr(self):
@@ -534,7 +534,7 @@ class TestAccumulatedRate(TransactionCase):
         account_move.action_post()
         retention = self._create_retention("islr", account_move)
         retention.action_post()
-        details = retention.get_retention_details("06")
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "06")
         self.assertTrue(len(details) > 0)
         self.assertIn("CodigoConcepto", details[0])
 
@@ -544,7 +544,7 @@ class TestAccumulatedRate(TransactionCase):
         retention = self._create_retention("iva", account_move)
         retention.action_post()
         with self.assertRaises(UserError):
-            retention.call_tfhka_api("no_existe", {})
+            self.env['tfhka.api.client']._request(retention.company_id, "no_existe", {})
 
     @patch('requests.post')
     def test_16_call_tfhka_api_401_refresh(self, mock_post):
@@ -582,7 +582,7 @@ class TestAccumulatedRate(TransactionCase):
         account_move.action_post()
         retention = self._create_retention("iva", account_move)
         retention.action_post()
-        result = retention.call_tfhka_api("emision", {})
+        result = self.env['tfhka.api.client']._request(retention.company_id, "emision", {})
         self.assertEqual(result["codigo"], "200")
 
     def test_17_get_subject_retention_missing_vat(self):
@@ -592,7 +592,7 @@ class TestAccumulatedRate(TransactionCase):
         retention.action_post()
         retention.partner_id.vat = False
         with self.assertRaises(UserError):
-            retention.get_subject_retention()
+            self.env['tfhka.retention.service']._get_fiscal_party(retention)
 
     def test_18_get_subject_retention_missing_country(self):
         account_move = self._create_invoice()
@@ -601,7 +601,7 @@ class TestAccumulatedRate(TransactionCase):
         retention.action_post()
         retention.partner_id.country_id = False
         with self.assertRaises(UserError):
-            retention.get_subject_retention()
+            self.env['tfhka.retention.service']._get_fiscal_party(retention)
 
     def test_19_get_subject_retention_missing_phone(self):
         account_move = self._create_invoice()
@@ -611,7 +611,7 @@ class TestAccumulatedRate(TransactionCase):
         retention.partner_id.mobile = False
         retention.partner_id.phone = False
         with self.assertRaises(UserError):
-            retention.get_subject_retention()
+            self.env['tfhka.retention.service']._get_fiscal_party(retention)
 
     def test_20_get_subject_retention_missing_email(self):
         account_move = self._create_invoice()
@@ -620,7 +620,7 @@ class TestAccumulatedRate(TransactionCase):
         retention.action_post()
         retention.partner_id.email = False
         with self.assertRaises(UserError):
-            retention.get_subject_retention()
+            self.env['tfhka.retention.service']._get_fiscal_party(retention)
 
     def test_21_compute_visibility_button(self):
         account_move = self._create_invoice()
@@ -637,13 +637,13 @@ class TestAccumulatedRate(TransactionCase):
         retention = self._create_retention("iva", account_move)
         retention.action_post()
         # Simular generación con validation_sequence=True
-        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api') as mock_call:
+        with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request') as mock_call:
             mock_call.return_value = {
                 "resultado": {"numeroControl": "00-00000001"},
                 "codigo": "200",
                 "mensaje": "OK",
             }
-            retention.generate_document_data("R00001", "05", True)
+            self.env['tfhka.retention.service'].generate_document_data(retention, "R00001", "05", True)
             self.assertTrue(retention.is_digitalized)
             messages = retention.message_ids.mapped('body')
             self.assertTrue(any("Warning accepted" in str(m) for m in messages))
@@ -653,9 +653,9 @@ class TestAccumulatedRate(TransactionCase):
         account_move.action_post()
         retention = self._create_retention("iva", account_move)
         retention.action_post()
-        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api') as mock_call:
+        with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request') as mock_call:
             mock_call.return_value = 0
-            result = retention.get_last_document_number("05")
+            result = self.env['tfhka.api.client'].get_last_document_number(retention.company_id, "05")
             self.assertEqual(result, 0)
 
     def test_25_query_numbering_no_series(self):
@@ -663,14 +663,14 @@ class TestAccumulatedRate(TransactionCase):
         account_move.action_post()
         retention = self._create_retention("iva", account_move)
         retention.action_post()
-        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api') as mock_call:
+        with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request') as mock_call:
             mock_call.return_value = {
                 "numeraciones": [],
                 "codigo": "200",
                 "mensaje": "OK",
             }
             with self.assertRaises(UserError):
-                retention.query_numbering()
+                self.env['tfhka.api.client'].query_numbering(retention.company_id)
 
     def test_26_get_retention_details_islr_without_code(self):
         account_move = self._create_invoice()
@@ -679,7 +679,7 @@ class TestAccumulatedRate(TransactionCase):
         retention.action_post()
         for line in retention.retention_line_ids:
             line.code = False
-        details = retention.get_retention_details("06")
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "06")
         self.assertTrue(len(details) > 0)
         self.assertNotIn("CodigoConcepto", details[0])
 

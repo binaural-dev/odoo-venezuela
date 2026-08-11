@@ -4,6 +4,7 @@ from odoo.tests import TransactionCase, tagged
 from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 import logging
+import requests
 
 _logger = logging.getLogger(__name__)
 
@@ -850,6 +851,12 @@ class TestAccountMoveApiCalls(TransactionCase):
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_15_generate_document_digital_has_not_been_digitized_error(self, mock_call):
 
+        # El wizard solo aplica la logica TFHKA en diarios digitales, y para que
+        # exista una factura previa "sin digitalizar" la compania debe estar en
+        # modo pago-primero (no digitaliza automaticamente al confirmar).
+        self.journal.digital_invoice = True
+        self.company.digitalization_with_payment_tfhka = True
+
         self.invoice = self._create_invoice(
             products=[
                 {
@@ -923,7 +930,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         invoice.partner_id = partner
         with self.assertRaises(UserError):
-            invoice.get_buyer()
+            self.env['tfhka.document.service']._get_fiscal_party(invoice)
 
     # # Validacion Sucursales
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
@@ -956,7 +963,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         invoice.partner_id = partner
         with self.assertRaises(UserError):
-            invoice.get_buyer()
+            self.env['tfhka.document.service']._get_fiscal_party(invoice)
 
     def test_22_get_buyer_missing_email(self):
         partner = self.env['res.partner'].create({
@@ -972,7 +979,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         invoice.partner_id = partner
         with self.assertRaises(UserError):
-            invoice.get_buyer()
+            self.env['tfhka.document.service']._get_fiscal_party(invoice)
 
     def test_23_get_payment_type_credit(self):
         term = self.env['account.payment.term'].create({
@@ -983,13 +990,13 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         invoice.invoice_payment_term_id = term
-        self.assertEqual(invoice.get_payment_type(), "Crédito")
+        self.assertEqual(self.env['tfhka.document.service']._get_payment_type(invoice), "Crédito")
 
     def test_24_get_payment_type_immediate(self):
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        self.assertEqual(invoice.get_payment_type(), "Inmediato")
+        self.assertEqual(self.env['tfhka.document.service']._get_payment_type(invoice), "Inmediato")
 
     def test_25_call_tfhka_api_undefined_endpoint(self):
         self.company.write({
@@ -1002,7 +1009,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         with self.assertRaises(UserError):
-            invoice.call_tfhka_api("no_existe", {})
+            self.env['tfhka.api.client']._request(invoice.company_id, "no_existe", {})
 
     @patch('requests.post')
     def test_26_call_tfhka_api_401_refresh_token(self, mock_post):
@@ -1043,7 +1050,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        result = invoice.call_tfhka_api("emision", {})
+        result = self.env['tfhka.api.client']._request(invoice.company_id, "emision", {})
         self.assertEqual(result["codigo"], "200")
 
     def test_27_get_base_url_raises(self):
@@ -1052,7 +1059,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         with self.assertRaises(UserError):
-            invoice.get_base_url()
+            self.env['tfhka.api.client']._base_url(invoice.company_id)
 
     def test_28_get_token_raises(self):
         self.company.token_auth_tfhka = ""
@@ -1060,9 +1067,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         with self.assertRaises(ValidationError):
-            invoice.get_token()
+            self.env['tfhka.api.client']._token(invoice.company_id)
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_29_get_item_details_product_type(self, mock_call):
         prod = self.env['product.product'].create({
             'name': 'Producto Fisico',
@@ -1072,10 +1079,10 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice = self._create_invoice(
             products=[{"product_id": prod.id, "price_unit": 50, "tax_ids": [self.tax_iva16.id]}]
         )
-        details = invoice.get_item_details()
+        details = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
         self.assertEqual(details[0]["indicadorBienoServicio"], "1")
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_31_compute_invisible_check(self, mock_call):
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
@@ -1093,7 +1100,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
             debit_origin_id=inv,
         )
-        ident = debit.get_document_identification("03", "123", "")
+        ident = self.env['tfhka.document.service']._prepare_identification(debit, "03", "123", "")
         self.assertEqual(ident["numeroFacturaAfectada"], str(inv.sequence_number))
 
     def test_33_get_document_identification_credit_note(self):
@@ -1105,7 +1112,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             move_type="out_refund",
             reversed_entry_id=inv,
         )
-        ident = credit.get_document_identification("02", "124", "")
+        ident = self.env['tfhka.document.service']._prepare_identification(credit, "02", "124", "")
         self.assertEqual(ident["numeroFacturaAfectada"], str(inv.sequence_number))
 
     def test_34_get_document_identification_no_invoice_date(self):
@@ -1127,7 +1134,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             })],
         })
         with self.assertRaises(UserError):
-            inv.get_document_identification("01", "125", "")
+            self.env['tfhka.document.service']._prepare_identification(inv, "01", "125", "")
 
     def test_35_get_buyer_numeric_vat(self):
         partner = self.env['res.partner'].create({
@@ -1155,7 +1162,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "tax_ids": [(6, 0, [self.tax_iva16.id])],
             })],
         })
-        buyer = invoice.get_buyer()
+        buyer = self.env['tfhka.document.service']._get_fiscal_party(invoice)
         self.assertTrue(buyer)
         self.assertEqual(buyer["numeroIdentificacion"], "12345678")
 
@@ -1173,16 +1180,16 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         invoice.partner_id = partner
-        buyer = invoice.get_buyer()
+        buyer = self.env['tfhka.document.service']._get_fiscal_party(invoice)
         self.assertEqual(buyer["tipoIdentificacion"], "V")
 
     def test_39_get_last_document_number_zero(self):
-        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api') as mock_call:
+        with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request') as mock_call:
             mock_call.return_value = 0
             invoice = self._create_invoice(
                 products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
             )
-            result = invoice.get_last_document_number("01", "")
+            result = self.env['tfhka.api.client'].get_last_document_number(invoice.company_id, "01", "")
             self.assertEqual(result, 0)
 
     def test_40_get_payment_methods_with_payment(self):
@@ -1192,7 +1199,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         pay = self._create_payment(amount=100)
         invoice._compute_tax_totals()
         # Forzar widget de pagos
-        methods = invoice.get_payment_methods()
+        methods = self.env['tfhka.document.service']._prepare_payments(invoice)
         self.assertTrue(methods or methods is False)
 
     def test_41_compute_invisible_check_credit_note(self):
@@ -1223,7 +1230,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         inv.invoice_date_due = inv.invoice_date
-        ident = inv.get_document_identification("01", "126", "")
+        ident = self.env['tfhka.document.service']._prepare_identification(inv, "01", "126", "")
         self.assertEqual(ident["fechaVencimiento"], ident["fechaEmision"])
 
     def test_44_get_document_identification_ref_with_comma(self):
@@ -1236,7 +1243,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             debit_origin_id=inv,
             ref="Motivo, detalle adicional",
         )
-        ident = debit.get_document_identification("03", "127", "")
+        ident = self.env['tfhka.document.service']._prepare_identification(debit, "03", "127", "")
         self.assertEqual(ident["comentarioFacturaAfectada"], "detalle adicional")
 
     def test_45_generate_document_digital_no_document_type(self):
@@ -1260,19 +1267,12 @@ class TestAccountMoveApiCalls(TransactionCase):
         res = inv.generate_document_digital()
         self.assertIsNone(res)
 
-    def test_46_get_currency(self):
-        invoice = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
-        )
-        name = invoice.get_currency(self.currency_usd.id)
-        self.assertEqual(name, "USD")
-
     def test_47_get_payment(self):
         pay = self._create_payment()
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        result = invoice.get_payment(pay.id)
+        result = self.env['tfhka.document.service']._get_payment(pay.id)
         self.assertTrue(result)
 
     def test_48_build_payment_info_ves(self):
@@ -1282,7 +1282,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        info = invoice.build_payment_info(pay)
+        info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
         self.assertEqual(info["moneda"], "VES")
 
     def test_49_get_item_details_with_discount(self):
@@ -1295,7 +1295,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": prod.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
         )
         invoice.invoice_line_ids[0].discount = 10
-        details = invoice.get_item_details()
+        details = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
         self.assertTrue(float(details[0]["descuentoMonto"]) > 0)
 
     def test_50_compute_invisible_check_draft(self):
@@ -1366,17 +1366,17 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
         )
-        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.get_payment_methods', return_value=[{"forma": "01"}] * 6):
+        with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService._prepare_payments', return_value=[{"forma": "01"}] * 6):
             with self.assertRaises(UserError):
-                invoice.get_totals()
+                self.env['tfhka.document.service']._prepare_totals(invoice)
 
     def test_56_get_totals_payment_without_forma(self):
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
         )
-        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.get_payment_methods', return_value=[{"forma": ""}]):
+        with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService._prepare_payments', return_value=[{"forma": ""}]):
             with self.assertRaises(ValidationError):
-                invoice.get_totals()
+                self.env['tfhka.document.service']._prepare_totals(invoice)
 
     def test_57_get_payment_methods_with_widget(self):
         invoice = self._create_invoice(
@@ -1385,7 +1385,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         pay = self._create_payment(amount=100)
         # Simular widget de pagos
         invoice.invoice_payments_widget = {"content": [{"account_payment_id": pay.id}]}
-        methods = invoice.get_payment_methods()
+        methods = self.env['tfhka.document.service']._prepare_payments(invoice)
         self.assertTrue(methods)
 
     def test_58_get_payment_methods_exception(self):
@@ -1393,7 +1393,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
         )
         invoice.invoice_payments_widget = None
-        methods = invoice.get_payment_methods()
+        methods = self.env['tfhka.document.service']._prepare_payments(invoice)
         self.assertFalse(methods)
 
     def test_59_get_document_identification_debit_origin(self):
@@ -1404,7 +1404,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
             debit_origin_id=inv,
         )
-        ident = debit.get_document_identification("03", "128", "")
+        ident = self.env['tfhka.document.service']._prepare_identification(debit, "03", "128", "")
         self.assertEqual(ident["numeroFacturaAfectada"], str(inv.sequence_number))
         self.assertEqual(ident["fechaFacturaAfectada"], inv.invoice_date.strftime("%d/%m/%Y"))
 
@@ -1417,7 +1417,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             move_type="out_refund",
             reversed_entry_id=inv,
         )
-        ident = credit.get_document_identification("02", "129", "")
+        ident = self.env['tfhka.document.service']._prepare_identification(credit, "02", "129", "")
         self.assertEqual(ident["numeroFacturaAfectada"], str(inv.sequence_number))
         self.assertEqual(ident["fechaFacturaAfectada"], inv.invoice_date.strftime("%d/%m/%Y"))
 
@@ -1426,7 +1426,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         inv.invoice_date_due = False
-        ident = inv.get_document_identification("01", "130", "")
+        ident = self.env['tfhka.document.service']._prepare_identification(inv, "01", "130", "")
         self.assertEqual(ident["fechaVencimiento"], ident["fechaEmision"])
 
     def test_62_generate_document_digital_company_disabled(self):
@@ -1445,7 +1445,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(doc_type, "01")
         self.assertEqual(series, "")
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_64_generate_document_data_sequence_update_error(self, mock_call):
         mock_call.return_value = {
             "codigo": "200",
@@ -1456,7 +1456,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         from odoo.addons.account.models.account_journal import AccountJournal
         with patch.object(AccountJournal, 'write', side_effect=Exception("fail")):
-            inv.generate_document_data("123", "01", "")
+            self.env['tfhka.document.service'].generate_document_data(inv, "123", "01", "")
         self.assertTrue(inv.is_digitalized)
 
     def test_65_is_eligible_for_tfhka_company_disabled(self):
@@ -1480,9 +1480,12 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(series, "")
 
     def test_67_generate_document_digital_non_numeric_last_number(self):
-        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.get_last_document_number', return_value="abc"):
-            with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.query_numbering', return_value=None):
-                with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api') as mock_call:
+        # El foco es el manejo de un ultimo numero no numerico; se desactiva la
+        # validacion de secuencia para no mezclar ese chequeo con este caso.
+        self.company.sequence_validation_tfhka = False
+        with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.get_last_document_number', return_value="abc"):
+            with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.query_numbering', return_value=None):
+                with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request') as mock_call:
                     mock_call.return_value = {
                         "codigo": "200",
                         "resultado": {"numeroControl": "00-00000001"}
@@ -1504,7 +1507,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         inv.seller_id = user.partner_id
-        seller = inv.get_seller()
+        seller = self.env['tfhka.document.service']._get_seller(inv)
         self.assertTrue(seller)
         self.assertEqual(seller["nombre"], "Vendedor Test")
 
@@ -1516,7 +1519,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             currency_id=vef.id,
             foreign_currency_id=self.currency_usd.id,
         )
-        totals, foreign = inv.get_totals()
+        totals, foreign = self.env['tfhka.document.service']._prepare_totals(inv)
         self.assertIn("montoGravadoTotal", totals)
         self.assertTrue(isinstance(foreign, dict))
 
@@ -1528,7 +1531,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             currency_id=vef.id,
             foreign_currency_id=self.currency_usd.id,
         )
-        result = inv.get_tax_subtotals("VEF")
+        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv, "VEF")
         self.assertTrue(isinstance(result, tuple))
         self.assertTrue(isinstance(result[0], list))
 
@@ -1540,7 +1543,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             currency_id=vef.id,
             foreign_currency_id=self.currency_usd.id,
         )
-        details = inv.get_item_details()
+        details = self.env['tfhka.document.service']._prepare_detail_lines(inv)
         self.assertTrue(len(details) > 0)
         self.assertEqual(details[0]["indicadorBienoServicio"], "2")
 
@@ -1548,7 +1551,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        ident = inv.get_document_identification("01", "131", "")
+        ident = self.env['tfhka.document.service']._prepare_identification(inv, "01", "131", "")
         self.assertEqual(ident["numeroFacturaAfectada"], "")
         self.assertEqual(ident["fechaFacturaAfectada"], "")
         self.assertEqual(ident["montoFacturaAfectada"], "")
@@ -1565,7 +1568,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
         )
         inv.invoice_payments_widget = {"content": []}
-        methods = inv.get_payment_methods()
+        methods = self.env['tfhka.document.service']._prepare_payments(inv)
         self.assertFalse(methods)
 
     def test_77_get_buyer_missing_prefix_vat_numeric(self):
@@ -1594,7 +1597,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "tax_ids": [(6, 0, [self.tax_iva16.id])],
             })],
         })
-        buyer = inv.get_buyer()
+        buyer = self.env['tfhka.document.service']._get_fiscal_party(inv)
         # prefix_vat default in l10n_ve_contact is 'V'
         self.assertEqual(buyer["tipoIdentificacion"], "V")
 
@@ -1638,10 +1641,10 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        with patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.requests.post') as mock_post:
-            mock_post.side_effect = Exception("Connection error")
+        with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.requests.post') as mock_post:
+            mock_post.side_effect = requests.exceptions.RequestException("Connection error")
             with self.assertRaises(UserError):
-                inv.call_tfhka_api("emision", {})
+                self.env['tfhka.api.client']._request(inv.company_id, "emision", {})
 
     def test_87_get_tax_subtotals_vef_no_taxes(self):
         vef = self.env.ref("base.VEF")
@@ -1652,7 +1655,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             foreign_currency_id=self.currency_usd.id,
             post_context={"move_action_post_alert": True},
         )
-        result = inv.get_tax_subtotals("VEF")
+        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv, "VEF")
         self.assertEqual(result, ([], []))
 
     def test_88_get_tax_subtotals_no_vef_no_taxes(self):
@@ -1674,11 +1677,11 @@ class TestAccountMoveApiCalls(TransactionCase):
             })],
         })
         inv.with_context(move_action_post_alert=True).action_post()
-        result = inv.get_tax_subtotals("USD")
+        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv, "USD")
         self.assertEqual(result, ([], []))
 
     def test_89_get_payment_type_empty(self):
-        result = self.env['account.move'].browse([]).get_payment_type()
+        result = self.env['tfhka.document.service']._get_payment_type(self.env['account.move'].browse([]))
         self.assertIsNone(result)
 
     def test_91_get_buyer_no_partner(self):
@@ -1695,7 +1698,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "tax_ids": [(5, 0, 0)],
             })],
         })
-        result = inv.get_buyer()
+        result = self.env['tfhka.document.service']._get_fiscal_party(inv)
         self.assertIsNone(result)
 
     def test_92_get_payment_methods_invalid_payment(self):
@@ -1703,7 +1706,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
         )
         inv.invoice_payments_widget = {"content": [{"account_payment_id": 99999}]}
-        methods = inv.get_payment_methods()
+        methods = self.env['tfhka.document.service']._prepare_payments(inv)
         self.assertFalse(methods)
 
     def test_96_tfhka_validate_mixed_invoicing_enabled(self):
@@ -1774,7 +1777,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "tax_ids": [(5, 0, 0)],
             })],
         })
-        buyer = inv.get_buyer()
+        buyer = self.env['tfhka.document.service']._get_fiscal_party(inv)
         self.assertEqual(buyer["tipoIdentificacion"], "J")
 
 
@@ -1786,15 +1789,15 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         with patch('requests.post') as mock_post:
-            mock_post.side_effect = Exception("Connection error")
+            mock_post.side_effect = requests.exceptions.RequestException("Connection error")
             with self.assertRaises(UserError):
-                inv.call_tfhka_api("emision", {})
+                self.env['tfhka.api.client']._request(inv.company_id, "emision", {})
 
 
 
 
     def test_109_get_document_identification_empty_recordset(self):
-        result = self.env['account.move'].browse([]).get_document_identification("01", "1", "")
+        result = self.env['tfhka.document.service']._prepare_identification(self.env['account.move'].browse([]), "01", "1", "")
         self.assertIsNone(result)
 
 
@@ -1811,7 +1814,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             foreign_currency_id=self.currency_usd.id,
             post_context={"move_action_post_alert": True},
         )
-        result = inv.get_tax_subtotals("VEF")
+        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv, "VEF")
         self.assertEqual(result, ([], []))
 
     def test_120_is_eligible_for_tfhka_wrong_move_type(self):
@@ -1851,7 +1854,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         })
         entry._tfhka_validate_mixed_invoicing()
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_122_query_numbering_skips_non_matching_series(self, mock_call):
         mock_call.return_value = {
             "numeraciones": [
@@ -1863,18 +1866,18 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        inv.query_numbering(series="")
+        self.env['tfhka.api.client'].query_numbering(inv.company_id, series="")
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_123_query_numbering_no_series_configured_raises(self, mock_call):
         mock_call.return_value = {"numeraciones": [], "codigo": "200"}
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         with self.assertRaises(UserError):
-            inv.query_numbering(series="X")
+            self.env['tfhka.api.client'].query_numbering(inv.company_id, series="X")
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.requests.post')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.requests.post')
     def test_124_call_tfhka_api_codigo_203_ultimo_documento(self, mock_post):
         self.company.write({"url_tfhka": "https://api.tfhka.com", "token_auth_tfhka": "token_fake"})
         mock_resp = MagicMock()
@@ -1884,10 +1887,10 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        result = inv.call_tfhka_api("ultimo_documento", {})
+        result = self.env['tfhka.api.client']._request(inv.company_id, "ultimo_documento", {})
         self.assertEqual(result, 0)
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.requests.post')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.requests.post')
     def test_125_call_tfhka_api_connection_error(self, mock_post):
         self.company.write({"url_tfhka": "https://api.tfhka.com", "token_auth_tfhka": "token_fake"})
         import requests as req
@@ -1896,5 +1899,5 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         with self.assertRaises(UserError):
-            inv.call_tfhka_api("emision", {})
+            self.env['tfhka.api.client']._request(inv.company_id, "emision", {})
 

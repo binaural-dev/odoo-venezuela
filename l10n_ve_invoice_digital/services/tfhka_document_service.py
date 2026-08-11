@@ -64,7 +64,10 @@ class TfhkaDocumentService(models.AbstractModel):
 
         client.query_numbering(company, series)
         document_number = client.get_last_document_number(company, document_type, series)
-        document_number = document_number + 1
+        try:
+            document_number = int(document_number) + 1
+        except (ValueError, TypeError):
+            document_number = 1
         current_number = invoice.sequence_number
 
         if document_number != current_number and invoice.company_id.sequence_validation_tfhka:
