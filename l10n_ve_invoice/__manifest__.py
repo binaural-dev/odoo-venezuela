@@ -3,11 +3,7 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
-<<<<<<< HEAD
     "version": "19.0.1.0.7",
-=======
-    "version": "19.0.1.0.6",
->>>>>>> f532fe439 ([FIX] #13960: l10n_ve_invoice)
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
