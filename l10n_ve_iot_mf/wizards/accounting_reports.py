@@ -128,6 +128,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             + amounts.get("tax_base_general_aliquot", 0),
             "amount_general_aliquot": cumulative["amount_general_aliquot"]
             + amounts.get("amount_general_aliquot", 0),
+            "tax_base_extend_aliquot": cumulative["tax_base_extend_aliquot"]
+            + amounts.get("tax_base_extend_aliquot", 0),
+            "amount_extend_aliquot": cumulative["amount_extend_aliquot"]
+            + amounts.get("amount_extend_aliquot", 0),
+            "tax_base_zero_aliquot_international": cumulative["tax_base_zero_aliquot_international"]
+            + amounts.get("tax_base_zero_aliquot_international", 0),
+            "amount_zero_aliquot_international": cumulative["amount_zero_aliquot_international"]
+            + amounts.get("amount_zero_aliquot_international", 0),
+            "igtf": cumulative["igtf"] + amounts.get("igtf", 0),
         }
 
     def _fields_sale_book_group_line(self, data, amounts):
@@ -144,12 +153,20 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "correlative": "",
             "reduced_aliquot": 0.08,
             "general_aliquot": 0.16,
-            "total_sales_iva": amounts.get("amount_taxed", 0),
+            "extend_aliquot": 0.31,
+            "zero_aliquiot_international": 0.00,
+            "total_sales_iva": amounts.get("amount_taxed", 0) - amounts.get("tax_base_exempt_aliquot", 0),
+            "total_sales": amounts.get("amount_taxed", 0),
             "total_sales_not_iva": amounts.get("tax_base_exempt_aliquot", 0),
             "amount_reduced_aliquot": amounts.get("amount_reduced_aliquot", 0),
             "amount_general_aliquot": amounts.get("amount_general_aliquot", 0),
             "tax_base_reduced_aliquot": amounts.get("tax_base_reduced_aliquot", 0),
             "tax_base_general_aliquot": amounts.get("tax_base_general_aliquot", 0),
+            "amount_extend_aliquot": amounts.get("amount_extend_aliquot", 0),
+            "tax_base_extend_aliquot": amounts.get("tax_base_extend_aliquot", 0),
+            "tax_base_zero_aliquot_international": amounts.get("tax_base_zero_aliquot_international", 0),
+            "amount_zero_aliquot_international": amounts.get("amount_zero_aliquot_international", 0),
+            "igtf": amounts.get("igtf", 0),
         }
 
     def parse_sale_book_data(self):
@@ -166,6 +183,11 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "amount_reduced_aliquot": 0,
             "tax_base_general_aliquot": 0,
             "amount_general_aliquot": 0,
+            "tax_base_extend_aliquot": 0,
+            "amount_extend_aliquot": 0,
+            "tax_base_zero_aliquot_international": 0,
+            "amount_zero_aliquot_international": 0,
+            "igtf": 0,
         }
         cumulative = init_cumulative.copy()
 
@@ -200,6 +222,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         is_last_move = True
 
                     amounts = self._determinate_amount_taxeds(move)
+                    is_igtf = bool(move.alter_bi_igtf > 0 or move.foreign_alter_bi_igtf > 0)
+                    if is_igtf:
+                        multiplier = -1 if move.move_type == "out_refund" else 1
+                        igtf_val = (
+                            move.tax_totals["igtf"]["igtf_amount"]
+                            if self.currency_system
+                            else move.tax_totals["igtf"]["foreign_igtf_amount"]
+                        ) * multiplier
+                    else:
+                        igtf_val = 0
+                    amounts["igtf"] = igtf_val
                     cumulative = self.update_amounts(cumulative, amounts)
 
                     if range_start == 0:

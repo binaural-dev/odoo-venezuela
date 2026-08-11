@@ -29,11 +29,11 @@ class ResCompany(models.Model):
         }
 
         try:
-            response = requests.post(url, json=payload)
+            response = requests.post(url, json=payload, timeout=10)
             self._handle_tfhka_response(response)
         except requests.exceptions.RequestException as e:
-            _logger.error(f"Error connecting to the TFHKA API: {e}")
-            raise ValidationError(_("Error connecting to the TFHKA API: %s") % e)
+            _logger.error("Error connecting to the TFHKA API: %s", e)
+            raise ValidationError(_("Error connecting to the TFHKA API: %s", e))
 
     def _validate_tfhka_credentials(self):
         if not self.username_tfhka:
@@ -58,14 +58,14 @@ class ResCompany(models.Model):
     def _process_tfhka_response_data(self, data):
         if "token" in data:
             self.token_auth_tfhka = data["token"]
-            _logger.info(f"Token generated successfully: {self.token_auth_tfhka}.")
+            _logger.info("Token generated successfully: %s.", self.token_auth_tfhka)
         else:
-            _logger.error(f"The 'token' field is not found in the response: {data}")
+            _logger.error("The 'token' field is not found in the response: %s", data)
             raise ValidationError(_("TFHKA API response does not contain 'token'."))
 
     def _handle_tfhka_http_error(self, response, data):
         message = data.get("mensaje")
         if message:
-            raise ValidationError(_("Authentication error: %(message)s") % {'message': message})
+            raise ValidationError(_("Authentication error: %(message)s", message=message))
         else:
-            raise ValidationError(_("Error in the TFHKA API: %(status_code)s") % {'status_code': response.status_code})
+            raise ValidationError(_("Error in the TFHKA API: %(status_code)s", status_code=response.status_code))

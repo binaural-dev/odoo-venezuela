@@ -48,3 +48,12 @@ class ResCompany(models.Model):
     )
 
     hide_issue_date_of_municipal_withholding_receipt = fields.Boolean('Hide issue date of municipal withholding receipt',default=False)
+
+    text_header_1_municipal_retention = fields.Text(
+        string="Header 1 for voucher of municipal retention", 
+        default="Comprobante emitido en cumplimiento de la Providencia Administrativa N° 001-2024 sobre la Designación de Sujetos Pasivos Especiales y Agentes de Retención del Impuesto sobre Actividades Económicas,"
+    )
+    text_header_2_municipal_retention = fields.Text(
+        string="Header 2 for voucher of municipal retention", 
+        default="Industria, Comercio, Servicios o de Índole Similar en el Municipio Libertador del Distrito Capital, publicada en la Gaceta Municipal N° 5030 del 08/02/2024."
+    )
