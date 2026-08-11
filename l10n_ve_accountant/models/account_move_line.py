@@ -167,24 +167,69 @@ class AccountMoveLine(models.Model):
                 line.foreign_price_manual = True
 
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit",
-                  "currency_id", "foreign_inverse_rate", "move_id.foreign_inverse_rate")
+                  "currency_id", "foreign_inverse_rate", "move_id.foreign_inverse_rate",
+                  "move_id.invoice_line_ids.foreign_price",
+                  "move_id.invoice_line_ids.quantity",
+                  "move_id.invoice_line_ids.discount",
+                  "move_id.line_ids.foreign_debit",
+                  "move_id.line_ids.foreign_credit")
     def _compute_foreign_subtotal(self):
+        """Compute `foreign_subtotal` and `foreign_price_total`.
+
+        `foreign_price_total` must agree with what actually ends up posted
+        on the tax journal line(s) (`foreign_debit`/`foreign_credit`), not
+        an independent re-tax of the alterno price -- one shared tax line
+        can cover several product lines, so its alterno amount is
+        apportioned here by each line's own share of the combined alterno
+        base (`foreign_subtotal` of this line / sum of `foreign_subtotal`
+        across every product line sharing the same `tax_ids`).
+
+        If no posted tax line exists yet (e.g. a brand new draft line,
+        before the tax lines sync), falls back to taxing the alterno price
+        directly so the field isn't left at zero in the meantime.
+        """
         for line in self:
             foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
-            
+
             if line.tax_ids:
-                taxes_res = line.tax_ids.compute_all(
-                    foreign_price_unit_full_precision,
-                    quantity=line.quantity,
-                    currency=line.foreign_currency_id,
-                    product=line.product_id,
-                    partner=line.partner_id,
-                    is_refund=line.is_refund,
+                foreign_subtotal = line.foreign_currency_id.round(
+                    foreign_price_unit_full_precision * line.quantity
                 )
-                line.foreign_subtotal = taxes_res["total_excluded"]
-                line.foreign_price_total = taxes_res["total_included"]
+                line.foreign_subtotal = foreign_subtotal
+
+                sibling_lines = line.move_id.invoice_line_ids.filtered(
+                    lambda l: l.display_type == 'product' and l.tax_ids == line.tax_ids
+                )
+                base_total = sum(
+                    sl.foreign_currency_id.round(
+                        sl.foreign_price * (1 - sl.discount / 100.0) * sl.quantity
+                    )
+                    for sl in sibling_lines
+                )
+                tax_lines = line.move_id.line_ids.filtered(
+                    lambda l: l.display_type == 'tax' and l.tax_line_id in line.tax_ids
+                )
+                total_tax_foreign = sum(
+                    abs(tl.foreign_debit - tl.foreign_credit) for tl in tax_lines
+                )
+                if tax_lines and not line.foreign_currency_id.is_zero(base_total):
+                    line_tax_share = line.foreign_currency_id.round(
+                        total_tax_foreign * (foreign_subtotal / base_total)
+                    )
+                else:
+                    line_tax_share = line.foreign_currency_id.round(
+                        line.tax_ids.compute_all(
+                            foreign_price_unit_full_precision,
+                            quantity=line.quantity,
+                            currency=line.foreign_currency_id,
+                            product=line.product_id,
+                            partner=line.partner_id,
+                            is_refund=line.is_refund,
+                        )["total_included"] - foreign_subtotal
+                    )
+                line.foreign_price_total = foreign_subtotal + line_tax_share
             else:
                 foreign_subtotal = line.foreign_currency_id.round(
                     foreign_price_unit_full_precision * line.quantity
