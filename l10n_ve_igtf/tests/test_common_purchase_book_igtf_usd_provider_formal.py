@@ -98,7 +98,12 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
             "customer_account_igtf_id": self.acc_igtf_cli.id,
             "supplier_account_igtf_id": self.acc_igtf_prov.id,
         }
-        if "advance_payment_igtf_journal_id" in self.company._fields:
+        advance_payment_fields = {
+            "advance_payment_igtf_journal_id",
+            "advance_customer_account_id",
+            "advance_supplier_account_id",
+        }
+        if advance_payment_fields <= self.company._fields.keys():
             company_vals.update(
                 {
                     "advance_payment_igtf_journal_id": self.journal_anticipo.id,
@@ -106,7 +111,17 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
                     "advance_supplier_account_id": self.acc_advance_supplier.id,
                 }
             )
-        self.company.write(company_vals)
+        try:
+            self.company.write(company_vals)
+        except ValueError:
+            # binaural_advance_payment(_igtf) is not installed in this test's
+            # addon set, so the advance-payment fields aren't real columns on
+            # res.company even when a stale registry cache reports them in
+            # _fields -- fall back to the base IGTF-only values.
+            company_vals = {
+                k: v for k, v in company_vals.items() if k not in advance_payment_fields
+            }
+            self.company.write(company_vals)
         
         manual_in = self.env.ref("account.account_payment_method_manual_in")
         manual_out = self.env.ref("account.account_payment_method_manual_out") 
