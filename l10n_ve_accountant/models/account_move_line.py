@@ -166,75 +166,45 @@ class AccountMoveLine(models.Model):
             if line.foreign_currency_id.compare_amounts(line.foreign_price, expected) != 0:
                 line.foreign_price_manual = True
 
-    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit",
-                  "currency_id", "foreign_inverse_rate", "move_id.foreign_inverse_rate",
-                  "move_id.invoice_line_ids.foreign_price",
-                  "move_id.invoice_line_ids.quantity",
-                  "move_id.invoice_line_ids.discount",
-                  "move_id.line_ids.foreign_debit",
-                  "move_id.line_ids.foreign_credit")
+    @api.depends("foreign_price", "quantity", "discount", "price_total", "price_subtotal",
+                  "price_unit", "currency_id", "foreign_inverse_rate",
+                  "move_id.foreign_inverse_rate")
     def _compute_foreign_subtotal(self):
         """Compute `foreign_subtotal` and `foreign_price_total`.
 
-        `foreign_price_total` must agree with what actually ends up posted
-        on the tax journal line(s) (`foreign_debit`/`foreign_credit`), not
-        an independent re-tax of the alterno price -- one shared tax line
-        can cover several product lines, so its alterno amount is
-        apportioned here by each line's own share of the combined alterno
-        base (`foreign_subtotal` of this line / sum of `foreign_subtotal`
-        across every product line sharing the same `tax_ids`).
-
-        If no posted tax line exists yet (e.g. a brand new draft line,
-        before the tax lines sync), falls back to taxing the alterno price
-        directly so the field isn't left at zero in the meantime.
+        `foreign_price_total`'s tax portion is the direct conversion of
+        this line's own native tax amount (`price_total - price_subtotal`)
+        at the invoice's rate -- the same `_convert`/`custom_rate`
+        mechanism used for `foreign_price`/`foreign_subtotal`, and for what
+        actually ends up posted (`foreign_debit`/`foreign_credit` are
+        themselves conversions of native amounts, not an independent
+        re-tax in the alterno currency). Previously this re-taxed
+        `foreign_price` via `tax_ids.compute_all()`, a second independent
+        computation that can diverge from the native tax amount (different
+        tax bases/rounding) and, when several lines shared one tax line,
+        required reconciling against the posted total -- rippling one
+        line's price change into every sibling's `foreign_price_total`.
+        Converting the native tax amount directly needs no sibling data at
+        all, so only the line actually being edited ever changes, and it
+        matches the asiento for sales, purchases, and the invoice alike.
         """
         for line in self:
             foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
+            foreign_subtotal = line.foreign_currency_id.round(
+                foreign_price_unit_full_precision * line.quantity
+            )
+            line.foreign_subtotal = foreign_subtotal
 
-            if line.tax_ids:
-                foreign_subtotal = line.foreign_currency_id.round(
-                    foreign_price_unit_full_precision * line.quantity
-                )
-                line.foreign_subtotal = foreign_subtotal
-
-                sibling_lines = line.move_id.invoice_line_ids.filtered(
-                    lambda l: l.display_type == 'product' and l.tax_ids == line.tax_ids
-                )
-                base_total = sum(
-                    sl.foreign_currency_id.round(
-                        sl.foreign_price * (1 - sl.discount / 100.0) * sl.quantity
-                    )
-                    for sl in sibling_lines
-                )
-                tax_lines = line.move_id.line_ids.filtered(
-                    lambda l: l.display_type == 'tax' and l.tax_line_id in line.tax_ids
-                )
-                total_tax_foreign = sum(
-                    abs(tl.foreign_debit - tl.foreign_credit) for tl in tax_lines
-                )
-                if tax_lines and not line.foreign_currency_id.is_zero(base_total):
-                    line_tax_share = line.foreign_currency_id.round(
-                        total_tax_foreign * (foreign_subtotal / base_total)
-                    )
-                else:
-                    line_tax_share = line.foreign_currency_id.round(
-                        line.tax_ids.compute_all(
-                            foreign_price_unit_full_precision,
-                            quantity=line.quantity,
-                            currency=line.foreign_currency_id,
-                            product=line.product_id,
-                            partner=line.partner_id,
-                            is_refund=line.is_refund,
-                        )["total_included"] - foreign_subtotal
-                    )
-                line.foreign_price_total = foreign_subtotal + line_tax_share
-            else:
-                foreign_subtotal = line.foreign_currency_id.round(
-                    foreign_price_unit_full_precision * line.quantity
-                )
-                line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
+            foreign_tax_amount = line.currency_id._convert(
+                line.price_total - line.price_subtotal,
+                line.foreign_currency_id,
+                line.company_id,
+                line.move_id.invoice_date or fields.Date.today(),
+                custom_rate=line.foreign_inverse_rate,
+            )
+            line.foreign_price_total = foreign_subtotal + foreign_tax_amount
 
     def _set_foreign(self, value):
         self.foreign_debit = abs(value) if value > 0 else 0.0

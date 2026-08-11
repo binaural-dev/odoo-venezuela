@@ -3422,6 +3422,15 @@ class TestCoverageGaps(TransactionCase):
         self.assertTrue(st_line.is_reconciled)
 
     def test_bank_rec_widget_action_validate_rounding_adjustment(self):
+        """Odoo core's own `_action_validate()` must land a balanced move
+        even when a manually-edited line leaves a sub-cent rounding
+        residual (e.g. -999.99 against a 1000.0 statement line) -- this
+        localization no longer overrides that method (the previous
+        `bank.rec.widget` override that manually re-rounded and absorbed
+        the residual into the liquidity line was removed as unnecessary).
+        Assert the actual invariant (the posted move balances to
+        company-currency rounding), not just that some line exists.
+        """
         bank_journal = self.env["account.journal"].create({
             "name": "Bank RecW2", "code": "BRECW2", "type": "bank",
             "default_account_id": self.acc_bank.id, "company_id": self.company.id,
@@ -3442,6 +3451,13 @@ class TestCoverageGaps(TransactionCase):
         wizard._action_validate()
         liquidity = wizard.line_ids.filtered(lambda l: l.flag in ("liquidity", "aml"))
         self.assertTrue(liquidity)
+        move = st_line.move_id
+        self.assertTrue(move)
+        company_currency = st_line.company_id.currency_id
+        self.assertTrue(
+            company_currency.is_zero(sum(move.line_ids.mapped("balance"))),
+            "The posted move must balance to company-currency rounding.",
+        )
 
     # ═══════════════════════════════════════════════════════════════
     # report/account_invoice_details_report.py
