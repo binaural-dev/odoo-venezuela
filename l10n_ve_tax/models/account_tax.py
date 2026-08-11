@@ -257,27 +257,21 @@ class AccountTax(models.Model):
             foreign_taxes, all_groups, product_foreign, tax_foreign, fc, foreign_currency)
 
     def _anchor_foreign_taxes_for_order(self, order, foreign_taxes, fc, foreign_currency):
-        """Tax the alterno base directly for a sale.order's or
-        purchase.order's (quotation/RFQ's) `tax_totals`, the same criterion
-        `_compute_foreign_tax_balance_from_lines` uses for a posted
-        account.move -- each tax group's alterno amount is that tax's own
-        percentage applied to the order lines' `foreign_price`, never a
-        conversion of `amount_total x rate` minus the alterno base.
+        """Anchor a sale.order's or purchase.order's (quotation/RFQ's)
+        `tax_totals` tax breakdown to each line's own native tax amount,
+        the same criterion `account.move.line._compute_foreign_subtotal`
+        uses for a posted invoice: convert `price_total - price_subtotal`
+        (both already stored on the order line) at the order's rate,
+        rather than taxing the alterno base independently.
 
-        That anchor-to-total approach used to hand the WHOLE gap between
-        `amount_total x rate` and the alterno base to `_apportion_largest_remainder`,
-        which distributes it across every tax group proportional to each
-        group's own (noisy, independently-rounded) starting value -- so even
-        a 0% ("Exento") group could get handed a slice of Bs, since its
-        starting value is never exactly zero. Taxing the alterno base
-        directly makes a 0% group's ideal amount exactly zero, and every
-        other group a real percentage of its own base; apportionment is
-        only used to settle sub-cent rounding, never to invent an
-        amount with no relationship to any tax's rate.
-
-        Neither model has posted journal lines, so there's no real posted
-        tax amount to read (unlike an invoice) -- the ideal IS the source of
-        truth here, not a fallback.
+        A quotation has no posted journal entry to reconcile against, so
+        without this a line's alterno tax was computed by re-taxing
+        `foreign_price` directly (`tax_id.compute_all` on the converted
+        base), which can diverge from `amount_total x rate` by a few cents
+        of native rounding and leave the quotation inconsistent with the
+        invoice it will turn into. No new field is introduced here --
+        `price_total`/`price_subtotal` are core fields already present on
+        both `sale.order.line` and `purchase.order.line`.
         """
         product_lines = order.order_line.filtered(lambda l: not l.display_type)
         if not product_lines or 'foreign_price' not in product_lines._fields:
@@ -308,9 +302,29 @@ class AccountTax(models.Model):
                 product=pl.product_id,
                 partner=order.partner_id,
             )
-            for t in foreign_res['taxes']:
-                grp_id = self.browse(t['id']).tax_group_id.id
-                ideal_by_group[grp_id] = ideal_by_group.get(grp_id, 0.0) + abs(t['amount'])
+            ideal_tax_by_id = {t['id']: abs(t['amount']) for t in foreign_res['taxes']}
+            ideal_line_total = sum(ideal_tax_by_id.values())
+
+            # Anchor this line's REAL tax portion to the direct conversion
+            # of its own native tax amount; the ideal breakdown above is
+            # only used to split that real total across the line's own
+            # tax groups when it carries more than one.
+            line_tax_total = abs(pl.currency_id._convert(
+                pl.price_total - pl.price_subtotal,
+                fc,
+                order.company_id,
+                order.date_order.date() if getattr(order, "date_order", False) else fields.Date.today(),
+                custom_rate=pl.foreign_inverse_rate,
+            ))
+
+            for tax_id, ideal_amount in ideal_tax_by_id.items():
+                grp_id = self.browse(tax_id).tax_group_id.id
+                share = (
+                    line_tax_total * (ideal_amount / ideal_line_total)
+                    if ideal_line_total
+                    else 0.0
+                )
+                ideal_by_group[grp_id] = ideal_by_group.get(grp_id, 0.0) + share
 
         for g in all_groups:
             g["tax_group_amount"] = ideal_by_group.get(g["tax_group_id"], 0.0)
