@@ -1,5 +1,6 @@
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
+from odoo.exceptions import ValidationError
 
 
 @tagged("post_install", "-at_install", "l10n_ve_crm")
@@ -14,6 +15,8 @@ class TestCrmLeadForeignCurrency(TransactionCase):
       by the user, in USD, and must never be recalculated.
     - expected_revenue / recurring_revenue are computed (non-stored) from the
       *_foreign fields using the exchange rate in effect at read time.
+    - Both *_foreign fields must be strictly positive (feedback item 5):
+      0 and negative amounts are rejected at create/write time.
     """
 
     # ------------------------------------------------------------------
@@ -72,7 +75,12 @@ class TestCrmLeadForeignCurrency(TransactionCase):
 
     def test_01_foreign_currency_id_follows_company(self):
         """foreign_currency_id must mirror company_id.foreign_currency_id."""
-        lead = self.env["crm.lead"].create({"name": "Oportunidad USD", "company_id": self.company.id})
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad USD",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 1.0,
+            "recurring_revenue_foreign": 1.0,
+        })
         self.assertEqual(lead.foreign_currency_id, self.usd)
 
     def test_02_expected_revenue_computed_from_foreign(self):
@@ -81,6 +89,7 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "name": "Oportunidad USD",
             "company_id": self.company.id,
             "expected_revenue_foreign": 200.0,
+            "recurring_revenue_foreign": 1.0,
         })
         # 200 USD / 0.002 = 100000 VEF
         self.assertAlmostEqual(lead.expected_revenue, 100000.0, places=2)
@@ -92,15 +101,23 @@ class TestCrmLeadForeignCurrency(TransactionCase):
         lead = self.env["crm.lead"].create({
             "name": "Oportunidad USD recurrente",
             "company_id": self.company.id,
+            "expected_revenue_foreign": 1.0,
             "recurring_revenue_foreign": 15.0,
         })
         # 15 USD / 0.002 = 7500 VEF
         self.assertAlmostEqual(lead.recurring_revenue, 7500.0, places=2)
         self.assertEqual(lead.recurring_revenue_foreign, 15.0)
 
-    def test_04_zero_amount_gives_zero(self):
-        """No amount entered in the foreign currency -> converted amount is 0.0."""
-        lead = self.env["crm.lead"].create({"name": "Oportunidad sin monto", "company_id": self.company.id})
+    def test_04_zero_amount_gives_zero_conversion(self):
+        """
+        The conversion logic itself must still degrade to 0.0 for a zero amount
+        (e.g. an in-memory/unsaved record). Uses .new() on purpose: it builds an
+        in-memory record without going through create()/write(), so the
+        strictly-positive @api.constrains (feedback item 5) never fires here —
+        this test isolates the pure conversion math from that separate business
+        rule, which is covered on its own in test_07/test_08.
+        """
+        lead = self.env["crm.lead"].new({"name": "Oportunidad sin monto", "company_id": self.company.id})
         self.assertEqual(lead.expected_revenue, 0.0)
         self.assertEqual(lead.recurring_revenue, 0.0)
 
@@ -113,6 +130,7 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "name": "Oportunidad USD",
             "company_id": self.company.id,
             "expected_revenue_foreign": 200.0,
+            "recurring_revenue_foreign": 1.0,
         })
         self.assertAlmostEqual(lead.expected_revenue, 100000.0, places=2)
 
@@ -147,6 +165,38 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "name": "Oportunidad sin moneda alterna",
             "company_id": company_without_foreign_currency.id,
             "expected_revenue_foreign": 100.0,
+            "recurring_revenue_foreign": 1.0,
         })
         self.assertFalse(lead.foreign_currency_id)
         self.assertEqual(lead.expected_revenue, 0.0)
+
+    def test_07_negative_foreign_amount_is_rejected(self):
+        """expected_revenue_foreign/recurring_revenue_foreign can never be negative."""
+        with self.assertRaises(ValidationError):
+            self.env["crm.lead"].create({
+                "name": "Oportunidad monto negativo",
+                "company_id": self.company.id,
+                "expected_revenue_foreign": -10.0,
+                "recurring_revenue_foreign": 1.0,
+            })
+
+    def test_08_zero_foreign_amount_is_rejected(self):
+        """
+        expected_revenue_foreign/recurring_revenue_foreign can never be 0 either
+        (feedback item 5 explicitly requires a strictly positive amount, even at
+        creation time).
+        """
+        with self.assertRaises(ValidationError):
+            self.env["crm.lead"].create({
+                "name": "Oportunidad monto cero",
+                "company_id": self.company.id,
+                "expected_revenue_foreign": 0.0,
+                "recurring_revenue_foreign": 1.0,
+            })
+        with self.assertRaises(ValidationError):
+            self.env["crm.lead"].create({
+                "name": "Oportunidad monto cero",
+                "company_id": self.company.id,
+                "expected_revenue_foreign": 1.0,
+                "recurring_revenue_foreign": 0.0,
+            })
