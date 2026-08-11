@@ -372,6 +372,39 @@ class AccountMoveRetention(models.Model):
                 move.foreign_inverse_rate = move.payment_id.foreign_rate
         return res
 
+    def button_cancel(self):
+        for record in self:
+            if record.retention_iva_line_ids.filtered(lambda l: l.state == "emitted") or record.retention_islr_line_ids.filtered(lambda l: l.state == "emitted") or record.retention_municipal_line_ids.filtered(lambda l: l.state == "emitted"):
+                raise UserError(
+                    _(
+                        "You cannot cancel an invoice with an emitted retention. Please cancel the retention first."
+                    )
+                )
+        return super().button_cancel()
+
+    def button_draft(self):
+        res = super().button_draft()
+        moves_with_retention = self.filtered(
+            lambda m: m.retention_iva_line_ids.filtered(lambda l: l.state == "emitted")
+            or m.retention_islr_line_ids.filtered(lambda l: l.state == "emitted")
+            or m.retention_municipal_line_ids.filtered(lambda l: l.state == "emitted")
+        )
+        if moves_with_retention:
+            self.env["bus.bus"]._sendone(
+                self.env.user.partner_id,
+                "simple_notification",
+                {
+                    "type": "warning",
+                    "message": _(
+                        "This invoice has an associated retention. If you make any "
+                        "change that affects the retention amounts, it is recommended "
+                        "that you make the adjustment in the retention."
+                    ),
+                    "sticky": True,
+                },
+            )
+        return res
+
     def unlink(self):
         for record in self:
             if record.retention_iva_line_ids.filtered(lambda l: l.state == "emitted") or record.retention_islr_line_ids.filtered(lambda l: l.state == "emitted") or record.retention_municipal_line_ids.filtered(lambda l: l.state == "emitted"):
