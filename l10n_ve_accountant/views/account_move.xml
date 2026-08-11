@@ -70,7 +70,7 @@
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_unit']"
                 position="after">
-                <field name="foreign_price" widget="monetary" options="{'precision': 'Foreign Product Price'}" readonly="move_type != 'in_invoice'"/>
+                <field name="foreign_price" widget="monetary" options="{'currency_field': 'foreign_currency_id', 'field_digits': True}" readonly="move_type != 'in_invoice'"/>
                 <field name="foreign_price_manual" column_invisible="True" readonly="1" force_save="1"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/tree/field[@name='price_subtotal']"
