@@ -28,6 +28,10 @@
                        readonly="is_digitalized"/>
                 <field name="line_currency" invisible="not multi_currency_invoice"
                        readonly="is_digitalized" required="1"/>
+                <!-- Cuadro de pago: solo cuando la compañía está en modo "registro de pago". -->
+                <field name="digitalization_with_payment_active" invisible="1"/>
+                <field name="show_payment_box" invisible="not digitalization_with_payment_active"
+                       readonly="is_digitalized"/>
             </xpath>
         </field>
     </record>

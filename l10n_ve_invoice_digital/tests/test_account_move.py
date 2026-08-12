@@ -1,4 +1,4 @@
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError, ValidationError, AccessError
 from odoo import fields, Command
 from odoo.tests import TransactionCase, tagged
 from unittest.mock import patch, MagicMock
@@ -572,11 +572,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]
         )
 
-        with self.assertRaises(UserError) as e:
-            self.invoice.generate_document_digital()
-            _logger.error(e.exception)
-
-        _logger.info("Test passed: Sequence validation error raised as expected.")
+        # Ahora la secuencia se ADOPTA de The Factory (ya no se lanza error):
+        # el ultimo de The Factory es 1 -> se adopta 2 y se renombra la factura.
+        self.invoice.generate_document_digital()
+        self.assertTrue(self.invoice.is_digitalized)
+        self.assertTrue(self.invoice.name.endswith("00000002"))
+        _logger.info("Test passed: Sequence adopted from The Factory (renamed).")
 
     # Factura de cliente con serie
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
@@ -1366,6 +1367,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
         )
+        invoice.show_payment_box = True
         with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService._prepare_payments', return_value=[{"forma": "01"}] * 6):
             with self.assertRaises(UserError):
                 self.env['tfhka.document.service']._prepare_totals(invoice)
@@ -1374,6 +1376,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
         )
+        invoice.show_payment_box = True
         with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService._prepare_payments', return_value=[{"forma": ""}]):
             with self.assertRaises(ValidationError):
                 self.env['tfhka.document.service']._prepare_totals(invoice)
@@ -1458,6 +1461,28 @@ class TestAccountMoveApiCalls(TransactionCase):
         with patch.object(AccountJournal, 'write', side_effect=Exception("fail")):
             self.env['tfhka.document.service'].generate_document_data(inv, "123", "01", "")
         self.assertTrue(inv.is_digitalized)
+
+    def test_130_payment_box_gate_off(self):
+        # Sin "mostrar cuadro de pago" el bloque formasPago NO se adjunta.
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.show_payment_box = False
+        totals, _foreign = self.env['tfhka.document.service']._prepare_totals(invoice)
+        self.assertNotIn("formasPago", totals)
+
+    def test_131_uninstall_requires_tfhka_admin(self):
+        # Un usuario sin el grupo TFHKA Admin no puede desinstalar el modulo.
+        module = self.env['ir.module.module'].search(
+            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
+        )
+        user = self.env['res.users'].create({
+            'name': 'No Admin TFHKA',
+            'login': 'no_admin_tfhka',
+            'groups_id': [(6, 0, [self.env.ref('base.group_user').id])],
+        })
+        with self.assertRaises(AccessError):
+            module.with_user(user)._check_tfhka_uninstall_rights()
 
     def test_65_is_eligible_for_tfhka_company_disabled(self):
         self.company.write({"invoice_digital_tfhka": False})
@@ -1893,8 +1918,7 @@ class TestAccountMoveApiCalls(TransactionCase):
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.requests.post')
     def test_125_call_tfhka_api_connection_error(self, mock_post):
         self.company.write({"url_tfhka": "https://api.tfhka.com", "token_auth_tfhka": "token_fake"})
-        import requests as req
-        mock_post.side_effect = req.exceptions.ConnectionError("Connection error")
+        mock_post.side_effect = requests.exceptions.ConnectionError("Connection error")
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )

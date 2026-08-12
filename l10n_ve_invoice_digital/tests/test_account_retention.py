@@ -270,6 +270,23 @@ class TestAccumulatedRate(TransactionCase):
         self.assertNotIn("porcentaje", detail)
         self.assertNotIn("retenido", detail)
 
+    # Anulacion de retencion via wizard (endpoint /Anular)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_annul_retention_wizard(self, mock_call):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.with_context(account_retention_alert=True).generate_document_digital()
+        self.assertTrue(retention.is_digitalized)
+
+        wizard = self.env['tfhka.annul.wizard'].create({
+            'retention_id': retention.id,
+            'motivo': 'Error de emision',
+        })
+        wizard.action_confirm()
+        self.assertTrue(retention.annulled_tfhka)
+
     # API de TFHKA para consultar numeraciones
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_03_query_numbering_success(self, mock_call):

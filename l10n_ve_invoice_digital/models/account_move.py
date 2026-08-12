@@ -12,6 +12,16 @@ class AccountMove(models.Model):
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
+    show_payment_box = fields.Boolean(
+        default=False,
+        copy=False,
+        tracking=True,
+        help="If enabled, the digital invoice includes the payment methods block (formasPago).",
+    )
+    digitalization_with_payment_active = fields.Boolean(
+        related="company_id.digitalization_with_payment_tfhka",
+    )
+
     def action_post(self):
         for invoice in self:
             invoice._tfhka_validate_mixed_invoicing()
@@ -123,8 +133,8 @@ class AccountMove(models.Model):
         ('VES', 'VES'),
         ('USD', 'USD'),
     ], default='VES',
-       help="VES: precios de líneas en Bolívares, totales solo en VES.\n"
-            "USD: precios de líneas en dólares, totales en ambas monedas.")
+       help="VES: line prices in Bolivars, totals in VES only.\n"
+            "USD: line prices in US dollars, totals in both currencies.")
 
     # Resuelve si esta factura debe tratarse como multi-moneda.
     # El modo multi-moneda (USD + totales bimoneda) se activa solo cuando

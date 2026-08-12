@@ -12,6 +12,7 @@ TFHKA_ENDPOINTS = {
     "emision": "/Emision",
     "ultimo_documento": "/UltimoDocumento",
     "consulta_numeraciones": "/ConsultaNumeraciones",
+    "anular": "/Anular",
 }
 
 # Timeout (segundos) para las llamadas HTTP a TFHKA.
@@ -91,6 +92,10 @@ class TfhkaApiClient(models.AbstractModel):
     def emit(self, company, payload):
         """POST /Emision. Devuelve la respuesta validada."""
         return self._request(company, "emision", payload)
+
+    def annul(self, company, payload):
+        """POST /Anular. Anula un documento digital (serie/tipo/numero + motivo)."""
+        return self._request(company, "anular", payload)
 
     def get_last_document_number(self, company, document_type, series=""):
         """POST /UltimoDocumento. Devuelve el último número (0 si no existe)."""

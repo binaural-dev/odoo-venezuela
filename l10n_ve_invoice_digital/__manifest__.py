@@ -1,10 +1,11 @@
 {
-    "name": "Venezuela - Facturación Digital",
+    "name": "Venezuela - The Factory HKA",
+    "description": "Integración de facturación digital con The Factory HKA para Venezuela.",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.21",
+    "version": "17.0.0.0.22",
     "depends": [
         "account",
         "l10n_ve_igtf",
@@ -16,6 +17,7 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "data": [
+        "data/groups.xml",
         "data/payment_method_data_tfhka.xml",
         "data/res_currency_data.xml",
         "security/ir.model.access.csv",
@@ -24,6 +26,7 @@
         "views/account_retention_iva.xml",
         "views/account_retention_islr.xml",
         "wizard/account_retention_alert_views.xml",
+        "wizard/tfhka_annul_wizard_views.xml",
         "views/account_journal.xml",
         "views/payment_method_tfhka.xml",
         "views/currency_views.xml",

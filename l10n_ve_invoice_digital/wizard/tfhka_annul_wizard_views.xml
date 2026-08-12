@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="tfhka_annul_wizard_form" model="ir.ui.view">
+        <field name="name">tfhka.annul.wizard.form</field>
+        <field name="model">tfhka.annul.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Cancel at The Factory HKA">
+                <group>
+                    <field name="retention_id" invisible="1"/>
+                    <field name="motivo"/>
+                </group>
+                <footer>
+                    <button name="action_confirm" string="Annul" type="object" class="btn-primary"/>
+                    <button string="Cancel" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+</odoo>
