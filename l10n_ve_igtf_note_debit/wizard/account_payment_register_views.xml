@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_account_payment_register_form_igtf_note_debit" model="ir.ui.view">
+        <field name="name">account.payment.register.form.igtf.note.debit</field>
+        <field name="model">account.payment.register</field>
+        <field name="inherit_id" ref="l10n_ve_igtf.view_account_payment_register_form_igtf"/>
+        <field name="arch" type="xml">
+            
+            <xpath expr="//form/group/group[2]/field[@name='igtf_to_show']" position="attributes">
+                <attribute name="invisible">not is_igtf or not igtf_note_debit_include_in_payment</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='amount_without_difference']" position="attributes">
+                <attribute name="invisible">not is_igtf or not igtf_note_debit_include_in_payment</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='igtf_percentage']" position="after">
+                <field name="igtf_note_debit_mode" invisible="1"/>
+                <field name="igtf_note_debit_include_in_payment" invisible="igtf_note_debit_mode != 'debit_note' or not is_igtf"/>
+            </xpath>
+
+            <xpath expr="//form/group" position="after">
+
+                <div role="alert" class="alert alert-info d-flex align-items-center  "
+                        invisible="igtf_note_debit_mode != 'debit_note' or not is_igtf or igtf_note_debit_include_in_payment">
+                    <i class="fa fa-info-circle fa-lg me-3" aria-hidden="true"/>
+                    <div class ="col">
+                        <div class="d-flex justify-content-center">Se creará un segundo pago en Moneda <b> VEF </b> , para cubrir el importe de la Nota de Débito por IGTF.</div>
+                        <div class="d-flex align-items-end justify-content-center mt-1">
+                            <div class="text-center px-2">
+                                <div class="small fw-bold fs-5 text-muted">Importe</div>
+                                <field name="amount" nolabel="1" readonly="1" class="oe_inline fw-bold fs-5" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            </div>
+                            <span class="fw-bold fs-5 mb-1">+</span>
+                            <div class="text-center px-2">
+                                <div class="small fw-bold fs-5 text-muted">IGTF</div>
+                                <field name="igtf_to_show" nolabel="1" readonly="1" class="oe_inline fw-bold fs-5" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            </div>
+                            <span class="fw-bold fs-5 mb-1">=</span>
+                            <div class="text-center px-2">
+                                <div class="small fw-bold fs-5 text-muted">Monto total a pagar</div>
+                                <field name="total_amount_with_igtf_note_debit" nolabel="1" class="oe_inline fw-bold fs-5" widget="monetary" options="{'currency_field': 'currency_id'}"/>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+
+            </xpath>
+            <xpath expr="//field[@name='missing_account_partners']" position="after">
+                <field name="is_igtf" readonly="1" invisible="1" />
+                <div role="alert" class="alert alert-warning" invisible="not is_igtf">
+                    <span class="fw-bold">Este pago generara una Nota de Debito Automatica por el monto de IGTF percibido en la transaccion</span>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

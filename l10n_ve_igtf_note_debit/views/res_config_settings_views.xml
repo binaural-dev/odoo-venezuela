@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_l10n_ve_igtf_note_debit" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n_ve_igtf_note_debit</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_igtf.res_config_settings_l10n_ve_igtf"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='binaural_igtf_settings']" position="inside">
+                <setting string="Modo de Percepción de IGTF"
+                         help="'Nota de Débito Fiscal automática' es un flujo nuevo y opcional: no afecta pagos/anticipos ya registrados con el flujo actual.">
+                    <field name="igtf_note_debit_mode" widget="radio"/>
+                </setting>
+                <setting string="Producto de Percepción de IGTF"
+                         invisible="igtf_note_debit_mode != 'debit_note'">
+
+                    <field name="igtf_note_debit_valid_product_ids" invisible="1"/>
+                    <field name="igtf_note_debit_product_id"
+                           required="igtf_note_debit_mode == 'debit_note'"
+                           domain="[('id','in',igtf_note_debit_valid_product_ids)]"/>
+                </setting>
+                <setting string="Incluir IGTF en el pago por defecto"
+                         invisible="igtf_note_debit_mode != 'debit_note'"
+                         help="Valor por defecto del check 'Incluir IGTF en el pago' que aparece en el wizard de registro de pago. El usuario puede marcarlo/desmarcarlo en cada pago: marcado, el pago cubre factura + IGTF junto; desmarcado, el pago solo cubre la factura y el IGTF se cobra aparte en VEF, conciliado automáticamente contra la ND.">
+                    <field name="igtf_note_debit_include_in_payment_default"/>
+                </setting>
+                <setting string="Diario VEF para cobro de IGTF"
+                         invisible="igtf_note_debit_mode != 'debit_note'">
+                    <field name="igtf_note_debit_valid_journal_ids" invisible="1"/>
+                    <field name="igtf_note_debit_vef_journal_id"
+                           required="igtf_note_debit_mode == 'debit_note'"
+                           domain="[('id', 'in', igtf_note_debit_valid_journal_ids)]"/>
+                </setting>
+            </xpath>
+        </field>
+    </record>
+</odoo>

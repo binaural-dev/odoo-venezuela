@@ -420,7 +420,6 @@ class AccountMove(models.Model):
                  
             igtf_amount = abs(payment.calculate_igtf_for_payment(self, applied_payment_curr,  payment.currency_id ,conversion_date))
 
-        #raise UserError(igtf_amount)
         if is_igtf_journal:
             igtf_in_invoice_curr = payment.currency_id._convert(igtf_amount, self.currency_id, self.company_id, conversion_date)
             if (base_amount_applied + igtf_in_invoice_curr) < advance_amount: ## include igtf in base
