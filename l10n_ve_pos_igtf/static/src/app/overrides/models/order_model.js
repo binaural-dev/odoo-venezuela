@@ -4,9 +4,9 @@ import { Order, Payment } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import {
   formatFloat,
+  floatIsZero,
   roundDecimals as round_di,
   roundPrecision as round_pr,
-  floatIsZero,
 } from "@web/core/utils/numbers";
 
 // New orders are now associated with the current table, if any.
@@ -131,8 +131,8 @@ patch(Order.prototype, {
         return;
       }
 
-      bi_igtf += payment.amount;
-      foreign_bi_igtf += payment.get_foreign_amount();
+      bi_igtf += round_pr(payment.amount, rounding);
+      foreign_bi_igtf += round_pr(payment.get_foreign_amount(), this.pos.foreign_currency.rounding);
       repeat_same_method.push(payment.payment_method.id);
       bi_payments.push(payment.cid);
 
@@ -153,7 +153,7 @@ patch(Order.prototype, {
       if (!is_change) {
         payment.set_igtf_amount(this.compute_igtf_amount(amount_to_pay));
         payment.set_foreign_igtf_amount(
-          this.compute_igtf_amount(foreign_amount_to_pay),
+          this.compute_igtf_amount(foreign_amount_to_pay, true),
         );
 
         igtf_amount += payment.igtf_amount;
@@ -218,13 +218,17 @@ patch(Order.prototype, {
       this.bi_igtf = amount_sum;
       this.foreign_bi_igtf = foreign_amount_sum;
       this.igtf_amount = igtf_amount_sum;
+
+      // Usamos el IGTF acumulado por pago (no el de la base total del pedido).
+      // Para pago parcial: 153,24 Bs (3% de $10 pagado).
+      // Para pago total: 529,71 Bs (3% de 17.657,06 Bs, calculado en el loop).
       this.foreign_igtf_amount = foreign_igtf_amount_sum;
     }
     return this.igtf_amount;
   },
   compute_igtf_amount(amount) {
     var rounding = this.pos.currency.rounding;
-    return amount * (this.pos.config.igtf_percentage / 100);
+    return round_pr(amount * (this.pos.config.igtf_percentage / 100), rounding);
   },
 
   get_bi_igtf() {
@@ -281,7 +285,7 @@ patch(Order.prototype, {
   },
   get_max_total_with_igtf() {
     const result =
-      this.compute_igtf_amount(super.get_foreign_total_with_tax()) +
+      this.compute_igtf_amount(super.get_foreign_total_with_tax(), true) +
       this.props.order.get_foreign_rounding_applied();
     return result;
   },
@@ -302,17 +306,45 @@ patch(Order.prototype, {
       is_change = this.get_due() > 0;
     }
 
+    var rounding = this.pos.currency.rounding;
+    // Capturar ANTES de super.add_paymentline() porque después get_due() = 0
+    const due_before = round_pr(this.get_due(), rounding);
+    const igtf_before = round_pr(this.get_igtf_amount(), rounding);
+    // Contar pagos no-IGTF existentes ANTES de añadir el nuevo.
+    // Solo el primero (EFECTIVO BS) debe pre-fillarse con el monto IGTF.
+    const non_igtf_count_before = this.get_paymentlines().filter(
+      (p) => !p.payment_method.apply_igtf
+    ).length;
+
     if (
-      !payment_method.apply_igtf || this.get_due() <= this.get_igtf_amount() || is_change
+      !payment_method.apply_igtf ||
+      round_pr(this.get_due(), rounding) <= round_pr(this.get_igtf_amount(), rounding) ||
+      is_change
     ) {
       let res = super.add_paymentline(...arguments);
       this.update_igtf();
+      if (
+        res &&
+        !payment_method.apply_igtf &&
+        !is_change &&
+        this.get_paymentlines().some((p) => p.payment_method.apply_igtf)
+      ) {
+        // Odoo base pre-fill amount = get_due() (antes de añadir = $24,87).
+        // EFECTIVO BS solo cubre el IGTF ($0,30). Corregimos usando due_before.
+        // Solo lo hacemos para el PRIMER pago no-IGTF.
+        if (due_before >= igtf_before && non_igtf_count_before === 0) {
+          res.set_amount(this.get_igtf_amount());
+          // Asignación directa para evitar que el setter dispare reconversiones locas
+          res.foreign_amount = this.get_foreign_igtf_amount();
+        }
+      }
       return res;
     }
     let res_igtf = this.add_paymentline_without_igtf(...arguments);
     this.update_igtf();
     return res_igtf;
   },
+
 
   add_paymentline_without_igtf(payment_method) {
     this.assert_editable();

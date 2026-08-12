@@ -3,6 +3,9 @@ import pytz
 
 from odoo import api, fields, models, _
 from odoo.osv.expression import AND
+import logging
+
+_logger = logging.getLogger(__name__)
 
 
 class ReportSaleDetails(models.AbstractModel):
@@ -140,7 +143,21 @@ class ReportSaleDetails(models.AbstractModel):
                     tuple(payment_ids),
                 ),
             )
-            payments = self.env.cr.dictfetchall()
+            payments = []
+            for payment in self.env.cr.dictfetchall():
+                payment_total = payment.get("total") or 0.0
+                payment_f_total = payment.get("f_total") or 0.0
+                try:
+                    payment_total = float(payment_total)
+                except (TypeError, ValueError):
+                    payment_total = 0.0
+                try:
+                    payment_f_total = float(payment_f_total)
+                except (TypeError, ValueError):
+                    payment_f_total = 0.0
+                payment["total"] = payment_total
+                payment["f_total"] = payment_f_total
+                payments.append(payment)
         else:
             payments = []
 

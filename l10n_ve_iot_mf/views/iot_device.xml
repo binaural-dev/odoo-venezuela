@@ -128,6 +128,9 @@
                 <field 
                     name="traditional_line"
                     invisible="type != 'fiscal_data_module' or manufacturer_type != 'HKA'"/>
+                <field 
+                    name="max_razon_social"
+                    invisible="type != 'fiscal_data_module' or manufacturer_type != 'HKA'"/>
             </xpath>
         </field>
     </record>

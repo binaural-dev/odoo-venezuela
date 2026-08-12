@@ -15,21 +15,13 @@ class TestIrSequence(TransactionCase):
         )
 
     def test_01_duplicate_sequence_code_same_company_raises_on_create(self):
-        self.env["ir.sequence"].create(
-            {
-                "name": "Primary Sequence",
-                "code": "test.sequence.same.company",
-                "padding": 4,
-                "number_next_actual": 1,
-                "company_id": self.company.id,
-            }
-        )
-
+        # La secuencia 'invoice.correlative' ya existe por la instalación del módulo.
+        # Intentar crear otra con el mismo código debe fallar.
         with self.assertRaises(ValidationError):
             self.env["ir.sequence"].create(
                 {
                     "name": "Duplicated Sequence",
-                    "code": "test.sequence.same.company",
+                    "code": "invoice.correlative",
                     "padding": 4,
                     "number_next_actual": 1,
                     "company_id": self.company.id,
@@ -61,15 +53,7 @@ class TestIrSequence(TransactionCase):
         self.assertEqual(sequence.company_id, self.other_company)
 
     def test_03_write_duplicate_sequence_code_same_company_raises(self):
-        existing_sequence = self.env["ir.sequence"].create(
-            {
-                "name": "Existing Sequence",
-                "code": "test.sequence.write.origin",
-                "padding": 4,
-                "number_next_actual": 1,
-                "company_id": self.company.id,
-            }
-        )
+        # Intentar cambiar el código de una secuencia a 'invoice.correlative' (que ya existe)
         sequence_to_update = self.env["ir.sequence"].create(
             {
                 "name": "Sequence To Update",
@@ -81,7 +65,7 @@ class TestIrSequence(TransactionCase):
         )
 
         with self.assertRaises(ValidationError):
-            sequence_to_update.write({"code": existing_sequence.code})
+            sequence_to_update.write({"code": "invoice.correlative"})
 
     def test_04_write_same_code_without_duplicates_is_allowed(self):
         sequence = self.env["ir.sequence"].create(
@@ -97,3 +81,29 @@ class TestIrSequence(TransactionCase):
         sequence.write({"name": "Single Sequence Updated"})
 
         self.assertEqual(sequence.name, "Single Sequence Updated")
+
+    def test_05_duplicate_generic_sequence_code_is_allowed(self):
+        """Test that duplicate codes are allowed if they are NOT 'invoice.correlative'."""
+        code = "test.sequence.duplicate.allowed"
+        self.env["ir.sequence"].create(
+            {
+                "name": "First Sequence",
+                "code": code,
+                "padding": 4,
+                "number_next_actual": 1,
+                "company_id": self.company.id,
+            }
+        )
+
+        # This should NOT raise ValidationError now
+        second_sequence = self.env["ir.sequence"].create(
+            {
+                "name": "Second Sequence",
+                "code": code,
+                "padding": 4,
+                "number_next_actual": 1,
+                "company_id": self.company.id,
+            }
+        )
+        self.assertTrue(second_sequence)
+        self.assertEqual(second_sequence.code, code)

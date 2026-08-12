@@ -67,6 +67,9 @@ class ResPartner(models.Model):
 
     @api.constrains("name")
     def _check_name_immutable(self):
+        if not self.env.company.validate_partner_name_immutable:
+            return
+
         model_checks = {
             "sale.order": [("partner_id", "=", "id")],
             "purchase.order": [("partner_id", "=", "id")],
@@ -121,12 +124,18 @@ class ResPartner(models.Model):
             if existing_partner:
                 raise ValidationError(error_message)
 
-    def check_duplicate_email(self, email, company_id=None):
+    def check_duplicate_email(self, email, company_id=None, parent_id=False):
         if email:
             domain = [
                 ("email", "=", email),
                 ("id", "!=", self.id if self else False),
             ]
+
+            if parent_id:
+                domain.extend([
+                    ("id", "!=", parent_id),
+                    ("parent_id", "!=", parent_id)
+                ])
 
             if self.env.company.validate_user_creation_by_company:
                 domain.extend(
@@ -176,7 +185,7 @@ class ResPartner(models.Model):
             if "vat" and "prefix_vat" in vals:
                 self.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
             if "email" in vals:
-                self.check_duplicate_email(vals.get("email"))
+                self.check_duplicate_email(vals.get("email"), parent_id=vals.get("parent_id"))
         return super(ResPartner, self).create(vals_list)
 
     def write(self, vals):
@@ -186,7 +195,8 @@ class ResPartner(models.Model):
                 record.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
         if "email" in vals:
             for record in self:
-                record.check_duplicate_email(vals.get("email"))
+                actual_parent_id = vals.get("parent_id", record.parent_id.id)
+                record.check_duplicate_email(vals.get("email"), parent_id=actual_parent_id)
         return res
 
     def _check_vat(self):

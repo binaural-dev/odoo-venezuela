@@ -1,11 +1,36 @@
 {
     "name": "Venezuela - Facturación",
-    "summary": """
-        Módulo de Facturación Venezuela
-    """,
-    "version": "17.0.1.0.0",
+    "summary": "Módulo de Facturación Venezuela",
+    "description": """
+Propósito
+---------
+Provee la facturación electrónica de la localización venezolana: el
+libro de compras y ventas exigido por el SENIAT, la numeración
+correlativa por diario, el formato de factura libre y la integración
+con notas de débito.
+
+Funcionalidades principales
+---------------------------
+* Wizard de reportes contables para generar el libro de compras y el
+  libro de ventas (nacional e internacional), con el desglose de bases
+  imponibles por alícuota y el monto equivalente en moneda alterna.
+* Numeración de secuencias única por diario (``ir.sequence``).
+* Reporte e impresión de factura en formato libre.
+* Integración con notas de débito (``account.debit.note``) propia de la
+  localización.
+* Grupos de seguridad y reglas de acceso específicas del módulo.
+
+Cambios en UI / Modelos impactados
+------------------------------------
+* Modifica ``account.move``, ``account.journal``, ``account.move.line``,
+  ``account.payment``, ``ir.sequence`` y ``account.debit.note``.
+* Vistas de factura, diario, notas de débito, menú y ajustes de
+  configuración; wizard y reportes de libro de compras/ventas y de
+  factura de forma libre.
+""",
+    "version": "17.0.1.0.5",
     "license": "LGPL-3",
-    "author": "binaural-dev",
+    "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
     "depends": [
@@ -14,6 +39,7 @@
         "l10n_ve_accountant",
         "l10n_ve_contact",
         "l10n_ve_tax",
+        "l10n_ve_filter_partner",
         "od_journal_sequence",
         "account_debit_note",
     ],

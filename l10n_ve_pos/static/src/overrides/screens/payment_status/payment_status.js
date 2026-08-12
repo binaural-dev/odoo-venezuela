@@ -8,7 +8,7 @@ patch(PaymentScreenStatus.prototype, {
 
     if (igtf_payment_methods.length > 0) {
       return this.env.utils.formatForeignCurrency(
-        this.props.order.get_foreign_total_with_tax() + this.props.order.get_foreign_rounding_applied() + this.props.order.get_foreign_igtf_amount()
+        this.props.order.get_foreign_total_with_tax() + this.props.order.get_foreign_rounding_applied()
       );
     } else {
       return this.env.utils.formatForeignCurrency(
