@@ -4,7 +4,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "1.0",
+    "version": "19.0.1.0.0",
     "depends": ["crm", "sale", "l10n_ve_rate", "l10n_ve_accountant"],
     "data": [
         "views/crm_lead_views.xml",
