@@ -1015,7 +1015,20 @@ class AccountMove(models.Model):
         taxing each product's OWN `foreign_price` directly (legacy per-line
         method) so the manually-priced line's tax follows ITS price, not
         the document rate.
+
+        The same fallback is also used whenever the company's base
+        currency is USD: `amount_total`/`tl.balance` are then native USD
+        amounts already rounded to 2 decimals, and multiplying that
+        already-rounded value by the (large, VEF-per-USD) `rate` amplifies
+        a fraction-of-a-cent USD rounding difference into several
+        bolivares of drift -- the "sum(native x rate) == amount_total x
+        rate exactly" argument above only holds while the native side
+        keeps enough precision relative to the alterno side, which isn't
+        the case when native is the small-magnitude, 2-decimal currency.
+        Taxing `foreign_price` directly (it keeps its own higher "Foreign
+        Product Price" precision) avoids that amplification.
         """
+        usd = self.env.ref("base.USD", raise_if_not_found=False)
         guarded = self.env.cr.cache.setdefault('_foreign_tax_balanced_set', set())
         for move in moves:
             if move.state != 'draft':
@@ -1046,7 +1059,8 @@ class AccountMove(models.Model):
             guarded.add(move.id)
             try:
                 manual_alterno = any(base_lines.mapped('foreign_price_manual'))
-                if manual_alterno:
+                is_usd_base = bool(usd and move.company_id.currency_id == usd)
+                if manual_alterno or is_usd_base:
                     self._compute_foreign_tax_balance_from_lines(move, fc, tax_amls)
                 else:
                     rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
