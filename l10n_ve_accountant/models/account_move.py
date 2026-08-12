@@ -187,7 +187,10 @@ class AccountMove(models.Model):
                     total_residual_currency += line.foreign_amount_residual
             sign = move.direction_sign
             if move.is_invoice(include_receipts=True):
-                move.foreign_amount_residual = -sign * total_residual_currency
+                amount = -sign * total_residual_currency
+                if amount <= 0:
+                    amount = 0.0
+                move.foreign_amount_residual = amount
             else:
                 move.foreign_amount_residual = abs(total_residual_currency)
 
