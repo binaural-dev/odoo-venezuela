@@ -1,4 +1,5 @@
 import logging
+import math
 from collections import defaultdict
 from contextlib import contextmanager
 
@@ -171,7 +172,6 @@ class AccountMove(models.Model):
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
     foreign_amount_residual = fields.Monetary(
-        'Foreign Amount Residual',
         copy=False,
         compute='_compute_foreign_amount_residual',
         currency_field='foreign_currency_id',
@@ -322,9 +322,13 @@ class AccountMove(models.Model):
         for move in moves:
             if move.move_type != "in_invoice":
                 move._compute_rate()
-            if move.move_type in ("out_refund", "in_refund") and move.reversed_entry_id:
-                move.foreign_rate = move.reversed_entry_id.foreign_rate
-                move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
+            else:
+                origin = move.reversed_entry_id or move.debit_origin_id
+                if origin:
+                    move.with_context(l10n_ve_force_rate_write=True).write({
+                        'foreign_rate': origin.foreign_rate,
+                        'foreign_inverse_rate': origin.foreign_inverse_rate,
+                    })
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 move.foreign_currency_id.id, move.invoice_date or fields.Date.context_today(self)
@@ -340,6 +344,30 @@ class AccountMove(models.Model):
         return moves
 
     def write(self, vals):
+        """
+        Prevents external writes to foreign_rate/foreign_inverse_rate on
+        rectificativas linked to an origin (reversed_entry_id/debit_origin_id),
+        so their rate always stays tied to the origin's. The recordset is
+        split between linked and unlinked moves so a batch write() only
+        strips those fields for the linked subset, leaving unrelated moves
+        in the same call unaffected.
+        """
+        if not self.env.context.get('l10n_ve_force_rate_write') and vals.keys() & {"foreign_rate", "foreign_inverse_rate"}:
+            linked = self.filtered(lambda m: m.reversed_entry_id or m.debit_origin_id)
+            if linked and linked != self:
+                stripped_vals = {
+                    k: v
+                    for k, v in vals.items()
+                    if k not in ("foreign_rate", "foreign_inverse_rate")
+                }
+                linked.write(stripped_vals)
+                return (self - linked).write(vals)
+            if linked:
+                vals = {
+                    k: v
+                    for k, v in vals.items()
+                    if k not in ("foreign_rate", "foreign_inverse_rate")
+                }
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
@@ -634,7 +662,7 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat) if move.partner_id.vat else ''
             move.vat = vat.upper()
 
-    @api.depends("invoice_date","foreign_currency_id","date")
+    @api.depends("invoice_date", "foreign_currency_id", "date", "reversed_entry_id", "debit_origin_id")
     def _compute_rate(self):
         self._compute_rate_for_documents(
             self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
@@ -651,6 +679,13 @@ class AccountMove(models.Model):
 
         for move in documents:
             if move.manually_set_rate:
+                continue
+            origin = move.reversed_entry_id or move.debit_origin_id
+            if origin:
+                move.with_context(l10n_ve_force_rate_write=True).write({
+                    'foreign_rate': origin.foreign_rate,
+                    'foreign_inverse_rate': origin.foreign_inverse_rate,
+                })
                 continue
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.context_today(self)
@@ -869,7 +904,7 @@ class AccountMove(models.Model):
                         'view_mode': 'form',
                         'view_id': False,
                         'target': 'new',
-                        'context': {'default_move_id': self.id},
+                        'context': {'default_move_id': move.id},
                     }
 
         for invoice in self:
@@ -940,8 +975,82 @@ class AccountMove(models.Model):
         self._compute_foreign_tax_balance(container['records'])
         self._distribute_foreign_pt_residual(container['records'])
 
+    @api.model
+    def _apportion_largest_remainder(self, ideal_values, target_total, decimal_places):
+        """Round each of ``ideal_values`` (unrounded, signed) to ``decimal_places``
+        so that they sum EXACTLY to ``round(target_total, decimal_places)``.
+
+        Uses the largest-remainder method: each value is floored first, then
+        the gap between the sum of floors and the target is handed out to the
+        entries whose fractional part was closest to rounding up. This is the
+        standard, deterministic way to reconcile independently-rounded parts
+        to a total that was rounded once -- no arbitrary "shove the diff into
+        one line" patch involved.
+
+        The bulk of that gap is distributed in one `divmod` pass (O(n)), and
+        only the last few units are handed out one by one to the largest
+        remainders -- never a naive one-cent-at-a-time loop over the whole
+        gap, which would be O(remaining) and can hang for minutes when the
+        ideal values are wildly off-scale from the target (e.g. a bug
+        upstream). If the bulk step pushes any entry negative, a final pass
+        claws back units from the smallest-remainder entries to fix it.
+        """
+        n = len(ideal_values)
+        if n == 0:
+            return []
+        scale = 10 ** decimal_places
+        target_scaled = round(target_total * scale)
+        signs = [1 if v >= 0 else -1 for v in ideal_values]
+        scaled = [abs(v) * scale for v in ideal_values]
+        floors = [math.floor(v) for v in scaled]
+        remainders = [s - f for s, f in zip(scaled, floors)]
+        result = floors[:]
+        remaining = target_scaled - sum(floors)
+        order = sorted(range(n), key=lambda i: -remainders[i])
+        if remaining != 0:
+            base, extra = divmod(abs(remaining), n)
+            step = 1 if remaining > 0 else -1
+            for i in range(n):
+                result[i] += step * base
+            for i in range(extra):
+                result[order[i]] += step
+        idx = 0
+        order_rev = list(reversed(order))
+        while any(v < 0 for v in result):
+            neg_idx = next(i for i, v in enumerate(result) if v < 0)
+            donor = order_rev[idx % n]
+            if result[donor] > 0:
+                result[donor] -= 1
+                result[neg_idx] += 1
+            idx += 1
+            if idx > n * 4:
+                break
+        return [sign * (val / scale) for sign, val in zip(signs, result)]
+
     def _compute_foreign_tax_balance(self, moves):
-        """Compute and write foreign_balance on tax lines."""
+        """Compute and write foreign_balance on tax lines.
+
+        Product lines' `foreign_subtotal` is computed bottom-up (unit price in
+        foreign currency x quantity, see account_move_line.py). Taxes, instead
+        of being independently re-taxed in the foreign currency (which used to
+        introduce its OWN rounding pass and could drift a couple cents from a
+        straight `amount_total x rate` conversion), are derived from their
+        ALREADY-CORRECT native amount times the SAME single move rate --
+        mathematically, sum(native components) == amount_total exactly, so
+        sum(native component x rate) == amount_total x rate exactly too. Only
+        the final per-line rounding to cents can introduce drift, and that is
+        resolved via `_apportion_largest_remainder` so product + tax lines
+        always sum, by construction, to the direct conversion of amount_total
+        (matching what the payment wizard / manual total x rate shows).
+
+        If a product's alterno was manually overridden to NOT match the
+        document rate, anchoring the tax total to `amount_total x rate`
+        would be wrong (the whole point of the override is to deviate from
+        it), so that case falls back to `_compute_foreign_tax_balance_from_lines`,
+        taxing each product's OWN `foreign_price` directly (legacy per-line
+        method) so the manually-priced line's tax follows ITS price, not
+        the document rate.
+        """
         guarded = self.env.cr.cache.setdefault('_foreign_tax_balanced_set', set())
         for move in moves:
             if move.state != 'draft':
@@ -963,104 +1072,105 @@ class AccountMove(models.Model):
             if not tax_amls:
                 continue
 
+            rate = move.foreign_inverse_rate or 0.0
+            if not rate:
+                continue
+
             if move.id in guarded:
                 continue
             guarded.add(move.id)
             try:
-                foreign_per_key = {}
-                sign = move.direction_sign if move.is_invoice(include_receipts=True) else 1
-                for bl in base_lines:
-                    if bl.display_type != 'product':
-                        continue
-                    quantity = bl.quantity if move.is_invoice(include_receipts=True) else 1.0
-                    discount = bl.discount if move.is_invoice(include_receipts=True) else 0.0
-                    base_amount = sign * bl.foreign_price * (1 - discount / 100)
-                    foreign_res = bl.tax_ids.compute_all(
-                        base_amount,
-                        currency=fc,
-                        quantity=quantity,
-                        product=bl.product_id,
-                        partner=move.partner_id,
-                        is_refund=move.move_type in ('out_refund', 'in_refund'),
-                        handle_price_include=True,
-                        include_caba_tags=move.always_tax_exigible,
-                        fixed_multiplicator=sign,
-                    )
-                    for tax in foreign_res['taxes']:
-                        if not tax['amount']:
-                            continue
-                        key = (tax['tax_repartition_line_id'], bl.account_id.id)
-                        foreign_per_key.setdefault(key, []).append(tax['amount'])
-
-                tax_lines_by_key = {}
-                for tl in tax_amls:
-                    key = (tl.tax_repartition_line_id.id, tl.account_id.id)
-                    tax_lines_by_key.setdefault(key, []).append(tl)
-
-                for (rep_line, acct), lines in tax_lines_by_key.items():
-                    amounts = foreign_per_key.get((rep_line, acct))
-                    if not amounts:
-                        for (r2, a2), amts in foreign_per_key.items():
-                            if r2 == rep_line:
-                                amounts = (amounts or []) + amts
-                    if not amounts:
-                        continue
-                    if len(lines) == len(amounts):
-                        pairs = zip(lines, amounts)
+                manual_alterno = any(base_lines.mapped('foreign_price_manual'))
+                if manual_alterno:
+                    self._compute_foreign_tax_balance_from_lines(move, fc, tax_amls)
+                else:
+                    rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+                    if move.currency_id == fc:
+                        target_total = fee(abs(move.amount_total))
                     else:
-                        total_ac = sum(abs(l.amount_currency) for l in lines if l.amount_currency)
-                        if fc.is_zero(total_ac):
-                            continue
-                        total_fb = sum(amounts)
-                        pairs = [
-                            (tl, fee(total_fb * abs(tl.amount_currency) / total_ac))
-                            for tl in lines
-                        ]
-                    for tl, amount in pairs:
-                        fb = fee(amount)
+                        target_total = fee(move.currency_id._convert(
+                            abs(move.amount_total), fc, move.company_id, rate_date,
+                            custom_rate=rate,
+                        ))
+                    product_total = sum(abs(l.foreign_subtotal) for l in base_lines)
+                    tax_target = target_total - product_total
+                    ideal_amounts = [abs(tl.balance) * rate for tl in tax_amls]
+                    apportioned = self._apportion_largest_remainder(
+                        ideal_amounts, tax_target, fc.decimal_places
+                    )
+                    for tl, magnitude in zip(tax_amls, apportioned):
+                        fb = magnitude if tl.balance >= 0 else -magnitude
                         if not fc.is_zero(tl.foreign_balance - fb):
                             if fb >= 0:
                                 tl.write({'foreign_debit': fb, 'foreign_credit': 0.0})
                             else:
                                 tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
-
-                rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-                if move.currency_id == fc:
-                    expected = fee(abs(move.amount_total))
-                else:
-                    expected = fee(move.currency_id._convert(
-                        abs(move.amount_total), fc, move.company_id, rate_date,
-                        custom_rate=move.foreign_inverse_rate or 0.0,
-                    ))
-                product_total = sum(abs(l.foreign_subtotal) for l in move.line_ids if l.display_type == 'product')
-                tax_total = sum(abs(l.foreign_balance) for l in move.line_ids if l.display_type == 'tax')
-                diff = fee(expected - fee(product_total + tax_total))
-                if not fc.is_zero(diff):
-                    manual_alterno = any(move.invoice_line_ids.filtered('foreign_price_manual'))
-                    counterpart = move.line_ids.filtered(
-                        lambda l: not l.tax_repartition_line_id
-                        and l.account_id.account_type in ('asset_receivable', 'liability_payable')
-                        and not l.display_type
-                    )
-                    if counterpart:
-                        target = counterpart[0]
-                        side = 'foreign_debit' if target.foreign_debit > 0 else 'foreign_credit'
-                        new_abs = fee(product_total + tax_total)
-                        if manual_alterno:
-                            _logger.info(
-                                "Foreign tax reconciliation: move %s residual %s redirected "
-                                "to counterpart (manual alterno present)",
-                                move.id, diff,
-                            )
-                        signed = new_abs if side == 'foreign_debit' else -new_abs
-                        target.write({
-                            'foreign_balance': signed,
-                            'foreign_debit': new_abs if side == 'foreign_debit' else 0.0,
-                            'foreign_credit': new_abs if side == 'foreign_credit' else 0.0,
-                            'not_foreign_recalculate': True,
-                        })
             finally:
                 guarded.discard(move.id)
+
+    def _compute_foreign_tax_balance_from_lines(self, move, fc, tax_amls):
+        """Legacy per-line method: tax each product's OWN `foreign_price`
+        (whatever it is, manual or computed) via `compute_all`, then map the
+        resulting foreign tax amounts back onto the journal's tax lines.
+        Used only when a manual alterno override is present on the move
+        (see `_compute_foreign_tax_balance`), since in that case there is no
+        single document rate that all components should reconcile to.
+        """
+        fee = fc.round
+        sign = move.direction_sign if move.is_invoice(include_receipts=True) else 1
+        foreign_per_key = {}
+        for bl in move.invoice_line_ids.filtered(lambda l: l.display_type == 'product'):
+            quantity = bl.quantity if move.is_invoice(include_receipts=True) else 1.0
+            discount = bl.discount if move.is_invoice(include_receipts=True) else 0.0
+            base_amount = sign * bl.foreign_price * (1 - discount / 100)
+            foreign_res = bl.tax_ids.compute_all(
+                base_amount,
+                currency=fc,
+                quantity=quantity,
+                product=bl.product_id,
+                partner=move.partner_id,
+                is_refund=move.move_type in ('out_refund', 'in_refund'),
+                handle_price_include=True,
+                include_caba_tags=move.always_tax_exigible,
+                fixed_multiplicator=sign,
+            )
+            for tax in foreign_res['taxes']:
+                if not tax['amount']:
+                    continue
+                key = (tax['tax_repartition_line_id'], bl.account_id.id)
+                foreign_per_key.setdefault(key, []).append(tax['amount'])
+
+        tax_lines_by_key = {}
+        for tl in tax_amls:
+            key = (tl.tax_repartition_line_id.id, tl.account_id.id)
+            tax_lines_by_key.setdefault(key, []).append(tl)
+
+        for (rep_line, acct), lines in tax_lines_by_key.items():
+            amounts = foreign_per_key.get((rep_line, acct))
+            if not amounts:
+                for (r2, a2), amts in foreign_per_key.items():
+                    if r2 == rep_line:
+                        amounts = (amounts or []) + amts
+            if not amounts:
+                continue
+            if len(lines) == len(amounts):
+                pairs = zip(lines, amounts)
+            else:
+                total_ac = sum(abs(l.amount_currency) for l in lines if l.amount_currency)
+                if fc.is_zero(total_ac):
+                    continue
+                total_fb = sum(amounts)
+                pairs = [
+                    (tl, fee(total_fb * abs(tl.amount_currency) / total_ac))
+                    for tl in lines
+                ]
+            for tl, amount in pairs:
+                fb = fee(amount)
+                if not fc.is_zero(tl.foreign_balance - fb):
+                    if fb >= 0:
+                        tl.write({'foreign_debit': fb, 'foreign_credit': 0.0})
+                    else:
+                        tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
 
     def _distribute_foreign_pt_residual(self, moves):
         """Distributes foreign_debit/foreign_credit across payment term lines
@@ -1070,6 +1180,13 @@ class AccountMove(models.Model):
         Runs at the end of _sync_dynamic_lines (initial distribution)
         and also from the write hook of AccountMoveLine when the real
         portion adjusts the native balances of PT lines.
+
+        For a third currency (neither the company's nor the alterno's), the
+        total is the aggregate direct conversion of `amount_total`; for the
+        base/alternate currency the line-by-line sum of the other entries is
+        used instead. Any rounding gap between that aggregate and the
+        line-by-line sum is absorbed by a PRODUCT line (never a tax line),
+        keeping the entry balanced without ever touching the tax amount.
         """
         for move in moves:
             if move.state != 'draft':
@@ -1089,14 +1206,13 @@ class AccountMove(models.Model):
             if not pt_lines:
                 continue
 
-            # For third currency use aggregate (total conversion),
-            # for base/alternate currency use line-by-line sum
             if move.currency_id not in (move.company_id.currency_id, fc):
                 aggregate = move.currency_id._convert(
                     abs(move.amount_total),
                     fc,
                     move.company_id,
                     move.invoice_date or fields.Date.today(),
+                    custom_rate=move.foreign_inverse_rate or 0.0,
                 )
                 total_debit = aggregate
                 total_credit = aggregate
@@ -1135,15 +1251,13 @@ class AccountMove(models.Model):
                         'not_foreign_recalculate': True,
                     })
 
-            # Adjust a non-PT line to absorb the rounding
-            # difference between the aggregate and the line-by-line sum,
-            # keeping the entry balanced to the correct value.
             if move.currency_id not in (move.company_id.currency_id, fc):
                 side_total = sum(other.mapped("foreign_credit")) if move.is_inbound() else sum(other.mapped("foreign_debit"))
                 diff = aggregate - side_total
                 if not fc.is_zero(diff):
                     target_key = "foreign_credit" if move.is_inbound() else "foreign_debit"
-                    target = other.filtered(lambda l: l[target_key] > 0).sorted(key=lambda l: -l[target_key])[:1]
+                    product_lines = other.filtered(lambda l: l.display_type == 'product')
+                    target = product_lines.filtered(lambda l: l[target_key] > 0).sorted(key=lambda l: -l[target_key])[:1]
                     if target:
                         cur_val = target[0][target_key]
                         target.write({
@@ -1179,6 +1293,17 @@ class AccountMove(models.Model):
 
 
     def _distribute_invoice_real_portion(self, move, cc):
+        """Correct the company-currency ("real portion") rounding gap on an
+        invoice's non-payment-term lines.
+
+        The expected total is the direct conversion of `amount_total` at the
+        document's own rate (never `line.currency_rate`, which is derived
+        from an already-rounded balance and would amplify the error), signed
+        to match the non-PT lines' natural side: credit/negative for sale
+        documents, debit/positive for purchase documents. Any gap between
+        that expected total and the actual sum of non-PT balances is
+        distributed across them via `_distribute_to_lines`.
+        """
         non_pt = move.line_ids.filtered(
             lambda l: l.display_type not in ('payment_term', 'cogs')
         )
@@ -1189,18 +1314,15 @@ class AccountMove(models.Model):
         if cc.is_zero(actual_non_pt):
             return
 
-        # Calculate expected total from direct document conversion
         total_currency = abs(move.amount_total)
         rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
         expected_total = cc.round(move.currency_id._convert(
             total_currency, cc, move.company_id, rate_date,
             custom_rate=move.foreign_inverse_rate or 0.0,
         ))
-        # non-PT lines are credit for sale docs (negative), debit for purchase docs (positive)
         sign = -1 if move.amount_total_signed > 0 else 1
         expected_total *= sign
 
-        # Correct non_pt if it diverges from expected
         non_pt_diff = cc.round(expected_total - actual_non_pt)
         tolerance = cc.rounding * len(move.line_ids)
         if abs(non_pt_diff) > tolerance:
