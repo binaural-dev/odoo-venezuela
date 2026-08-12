@@ -1,13 +1,47 @@
 {
     "name": "Venezuela - Contabilidad",
-    "summary": """
-       Módulo de Contabilidad Venezuela
-    """,
+    "summary": "Módulo de Contabilidad Venezuela",
+    "description": """
+Propósito
+---------
+Módulo base de contabilidad de la localización venezolana: numeración
+correlativa de comprobantes, unidad tributaria, cálculo y seguimiento del
+monto equivalente en moneda alterna (extranjera) a lo largo de todo el
+ciclo contable (facturas, pagos, extractos bancarios, conciliaciones), y
+los reportes/asistentes contables propios de Venezuela.
+
+Funcionalidades principales
+---------------------------
+* Numeración de comprobantes única por contacto/diario/estado, y gestión
+  de la Unidad Tributaria (``tax.unit``).
+* Cálculo de la moneda alterna en cada punto del ciclo contable: precio
+  unitario y subtotal de línea, impuestos, términos de pago, extractos
+  bancarios y conciliaciones -- siempre anclado al total real del
+  documento/asiento para que coincida con lo que ve el usuario en el
+  wizard de pago.
+* Distribución del "real portion" (ajuste de redondeo entre la moneda de
+  la compañía y la de terceros) sin afectar nunca las líneas de impuesto.
+* Alerta de límite de crédito del cliente al confirmar una factura de
+  venta, y bloqueo de edición de tasas de cambio salvo para el grupo
+  autorizado.
+* Wizard de registro de pagos con tasa alterna, reportes de detalle de
+  factura y de pagos, y asistente de alerta al publicar un asiento.
+
+Cambios en UI / Modelos impactados
+------------------------------------
+* Modifica ``account.move``, ``account.move.line``, ``account.payment``,
+  ``account.bank.statement.line``, ``account.payment.term``,
+  ``res.currency``, ``res.partner`` y ``res.company``; agrega el modelo
+  ``tax.unit``.
+* Vistas de factura, apunte contable, pago, contacto, moneda, ajustes de
+  configuración y el wizard de registro de pagos; reportes de detalle de
+  factura y de pagos.
+""",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.0.0.56",
+    "version": "17.0.0.0.60",
     "depends": [
         "base",
         "web",
