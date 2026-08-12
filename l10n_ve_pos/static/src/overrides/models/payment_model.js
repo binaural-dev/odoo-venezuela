@@ -37,7 +37,9 @@ patch(Payment.prototype, {
 				this.set_foreign_amount(this.order.get_foreign_due() + this.order.get_foreign_rounding_applied(), true);
 				return res;
 			}
-			this.foreign_amount = round_di(amount * this.pos.foreign_currency.rate, this.pos.foreign_currency.decimal_places);
+			// Se convierte con la tasa de la orden (la misma de las lineas y de la
+			// impresora fiscal), no con la tasa global de la moneda.
+			this.foreign_amount = round_pr(amount * this.order.get_conversion_rate(), this.pos.foreign_currency.rounding);
 
 		}
 		return res;

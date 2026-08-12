@@ -50,8 +50,10 @@ patch(Order.prototype, {
     return round_pr(amount, this.pos.currency.rounding);
   },
   _igtfToForeign(amount) {
+    // Se usa la misma tasa que las lineas de la orden (get_conversion_rate),
+    // no la tasa cruda de la configuracion, para no introducir descuadres.
     return round_pr(
-      amount * (this._isBsBase() ? this.pos.foreign_currency.rate : this._getBsRate()),
+      amount * (this._isBsBase() ? this.pos.foreign_currency.rate : this.get_conversion_rate()),
       this.pos.foreign_currency.rounding,
     );
   },
@@ -161,7 +163,13 @@ patch(Order.prototype, {
     return this._igtfRoundLocal(res + (this.igtf_amount || 0));
   },
   get_foreign_total_with_tax() {
-    return this._igtfToForeign(this.get_total_with_tax());
+    // El total alterno debe ser la suma linea a linea (misma base que la
+    // impresora fiscal y el asiento contable). El IGTF ya convertido se suma
+    // encima; nunca se reconvierte el total en la moneda base.
+    return round_pr(
+      this.get_foreign_total_without_igtf() + (this.foreign_igtf_amount || 0),
+      this.pos.foreign_currency.rounding,
+    );
   },
 
   // get_due incluye recargo IGTF para que la precarga de pagos sea correcta
