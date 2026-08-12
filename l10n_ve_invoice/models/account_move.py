@@ -49,6 +49,8 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
+    free_form_copy_number = fields.Integer(default=0, copy=False)
+
     invoice_date_display_datetime = fields.Datetime(
         string="Invoice Date",
         readonly=True,
@@ -406,4 +408,63 @@ class AccountMove(models.Model):
             elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
                 move.correlative = False
                 move.declaration_unique_of_customs = False
+        return res
+
+    
+    def print_invoice_free_form(self):
+        self.ensure_one()
+        self.free_form_copy_number += 1
+
+        # Si ya existe un archivo adjunto principal, se descarga directamente
+        if self.message_main_attachment_id:
+            attachment = self.message_main_attachment_id
+            return {
+                'type': 'ir.actions.act_url',
+                'url': f'/web/content/{attachment.id}?download=true',
+                'target': 'download',
+            }
+
+        # Si no existe, genera el reporte mediante la acción QWeb estándar
+        report = self.env.ref("l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice")
+        return report.report_action(self)
+
+
+    def _message_set_main_attachment_id(self, attachments, force=False, filter_xml=True):
+        """
+        Solo permite establecer el message_main_attachment_id si la llamada 
+        proviene del flujo explícito de impresión o envío mediante free_form_copy_number.
+        """
+        if self.free_form_copy_number >= 1 and not self.message_main_attachment_id:
+            return super()._message_set_main_attachment_id(attachments, force=force, filter_xml=filter_xml)
+        
+        return
+
+    def _get_mail_thread_data_attachments(self):
+        self.ensure_one()
+        
+        if self.message_main_attachment_id:
+            res = self.message_main_attachment_id
+            
+            if 'original_id' in self.env['ir.attachment']._fields:
+                svg_ids = res.filtered(lambda attachment: attachment.mimetype == 'image/svg+xml')
+                non_svg_ids = res - svg_ids
+                original_ids = res.mapped('original_id')
+                res = res.filtered(
+                    lambda attachment: (attachment in svg_ids and attachment not in original_ids) 
+                    or (attachment in non_svg_ids and attachment.original_id not in non_svg_ids)
+                )
+            
+            return res
+
+        return super()._get_mail_thread_data_attachments()
+
+
+    def action_invoice_sent(self):
+        """ Sobrescribimos para pasar la clave de contexto 'allow_main_attachment_from_system'
+            al abrir la ventana/wizard de enviar e imprimir factura.
+        """
+        self.free_form_copy_number += 1
+        
+        res = super(AccountMove, self).action_invoice_sent()
+
         return res
