@@ -669,16 +669,15 @@ class AccountRetention(models.Model):
             if not retention.date:
                 retention.date = today
 
+            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
+                retention._set_sequence()
+
             move_ids = retention.mapped("retention_line_ids.move_id")
             self.set_voucher_number_in_invoice(move_ids, retention)
 
             if not retention.payment_ids:
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
-
-            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
-                retention._set_sequence()
-                self.set_voucher_number_in_invoice(move_ids, retention)
 
             if retention.type_retention == "iva":
                 if not re.fullmatch(r"\d{14}", retention.number):
