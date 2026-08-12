@@ -9,8 +9,12 @@
                     <field name="show_digital_retention_iva" invisible="1"/>
                     <field name="control_number_tfhka" invisible="1"/>
                     <button name="generate_document_digital" string="Generate Digital Retention" type="object"
-                            context="{'document_type': '05'}" 
+                            context="{'document_type': '05'}"
                             invisible="show_digital_retention_iva"/>
+                    <field name="annulled_tfhka" invisible="1"/>
+                    <button name="action_annul_tfhka" string="Cancel in TFHKA" type="object"
+                            invisible="not is_digitalized or annulled_tfhka"
+                            groups="account.group_account_manager"/>
                 </xpath>
                 <xpath expr="//field[@name='type']" position="before">
                     <field name="is_digitalized" string="Digitized" readonly="True"/>

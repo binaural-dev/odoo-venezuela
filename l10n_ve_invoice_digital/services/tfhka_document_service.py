@@ -63,15 +63,18 @@ class TfhkaDocumentService(models.AbstractModel):
         client = self.env["tfhka.api.client"]
 
         client.query_numbering(company, series)
-        document_number = client.get_last_document_number(company, document_type, series)
-        try:
-            document_number = int(document_number) + 1
-        except (ValueError, TypeError):
-            document_number = 1
-        current_number = invoice.sequence_number
 
-        if document_number != current_number and invoice.company_id.sequence_validation_tfhka:
-            raise UserError(_("The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The Factory (%(factory_seq)s).Please check your numbering settings.", odoo_seq=current_number, factory_seq=document_number))
+        # Secuencia: en modo "pago primero" (o con la sincronización desactivada)
+        # se usa el correlativo local de Odoo; en el modo normal se ADOPTA el
+        # correlativo de The Factory (último + 1) y luego se sincroniza el diario.
+        if company.digitalization_with_payment_tfhka or not company.sequence_validation_tfhka:
+            document_number = invoice.sequence_number
+        else:
+            last = client.get_last_document_number(company, document_type, series)
+            try:
+                document_number = int(last) + 1
+            except (ValueError, TypeError):
+                document_number = invoice.sequence_number or 1
 
         document_number = str(document_number)
 
@@ -104,14 +107,13 @@ class TfhkaDocumentService(models.AbstractModel):
             payload["documentoElectronico"]["infoAdicional"] = additional_information
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(invoice))
-        _logger.info(f"---| {payload}")
         response = self.env["tfhka.api.client"].emit(invoice.company_id, payload)
 
         if response:
-            self._register_success(invoice, response)
+            self._register_success(invoice, response, document_number)
             return
 
-    def _register_success(self, invoice, response):
+    def _register_success(self, invoice, response, document_number):
         invoice.is_digitalized = True
         emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
         invoice.message_post(
@@ -120,6 +122,38 @@ class TfhkaDocumentService(models.AbstractModel):
         )
         num_control_tfhka = response.get("resultado").get("numeroControl")
         invoice.correlative = num_control_tfhka
+
+        # Sincronización de secuencia: si se adoptó el correlativo de The Factory
+        # (modo normal) y difiere del de Odoo, se avanza el diario y se renombra
+        # la factura al número asignado por The Factory.
+        company = invoice.company_id
+        if (
+            not company.digitalization_with_payment_tfhka
+            and company.sequence_validation_tfhka
+            and str(invoice.sequence_number) != str(document_number)
+        ):
+            try:
+                number = int(document_number)
+                field = self._get_sequence_field(invoice)
+                invoice.journal_id.sudo().write({field: number + 1})
+                invoice.name = self._get_document_name(invoice, number)
+            except Exception as error:
+                _logger.error("No se pudo sincronizar la secuencia del diario TFHKA: %s", error)
+
+    def _get_sequence_field(self, invoice):
+        if invoice.move_type == "out_refund":
+            return "refund_sequence_number_next"
+        return "sequence_number_next"
+
+    def _get_document_name(self, invoice, number):
+        journal = invoice.journal_id
+        sequence = (
+            journal.refund_sequence_id
+            if invoice.move_type == "out_refund" and journal.refund_sequence_id
+            else journal.sequence_id
+        )
+        prefix = sequence.prefix or ""
+        return f"{prefix}{str(number).zfill(8)}"
 
     def _prepare_extra_payload_values(self, invoice):
         """Hook de extensión: valores extra del payload. Por defecto vacío."""
@@ -364,14 +398,17 @@ class TfhkaDocumentService(models.AbstractModel):
                 "totalIGTF": str(totalIGTF),
                 "totalIGTF_VES": str(totalIGTF_VES),
             }
-            payment_forms = self._prepare_payments(record)
+            # Cuadro de pago: el bloque formasPago solo se adjunta cuando el
+            # usuario activó "Mostrar cuadro de pago" en la factura.
+            if record.show_payment_box:
+                payment_forms = self._prepare_payments(record)
 
-            if payment_forms:
-                if len(payment_forms) > 5:
-                    raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
-                if any(not method.get('forma') for method in payment_forms):
-                    raise ValidationError(_("The payment method code is not configured in the journal."))
-                totals["formasPago"] = payment_forms
+                if payment_forms:
+                    if len(payment_forms) > 5:
+                        raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
+                    if any(not method.get('forma') for method in payment_forms):
+                        raise ValidationError(_("The payment method code is not configured in the journal."))
+                    totals["formasPago"] = payment_forms
 
             if amounts_foreign:
                 foreign_totals = {

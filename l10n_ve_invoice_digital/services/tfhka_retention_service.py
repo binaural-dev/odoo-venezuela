@@ -57,6 +57,40 @@ class TfhkaRetentionService(models.AbstractModel):
 
         return self.generate_document_data(retention, document_number, document_type, validation_sequence)
 
+    def annul_retention(self, retention, motivo):
+        """Anula la retención digitalizada en TFHKA (endpoint /Anular).
+
+        Envía serie/tipoDocumento/numeroDocumento + motivo y fecha/hora
+        automáticas. Marca ``annulled_tfhka`` al confirmar.
+        """
+        retention.ensure_one()
+        company = retention.company_id
+        if not retention.is_digitalized:
+            raise UserError(_("The retention has not been digitalized; it cannot be annulled."))
+        if retention.annulled_tfhka:
+            raise UserError(_("The retention has already been annulled in The Factory HKA."))
+
+        document_type = "05" if retention.type_retention == "iva" else "06"
+        numero_documento = retention.document_number_tfhka or str(retention.number)
+        now_local = self._get_emission_datetime(retention)
+
+        payload = {
+            "serie": "",
+            "tipoDocumento": document_type,
+            "numeroDocumento": numero_documento,
+            "motivoAnulacion": motivo,
+            "fechaAnulacion": now_local.strftime("%d/%m/%Y"),
+            "horaAnulacion": now_local.strftime("%I:%M:%S %p").lower(),
+        }
+
+        self.env["tfhka.api.client"].annul(company, payload)
+        retention.write({"annulled_tfhka": True})
+        retention.message_post(
+            body=_("Retention annulled in The Factory HKA. Reason: %s", motivo),
+            message_type='comment',
+        )
+        return True
+
     def generate_document_data(self, retention, document_number, document_type, validation_sequence):
         document_identification = self._prepare_identification(retention, document_type, document_number)
         subject_retention = self._get_fiscal_party(retention)
@@ -80,6 +114,7 @@ class TfhkaRetentionService(models.AbstractModel):
         if response:
             retention.is_digitalized = True
             retention.control_number_tfhka = response.get("resultado").get("numeroControl")
+            retention.document_number_tfhka = str(document_number)
             emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
             if validation_sequence:
                 retention.message_post(
