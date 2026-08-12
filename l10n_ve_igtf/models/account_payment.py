@@ -29,6 +29,8 @@ class AccountPaymentIgtf(models.Model):
         help="IGTF Amount",
     )
 
+    is_igtf = fields.Boolean('is_igtf')
+
     payment_from_wizard = fields.Boolean()
 
     invoices_origin_ids = fields.Many2many('account.move', string='Invoices Origin')
@@ -419,3 +421,16 @@ class AccountPaymentIgtf(models.Model):
         else:
             move_lines = self.env["account.move.line"].browse(ids)
             return set(move_lines.mapped("move_id"))
+
+    @api.onchange("currency_id", "is_igtf_on_foreign_exchange")
+    def _compute_check_igtf(self):
+        """Check if the company is an ordinary contributor."""
+        for payment in self:
+            payment.is_igtf = False
+            if payment.journal_id.is_igtf and payment.partner_id and payment.journal_id.fiscal:
+                if payment.payment_type == "inbound":
+                    if payment.partner_id._check_igtf_apply_improved('out_invoice') and payment.is_igtf_on_foreign_exchange:
+                        payment.is_igtf = True
+                elif payment.payment_type == "outbound":
+                    if payment.partner_id._check_igtf_apply_improved('in_invoice') and payment.is_igtf_on_foreign_exchange:
+                        payment.is_igtf = True
