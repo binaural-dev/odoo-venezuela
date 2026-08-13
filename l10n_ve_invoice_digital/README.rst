@@ -23,33 +23,6 @@ This module enables digital invoicing integration with The Factory HKA (TFHKA) A
 .. contents::
    :local:
 
-Installation
-============
-
-To install this module, you need to have the following modules installed:
-
-* account
-* l10n_ve_igtf
-* account_debit_note
-* l10n_ve_invoice
-* l10n_ve_payment_extension
-
-Usage
-=====
-
-1. Go to *Settings > General Settings > Venezuela - Facturación Digital*.
-2. Configure your TFHKA credentials (Username, Password, URL).
-3. Generate the authentication token.
-4. Enable digital invoicing for the company.
-
-Bug Tracker
-===========
-
-Bugs are tracked on `GitHub Issues <https://github.com/binaural-dev/odoo-venezuela/issues>`_.
-In case of trouble, please check there if your issue has already been reported.
-
-Credits
-=======
 
 Authors
 ~~~~~~~
