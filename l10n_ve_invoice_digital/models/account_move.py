@@ -21,6 +21,11 @@ class AccountMove(models.Model):
     digitalization_with_payment_active = fields.Boolean(
         related="company_id.digitalization_with_payment_tfhka",
     )
+    journal_digital_invoice = fields.Boolean(
+        related="journal_id.digital_invoice",
+        string="Journal Is Digital",
+        help="Used to hide the TFHKA digitalization fields when the journal is not digital.",
+    )
 
     def write(self, vals):
         """Prevent disabling multi_currency_invoice while it is locked by a USD payment."""
@@ -40,7 +45,12 @@ class AccountMove(models.Model):
             invoice._tfhka_validate_mixed_invoicing()
             invoice._tfhka_validate_invoice_date()
 
-        res = super(AccountMove, self).action_post()
+        # Marca de contexto: l10n_ve_payment_extension crea y postea las
+        # retenciones de proveedor (IVA/ISLR) dentro de esta misma cadena de
+        # super(); el contexto se propaga hasta account.retention.action_post()
+        # para que sepa que la retención vino de la factura y pueda
+        # auto-digitalizarse (ver account_retention.py).
+        res = super(AccountMove, self.with_context(l10n_ve_invoice_digital_auto_retention=True)).action_post()
         return res
 
     def _tfhka_validate_invoice_date(self):

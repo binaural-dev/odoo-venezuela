@@ -11,7 +11,7 @@ class StockPicking(models.Model):
     def button_validate(self):
         res = super(StockPicking, self).button_validate()
         for record in self:
-            if record.company_id.dispatch_guide_digital_tfhka and not record.is_digitalized and record.is_dispatch_guide and record.picking_type_id.code != "incoming":
+            if record.state == 'done' and record.company_id.dispatch_guide_digital_tfhka and not record.is_digitalized and record.is_dispatch_guide and record.picking_type_id.code != "incoming":
                 record.generate_document_digital()
         return res
 

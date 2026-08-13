@@ -58,7 +58,7 @@ class TfhkaRetentionService(models.AbstractModel):
 
         return self.generate_document_data(retention, document_number, document_type, validation_sequence)
 
-    def annul_retention(self, retention, motivo):
+    def annul_retention(self, retention, reason):
         """Anula la retención digitalizada en TFHKA (endpoint /Anular).
 
         Envía serie/tipoDocumento/numeroDocumento + motivo y fecha/hora
@@ -72,14 +72,14 @@ class TfhkaRetentionService(models.AbstractModel):
             raise UserError(_("The retention has already been annulled in The Factory HKA."))
 
         document_type = "05" if retention.type_retention == "iva" else "06"
-        numero_documento = retention.document_number_tfhka or str(retention.number)
+        document_number = retention.document_number_tfhka or str(retention.number)
         now_local = self._get_emission_datetime(retention)
 
         payload = {
             "serie": "",
             "tipoDocumento": document_type,
-            "numeroDocumento": numero_documento,
-            "motivoAnulacion": motivo,
+            "numeroDocumento": document_number,
+            "motivoAnulacion": reason,
             "fechaAnulacion": now_local.strftime("%d/%m/%Y"),
             "horaAnulacion": now_local.strftime("%I:%M:%S %p").lower(),
         }
@@ -87,7 +87,7 @@ class TfhkaRetentionService(models.AbstractModel):
         self.env["tfhka.api.client"].annul(company, payload)
         retention.write({"annulled_tfhka": True})
         retention.message_post(
-            body=_("Retention annulled in The Factory HKA. Reason: %s", motivo),
+            body=_("Retention annulled in The Factory HKA. Reason: %s", reason),
             message_type='comment',
         )
         return True
@@ -109,7 +109,7 @@ class TfhkaRetentionService(models.AbstractModel):
             }
         }
         payload["documentoElectronico"].update(self._prepare_extra_retention_values(retention))
-        _logger.info(f"---| {payload}")
+
         response = self.env["tfhka.api.client"].emit(retention.company_id, payload)
 
         if response:
@@ -193,6 +193,22 @@ class TfhkaRetentionService(models.AbstractModel):
 
             return retention_data
 
+    def _get_exempt_amount(self, move, base_currency_is_vef):
+        """Monto exento (Exento/IVA 0%) de la factura afectada, en la misma
+        moneda que el resto de la linea (patron de tfhka_document_service._prepare_totals).
+
+        No asume el nombre del subtotal (en ventas es "Subtotal", en compras
+        puede ser "Untaxed Amount"): recorre todos los subtotales del grupo.
+        """
+        key = "groups_by_subtotal" if base_currency_is_vef else "groups_by_foreign_subtotal"
+        subtotal_groups = move.tax_totals.get(key, {})
+        return sum(
+            group.get("tax_group_base_amount", 0)
+            for groups in subtotal_groups.values()
+            for group in groups
+            if group.get("tax_group_name") in ("Exento", "IVA 0%")
+        )
+
     def _prepare_detail_lines(self, retention, document_type):
         retention_details = []
         type_document = {
@@ -203,10 +219,10 @@ class TfhkaRetentionService(models.AbstractModel):
         counter = 1
         for record in retention:
             for line in record.retention_line_ids:
-                tipo_documento = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
-                serie = line.move_id.name
-                document_series_ret = ''.join([c for c in serie if c.isalpha()])
-                document_number_ret = str(''.join([c for c in serie if c.isdigit()]))
+                line_document_type = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
+                series = line.move_id.name
+                document_series_ret = ''.join([c for c in series if c.isalpha()])
+                document_number_ret = str(''.join([c for c in series if c.isdigit()]))
 
                 if record.base_currency_is_vef:
                     invoice_total = str(round(line.invoice_total, 2))
@@ -223,7 +239,7 @@ class TfhkaRetentionService(models.AbstractModel):
                 retention_data = {
                     "numeroLinea": str(counter),
                     "fechaDocumento": line.move_id.invoice_date.strftime("%d/%m/%Y"),
-                    "tipoDocumento": tipo_documento,
+                    "tipoDocumento": line_document_type,
                     "serieDocumento": document_series_ret,
                     "numeroDocumento": document_number_ret,
                     "numeroControl": line.move_id.correlative,
@@ -237,6 +253,9 @@ class TfhkaRetentionService(models.AbstractModel):
                     retention_data["montoIVA"] = iva_amount
                     retention_data["porcentaje"] = str(round(line.aliquot, 2))
                     retention_data["retenidoIVA"] = str(round(line.related_percentage_tax_base, 2))
+                    retention_data["montoExento"] = str(round(
+                        self._get_exempt_amount(line.move_id, record.base_currency_is_vef), 2
+                    ))
 
                 if document_type == "06":
                     code = line.code
