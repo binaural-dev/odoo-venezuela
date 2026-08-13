@@ -1,35 +1,19 @@
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension">
-        <xpath expr="//div[hasclass('text-success')]" position="after">
-            <div class="total text-center py-2 text-success">
-                <t t-out="foreignTotalDueText" />
-            </div>
-        </xpath>
-
-        <xpath expr="//div[hasclass('payment-status-total-due')]/span[2]" position="inside">
-            <div>
-                <span class="label pe-2">Foreign Total Due</span>
-                <span>
-                    <t t-out="foreignTotalDueText" />
-                </span>
-            </div>
-        </xpath>
-        <xpath expr="//div[hasclass('payment-status-remaining')]/span[2]" position="after">
-            <div>
-                <span class="label pe-2">Foreign Remaining</span>
-                <span class="amount"
-                      t-att-class="{ highlight: props.order.get_due() > 0 }">
-                    <t t-out="foreignRemainingText" />
-                </span>
-            </div>
-        </xpath>
-        <xpath expr="//div[hasclass('payment-status-change')]/span[2]" position="after">
-            <div>
-                <span class="label pe-2">Foreign Change</span>
-                <span class="amount"
-                      t-att-class="{ highlight: props.order.get_change() > 0 }">
-                    <t t-out="foreignChangeText" />
-                </span>
+        <xpath expr="//div[hasclass('payment-status-container')]" position="inside">
+            <div class="payment-status-foreign d-flex flex-column justify-content-center fs-6 ms-lg-4 mt-2 mt-lg-0">
+                <div class="d-flex justify-content-between gap-2">
+                    <span class="label">Foreign Total</span>
+                    <span class="amount fw-semibold" t-out="foreignTotalDueText" />
+                </div>
+                <div class="d-flex justify-content-between gap-2">
+                    <span class="label">Foreign Remaining</span>
+                    <span class="amount" t-out="foreignRemainingText" />
+                </div>
+                <div class="d-flex justify-content-between gap-2">
+                    <span class="label">Foreign Change</span>
+                    <span class="amount" t-out="foreignChangeText" />
+                </div>
             </div>
         </xpath>
     </t>

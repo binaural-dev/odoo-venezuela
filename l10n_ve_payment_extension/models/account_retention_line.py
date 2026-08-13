@@ -428,15 +428,13 @@ class AccountRetentionLine(models.Model):
                                 record.invoice_amount = record.move_id.tax_totals["base_amount"]
                                 record.foreign_invoice_amount = record.move_id.tax_totals["base_amount_currency"]
 
-    @api.depends("invoice_amount", "foreign_invoice_amount")
+    @api.depends("invoice_amount", "foreign_invoice_amount", "move_id")
     def _compute_amounts(self):
         base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
         if not base_currency_is_vef:
             for line in self:
-                if line.invoice_amount > 0 and line.foreign_invoice_amount > 0:
-                    line.invoice_amount = line.foreign_invoice_amount * (
-                        1 / line.foreign_currency_rate
-                    )
+                if line.move_id and line.invoice_amount > 0 and line.foreign_invoice_amount > 0:
+                    line.invoice_amount = line.move_id.tax_totals["base_amount"]
 
     @api.onchange(
         "invoice_amount",
