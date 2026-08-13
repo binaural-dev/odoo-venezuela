@@ -166,7 +166,7 @@ class AccountMoveLine(models.Model):
             if line.foreign_currency_id.compare_amounts(line.foreign_price, expected) != 0:
                 line.foreign_price_manual = True
 
-    @api.depends("foreign_price", "quantity", "discount", "price_total", "price_subtotal",
+    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_total", "price_subtotal",
                   "price_unit", "currency_id", "foreign_inverse_rate",
                   "move_id.foreign_inverse_rate")
     def _compute_foreign_subtotal(self):
@@ -187,7 +187,20 @@ class AccountMoveLine(models.Model):
         Converting the native tax amount directly needs no sibling data at
         all, so only the line actually being edited ever changes, and it
         matches the asiento for sales, purchases, and the invoice alike.
+
+        EXCEPT when the company's base currency is USD: there, the native
+        amounts (`price_total`/`price_subtotal`) are already rounded to
+        USD's 2 decimals BEFORE any conversion happens, and multiplying
+        that already-rounded delta by the (large, VEF-per-USD) rate
+        amplifies a fraction-of-a-cent USD rounding difference into
+        several bolivares of drift. Taxing the alterno base directly
+        (`foreign_price`, which keeps its own higher "Foreign Product
+        Price" precision instead of being rounded to 2 decimals) avoids
+        that double-rounding-then-amplify path entirely -- the same
+        reasoning `price_subtotal` itself follows natively (tax the base
+        directly, never convert a foreign delta into it).
         """
+        usd = self.env.ref("base.USD", raise_if_not_found=False)
         for line in self:
             foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
@@ -197,13 +210,28 @@ class AccountMoveLine(models.Model):
             )
             line.foreign_subtotal = foreign_subtotal
 
-            foreign_tax_amount = line.currency_id._convert(
-                line.price_total - line.price_subtotal,
-                line.foreign_currency_id,
-                line.company_id,
-                line.move_id.invoice_date or fields.Date.today(),
-                custom_rate=line.foreign_inverse_rate,
-            )
+            if usd and line.company_id.currency_id == usd:
+                if line.tax_ids:
+                    foreign_tax_amount = line.foreign_currency_id.round(
+                        line.tax_ids.compute_all(
+                            foreign_price_unit_full_precision,
+                            quantity=line.quantity,
+                            currency=line.foreign_currency_id,
+                            product=line.product_id,
+                            partner=line.partner_id,
+                            is_refund=line.is_refund,
+                        )["total_included"]
+                    ) - foreign_subtotal
+                else:
+                    foreign_tax_amount = 0.0
+            else:
+                foreign_tax_amount = line.currency_id._convert(
+                    line.price_total - line.price_subtotal,
+                    line.foreign_currency_id,
+                    line.company_id,
+                    line.move_id.invoice_date or fields.Date.today(),
+                    custom_rate=line.foreign_inverse_rate,
+                )
             line.foreign_price_total = foreign_subtotal + foreign_tax_amount
 
     def _set_foreign(self, value):

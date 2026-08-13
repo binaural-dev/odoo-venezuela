@@ -1126,6 +1126,152 @@ class TestCoverageGaps(TransactionCase):
             self.assertGreater(rec_line.foreign_debit, 0)
             self.assertEqual(rec_line.foreign_credit, 0.0)
 
+    # ═══════════════════════════════════════════════════════════════
+    # account_move_line.py - _compute_foreign_subtotal: base VEF vs base
+    # USD must use DIFFERENT formulas for the tax portion of
+    # foreign_price_total (base VEF converts the native tax delta; base
+    # USD taxes the alterno base directly, since converting an
+    # already-2-decimal-rounded USD tax amount by a large VEF rate
+    # amplifies sub-cent noise into several bolivares -- see
+    # _compute_foreign_subtotal's docstring).
+    # ═══════════════════════════════════════════════════════════════
+
+    def _direct_foreign_tax(self, line):
+        """Replicates taxing the alterno base directly (compute_all on
+        `foreign_price`), the formula base USD must use."""
+        foreign_price_unit = line.foreign_price * (1 - line.discount / 100.0)
+        taxed = line.tax_ids.compute_all(
+            foreign_price_unit, quantity=line.quantity,
+            currency=line.foreign_currency_id, product=line.product_id,
+            partner=line.partner_id, is_refund=line.is_refund,
+        )["total_included"]
+        return line.foreign_currency_id.round(taxed) - line.foreign_subtotal
+
+    def _converted_native_tax(self, line):
+        """Replicates converting the native tax delta, the formula base
+        VEF must use."""
+        return line.currency_id._convert(
+            line.price_total - line.price_subtotal, line.foreign_currency_id,
+            line.company_id, line.move_id.invoice_date or fields.Date.today(),
+            custom_rate=line.foreign_inverse_rate,
+        )
+
+    def test_foreign_price_total_vef_base_converts_native_tax(self):
+        """Base VEF (this class' default setUp): `foreign_price_total`'s
+        tax portion must match converting the native tax delta, not
+        taxing the alterno base directly -- the two formulas are
+        expected to diverge slightly (see the USD-base test below), and
+        this asserts the VEF-base branch picks the conversion one."""
+        invoice = self._create_invoice(self.currency_vef, 99.99)
+        line = invoice.invoice_line_ids[:1]
+        self.assertTrue(line)
+        actual_tax = line.foreign_price_total - line.foreign_subtotal
+        self.assertAlmostEqual(
+            actual_tax, self._converted_native_tax(line), places=2,
+            msg="base VEF must convert the native tax delta")
+
+    def test_foreign_price_total_usd_base_taxes_alterno_directly(self):
+        """Base USD: `foreign_price_total`'s tax portion must tax the
+        alterno base directly (like `price_subtotal` is taxed natively),
+        NOT convert the native (already USD-2-decimal-rounded) tax delta
+        -- converting it would amplify the native rounding noise by the
+        (large) VEF rate into a visibly wrong bolivar amount.
+
+        99.99 x 16% = 15.9984, which native tax rounds to 16.00 (a real
+        +0.0016 USD rounding bump); multiplied by a ~710 VEF rate that
+        alone is already a ~1.1 Bs difference from the direct-tax
+        result, well above float noise, proving which formula actually
+        ran.
+        """
+        self.company.write({
+            "currency_id": self.currency_usd.id,
+            "currency_foreign_id": self.currency_vef.id,
+        })
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "manually_set_rate": True,
+            "foreign_rate": 709.6935,
+            "foreign_inverse_rate": 709.6935,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 99.99,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        line = invoice.invoice_line_ids[:1]
+        self.assertTrue(line)
+        actual_tax = line.foreign_price_total - line.foreign_subtotal
+        direct_tax = self._direct_foreign_tax(line)
+        converted_tax = self._converted_native_tax(line)
+
+        self.assertNotAlmostEqual(
+            direct_tax, converted_tax, places=1,
+            msg="test premise: the two formulas must actually diverge here")
+        self.assertAlmostEqual(
+            actual_tax, direct_tax, places=2,
+            msg="base USD must tax the alterno base directly")
+        self.assertNotAlmostEqual(
+            actual_tax, converted_tax, places=1,
+            msg="base USD must NOT convert the native tax delta")
+
+    def test_compute_foreign_tax_balance_usd_base_matches_direct_lines(self):
+        """The REAL posted tax line (`_compute_foreign_tax_balance` in
+        account_move.py) must follow the same base-USD rule: its
+        `foreign_debit`/`foreign_credit` must match
+        `_compute_foreign_tax_balance_from_lines` (taxing each product's
+        `foreign_price` directly), not the `amount_total x rate`-anchored
+        apportionment used for base VEF.
+        """
+        self.company.write({
+            "currency_id": self.currency_usd.id,
+            "currency_foreign_id": self.currency_vef.id,
+        })
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": fields.Date.today(),
+            "date": fields.Date.today(),
+            "manually_set_rate": True,
+            "foreign_rate": 709.6935,
+            "foreign_inverse_rate": 709.6935,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 99.99,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        tax_line = invoice.line_ids.filtered(lambda l: l.display_type == 'tax')[:1]
+        self.assertTrue(tax_line)
+        product_line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')[:1]
+        self.assertTrue(product_line)
+        expected_per_key = self._foreign_tax_expected(invoice)
+        # _foreign_tax_expected keys by the BASE (product) line's account,
+        # not the tax line's own account -- see its docstring.
+        key = (tax_line.tax_repartition_line_id.id, product_line.account_id.id)
+        expected_amount = sum(expected_per_key.get(key, []))
+        self.assertAlmostEqual(
+            tax_line.foreign_debit - tax_line.foreign_credit,
+            expected_amount, places=2,
+            msg="posted tax line must match the direct per-line method under base USD")
+
     def test_inverse_foreign_price(self):
         invoice = self._create_invoice(self.currency_usd, 100.0)
         line = invoice.line_ids.filtered(lambda l: l.display_type == 'product')[:1]
