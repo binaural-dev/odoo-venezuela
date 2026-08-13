@@ -161,7 +161,10 @@ patch(Order.prototype, {
     return this._igtfRoundLocal(res + (this.igtf_amount || 0));
   },
   get_foreign_total_with_tax() {
-    return this._igtfToForeign(this.get_total_with_tax());
+    return round_pr(
+      this.get_foreign_total_without_igtf() + (this.foreign_igtf_amount || 0),
+      this.pos.foreign_currency.rounding,
+    );
   },
 
   // get_due incluye recargo IGTF para que la precarga de pagos sea correcta

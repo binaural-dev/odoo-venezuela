@@ -30,7 +30,10 @@ patch(Payment.prototype, {
 		return this.foreign_amount || 0;
 	},
 	set_amount(amount, only = false) {
-		let is_due = amount == this.order.get_due();
+		let is_due = floatIsZero(
+			amount - this.order.get_due(),
+			this.pos.currency.decimal_places,
+		);
 		let res = super.set_amount(...arguments);
 		if (!only) {
 			if (is_due) {
