@@ -982,7 +982,7 @@ class AccountRetention(models.Model):
             lambda l: l.tax_ids and l.tax_ids[0].amount > 0
         ).mapped("tax_ids")
         if not any(tax_ids):
-            raise UserError(_("The invoice %s has no tax."), invoice_id.number)
+            raise UserError(_("The invoice %s has no tax.", invoice_id.number))
 
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []

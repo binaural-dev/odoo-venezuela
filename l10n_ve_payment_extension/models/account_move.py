@@ -192,8 +192,8 @@ class AccountMoveRetention(models.Model):
         for line in islr_retention_lines:
             move = line.move_id
             invoice_base = abs(move.tax_totals.get("amount_untaxed", 0.0))
-            decimal_places = self.currency_id.decimal_places
-            
+            decimal_places = move.currency_id.decimal_places
+
             if float_compare(abs(line.invoice_amount), invoice_base, precision_digits=decimal_places) == 1:
                 raise UserError(
                     _(

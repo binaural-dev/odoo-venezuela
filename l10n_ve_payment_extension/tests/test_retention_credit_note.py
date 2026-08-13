@@ -282,6 +282,12 @@ class TestRetentionCreditNote(TransactionCase):
             "out_refund", self.partner_customer, 200.0, self.sale_journal, self.tax_iva16_sale
         )
 
+        # NOTE: unlike its supplier twin above, customer (out_invoice) ISLR
+        # retention lines are NOT auto-computed by
+        # account_retention_line._compute_retention_amount (it only applies
+        # when retention_id.type == "in_invoice" -- customer amounts are
+        # meant to be filled in manually by the user), so this can't be
+        # built via Form the same way; the amounts must be hand-crafted here.
         retention = self.env["account.retention"].create(
             {
                 "type": "out_invoice",
@@ -455,9 +461,16 @@ class TestRetentionCreditNote(TransactionCase):
             credit_note_retention.payment_ids,
             "Posting the retention over the credit note must create a payment.",
         )
-        self.assertLess(
+        # 5% ISLR tariff over the credit note's 200.0 taxable base (see
+        # cls.payment_concept in setUpClass): the residual must decrease by
+        # exactly that retained amount, not just "some" amount.
+        retained_amount = 200.0 * 0.05
+        self.assertAlmostEqual(
             abs(credit_note.amount_residual),
-            abs(residual_before),
-            "The credit note's residual must decrease once its retention is "
-            "posted and reconciled, not stay untouched.",
+            abs(residual_before) - retained_amount,
+            places=2,
+            msg=(
+                "The credit note's residual must decrease by exactly the "
+                "retained amount once its retention is posted and reconciled."
+            ),
         )
