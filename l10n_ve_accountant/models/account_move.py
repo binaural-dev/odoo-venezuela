@@ -187,7 +187,10 @@ class AccountMove(models.Model):
                     total_residual_currency += line.foreign_amount_residual
             sign = move.direction_sign
             if move.is_invoice(include_receipts=True):
-                move.foreign_amount_residual = -sign * total_residual_currency
+                amount = -sign * total_residual_currency
+                if amount <= 0:
+                    amount = 0.0
+                move.foreign_amount_residual = amount
             else:
                 move.foreign_amount_residual = abs(total_residual_currency)
 
@@ -1058,7 +1061,20 @@ class AccountMove(models.Model):
         taxing each product's OWN `foreign_price` directly (legacy per-line
         method) so the manually-priced line's tax follows ITS price, not
         the document rate.
+
+        The same fallback is also used whenever the company's base
+        currency is USD: `amount_total`/`tl.balance` are then native USD
+        amounts already rounded to 2 decimals, and multiplying that
+        already-rounded value by the (large, VEF-per-USD) `rate` amplifies
+        a fraction-of-a-cent USD rounding difference into several
+        bolivares of drift -- the "sum(native x rate) == amount_total x
+        rate exactly" argument above only holds while the native side
+        keeps enough precision relative to the alterno side, which isn't
+        the case when native is the small-magnitude, 2-decimal currency.
+        Taxing `foreign_price` directly (it keeps its own higher "Foreign
+        Product Price" precision) avoids that amplification.
         """
+        usd = self.env.ref("base.USD", raise_if_not_found=False)
         guarded = self.env.cr.cache.setdefault('_foreign_tax_balanced_set', set())
         for move in moves:
             if move.state != 'draft':
@@ -1089,7 +1105,8 @@ class AccountMove(models.Model):
             guarded.add(move.id)
             try:
                 manual_alterno = any(base_lines.mapped('foreign_price_manual'))
-                if manual_alterno:
+                is_usd_base = bool(usd and move.company_id.currency_id == usd)
+                if manual_alterno or is_usd_base:
                     self._compute_foreign_tax_balance_from_lines(move, fc, tax_amls)
                 else:
                     rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
@@ -1419,5 +1436,47 @@ class AccountMove(models.Model):
             new_balance = currency.round(cur_bal + sign * units * currency.rounding)
             lines.browse(line_id).balance = new_balance
             remaining_units -= units
+
+    
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        """
+        Reverse moves and swap foreign adjustment fields by matching line indices
+        to ensure every line is processed correctly even if sequences are identical.
+        """
+        reverse_moves = super(AccountMove, self)._reverse_moves(
+            default_values_list=default_values_list, 
+            cancel=cancel
+        )
+
+        for move in reverse_moves:
+            original_move = move.reversed_entry_id
+            if not original_move:
+                continue
+
+            lines_to_update = []
+            
+            reversed_lines = move.line_ids.sorted('id')
+            original_lines = original_move.line_ids.sorted('id')
+
+            for rev_line, orig_line in zip(reversed_lines, original_lines):
+                # THE SWAP: Get values from the specific matching original line
+                f_debit_source = getattr(orig_line, 'foreign_debit_adjustment', 0.0)
+                f_credit_source = getattr(orig_line, 'foreign_credit_adjustment', 0.0)
+
+                if f_debit_source or f_credit_source:
+                    lines_to_update.append(Command.update(rev_line.id, {
+                        'foreign_debit_adjustment': f_credit_source,
+                        'foreign_credit_adjustment': f_debit_source,
+                    }))
+                else:
+                    lines_to_update.append(Command.update(rev_line.id, {
+                        'foreign_debit_adjustment': 0.0,
+                        'foreign_credit_adjustment': 0.0,
+                    }))
+
+            if lines_to_update:
+                move.with_context(skip_invoice_sync=True).write({
+                    'line_ids': lines_to_update
+                })
 
         return reverse_moves
