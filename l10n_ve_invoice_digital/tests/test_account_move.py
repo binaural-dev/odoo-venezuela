@@ -1925,3 +1925,39 @@ class TestAccountMoveApiCalls(TransactionCase):
         with self.assertRaises(UserError):
             self.env['tfhka.api.client']._request(inv.company_id, "emision", {})
 
+    def test_140_multi_currency_auto_locks_with_usd_payment(self):
+        # Con show_payment_box activo y un pago en USD conciliado, el
+        # multi-moneda debe activarse solo y quedar bloqueado.
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.show_payment_box = True
+        pay = self._create_payment(amount=100, currency=self.currency_usd)
+        invoice.invoice_payments_widget = {"content": [{"account_payment_id": pay.id}]}
+        invoice._compute_multi_currency_invoice_lock()
+        self.assertTrue(invoice.multi_currency_invoice_lock)
+        self.assertTrue(invoice.multi_currency_invoice)
+
+    def test_141_multi_currency_not_locked_without_payment_box(self):
+        # Sin show_payment_box, un pago en USD no debe forzar el multi-moneda.
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.show_payment_box = False
+        pay = self._create_payment(amount=100, currency=self.currency_usd)
+        invoice.invoice_payments_widget = {"content": [{"account_payment_id": pay.id}]}
+        invoice._compute_multi_currency_invoice_lock()
+        self.assertFalse(invoice.multi_currency_invoice_lock)
+        self.assertFalse(invoice.multi_currency_invoice)
+
+    def test_142_cannot_disable_multi_currency_when_locked(self):
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.show_payment_box = True
+        pay = self._create_payment(amount=100, currency=self.currency_usd)
+        invoice.invoice_payments_widget = {"content": [{"account_payment_id": pay.id}]}
+        invoice._compute_multi_currency_invoice_lock()
+        with self.assertRaises(ValidationError):
+            invoice.multi_currency_invoice = False
+
