@@ -703,6 +703,180 @@ class TestAccumulatedRate(TransactionCase):
         self.assertTrue(len(details) > 0)
         self.assertNotIn("CodigoConcepto", details[0])
 
+    # ------------------------------------------------------------------
+    # Cobertura adicional: account_retention.py / tfhka_retention_service.py
+    # ------------------------------------------------------------------
+
+    def test_27_send_retention_company_disabled(self):
+        self.company.invoice_digital_tfhka = False
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        result = self.env['tfhka.retention.service'].send_retention(retention)
+        self.assertIsNone(result)
+
+    def test_28_send_retention_document_number_long_string(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.get_last_document_number',
+            return_value="12345678",
+        ):
+            with patch(
+                'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.query_numbering',
+                return_value=None,
+            ):
+                with patch(
+                    'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit',
+                    return_value={"codigo": "200", "resultado": {"numeroControl": "00-00000001"}},
+                ):
+                    result = retention.with_context(account_retention_alert=True).generate_document_digital()
+        # documentNumberStr con longitud > 6: se toma el resto desde la posicion 6 + 1
+        self.assertIsInstance(result, type(None))
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_29_send_retention_sequence_mismatch_opens_wizard(self, mock_call):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        # Sin account_retention_alert en el contexto: si la secuencia de Odoo
+        # no coincide con la de The Factory, se abre el wizard de alerta.
+        result = retention.generate_document_digital()
+        self.assertIsInstance(result, dict)
+        self.assertEqual(result.get('res_model'), 'account.retention.alert.wizard')
+
+    def test_30_annul_retention_not_digitalized_raises(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        with self.assertRaises(UserError):
+            self.env['tfhka.retention.service'].annul_retention(retention, "Motivo de prueba")
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_31_annul_retention_already_annulled_raises(self, mock_call):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.with_context(account_retention_alert=True).generate_document_digital()
+        self.env['tfhka.retention.service'].annul_retention(retention, "Primera anulacion")
+        self.assertTrue(retention.annulled_tfhka)
+        with self.assertRaises(UserError):
+            self.env['tfhka.retention.service'].annul_retention(retention, "Segunda anulacion")
+
+    def test_32_generate_document_data_falsy_response(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit',
+            return_value=None,
+        ):
+            result = self.env['tfhka.retention.service'].generate_document_data(
+                retention, "R00099", "05", True
+            )
+        self.assertIsNone(result)
+        self.assertFalse(retention.is_digitalized)
+
+    def test_33_generate_document_data_validation_sequence_false(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request'
+        ) as mock_call:
+            mock_call.return_value = {
+                "resultado": {"numeroControl": "00-00000002"},
+                "codigo": "200",
+                "mensaje": "OK",
+            }
+            self.env['tfhka.retention.service'].generate_document_data(retention, "R00002", "05", False)
+        self.assertTrue(retention.is_digitalized)
+        messages = retention.message_ids.mapped('body')
+        self.assertFalse(any("Warning accepted" in str(m) for m in messages))
+
+    def test_34_prepare_identification_empty_recordset(self):
+        result = self.env['tfhka.retention.service']._prepare_identification(
+            self.env['account.retention'].browse([]), "05", "1"
+        )
+        self.assertIsNone(result)
+
+    def test_35_prepare_identification_debit_origin(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        debit_note = self.env["account.move"].create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner_a.id,
+            "journal_id": self.journal.id,
+            "invoice_date": fields.Date.today(),
+            "debit_origin_id": account_move.id,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 100,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        debit_note.action_post()
+        retention = self._create_retention("iva", debit_note)
+        retention.action_post()
+        ident = self.env['tfhka.retention.service']._prepare_identification(retention, "05", "1")
+        self.assertEqual(ident["numeroFacturaAfectada"], str(account_move.sequence_number))
+
+    def test_36_prepare_identification_reversed_entry(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        refund = self.env["account.move"].create({
+            "move_type": "in_refund",
+            "partner_id": self.partner_a.id,
+            "journal_id": self.journal.id,
+            "invoice_date": fields.Date.today(),
+            "reversed_entry_id": account_move.id,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 100,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        refund.action_post()
+        retention = self._create_retention("iva", refund)
+        retention.action_post()
+        ident = self.env['tfhka.retention.service']._prepare_identification(retention, "05", "1")
+        self.assertEqual(ident["numeroFacturaAfectada"], str(account_move.sequence_number))
+
+    def test_37_prepare_totals_empty_recordset(self):
+        result = self.env['tfhka.retention.service']._prepare_totals(
+            self.env['account.retention'].browse([]), "05"
+        )
+        self.assertIsNone(result)
+
+    def test_38_prepare_detail_lines_base_currency_vef(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.base_currency_is_vef = True
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "05")
+        self.assertTrue(details)
+        self.assertIn("montoTotal", details[0])
+
+    def test_39_action_annul_tfhka_returns_wizard_action(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        action = retention.action_annul_tfhka()
+        self.assertEqual(action["res_model"], "tfhka.annul.wizard")
+        self.assertEqual(action["context"]["default_retention_id"], retention.id)
+
     # # Retencion con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     # def test_12_generate_document_digital_subsidiary_succes(self, mock_call):

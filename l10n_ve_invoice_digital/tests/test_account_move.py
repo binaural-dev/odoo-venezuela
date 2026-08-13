@@ -274,6 +274,19 @@ class TestAccountMoveApiCalls(TransactionCase):
                 invoice.action_post()
         return invoice
 
+    def _force_company_currency(self, company, currency):
+        """Fuerza currency_id evitando el guard de account.company.write()
+        ("no se puede cambiar la moneda si ya existen asientos"). Solo se
+        usa para aislar la lógica de _prepare_totals/_prepare_tax_subtotals
+        bajo compañía VEF; el UPDATE ocurre dentro de la transacción del
+        test y se revierte con el rollback normal de TransactionCase.
+        """
+        self.env.cr.execute(
+            "UPDATE res_company SET currency_id = %s WHERE id = %s",
+            (currency.id, company.id),
+        )
+        company.invalidate_recordset(["currency_id"])
+
     def _create_subsidiary(self, name="Sucursal prueba"):
         analytic_plan = self.env['account.analytic.plan'].create({
             'name': 'Plan para pruebas',
@@ -1538,7 +1551,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_69_get_totals_vef(self):
         vef = self.env.ref("base.VEF")
-        self.company.currency_id = vef
+        self._force_company_currency(self.company, vef)
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
             currency_id=vef.id,
@@ -1550,7 +1563,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_70_get_tax_subtotals_vef(self):
         vef = self.env.ref("base.VEF")
-        self.company.currency_id = vef
+        self._force_company_currency(self.company, vef)
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
             currency_id=vef.id,
@@ -1562,7 +1575,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_71_get_item_details_vef(self):
         vef = self.env.ref("base.VEF")
-        self.company.currency_id = vef
+        self._force_company_currency(self.company, vef)
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
             currency_id=vef.id,
@@ -1673,7 +1686,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_87_get_tax_subtotals_vef_no_taxes(self):
         vef = self.env.ref("base.VEF")
-        self.company.currency_id = vef
+        self._force_company_currency(self.company, vef)
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": []}],
             currency_id=vef.id,
@@ -1832,7 +1845,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_115_get_tax_subtotals_vef_no_taxes(self):
         vef = self.env.ref("base.VEF")
-        self.company.currency_id = vef
+        self._force_company_currency(self.company, vef)
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": []}],
             currency_id=vef.id,
@@ -1960,4 +1973,514 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice._compute_multi_currency_invoice_lock()
         with self.assertRaises(ValidationError):
             invoice.multi_currency_invoice = False
+
+    # ------------------------------------------------------------------
+    # Cobertura adicional: account_move.py (write branches, fecha, compute)
+    # ------------------------------------------------------------------
+
+    def test_150_write_multi_currency_false_without_lock_no_raise(self):
+        # Sin pago USD conciliado, desactivar multi_currency_invoice no debe fallar
+        # (recorre el for sin entrar al raise: cubre 28->36 y 29->28).
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.show_payment_box = False
+        invoice.write({'multi_currency_invoice': False})
+        self.assertFalse(invoice.multi_currency_invoice)
+
+    def test_151_validate_invoice_date_earlier_than_last_digitalized(self):
+        # action_post() sin contexto queda interceptado por el wizard de
+        # alerta de l10n_ve_accountant (devuelve la accion del wizard en vez
+        # de contabilizar); hay que pasar move_action_post_alert=True para
+        # que la factura llegue realmente a "posted".
+        self.journal.digital_invoice = True
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            post_context={"move_action_post_alert": True},
+        )
+        inv1.is_digitalized = True
+        inv2 = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            "invoice_date": fields.Date.today() - timedelta(days=3),
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(6, 0, [self.tax_iva16.id])],
+            })],
+        })
+        with self.assertRaises(ValidationError):
+            inv2.with_context(move_action_post_alert=True).action_post()
+
+    def test_152_multi_currency_enabled_compute(self):
+        self.company.multi_currency_invoice_tfhka = True
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv._compute_multi_currency_enabled()
+        self.assertTrue(inv.multi_currency_enabled)
+
+    def test_153_has_usd_reconciled_payment_no_content(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.invoice_payments_widget = False
+        self.assertFalse(inv._has_usd_reconciled_payment())
+
+    def test_154_compute_invisible_check_digital_journal_plain_invoice(self):
+        # action_post() sin contexto queda interceptado por el wizard de
+        # alerta de l10n_ve_accountant; hace falta move_action_post_alert=True
+        # para que la factura llegue a "posted".
+        self.journal.digital_invoice = True
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            post_context={"move_action_post_alert": True},
+        )
+        inv._compute_invisible_check()
+        self.assertFalse(inv.show_digital_invoice)
+        self.assertTrue(inv.show_digital_debit_note)
+        self.assertTrue(inv.show_digital_credit_note)
+
+    def test_155_compute_invisible_check_digital_journal_credit_note(self):
+        self.journal.digital_invoice = True
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            post_context={"move_action_post_alert": True},
+        )
+        inv.is_digitalized = True
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+            post_context={"move_action_post_alert": True},
+        )
+        credit._compute_invisible_check()
+        self.assertFalse(credit.show_digital_credit_note)
+
+    def test_156_compute_invisible_check_digital_journal_debit_note(self):
+        self.journal.digital_invoice = True
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            post_context={"move_action_post_alert": True},
+        )
+        inv.is_digitalized = True
+        debit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            debit_origin_id=inv,
+            post_context={"move_action_post_alert": True},
+        )
+        debit._compute_invisible_check()
+        self.assertFalse(debit.show_digital_debit_note)
+
+    # ------------------------------------------------------------------
+    # Cobertura adicional: ir_module_module.py (guard de desinstalación)
+    # ------------------------------------------------------------------
+
+    def test_157_check_uninstall_rights_empty_recordset(self):
+        # Recordset vacío: el for no itera, sale directo (12->exit).
+        self.env['ir.module.module'].browse([])._check_tfhka_uninstall_rights()
+
+    def test_158_check_uninstall_rights_other_modules_no_raise(self):
+        # Módulos que no son el nuestro: la condición del if da False y el
+        # for sigue de largo (13->12) sin lanzar AccessError.
+        modules = self.env['ir.module.module'].search([('name', 'in', ['base', 'web'])])
+        self.assertTrue(len(modules) >= 1)
+        modules._check_tfhka_uninstall_rights()
+
+    def test_159_button_uninstall_as_admin(self):
+        from odoo.addons.base.models.ir_module import Module
+        module = self.env['ir.module.module'].search(
+            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
+        )
+        admin_group = self.env.ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin')
+        admin_user = self.env['res.users'].create({
+            'name': 'TFHKA Admin Uninstall',
+            'login': 'tfhka_admin_uninstall',
+            'groups_id': [(6, 0, [self.env.ref('base.group_user').id, admin_group.id])],
+        })
+        with patch.object(Module, 'button_uninstall', return_value=True) as mock_super:
+            module.with_user(admin_user).button_uninstall()
+            mock_super.assert_called_once()
+
+    def test_160_button_immediate_uninstall_as_admin(self):
+        from odoo.addons.base.models.ir_module import Module
+        module = self.env['ir.module.module'].search(
+            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
+        )
+        admin_group = self.env.ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin')
+        admin_user = self.env['res.users'].create({
+            'name': 'TFHKA Admin Immediate Uninstall',
+            'login': 'tfhka_admin_immediate_uninstall',
+            'groups_id': [(6, 0, [self.env.ref('base.group_user').id, admin_group.id])],
+        })
+        with patch.object(Module, 'button_immediate_uninstall', return_value=True) as mock_super:
+            module.with_user(admin_user).button_immediate_uninstall()
+            mock_super.assert_called_once()
+
+    # ------------------------------------------------------------------
+    # Cobertura adicional: tfhka_client.py
+    # ------------------------------------------------------------------
+
+    @patch('requests.post')
+    def test_161_call_tfhka_api_401_still_failing_after_retry(self, mock_post):
+        self.company.write({
+            "username_tfhka": "u",
+            "password_tfhka": "p",
+            "url_tfhka": "https://api.tfhka.com",
+            "token_auth_tfhka": "old",
+            "invoice_digital_tfhka": True,
+            "sequence_validation_tfhka": True,
+        })
+
+        def side_effect(url, *args, **kwargs):
+            resp = MagicMock()
+            if "/Autenticacion" in url:
+                resp.status_code = 200
+                resp.json.return_value = {
+                    "codigo": 200,
+                    "mensaje": "OK",
+                    "token": "still_bad",
+                    "expiracion": "2025-12-31T23:59:59",
+                }
+            else:
+                resp.status_code = 401
+                resp.text = "Unauthorized"
+            return resp
+
+        mock_post.side_effect = side_effect
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(UserError):
+            self.env['tfhka.api.client']._request(invoice.company_id, "emision", {})
+
+    def test_162_query_numbering_falsy_response(self):
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request',
+            return_value=None,
+        ):
+            invoice = self._create_invoice(
+                products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+            )
+            result = self.env['tfhka.api.client'].query_numbering(invoice.company_id, "")
+            self.assertIsNone(result)
+
+    # ------------------------------------------------------------------
+    # Cobertura adicional: tfhka_document_service.py
+    # ------------------------------------------------------------------
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_163_send_document_credit_note_document_type_and_sequence_sync(self, mock_call):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        self.journal.refund_sequence_id.number_next_actual = 9
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+        )
+        credit.generate_document_digital()
+        self.assertTrue(credit.is_digitalized)
+        self.assertTrue(credit.name.endswith("00000002"))
+
+    def test_164_send_document_last_number_non_numeric_fallback(self):
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.get_last_document_number',
+            return_value="abc",
+        ):
+            with patch(
+                'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.query_numbering',
+                return_value=None,
+            ):
+                with patch(
+                    'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request'
+                ) as mock_call:
+                    mock_call.return_value = {
+                        "codigo": "200",
+                        "resultado": {"numeroControl": "00-00000001"},
+                    }
+                    inv = self._create_invoice(
+                        products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                    )
+                    inv.generate_document_digital()
+                    self.assertTrue(inv.is_digitalized)
+
+    @patch(
+        'odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService'
+        '._prepare_additional_information',
+        return_value=[{"campo": "x", "valor": "y"}],
+    )
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
+    def test_165_generate_document_data_additional_info(self, mock_call, mock_extra):
+        mock_call.return_value = {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        self.env['tfhka.document.service'].generate_document_data(inv, "140", "01", "")
+        self.assertTrue(inv.is_digitalized)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
+    def test_166_generate_document_data_with_seller(self, mock_call):
+        mock_call.return_value = {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
+        if "seller_id" not in self.env["account.move"]._fields:
+            self.skipTest("seller_id field not installed")
+        user = self.env["res.users"].create({"name": "Vendedor Test 2", "login": "vendedor_test_2"})
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.seller_id = user.partner_id
+        self.env['tfhka.document.service'].generate_document_data(inv, "141", "01", "")
+        self.assertTrue(inv.is_digitalized)
+
+    def test_167_generate_document_data_falsy_response_no_register(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit',
+            return_value=None,
+        ):
+            result = self.env['tfhka.document.service'].generate_document_data(inv, "142", "01", "")
+        self.assertIsNone(result)
+        self.assertFalse(inv.is_digitalized)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
+    def test_168_generate_document_data_no_foreign_totals(self, mock_call):
+        mock_call.return_value = {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
+        self._force_company_currency(self.company, self.currency_vef)
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_vef.id,
+            foreign_currency_id=self.currency_usd.id,
+            foreign_rate=0,
+            foreign_inverse_rate=0,
+        )
+        self.env['tfhka.document.service'].generate_document_data(inv, "143", "01", "")
+        self.assertTrue(inv.is_digitalized)
+        payload = mock_call.call_args[0][2]
+        self.assertNotIn("totalesOtraMoneda", payload["documentoElectronico"]["encabezado"])
+
+    def test_169_prepare_identification_series_and_vef_amounts(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        control_seq = self.env['ir.sequence'].create({
+            'name': 'Control Serie VEF',
+            'code': 'series.invoice.correlative',
+            'padding': 5,
+        })
+        serie_seq = self.env['ir.sequence'].create({
+            'name': 'Secuencia Serie VEF',
+            'prefix': 'B-',
+            'padding': 8,
+            'number_next_actual': 2,
+        })
+        self.company.group_sales_invoicing_series = True
+        self.journal.write({
+            'series_correlative_sequence_id': control_seq.id,
+            'sequence_id': serie_seq.id,
+        })
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_vef.id,
+            foreign_currency_id=self.currency_usd.id,
+        )
+        debit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            debit_origin_id=inv,
+            currency_id=self.currency_vef.id,
+            foreign_currency_id=self.currency_usd.id,
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+            currency_id=self.currency_vef.id,
+            foreign_currency_id=self.currency_usd.id,
+        )
+        ident_debit = self.env['tfhka.document.service']._prepare_identification(debit, "03", "144", "B")
+        self.assertTrue(ident_debit["serieFacturaAfectada"])
+        self.assertEqual(ident_debit["montoFacturaAfectada"], str(round(inv.amount_total, 2)))
+
+        ident_credit = self.env['tfhka.document.service']._prepare_identification(credit, "02", "145", "B")
+        self.assertTrue(ident_credit["serieFacturaAfectada"])
+        self.assertEqual(ident_credit["montoFacturaAfectada"], str(round(inv.amount_total, 2)))
+
+    def test_170_prepare_identification_credit_note_ref_with_comma(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            ref="Motivo, detalle credito",
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=inv,
+            ref="Motivo, detalle credito",
+        )
+        ident = self.env['tfhka.document.service']._prepare_identification(credit, "02", "146", "")
+        self.assertEqual(ident["comentarioFacturaAfectada"], "detalle credito")
+
+    def test_171_prepare_identification_multi_currency_usd(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.multi_currency_invoice = True
+        inv.line_currency = 'USD'
+        ident = self.env['tfhka.document.service']._prepare_identification(inv, "01", "147", "")
+        self.assertEqual(ident["moneda"], "USD")
+
+    def test_172_prepare_identification_company_currency_vef_moneda_code(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        self.currency_vef.code_tfhka = "VES"
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_vef.id,
+            foreign_currency_id=self.currency_usd.id,
+        )
+        ident = self.env['tfhka.document.service']._prepare_identification(inv, "01", "148", "")
+        self.assertEqual(ident["moneda"], "VES")
+
+    def test_173_prepare_tax_subtotals_empty_recordset(self):
+        result = self.env['tfhka.document.service']._prepare_tax_subtotals(
+            self.env['account.move'].browse([]), "USD"
+        )
+        self.assertIsNone(result)
+
+    def test_174_prepare_tax_subtotals_local_branch_subtotal_group(self):
+        # Doble de prueba (duck-typing): _prepare_tax_subtotals solo necesita
+        # que cada elemento exponga `.tax_totals`, así que se aísla la lógica
+        # de armado del payload de la capa ORM.
+        fake = type("FakeTaxRecord", (), {"tax_totals": {
+            "groups_by_subtotal": {"Subtotal": [
+                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+            ]},
+        }})()
+        local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "VEF")
+        self.assertEqual(local[0]["codigoTotalImp"], "G")
+        self.assertEqual(foreign, [])
+
+    def test_175_prepare_tax_subtotals_multi_currency_branch_with_igtf(self):
+        fake = type("FakeTaxRecord", (), {"tax_totals": {
+            "groups_by_subtotal": {"Subtotal": [
+                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+            ]},
+            "groups_by_foreign_subtotal": {"Subtotal": [
+                {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
+            ]},
+            "igtf": {
+                "apply_igtf": True,
+                "name": "3.0 %",
+                "igtf_base_amount": 100.0,
+                "igtf_amount": 3.0,
+                "foreign_igtf_base_amount": 200.0,
+                "foreign_igtf_amount": 6.0,
+            },
+        }})()
+        local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "VEF", multi_currency=True)
+        self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in local))
+        self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in foreign))
+
+    def test_176_prepare_tax_subtotals_foreign_branch_with_igtf(self):
+        fake = type("FakeTaxRecord", (), {"tax_totals": {
+            "groups_by_foreign_subtotal": {"Subtotal": [
+                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+            ]},
+            "groups_by_subtotal": {"Subtotal": [
+                {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
+            ]},
+            "igtf": {
+                "apply_igtf": True,
+                "name": "3.0 %",
+                "igtf_base_amount": 100.0,
+                "igtf_amount": 3.0,
+                "foreign_igtf_base_amount": 200.0,
+                "foreign_igtf_amount": 6.0,
+            },
+        }})()
+        local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "USD", multi_currency=False)
+        self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in local))
+        self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in foreign))
+
+    def test_177_prepare_detail_lines_unsupported_tax_rate_raises(self):
+        tax_group = self.env['account.tax.group'].create({'name': 'IVA Rara'})
+        weird_tax = self.env['account.tax'].create({
+            'name': 'IVA 5%',
+            'amount': 5,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'tax_group_id': tax_group.id,
+        })
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [weird_tax.id]}]
+        )
+        with self.assertRaises(UserError):
+            self.env['tfhka.document.service']._prepare_detail_lines(inv)
+
+    def test_178_get_seller_empty_recordset(self):
+        result = self.env['tfhka.document.service']._get_seller(self.env['account.move'].browse([]))
+        self.assertIsNone(result)
+
+    def test_179_build_payment_info_multi_currency_ves_payment(self):
+        pay = self._create_payment()
+        pay.currency_id = self.currency_vef
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.multi_currency_invoice = True
+        invoice.line_currency = 'USD'
+        info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
+        self.assertEqual(info["moneda"], self.company.currency_id.code_tfhka)
+        self.assertNotIn("tipoCambio", info)
+
+    def test_180_build_payment_info_company_currency_vef(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        self.currency_vef.code_tfhka = "VES"
+        pay = self._create_payment()
+        pay.currency_id = self.currency_vef
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_vef.id,
+            foreign_currency_id=self.currency_usd.id,
+        )
+        info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
+        self.assertEqual(info["moneda"], "VES")
+
+    def test_181_prepare_totals_payment_box_no_payments_skips_formas_pago(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.show_payment_box = True
+        inv.invoice_payments_widget = None
+        totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
+        self.assertNotIn("formasPago", totals)
+
+    def test_182_prepare_totals_payment_box_valid_payment_success(self):
+        import random
+        import string
+        existing = self.env["payment.method.tfhka"].search([]).mapped("code")
+        while True:
+            code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=2))
+            if code not in existing:
+                break
+        payment_method_tfhka = self.env['payment.method.tfhka'].create({
+            'code': code,
+            'description': 'Efectivo Divisas',
+        })
+        self.bank_journal_usd.payment_method_code = payment_method_tfhka
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.show_payment_box = True
+        pay = self._create_payment(amount=100)
+        inv.invoice_payments_widget = {"content": [{"account_payment_id": pay.id}]}
+        totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
+        self.assertIn("formasPago", totals)
+        self.assertEqual(totals["formasPago"][0]["forma"], code)
 
