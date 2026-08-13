@@ -63,16 +63,16 @@ class TfhkaServiceBase(models.AbstractModel):
 
         vat = partner.vat.upper()
         if vat[0].isalpha():
-            tipo_identificacion = vat[0]
-            numero_identificacion = vat[1:]
+            identification_type = vat[0]
+            identification_number = vat[1:]
         else:
-            tipo_identificacion = ""
-            numero_identificacion = vat
+            identification_type = ""
+            identification_number = vat
 
         if partner.prefix_vat:
-            tipo_identificacion = partner.prefix_vat
+            identification_type = partner.prefix_vat
 
-        numero_identificacion = numero_identificacion.replace("-", "").replace(".", "")
+        identification_number = identification_number.replace("-", "").replace(".", "")
 
         if not partner.country_code:
             raise UserError(_("The 'Country' field of the Customer cannot be empty for digitalization."))
@@ -84,8 +84,8 @@ class TfhkaServiceBase(models.AbstractModel):
             raise UserError(_("The 'Email' field of the Customer cannot be empty for digitalization."))
 
         return {
-            "tipoIdentificacion": tipo_identificacion,
-            "numeroIdentificacion": numero_identificacion,
+            "tipoIdentificacion": identification_type,
+            "numeroIdentificacion": identification_number,
             "razonSocial": partner.name,
             "direccion": self._get_party_address(partner),
             "pais": partner.country_code,

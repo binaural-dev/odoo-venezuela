@@ -7,7 +7,7 @@
             <form string="Cancel at The Factory HKA">
                 <group>
                     <field name="retention_id" invisible="1"/>
-                    <field name="motivo"/>
+                    <field name="reason"/>
                 </group>
                 <footer>
                     <button name="action_confirm" string="Annul" type="object" class="btn-primary"/>

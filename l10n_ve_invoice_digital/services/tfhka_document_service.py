@@ -87,6 +87,7 @@ class TfhkaDocumentService(models.AbstractModel):
         totals, foreign_totals = self._prepare_totals(invoice)
         details_items = self._prepare_detail_lines(invoice)
         additional_information = self._prepare_additional_information(invoice)
+        dispatch_guide_reference = self._get_dispatch_guide_reference(invoice)
 
         payload = {
             "documentoElectronico": {
@@ -105,6 +106,8 @@ class TfhkaDocumentService(models.AbstractModel):
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
         if additional_information:
             payload["documentoElectronico"]["infoAdicional"] = additional_information
+        if dispatch_guide_reference:
+            payload["documentoElectronico"]["FacturaGuia"] = dispatch_guide_reference
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(invoice))
         response = self.env["tfhka.api.client"].emit(invoice.company_id, payload)
@@ -562,8 +565,8 @@ class TfhkaDocumentService(models.AbstractModel):
                 vat = round(item_price * tax_rate / 100.0, 2)
                 total_item_value = round(item_price + vat, 2)
 
-                codigo_impuesto = tax_mapping.get(tax_rate)
-                if codigo_impuesto is None:
+                tax_code = tax_mapping.get(tax_rate)
+                if tax_code is None:
                     raise UserError(_(
                         "The tax rate %(rate)s%% on product '%(product)s' is not supported "
                         "by TFHKA digitalization (allowed rates: 0, 8, 16, 31).",
@@ -581,7 +584,7 @@ class TfhkaDocumentService(models.AbstractModel):
                     "descuentoMonto": str(discount_amount),
                     "precioItem": str(item_price),
                     "precioAntesDescuento": str(price_before_discount),
-                    "codigoImpuesto": codigo_impuesto,
+                    "codigoImpuesto": tax_code,
                     "tasaIVA": str(round(tax_rate, 2)),
                     "valorIVA": str(vat),
                     "valorTotalItem": str(total_item_value),
@@ -596,6 +599,18 @@ class TfhkaDocumentService(models.AbstractModel):
                     "codigo": str(record.seller_id.id),
                     "nombre": record.seller_id.name,
                     "numCajero": ""
+                }
+            else:
+                return False
+
+    def _get_dispatch_guide_reference(self, invoice):
+        """Referencia a la guia de despacho asociada, cuando la factura
+        proviene de una (campo guide_number de l10n_ve_stock_account)."""
+        for record in invoice:
+            if "guide_number" in record._fields and record.guide_number:
+                return {
+                    "TipoDocumento": "04",
+                    "NumeroDocumento": record.guide_number,
                 }
             else:
                 return False
@@ -640,16 +655,16 @@ class TfhkaDocumentService(models.AbstractModel):
             if multi_currency:
                 # Multimoneda: el pago en VES se reporta como moneda local.
                 currency_code = invoice.company_id.currency_id.code_tfhka
-                tipo_cambio = None
+                exchange_rate = None
             else:
                 currency_code = invoice.company_id.currency_foreign_id.code_tfhka
                 if invoice.company_id.currency_id.name in ('VEF', 'VES'):
                     currency_code = invoice.company_id.currency_id.code_tfhka
-                tipo_cambio = None
+                exchange_rate = None
         else:
             # Pago en moneda extranjera: se incluye el tipo de cambio.
             currency_code = payment_currency
-            tipo_cambio = "{:.4f}".format(payment_id.foreign_rate)
+            exchange_rate = "{:.4f}".format(payment_id.foreign_rate)
 
         payment_info = {
             "descripcion": payment_method.description if payment_method else "",
@@ -659,8 +674,8 @@ class TfhkaDocumentService(models.AbstractModel):
             "moneda": currency_code,
         }
 
-        if tipo_cambio:
-            payment_info["tipoCambio"] = tipo_cambio
+        if exchange_rate:
+            payment_info["tipoCambio"] = exchange_rate
 
         return payment_info
 

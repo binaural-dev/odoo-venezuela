@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 17.0+e-20260807\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-11 16:54+0000\n"
-"PO-Revision-Date: 2026-08-11 16:54+0000\n"
+"POT-Creation-Date: 2026-08-13 20:26+0000\n"
+"PO-Revision-Date: 2026-08-13 20:26+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -70,12 +70,6 @@ msgid "Cancel at The Factory HKA"
 msgstr "Anular en The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_islr_form_l10n_ve_payment_extension_inherit
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_form_l10n_ve_payment_extension_inherit
-msgid "Cancel in TFHKA"
-msgstr "Anular en TFHKA"
-
-#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_journal.py:0
@@ -85,6 +79,18 @@ msgid ""
 msgstr ""
 "No se puede desactivar la facturación digital en un diario con facturas "
 "digitales existentes."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"Cannot disable multi-currency invoicing: a payment in USD is already linked "
+"to this invoice."
+msgstr ""
+"No se puede desactivar la facturación multi-moneda: ya existe un pago en USD "
+"vinculado a esta factura."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__code
@@ -360,6 +366,13 @@ msgid "Journal Entry"
 msgstr "Asiento contable"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__journal_digital_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__journal_digital_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__journal_digital_invoice
+msgid "Journal Is Digital"
+msgstr "Diario es digital"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__write_uid
@@ -414,6 +427,13 @@ msgid "Multi-Currency Invoice"
 msgstr "Factura Multi-Moneda"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__multi_currency_invoice_lock
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__multi_currency_invoice_lock
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__multi_currency_invoice_lock
+msgid "Multi-Currency Invoice Lock"
+msgstr "Bloqueo de factura multi-moneda"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__multi_currency_invoice_tfhka
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__multi_currency_invoice_tfhka
 msgid "Multi-currency digital invoicing"
@@ -457,7 +477,7 @@ msgid "Payment Method Code"
 msgstr "Código de forma de pago"
 
 #. module: l10n_ve_invoice_digital
-#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__motivo
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__reason
 msgid "Reason for annulment"
 msgstr "Motivo de anulación"
 
@@ -466,6 +486,18 @@ msgstr "Motivo de anulación"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__retention_id
 msgid "Retention"
 msgstr "Retención"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/wizard/tfhka_annul_wizard.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/wizard/tfhka_annul_wizard.py:0
+#, python-format
+msgid ""
+"Retention also cancelled in Odoo (accounting entries reversed) as part of "
+"the unified cancellation."
+msgstr ""
+"Retención también anulada en Odoo (asientos contables revertidos) como parte "
+"de la anulación unificada."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -551,6 +583,14 @@ msgstr "Servicio de Retenciones TFHKA"
 #: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_service_base
 msgid "TFHKA Service Base"
 msgstr "Servicio Base TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_config_settings.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_config_settings.py:0
+#, python-format
+msgid "TFHKA Token"
+msgstr "Token TFHKA"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -826,6 +866,14 @@ msgid "Token Auth Tfhka"
 msgstr "Token de Autenticación Tfhka"
 
 #. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/res_config_settings.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/res_config_settings.py:0
+#, python-format
+msgid "Token generated successfully."
+msgstr "Token generado exitosamente."
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__url_tfhka
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "URL"
@@ -845,6 +893,17 @@ msgstr "Desinstalar el módulo The Factory HKA"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__url_tfhka
 msgid "Url Tfhka"
 msgstr "URL Tfhka"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_bank_statement_line__journal_digital_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__journal_digital_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_payment__journal_digital_invoice
+msgid ""
+"Used to hide the TFHKA digitalization fields when the journal is not "
+"digital."
+msgstr ""
+"Se usa para ocultar los campos de digitalización TFHKA cuando el diario no "
+"es digital."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__username_tfhka

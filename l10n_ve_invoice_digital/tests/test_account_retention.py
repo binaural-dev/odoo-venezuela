@@ -285,7 +285,7 @@ class TestAccumulatedRate(TransactionCase):
 
         wizard = self.env['tfhka.annul.wizard'].create({
             'retention_id': retention.id,
-            'motivo': 'Error de emision',
+            'reason': 'Error de emision',
         })
         wizard.action_confirm()
         self.assertTrue(retention.annulled_tfhka)
@@ -868,14 +868,151 @@ class TestAccumulatedRate(TransactionCase):
         self.assertTrue(details)
         self.assertIn("montoTotal", details[0])
 
-    def test_39_action_annul_tfhka_returns_wizard_action(self):
+    # Boton unico de anulacion (action_cancel_retention): reemplaza a los dos
+    # botones sueltos (nativo "Cancel" + "Cancel in TFHKA").
+    def test_39_action_cancel_retention_not_digitized_cancels_directly(self):
         account_move = self._create_invoice()
         account_move.action_post()
         retention = self._create_retention("iva", account_move)
         retention.action_post()
-        action = retention.action_annul_tfhka()
+        self.assertFalse(retention.is_digitalized)
+        result = retention.action_cancel_retention()
+        self.assertEqual(retention.state, "cancel")
+        self.assertFalse(isinstance(result, dict) and result.get("res_model") == "tfhka.annul.wizard")
+
+    def test_40_action_cancel_retention_digitized_opens_wizard(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.is_digitalized = True
+        action = retention.action_cancel_retention()
         self.assertEqual(action["res_model"], "tfhka.annul.wizard")
         self.assertEqual(action["context"]["default_retention_id"], retention.id)
+        # No cancela todavia: falta confirmar el wizard con el motivo.
+        self.assertEqual(retention.state, "emitted")
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_41_annul_wizard_confirm_chains_native_cancel(self, mock_call):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        retention.with_context(account_retention_alert=True).generate_document_digital()
+        self.assertTrue(retention.is_digitalized)
+
+        wizard = self.env['tfhka.annul.wizard'].create({
+            'retention_id': retention.id,
+            'reason': 'Error de emision',
+        })
+        wizard.action_confirm()
+        # Un solo paso deja los dos lados consistentes: anulada en TFHKA y
+        # cancelada en Odoo (pagos/conciliacion reversados).
+        self.assertTrue(retention.annulled_tfhka)
+        self.assertEqual(retention.state, "cancel")
+
+    # Auto-digitalizacion condicionada al origen: si la retencion se postea
+    # dentro de la cadena de account.move.action_post() (contexto propagado
+    # por l10n_ve_invoice_digital/models/account_move.py), se auto-digitaliza;
+    # si se postea manualmente (flujo individual, sin ese contexto), no.
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_42_action_post_with_invoice_context_auto_digitizes_iva(self, mock_call):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.with_context(l10n_ve_invoice_digital_auto_retention=True).action_post()
+        self.assertTrue(retention.is_digitalized)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_43_action_post_with_invoice_context_auto_digitizes_islr(self, mock_call):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("islr", account_move)
+        retention.with_context(l10n_ve_invoice_digital_auto_retention=True).action_post()
+        self.assertTrue(retention.is_digitalized)
+
+    def test_44_action_post_without_invoice_context_stays_manual(self):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+        # Flujo individual: sigue "emitted" sin digitalizar, con el boton
+        # manual visible (show_digital_retention_iva=False => no invisible).
+        self.assertFalse(retention.is_digitalized)
+        self.assertFalse(retention.show_digital_retention_iva)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_45_invoice_post_auto_digitizes_supplier_iva_retention(self, mock_call):
+        # Extremo a extremo real: el contexto debe propagarse a traves de la
+        # cadena de super() hasta l10n_ve_payment_extension, que crea y
+        # postea la retencion IVA de proveedor al confirmar la factura.
+        account_move = self._create_invoice()
+        account_move.generate_iva_retention = True
+        account_move.action_post()
+        retention = self.env["account.retention"].search([
+            ("type_retention", "=", "iva"),
+            ("type", "=", "in_invoice"),
+            ("partner_id", "=", self.partner_a.id),
+        ], order="id desc", limit=1)
+        self.assertTrue(retention, "La retencion IVA deberia haberse creado automaticamente al postear la factura")
+        self.assertEqual(retention.state, "emitted")
+        self.assertTrue(retention.is_digitalized)
+
+    def test_46_prepare_detail_lines_monto_exento(self):
+        tax_group_exento = self.env["account.tax.group"].create({"name": "Exento"})
+        tax_exento = self.env["account.tax"].create({
+            "name": "Exento",
+            "amount": 0,
+            "amount_type": "percent",
+            "type_tax_use": "purchase",
+            "tax_group_id": tax_group_exento.id,
+        })
+        invoice = self.env["account.move"].create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner_a.id,
+            "journal_id": self.journal.id,
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                (0, 0, {
+                    "product_id": self.product.id,
+                    "quantity": 2,
+                    "price_unit": 100,
+                    "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                    "price_subtotal": 200,
+                    "price_total": 232,
+                    "foreign_rate": 2.0,
+                    "foreign_inverse_rate": 2.0,
+                    "foreign_price": 200,
+                    "foreign_subtotal": 400,
+                    "foreign_price_total": 464,
+                }),
+                (0, 0, {
+                    "product_id": self.product.id,
+                    "quantity": 1,
+                    "price_unit": 50,
+                    "tax_ids": [(6, 0, [tax_exento.id])],
+                    "price_subtotal": 50,
+                    "price_total": 50,
+                    "foreign_rate": 2.0,
+                    "foreign_inverse_rate": 2.0,
+                    "foreign_price": 50,
+                    "foreign_subtotal": 100,
+                    "foreign_price_total": 100,
+                }),
+            ],
+        })
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+        # base_currency_is_vef=True fuerza la lectura de groups_by_subtotal
+        # (montos base), el mismo grupo que ya usan otros tests de este
+        # archivo (ver test_38) para evitar depender de como se propagan los
+        # campos foreign_* de linea hacia tax_totals en facturas de compra.
+        retention.base_currency_is_vef = True
+
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "05")
+        self.assertTrue(details)
+        self.assertEqual(details[0]["montoExento"], "50.0")
 
     # # Retencion con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)

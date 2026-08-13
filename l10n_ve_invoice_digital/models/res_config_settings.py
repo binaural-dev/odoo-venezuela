@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
@@ -21,6 +21,18 @@ class ResConfigSettings(models.TransientModel):
 
     def action_generate_token_tfhka(self):
         self.company_id.generate_token_tfhka()
+        # generate_token_tfhka() lanza UserError/ValidationError ante
+        # cualquier falla; si llega aca fue exitoso (patron de unidigital).
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("TFHKA Token"),
+                "message": _("Token generated successfully."),
+                "type": "success",
+                "sticky": False,
+            },
+        }
 
     @api.onchange('invoice_digital_tfhka')
     def _onchange_invoice_digital_tfhka(self):

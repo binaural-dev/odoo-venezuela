@@ -2484,3 +2484,66 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertIn("formasPago", totals)
         self.assertEqual(totals["formasPago"][0]["forma"], code)
 
+    # ------------------------------------------------------------------
+    # FacturaGuia: referencia a la guia de despacho de origen en el payload
+    # ------------------------------------------------------------------
+
+    def test_183_get_factura_guia_with_guide_number(self):
+        if "guide_number" not in self.env["account.move"]._fields:
+            self.skipTest("guide_number field not installed")
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv.guide_number = "00-00012345"
+        factura_guia = self.env['tfhka.document.service']._get_dispatch_guide_reference(inv)
+        self.assertEqual(factura_guia, {"TipoDocumento": "04", "NumeroDocumento": "00-00012345"})
+
+    def test_184_get_factura_guia_without_guide_number(self):
+        if "guide_number" not in self.env["account.move"]._fields:
+            self.skipTest("guide_number field not installed")
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        self.assertFalse(self.env['tfhka.document.service']._get_dispatch_guide_reference(inv))
+
+    def test_185_get_factura_guia_empty_recordset(self):
+        result = self.env['tfhka.document.service']._get_dispatch_guide_reference(self.env['account.move'].browse([]))
+        self.assertFalse(result)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_186_generate_document_data_includes_factura_guia(self, mock_call):
+        if "guide_number" not in self.env["account.move"]._fields:
+            self.skipTest("guide_number field not installed")
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            do_post=False,
+        )
+        inv.guide_number = "00-00099999"
+        inv.action_post()
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit',
+        ) as mock_emit:
+            mock_emit.return_value = {"resultado": {"numeroControl": "00-00000001"}}
+            inv.generate_document_digital()
+        payload = mock_emit.call_args[0][1]
+        self.assertEqual(
+            payload["documentoElectronico"]["FacturaGuia"],
+            {"TipoDocumento": "04", "NumeroDocumento": "00-00099999"},
+        )
+
+    # ------------------------------------------------------------------
+    # journal_digital_invoice: related field usado para ocultar en la vista
+    # is_digitalized/show_payment_box/multi_currency_invoice cuando el
+    # diario no es de facturacion digital.
+    # ------------------------------------------------------------------
+
+    def test_187_journal_digital_invoice_reflects_journal_flag(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            do_post=False,
+        )
+        self.journal.digital_invoice = True
+        self.assertTrue(inv.journal_digital_invoice)
+        self.journal.digital_invoice = False
+        self.assertFalse(inv.journal_digital_invoice)
+

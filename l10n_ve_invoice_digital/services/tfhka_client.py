@@ -124,8 +124,8 @@ class TfhkaApiClient(models.AbstractModel):
             approves = False
             found_series = False
             for numbering in response.get("numeraciones", []):
-                serie_tfhka = numbering.get("serie", "")
-                if serie_tfhka != series and serie_tfhka != "NO APLICA":
+                series_tfhka = numbering.get("serie", "")
+                if series_tfhka != series and series_tfhka != "NO APLICA":
                     continue
 
                 end_number = numbering.get("hasta")
