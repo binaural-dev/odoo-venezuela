@@ -78,6 +78,29 @@ class TestResConfigSettings(TransactionCase):
         self.assertTrue(settings.dispatch_guide_digital_tfhka)
 
     @patch('odoo.addons.base.models.ir_module.Module.button_immediate_install')
+    def test_07_set_values_install_module_forces_uninstalled_state(self, mock_install):
+        # Fuerza el estado a 'uninstalled' (sin importar el estado real que
+        # tenga el módulo en esta base) para cubrir siempre la rama que
+        # llama a button_immediate_install().
+        module = self.env['ir.module.module'].sudo().search(
+            [('name', '=', 'l10n_ve_dispatch_guide_digital')], limit=1
+        )
+        if module:
+            module.state = 'uninstalled'
+        else:
+            module = self.env['ir.module.module'].sudo().create({
+                'name': 'l10n_ve_dispatch_guide_digital',
+                'state': 'uninstalled',
+                'category_id': self.env.ref('base.module_category_usability').id,
+            })
+        settings = self.env["res.config.settings"].create({
+            "company_id": self.company.id,
+            "dispatch_guide_digital_tfhka": True,
+        })
+        settings.set_values()
+        mock_install.assert_called_once()
+
+    @patch('odoo.addons.base.models.ir_module.Module.button_immediate_install')
     def test_06_set_values_module_already_installed_skips_install(self, mock_install):
         module = self.env['ir.module.module'].sudo().search([('name', '=', 'l10n_ve_dispatch_guide_digital')], limit=1)
         if not module:
