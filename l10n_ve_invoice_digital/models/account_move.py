@@ -214,8 +214,8 @@ class AccountMove(models.Model):
                 if record.debit_origin_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
-                if record.company_id.currency_id.name == "VEF":
-                    affected_invoice_amount = str(record.debit_origin_id.amount_total)
+                if record.company_id.currency_id.name in ('VEF', 'VES'):
+                    affected_invoice_amount = str(round(record.debit_origin_id.amount_total, 2))
                 else:
                     tax_totals = record.debit_origin_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
@@ -231,8 +231,8 @@ class AccountMove(models.Model):
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
-                if record.company_id.currency_id.name == "VEF":
-                    affected_invoice_amount = str(record.reversed_entry_id.amount_total)
+                if record.company_id.currency_id.name in ('VEF', 'VES'):
+                    affected_invoice_amount = str(round(record.reversed_entry_id.amount_total, 2))
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
                     affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
@@ -469,7 +469,10 @@ class AccountMove(models.Model):
         item_details = []
         line_number = 1
         for record in self:
-            for line in record.invoice_line_ids:
+            product_lines = record.invoice_line_ids.filtered(
+                lambda l: l.display_type == 'product'
+            )
+            for line in product_lines:
                 tax_mapping = {
                     0.0: "E",
                     8.0: "R",
@@ -500,7 +503,7 @@ class AccountMove(models.Model):
                     "numeroLinea": str(line_number),
                     "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                    "descripcion": line.product_id.name,
+                    "descripcion": line.product_id.name or "",
                     "cantidad": str(line.quantity),
                     "precioUnitario": str(unit_price),
                     "precioUnitarioDescuento": str(unit_price_discount),

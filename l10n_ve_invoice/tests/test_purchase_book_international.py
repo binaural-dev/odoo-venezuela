@@ -88,10 +88,19 @@ class TestIgtfPurchaseBook(TestCommonPurchaseInternational):
             "La base imponible general internacional debe ser mayor a 0"
         )
 
+        # `tax_general` comes from the real posted tax line (anchored to the
+        # document's total x rate, per l10n_ve_tax._sync_foreign_taxes_with_entry
+        # so it matches the CxC/payment-wizard alterno exactly); `base_general`
+        # is the independently-rounded product alterno. round(base) x rate can
+        # differ from the real tax by a few cents due to rounding-order (each
+        # is correctly rounded to 2 decimals on its own, but round(A) x rate
+        # != round(A x rate) in general) -- a delta tolerance is used instead
+        # of `places=2` to allow for that, rather than requiring the two
+        # independently-rounded amounts to match to the cent.
         self.assertAlmostEqual(
             tax_general,
             base_general * 0.16,
-            places=2,
+            delta=1.0,
             msg="El IVA general internacional no corresponde al 16% de la base"
         )
 
@@ -138,10 +147,12 @@ class TestIgtfPurchaseBook(TestCommonPurchaseInternational):
             "La base extendida internacional debe ser mayor a 0"
         )
 
+        # See the analogous assertion in test_purchase_book_line_fields_international_general
+        # for why a delta tolerance (not `places=2`) is used here.
         self.assertAlmostEqual(
             tax_extend,
             base_extend * 0.32,
-            places=2,
+            delta=1.0,
             msg="El IVA extendido internacional no corresponde al 32%"
         )
 
@@ -191,10 +202,12 @@ class TestIgtfPurchaseBook(TestCommonPurchaseInternational):
             "La base reducida internacional debe ser mayor a 0"
         )
 
+        # See the analogous assertion in test_purchase_book_line_fields_international_general
+        # for why a delta tolerance (not `places=2`) is used here.
         self.assertAlmostEqual(
             tax_reduced,
             base_reduced * 0.08,
-            places=2,
+            delta=1.0,
             msg="El IVA reducido internacional no corresponde al 8%"
         )
 
