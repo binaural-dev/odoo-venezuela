@@ -71,15 +71,34 @@ class TestRetentionCreditNote(TransactionCase):
         cls.islr_supplier_journal = _make_retention_journal("Retenciones ISLR Prov NC", "RSPNC")
         cls.islr_customer_journal = _make_retention_journal("Retenciones ISLR Cli NC", "RSCNC")
 
-        if not cls.company.currency_foreign_id:
-            cls.company.currency_foreign_id = cls.env.ref("base.USD").id
+        cls.currency_usd = cls.env.ref("base.USD")
+        cls.currency_vef = cls.env.ref("base.VEF")
 
         cls.company.write(
             {
+                "currency_id": cls.currency_usd.id,
+                "currency_foreign_id": cls.currency_vef.id,
                 "iva_supplier_retention_journal_id": cls.iva_supplier_journal.id,
                 "iva_customer_retention_journal_id": cls.iva_customer_journal.id,
                 "islr_supplier_retention_journal_id": cls.islr_supplier_journal.id,
                 "islr_customer_retention_journal_id": cls.islr_customer_journal.id,
+            }
+        )
+
+        # Tasa de cambio real, igual que en l10n_ve_igtf: sin esto,
+        # _compute_rate_for_documents (l10n_ve_accountant) no encuentra
+        # ningun res.currency.rate y sobreescribe foreign_rate/foreign_inverse_rate
+        # a 0 en cada factura, dejando el impuesto en moneda alterna en 0.
+        cls.currency_vef.write(
+            {
+                "rate_ids": [
+                    Command.create(
+                        {
+                            "company_rate": 2.0,
+                            "name": fields.Date.today(),
+                        }
+                    )
+                ],
             }
         )
 
@@ -167,32 +186,37 @@ class TestRetentionCreditNote(TransactionCase):
         )
 
     def _create_move(self, move_type, partner, base, journal, tax):
-        if move_type in ("out_invoice", "out_refund"):
+        # `correlative` is only editable in the form for in_invoice/in_refund
+        # (required there); for out_invoice/out_refund it's readonly unless
+        # is_contingency, so it must not be touched for those.
+        correlative = None
+        if move_type in ("in_invoice", "in_refund"):
             self.__class__._correlative_counter = (
                 getattr(self.__class__, "_correlative_counter", 500000) + 1
             )
-            correlative = str(self.__class__._correlative_counter).zfill(5)
-        else:
-            correlative = False
-        move = self.env["account.move"].create(
-            {
-                "move_type": move_type,
-                "partner_id": partner.id,
-                "journal_id": journal.id,
-                "invoice_date": fields.Date.today(),
-                "correlative": correlative,
-                "invoice_line_ids": [
-                    Command.create(
-                        {
-                            "product_id": self.product.id,
-                            "quantity": 1,
-                            "price_unit": base,
-                            "tax_ids": [(6, 0, [tax.id])],
-                        }
-                    )
-                ],
-            }
-        )
+            correlative = str(self.__class__._correlative_counter).zfill(14)
+
+        with Form(
+            self.env["account.move"].with_context(default_move_type=move_type)
+        ) as move_form:
+            move_form.partner_id = partner
+            move_form.journal_id = journal
+            move_form.invoice_date = fields.Date.today()
+            if correlative:
+                move_form.correlative = correlative
+        move = move_form.save()
+
+        with Form(move) as move_form_edit:
+            with move_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product
+                line.quantity = 1
+                line.price_unit = base
+        move = move_form_edit.save()
+
+        # The product carries its own default taxes (tax_iva16 for purchases,
+        # tax_iva16_sale for sales), matching what every caller passes here.
+        assert tax in move.invoice_line_ids.tax_ids
+
         move.with_context(move_action_post_alert=True).action_post()
         return move
 
