@@ -281,8 +281,9 @@ class AccountRetention(models.Model):
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
-            ("move_type", "in", ("in_refund", "in_invoice")),
-            ("amount_residual", "!=", 0),
+            "|",
+            "&", ("move_type", "=", "in_invoice"), ("amount_residual", ">", 0),
+            "&", ("move_type", "=", "in_refund"), ("amount_residual", "!=", 0),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain
@@ -321,8 +322,9 @@ class AccountRetention(models.Model):
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
-            ("move_type", "in", ("out_refund", "out_invoice")),
-            ("amount_residual", "!=", 0),
+            "|",
+            "&", ("move_type", "=", "out_invoice"), ("amount_residual", ">", 0),
+            "&", ("move_type", "=", "out_refund"), ("amount_residual", "!=", 0),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain
@@ -982,7 +984,7 @@ class AccountRetention(models.Model):
             lambda l: l.tax_ids and l.tax_ids[0].amount > 0
         ).mapped("tax_ids")
         if not any(tax_ids):
-            raise UserError(_("The invoice %s has no tax."), invoice_id.number)
+            raise UserError(_("The invoice %s has no tax.", invoice_id.number))
 
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []
