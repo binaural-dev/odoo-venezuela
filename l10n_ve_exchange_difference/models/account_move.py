@@ -124,7 +124,13 @@ class AccountMove(models.Model):
         invoice = related_moves.filtered(
             lambda m: m.move_type in ('out_invoice', 'out_refund')
         )[:1]
-        if invoice and invoice.company_id.l10n_ve_exchange_use_nd_nc:
+        if invoice:
+            # No se condiciona a `company_id.l10n_ve_exchange_use_nd_nc`: la
+            # sola existencia de una nota vinculada a esta factura ya prueba
+            # que se usó este flujo al conciliar -- revisar el toggle aquí
+            # es redundante (y frágil: si alguien desactiva la opción
+            # después de emitida la nota, esta seguiría necesitando
+            # revertirse correctamente al desconciliar).
             note = self.env['account.move'].search([
                 ('l10n_ve_exchange_invoice_id', '=', invoice.id),
                 ('state', '!=', 'cancel'),
