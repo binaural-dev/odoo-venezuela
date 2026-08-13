@@ -254,8 +254,11 @@ class TestAccumulatedRate(TransactionCase):
         retention_islr.with_context(account_retention_alert=True).generate_document_digital()
         self.assertEqual(retention_islr.is_digitalized, True)
 
-    # DetallesRetencion debe usar los nombres de campo de la spec (Tabla 24):
-    # "porcentajeIVA" y "retenidoIVA", no "porcentaje"/"retenido". No usa API.
+    # DetallesRetencion debe usar los nombres de campo de la spec TFHKA (Tabla 24):
+    # "retenido" (monto retenido, obligatorio) y "porcentaje" (alicuota), no
+    # "retenidoIVA"/"porcentajeIVA" para esos valores. "retenidoIVA" sigue
+    # existiendo pero para el monto de retención especial
+    # (related_percentage_tax_base). No usa API.
     def test_retention_details_field_names(self):
         account_move = self._create_invoice()
         account_move.action_post()
@@ -265,10 +268,10 @@ class TestAccumulatedRate(TransactionCase):
         details = self.env['tfhka.retention.service']._prepare_detail_lines(retention_iva, "05")
         self.assertTrue(details, "get_retention_details debe devolver al menos una línea")
         detail = details[0]
-        self.assertIn("porcentajeIVA", detail)
+        self.assertIn("retenido", detail)
+        self.assertIn("porcentaje", detail)
         self.assertIn("retenidoIVA", detail)
-        self.assertNotIn("porcentaje", detail)
-        self.assertNotIn("retenido", detail)
+        self.assertNotIn("porcentajeIVA", detail)
 
     # Anulacion de retencion via wizard (endpoint /Anular)
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)

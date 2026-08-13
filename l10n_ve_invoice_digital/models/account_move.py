@@ -22,6 +22,19 @@ class AccountMove(models.Model):
         related="company_id.digitalization_with_payment_tfhka",
     )
 
+    def write(self, vals):
+        """Prevent disabling multi_currency_invoice while it is locked by a USD payment."""
+        if 'multi_currency_invoice' in vals and not vals.get('multi_currency_invoice'):
+            for move in self:
+                if move.show_payment_box and move._has_usd_reconciled_payment():
+                    raise ValidationError(
+                        _(
+                            "Cannot disable multi-currency invoicing: a payment in USD is already "
+                            "linked to this invoice."
+                        )
+                    )
+        return super().write(vals)
+
     def action_post(self):
         for invoice in self:
             invoice._tfhka_validate_mixed_invoicing()
@@ -126,6 +139,32 @@ class AccountMove(models.Model):
     def _compute_multi_currency_enabled(self):
         for move in self:
             move.multi_currency_enabled = move.company_id.multi_currency_invoice_tfhka
+
+    # Bloquea multi_currency_invoice cuando el cuadro de pago está activo y
+    # ya hay un pago en USD conciliado con la factura: en ese caso el
+    # multi-moneda pasa a ser obligatorio (no se puede desmarcar).
+    multi_currency_invoice_lock = fields.Boolean(
+        compute='_compute_multi_currency_invoice_lock',
+        string='Multi-Currency Invoice Lock',
+    )
+
+    @api.depends('show_payment_box', 'invoice_payments_widget')
+    def _compute_multi_currency_invoice_lock(self):
+        for move in self:
+            has_usd_payment = move.show_payment_box and move._has_usd_reconciled_payment()
+            move.multi_currency_invoice_lock = has_usd_payment
+            if has_usd_payment:
+                move.multi_currency_invoice = True
+
+    def _has_usd_reconciled_payment(self):
+        """Check if any payment reconciled with this invoice is in USD."""
+        self.ensure_one()
+        content = (self.invoice_payments_widget or {}).get('content', [])
+        if not content:
+            return False
+        payment_ids = [item.get('account_payment_id') for item in content if item.get('account_payment_id')]
+        payments = self.env['account.payment'].browse(payment_ids).exists()
+        return any(payment.currency_id.name == 'USD' for payment in payments)
 
     # Moneda de las líneas de producto: VES (precios en Bs.) o USD (precios en USD).
     # Solo visible cuando multi_currency_invoice está activo en la factura.

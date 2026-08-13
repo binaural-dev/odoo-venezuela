@@ -1,6 +1,7 @@
+import logging
 from odoo import _, fields, models
 from odoo.exceptions import UserError
-
+_logger = logging.getLogger(__name__)
 
 class TfhkaRetentionService(models.AbstractModel):
     """Arma y envía los comprobantes de retención (IVA 05 / ISLR 06) a TFHKA.
@@ -108,7 +109,7 @@ class TfhkaRetentionService(models.AbstractModel):
             }
         }
         payload["documentoElectronico"].update(self._prepare_extra_retention_values(retention))
-
+        _logger.info(f"---| {payload}")
         response = self.env["tfhka.api.client"].emit(retention.company_id, payload)
 
         if response:
@@ -229,21 +230,20 @@ class TfhkaRetentionService(models.AbstractModel):
                     "montoTotal": invoice_total,
                     "baseImponible": invoice_amount,
                     "moneda": record.company_id.currency_id.name,
-                    # Tabla 24 (DetallesRetencion): el monto retenido va en
-                    # "retenidoIVA" (no colocar porcentaje sino monto).
-                    "retenidoIVA": retention_amount,
+                    "retenido": retention_amount,
                 }
 
                 if document_type == "05":
                     retention_data["montoIVA"] = iva_amount
-                    retention_data["porcentajeIVA"] = str(round(line.aliquot, 2))
+                    retention_data["porcentaje"] = str(round(line.aliquot, 2))
+                    retention_data["retenidoIVA"] = str(round(line.related_percentage_tax_base, 2))
 
                 if document_type == "06":
                     code = line.code
                     if code:
                         retention_data["CodigoConcepto"] = code.zfill(3)
 
-                    retention_data["porcentajeIVA"] = str(round(line.related_percentage_fees, 2))
+                    retention_data["porcentaje"] = str(round(line.related_percentage_fees, 2))
 
                 retention_details.append(retention_data)
                 counter += 1
