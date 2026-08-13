@@ -1,387 +1,749 @@
-from odoo.exceptions import UserError
-from odoo import fields, Command
-from odoo.tests import TransactionCase, tagged
-from unittest.mock import patch, MagicMock
-
 import logging
+
+from odoo import Command, fields
+from odoo.exceptions import UserError
+from odoo.tests import TransactionCase, tagged
+from unittest.mock import patch
 
 _logger = logging.getLogger(__name__)
 
-@tagged('l10n_ve_dispatch_guide_digital', 'invoice digital') 
+
+# Simula las respuestas SUCCESS de la API de TFHKA (mismo formato usado por
+# l10n_ve_invoice_digital/tests/test_account_move.py, ya que 'tfhka.api.client'
+# es el mismo servicio compartido por ambos módulos).
+def mock_api(company, endpoint_key, payload, *args, **kwargs):
+    if endpoint_key == "emision":
+        return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
+    elif endpoint_key == "ultimo_documento":
+        return {"codigo": "200", "numeroDocumento": 1}
+    elif endpoint_key == "consulta_numeraciones":
+        return {
+            "numeraciones": [
+                {"serie": "NO APLICA", "hasta": "100000", "correlativo": "01"},
+            ],
+            "codigo": "200",
+            "mensaje": "Consulta realizada exitosamente",
+        }
+
+
+TFHKA_REQUEST_PATCH = "odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request"
+GENERATE_DIGITAL_PATCH = "odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.generate_document_digital"
+
+
+@tagged("post_install", "-at_install", "l10n_ve_dispatch_guide_digital")
 class TestStockPickingApiCalls(TransactionCase):
 
     def setUp(self):
-        super(TestStockPickingApiCalls, self).setUp()
+        super().setUp()
+        self.env.user.tz = "America/Caracas"
 
-        # Monedas
+        self.DispatchGuideService = self.env["tfhka.dispatch.guide.service"]
+        self.StockPicking = self.env["stock.picking"]
+        self.StockQuant = self.env["stock.quant"]
+
+        # ───────────────────────────────────────────────────── monedas / compañía
         self.currency_vef = self.env.ref("base.VEF")
         self.currency_usd = self.env.ref("base.USD")
-
-        # Crear modelos necesarios
-        self.ProductProduct = self.env['product.product']
-        self.ResPartner = self.env['res.partner']
-        self.StockLocation = self.env['stock.location']
-        self.StockPicking = self.env['stock.picking']
-        self.StockQuant = self.env['stock.quant']
-        self.StockWarehouse = self.env['stock.warehouse']
-        self.UomUom = self.env['uom.uom']
-        self.env.user.tz = 'America/Caracas'
-
-        # Crear compañía (usamos la principal por defecto)
         self.company = self.env.ref("base.main_company")
 
         self.company.write(
             {
-                "currency_id": self.currency_usd.id,
-                "currency_foreign_id": self.currency_vef.id,
                 "url_tfhka": "https://fake-api.com",
                 "token_auth_tfhka": "fake-token",
-                "group_sales_invoicing_series": True,
                 "sequence_validation_tfhka": True,
                 "invoice_digital_tfhka": True,
                 "dispatch_guide_digital_tfhka": True,
+                "country_id": self.env.ref("base.ve").id,
             }
         )
-        
-        # Crear unidad de medida (Unidades)
-        self.uom_unit = self.env.ref('uom.product_uom_unit')
-        
-        # Crear categoría de producto
-        self.product_category = self.env['product.category'].create({
-            'name': 'Test Category',
-        })
-        
-        # Crear producto consumible
-        self.product_consumable = self.ProductProduct.create({
-            'name': 'Producto Consumible',
-            'type': 'consu',
-            'categ_id': self.product_category.id,
-            'uom_id': self.uom_unit.id,
-            'uom_po_id': self.uom_unit.id,
-        })
-        
-        # Crear producto almacenable
-        self.product_storable = self.ProductProduct.create({
-            'name': 'Producto Almacenable',
-            'type': 'product',
-            'categ_id': self.product_category.id,
-            'uom_id': self.uom_unit.id,
-            'uom_po_id': self.uom_unit.id,
-        })
-        
-        # Crear partner (cliente)
-        self.customer = self.env['res.partner'].create({
-            'name': 'Cliente Prueba',
-            'vat': 'V12345678',
-            'prefix_vat': 'J',
-            'country_id': self.env.ref('base.ve').id,
-            'phone': '04141234567',
-            'email': 'cliente@prueba.com',
-            'street': 'Calle Falsa 123',
-        })
-        
-        # Crear partner (proveedor)
-        self.supplier = self.env['res.partner'].create({
-            'name': 'Proveedor Prueba',
-            'vat': 'J12345679',
-            'prefix_vat': 'J',
-            'country_id': self.env.ref('base.ve').id,
-            'phone': '04141234567',
-            'email': 'proveedor@prueba.com',
-            'street': 'Calle Prueba 123',
-        })
-        
-        # Obtener ubicaciones principales
-        self.stock_location = self.env.ref('stock.stock_location_stock')
-        self.customer_location = self.env.ref('stock.stock_location_customers')
-        self.supplier_location = self.env.ref('stock.stock_location_suppliers')
-        
-        # Obtener tipos de operación
-        self.picking_type_in = self.env.ref('stock.picking_type_in')
-        self.picking_type_out = self.env.ref('stock.picking_type_out')
-        self.picking_type_int = self.env.ref('stock.picking_type_internal')
-        
-        # Crear almacén adicional para pruebas
-        self.warehouse_2 = self.StockWarehouse.create({
-            'name': 'Almacén Secundario',
-            'code': 'WH2',
-        })
-        
-        # Crear ubicación adicional
-        self.additional_location = self.StockLocation.create({
-            'name': 'Ubicación Especial',
-            'location_id': self.stock_location.id,
-        })
-        
-        self.sequence_guide = self.env['ir.sequence'].search([('code', '=', 'guide.number')], limit=1)
 
-        self.sequence_guide.write({'number_next_actual': 2,})
+        # ───────────────────────────────────────────────────── ubicaciones / tipos
+        self.stock_location = self.env.ref("stock.stock_location_stock")
+        self.customer_location = self.env.ref("stock.stock_location_customers")
 
-        # Crear stock inicial para producto almacenable
-        self.StockQuant.create({
-            'product_id': self.product_storable.id,
-            'location_id': self.stock_location.id,
-            'quantity': 100.0,
-        })
-    
-    def create_picking(self, type=None, location=None, location_dest=None):
-        type = type if type is not None else self.picking_type_int.id
-        location = location if location is not None else self.stock_location.id
-        location_dest = location_dest if location_dest is not None else self.customer_location.id
+        self.picking_type_in = self.env.ref("stock.picking_type_in")
+        self.picking_type_int = self.env.ref("stock.picking_type_internal")
 
-        return self.StockPicking.create({
-            'location_id': location,
-            'location_dest_id': location_dest,
-            'partner_id': self.customer.id,
-            'picking_type_id': type,
-            'is_dispatch_guide': True,
-            'move_ids': [(0, 0, {
-                'name': self.product_storable.name,
-                'product_id': self.product_storable.id,
-                'product_uom_qty': 10,
-                'product_uom': self.uom_unit.id,
-                'location_id': self.stock_location.id,
-                'location_dest_id': self.customer_location.id,
-            })]
-        })
+        self.uom_unit = self.env.ref("uom.product_uom_unit")
 
-    def _create_subsidiary(self, name="Sucursal prueba"):
-        analytic_plan = self.env['account.analytic.plan'].create({
-            'name': 'Plan para pruebas',
-        })
+        # ───────────────────────────────────────────────────── partners
+        self.customer = self.env["res.partner"].create(
+            {
+                "name": "Cliente Prueba",
+                "vat": "V12345678",
+                "prefix_vat": "V",
+                "country_id": self.env.ref("base.ve").id,
+                "phone": "04141234567",
+                "email": "cliente@prueba.com",
+                "street": "Calle Falsa 123",
+            }
+        )
 
-        return self.env['account.analytic.account'].create({
-            'name': name,
-            'is_subsidiary': True,
-            'company_id': self.env.company.id,
-            'plan_id': analytic_plan.id,
-            'code': "002",
-        })
+        self.customer_child = self.env["res.partner"].create(
+            {
+                "name": "Contacto Entrega",
+                "parent_id": self.customer.id,
+                "type": "delivery",
+            }
+        )
 
-    # Simula las respuestas SUCCES de la API de TFHKA
-    def mock_api(endpoint_key, payload):
-        if endpoint_key == "emision":
-            return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
-        elif endpoint_key == "ultimo_documento":
-            return {"codigo": "200", "numeroDocumento": 1}
-        elif endpoint_key == "consulta_numeraciones":
-            return {"codigo": "200", "numeraciones": [{"serie": "NO APLICA", "hasta": "100000", "correlativo": "01"}]}
-        return {"codigo": "200"}
-    
-    # API de TFHKA para consultar numeraciones
-    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api')
-    def test_01_query_numbering_success(self, mock_call):
+        self.customer_bare = self.env["res.partner"].create(
+            {
+                "name": "Sin Dirección",
+                "country_id": False,
+            }
+        )
 
-        mock_call.return_value = {
-            "numeraciones": [
+        # ───────────────────────────────────────────────────── impuestos
+        self.tax_group = self.env["account.tax.group"].create({"name": "IVA"})
+        self.tax_iva16 = self.env["account.tax"].create(
+            {
+                "name": "IVA 16%",
+                "amount": 16,
+                "amount_type": "percent",
+                "type_tax_use": "sale",
+                "tax_group_id": self.tax_group.id,
+            }
+        )
+
+        # ───────────────────────────────────────────────────── condiciones de pago
+        self.payment_term_credit = self.env["account.payment.term"].create(
+            {
+                "name": "30 dias",
+                "line_ids": [
+                    Command.create({"nb_days": 30, "value": "percent", "value_amount": 100})
+                ],
+            }
+        )
+        self.payment_term_immediate = self.env["account.payment.term"].create(
+            {
+                "name": "Inmediato",
+                "line_ids": [
+                    Command.create({"nb_days": 0, "value": "percent", "value_amount": 100})
+                ],
+            }
+        )
+
+        # ───────────────────────────────────────────────────── motivos de traslado
+        self.transfer_reason_sale = self.env.ref("l10n_ve_stock_account.transfer_reason_sale")
+        self.transfer_reason_other_causes = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_other_causes"
+        )
+
+        # ───────────────────────────────────────────────────── productos
+        self.product_category = self.env["product.category"].create({"name": "Test Category"})
+
+        self.product_storable = self.env["product.product"].create(
+            {
+                "name": "Producto Almacenable",
+                "type": "product",
+                "categ_id": self.product_category.id,
+                "uom_id": self.uom_unit.id,
+                "uom_po_id": self.uom_unit.id,
+                "barcode": "1111111111",
+                "taxes_id": [Command.set([self.tax_iva16.id])],
+            }
+        )
+
+        self.product_service = self.env["product.product"].create(
+            {
+                "name": "Servicio de Prueba",
+                "type": "service",
+                "categ_id": self.product_category.id,
+            }
+        )
+
+        self.product_national = self.env["product.product"].create(
+            {
+                "name": "Producto Nacional",
+                "type": "product",
+                "categ_id": self.product_category.id,
+                "uom_id": self.uom_unit.id,
+                "uom_po_id": self.uom_unit.id,
+                "country_of_origin": self.env.ref("base.ve").id,
+                "taxes_id": [Command.set([self.tax_iva16.id])],
+            }
+        )
+
+        self.product_imported = self.env["product.product"].create(
+            {
+                "name": "Producto Importado",
+                "type": "product",
+                "categ_id": self.product_category.id,
+                "uom_id": self.uom_unit.id,
+                "uom_po_id": self.uom_unit.id,
+                "country_of_origin": self.env.ref("base.us").id,
+                "taxes_id": [Command.set([self.tax_iva16.id])],
+            }
+        )
+
+        for product in (
+            self.product_storable,
+            self.product_national,
+            self.product_imported,
+        ):
+            self.StockQuant.create(
                 {
-                    "titulo": "NUMERACIÓN DE 1 A 100000",
-                    "serie": "NO APLICA",
-                    "tipoDocumento": "TODOS",
-                    "prefijo": "00",
-                    "desde": "1",
-                    "hasta": "100000",
-                    "correlativo": "645",
-                    "estado": "True"
+                    "product_id": product.id,
+                    "location_id": self.stock_location.id,
+                    "quantity": 100.0,
+                }
+            )
+
+    # ------------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------------
+
+    def create_picking(self, picking_type=None, products=None, partner=None):
+        """Picking manual (sin sale_id), como una transferencia interna directa."""
+        picking_type = picking_type if picking_type is not None else self.picking_type_int
+        products = products if products is not None else [(self.product_storable, 10)]
+
+        location = picking_type.default_location_src_id.id or self.stock_location.id
+        location_dest = picking_type.default_location_dest_id.id or self.customer_location.id
+
+        vals = {
+            "location_id": location,
+            "location_dest_id": location_dest,
+            "picking_type_id": picking_type.id,
+            "is_dispatch_guide": True,
+        }
+        if partner is not False:
+            vals["partner_id"] = (partner or self.customer).id
+
+        vals["move_ids"] = [
+            Command.create(
+                {
+                    "name": product.name,
+                    "product_id": product.id,
+                    "product_uom_qty": qty,
+                    "product_uom": product.uom_id.id,
+                    "location_id": location,
+                    "location_dest_id": location_dest,
+                }
+            )
+            for product, qty in products
+        ]
+
+        return self.StockPicking.create(vals)
+
+    def validate_picking(self, picking):
+        for move in picking.move_ids_without_package:
+            move.quantity = move.product_uom_qty
+        return picking.button_validate()
+
+    def create_sale_dispatch_guide(
+        self,
+        order_lines,
+        currency=None,
+        foreign_rate=10.0,
+        partner=None,
+        payment_term=None,
+    ):
+        """Crea una orden de venta (documento='dispatch_guide'), la confirma y
+        deja el picking resultante listo para validar, con transfer_reason_id
+        'sale' ya asignado.
+        """
+        currency = currency or self.currency_vef
+        order_vals = {
+            "partner_id": (partner or self.customer).id,
+            "document": "dispatch_guide",
+            "currency_id": currency.id,
+            "manually_set_rate": True,
+            "foreign_rate": foreign_rate,
+            "foreign_inverse_rate": 1 / foreign_rate,
+        }
+        if payment_term:
+            order_vals["payment_term_id"] = payment_term.id
+
+        order = self.env["sale.order"].create(order_vals)
+
+        for line_vals in order_lines:
+            vals = {
+                "order_id": order.id,
+                "currency_id": currency.id,
+                "foreign_currency_id": self.currency_usd.id
+                if currency == self.currency_vef
+                else self.currency_vef.id,
+                "foreign_rate": foreign_rate,
+                "display_type": False,
+            }
+            vals.update(line_vals)
+            self.env["sale.order.line"].create(vals)
+
+        # currency_id es un campo computado (a partir de la lista de precios); lo
+        # forzamos explícitamente para controlar la rama VEF/extranjera en las
+        # pruebas, sin depender de qué lista de precios resuelva el partner.
+        order.currency_id = currency.id
+        order.action_confirm()
+        order.currency_id = currency.id
+        picking = order.picking_ids
+        picking.transfer_reason_id = self.transfer_reason_sale.id
+        return order, picking
+
+    # ==================================================================
+    # send_document
+    # ==================================================================
+
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_send_document_success(self, mock_call):
+        sequence = self.env["ir.sequence"].search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company.id)]
+        )
+        sequence.write({"number_next_actual": 2})
+
+        picking = self.create_picking()
+        self.validate_picking(picking)
+
+        self.assertTrue(picking.is_digitalized)
+        self.assertEqual(picking.control_number_tfhka, "00-00000001")
+        self.assertTrue(picking.guide_number)
+
+        messages = picking.message_ids.filtered(lambda m: "successfully digitized" in (m.body or ""))
+        self.assertTrue(messages, "Debe publicarse un mensaje de digitalización exitosa.")
+
+    def test_send_document_already_digitalized_raises(self):
+        picking = self.create_picking()
+        picking.is_digitalized = True
+
+        with self.assertRaises(UserError):
+            self.DispatchGuideService.send_document(picking)
+
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_send_document_sequence_mismatch_raises_when_validation_enabled(self, mock_call):
+        sequence = self.env["ir.sequence"].search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company.id)]
+        )
+        sequence.write({"number_next_actual": 99})
+        self.company.sequence_validation_tfhka = True
+
+        picking = self.create_picking()
+
+        with self.assertRaises(UserError):
+            self.validate_picking(picking)
+
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_send_document_sequence_mismatch_ignored_when_validation_disabled(self, mock_call):
+        sequence = self.env["ir.sequence"].search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company.id)]
+        )
+        sequence.write({"number_next_actual": 99})
+        self.company.sequence_validation_tfhka = False
+
+        picking = self.create_picking()
+        self.validate_picking(picking)
+
+        self.assertTrue(picking.is_digitalized)
+
+    # ==================================================================
+    # generate_document_data / _register_success (flujo completo)
+    # ==================================================================
+
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_generate_document_data_full_flow_sale_vef_with_tax(self, mock_call):
+        sequence = self.env["ir.sequence"].search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company.id)]
+        )
+        sequence.write({"number_next_actual": 2})
+
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 2,
+                    "price_unit": 100,
+                    "tax_id": [Command.set([self.tax_iva16.id])],
+                    "name": "Línea con impuesto",
                 }
             ],
-            "codigo": "200",
-            "mensaje": "Consulta realizada exitosamente"
-        }
-        
-        outgoing_int_picking = self.create_picking()
-        response = outgoing_int_picking.query_numbering()
-        self.assertEqual(response, None)
-        _logger.info("Test passed: Query numbering successfully.")
+            currency=self.currency_vef,
+            payment_term=self.payment_term_credit,
+        )
 
-    # API de TFHKA para obtener el último número de documento
-    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api')
-    def test_02_get_last_document_number_success(self, mock_call):
-        mock_call.return_value = {
-            "numeroDocumento": 126,
-            "codigo": "200",
-            "mensaje": "Consulta realizada exitosamente"
-        }
+        self.validate_picking(picking)
 
-        document_type = "04"
-        outgoing_int_picking = self.create_picking()
-        response = outgoing_int_picking.get_last_document_number(document_type)
-        self.assertEqual(response, 126)
-        _logger.info("Test passed: Get last document number successfully.")
+        self.assertTrue(picking.is_digitalized)
+        self.assertEqual(picking.control_number_tfhka, "00-00000001")
+        self.assertTrue(picking.guide_number)
 
-    # API de TFHKA para generar documento digital (Guia de despacho)
-    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api')
-    def test_03_generate_document_data_success(self, mock_call):
-        mock_call.return_value = {
-            "resultado": {
-                "imprentaDigital": "THE FACTORY HKA VENEZUELA, C.A.",
-                "autorizado": "Imprenta Digital Autorizada mediante Providencia SENIAT/INTI/XXXXXXX de fecha 09/09/2022",
-                "serie": "",
-                "tipoDocumento": "01",
-                "numeroDocumento": "329",
-                "numeroControl": "00-00000646",
-                "fechaAsignacion": "03/02/2023",
-                "horaAsignacion": "01:26:30 PM",
-                "fechaAsignacionNumeroControl": "10/06/2025",
-                "horaAsignacionNumeroControl": "02:49:11 PM",
-                "rangoAsignado": "Nros. de Control desde el 00-00000001 hasta 00-00100000",
-                "urlConsulta": "https://democonsulta.thefactoryhka.com.ve/?doc=4veMdK7d7zPkGconw/7fyG8qQxFGrk9KhWAr1hCY8D7lq3an6kwmqgXyxFca+9EI"
-            },
-            "codigo": "200",
-            "mensaje": "Documento procesado correctamente"
-        }
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_generate_document_data_without_partner_skips_additional_info(self, mock_call):
+        picking = self.create_picking(partner=False)
+        self.DispatchGuideService.generate_document_data(picking, "5", "04")
+        self.assertTrue(picking.is_digitalized)
 
-        document_type = "04"
-        document_number = "12345678"
-        outgoing_int_picking = self.create_picking()
-        response = outgoing_int_picking.generate_document_data(document_number, document_type)
-        self.assertEqual(outgoing_int_picking.is_digitalized, True)
-        _logger.info("Test passed: Document data generated successfully.")
+    @patch(TFHKA_REQUEST_PATCH)
+    def test_generate_document_data_empty_response_skips_register_success(self, mock_call):
+        mock_call.return_value = None
+        picking = self.create_picking()
+        self.DispatchGuideService.generate_document_data(picking, "5", "04")
+        self.assertFalse(picking.is_digitalized)
 
-    # Generar Guia de despacho interno
-    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
-    def test_04_create_stock_picking(self, mock_call):
-        """Test creating a stock picking with valid data."""
-        outgoing_int_picking = self.create_picking()
-        outgoing_int_picking.button_validate()
+    # ==================================================================
+    # _prepare_identification
+    # ==================================================================
 
-        self.assertEqual(outgoing_int_picking.is_digitalized, True)
-        _logger.info("Test passed: Document digital generated successfully.")
+    def test_prepare_identification_without_date_deadline(self):
+        picking = self.create_picking()
+        ident = self.DispatchGuideService._prepare_identification(picking, "04", "1")
+        self.assertEqual(ident["fechaVencimiento"], ident["fechaEmision"])
 
-    # Generar Guia de despacho entrega
-    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
-    def test_05_create_stock_picking(self, mock_call):
-        """Test creating a stock picking with valid data."""
-        outgoing_out_picking = self.create_picking()
-        outgoing_out_picking.button_validate()
+    def test_prepare_identification_with_date_deadline(self):
+        picking = self.create_picking()
+        picking.date_deadline = fields.Datetime.from_string("2026-09-01 10:00:00")
+        ident = self.DispatchGuideService._prepare_identification(picking, "04", "1")
+        self.assertEqual(ident["fechaVencimiento"], "01/09/2026")
 
-        self.assertEqual(outgoing_out_picking.is_digitalized, True)
-        _logger.info("Test passed: Document digital generated successfully.")
-    
-    # Generar Guia de despacho recepción
-    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
-    def test_06_create_stock_picking(self, mock_call):
-        """Test creating a stock picking with valid data."""
-        incoming_picking = self.create_picking(self.picking_type_in.id, self.supplier_location.id, self.stock_location.id,)
-        incoming_picking.button_validate()
+    def test_prepare_identification_empty_recordset(self):
+        empty_picking = self.StockPicking.browse()
+        result = self.DispatchGuideService._prepare_identification(empty_picking, "04", "1")
+        self.assertIsNone(result)
 
-        self.assertEqual(incoming_picking.is_digitalized, False)
-        _logger.info("Test passed: Document digital generated successfully.")
+    # ==================================================================
+    # _get_payment_type
+    # ==================================================================
 
-    # Validacion de secuencia entre la API y Odoo
-    @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
-    def test_07_generate_document_digital_sequence_error(self, mock_call):
-        """Test creating a stock picking with valid data."""
-        self.sequence_guide.write({'number_next_actual': 1,})
-        outgoing_out_picking = self.create_picking()
+    def test_get_payment_type_without_sale_id(self):
+        picking = self.create_picking()
+        self.assertIsNone(self.DispatchGuideService._get_payment_type(picking))
 
-        with self.assertRaises(UserError):
-            outgoing_out_picking.button_validate()
+    def test_get_payment_type_credit(self):
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 10,
+                    "tax_id": [Command.set([self.tax_iva16.id])],
+                    "name": "Línea",
+                }
+            ],
+            payment_term=self.payment_term_credit,
+        )
+        self.assertEqual(self.DispatchGuideService._get_payment_type(picking), "Crédito")
 
-        _logger.info("Test passed: Sequence validation error raised as expected.")
+    def test_get_payment_type_immediate(self):
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 10,
+                    "tax_id": [Command.set([self.tax_iva16.id])],
+                    "name": "Línea",
+                }
+            ],
+            payment_term=self.payment_term_immediate,
+        )
+        self.assertEqual(self.DispatchGuideService._get_payment_type(picking), "Inmediato")
 
-    # Llamada a la API de TFHKA URL vacía
-    def test_08_call_tfhka_api_URL_error(self):
-        self.company.write({"url_tfhka": ""})
+    # ==================================================================
+    # _prepare_detail_lines
+    # ==================================================================
 
-        outgoing_out_picking = self.create_picking()
+    def test_prepare_detail_lines_generic_without_sale(self):
+        picking = self.create_picking(
+            products=[(self.product_storable, 5), (self.product_service, 2)]
+        )
+        items = self.DispatchGuideService._prepare_detail_lines(picking)
 
-        endpoint_key = "emision"
-        payload={
-            "serie": "",
-            "tipoDocumento": "",
-            "prefix": ""
-        }
-        with self.assertRaises(UserError):
-            outgoing_out_picking.call_tfhka_api(endpoint_key, payload)
+        self.assertEqual(len(items), 2)
+        for item in items:
+            self.assertEqual(item["precioUnitario"], "0")
+            self.assertEqual(item["valorTotalItem"], "0")
 
-        _logger.info("Test passed: URL for TFHKA is empty, UserError raised as expected.")
+        indicators = {item["indicadorBienoServicio"] for item in items}
+        self.assertEqual(indicators, {"1", "2"})
 
-    # Llamada a la API de TFHKA Token vacío
-    def test_09_call_tfhka_api_token_error(self):
-        self.company.write({"token_auth_tfhka": ""})
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_prepare_detail_lines_sale_with_tax_vef(self, mock_call):
+        self.company.sequence_validation_tfhka = False
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 3,
+                    "price_unit": 50,
+                    "tax_id": [Command.set([self.tax_iva16.id])],
+                    "name": "Línea con impuesto",
+                }
+            ],
+            currency=self.currency_vef,
+        )
+        self.validate_picking(picking)
 
-        outgoing_out_picking = self.create_picking()
+        items = self.DispatchGuideService._prepare_detail_lines(picking)
+        self.assertEqual(len(items), 1)
+        item = items[0]
+        self.assertEqual(item["codigoImpuesto"], "G")
+        self.assertEqual(item["tasaIVA"], "16.0")
+        self.assertEqual(item["precioUnitario"], "50.0")
 
-        endpoint_key = "emision"
-        payload={
-            "serie": "",
-            "tipoDocumento": "",
-            "prefix": ""
-        }
-        with self.assertRaises(UserError):
-            outgoing_out_picking.call_tfhka_api(endpoint_key, payload)
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_prepare_detail_lines_sale_without_tax_foreign_currency(self, mock_call):
+        self.company.sequence_validation_tfhka = False
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 2,
+                    "price_unit": 100,
+                    "tax_id": [Command.clear()],
+                    "name": "Línea sin impuesto",
+                }
+            ],
+            currency=self.currency_usd,
+            foreign_rate=10.0,
+        )
+        self.validate_picking(picking)
 
-        _logger.info("Test passed: Token for TFHKA is empty, UserError raised as expected.")
+        sale_line = order.order_line.filtered(lambda l: l.product_id)
+        expected_unit_price = round(sale_line.foreign_price, 2)
 
-    # Llamada a la API de TFHKA con error 400
-    @patch('requests.post')
-    def test_10_call_tfhka_api_status_code_400_error(self, mock_call):
-        mock_response = MagicMock()
-        mock_response.status_code = 400
-        mock_call.return_value = mock_response
+        items = self.DispatchGuideService._prepare_detail_lines(picking)
+        self.assertEqual(len(items), 1)
+        item = items[0]
+        self.assertEqual(item["codigoImpuesto"], "E")
+        self.assertEqual(item["tasaIVA"], "0.0")
+        self.assertEqual(item["precioUnitario"], str(expected_unit_price))
 
-        outgoing_out_picking = self.create_picking()
+    # ==================================================================
+    # _prepare_dispatch_guide
+    # ==================================================================
 
-        endpoint_key = "emision"
-        payload={
-            "serie": "",
-            "tipoDocumento": "",
-            "prefix": ""
-        }
-        with self.assertRaises(UserError):
-            outgoing_out_picking.call_tfhka_api(endpoint_key, payload)
+    def test_prepare_dispatch_guide_origin_nacional(self):
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_national.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 10,
+                    "name": "Nacional",
+                }
+            ],
+        )
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["origenProducto"], "Nacional")
 
-        _logger.info("Test passed: Token for TFHKA is empty, UserError raised as expected.")
+    def test_prepare_dispatch_guide_origin_importado(self):
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_imported.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 10,
+                    "name": "Importado",
+                }
+            ],
+        )
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["origenProducto"], "Importado")
 
-    # Llamada a la API de TFHKA con error 200 pero con mensaje de error
-    @patch('requests.post')
-    def test_11_call_tfhka_api_status_code_200_error(self, mock_call):
-        mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.json.return_value = {
-            "codigo": "400",
-            "mensaje": "Error en la petición"
-        }
-        mock_call.return_value = mock_response
+    def test_prepare_dispatch_guide_origin_mixed(self):
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_national.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 10,
+                    "name": "Nacional",
+                },
+                {
+                    "product_id": self.product_imported.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 10,
+                    "name": "Importado",
+                },
+            ],
+        )
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["origenProducto"], "Nacional e Importado")
 
-        outgoing_out_picking = self.create_picking()
+    def test_prepare_dispatch_guide_origin_sin_definir(self):
+        picking = self.create_picking()
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["origenProducto"], "Sin origen definido")
 
-        endpoint_key = "emision"
-        payload={
-            "serie": "",
-            "tipoDocumento": "",
-            "prefix": ""
-        }
-        with self.assertRaises(UserError):
-            outgoing_out_picking.call_tfhka_api(endpoint_key, payload)
+    def test_prepare_dispatch_guide_empty_recordset(self):
+        empty_picking = self.StockPicking.browse()
+        result = self.DispatchGuideService._prepare_dispatch_guide(empty_picking)
+        self.assertIsNone(result)
 
-        _logger.info("Test passed: Token for TFHKA is empty, UserError raised as expected.")
+    def test_prepare_dispatch_guide_other_causes_reason(self):
+        picking = self.create_picking()
+        picking.transfer_reason_id = self.transfer_reason_other_causes.id
+        picking.other_causes_transfer_reason = "Reparación de emergencia"
 
-    # # Generar Guia de despacho con Sucursal
-    # @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
-    # def test_12_create_stock_picking_subsidiary(self, mock_call):
-    #     self.company.write({"subsidiary": True})
-    #     """Test creating a stock picking with valid data."""
-    #     outgoing_out_picking = self.create_picking()
-    #     subsidiary = self._create_subsidiary()
-    #     outgoing_out_picking.subsidiary_origin_id = subsidiary.id
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["motivoTraslado"], "Reparación de emergencia")
 
-    #     outgoing_out_picking.button_validate()
+    def test_prepare_dispatch_guide_other_transfer_reason(self):
+        picking = self.create_picking()
+        picking.transfer_reason_id = self.transfer_reason_sale.id
 
-    #     self.assertEqual(outgoing_out_picking.is_digitalized, True)
-    #     _logger.info("Test passed: Document digital generated successfully.")
-    
-    # # Error de referencia de Retencion con Sucursal
-    # @patch('odoo.addons.l10n_ve_dispatch_guide_digital.models.stock_picking.StockPicking.call_tfhka_api', side_effect=mock_api)
-    # def test_13_create_stock_picking_subsidiary_error(self, mock_call):
-    #     self.company.write({"subsidiary": True})
-    #     outgoing_out_picking = self.create_picking()
-    #     subsidiary = self._create_subsidiary()
-    #     subsidiary.code = ""
-    #     outgoing_out_picking.subsidiary_origin_id = subsidiary.id
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["motivoTraslado"], self.transfer_reason_sale.name)
 
-    #     with self.assertRaises(UserError) as e:
-    #         outgoing_out_picking.button_validate()
-    #         _logger.error(e.exception)
-    #     _logger.info("Test passed: The reference is empty, a user error was generated as expected.")
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_prepare_dispatch_guide_with_shipping_weight(self, mock_call):
+        self.company.sequence_validation_tfhka = False
+        self.product_storable.weight = 5.0
+        picking = self.create_picking(products=[(self.product_storable, 10)])
+        self.validate_picking(picking)
+
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        expected = f"{picking.shipping_weight:.2f} {picking.weight_uom_name}"
+        self.assertEqual(guide["pesoOVolumenTotal"], expected)
+        self.assertNotEqual(guide["pesoOVolumenTotal"], "Sin peso")
+
+    def test_prepare_dispatch_guide_without_shipping_weight(self):
+        picking = self.create_picking()
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["pesoOVolumenTotal"], "Sin peso")
+
+    def test_prepare_dispatch_guide_with_note(self):
+        picking = self.create_picking()
+        picking.note = "<p>Entrega urgente</p>"
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["descripcionServicio"], "Entrega urgente")
+
+    def test_prepare_dispatch_guide_without_note(self):
+        picking = self.create_picking()
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["descripcionServicio"], "Sin descripción")
+
+    # ==================================================================
+    # _prepare_additional_information
+    # ==================================================================
+
+    def test_prepare_additional_information_with_partner(self):
+        picking = self.create_picking()
+        info = self.DispatchGuideService._prepare_additional_information(picking)
+        self.assertEqual(len(info), 1)
+        self.assertEqual(info[0]["campo"], "direccionEntrega")
+
+    def test_prepare_additional_information_without_partner(self):
+        picking = self.create_picking(partner=False)
+        info = self.DispatchGuideService._prepare_additional_information(picking)
+        self.assertEqual(info, [])
+
+    # ==================================================================
+    # _get_party_source / _get_party_address
+    # ==================================================================
+
+    def test_get_party_source_with_parent(self):
+        picking = self.create_picking(partner=self.customer_child)
+        party = self.DispatchGuideService._get_party_source(picking)
+        self.assertEqual(party, self.customer)
+
+    def test_get_party_source_without_parent(self):
+        picking = self.create_picking(partner=self.customer)
+        party = self.DispatchGuideService._get_party_source(picking)
+        self.assertEqual(party, self.customer)
+
+    def test_get_party_address_defined(self):
+        address = self.DispatchGuideService._get_party_address(self.customer)
+        self.assertTrue(address)
+        self.assertNotEqual(address, "no definida")
+
+    def test_get_party_address_not_defined(self):
+        address = self.DispatchGuideService._get_party_address(self.customer_bare)
+        self.assertEqual(address, "no definida")
+
+    # ==================================================================
+    # stock_picking.py — button_validate
+    # ==================================================================
+
+    @patch(GENERATE_DIGITAL_PATCH)
+    def test_button_validate_triggers_digitalization(self, mock_generate):
+        self.company.dispatch_guide_digital_tfhka = True
+        picking = self.create_picking(picking_type=self.picking_type_int)
+        self.validate_picking(picking)
+        mock_generate.assert_called_once()
+
+    @patch(GENERATE_DIGITAL_PATCH)
+    def test_button_validate_skipped_when_company_flag_disabled(self, mock_generate):
+        self.company.dispatch_guide_digital_tfhka = False
+        picking = self.create_picking(picking_type=self.picking_type_int)
+        self.validate_picking(picking)
+        mock_generate.assert_not_called()
+
+    @patch(GENERATE_DIGITAL_PATCH)
+    def test_button_validate_skipped_when_already_digitalized(self, mock_generate):
+        self.company.dispatch_guide_digital_tfhka = True
+        picking = self.create_picking(picking_type=self.picking_type_int)
+        picking.is_digitalized = True
+        self.validate_picking(picking)
+        mock_generate.assert_not_called()
+
+    @patch(GENERATE_DIGITAL_PATCH)
+    def test_button_validate_skipped_when_not_dispatch_guide(self, mock_generate):
+        self.company.dispatch_guide_digital_tfhka = True
+        picking = self.create_picking(picking_type=self.picking_type_int)
+        picking.is_dispatch_guide = False
+        self.validate_picking(picking)
+        mock_generate.assert_not_called()
+
+    @patch(GENERATE_DIGITAL_PATCH)
+    def test_button_validate_skipped_when_incoming(self, mock_generate):
+        self.company.dispatch_guide_digital_tfhka = True
+        picking = self.create_picking(
+            picking_type=self.picking_type_in,
+            products=[(self.product_storable, 10)],
+        )
+        self.validate_picking(picking)
+        mock_generate.assert_not_called()
+
+    # ==================================================================
+    # _compute_visibility_button
+    # ==================================================================
+
+    def test_compute_visibility_button_company_flag_enabled(self):
+        self.company.dispatch_guide_digital_tfhka = True
+        picking = self.create_picking()
+        picking._compute_visibility_button()
+        self.assertFalse(picking.show_digital_dispatch_guide)
+
+    def test_compute_visibility_button_company_flag_disabled(self):
+        self.company.dispatch_guide_digital_tfhka = False
+        picking = self.create_picking()
+        picking._compute_visibility_button()
+        self.assertTrue(picking.show_digital_dispatch_guide)
+
+    # ==================================================================
+    # _set_guide_number
+    # ==================================================================
+
+    def test_set_guide_number_controls_disabled(self):
+        picking = self.create_picking()
+        # Picking en borrador: dispatch_guide_controls es False (state != done).
+        picking._set_guide_number()
+        self.assertFalse(picking.guide_number)
+
+    def test_set_guide_number_company_flag_disabled_sets_number(self):
+        self.company.dispatch_guide_digital_tfhka = False
+        picking = self.create_picking()
+        self.validate_picking(picking)
+        self.assertTrue(picking.guide_number)
+
+    def test_set_guide_number_digital_flag_enabled_and_digitalized(self):
+        self.company.dispatch_guide_digital_tfhka = False
+        picking = self.create_picking()
+        self.validate_picking(picking)
+        picking.guide_number = False
+
+        self.company.dispatch_guide_digital_tfhka = True
+        picking.is_digitalized = True
+        picking._set_guide_number()
+        self.assertTrue(picking.guide_number)
+
+    def test_set_guide_number_digital_flag_enabled_not_digitalized(self):
+        self.company.dispatch_guide_digital_tfhka = False
+        picking = self.create_picking()
+        self.validate_picking(picking)
+        picking.guide_number = False
+
+        self.company.dispatch_guide_digital_tfhka = True
+        picking.is_digitalized = False
+        picking._set_guide_number()
+        self.assertFalse(picking.guide_number)
