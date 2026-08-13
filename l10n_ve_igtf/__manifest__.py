@@ -31,6 +31,7 @@
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",
+        "report/invoice_free_form.xml",
         "views/account_journal.xml",
         "views/account_account.xml",
         "views/account_move.xml",

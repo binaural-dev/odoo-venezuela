@@ -194,13 +194,13 @@ class AccountRetention(models.Model):
         for retention in self:
             retention.actual_invoice_ids = retention.retention_line_ids.mapped('move_id').ids
 
-    @api.depends("type", "partner_id")
+    @api.depends("type", "type_retention", "partner_id")
     def _compute_allowed_lines_move_ids(self):
         for retention in self:
             allowed_types = (
-                ("in_invoice", "in_refund")
-                if retention.type == ["in_invoice", "in_refund", "in_debit"]
-                else ("out_invoice", "out_refund")
+                ("in_invoice", "in_refund", "in_debit")
+                if retention.type in ("in_invoice", "in_refund", "in_debit", "in_contingence")
+                else ("out_invoice", "out_refund", "out_debit")
             )
 
             domain = [
@@ -209,6 +209,9 @@ class AccountRetention(models.Model):
                 ("partner_id", "=", retention.partner_id.id),
                 ("move_type", "in", allowed_types),
             ]
+
+            if retention.type_retention == "islr":
+                domain.append(("is_isrl_retention_available", "=", True))
 
             retention.allowed_lines_move_ids = self.env["account.move"].search(domain)
 
@@ -723,6 +726,19 @@ class AccountRetention(models.Model):
                     _("No registered lines found in the move to reconcile.")
                 )
             
+            invoice = payment.retention_line_ids.move_id
+            if len(invoice) == 1 and invoice.currency_id != self.env.company.currency_id:
+                # Fijamos amount_currency en la moneda de la factura para que el core
+                # use este valor directamente al conciliar, en vez de reconvertir el
+                # monto en Bs con la tasa del día de la retención.
+                foreign_amount = sum(payment.retention_line_ids.mapped("foreign_retention_amount"))
+                sign = -1 if lines[0].balance < 0 else 1
+                lines[0].write({
+                    "currency_id": invoice.currency_id.id,
+                    "amount_currency": sign * abs(foreign_amount),
+                    "balance": lines[0].balance,
+                })
+
             payment.retention_line_ids.move_id.js_assign_outstanding_line(lines[0].id)
 
     @api.model
