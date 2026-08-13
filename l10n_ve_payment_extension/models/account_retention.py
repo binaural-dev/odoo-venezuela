@@ -726,6 +726,19 @@ class AccountRetention(models.Model):
                     _("No registered lines found in the move to reconcile.")
                 )
             
+            invoice = payment.retention_line_ids.move_id
+            if len(invoice) == 1 and invoice.currency_id != self.env.company.currency_id:
+                # Fijamos amount_currency en la moneda de la factura para que el core
+                # use este valor directamente al conciliar, en vez de reconvertir el
+                # monto en Bs con la tasa del día de la retención.
+                foreign_amount = sum(payment.retention_line_ids.mapped("foreign_retention_amount"))
+                sign = -1 if lines[0].balance < 0 else 1
+                lines[0].write({
+                    "currency_id": invoice.currency_id.id,
+                    "amount_currency": sign * abs(foreign_amount),
+                    "balance": lines[0].balance,
+                })
+
             payment.retention_line_ids.move_id.js_assign_outstanding_line(lines[0].id)
 
     @api.model
