@@ -63,40 +63,32 @@ class AccountTax(models.Model):
         if invoice.bi_igtf > 0.0:
             apply_igtf = True
             if invoice.currency_id.id != invoice.company_id.currency_id.id:
-                base_igtf = invoice.foreign_bi_igtf
-                foreign_base_igtf = invoice.bi_igtf
+                base_igtf = abs(invoice.foreign_bi_igtf)
+                foreign_base_igtf = abs(invoice.bi_igtf)
             else:
-                base_igtf = invoice.bi_igtf
-                foreign_base_igtf = invoice.foreign_bi_igtf
+                base_igtf = abs(invoice.bi_igtf)
+                foreign_base_igtf = abs(invoice.foreign_bi_igtf)
         else:
             if invoice.move_type == "out_invoice" and invoice.payment_state == "not_paid":
                 igtf_show = True
 
             if invoice.currency_id.id != invoice.company_id.currency_id.id:
                 base_igtf = invoice.amount_total
-                foreign_base_igtf = invoice.amount_total_signed 
+                foreign_base_igtf = abs(invoice.amount_total_signed)
             else:
-
-                if invoice.invoice_date_due and invoice.invoice_date and invoice.invoice_date_due > invoice.invoice_date:
-                    base_igtf = invoice.amount_total_signed 
-                    foreign_base_igtf = invoice.amount_total
-                    igtf_show = True
-                else:
-                    igtf_show = False
+                base_igtf = abs(invoice.amount_total_signed)
+                foreign_base_igtf = invoice.amount_total
+                igtf_show = True
 
         base_igtf_free = 0.0
         foreign_base_igtf_free = 0.0
         if invoice.move_type == "out_invoice":
             if invoice.currency_id.id != invoice.company_id.currency_id.id:
                 base_igtf_free = invoice.amount_total
-                foreign_base_igtf_free = invoice.amount_total_signed 
+                foreign_base_igtf_free = abs(invoice.amount_total_signed)
             else:
-                if invoice.invoice_date_due and invoice.invoice_date and invoice.invoice_date_due > invoice.invoice_date:
-                    base_igtf_free = invoice.amount_total_signed 
-                    foreign_base_igtf_free = invoice.amount_total
-                else:
-                    base_igtf_free = 0.0 
-                    foreign_base_igtf_free = 0.0
+                base_igtf_free = abs(invoice.amount_total_signed)
+                foreign_base_igtf_free = invoice.amount_total
 
 
         igtf_base_amount = base_igtf 
