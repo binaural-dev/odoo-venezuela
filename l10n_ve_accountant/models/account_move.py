@@ -906,7 +906,7 @@ class AccountMove(models.Model):
                     "total_amount_foreign_currency", 0
                 )
 
-    #override of base 
+    #override of base
     @api.depends(
         'invoice_line_ids.currency_rate',
         'invoice_line_ids.tax_base_amount',
@@ -918,11 +918,19 @@ class AccountMove(models.Model):
         'foreign_rate',
     )
     def _compute_tax_totals(self):
-        # Adapt context so tax method can retrieve invoice record
-        for move in self:
-            ctx = self.env.context.copy()
-            ctx.update({'active_id': move.id, 'active_model': move._name})
-            super(AccountMove, move.with_context(ctx))._compute_tax_totals()
+        # El `with_context(active_id=..., active_model=...)` por registro que
+        # había aquí antes era redundante: `account_tax._get_tax_totals_summary`
+        # (l10n_ve_accountant) ya deriva el `record` (la factura) directo de
+        # `base_lines[0]['record'].move_id` como fallback cuando no hay
+        # `active_id`/`active_model` en el contexto -- da exactamente el mismo
+        # resultado. Además, `with_context()` crea un `Environment` nuevo por
+        # cada factura (iterando el registro de entornos vivos de la
+        # transacción), que en este proyecto (con cadenas de `super()` muy
+        # profundas) es uno de varios puntos que puede terminar en un
+        # `RecursionError` real al conciliar pagos. Se mantiene el
+        # `@api.depends` (necesario por `foreign_rate`, específico de este
+        # proyecto) pero se delega directo, sin el contexto por registro.
+        super()._compute_tax_totals()
 
 
     @api.onchange("foreign_rate")

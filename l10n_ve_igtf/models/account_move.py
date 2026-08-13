@@ -756,7 +756,10 @@ class AccountMove(models.Model):
                 rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
-                final_payment_moves = receivable_payable_lines.reconciled_lines_ids.mapped('move_id')
+                final_payment_moves = (
+                    receivable_payable_lines.matched_debit_ids.debit_move_id
+                    | receivable_payable_lines.matched_credit_ids.credit_move_id
+                ).mapped('move_id')
 
                 account = [rec.company_id.customer_account_igtf_id.id,rec.company_id.supplier_account_igtf_id.id ]
                 
