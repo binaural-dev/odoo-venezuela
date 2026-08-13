@@ -1,5 +1,5 @@
 {
-    "name": "Venezuela - Guía de Despacho Digital",
+    "name": "Venezuela - The Factory HKA / Guía de Despacho",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
