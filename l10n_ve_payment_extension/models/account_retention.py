@@ -224,56 +224,38 @@ class AccountRetention(models.Model):
             retention.foreign_total_retention_amount = 0
 
             for line in retention.retention_line_ids:
-                if line.move_id.move_type in ("in_refund", "out_refund"):
-                    retention.total_invoice_amount -= float_round(
-                        line.invoice_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_iva_amount -= float_round(
-                        line.iva_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_retention_amount -= float_round(
-                        line.retention_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_invoice_amount -= float_round(
-                        line.foreign_invoice_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_iva_amount -= float_round(
-                        line.foreign_iva_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_retention_amount -= float_round(
-                        line.foreign_retention_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                else:
-                    retention.total_invoice_amount += float_round(
-                        line.invoice_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_iva_amount += float_round(
-                        line.iva_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.total_retention_amount += float_round(
-                        line.retention_amount,
-                        precision_digits=retention.company_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_invoice_amount += float_round(
-                        line.foreign_invoice_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_iva_amount += float_round(
-                        line.foreign_iva_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
-                    retention.foreign_total_retention_amount += float_round(
-                        line.foreign_retention_amount,
-                        precision_digits=retention.foreign_currency_id.decimal_places,
-                    )
+                # Lines are stored with positive amounts, but retentions created before this
+                # fix may still hold negative amounts for credit notes; abs() guards against
+                # that historical data so the sign below is the only source of truth.
+                sign = (
+                    -1
+                    if line.move_id.move_type in ("in_refund", "out_refund")
+                    else 1
+                )
+                retention.total_invoice_amount += sign * float_round(
+                    abs(line.invoice_amount),
+                    precision_digits=retention.company_currency_id.decimal_places,
+                )
+                retention.total_iva_amount += sign * float_round(
+                    abs(line.iva_amount),
+                    precision_digits=retention.company_currency_id.decimal_places,
+                )
+                retention.total_retention_amount += sign * float_round(
+                    abs(line.retention_amount),
+                    precision_digits=retention.company_currency_id.decimal_places,
+                )
+                retention.foreign_total_invoice_amount += sign * float_round(
+                    abs(line.foreign_invoice_amount),
+                    precision_digits=retention.foreign_currency_id.decimal_places,
+                )
+                retention.foreign_total_iva_amount += sign * float_round(
+                    abs(line.foreign_iva_amount),
+                    precision_digits=retention.foreign_currency_id.decimal_places,
+                )
+                retention.foreign_total_retention_amount += sign * float_round(
+                    abs(line.foreign_retention_amount),
+                    precision_digits=retention.foreign_currency_id.decimal_places,
+                )
 
     @api.onchange("partner_id")
     def onchange_partner_id(self):
@@ -300,7 +282,7 @@ class AccountRetention(models.Model):
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
             ("move_type", "in", ("in_refund", "in_invoice")),
-            ("amount_residual", ">", 0),
+            ("amount_residual", "!=", 0),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain
@@ -340,7 +322,7 @@ class AccountRetention(models.Model):
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
             ("move_type", "in", ("out_refund", "out_invoice")),
-            ("amount_residual", ">", 0),
+            ("amount_residual", "!=", 0),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain
@@ -836,33 +818,24 @@ class AccountRetention(models.Model):
         Payment = self.env["account.payment"]
         journals = {
             ("islr", "in_invoice"): self.env.company.islr_supplier_retention_journal_id,
-            (
-                "islr",
-                "out_invoice",
-            ): self.env.company.islr_customer_retention_journal_id,
-            (
-                "municipal",
-                "in_invoice",
-            ): self.env.company.municipal_supplier_retention_journal_id,
-            (
-                "municipal",
-                "out_invoice",
-            ): self.env.company.municipal_customer_retention_journal_id,
+            ("islr", "out_invoice"): self.env.company.islr_customer_retention_journal_id,
+            ("municipal", "in_invoice"): self.env.company.municipal_supplier_retention_journal_id,
+            ("municipal", "out_invoice"): self.env.company.municipal_customer_retention_journal_id,
         }
+
         journal_id = journals[(self.type_retention, self.type)].id
 
         if self.type_retention == "islr":
             self._validate_islr_retention_fields()
 
-        payment_type = "outbound" if self.type == "in_invoice" else "inbound"
         partner_type = "supplier" if self.type == "in_invoice" else "customer"
         payment_vals = []
 
         for line in self.retention_line_ids:
-            if line.move_id.move_type == "in_refund":
-                payment_type = "inbound" if self.type == "in_invoice" else "outbound"
-            if line.move_id.move_type == "out_refund":
-                payment_type = "outbound" if self.type == "out_invoice" else "inbound"
+            if self.type == "in_invoice":
+                payment_type = "inbound" if line.move_id.move_type == "in_refund" else "outbound"
+            else:
+                payment_type = "outbound" if line.move_id.move_type == "out_refund" else "inbound"
 
             payment_method_ref = (
                 "account.account_payment_method_manual_in"
@@ -914,7 +887,7 @@ class AccountRetention(models.Model):
             payment.action_post()
             if payment.partner_type == "supplier":
                 self._reconcile_supplier_payment(payment)
-            if payment.partner_type == "customer":
+            elif payment.partner_type == "customer":
                 self._reconcile_customer_payment(payment)
 
     def _reconcile_supplier_payment(self, payment):
@@ -1034,23 +1007,23 @@ class AccountRetention(models.Model):
                 "move_id": invoice_id.id,
                 "payment_id": payment.id if payment else None,
                 "aliquot": tax.amount,
-                "iva_amount": tax_group["tax_group_amount"],
-                "invoice_total": invoice_id.tax_totals["amount_total"],
+                "iva_amount": abs(tax_group["tax_group_amount"]),
+                "invoice_total": abs(invoice_id.tax_totals["amount_total"]),
                 "related_percentage_tax_base": withholding_amount,
-                "invoice_amount": tax_group["tax_group_base_amount"],
+                "invoice_amount": abs(tax_group["tax_group_base_amount"]),
                 "foreign_currency_rate": invoice_id.foreign_rate,
-                "foreign_invoice_amount": foreign_tax_group["tax_group_base_amount"],
-                "foreign_iva_amount": foreign_tax_group["tax_group_amount"],
-                "foreign_invoice_total": invoice_id.tax_totals["foreign_amount_total"],
+                "foreign_invoice_amount": abs(foreign_tax_group["tax_group_base_amount"]),
+                "foreign_iva_amount": abs(foreign_tax_group["tax_group_amount"]),
+                "foreign_invoice_total": abs(invoice_id.tax_totals["foreign_amount_total"]),
             }
             if invoice_id.move_type == "out_invoice":
                 line_data["retention_amount"] = 0.0
                 line_data["foreign_retention_amount"] = 0.0
             else:
-                line_data["retention_amount"] = retention_amount
-                line_data["foreign_retention_amount"] = line_data[
+                line_data["retention_amount"] = abs(retention_amount)
+                line_data["foreign_retention_amount"] = abs(line_data[
                     "foreign_iva_amount"
-                ] * (withholding_amount / 100)
+                ] * (withholding_amount / 100))
             lines_data.append(line_data)
         return lines_data
 
