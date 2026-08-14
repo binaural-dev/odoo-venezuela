@@ -17,8 +17,11 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
 
     Both reuse the core ``_verify_pos_config`` helper to validate the
     ``access_token`` and run under the pos.config's company/user context, and
-    only ever return public fields (id, name, phone) — same criterion as the
-    native ``validate_partner`` endpoint.
+    return only the fields the Kiosk needs (id, name, phone) plus the
+    ``vat``/``prefix_vat`` the customer just typed to identify themselves — the
+    cédula is not a leak (it is their own, already entered) and downstream
+    payment integrations (e.g. Megasoft, ``binaural_megasoft_self_order``) read
+    it from the order's partner instead of asking for it again.
     """
 
     @http.route(
@@ -38,7 +41,9 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
             .search([("prefix_vat", "=", prefix_vat), ("vat", "=", vat)], limit=1)
         )
         return {
-            "res.partner": partner.read(["id", "name", "phone"], load=False),
+            "res.partner": partner.read(
+                ["id", "name", "phone", "vat", "prefix_vat"], load=False
+            ),
         }
 
     @http.route(
@@ -71,5 +76,7 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         # company, mirroring how validate_partner creates with sudo().
         partner = partner_model.create(vals)
         return {
-            "res.partner": partner.read(["id", "name", "phone"], load=False),
+            "res.partner": partner.read(
+                ["id", "name", "phone", "vat", "prefix_vat"], load=False
+            ),
         }
