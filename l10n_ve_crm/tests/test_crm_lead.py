@@ -15,8 +15,13 @@ class TestCrmLeadForeignCurrency(TransactionCase):
       by the user, in USD, and must never be recalculated.
     - expected_revenue / recurring_revenue are computed (non-stored) from the
       *_foreign fields using the exchange rate in effect at read time.
-    - Both *_foreign fields must be strictly positive (feedback item 5):
-      0 and negative amounts are rejected at create/write time.
+    - expected_revenue_foreign must always be strictly positive.
+    - recurring_revenue_foreign can be 0 (no recurring plan set), but must be
+      strictly positive once a recurring_plan is set, and can never be
+      negative either way. These two rules are independent from each other
+      (review feedback: the original single constraint used an "or" that
+      coupled both fields, forcing every opportunity to have a recurring
+      amount even when the recurring-revenue feature isn't in use).
     """
 
     # ------------------------------------------------------------------
@@ -79,7 +84,6 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "name": "Oportunidad USD",
             "company_id": self.company.id,
             "expected_revenue_foreign": 1.0,
-            "recurring_revenue_foreign": 1.0,
         })
         self.assertEqual(lead.foreign_currency_id, self.usd)
 
@@ -89,7 +93,6 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "name": "Oportunidad USD",
             "company_id": self.company.id,
             "expected_revenue_foreign": 200.0,
-            "recurring_revenue_foreign": 1.0,
         })
         # 200 USD / 0.002 = 100000 VEF
         self.assertAlmostEqual(lead.expected_revenue, 100000.0, places=2)
@@ -113,9 +116,9 @@ class TestCrmLeadForeignCurrency(TransactionCase):
         The conversion logic itself must still degrade to 0.0 for a zero amount
         (e.g. an in-memory/unsaved record). Uses .new() on purpose: it builds an
         in-memory record without going through create()/write(), so the
-        strictly-positive @api.constrains (feedback item 5) never fires here —
-        this test isolates the pure conversion math from that separate business
-        rule, which is covered on its own in test_07/test_08.
+        strictly-positive @api.constrains never fires here — this test isolates
+        the pure conversion math from that separate business rule, which is
+        covered on its own in the tests below.
         """
         lead = self.env["crm.lead"].new({"name": "Oportunidad sin monto", "company_id": self.company.id})
         self.assertEqual(lead.expected_revenue, 0.0)
@@ -130,7 +133,6 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "name": "Oportunidad USD",
             "company_id": self.company.id,
             "expected_revenue_foreign": 200.0,
-            "recurring_revenue_foreign": 1.0,
         })
         self.assertAlmostEqual(lead.expected_revenue, 100000.0, places=2)
 
@@ -165,38 +167,81 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "name": "Oportunidad sin moneda alterna",
             "company_id": company_without_foreign_currency.id,
             "expected_revenue_foreign": 100.0,
-            "recurring_revenue_foreign": 1.0,
         })
         self.assertFalse(lead.foreign_currency_id)
         self.assertEqual(lead.expected_revenue, 0.0)
 
-    def test_07_negative_foreign_amount_is_rejected(self):
-        """expected_revenue_foreign/recurring_revenue_foreign can never be negative."""
+    # ------------------------------------------------------------------
+    # expected_revenue_foreign: siempre estrictamente positivo
+    # ------------------------------------------------------------------
+
+    def test_07_expected_revenue_foreign_negative_is_rejected(self):
         with self.assertRaises(ValidationError):
             self.env["crm.lead"].create({
                 "name": "Oportunidad monto negativo",
                 "company_id": self.company.id,
                 "expected_revenue_foreign": -10.0,
-                "recurring_revenue_foreign": 1.0,
             })
 
-    def test_08_zero_foreign_amount_is_rejected(self):
-        """
-        expected_revenue_foreign/recurring_revenue_foreign can never be 0 either
-        (feedback item 5 explicitly requires a strictly positive amount, even at
-        creation time).
-        """
+    def test_08_expected_revenue_foreign_zero_is_rejected(self):
         with self.assertRaises(ValidationError):
             self.env["crm.lead"].create({
                 "name": "Oportunidad monto cero",
                 "company_id": self.company.id,
                 "expected_revenue_foreign": 0.0,
-                "recurring_revenue_foreign": 1.0,
             })
+
+    # ------------------------------------------------------------------
+    # recurring_revenue_foreign: 0 permitido sin recurring_plan, negativo
+    # nunca permitido, y >0 obligatorio solo si hay un plan recurrente.
+    # ------------------------------------------------------------------
+
+    def test_09_recurring_revenue_foreign_zero_allowed_without_plan(self):
+        """Sin recurring_plan, 0 es un valor válido (no todas las
+        oportunidades tienen ingreso recurrente)."""
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad sin recurrente",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 100.0,
+        })
+        self.assertEqual(lead.recurring_revenue_foreign, 0.0)
+
+    def test_10_recurring_revenue_foreign_negative_is_rejected(self):
+        """Negativo se rechaza siempre, tenga o no recurring_plan."""
         with self.assertRaises(ValidationError):
             self.env["crm.lead"].create({
-                "name": "Oportunidad monto cero",
+                "name": "Oportunidad recurrente negativa",
                 "company_id": self.company.id,
-                "expected_revenue_foreign": 1.0,
+                "expected_revenue_foreign": 100.0,
+                "recurring_revenue_foreign": -5.0,
+            })
+
+    def test_11_recurring_revenue_foreign_zero_rejected_with_plan(self):
+        """Con recurring_plan definido, recurring_revenue_foreign debe ser > 0."""
+        plan = self.env["crm.recurring.plan"].create({
+            "name": "Mensual Test",
+            "number_of_months": 1,
+        })
+        with self.assertRaises(ValidationError):
+            self.env["crm.lead"].create({
+                "name": "Oportunidad con plan sin monto",
+                "company_id": self.company.id,
+                "expected_revenue_foreign": 100.0,
+                "recurring_plan": plan.id,
                 "recurring_revenue_foreign": 0.0,
             })
+
+    def test_12_recurring_revenue_foreign_positive_allowed_with_plan(self):
+        """Con recurring_plan y un monto positivo, no debe lanzar nada."""
+        plan = self.env["crm.recurring.plan"].create({
+            "name": "Mensual Test",
+            "number_of_months": 1,
+        })
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad con plan y monto",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 100.0,
+            "recurring_plan": plan.id,
+            "recurring_revenue_foreign": 10.0,
+        })
+        self.assertEqual(lead.recurring_revenue_foreign, 10.0)
