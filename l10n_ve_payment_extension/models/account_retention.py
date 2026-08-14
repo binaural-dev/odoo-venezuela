@@ -2,6 +2,7 @@ from odoo import api, models, fields, Command, _
 from datetime import datetime
 import re
 from odoo.exceptions import UserError, ValidationError
+from odoo.addons.account.models.account_move import BYPASS_LOCK_CHECK
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
@@ -727,13 +728,16 @@ class AccountRetention(models.Model):
                 )
             
             invoice = payment.retention_line_ids.move_id
-            if len(invoice) == 1 and invoice.currency_id != self.env.company.currency_id:
+            if len(invoice) == 1 and invoice.currency_id == self.env.company.foreign_currency_id:
                 # Fijamos amount_currency en la moneda de la factura para que el core
                 # use este valor directamente al conciliar, en vez de reconvertir el
-                # monto en Bs con la tasa del día de la retención.
+                # monto en Bs con la tasa del día de la retención. El pago ya está
+                # posteado en este punto; bypass_lock_check es el mecanismo oficial
+                # de Odoo para corregir una línea posteada sin chocar con la fecha
+                # de cierre fiscal (mismo patrón usado en account/models/partner.py).
                 foreign_amount = sum(payment.retention_line_ids.mapped("foreign_retention_amount"))
                 sign = -1 if lines[0].balance < 0 else 1
-                lines[0].write({
+                lines[0].with_context(bypass_lock_check=BYPASS_LOCK_CHECK).write({
                     "currency_id": invoice.currency_id.id,
                     "amount_currency": sign * abs(foreign_amount),
                     "balance": lines[0].balance,
