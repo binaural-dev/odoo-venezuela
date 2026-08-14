@@ -1,4 +1,5 @@
 import logging
+from lxml import etree
 from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
 from odoo.exceptions import UserError, ValidationError
@@ -1230,3 +1231,114 @@ class TestAccountMoveCore(TransactionCase):
         invoice = self._create_invoice_with_duplicated_lines()
         invoice.with_context(move_action_post_alert=True).action_post()
         self._assert_refund_error(invoice, line_mods={0: {"price_unit": 15.0}})
+
+    # ═══════════════════════════════════════════════════════════════
+    # Amount-per-product validation (quantity and max unit price alone
+    # are not enough: a repeated product with a price correction can pass
+    # both checks independently while still crediting more than the
+    # origin invoice's actual total for that product).
+    # ═══════════════════════════════════════════════════════════════
+
+    def _create_invoice_with_price_corrected_product(self):
+        """Origin invoice with the same product on two lines at different
+        prices (e.g. a price correction): 1 unit at 10.0 and 1 unit at
+        100.0. Total quantity available: 2.0. Max unit price: 100.0. Total
+        amount available: 110.0."""
+        return self._create_invoice(lines=[
+            {"product_id": self.product.id, "quantity": 1.0, "price_unit": 10.0},
+            {"product_id": self.product.id, "quantity": 1.0, "price_unit": 100.0},
+        ])
+
+    def test_67_refund_validation_amount_mirrored_is_valid(self):
+        """NC que refleja exactamente las dos líneas de origen (1@10.0 +
+        1@100.0, total 110.0) es válida."""
+        invoice = self._create_invoice_with_price_corrected_product()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+        self.assertEqual(refund.invoice_line_ids[0].price_unit, 10.0)
+        self.assertEqual(refund.invoice_line_ids[1].price_unit, 100.0)
+
+    def test_68_refund_validation_amount_exceeds_origin_despite_valid_quantity_and_price(self):
+        """Caso del bug: cantidad total (1+1=2) no excede el origen (2.0) y
+        cada precio unitario (100.0) no excede el máximo del origen
+        (100.0), pero el monto total acreditado (2 x 100.0 = 200.0) sí
+        excede el monto real de la factura origen (110.0). Debe
+        rechazarse."""
+        invoice = self._create_invoice_with_price_corrected_product()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"price_unit": 100.0}})
+
+    def test_69_refund_validation_amount_equal_origin_is_valid(self):
+        """NC cuyo monto total por producto es exactamente igual al monto
+        disponible en origen (110.0, repartido distinto entre líneas: 2@50
+        + 1@10 = 110.0) es válida (comparación estrictamente '>', no
+        '>=')."""
+        invoice = self._create_invoice_with_price_corrected_product()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice, line_mods={
+            0: {"quantity": 1.0, "price_unit": 10.0},
+            1: {"quantity": 1.0, "price_unit": 100.0},
+        })
+        self.assertEqual(refund.invoice_line_ids[0].price_unit, 10.0)
+        self.assertEqual(refund.invoice_line_ids[1].price_unit, 100.0)
+
+    def test_70_refund_validation_amount_enforced_on_write_bypassing_onchange(self):
+        """La validación de monto por producto debe aplicar también fuera
+        del formulario (create/write directo), no solo vía onchange."""
+        invoice = self._create_invoice_with_price_corrected_product()
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        move_reversal = self.env['account.move.reversal'].with_context(
+            active_model="account.move",
+            active_ids=invoice.ids,
+        ).create({
+            'date': fields.Date.today(),
+            'journal_id': invoice.journal_id.id,
+        })
+        reversal = move_reversal.reverse_moves()
+        refund = self.env['account.move'].browse(reversal['res_id'])
+
+        with self.assertRaises(ValidationError):
+            refund.write({
+                'invoice_line_ids': [
+                    (1, refund.invoice_line_ids[0].id, {"quantity": 1.0, "price_unit": 100.0}),
+                    (1, refund.invoice_line_ids[1].id, {"quantity": 1.0, "price_unit": 100.0}),
+                ],
+            })
+
+    # ═══════════════════════════════════════════════════════════════
+    # A credit/debit note must always originate from its source invoice
+    # via the reversal wizard: the native New/Upload buttons must never
+    # be available from the customer credit notes or vendor refunds lists.
+    # ═══════════════════════════════════════════════════════════════
+
+    def _assert_list_view_has_no_create(self, view_xml_id):
+        view = self.env['account.move'].get_view(
+            view_id=self.env.ref(view_xml_id).id,
+            view_type='list',
+        )
+        arch = etree.fromstring(view['arch'])
+        self.assertEqual(arch.get('create'), 'false')
+
+    def test_71_out_refund_list_view_has_no_create(self):
+        """La lista de Notas de Crédito de cliente no debe permitir crear
+        registros directamente (sin botones Nuevo/Subir)."""
+        self._assert_list_view_has_no_create('account.view_out_credit_note_tree')
+
+    def test_72_in_refund_list_view_has_no_create(self):
+        """La lista de Notas de Débito/reembolsos de proveedor no debe
+        permitir crear registros directamente (sin botones Nuevo/Subir)."""
+        self._assert_list_view_has_no_create('account.view_in_invoice_refund_tree')
+
+    def test_73_invoice_form_credit_note_button_label_matches_debit_note(self):
+        """El botón para generar una NC desde la factura debe decir
+        'Credit Note', igual que su hermano 'Debit Note', sin el prefijo
+        'Add' (ticket 13911, punto 3)."""
+        view = self.env['account.move'].get_view(
+            view_id=self.env.ref('account.view_move_form').id,
+            view_type='form',
+        )
+        arch = etree.fromstring(view['arch'])
+        reverse_button = arch.xpath("//button[@name='action_reverse']")
+        self.assertTrue(reverse_button)
+        self.assertEqual(reverse_button[0].get('string'), 'Credit Note')
