@@ -3,7 +3,7 @@
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
-    "category": "Technical",
+    "category": "Sales/CRM",
     "version": "19.0.1.0.0",
     "depends": ["crm", "sale", "l10n_ve_rate", "l10n_ve_accountant"],
     "data": [
@@ -12,4 +12,5 @@
         "views/crm_lead_forecast_views.xml",
         "views/crm_lead_pipeline_analysis_views.xml",
     ],
+    "post_init_hook": "post_init_hook",
 }
