@@ -237,6 +237,18 @@ class TestAccountRetentionSequence(TransactionCase):
 
         retention = retention_form.save()
 
+        if type_retention == "iva":
+            # account.retention.onchange_partner_id already auto-loaded the
+            # line for `invoice` above (it's the only method that reliably
+            # computes iva_amount/retention_amount for an IVA line, via
+            # compute_retention_lines_data). Manually adding a second line
+            # here via .new() + payment_concept_id -- a purely ISLR field --
+            # would just create a duplicate, zero-amount line: retention_id
+            # isn't resolved yet inside that nested Form edit, so
+            # _onchange_move_id (the only place that fills iva_amount) never
+            # actually runs.
+            return retention
+
         with Form(retention) as retention_form_edit:
             with retention_form_edit.retention_line_ids.new() as line:
                 line.move_id = invoice
@@ -313,6 +325,61 @@ class TestAccountRetentionSequence(TransactionCase):
             retention.action_post()
         _logger.info(
             "test_06_approve_islr_without_payment_concept --- successfully."
+        )
+
+    def test_08_iva_supplier_retention_survives_recompute_after_save(self):
+        """Regression: _compute_retention_amount only assigns retention_amount/
+        foreign_retention_amount for ISLR supplier lines. If a shared
+        dependency (invoice_amount, move_id, ...) is later marked dirty for
+        an IVA line -- e.g. by re-reading the record like the web client
+        does after saving, which is what actually happens in production --
+        Odoo resets any field the compute function didn't explicitly touch
+        back to 0, wiping out the correct value the onchange had set and
+        tripping _constraint_amounts_in_zero. This only surfaces when the
+        recompute is forced (real usage), a plain Form save doesn't
+        reproduce it, so we invalidate the cache to force it here.
+        """
+        self.company.write({
+            "currency_id": self.currency_vef.id,
+            "currency_foreign_id": self.currency_usd.id,
+        })
+        self.currency_usd.write(
+            {
+                "rate_ids": [
+                    Command.create(
+                        {
+                            "company_rate": 766.8603,
+                            "name": fields.Date.today(),
+                        }
+                    )
+                ],
+            }
+        )
+
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        with Form(
+            self.env["account.retention"].with_context(
+                default_type="in_invoice", default_type_retention="iva"
+            )
+        ) as retention_form:
+            retention_form.partner_id = self.partner_a
+        retention = retention_form.save()
+
+        line = retention.retention_line_ids
+        self.assertGreater(line.retention_amount, 0.0)
+
+        # Force the same kind of recompute the web client triggers on
+        # web_save -> web_read after saving a record.
+        line.invalidate_recordset(
+            ["invoice_amount", "foreign_invoice_amount", "retention_amount", "foreign_retention_amount"]
+        )
+        self.assertGreater(
+            line.retention_amount,
+            0.0,
+            "retention_amount must survive a recompute triggered by a shared "
+            "dependency, not silently reset to 0 for a non-ISLR-supplier line.",
         )
 
     def test_07_no_islr_supplier_journal_in_company(self):

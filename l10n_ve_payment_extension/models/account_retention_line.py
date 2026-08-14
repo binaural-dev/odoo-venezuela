@@ -60,9 +60,6 @@ class AccountRetentionLine(models.Model):
     retention_amount = fields.Float(
         digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
     )
-    foreign_retention_amount = fields.Float(
-        digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
-    )
 
     payment_concept_id = fields.Many2one(
         "payment.concept", "Payment concept", ondelete="cascade", index=True
@@ -132,7 +129,9 @@ class AccountRetentionLine(models.Model):
     )
     foreign_invoice_total = fields.Float(string="Foreign total invoiced")
     foreign_iva_amount = fields.Float(string="Foreign IVA")
-    foreign_retention_amount = fields.Float()
+    foreign_retention_amount = fields.Float(
+        digits="Tasa", compute="_compute_retention_amount", store=True, readonly=False
+    )
     foreign_currency_rate = fields.Float(string="Rate")
 
     @api.depends("payment_concept_id", "move_id", "move_id.partner_id.type_person_id")
@@ -332,6 +331,36 @@ class AccountRetentionLine(models.Model):
             lambda l: (not l.retention_id and l.payment_concept_id)
             or (l.retention_id.type_retention == "islr" and l.retention_id.type == "in_invoice")
         )
+        iva_supplier_retention_lines = (self - islr_supplier_retention_lines).filtered(
+            lambda l: l.retention_id and l.retention_id.type_retention == "iva" and l.retention_id.type == "in_invoice"
+        )
+        other_lines = self - islr_supplier_retention_lines - iva_supplier_retention_lines
+
+        # IVA supplier retention_amount/foreign_retention_amount are computed here (not
+        # just via the move_id onchange) because these fields are compute=store=True:
+        # whenever a shared dependency (invoice_amount, move_id, ...) is written again in
+        # the same create/write -- e.g. building the line's o2m via a second Form save
+        # instead of one single create() -- Odoo re-runs this method, and this branch
+        # would otherwise never assign these two fields for IVA lines, resetting them to
+        # 0 and tripping _constraint_amounts_in_zero even though the invoice/partner data
+        # was correct. Mirrors the formula in account_retention_line._onchange_move_id /
+        # account_retention.compute_retention_lines_data.
+        for record in iva_supplier_retention_lines:
+            withholding_amount = record.move_id.partner_id.withholding_type_id.value
+            record.retention_amount = abs(record.iva_amount * (withholding_amount / 100))
+            record.foreign_retention_amount = abs(
+                record.foreign_iva_amount * (withholding_amount / 100)
+            )
+
+        # Any other record not covered above (customer retentions, municipal, or an IVA
+        # line not yet linked to its retention) must still get both fields assigned, or
+        # Odoo resets them to 0 once this method returns. _origin reads the persisted
+        # value, bypassing the "to compute" invalidation, so it preserves whatever was
+        # already stored instead of zeroing it out.
+        for record in other_lines:
+            record.retention_amount = record._origin.retention_amount
+            record.foreign_retention_amount = record._origin.foreign_retention_amount
+
         for record in islr_supplier_retention_lines:
             foreign_rate = record.move_id.foreign_rate
             if not foreign_rate:
