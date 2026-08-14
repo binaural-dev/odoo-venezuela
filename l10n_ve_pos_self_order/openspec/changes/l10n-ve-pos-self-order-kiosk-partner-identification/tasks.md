@@ -24,32 +24,46 @@
 
 ## 2. Implementación — Backend
 
-- [ ] 2.1 `l10n_ve_pos_self_order/controllers/__init__.py`,
+- [x] 2.1 `l10n_ve_pos_self_order/controllers/__init__.py`,
       `controllers/orders.py`: ruta `/l10n_ve_pos_self_order/kiosk/identify`
-      (búsqueda por `prefix_vat`+`vat`, mismo domain que `check_duplicate_vat`)
-- [ ] 2.2 Ruta `/l10n_ve_pos_self_order/kiosk/identify/create` (crear
+      (búsqueda por `prefix_vat`+`vat`, mismo domain que `check_duplicate_vat`).
+      Controlador hereda de `PosSelfOrderController` para reutilizar
+      `_verify_pos_config`; devuelve solo `id/name/phone`
+- [x] 2.2 Ruta `/l10n_ve_pos_self_order/kiosk/identify/create` (crear
       partner con `default_get(l10n_ve_pos_partner_defaults=True)` para las
-      direcciones + `sudo()`, mismo patrón que `validate_partner`)
-- [ ] 2.3 Registrar `controllers` en `l10n_ve_pos_self_order/__init__.py`
+      direcciones + `sudo()`, mismo patrón que `validate_partner`).
+      Nota: el `create` usa el `env` del `pos_config` (con_company correcto)
+      en vez de `request.env`, para que el `company_id` por defecto resuelva a
+      la compañía de la caja. `_POS_COMPANY_DEFAULT_FIELDS` se lee del modelo,
+      sin duplicar la tupla
+- [x] 2.3 Registrar `controllers` en `l10n_ve_pos_self_order/__init__.py`
 
 ## 3. Implementación — Frontend
 
-- [ ] 3.1 `static/src/app/pages/identification_page/identification_page.js`
+- [x] 3.1 `static/src/app/pages/identification_page/identification_page.js`
       + `.xml`: Paso A (prefix_vat + cédula) → Paso B (nombre, apellido,
-      teléfono) condicional a "no encontrado"
-- [ ] 3.2 `static/src/overrides/landing_page.js`: patch `start()`,
+      teléfono) condicional a "no encontrado". Reutiliza el wiring del
+      `PresetInfoPopup` (`synchronizeServerDataInIndexedDB` + `connectNewData`)
+      para asignar `partner_id`. Botón "Atrás": desde Paso B vuelve a Paso A
+      (sin perder la cédula); desde Paso A → `navigate("default")`
+- [x] 3.2 `static/src/overrides/landing_page.js`: patch `start()`,
       gateado ESTRICTAMENTE por `self_ordering_mode === 'kiosk'` (no debe
-      afectar el flujo `mobile`/QR de mesas)
-- [ ] 3.3 `static/src/overrides/self_order_index.js` + template XML:
+      afectar el flujo `mobile`/QR de mesas). Preserva el early-return nativo
+      de órdenes en borrador (`pay_after === 'each'`)
+- [x] 3.3 `static/src/overrides/self_order_index.js` + template XML:
       `t-inherit` del slot `"identification"` + registro del componente
       en `selfOrderIndex.components`
-- [ ] 3.4 `__manifest__.py`: añadir bloque `"assets": {"pos_self_order.assets": [...]}`
+- [x] 3.4 `__manifest__.py`: añadir bloque `"assets": {"pos_self_order.assets": [...]}`
       (el módulo hoy no declara assets)
-- [ ] 3.5 Verificar en implementación si `selfOrder.currentOrder` existe
-      como objeto local antes de `product_list`, o si `IdentificationPage`
-      necesita forzar su creación antes de asignar `partner_id`
+- [x] 3.5 Verificado: `selfOrder.currentOrder` es un getter que crea la orden
+      local de forma perezosa (`createNewOrder()`) si no existe, así que
+      siempre hay objeto sobre el que fijar `partner_id`; no hace falta
+      forzar su creación desde `IdentificationPage`
 
 ## 4. Tests
+
+> Pendiente: no escritos en este pase por preferencia del usuario (no crear
+> tests salvo petición explícita). Se añaden si se piden.
 
 - [ ] 4.1 Test Python: cédula existente → la ruta de búsqueda devuelve el
       partner correcto (id/name/phone), sin datos privados extra
