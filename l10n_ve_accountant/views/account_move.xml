@@ -73,7 +73,7 @@
                     invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax" />
             </xpath>
             <xpath expr="//button[@name='action_reverse']" position="attributes">
-                <attribute name="string">Add Credit Note</attribute>
+                <attribute name="string">Credit Note</attribute>
                 <attribute name="invisible">move_type not in ('out_invoice', 'in_invoice') or state != 'posted' or debit_origin_id</attribute>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="replace">
@@ -280,6 +280,31 @@
             <xpath expr="//field[@name='checked']" position="after">
                 <field name="real_portion_count" invisible="1"/>
                 <field name="real_portion_amount" invisible="1"/>
+            </xpath>
+        </field>
+    </record>
+
+    <!-- A credit/debit note must always originate from its source invoice via the
+         reversal wizard, so the native New/Upload buttons must never be available
+         from these lists. -->
+    <record id="view_out_credit_note_tree_no_create_l10n_ve" model="ir.ui.view">
+        <field name="name">account.out.credit.note.list.no.create.l10n.ve</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_out_credit_note_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="create">false</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_in_invoice_refund_tree_no_create_l10n_ve" model="ir.ui.view">
+        <field name="name">account.in.invoice.refund.list.no.create.l10n.ve</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_in_invoice_refund_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//list" position="attributes">
+                <attribute name="create">false</attribute>
             </xpath>
         </field>
     </record>

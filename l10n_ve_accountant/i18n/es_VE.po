@@ -128,8 +128,8 @@ msgstr "Activo"
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
-msgid "Add Credit Note"
-msgstr "Añadir Nota de Crédito"
+msgid "Credit Note"
+msgstr "Nota de Crédito"
 
 #. module: l10n_ve_accountant
 #. odoo-python

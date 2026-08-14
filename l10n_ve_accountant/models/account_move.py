@@ -1821,16 +1821,19 @@ class AccountMove(models.Model):
         # lines are being added/removed/reordered in the UI, and a stateful
         # pairing (e.g. consuming a queue) would misattribute a refund line to
         # the wrong origin line mid-edit.
-        origin_totals_by_product = defaultdict(lambda: {"quantity": 0.0, "max_price_unit": 0.0})
+        origin_totals_by_product = defaultdict(lambda: {"quantity": 0.0, "max_price_unit": 0.0, "amount": 0.0})
         for line in self.reversed_entry_id.invoice_line_ids:
             if not line.product_id:
                 continue
             totals = origin_totals_by_product[line.product_id.id]
             totals["quantity"] += line.quantity
             totals["max_price_unit"] = max(totals["max_price_unit"], line.price_unit)
+            totals["amount"] += line.quantity * line.price_unit
 
         precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
+        currency_precision = self.currency_id.decimal_places
         refund_quantity_by_product = defaultdict(float)
+        refund_amount_by_product = defaultdict(float)
 
         for line in self.invoice_line_ids:
             if not line.product_id:
@@ -1869,6 +1872,19 @@ class AccountMove(models.Model):
                     "The unit price (%s) cannot be greater than the original "
                     "unit price in the source invoice (%s)."
                 ) % (line.product_id.name, line.price_unit, totals["max_price_unit"]))
+
+            refund_amount_by_product[line.product_id.id] += line.quantity * line.price_unit
+
+            if float_compare(
+                refund_amount_by_product[line.product_id.id],
+                totals["amount"],
+                precision_digits=currency_precision,
+            ) > 0:
+                raise ValidationError(_(
+                    "Product '%s':\n"
+                    "The credited/debited amount (%s) cannot be greater than the "
+                    "original amount in the source invoice (%s)."
+                ) % (line.product_id.name, refund_amount_by_product[line.product_id.id], totals["amount"]))
 
     @api.onchange('invoice_line_ids')
     def _onchange_invoice_line_ids_refund_validation(self):
