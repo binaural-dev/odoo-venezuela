@@ -1759,16 +1759,17 @@ class AccountMove(models.Model):
             return
 
         # Exchange-difference credit notes (`l10n_ve_exchange_difference`,
-        # not a dependency of this module) are built directly with
-        # `create()`/`reversed_entry_id` pointing at the real commercial
-        # invoice, but their single line is a dedicated "exchange
-        # difference" product that is legitimately never on that invoice
-        # -- it documents a currency-rate gain/loss, not a correction of
-        # what was sold. That module isn't installed here, so the field is
-        # read defensively (`getattr` with a safe default) instead of a
-        # hard dependency: this stays a no-op today and only activates
-        # once that module is in place.
-        if getattr(self, 'l10n_ve_exchange_diff_entry', False):
+        # not a dependency of this module, in development on a separate
+        # PR) are built directly with `create()`/`reversed_entry_id`
+        # pointing at the real commercial invoice, but their single line
+        # is a dedicated "exchange difference" product that is
+        # legitimately never on that invoice -- it documents a
+        # currency-rate gain/loss, not a correction of what was sold.
+        # Since that module can't add a field/dependency here, the note's
+        # own creation code is expected to set this context key (instead
+        # of a persisted field) around the `create()`/`action_post()`
+        # call that builds it.
+        if self.env.context.get('l10n_ve_skip_refund_origin_validation'):
             return
 
         # Lines are grouped by product (not matched by `sequence`: Odoo computes
