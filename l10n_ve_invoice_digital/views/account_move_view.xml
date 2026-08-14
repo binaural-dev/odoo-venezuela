@@ -5,9 +5,6 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//button[@name='button_draft']" position="attributes">
-                <attribute name="invisible">not show_reset_to_draft_button or is_digitalized</attribute>
-            </xpath>
             <xpath expr="//header" position="inside">
                 <field name="show_digital_invoice" invisible="1"/>
                 <field name="show_digital_credit_note" invisible="1"/>
@@ -20,7 +17,27 @@
                     invisible="show_digital_debit_note"/>            
             </xpath>
             <xpath expr="//group[@id='header_right_group']/label[1]" position="before">
-                <field name="is_digitalized" string="Digitized" invisible="move_type not in ['out_invoice', 'out_refund']" readonly="True"/>
+                <field name="journal_digital_invoice" invisible="1"/>
+                <field name="is_digitalized" string="Digitized"
+                       invisible="move_type not in ['out_invoice', 'out_refund'] or not journal_digital_invoice"
+                       readonly="True"/>
+            </xpath>
+            <!-- Multi-moneda: checkbox + selector de moneda de línea.
+                 Solo visible si multi_currency_enabled (compañía) y el diario
+                 es de facturacion digital (journal_digital_invoice).
+                 line_currency se despliega solo cuando multi_currency_invoice está activo. -->
+            <xpath expr="//field[@name='invoice_date']" position="after">
+                <field name="multi_currency_enabled" invisible="1"/>
+                <field name="multi_currency_invoice_lock" invisible="1"/>
+                <field name="multi_currency_invoice" invisible="not multi_currency_enabled or not journal_digital_invoice"
+                       readonly="is_digitalized or multi_currency_invoice_lock"/>
+                <field name="line_currency" invisible="not multi_currency_invoice"
+                       readonly="is_digitalized" required="1"/>
+                <!-- Cuadro de pago: solo cuando la compañía está en modo "registro de pago"
+                     y el diario es de facturacion digital. -->
+                <field name="digitalization_with_payment_active" invisible="1"/>
+                <field name="show_payment_box" invisible="not digitalization_with_payment_active or not journal_digital_invoice"
+                       readonly="is_digitalized"/>
             </xpath>
         </field>
     </record>
