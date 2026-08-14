@@ -1811,6 +1811,19 @@ class AccountMove(models.Model):
         if not self.reversed_entry_id or self.move_type not in ['out_refund', 'in_refund']:
             return
 
+        # Exchange-difference credit notes (`l10n_ve_exchange_difference`,
+        # not a dependency of this module) are built directly with
+        # `create()`/`reversed_entry_id` pointing at the real commercial
+        # invoice, but their single line is a dedicated "exchange
+        # difference" product that is legitimately never on that invoice
+        # -- it documents a currency-rate gain/loss, not a correction of
+        # what was sold. That module isn't installed here, so the field is
+        # read defensively (`getattr` with a safe default) instead of a
+        # hard dependency: this stays a no-op today and only activates
+        # once that module is in place.
+        if getattr(self, 'l10n_ve_exchange_diff_entry', False):
+            return
+
         # Lines are grouped by product (not matched by `sequence`: Odoo computes
         # `sequence` from `display_type` only, so every regular product line gets
         # the same value (100) regardless of position, and keying on it collapses

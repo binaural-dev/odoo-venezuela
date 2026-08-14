@@ -1,4 +1,5 @@
 import logging
+from unittest.mock import patch
 from lxml import etree
 from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
@@ -1342,3 +1343,60 @@ class TestAccountMoveCore(TransactionCase):
         reverse_button = arch.xpath("//button[@name='action_reverse']")
         self.assertTrue(reverse_button)
         self.assertEqual(reverse_button[0].get('string'), 'Credit Note')
+
+    # ═══════════════════════════════════════════════════════════════
+    # Bypass for documents that are legitimately allowed to differ from
+    # the source invoice: exchange-difference notes (`l10n_ve_exchange_difference`,
+    # a separate module not installed here) are built directly with
+    # `reversed_entry_id` pointing at the real invoice, but their single
+    # line is a dedicated "exchange difference" product that documents a
+    # currency-rate gain/loss -- never a line of the original invoice.
+    # The field itself doesn't exist in this module's dependency chain,
+    # so it's simulated here the same way it will actually appear once
+    # that module is installed: as a plain attribute on the recordset.
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_74_refund_validation_bypassed_for_exchange_difference_note(self):
+        """Una nota marcada como `l10n_ve_exchange_diff_entry` no se valida
+        contra las líneas de la factura de origen: su producto (ajuste de
+        diferencial cambiario) nunca está en esa factura por diseño, y eso
+        es legítimo, no un intento de acreditar algo indebido."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+
+        other_product = self.env["product.product"].create({
+            "name": "Exchange Difference Adjustment", "type": "service",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+
+        with patch.object(type(refund), 'l10n_ve_exchange_diff_entry', True, create=True):
+            with Form(refund) as refund_form:
+                with refund_form.invoice_line_ids.edit(0) as line:
+                    line.product_id = other_product
+                    line.quantity = 999.0
+                    line.price_unit = 999999.0
+
+        self.assertEqual(refund.invoice_line_ids[0].product_id.id, other_product.id)
+
+    def test_75_refund_validation_not_bypassed_without_exchange_flag(self):
+        """Control: sin el flag de diferencial cambiario, el mismo cambio
+        (producto ajeno, cantidad y precio fuera de rango) sigue siendo
+        rechazado -- el bypass no debilita la validación por defecto."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice)
+
+        other_product = self.env["product.product"].create({
+            "name": "Exchange Difference Adjustment", "type": "service",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+
+        with self.assertRaises(ValidationError):
+            with Form(refund) as refund_form:
+                with refund_form.invoice_line_ids.edit(0) as line:
+                    line.product_id = other_product
+                    line.quantity = 999.0
+                    line.price_unit = 999999.0
