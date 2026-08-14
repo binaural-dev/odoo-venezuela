@@ -1,4 +1,4 @@
-from datetime import datetime, date, timedelta
+from datetime import date, timedelta
 import json
 import logging
 import calendar
@@ -18,7 +18,7 @@ class AccountMove(models.Model):
 
     invoice_date = fields.Date(
         string="Invoice Date",
-        default=fields.Date.today,
+        default=fields.Date.context_today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
     
@@ -49,6 +49,8 @@ class AccountMove(models.Model):
         compute="_compute_entry_in_period",
     )
 
+    free_form_copy_number = fields.Integer(default=0, copy=False)
+
     invoice_date_display_datetime = fields.Datetime(
         string="Invoice Date",
         readonly=True,
@@ -64,10 +66,10 @@ class AccountMove(models.Model):
                     raise ValidationError(_("The invoice date cannot be greater than the accounting date."))
     import_file_number_purchase_international = fields.Char(string="Import File Number Purchase International")
 
-    @api.depends("invoice_date", "state")
+    @api.depends("invoice_date", "state", "move_type")
     def _compute_entry_in_period(self):
         """Computing that allows determining whether an account move (invoice, debit/credit note or receipt) is within the current fiscal period."""
-        today = date.today()
+        today = fields.Date.context_today(self)
         taxpayer_type = self.env.company.taxpayer_type
         period_limit = self._get_period_limit(today, taxpayer_type)
 
@@ -102,16 +104,22 @@ class AccountMove(models.Model):
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
         from_pos = self.env.context.get('from_pos', False)
-        for line in self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids"):
+        invoice_lines = self.filtered(lambda m: m.is_invoice()).mapped("invoice_line_ids")
+        # _get_discount_lines() is the hook Odoo uses to tag a line as a
+        # recognized discount (sale_discount_product_id, pos_discount's
+        # config.discount_product_id, loyalty rewards, display_type
+        # 'discount', ...). Those are legitimate price <= 0 lines.
+        discount_lines = invoice_lines._get_discount_lines()
+        for line in invoice_lines - discount_lines:
             if line.price_unit <= 0 and line.display_type not in ("line_section","line_note"):
                 from_loyalty = self.env.context.get('from_loyalty', False)
-                if (
-                    self.env.company.sale_discount_product_id
-                    and line.product_id == self.env.company.sale_discount_product_id
-                ):
-                    continue
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
+
+    @api.onchange("move_type")
+    def _onchange_move_type(self):
+        if self.move_type == "out_invoice":
+            self.invoice_date = fields.Date.context_today(self)
 
     def action_post(self):
         
@@ -154,29 +162,53 @@ class AccountMove(models.Model):
         AccountMove = self.env["account.move"]
         is_series_invoicing_enabled = self.company_id.group_sales_invoicing_series
         for move in self:
-            if not move.is_contingency:
-                continue
-            if not is_series_invoicing_enabled and not move.correlative:
-                raise ValidationError(
-                    _(
-                        "Contingency journal's invoices should always have a correlative if series "
-                        "invoicing is not enabled"
+            if move.is_contingency:
+                if not is_series_invoicing_enabled and not move.correlative:
+                    raise ValidationError(
+                        _(
+                            "Contingency journal's invoices should always have a correlative if series "
+                            "invoicing is not enabled"
+                        )
                     )
+                repeated_moves = AccountMove.search(
+                    [
+                        ("is_contingency", "=", True),
+                        ("id", "!=", move.id),
+                        ("correlative", "!=", False),
+                        ("correlative", "=", move.correlative),
+                        ("journal_id", "=", move.journal_id.id),
+                    ],
+                    limit=1,
                 )
-            repeated_moves = AccountMove.search(
-                [
-                    ("is_contingency", "=", True),
-                    ("id", "!=", move.id),
-                    ("correlative", "!=", False),
-                    ("correlative", "=", move.correlative),
-                    ("journal_id", "=", move.journal_id.id),
-                ],
-                limit=1,
-            )
-            if repeated_moves:
-                raise UserError(
-                    _("The correlative must be unique per journal when using a contingency journal")
+                if repeated_moves:
+                    raise UserError(
+                        _("The correlative must be unique per journal when using a contingency journal")
+                    )
+
+            if (
+                move.correlative and not move.is_contingency
+                and move.move_type in ("out_invoice", "out_refund")
+            ):
+                repeated_moves = AccountMove.search(
+                    [
+                        ("id", "!=", move.id),
+                        ("company_id", "=", move.company_id.id),
+                        ("correlative", "=", move.correlative),
+                        ("state", "=", "posted"),
+                        ("move_type", "in", ("out_invoice", "out_refund")),
+                    ],
+                    limit=1,
                 )
+                if repeated_moves:
+                    raise ValidationError(
+                        _(
+                            "The control number %(correlative)s is already in use "
+                            "by the confirmed invoice %(invoice)s.",
+                            correlative=move.correlative,
+                            invoice=repeated_moves.name,
+                        )
+                    )
+
     @api.depends('journal_id')
     def _compute_is_debit_journal(self):
         for move in self:
@@ -238,19 +270,26 @@ class AccountMove(models.Model):
                     _("You can not add more than %s products to the invoice." % max_product_invoice)
                 )
 
-    @api.depends("payment_term_details")
+    @api.depends("line_ids.date_maturity", "line_ids.display_type", "invoice_date_due")
     def _compute_next_installment_date(self):
-        lang = self.env["res.lang"].search([("code", "=", self.env.user.lang)])
-        date_format = lang.date_format if lang else "%Y-%m-%d"
+        # No usar payment_term_details: viene ya formateado con format_date()
+        # segun el locale (ej. "29/07/2026"), no en ISO, asi que re-parsearlo
+        # con datetime.strptime()/res.lang.date_format es fragil (rompe si el
+        # lang del contexto no coincide con el lang guardado del usuario).
+        # Leemos date_maturity directo de las lineas, con el mismo filtro que
+        # usa el core para construir payment_term_details.
         for invoice in self:
             invoice.next_installment_date = False
-            if not invoice.payment_term_details:
+            term_lines = invoice.line_ids.filtered(
+                lambda l: l.display_type == "payment_term"
+            ).sorted("date_maturity")
+            if not term_lines:
                 invoice.next_installment_date = invoice.invoice_date_due
                 continue
-            for term in invoice.payment_term_details:
-                term_date = datetime.strptime(term.get("date", ""), date_format).date()
-                if term_date and term_date >= fields.Date.today():
-                    invoice.next_installment_date = term_date
+            today = fields.Date.context_today(invoice)
+            for line in term_lines:
+                if line.date_maturity and line.date_maturity >= today:
+                    invoice.next_installment_date = line.date_maturity
                     break
     
     @api.depends("invoice_date", "state")
@@ -369,4 +408,63 @@ class AccountMove(models.Model):
             elif not move.is_purchase_international and move.correlative and move.correlative == move.declaration_unique_of_customs:
                 move.correlative = False
                 move.declaration_unique_of_customs = False
+        return res
+
+    
+    def print_invoice_free_form(self):
+        self.ensure_one()
+        self.free_form_copy_number += 1
+
+        # Si ya existe un archivo adjunto principal, se descarga directamente
+        if self.message_main_attachment_id:
+            attachment = self.message_main_attachment_id
+            return {
+                'type': 'ir.actions.act_url',
+                'url': f'/web/content/{attachment.id}?download=true',
+                'target': 'download',
+            }
+
+        # Si no existe, genera el reporte mediante la acción QWeb estándar
+        report = self.env.ref("l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice")
+        return report.report_action(self)
+
+
+    def _message_set_main_attachment_id(self, attachments, force=False, filter_xml=True):
+        """
+        Solo permite establecer el message_main_attachment_id si la llamada 
+        proviene del flujo explícito de impresión o envío mediante free_form_copy_number.
+        """
+        if self.free_form_copy_number >= 1 and not self.message_main_attachment_id:
+            return super()._message_set_main_attachment_id(attachments, force=force, filter_xml=filter_xml)
+        
+        return
+
+    def _get_mail_thread_data_attachments(self):
+        self.ensure_one()
+        
+        if self.message_main_attachment_id:
+            res = self.message_main_attachment_id
+            
+            if 'original_id' in self.env['ir.attachment']._fields:
+                svg_ids = res.filtered(lambda attachment: attachment.mimetype == 'image/svg+xml')
+                non_svg_ids = res - svg_ids
+                original_ids = res.mapped('original_id')
+                res = res.filtered(
+                    lambda attachment: (attachment in svg_ids and attachment not in original_ids) 
+                    or (attachment in non_svg_ids and attachment.original_id not in non_svg_ids)
+                )
+            
+            return res
+
+        return super()._get_mail_thread_data_attachments()
+
+
+    def action_invoice_sent(self):
+        """ Sobrescribimos para pasar la clave de contexto 'allow_main_attachment_from_system'
+            al abrir la ventana/wizard de enviar e imprimir factura.
+        """
+        self.free_form_copy_number += 1
+        
+        res = super(AccountMove, self).action_invoice_sent()
+
         return res
