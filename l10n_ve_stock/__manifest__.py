@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "19.0.1.0.4",
+    "version": "19.0.1.0.5",
     "depends": [
         "stock",
         "product",
@@ -29,6 +29,7 @@
         "views/stock_move_line_views.xml",
         "views/stock_picking_views.xml",
         "views/stock_location_views.xml",
+        "views/stock_warehouse_views.xml",
         "wizard/stock_quantity_history.xml",
     ],
     "application": True,
