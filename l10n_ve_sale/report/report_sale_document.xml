@@ -2,9 +2,9 @@
 <odoo>
   <template id="report_sale_document_l10n_ve_sale" inherit_id="sale.report_saleorder_document">
     <xpath expr="//div[@class='page']" position="inside">
-      <h3 t-if="doc.state == 'draft'"
-        style="position:absolute;left:35px;top:250px;font-size:180px !important;opacity: 0.1;">
-        BORRADOR</h3>
+      <h3 style="position: absolute; left: 0; right: 0; top: 250px; font-size: 180px !important; opacity: 0.1; text-align: center; white-space: nowrap; width: 100%; margin: 0; pointer-events: none;">
+          NO FISCAL
+      </h3>
     </xpath>
     <xpath expr="//div[@class='clearfix'][1]" position="after">
       <div class="row mt-4">

@@ -201,15 +201,20 @@ class AccountPayment(models.Model):
             
 
     def action_cancel(self):
-        """ 
-        Cancel the payments and their related journal entries.
-        
-        Odoo's native behavior physically deletes ('unlink') draft moves 
-        associated with the payment. This override changes that behavior to 
-        ensure fiscal integrity, keeping the journal entries in the system 
-        by moving them to 'cancel' instead of deleting them.
-        
+        """Cancel payments preserving fiscal traceability.
+
+        Odoo's native behavior physically deletes ('unlink') draft moves
+        associated with the payment. This override protects previously
+        posted moves (posted_before=True) by cancelling them instead of
+        letting them be deleted, while handling the rest of the standard
+        flow (posted moves reversal, draft moves cleanup) explicitly.
         """
+        for payment in self:
+            move = payment.move_id
+            if not move:
+                continue
+            if move.state == 'draft' and not move.posted_before:
+                move.unlink()
+            elif move.state != 'cancel':
+                move.button_cancel()
         self.state = 'canceled'
-        draft_moves = self.move_id.filtered(lambda m: m.state == 'draft')
-        draft_moves.button_cancel()

@@ -18,7 +18,7 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
     
-    invoice_date_display = fields.Date(string="Invoice rate", default=fields.Date.today)
+    invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.context_today)
     is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
 
     @api.depends('invoice_date_display')
@@ -144,8 +144,8 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
-        self.invoice_date = False if self.move_type == "entry" else fields.Date.today()
-        self.invoice_date_display = False if self.move_type == "entry" else fields.Date.today()
+        self.invoice_date = False if self.move_type == "entry" else fields.Date.context_today(self)
+        self.invoice_date_display = False if self.move_type == "entry" else fields.Date.context_today(self)
 
     @api.onchange("journal_id")
     def _onchange_journal_id_reset_international_exempt(self):
@@ -1141,88 +1141,21 @@ class AccountMove(models.Model):
     )
     def _compute_needed_terms(self):
         res = super()._compute_needed_terms()
-
         for invoice in self:
             if not isinstance(invoice.needed_terms, dict):
-                invoice.needed_terms = {}
-            is_draft = invoice.id != invoice._origin.id
-            sign = 1 if invoice.is_inbound(include_receipts=True) else -1
-            if invoice.is_invoice(True) and invoice.invoice_line_ids:
-                invoice._compute_tax_totals()
-                if invoice.invoice_payment_term_id:
-                    if is_draft:
-                        tax_amount_currency = 0.0
-                        untaxed_amount_currency = 0.0
-                        for line in invoice.invoice_line_ids:
-                            untaxed_amount_currency += line.foreign_subtotal
-                            tax_amount_currency += (
-                                line.foreign_price_total - line.foreign_subtotal
-                            )
-                        untaxed_amount = untaxed_amount_currency
-                        tax_amount = tax_amount_currency
-                    else:
-                        tax_amount = (
-                            invoice.foreign_total_billed
-                            - invoice.foreign_taxable_income
-                        ) * sign
-                        untaxed_amount = (invoice.foreign_taxable_income) * sign
-
-                    invoice_payment_terms = (
-                        invoice.invoice_payment_term_id._compute_terms(
-                            date_ref=invoice.invoice_date_display
-                            or invoice.date
-                            or fields.Date.context_today(invoice),
-                            currency=invoice.foreign_currency_id,
-                            tax_amount_currency=tax_amount,
-                            tax_amount=tax_amount,
-                            untaxed_amount_currency=untaxed_amount,
-                            untaxed_amount=untaxed_amount,
-                            company=invoice.company_id,
-                            sign=sign,
-                        )
+                continue
+            if not invoice.is_invoice(include_receipts=True) or not invoice.invoice_line_ids:
+                continue
+            if not invoice.foreign_currency_id:
+                continue
+            rate_date = invoice._get_invoice_currency_rate_date() or fields.Date.context_today(invoice)
+            for key in invoice.needed_terms:
+                balance = invoice.needed_terms[key].get('balance', 0)
+                invoice.needed_terms[key]['foreign_balance'] = \
+                    invoice.company_id.currency_id._convert(
+                        balance, invoice.foreign_currency_id,
+                        invoice.company_id, rate_date
                     )
-
-                    for term in invoice_payment_terms["line_ids"]:
-                        if not isinstance(invoice.needed_terms, dict):
-                            invoice.needed_terms = {}
-                        for key in list(invoice.needed_terms.keys()):
-                            if key["date_maturity"] == fields.Date.to_date(
-                                term.get("date")
-                            ):
-                                invoice.needed_terms[key] = {
-                                    **invoice.needed_terms[key],
-                                    "foreign_balance": term["company_amount"],
-                                }
-
-                    # Fallback: if no term matched any needed_terms key (e.g. date_maturity
-                    # mismatch due to immediate-payment terms with date_maturity=False),
-                    # distribute foreign_balance across all keys proportionally.
-                    if not isinstance(invoice.needed_terms, dict):
-                        invoice.needed_terms = {}
-                    unmatched_keys = [
-                        key for key in invoice.needed_terms.keys()
-                        if "foreign_balance" not in invoice.needed_terms[key]
-                    ]
-                    if unmatched_keys:
-                        total_balance = sum(
-                            abs(invoice.needed_terms[k].get("balance", 0))
-                            for k in invoice.needed_terms.keys()
-                        ) or 1
-                        for key in unmatched_keys:
-                            key_balance = abs(invoice.needed_terms[key].get("balance", 0))
-                            proportion = key_balance / total_balance
-                            invoice.needed_terms[key] = {
-                                **invoice.needed_terms[key],
-                                "foreign_balance": sign * invoice.foreign_total_billed * proportion,
-                            }
-                else:
-                    if not isinstance(invoice.needed_terms, dict):
-                        invoice.needed_terms = {}
-                    for key in list(invoice.needed_terms.keys()):
-                        invoice.needed_terms[key] = {
-                            **invoice.needed_terms[key],
-                            "foreign_balance": sign * invoice.foreign_total_billed,
-                        }
         return res
 
    
@@ -1602,6 +1535,8 @@ class AccountMove(models.Model):
                 lambda l: l.display_type not in ("payment_term", "cogs")
             )
             fc = move.company_id.foreign_currency_id
+            if not fc:
+                continue
 
             # For third currency use aggregate (total conversion),
             # for base/alternate currency use line-by-line sum
@@ -1615,8 +1550,30 @@ class AccountMove(models.Model):
                 total_debit = aggregate
                 total_credit = aggregate
             else:
-                total_debit = sum(other.mapped("foreign_debit"))
-                total_credit = sum(other.mapped("foreign_credit"))
+                gross_debit = sum(other.mapped("foreign_debit"))
+                gross_credit = sum(other.mapped("foreign_credit"))
+                # Neto, no bruto. Los pares autobalanceados —las líneas COGS
+                # que stock_account agrega dentro de _post(), con el asiento
+                # todavía en draft— aportan el mismo importe como débito y
+                # como crédito. Sumar un solo lado los cuenta una vez y
+                # descuadra el asiento exactamente por ese importe.
+                # Sin líneas de ese tipo, gross_debit es 0 y el neto coincide
+                # con el bruto: mismo comportamiento que antes.
+                total_debit = gross_debit - gross_credit
+                total_credit = gross_credit - gross_debit
+
+                # Un asiento con importes alternos ya invertidos de origen
+                # puede dar neto negativo: en pos2, INV/2026/0137 tiene una
+                # línea de impuesto al débito con el importe alterno en el
+                # haber, y arrastra 71,28 de descuadre antes de llegar aquí.
+                # Ahí el neto no significa nada, y escribir un importe
+                # negativo sería peor que el valor equivocado de antes, así
+                # que se vuelve al bruto. Estos documentos necesitan data-fix,
+                # no una fórmula distinta.
+                if total_debit < 0:
+                    total_debit = gross_debit
+                if total_credit < 0:
+                    total_credit = gross_credit
 
             sorted_pt = pt_lines.sorted("id")
             n = len(sorted_pt)
@@ -1710,6 +1667,29 @@ class AccountMove(models.Model):
         if cc.is_zero(actual_non_pt):
             return
 
+        # Calculate expected total from direct document conversion
+        total_currency = abs(move.amount_total)
+        rate_date = move._get_invoice_currency_rate_date() or fields.Date.context_today(move)
+        expected_total = cc.round(move.currency_id._convert(
+            total_currency, cc, move.company_id, rate_date
+        ))
+        # non-PT lines are credit for sale docs (negative), debit for purchase docs (positive)
+        sign = -1 if move.amount_total_signed > 0 else 1
+        expected_total *= sign
+
+        # Correct non_pt if it diverges from expected
+        non_pt_diff = cc.round(expected_total - actual_non_pt)
+        tolerance = cc.rounding * len(move.line_ids)
+        if abs(non_pt_diff) > tolerance:
+            _logger.warning(
+                "Real portion: anomalous diff in move %s: diff=%s expected=%s actual=%s",
+                move.id, non_pt_diff, expected_total, actual_non_pt,
+            )
+        if not cc.is_zero(non_pt_diff):
+            self._distribute_to_lines(non_pt, non_pt_diff, cc)
+
+        actual_non_pt = sum(non_pt.mapped('balance'))
+
         pt_lines = move.line_ids.filtered(
             lambda l: l.display_type == 'payment_term'
         )
@@ -1732,7 +1712,9 @@ class AccountMove(models.Model):
                 lambda l: not l.tax_repartition_line_id
             )
             self._distribute_to_lines(target_lines, remaining, cc)
-            move.real_portion_amount = 0.0
+            move.real_portion_amount = cc.round(
+                (move.real_portion_amount or 0.0) + remaining
+            )
             move.real_portion_count += 1
 
     def _distribute_entry_real_portion(self, move, cc):
@@ -1751,57 +1733,6 @@ class AccountMove(models.Model):
             )
             move.real_portion_count += 1
 
-    def _fix_company_currency_rounding(self, moves):
-        """Corrects the rounding difference between the line-by-line sum
-        of VEF (balance) and the aggregate conversion of the document
-        currency total to the company currency.
-
-        Adjusts a non-tax non-PT line and compensates with PT lines
-        to keep the entry balanced.
-        """
-        for move in moves:
-            if move.state != 'draft':
-                continue
-            if not move.is_invoice(include_receipts=True):
-                continue
-            if move.currency_id == move.company_currency_id:
-                continue
-            cc = move.company_currency_id
-            pt_lines = move.line_ids.filtered(
-                lambda l: l.display_type == 'payment_term'
-            )
-            if not pt_lines:
-                continue
-            non_pt = move.line_ids - pt_lines
-            if not non_pt:
-                continue
-
-            expected = move.currency_id._convert(
-                abs(move.amount_total),
-                cc,
-                move.company_id,
-                move.invoice_date or fields.Date.today(),
-            )
-            actual = sum(non_pt.mapped('balance'))
-            if actual < 0:
-                expected = -expected
-
-            diff = expected - actual
-            
-            if cc.is_zero(diff):
-                
-                continue
-
-            target_lines = non_pt.filtered(
-                lambda l: not l.tax_repartition_line_id
-            )
-            if not target_lines:
-                
-                continue
-
-            self._distribute_to_lines(target_lines, diff, cc)
-            self._distribute_to_lines(pt_lines, -diff, cc)
-            
 
     @api.model
     def _distribute_to_lines(self, lines, amount, currency):
@@ -1841,58 +1772,3 @@ class AccountMove(models.Model):
         for move in self:
             if move.posted_before and not self._context.get('force_delete'):
                 raise UserError(_("You cannot delete a journal item that is posted, cancelled, or has been previously posted."))
-            
-
-    @api.onchange('invoice_line_ids')
-    def _onchange_invoice_line_ids_refund_validation(self):
-        """
-        Validate and synchronize invoice lines in credit notes (refunds) against 
-        their corresponding original invoice lines from the source document.
-
-        This method triggers in real-time when changes are made to the invoice lines.
-        It performs the following:
-        1. Verifies the document is a credit note with an active source invoice link.
-        2. Disallows the addition of new products not present in the original invoice.
-        3. Maps source invoice lines using a composite key (sequence, product_id)
-           to handle duplicate products accurately.
-        4. Restricts validation to consumable ('consu') and service ('service') products.
-        5. Automatically reverts any modified quantities back to the original values.
-        6. Validates that the unit price is non-negative and does not exceed 
-           the original invoice unit price.
-        """
-        
-        if not self.reversed_entry_id or self.move_type not in ['out_refund', 'in_refund']:
-            return
-
-        origin_lines_by_key = {
-            (line.sequence, line.product_id.id): line
-            for line in self.reversed_entry_id.invoice_line_ids
-            if line.product_id and line.product_id.type in ('consu', 'service')
-        }
-
-        for line in self.invoice_line_ids:
-
-            line_key = (line.sequence, line.product_id.id)
-
-            if line_key not in origin_lines_by_key:
-                raise ValidationError(_(
-                    "You are not allowed to add new products ('%s') "
-                    "that were not present in the original invoice."
-                ) % line.product_id.name)
-
-            origin_line = origin_lines_by_key[line_key]
-
-            if float_compare(line.quantity, origin_line.quantity, precision_digits=2) != 0:
-                line.update({
-                    'quantity': origin_line.quantity
-                })
-
-            if line.price_unit < 0.0:
-                raise ValidationError(_("The unit price cannot be negative."))
-
-            if line.price_unit > origin_line.price_unit:
-                raise ValidationError(_(
-                    "Product '%s':\n"
-                    "The unit price (%s) cannot be greater than the original "
-                    "unit price in the source invoice (%s)."
-                ) % (line.product_id.name, line.price_unit, origin_line.price_unit))

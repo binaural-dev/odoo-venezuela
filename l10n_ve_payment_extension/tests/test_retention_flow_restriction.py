@@ -9,6 +9,9 @@ class TestRetentionFlowRestriction(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super(TestRetentionFlowRestriction, cls).setUpClass()
+        cls.company = cls.env.user.company_id
+        cls.company.currency_id = cls.env.ref('base.VEF')
+        cls.company.foreign_currency_id = cls.env.ref("base.USD")
 
         cls.partner = cls.env["res.partner"].create({"name": "Test Partner Retention Flow Restriction"})
         cls.product = cls.env["product.product"].create({"name": "Test Service Flow Restriction", "type": "service"})

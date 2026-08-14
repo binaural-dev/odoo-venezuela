@@ -24,9 +24,9 @@ class ProductProduct(models.Model):
         return res
 
     def _validate_list_price(self):
-        for product in self:
-            if product.list_price <= 0:
-                raise ValidationError(_("Price cannot be negative or zero."))
+        if self.env.context.get("install_mode"):
+            return
+        self.mapped("product_tmpl_id")._check_list_price()
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -68,8 +68,9 @@ class ProductProduct(models.Model):
 
 
     def _compute_quantities_dict(
-        self, lot_id, owner_id, package_id, from_date=False, to_date=False, location=False
+        self, lot_id, owner_id, package_id, from_date=False, to_date=False
     ):
+        location = False
         if not location:
             return super(ProductProduct, self)._compute_quantities_dict(
                 lot_id, owner_id, package_id, from_date, to_date

@@ -378,7 +378,7 @@ class TestRealPortion(TransactionCase):
         self._assert_foreign_squares(invoice, "test_04")
 
     def test_05_invoice_variable_rates(self):
-        """Factura en VEF con tasa irregular - _fix_company_currency_rounding
+        """Factura en VEF con tasa irregular -
            debe corregir la diferencia entre conversion agregada y linea por linea
         """
         self._set_usd_rate(402.3343)

@@ -29,6 +29,7 @@
         "views/stock_move_line_views.xml",
         "views/stock_picking_views.xml",
         "views/stock_location_views.xml",
+        "views/stock_warehouse_views.xml",
         "wizard/stock_quantity_history.xml",
     ],
     "application": True,

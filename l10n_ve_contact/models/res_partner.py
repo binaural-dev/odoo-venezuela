@@ -57,6 +57,38 @@ class ResPartner(models.Model):
         tracking=True,
     )
 
+    @api.constrains("name")
+    def _check_name_immutable(self):
+        if not self.env.company.validate_partner_name_immutable:
+            return
+
+        model_checks = {
+            "sale.order": [("partner_id", "=", "id")],
+            "purchase.order": [("partner_id", "=", "id")],
+            "account.move": [
+                ("partner_id", "=", "id"),
+                ("move_type", "in", ["out_invoice", "in_invoice"]),
+            ],
+            "account.move.line": [("partner_id", "=", "id")],
+        }
+
+        for partner in self:
+            for model, domain in model_checks.items():
+                if model not in self.env.registry.models:
+                    continue
+                # Replace 'id' placeholder with actual partner.id
+                resolved_domain = [
+                    (field, op, partner.id if val == "id" else val)
+                    for field, op, val in domain
+                ]
+                if self.env[model].search_count(resolved_domain) > 0:
+                    raise ValidationError(
+                        _(
+                            "You cannot modify the name of a contact with associated "
+                            "transactions."
+                        )
+                    )
+
     def check_duplicate_vat(self, prefix_vat, vat, company_id=None):
         error_message = ""
         domain = [
@@ -147,7 +179,7 @@ class ResPartner(models.Model):
             if "vat" and "prefix_vat" in vals:
                 self.check_duplicate_vat(
                     vals.get("prefix_vat"), vals.get("vat"))
-            if "email" in vals:
+            if "email" in vals and vals.get("type", "contact") == "contact":
                 self.check_duplicate_email(vals.get("email"))
         return super(ResPartner, self).create(vals_list)
 
@@ -159,7 +191,8 @@ class ResPartner(models.Model):
                     vals.get("prefix_vat"), vals.get("vat"))
         if "email" in vals:
             for record in self:
-                record.check_duplicate_email(vals.get("email"))
+                if record.type == "contact":
+                    record.check_duplicate_email(vals.get("email"))
         return res
 
     def _check_vat(self):

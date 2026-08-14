@@ -113,6 +113,10 @@ class AccountMove(models.Model):
                         'account_payment_id': counterpart_line.payment_id.id,
                         'payment_method_name': counterpart_line.payment_id.payment_method_line_id.name,
                         'move_id': counterpart_line.move_id.id,
+                        # ``is_refund`` es requerido por account/views/report_invoice.xml en Odoo 19
+                        # (template account.report_invoice_document itera payments_vals y accede
+                        # a payment_vals['is_refund']).
+                        'is_refund': counterpart_line.move_id.move_type in ['in_refund', 'out_refund'],
                         'ref': reconciliation_ref,
                         # these are necessary for the views to change depending on the values
                         'is_exchange': reconciled_partial['is_exchange'],
@@ -445,21 +449,21 @@ class AccountMove(models.Model):
             igtf_amount = abs(payment.calculate_igtf_for_payment(self, applied_payment_curr,  payment.currency_id ,conversion_date))
 
         #raise UserError(igtf_amount)
-        #if is_igtf_journal:
-        #igtf_in_invoice_curr = payment.currency_id._convert(igtf_amount, self.currency_id, self.company_id, conversion_date)
-        #if (base_amount_applied + igtf_in_invoice_curr) < advance_amount: ## include igtf in base
-        #    base_amount_applied = self.currency_id.round(base_amount_applied + igtf_in_invoice_curr)
-        #    if advance_amount > 0:
-        #        applied_payment_curr = payment.currency_id.round(
-        #            advance_amount_payment_curr * (base_amount_applied / advance_amount))
+        if is_igtf_journal:
+            igtf_in_invoice_curr = payment.currency_id._convert(igtf_amount, self.currency_id, self.company_id, conversion_date)
+            if (base_amount_applied + igtf_in_invoice_curr) < advance_amount: ## include igtf in base
+                base_amount_applied = self.currency_id.round(base_amount_applied + igtf_in_invoice_curr)
+                if advance_amount > 0:
+                    applied_payment_curr = payment.currency_id.round(
+                        advance_amount_payment_curr * (base_amount_applied / advance_amount))
                 
 
         # --- Forzar balance cuando el cruce cubre exactamente el residual ---
         factura_line = receivable_payable_line
-        #if is_igtf_journal:
-        #    total_in_invoice_curr = base_amount_applied + igtf_in_invoice_curr
-        #else:
-        total_in_invoice_curr = base_amount_applied
+        if is_igtf_journal:
+            total_in_invoice_curr = base_amount_applied + igtf_in_invoice_curr
+        else:
+            total_in_invoice_curr = base_amount_applied
 
         force_balance = None
         if (abs(total_in_invoice_curr - advance_amount_residual) <= self.currency_id.rounding
@@ -475,10 +479,9 @@ class AccountMove(models.Model):
         
         if is_igtf_journal and igtf_amount > 0.0:
 
-            #line_vals = self.prepare_igtf_payment_vals(
-            #    line_vals, payment, igtf_amount, igtf_account, conversion_date, common_vals
-            #)
-            self.prepare_igtf_payment_debit_note(self, igtf_amount, self, payment)
+            line_vals = self.prepare_igtf_payment_vals(
+                line_vals, payment, igtf_amount, igtf_account, conversion_date, common_vals
+            )
                
         # --- Entry Creation ---
         advance_journal = self.env.company.advance_payment_igtf_journal_id
@@ -778,14 +781,13 @@ class AccountMove(models.Model):
     )
     def compute_bi_igtf(self):
         for rec in self:
-
             rec.igtf_top_aply = 0.0
             rec.alter_bi_igtf = 0.0
             rec.foreign_bi_igtf = 0.0
             rec.bi_igtf = 0.0
 
-            if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']: 
-                rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
+            if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']:
+                rec.igtf_top_aply = abs(rec.amount_total_signed) * (rec.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
                 final_payment_moves = receivable_payable_lines.reconciled_lines_ids.mapped('move_id')
@@ -856,9 +858,9 @@ class AccountMove(models.Model):
 
                                 amount_base_payment = partial_amount
 
-                            elif 'pos_payment_ids' in bank_line[0].move_id._fields:
-                                    if bank_line[0].move_id.pos_payment_ids:
-                                        amount_base_payment = rec.company_id.currency_id.round(igtf_amount / (rec.company_id.igtf_percentage / 100))
+                            elif 'pos_payment_ids' in bank_line[0].move_id._fields and getattr(bank_line[0].move_id, 'pos_payment_ids', False):
+                                amount_base_payment = rec.company_id.currency_id.round(igtf_amount / (rec.company_id.igtf_percentage / 100))
+                            
 
                             elif  rec.company_id.currency_id.round(partial_amount * (rec.company_id.igtf_percentage / 100)) == igtf_amount:
                                     
@@ -936,8 +938,8 @@ class AccountMove(models.Model):
         if not payment_move:
             _logger.error("IGTF: remove_igtf — no payment_move found for partial_id=%s", partial_id)
             return False
-        if payment_move.currency_id == self.env.ref("base.VEF") and not payment_move.origin_payment_advanced_payment_id:
-            _logger.info("IGTF: remove_igtf — skipping VEF payment %s (id=%s)", payment_move.name, payment_move.id)
+        vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
+        if payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id:
             return 
         
         _logger.info("IGTF: remove_igtf — processing payment_move=%s (id=%s), calling create_note_credit_igtf", 
