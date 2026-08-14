@@ -272,7 +272,19 @@ class AccountTax(models.Model):
         invoice it will turn into. No new field is introduced here --
         `price_total`/`price_subtotal` are core fields already present on
         both `sale.order.line` and `purchase.order.line`.
+
+        EXCEPT when the company's base currency is USD: `price_total`/
+        `price_subtotal` are then already rounded to USD's 2 decimals
+        before any conversion, and multiplying that already-rounded delta
+        by the (large, VEF-per-USD) rate amplifies a fraction-of-a-cent
+        USD rounding difference into several bolivares of drift. There,
+        the ideal per-tax breakdown computed below (taxing `foreign_price`
+        -- which keeps its own higher precision -- directly) is used
+        as-is instead of being discarded in favor of the converted delta,
+        same reasoning as `account.move.line._compute_foreign_subtotal`.
         """
+        usd = self.env.ref("base.USD", raise_if_not_found=False)
+        is_usd_base = bool(usd and order.company_id.currency_id == usd)
         product_lines = order.order_line.filtered(lambda l: not l.display_type)
         if not product_lines or 'foreign_price' not in product_lines._fields:
             return
@@ -305,17 +317,25 @@ class AccountTax(models.Model):
             ideal_tax_by_id = {t['id']: abs(t['amount']) for t in foreign_res['taxes']}
             ideal_line_total = sum(ideal_tax_by_id.values())
 
-            # Anchor this line's REAL tax portion to the direct conversion
-            # of its own native tax amount; the ideal breakdown above is
-            # only used to split that real total across the line's own
-            # tax groups when it carries more than one.
-            line_tax_total = abs(pl.currency_id._convert(
-                pl.price_total - pl.price_subtotal,
-                fc,
-                order.company_id,
-                order.date_order.date() if getattr(order, "date_order", False) else fields.Date.today(),
-                custom_rate=pl.foreign_inverse_rate,
-            ))
+            if is_usd_base:
+                # Base USD: tax the alterno base directly (the ideal
+                # breakdown already computed above) instead of converting
+                # an already-2-decimal-rounded native delta, which would
+                # amplify sub-cent USD noise into several bolivares.
+                line_tax_total = ideal_line_total
+            else:
+                # Anchor this line's REAL tax portion to the direct
+                # conversion of its own native tax amount; the ideal
+                # breakdown above is only used to split that real total
+                # across the line's own tax groups when it carries more
+                # than one.
+                line_tax_total = abs(pl.currency_id._convert(
+                    pl.price_total - pl.price_subtotal,
+                    fc,
+                    order.company_id,
+                    order.date_order.date() if getattr(order, "date_order", False) else fields.Date.today(),
+                    custom_rate=pl.foreign_inverse_rate,
+                ))
 
             for tax_id, ideal_amount in ideal_tax_by_id.items():
                 grp_id = self.browse(tax_id).tax_group_id.id
