@@ -13,6 +13,10 @@ patch(ClosePosPopup.prototype, {
     super.setup(...arguments);
     this.orm = useService("orm");
     this.mfState = useState({ isPrintingReport: false });
+    // Permiso VE: usuarios con l10n_ve_pos_mf.group_pos_close_native ven
+    // ademas un boton de cierre nativo (sin Reporte Z ni validacion de
+    // pedidos sin facturar), junto al flujo dual existente.
+    this.canCloseNative = Boolean(this.pos.user._can_close_session_native);
   },
 
   getFiscalPrinter() {
