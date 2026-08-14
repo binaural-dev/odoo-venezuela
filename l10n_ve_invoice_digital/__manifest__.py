@@ -5,13 +5,14 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.0.0.22",
+    "version": "17.0.0.0.23",
     "depends": [
         "account",
         "l10n_ve_igtf",
         "account_debit_note",
         "l10n_ve_invoice",
         "l10n_ve_payment_extension",
+        "l10n_ve_contact",
     ],
 
     "images": ["static/description/icon.png"],

@@ -15,6 +15,19 @@ class TestAccumulatedRate(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.company = self.env.ref("base.main_company")
         self.env.user.tz = "America/Caracas"
+
+        # En una base sin datos de demo el VEF viene inactivo y sin ninguna tasa
+        # cargada. Sin esto el foreign_rate de la factura queda en 0 (lo calcula
+        # _compute_rate contra res.currency.rate, no lo toma del valor que se le
+        # pase a la linea) y las lineas de retencion violan el constraint
+        # _constraint_amounts_in_zero de l10n_ve_payment_extension.
+        self.currency_vef.active = True
+        self.env["res.currency.rate"].create({
+            "name": date(2020, 1, 1),
+            "currency_id": self.currency_vef.id,
+            "company_rate": 2.0,
+            "company_id": self.company.id,
+        })
         iva_sequence = self.env["ir.sequence"].create({
             "name": "Secuencia de iva para proveedores",
             "code": "payment.retention.iva",
