@@ -37,7 +37,7 @@ Configuración:
   Débito.
     """,
     'author': 'Binaural',
-    'depends': ['account', 'l10n_ve_accountant', 'od_journal_sequence', 'l10n_ve_invoice'],
+    'depends': ['account', 'l10n_ve_accountant', 'od_journal_sequence', 'l10n_ve_invoice', 'l10n_ve_igtf'],
     'data': [
         'views/account_journal_views.xml',
         'views/account_move_views.xml',
