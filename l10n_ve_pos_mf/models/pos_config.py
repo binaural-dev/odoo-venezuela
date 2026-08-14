@@ -1,37 +1,92 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
-
 
 class PosConfigInherit(models.Model):
     _inherit = "pos.config"
 
-    iface_fiscal_data_module = fields.Many2one(
-        "iot.device",
-        domain=(
-            "[('type', '=', 'fiscal_data_module'), '|', ('company_id', '=', False),"
-            "('company_id', '=', company_id)]"
-        ),
-    )
+    # Campos de configuración de la máquina fiscal (Web Serial API)
     serial_machine = fields.Char(
-        related="iface_fiscal_data_module.serial_machine")
-    flag_21 = fields.Selection(related="iface_fiscal_data_module.flag_21")
-    traditional_line = fields.Boolean(
-        related="iface_fiscal_data_module.traditional_line"
+        string="Serial de Máquina Fiscal",
+        help="Serial de la impresora fiscal conectada (se llena automáticamente)"
     )
+    
+    flag_21 = fields.Selection(
+        [
+            ('00', 'Estándar (8+2 enteros, 5+3 cantidad)'),
+            ('01', 'Precisión decimal (7+3 enteros, 5+3 cantidad)'),
+            ('02', 'Alta precisión (6+4 enteros, 5+3 cantidad)'),
+            ('30', 'Montos grandes (14+2 enteros, 14+3 cantidad)')
+        ],
+        string="Flag 21 - Formato de Números",
+        default='00',
+        required=True,
+        help="Determina el formato de números en la impresora fiscal TFHKA.\n"
+             "00 = Estándar (la mayoría de impresoras)\n"
+             "30 = Para montos muy grandes (empresas grandes)"
+    )
+    
+    traditional_line = fields.Boolean(
+        string="Línea Tradicional",
+        default=False,
+        help="Activar si la impresora usa formato de línea tradicional"
+    )
+    
     has_cashbox = fields.Boolean(
-        related="iface_fiscal_data_module.has_cashbox")
-    access_button_mf = fields.Boolean()
-    message_in_head = fields.Boolean()
+        string="Tiene Gaveta de Efectivo",
+        default=True,
+        help="Si está activado, la gaveta se abrirá automáticamente al cobrar en efectivo"
+    )
+    
+    # Campos de configuración general
+    access_button_mf = fields.Boolean(
+        string="Mostrar Botón de Conexión MF",
+        default=True
+    )
+    
+    message_in_head = fields.Boolean(
+        string="Mensaje en Encabezado",
+        default=False
+    )
 
-    def _compute_iot_device_ids(self):
-        super()._compute_iot_device_ids()
-        for config in self:
-            if config.is_posbox:
-                config.iot_device_ids += config.iface_fiscal_data_module
+    enable_auto_sync = fields.Boolean(
+        string="Habilitar Sincronización Automática",
+        default=True,
+        help="Si está activo, sincroniza automáticamente pedidos offline en segundo plano"
+    )
 
-    # def open_ui(self):
-    #     if not self.is_posbox or not self.iface_fiscal_data_module:
-    #         raise UserError(
-    #             _("Necesitas activar el IOT en la caja y asignarle una máquina fiscal.")
-    #         )
-    #     return super().open_ui()
+    auto_sync_interval = fields.Integer(
+        string="Intervalo de Sincronización (segundos)",
+        default=60,
+        help="Intervalo en segundos para sincronizar pedidos offline con Odoo"
+    )
+    
+    mf_skip_invoice_pdf = fields.Boolean(
+        string="Omitir PDF de Factura",
+        default=True,
+        help="Si está activo, no genera ni descarga el PDF de la factura al validar un pedido fiscal"
+    )
+    
+    @api.model
+    def _load_pos_data_fields(self, config):
+        """Exponer campos de configuración fiscal al frontend POS"""
+        fields_list = list(super()._load_pos_data_fields(config))
+        # Si el core devuelve [] significa "todos los campos"
+        if not fields_list:
+            return fields_list
+        
+        fiscal_fields = [
+            'serial_machine',
+            'flag_21',
+            'traditional_line',
+            'has_cashbox',
+            'access_button_mf',
+            'message_in_head',
+            'enable_auto_sync',
+            'auto_sync_interval',
+            'mf_skip_invoice_pdf',
+        ]
+        
+        for field_name in fiscal_fields:
+            if field_name not in fields_list:
+                fields_list.append(field_name)
+        
+        return fields_list

@@ -90,13 +90,26 @@
                                 t-out="context_timestamp(o.scheduled_date).strftime('%d/%m/%Y %H:%M') if o.scheduled_date else ''" />
                         </td>
                     </tr>
-                    <tr>
-                        <td class="w-50 pb-0 my-0 pt-1">
-                            <span class="fw-bold">Dirección de entrega:</span>
-                            <span t-out="o.partner_id.contact_address or ''" />
-
-                        </td>
-                    </tr>
+                    <t t-if="o.operation_code == 'internal'">
+                        <tr>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">Dirección de origen:</span>
+                                <span t-out="o.source_physical_address or ''" />
+                            </td>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">Dirección de destino:</span>
+                                <span t-out="o.destination_physical_address or ''" />
+                            </td>
+                        </tr>
+                    </t>
+                    <t t-else="">
+                        <tr>
+                            <td class="w-50 pb-0 my-0 pt-1">
+                                <span class="fw-bold">Dirección de entrega:</span>
+                                <span t-out="o.partner_id.contact_address or ''" />
+                            </td>
+                        </tr>
+                    </t>
                 </tbody>
             </table>
 

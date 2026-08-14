@@ -348,16 +348,22 @@ class SaleOrder(models.Model):
     def _compute_tax_totals_base(self):
         return super()._compute_tax_totals()
 
-    @api.depends("partner_id")
+    @api.depends("partner_id", "partner_id.vat", "partner_id.prefix_vat")
     def _compute_vat(self):
         """
         Compute the vat of the partner and add the prefix to it if it exists in the partner record
         """
         for rec in self:
+            vat = ""
+
+            if not rec.partner_id:
+                rec.vat = vat
+                continue
+
             if rec.partner_id.prefix_vat and rec.partner_id.vat:
-                vat = str(rec.partner_id.prefix_vat) + str(rec.partner_id.vat)
+                vat = (rec.partner_id.prefix_vat or "") + (rec.partner_id.vat or "")
             else:
-                vat = str(rec.partner_id.vat)
+                vat = rec.partner_id.vat or ""
             rec.vat = vat.upper()
 
     @api.onchange("name")
@@ -638,29 +644,31 @@ class SaleOrder(models.Model):
 
 
         res = super().action_confirm()
-        product_limit = self.env.company.limit_product_qty_out
         for sale in self:
             picking = sale.picking_ids
-            if product_limit > 0:
-                picking_moves = picking.move_ids
-                picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id']) 
-                picking_vals = {
-                    key: (value[0] if isinstance(value, tuple) else value)
-                    for key, value in picking_vals[0].items()
-                }
-                picking_vals['origin'] = picking.origin
-                picking_vals['partner_id'] = picking.partner_id.id
-                picking_vals['user_id'] = picking.user_id.id
-                
-                list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
-                picking.move_ids = list_pickings_moves[0]
-                
-                for list_moves in list_pickings_moves[1:]:
-                    picking_vals["move_ids"] = list_moves
-                    new_picking = self.env['stock.picking'].create(picking_vals)
-                
-
-                
+            if not picking:
+                continue
+            product_limit = sale.company_id.limit_product_qty_out
+            if product_limit <= 0:
+                continue
+            picking_moves = picking.move_ids
+            if not picking_moves:
+                continue
+            picking_vals = picking.read(['location_dest_id', 'location_id', 'move_type', 'picking_type_id'])
+            if not picking_vals:
+                continue
+            picking_vals = {
+                key: (value[0] if isinstance(value, tuple) else value)
+                for key, value in picking_vals[0].items()
+            }
+            picking_vals['origin'] = picking.origin
+            picking_vals['partner_id'] = picking.partner_id.id
+            picking_vals['user_id'] = picking.user_id.id
+            list_pickings_moves = [picking_moves[i:i + product_limit] for i in range(0, len(picking_moves), product_limit)]
+            picking.move_ids = list_pickings_moves[0]
+            for list_moves in list_pickings_moves[1:]:
+                picking_vals["move_ids"] = list_moves
+                self.env['stock.picking'].create(picking_vals)
         return res
 
     def cancel_order_after_date(self):
