@@ -1,17 +1,5 @@
 <odoo>
-    <!-- <record id="res_config_settings_view_inherit_l10n_ve_accountant" model="ir.ui.view">
-        <field name="name">res.config.settings.view.inherit.l10n.ve.accountant</field>
-        <field name="model">res.config.settings</field>
-        <field name="inherit_id" ref="account.res_config_settings_view_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//setting[@id='show_sale_receipts']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-            <xpath expr="//setting[@id='show_purchase_receipts']" position="attributes">
-                <attribute name="invisible">1</attribute>
-            </xpath>
-        </field>
-    </record> -->
+    
     <record id="view_res_config_settings_l10n_ve_accountant" model="ir.ui.view">
             <field name="name">res.config.settings.l10n.ve.taxes</field>
             <field name="model">res.config.settings</field>
@@ -44,6 +32,32 @@
                             </div>
                         </div>
                     </block>
+
+                     <block title="Config payment Wizard Indexacion" name="l10n_ve_index_payment">
+                        <div class="col-12 col-lg-6 o_setting_box">
+
+                            <div class="col-12 col-lg-6 o_setting_left_pane">
+                                <field name="index_payment_in_wizard"/>
+                            </div>
+                            <div class="o_setting_right_pane" >
+                                <label for="index_payment_in_wizard"/>
+                                <div class="text-muted">
+                                    Enable this to indexation payment in wizard of payment not grouping
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-12 col-lg-6 o_setting_box" invisible="not index_payment_in_wizard">
+                            <div class="o_setting_right_pane" >
+                                <group>
+                                    <field name="indexaxion_payment_mode" />
+                                    <field name="indexed_default" readonly="indexaxion_payment_mode != 'to_agreed'"/>
+                                </group>
+                            </div>
+                        </div>
+                        
+                    </block>
+
                     <block title="Configuration Taxes: Taxes Sales/Purchase" name="l10n_ve_tax_block_tax_rates">
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_rates_sales">
                             <div class="o_setting_right_pane">

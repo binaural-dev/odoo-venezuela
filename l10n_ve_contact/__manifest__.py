@@ -4,10 +4,13 @@
        Módulo para información de contactos de Venezuela
     """,
     "license": "LGPL-3",
+    "description": """
+       Módulo para información de contactos de Venezuela
+    """,
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Contacts/Contacts",
-    "version": "1.3",
+    "version": "1.4",
     "depends": ["base", "contacts", "account", "l10n_ve_rate", "l10n_ve_location"],
     "data": [
         "security/ir.model.access.csv",

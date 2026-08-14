@@ -223,7 +223,6 @@ class WizardAccountingReports(models.TransientModel):
     def get_retention_iva_values(self, move_id):
         move = self.env["account.move"].browse(move_id)
         is_purchase = self.report == "purchase"
-        multiplier = -1 if move.move_type in ["out_refund", "in_refund"] else 1
         ret_lines = (
             move.retention_iva_line_ids.filtered(lambda x: x.retention_id.state == "emitted")
             if move.state == "posted"
@@ -247,7 +246,7 @@ class WizardAccountingReports(models.TransientModel):
             ret_vals["date_retention"] = self._format_date(ret_line.mapped("retention_id").date)
             ret_vals["number_retention"] = move.iva_voucher_number
             ret_vals["iva_retained"] = ret_vals["iva_retained"] + (
-                self._sum_retention_total(ret_line) * multiplier
+                self._sum_retention_total(ret_line)
                 if ret_line.move_id.state != "cancel"
                 else 0
             )
@@ -271,9 +270,14 @@ class WizardAccountingReports(models.TransientModel):
                 continue
 
             if not is_check_currency_system:
-                total += line.foreign_retention_amount
+                amount = line.foreign_retention_amount
             else:
-                total += line.retention_amount
+                amount = line.retention_amount
+
+            if line.move_id and line.move_id.move_type in ["out_refund", "in_refund"]:
+                amount *= -1
+
+            total += amount
 
         return total
 

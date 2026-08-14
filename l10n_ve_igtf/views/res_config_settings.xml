@@ -31,7 +31,7 @@
                         <setting string="Show in Sale Order" help="Show suggestion based on total amount of the Order">
                             <field name="show_igtf_suggested_sale_order" />
                         </setting>
-                        <setting string="Show in Invoice" help="Show suggestion based on total amount of the Invoice">
+                        <setting string="Show IGTF to be received" help="Show IGTF to be received freely from customer invoices">
                             <field name="show_igtf_suggested_account_move" />
                         </setting>
 

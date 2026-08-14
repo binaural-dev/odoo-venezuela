@@ -15,13 +15,9 @@
                 <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:260px !important;opacity: 0.1;">ANULADA</h3>
                 <div class="col-8" style="text-align: left;">
                     <h6>COMPROBANTE DE RETENCIÓN DEL IMPUESTO AL VALOR AGREGADO</h6>
-                    <p>"Decreto con Rango, Valor y Fuerza de Ley de Reforma de la Ley del Impuesto al Valor agregado
-                        Nro 1.436 del 17 de Noviembre del 2014"
-                        Articulo 11: La Administracion Tributaria podra Designar como Responsable del Pago del
-                        Impuesto, en calidad de Agentes de Retencion a quienes por sus
-                        Funciones Publicas o por Razón de sus Actividades Privadas intervengan en operaciones
-                        Gravadas con el Impuesto Establecido en este Decreto con Rango,
-                        Valor y Fuerza de Ley.
+                    <p>"Este comprobante se emite según lo establecido en el artículo 16 de la Providencia
+                        Administrativa snat/2025/000054 de fecha 02/07/2025 publicada en Gaceta Oficial número
+                        43.171 de fecha 16 de julio de 2025.
                     </p>
                 </div>
             </div>

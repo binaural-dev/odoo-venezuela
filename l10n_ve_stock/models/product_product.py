@@ -68,8 +68,9 @@ class ProductProduct(models.Model):
 
 
     def _compute_quantities_dict(
-        self, lot_id, owner_id, package_id, from_date=False, to_date=False, location=False
+        self, lot_id, owner_id, package_id, from_date=False, to_date=False
     ):
+        location = False
         if not location:
             return super(ProductProduct, self)._compute_quantities_dict(
                 lot_id, owner_id, package_id, from_date, to_date
