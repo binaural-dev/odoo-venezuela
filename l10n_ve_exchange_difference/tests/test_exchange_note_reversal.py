@@ -83,10 +83,20 @@ class TestExchangeNoteReversal(TransactionCase):
             ("type_tax_use", "=", "sale"), ("amount", "=", 0.0),
             ("company_id", "=", cls.company.id),
         ], limit=1)
+        # `supplier_taxes_id` explícito -- sin esto, el default que arma
+        # Odoo para ese campo en `create()` puede traer más de un impuesto
+        # en bases con varios impuestos de compra al 0% configurados, y
+        # `l10n_ve_accountant` (`_enforce_single_tax_vals`) rechaza
+        # cualquier producto con más de un impuesto de compra asignado.
+        cls.exent_purchase = cls.env["account.tax"].search([
+            ("type_tax_use", "=", "purchase"), ("amount", "=", 0.0),
+            ("company_id", "=", cls.company.id),
+        ], limit=1)
         cls.note_product = cls.env["product.product"].create({
             "name": "Diferencial Test Reversal",
             "type": "service",
             "taxes_id": [(6, 0, cls.exent.ids)],
+            "supplier_taxes_id": [(6, 0, cls.exent_purchase.ids)],
         })
         cls.company.l10n_ve_exchange_note_product_id = cls.note_product.id
         cls.company.l10n_ve_exchange_use_nd_nc = True
@@ -141,7 +151,39 @@ class TestExchangeNoteReversal(TransactionCase):
             "name": "Servicio Test Reversal",
             "type": "service",
             "taxes_id": [(6, 0, cls.exent.ids)],
+            "supplier_taxes_id": [(6, 0, cls.exent_purchase.ids)],
         })
+
+        # Diario de banco en la moneda DE COMPAÑÍA (VEF) -- necesario para
+        # reproducir el caso "factura en USD pagada directo en VEF"
+        # (`test_exchange_difference_settled_with_company_currency_payment`):
+        # a diferencia de `usd_bank_journal`, aquí la línea de conciliación
+        # del pago queda en VEF, distinta de la moneda de la factura.
+        cls.vef_bank_journal = cls.env["account.journal"].search(
+            [
+                *cls.env["account.journal"]._check_company_domain(cls.company),
+                ("type", "=", "bank"), ("currency_id", "=", False),
+            ],
+            limit=1,
+        )
+        if not cls.vef_bank_journal:
+            vef_bank_account = cls.env["account.account"].create({
+                "name": "Banco VEF Prueba Reversal",
+                "code": "BVEFR01",
+                "account_type": "asset_cash",
+            })
+            cls.vef_bank_journal = cls.env["account.journal"].create({
+                "name": "Banco VEF Prueba Reversal",
+                "type": "bank",
+                "code": "BVEFR",
+                "company_id": cls.company.id,
+                "default_account_id": vef_bank_account.id,
+                "inbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                    "name": "Manual",
+                    "payment_method_id": cls.env.ref("account.account_payment_method_manual_in").id,
+                    "payment_account_id": vef_bank_account.id,
+                })],
+            })
 
     def _create_invoice(self, invoice_date):
         """Mismo patrón que usa `l10n_ve_igtf` para sus facturas de prueba
@@ -223,6 +265,59 @@ class TestExchangeNoteReversal(TransactionCase):
         else:
             self.assertEqual(note.move_type, "out_invoice")
             self.assertEqual(note.debit_origin_id, invoice)
+
+    def test_exchange_difference_settled_with_company_currency_payment(self):
+        """Mismo flujo que `test_exchange_difference_settled_by_real_note_via_register_payment`,
+        pero pagando la factura en USD directo con un diario de banco en
+        VEF (la moneda de compañía) -- reproduce el reporte del usuario
+        ("pago una factura en dólares con VEF"). Antes de este fix,
+        `reconcile()` exigía `invoice_line.currency_id == payment_line.currency_id`;
+        al pagar en VEF una factura en USD esa igualdad nunca se cumplía,
+        y el diferencial cambiario se perdía por completo (ni ND/NC propia
+        ni asiento genérico de Odoo, por el `no_exchange_difference=True`)."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.vef_bank_journal
+            # El wizard, por defecto, mantiene la moneda de la factura (USD)
+            # sin importar la moneda del diario -- para reproducir el
+            # reporte real ("pago una factura en dólares con VEF") hay que
+            # forzar explícitamente la moneda del PAGO a VEF, tal como haría
+            # un usuario que cambia ese campo en el formulario.
+            pay_form.currency_id = self.company.currency_id
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        self.assertEqual(payment_wizard.currency_id, self.company.currency_id)
+        action = payment_wizard.action_create_payments()
+        payment = self.env["account.payment"].browse(action.get("res_id"))
+
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        self.assertEqual(invoice.payment_state, "paid")
+        self.assertTrue(inv_line.reconciled)
+        self.assertTrue(self.company.currency_id.is_zero(inv_line.amount_residual))
+
+        notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("partner_id", "=", self.partner.id),
+        ])
+        self.assertEqual(
+            len(notes), 1,
+            "Debió crearse exactamente una ND/NC de diferencial cambiario aun pagando en VEF "
+            "una factura en USD.",
+        )
+        note = notes[0]
+        self.assertEqual(note.state, "posted")
+        self.assertEqual(note.l10n_ve_exchange_invoice_id, invoice)
+        note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertTrue(note_line.reconciled)
+        self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))
 
     def test_exchange_note_reversed_on_unreconcile(self):
         """Si se rompe la conciliación factura<->pago que originó la
@@ -620,6 +715,16 @@ class TestExchangeNoteReversal(TransactionCase):
             [("type", "=", "purchase"), ("company_id", "=", self.company.id)], limit=1
         )
 
+        # `company.quick_edit_mode` -- sin esto, el campo `name` viene
+        # invisible en el Form (`account.view_move_form`, núcleo de Odoo:
+        # solo se muestra si ya tiene valor, si hay `name_placeholder`
+        # calculado -esto último solo pasa si el diario de compras AÚN NO
+        # tiene ninguna secuencia previa, cosa que no se cumple en una base
+        # con datos reales-, o si `move.quick_edit_mode` es `True`). Ese
+        # campo es COMPUTADO desde `company.quick_edit_mode` (no un simple
+        # valor de contexto) -- hay que activarlo a nivel de compañía para
+        # las facturas de proveedor.
+        self.company.quick_edit_mode = "in_invoices"
         with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as bill_form:
             bill_form.partner_id = supplier
             bill_form.invoice_date = "2026-01-01"

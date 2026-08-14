@@ -20,7 +20,32 @@ class AccountMoveLine(models.Model):
             return res
 
         company = (self.move_id.company_id or company)[:1]
-        if company.l10n_ve_exchange_use_nd_nc:
+        # Ojo: esto también corre cuando la línea que quedó con residual es
+        # nuestra PROPIA ND/NC de diferencial, o la ND que crea
+        # `l10n_ve_igtf_note_debit` al pagar en USD por banco (ambas quedan
+        # excluidas de `invoice_lines` en `reconcile()` por tener
+        # `debit_origin_id`/`reversed_entry_id`, así que caen aquí vía
+        # `super().reconcile()` sin pasar por nuestra lógica) -- sin este
+        # chequeo, el asiento genérico que Odoo arma para ESA reconciliación
+        # quedaba igual etiquetado `l10n_ve_exchange_diff_entry=True`,
+        # apareciendo como una segunda ND/NC "de negocio" fantasma para el
+        # mismo partner. Se excluye SOLO ese caso puntual (nota/corrección
+        # ya derivada de otro documento) -- cualquier otra cosa (incluida
+        # una factura de PROVEEDOR, `liability_payable`, no
+        # `asset_receivable`) sí debe quedar etiquetada como siempre, para
+        # no perder el asiento genérico de esos casos (ver
+        # `test_fallback_tags_generic_exchange_move_for_vendor_bill`).
+        is_own_derived_note = self.filtered(
+            lambda l: (
+                l.move_id.move_type in ('out_invoice', 'out_refund')
+                and (
+                    l.move_id.debit_origin_id
+                    or l.move_id.reversed_entry_id
+                    or getattr(l.move_id, 'l10n_ve_igtf_note_debit_origin', False)
+                )
+            )
+        )
+        if company.l10n_ve_exchange_use_nd_nc and not is_own_derived_note:
             res['move_values']['l10n_ve_exchange_diff_entry'] = True
 
         return res
@@ -52,6 +77,7 @@ class AccountMoveLine(models.Model):
                 # nunca sobre una nota/corrección ya derivada de otra.
                 and not l.move_id.debit_origin_id
                 and not l.move_id.reversed_entry_id
+                and not getattr(l.move_id, 'l10n_ve_igtf_note_debit_origin', False)
             )
         )
         if not invoice_lines:
@@ -81,15 +107,40 @@ class AccountMoveLine(models.Model):
         # (o menor) al de la factura, ese exceso/faltante queda como
         # residual también, pero NO es diferencial cambiario. Lo correcto
         # es tomar el `account.partial.reconcile` que Odoo acaba de crear
-        # entre estas dos líneas: `debit_amount_currency`/`credit_amount_currency`
-        # es el monto REALMENTE emparejado (nunca el residual total), y con
-        # la tasa propia de cada línea (`balance / amount_currency`, fija
-        # desde que se creó cada línea, sin importar lo que quede pendiente
-        # después) se calcula la diferencia en VEF de esa porción
-        # emparejada -- y nada más.
+        # entre estas dos líneas: el monto REALMENTE emparejado (nunca el
+        # residual total) de CADA lado, en SU PROPIA moneda -- NUNCA
+        # asumiendo cuál campo (`debit_amount_currency`/`credit_amount_currency`)
+        # corresponde a cuál línea, ya que si la factura está en moneda
+        # extranjera (USD) y el pago se registró directo en moneda de
+        # compañía (VEF, el caso típico de "pagar una factura en USD con
+        # VEF"), cada campo queda en la moneda de SU propia línea, no en
+        # una moneda común. `partial.amount` NO sirve para esto -- con
+        # `no_exchange_difference=True` activo, Odoo lo calcula reflejando
+        # la tasa de UN solo lado (se confirmó que siempre da
+        # `matched_amount_factura * inv_rate`, igual a lo que la factura
+        # necesitaba, jamás lo que el pago realmente cubrió) -- por eso hay
+        # que recalcular el lado del PAGO también con su propia tasa fija
+        # (`balance / amount_currency`, igual que la de la factura): si el
+        # pago quedó en moneda de compañía (VEF), esa tasa es simplemente 1
+        # y el monto emparejado del pago YA está en VEF, sin conversión.
         residual = 0.0
+        # `payment_line` debe ser el lado del PAGO (banco/caja) de la
+        # conciliación, nunca otra factura/NC de cliente -- si no se
+        # exigiera esto, la propia conciliación que hace
+        # `_create_exchange_difference_note()` al final para cerrar la
+        # ND/NC contra `invoice_line` (rama de Nota de Crédito, ver más
+        # abajo: `(note_line + invoice_line).reconcile()`) vuelve a entrar
+        # AQUÍ MISMO -- `invoice_line` sigue calificando como factura real
+        # (no tiene `debit_origin_id`/`reversed_entry_id`), y `note_line`
+        # terminaría tratado como si fuera el pago, generando una SEGUNDA
+        # ND/NC fantasma para la misma factura. Antes esto quedaba
+        # bloqueado por casualidad (la nota se crea en moneda de compañía,
+        # `invoice_line` casi siempre en moneda extranjera -- monedas
+        # distintas), pero ya no se puede depender de eso ahora que el
+        # cálculo soporta monedas distintas a propósito.
         if (
-            invoice_line.currency_id == payment_line.currency_id
+            payment_line
+            and payment.move_type not in ('out_invoice', 'out_refund')
             and not invoice_line.currency_id.is_zero(invoice_line.amount_currency)
             and not payment_line.currency_id.is_zero(payment_line.amount_currency)
         ):
@@ -98,10 +149,17 @@ class AccountMoveLine(models.Model):
                 ('credit_move_id', 'in', (invoice_line + payment_line).ids),
             ], order='id desc', limit=1)
             if partial:
-                matched_amount = abs(partial.debit_amount_currency)
+                if partial.debit_move_id == invoice_line:
+                    invoice_matched = abs(partial.debit_amount_currency)
+                    payment_matched = abs(partial.credit_amount_currency)
+                else:
+                    invoice_matched = abs(partial.credit_amount_currency)
+                    payment_matched = abs(partial.debit_amount_currency)
                 inv_rate = abs(invoice_line.balance) / abs(invoice_line.amount_currency)
                 pay_rate = abs(payment_line.balance) / abs(payment_line.amount_currency)
-                residual = invoice_line.company_currency_id.round(matched_amount * (inv_rate - pay_rate))
+                residual = invoice_line.company_currency_id.round(
+                    invoice_matched * inv_rate - payment_matched * pay_rate
+                )
 
         if not invoice_line.company_currency_id.is_zero(residual):
             # No se llama directo: en este punto la pila de llamadas viene
@@ -153,7 +211,23 @@ class AccountMoveLine(models.Model):
         # `balance`/`debit`/`credit` de nuestras propias líneas nuevas, que
         # quedaban en 0 aun después de `action_post()`. Se limpia antes de
         # crear la ND/NC.
-        self = self.with_context(skip_invoice_sync=False)
+        #
+        # `active_model`/`active_id` heredados del contexto ambiental de la
+        # acción que disparó esta reconciliación (ej. el wizard "Registrar
+        # Pago") también hay que limpiarlos: este precommit corre en medio
+        # del `write()`/`action_post()` de ESA acción, así que el `env` de
+        # aquí sigue arrastrando esas llaves -- y `l10n_ve_accountant`
+        # (`_get_tax_totals_summary`) las usa a ciegas (`self.env[active_model]
+        # .browse(active_id)`, sin `exists()`) para decidir de qué
+        # `record` calcular los totales de impuesto al postear la ND/NC.
+        # Si para este punto ese registro (ej. la línea de la factura/pago
+        # original) ya cambió de identidad por la propia conciliación,
+        # `record.company_id` revienta con `MissingError` al postear
+        # NUESTRA nota. La ND/NC es un documento propio, nuevo -- no debe
+        # heredar el `active_id` de otra acción; se limpia para que ese
+        # método caiga a su propio fallback (deducir el `record` desde
+        # `base_lines`, ver `l10n_ve_accountant/models/account_tax.py`).
+        self = self.with_context(skip_invoice_sync=False, active_model=False, active_id=False)
         company = self.company_id
 
         product = company.l10n_ve_exchange_note_product_id
