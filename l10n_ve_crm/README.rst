@@ -64,12 +64,12 @@ Créditos
 ========
 
 Autor/es
-~~~~~~~~
+--------
 
 * Binauraldev
 
 Mantenedor/es
-~~~~~~~~~~~~~
+-------------
 
 Este módulo es mantenido por Binaural.
 
