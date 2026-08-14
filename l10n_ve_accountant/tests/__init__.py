@@ -8,3 +8,4 @@ from . import test_account_tax_foreign
 from . import test_coverage_gaps
 from . import test_product_template
 from . import test_action_cancel
+from . import test_no_upload_credit_debit_note_actions
