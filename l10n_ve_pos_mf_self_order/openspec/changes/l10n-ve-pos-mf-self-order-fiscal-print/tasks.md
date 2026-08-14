@@ -99,12 +99,20 @@
       (espejo de la guarda `!order.mf_invoice_number` de la caja); no recobrar la
       tarjeta en reintentos.
 
-## 6. Reimpresión de fallidas + fallos (Fase 3)
+## 6. Menú de Debug MF + reimpresión de fallidas (Fase 3)
 
-- [ ] 6.1 Al fallar la impresión: persistir el payload armado en local (cola
-      "pendiente de imprimir") sin recobrar.
-- [ ] 6.2 Acción de reimpresión gated por modo debug: lista de facturas
-      pendientes de imprimir + reenvío a la máquina (`printInvoice(payload)`).
+- [x] 6.1 Menú de Debug MF (`app/debug/mf_debug_dialog.{js,xml}`): panel único
+      abierto desde un botón flotante "🛠 Debug MF" (raíz `selfOrderIndex`,
+      `t-if="env.debug"`). Extensible: cada herramienta es un botón + método que
+      delega en el servicio `self_order`. Opciones actuales: estado de conexión,
+      parear puerto, reimprimir última pendiente. Si la impresión falla, el
+      diálogo del pago muestra el MOTIVO exacto (no omisión silenciosa).
+- [x] 6.2 Reimpresión gated por debug: `SelfOrder.reprintLastKioskFiscalInvoice`
+      busca la última orden en memoria sin `mf_invoice_number` (con partner,
+      líneas y pago) y reintenta `printKioskFiscalInvoice`, derivando el pago de
+      `order.payment_ids`. Sin recobrar. LÍMITE conocido: solo órdenes de la
+      SESIÓN actual (IndexedDB off en kiosko → tras recargar se pierden). Traer
+      pendientes del servidor queda para después.
 - [ ] 6.3 Respaldo en caja: la orden queda marcada para reimprimir desde el POS
       de caja (`write_mf_invoice_data` / `PrintPendingOrderButton`).
 

@@ -106,6 +106,20 @@ patch(SelfOrder.prototype, {
             return { valid: true, message: "", alreadyPrinted: true };
         }
 
+        // Reimpresión: si no se pasa el pago explícito (flujo en vivo), derivarlo
+        // de la orden YA registrada (sus `payment_ids` ya están en el cliente
+        // tras sincronizar). El monto se toma en la moneda de la orden; en este
+        // despliegue la moneda base es la fiscal (VES), así que no se convierte.
+        if (!paymentMethod || amount == null) {
+            const payments = order.payment_ids || [];
+            if (!paymentMethod) {
+                paymentMethod = payments[0] && payments[0].payment_method_id;
+            }
+            if (amount == null) {
+                amount = payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+            }
+        }
+
         const printer = await this.ensureFiscalPrinterConnected();
         if (!printer || !printer.isConnected) {
             return {
@@ -153,5 +167,34 @@ patch(SelfOrder.prototype, {
         order.mf_reportz = String(response.reportZ || response.mf_reportz || "");
 
         return { valid: true, message: "", response };
+    },
+
+    /**
+     * Reimprime en la máquina fiscal la última orden del Kiosko que quedó SIN
+     * número fiscal (impresión fallida u omitida por máquina desconectada).
+     * Herramienta de recuperación expuesta desde el modo debug. Deriva el pago
+     * de la propia orden (`payment_ids`).
+     *
+     * @returns {Promise<{valid:boolean, message?:string, order?:Object}>}
+     */
+    async reprintLastKioskFiscalInvoice() {
+        const pending = (this.models["pos.order"] || [])
+            .filter(
+                (o) =>
+                    !o.mf_invoice_number &&
+                    o.partner_id &&
+                    (o.lines || []).length > 0 &&
+                    (o.payment_ids || []).length > 0
+            )
+            .sort((a, b) => (b.id || 0) - (a.id || 0));
+        const order = pending[0];
+        if (!order) {
+            return {
+                valid: false,
+                message: "No hay órdenes pendientes de imprimir en esta sesión",
+            };
+        }
+        const result = await this.printKioskFiscalInvoice(order);
+        return { ...result, order };
     },
 });

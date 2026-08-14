@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf_self_order.selfOrderIndexMfPair"
+       t-inherit="pos_self_order.selfOrderIndex" t-inherit-mode="extension" owl="1">
+        <xpath expr="//MainComponentsContainer" position="after">
+            <button t-if="env.debug" type="button"
+                    class="btn btn-dark btn-sm position-fixed"
+                    style="top: 8px; left: 8px; z-index: 2000;"
+                    t-on-click="openMfDebug">
+                🛠 Debug MF
+            </button>
+        </xpath>
+    </t>
+</templates>

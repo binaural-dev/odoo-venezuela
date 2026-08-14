@@ -12,9 +12,12 @@
     "category": "Point of Sale",
     "version": "19.0.1.0.0",
     "depends": [
+        # Driver Web Serial de la máquina fiscal (TfhkaDriver): se importa y se
+        # inyecta directamente en el bundle del Kiosko, así que se declara como
+        # dependencia DIRECTA (no solo transitiva vía l10n_ve_pos_mf).
+        "l10n_ve_mf_base",
         # Máquina fiscal del POS de caja: aporta el server-side fiscal
-        # (mf_invoice_number, _prepare_invoice_vals, write_mf_invoice_data) y,
-        # transitivamente, el driver Web Serial de l10n_ve_mf_base.
+        # (mf_invoice_number, _prepare_invoice_vals, write_mf_invoice_data).
         "l10n_ve_pos_mf",
         # Kiosko venezolano: identificación por cédula + factura forzada +
         # totales foráneos en el kiosko (precondición de la factura fiscal).
