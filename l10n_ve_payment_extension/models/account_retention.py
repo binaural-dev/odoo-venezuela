@@ -292,6 +292,9 @@ class AccountRetention(models.Model):
                     lambda l: l.state in ("draft", "emitted")
                 )
             )
+            # SQL "!= 0" above can let float dust through; re-check with the
+            # invoice's own currency rounding to truly exclude paid invoices.
+            and float_compare(i.amount_residual, 0.0, precision_rounding=i.currency_id.rounding) != 0
         )
         if not any(invoices_with_taxes):
             raise UserError(
@@ -332,6 +335,9 @@ class AccountRetention(models.Model):
                     lambda l: l.state in ("draft", "emitted")
                 )
             )
+            # SQL "!= 0" above can let float dust through; re-check with the
+            # invoice's own currency rounding to truly exclude paid invoices.
+            and float_compare(i.amount_residual, 0.0, precision_rounding=i.currency_id.rounding) != 0
         )
         if not any(invoices_with_taxes):
             raise UserError(

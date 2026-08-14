@@ -358,8 +358,16 @@ class AccountRetentionLine(models.Model):
         # Everything else (customer, municipal, unlinked IVA line): preserve the
         # persisted value via _origin instead of letting Odoo reset it to 0.
         for record in other_lines:
-            record.retention_amount = record._origin.retention_amount
-            record.foreign_retention_amount = record._origin.foreign_retention_amount
+            # A record not yet persisted (new/unsaved line) has no _origin to fall
+            # back on -- keep its current (onchange-set) value instead of zeroing it.
+            record.retention_amount = (
+                record._origin.retention_amount if record._origin else record.retention_amount
+            )
+            record.foreign_retention_amount = (
+                record._origin.foreign_retention_amount
+                if record._origin
+                else record.foreign_retention_amount
+            )
 
         for record in islr_supplier_retention_lines:
             foreign_rate = record.move_id.foreign_rate
