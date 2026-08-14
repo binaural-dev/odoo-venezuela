@@ -1,8 +1,34 @@
-from odoo import models
+from odoo import api, models
 
 
 class PosOrder(models.Model):
     _inherit = "pos.order"
+
+    @api.model
+    def _check_pos_order(self, pos_config, order, device_type, table=None):
+        """Force ``to_invoice=True`` on every Kiosk order.
+
+        ``l10n_ve_pos`` requires every POS sale to emit a fiscal invoice
+        (SENIAT), and enforces it on the cashier by patching the JS
+        ``PosOrder`` in the ``point_of_sale._assets_pos`` bundle
+        (``static/src/overrides/models/pos_order.js`` — ``setup``/
+        ``serializeForORM``). The Kiosk/Self-Order app ships a *different*
+        asset bundle (``pos_self_order.assets``) that never loads that patch,
+        so the client sends no ``to_invoice`` and the core ``_check_pos_order``
+        copies that missing value straight through — the Kiosk order ends up
+        NOT invoiced.
+
+        Force it server-side here, the one method that builds the Kiosk order
+        vals. Gated to ``self_ordering_mode == 'kiosk'`` (same scope as the
+        cédula identification flow, which is what guarantees the order carries
+        a real ``partner_id`` to invoice): the ``mobile``/QR flow has no such
+        guarantee and must not be forced to invoice against the generic
+        consumer.
+        """
+        vals = super()._check_pos_order(pos_config, order, device_type, table)
+        if pos_config.self_ordering_mode == "kiosk":
+            vals["to_invoice"] = True
+        return vals
 
     def recompute_prices(self):
         """``recompute_prices`` (pos_self_order) recalculates ``amount_total``
