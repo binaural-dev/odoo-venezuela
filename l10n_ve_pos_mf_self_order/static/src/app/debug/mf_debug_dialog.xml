@@ -23,6 +23,12 @@
                         t-on-click="onReprint" t-att-disabled="state.busy">
                     Reimprimir última factura pendiente
                 </button>
+                <button type="button" class="btn btn-outline-primary text-start"
+                        t-on-click="onFlushQueue" t-att-disabled="state.busy">
+                    Reintentar registro de órdenes pendientes
+                    <span t-if="pendingCount" class="badge text-bg-warning ms-2"
+                          t-esc="pendingCount"/>
+                </button>
 
                 <div t-if="state.message" class="alert alert-info mb-0 mt-2 py-2"
                      t-esc="state.message" role="status"/>

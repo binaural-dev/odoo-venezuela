@@ -83,21 +83,20 @@
 - [~] 5.2 Enganche pago-en-caja: FUERA DE ALCANCE por ahora — en pago-en-caja
       (sin terminal) el cobro y la factura fiscal los hace el CAJERO, no el
       Kiosko. Reevaluar solo si aparece un caso de Kiosko que factura sin cobrar.
-- [ ] 5.3 Persistencia + reintento reutilizando el motor del POS: reactivar
-      IndexedDB del `PosData` (hoy no-op en kiosko) **solo para las órdenes
-      pendientes** — NO para cachear el dataset del servidor (el kiosko lo apaga
-      a propósito). Cola/reintento calcada del patrón `network.unsyncData` +
-      `syncData()`, pero disparando el **RPC público del kiosko**
-      (`/pos-self-order/process-order` / `/kiosk/payment`), no el `sync_from_ui`
-      autenticado (inaccesible desde el frontend público). Reintento en `online`/
-      al cargar. La orden nunca se pierde; al sincronizar, el servidor registra
-      pago + `account.move` con el número fiscal.
-      - [ ] 5.3.1 Verificar qué reactivar exactamente de `data_service.js` sin
-            arrastrar el caché de datos del servidor ni el borrado de órdenes
-            "faltantes" (`checkAndDeleteMissingOrders`, no-op en kiosko).
-- [ ] 5.4 Idempotencia: no reimprimir si la orden ya tiene `mf_invoice_number`
-      (espejo de la guarda `!order.mf_invoice_number` de la caja); no recobrar la
-      tarjeta en reintentos.
+- [x] 5.3 Cola durable de reintento del registro (localStorage, NO se reactiva
+      el IndexedDB del PosData — demasiado invasivo, toca el arranque del kiosko).
+      `l10n_ve_pos_self_order/.../kiosk_sync_queue.js`: patch `SelfOrder` con
+      `enqueueKioskRegistration`/`flushKioskRegistrations`/`kioskPendingCount`.
+      Guarda el payload EXACTO del RPC que falló (dedup por uuid) y reintenta al
+      arrancar, en `online` y por timer (`auto_sync_interval`). Se detiene ante
+      `ConnectionLostError` y conserva la cola; un error de negocio saca la
+      entrada (la orden ya está pagada+impresa → respaldo caja). Enganche en
+      Megasoft `_finalizeMegasoftPayment`: serializa UNA vez (fix: los comandos
+      se consumen al serializar) y encola en el catch. Botón en el menú Debug MF
+      ("Reintentar registro pendiente (N)"). RPC idempotente → sin duplicados.
+- [x] 5.4 Idempotencia: `printKioskFiscalInvoice` no reimprime si la orden ya
+      tiene `mf_invoice_number`; la cola dedup por uuid + RPC idempotente en el
+      server; no se recobra la tarjeta en reintentos (`_megasoftApproved`).
 
 ## 6. Menú de Debug MF + reimpresión de fallidas (Fase 3)
 

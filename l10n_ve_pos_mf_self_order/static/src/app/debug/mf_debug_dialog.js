@@ -81,4 +81,26 @@ export class MfDebugDialog extends Component {
             this.selfOrder.reprintLastKioskFiscalInvoice()
         );
     }
+
+    get pendingCount() {
+        return typeof this.selfOrder.kioskPendingCount === "number"
+            ? this.selfOrder.kioskPendingCount
+            : 0;
+    }
+
+    onFlushQueue() {
+        this._run(_t("Reintentar registro pendiente"), async () => {
+            if (typeof this.selfOrder.flushKioskRegistrations !== "function") {
+                return { valid: false, message: _t("Cola no disponible") };
+            }
+            await this.selfOrder.flushKioskRegistrations();
+            const left = this.pendingCount;
+            return {
+                valid: left === 0,
+                message: left
+                    ? _t("Quedan %s orden(es) pendiente(s).", left)
+                    : _t("Sin órdenes pendientes."),
+            };
+        });
+    }
 }
