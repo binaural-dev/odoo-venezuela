@@ -256,8 +256,10 @@ class AccountMoveLine(models.Model):
             'quantity': 1.0,
             'price_unit': abs(residual),
             'tax_ids': [(6, 0, product.taxes_id.ids)],
-            'name': _('Diferencial cambiario (%s) s/ %s') % (
-                _('pérdida') if is_credit_note else _('ganancia'), invoice.name,
+            'name': _(
+                'Diferencial cambiario (%(concept)s) s/ %(invoice)s',
+                concept=_('pérdida') if is_credit_note else _('ganancia'),
+                invoice=invoice.name,
             ),
         }
         today = fields.Date.context_today(self)
@@ -287,6 +289,11 @@ class AccountMoveLine(models.Model):
             # `l10n_ve_igtf_note_debit.prepare_igtf_payment_debit_note`.
             note.with_context(move_action_post_alert=True).action_post()
 
+            # Nota de Débito: `move_type='out_invoice'`, no `out_refund`/
+            # `in_refund`, así que `_validate_refund_lines_against_origin()`
+            # (módulo en desarrollo, ver nota en la rama de Nota de Crédito
+            # más abajo) no le aplica -- no hace falta el contexto aquí.
+
             # Línea de conciliación real del pago: mismo criterio que usa
             # `l10n_ve_igtf_note_debit.settle_igtf_debit_note` para ubicar
             # `outstanding_line`, adaptado -- IGTF busca residual en moneda
@@ -308,7 +315,19 @@ class AccountMoveLine(models.Model):
             # originales. Se crea ya desde cero por el monto exacto del
             # residual (con el contexto limpio de `skip_invoice_sync`, ver
             # arriba, para que la línea sincronice bien su balance).
-            note = self.env['account.move'].create({
+            # `l10n_ve_skip_refund_origin_validation`: esta NC es
+            # `reversed_entry_id` -> factura real, pero su única línea es
+            # el producto dedicado de diferencial cambiario -- nunca un
+            # producto de la factura original -- así que NO debe pasar por
+            # `_validate_refund_lines_against_origin()` (módulo de
+            # validación de líneas de refund contra su origen, en
+            # desarrollo en otro PR, que corre sobre cualquier NC/ND con
+            # `reversed_entry_id`). Ese módulo no puede depender de este ni
+            # viceversa, así que se coordina con esta llave de contexto en
+            # vez de un campo persistido.
+            note = self.env['account.move'].with_context(
+                l10n_ve_skip_refund_origin_validation=True,
+            ).create({
                 'move_type': 'out_refund',
                 'partner_id': invoice.partner_id.id,
                 'invoice_date': today,
@@ -326,8 +345,14 @@ class AccountMoveLine(models.Model):
             # llave, `action_post()` en facturas/NC de cliente
             # (`l10n_ve_accountant`) devuelve una acción para abrir un
             # wizard de confirmación en vez de postear -- mismo patrón que
-            # la rama de Nota de Débito arriba.
-            note.with_context(move_action_post_alert=True).action_post()
+            # la rama de Nota de Débito arriba. Se mantiene también
+            # `l10n_ve_skip_refund_origin_validation`, por si esa
+            # validación corre en `action_post()`/`write()` y no solo en
+            # `create()`.
+            note.with_context(
+                move_action_post_alert=True,
+                l10n_ve_skip_refund_origin_validation=True,
+            ).action_post()
 
             # La Nota de Crédito se concilia contra la propia factura de
             # origen (la que quedó "falta"), no contra el pago.

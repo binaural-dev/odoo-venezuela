@@ -157,7 +157,17 @@ class AccountMove(models.Model):
         # completo -- mismo parámetro que usa
         # `account.partial.reconcile.unlink()` para el asiento genérico de
         # diferencial y las entradas de base imponible en caja (CABA).
-        self.with_context(move_reverse_cancel=True)._reverse_moves(
+        # `l10n_ve_skip_refund_origin_validation`: la reversión que crea
+        # `_reverse_moves()` queda con `reversed_entry_id` apuntando a
+        # esta ND/NC de diferencial -- misma razón que en
+        # `_create_exchange_difference_note()` (ver `account_move_line.py`):
+        # su línea es el producto dedicado de diferencial, nunca uno de
+        # los de la nota que revierte, así que no debe pasar por
+        # `_validate_refund_lines_against_origin()`.
+        self.with_context(
+            move_reverse_cancel=True,
+            l10n_ve_skip_refund_origin_validation=True,
+        )._reverse_moves(
             default_values_list=[{
                 'ref': _('Reversión de: %s', self.name),
                 'l10n_ve_exchange_diff_entry': True,
