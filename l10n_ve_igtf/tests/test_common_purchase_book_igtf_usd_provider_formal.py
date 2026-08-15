@@ -272,12 +272,26 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
         })
        
         self.tax_iva_exent = self.env['account.tax'].create({
-            'name': 'IVA exento', 'amount': 0, 'amount_type': 'percent', 
+            'name': 'IVA exento', 'amount': 0, 'amount_type': 'percent',
             'type_tax_use': 'purchase', # Usar para compra
             'company_id': self.company.id,
             'tax_group_id': self.tax_group.id,  # <--- Esta es la clave
             'country_id': self.company.country_id.id,
 
+        })
+        # Impuesto de venta explícito: sin esto, `product.template.create()`
+        # completa `taxes_id` con el impuesto de venta por defecto de la
+        # compañía (`_enforce_single_tax_vals`, l10n_ve_accountant) -- si esa
+        # compañía ya tiene más de un impuesto de venta por defecto
+        # configurado (comparte `base.main_company` con el resto de la
+        # suite), el producto queda con 2 impuestos de venta y la
+        # validación de política fiscal única lo rechaza.
+        self.tax_iva_sale = self.env['account.tax'].create({
+            'name': 'IVA venta (fixture)', 'amount': 0, 'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'company_id': self.company.id,
+            'tax_group_id': self.tax_group.id,
+            'country_id': self.company.country_id.id,
         })
 
         self.product = self.env["product.product"].create(
@@ -287,6 +301,7 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
                 "purchase_ok": True, # Asegurar que es para compra
                 "property_account_expense_id": self.acc_expense.id, # Usar cuenta de Gasto
                 "supplier_taxes_id": [(6, 0, [self.tax_iva_exent.id])],
+                "taxes_id": [(6, 0, [self.tax_iva_sale.id])],
 
             }
         )
