@@ -118,6 +118,13 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
+        # `l10n_ve_accountant._onchange_move_type()` (que corre antes en la
+        # cadena de `super()`, ya que este módulo depende de aquel) limpia
+        # `invoice_date`/`invoice_date_display` para `entry` -- sin este
+        # `super()`, este método la pisaba por completo (ningún onchange
+        # llamaba al otro), dejando esos campos con la fecha de hoy en
+        # cualquier asiento manual.
+        super()._onchange_move_type()
         if self.move_type == "out_invoice":
             self.invoice_date = fields.Date.context_today(self)
 
