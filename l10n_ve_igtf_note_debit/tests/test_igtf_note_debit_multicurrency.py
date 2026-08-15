@@ -41,9 +41,9 @@ class TestIgtfNoteDebitMulticurrency(IGTFTestCommon):
             pay_form.journal_id = journal
             pay_form.save()
             pay_form.amount = amount
+            pay_form.save()
             if include_igtf_in_payment is not None:
                 pay_form.igtf_note_debit_include_in_payment = include_igtf_in_payment
-            pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
         return self.env["account.payment"].browse(action.get("res_id"))
@@ -93,6 +93,13 @@ class TestIgtfNoteDebitMulticurrency(IGTFTestCommon):
             f"(equivalente a {expected_igtf_amount_foreign_curr} {payment.currency_id.name}), "
             f"encontrado {igtf_lines.price_unit}",
         )
+
+        # Forzar el cómputo de `compute_bi_igtf` (base imponible de IGTF) --
+        # debe seguir resolviendo un valor coherente aun cuando el IGTF de
+        # la factura ya no viene de una línea embebida sino de esta ND.
+        self.assertGreaterEqual(invoice.bi_igtf, 0.0)
+        self.assertGreaterEqual(invoice.foreign_bi_igtf, 0.0)
+
         return debit_note
 
     def test_usd_invoice_partial_payment_generates_debit_note(self):

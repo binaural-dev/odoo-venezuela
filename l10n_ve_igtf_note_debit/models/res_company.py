@@ -8,63 +8,63 @@ class ResCompany(models.Model):
 
     igtf_note_debit_mode = fields.Selection(
         [
-            ("inline", "Línea en el mismo asiento (flujo actual)"),
-            ("debit_note", "Nota de Débito Fiscal automática (nuevo flujo)"),
+            ("inline", "Line in the same journal entry (current flow)"),
+            ("debit_note", "Automatic Fiscal Debit Note (new flow)"),
         ],
-        string="Modo de Percepción de IGTF",
+        string="IGTF Perception Mode",
         default="inline",
         required=True,
         copy=False,
-        help="Determina cómo se registra la percepción de IGTF:\n"
-             "- Línea en el mismo asiento: comportamiento histórico de l10n_ve_igtf.\n"
-             "- Nota de Débito Fiscal automática: genera un documento fiscal "
-             "independiente (ND) vinculado a la factura de origen, conforme a "
-             "las Providencias SENIAT 0071/0102.",
+        help="Determines how the IGTF perception is recorded:\n"
+             "- Line in the same journal entry: l10n_ve_igtf's historical behavior.\n"
+             "- Automatic Fiscal Debit Note: generates an independent fiscal "
+             "document (Debit Note) linked to the source invoice, in "
+             "accordance with SENIAT Providencias 0071/0102.",
     )
 
 
     igtf_note_debit_product_id = fields.Many2one(
         "product.product",
-        string="Producto de Percepción de IGTF",
+        string="IGTF Perception Product",
         copy=False,
-        help="Producto usado como única línea de la Nota de Débito de IGTF. "
-             "Debe llevar asignado el impuesto Exento/No Sujeto de venta y "
-             "compra (campos 'exent_aliquot_sale' / 'exent_aliquot_purchase' "
-             "de l10n_ve_accountant) -- IGTF no es base de IVA, pero "
-             "l10n_ve_accountant exige que todo producto tenga exactamente "
-             "un impuesto de venta y uno de compra asignados.",
+        help="Product used as the single line of the IGTF Debit Note. It "
+             "must have the Exempt/Not Subject sale and purchase tax "
+             "assigned ('exent_aliquot_sale' / 'exent_aliquot_purchase' "
+             "fields from l10n_ve_accountant) -- IGTF is not a VAT base, but "
+             "l10n_ve_accountant requires every product to have exactly one "
+             "sale tax and one purchase tax assigned.",
     )
 
     igtf_note_debit_include_in_payment_default = fields.Boolean(
-        string="Incluir IGTF en el pago por defecto",
+        string="Include IGTF in Payment by Default",
         default=True,
         copy=False,
-        help="Valor por defecto del check 'Incluir IGTF en el pago' en el "
-             "wizard de registro de pago, cuando 'Modo de Percepción de "
-             "IGTF' es 'Nota de Débito Fiscal automática'. El usuario puede "
-             "marcarlo o desmarcarlo en cada pago individual; esto solo "
-             "define con qué valor arranca.",
+        help="Default value of the 'Include IGTF in Payment' checkbox in "
+             "the payment register wizard, when 'IGTF Perception Mode' is "
+             "'Automatic Fiscal Debit Note'. The user can check or uncheck "
+             "it on each individual payment; this only defines the "
+             "starting value.",
     )
 
     igtf_note_debit_vef_journal_id = fields.Many2one(
         "account.journal",
-        string="Diario VEF para cobro de IGTF",
+        string="VEF Journal for IGTF Collection",
         copy=False,
-        help="Diario en Bolívares (VEF) usado para registrar el pago aparte "
-             "del IGTF cuando el 'Modo de Cobro del IGTF' es 'Registrar el "
-             "IGTF como pago aparte en VEF'. Si no se configura, se busca "
-             "automáticamente el primer diario de banco/caja en VEF que no "
-             "esté marcado como IGTF.",
+        help="Journal in Bolivares (VEF) used to register the separate "
+             "IGTF payment when the 'IGTF Collection Mode' is 'Register "
+             "IGTF as a separate payment in VEF'. If not configured, the "
+             "first bank/cash journal in VEF not marked as IGTF is "
+             "searched automatically.",
     )
 
     igtf_note_debit_valid_journal_ids = fields.Json(
-        string="IDs de diarios VEF válidos para IGTF",
+        string="Valid VEF Journal IDs for IGTF",
         compute="_compute_igtf_note_debit_valid_journal_ids",
-        help="Lista (JSON) de los IDs de account.journal que cumplen los "
-             "requisitos para ser el Diario VEF de cobro de IGTF: tipo "
-             "banco/caja, no marcado como diario IGTF, y en moneda "
-             "Bolívares (VEF) -- ya sea explícita o implícita (sin "
-             "moneda propia, cuando la moneda de la compañía es VEF).",
+        help="List (JSON) of the account.journal IDs that meet the "
+             "requirements to be the VEF journal for IGTF collection: "
+             "bank/cash type, not marked as an IGTF journal, and in "
+             "Bolivares (VEF) currency -- either explicit or implicit "
+             "(no own currency, when the company currency is VEF).",
     )
 
     @api.depends("currency_id")
@@ -85,15 +85,15 @@ class ResCompany(models.Model):
             company.igtf_note_debit_valid_journal_ids = journals.ids
 
     igtf_note_debit_valid_product_ids = fields.Json(
-        string="IDs de productos válidos para IGTF",
+        string="Valid Product IDs for IGTF",
         compute="_compute_igtf_note_debit_valid_product_ids",
-        help="Lista (JSON) de los IDs de product.product que cumplen los "
-             "requisitos para ser el Producto de Percepción de IGTF: tipo "
-             "Servicio, cuenta de ingreso/gasto igual a la cuenta de IGTF "
-             "de cliente/proveedor configurada en Ajustes > Contabilidad > "
-             "IGTF, e impuesto de venta/compra igual al impuesto Exento "
-             "configurado en Ajustes > Contabilidad > Régimen Fiscal "
-             "(exent_aliquot_sale / exent_aliquot_purchase).",
+        help="List (JSON) of the product.product IDs that meet the "
+             "requirements to be the IGTF Perception Product: Service "
+             "type, income/expense account equal to the customer/supplier "
+             "IGTF account configured in Settings > Accounting > IGTF, "
+             "and sale/purchase tax equal to the Exempt tax configured in "
+             "Settings > Accounting > Fiscal Regime (exent_aliquot_sale / "
+             "exent_aliquot_purchase).",
     )
 
     @api.depends(
@@ -131,7 +131,7 @@ class ResCompany(models.Model):
                 continue
             if company.igtf_note_debit_mode == "debit_note" and not company.igtf_note_debit_product_id:
                 raise UserError(_(
-                    "Para usar el modo 'Nota de Débito Fiscal automática' debe "
-                    "configurar el producto de Percepción de IGTF en Ajustes > "
-                    "Contabilidad > IGTF."
+                    "To use the 'Automatic Fiscal Debit Note' mode you must "
+                    "configure the IGTF Perception product in Settings > "
+                    "Accounting > IGTF."
                 ))

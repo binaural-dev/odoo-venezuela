@@ -6,14 +6,14 @@ class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
 
    
     igtf_note_debit_include_in_payment = fields.Boolean(
-        string="Incluir IGTF en el Importe",
+        string="Include IGTF in Amount",
         default=lambda self: self.env.company.igtf_note_debit_include_in_payment_default,
     )
 
     igtf_note_debit_mode = fields.Selection(related="company_id.igtf_note_debit_mode")
 
     total_amount_with_igtf_note_debit = fields.Monetary(
-        string="Total a pagar (pago + ND IGTF)",
+        string="Total to Pay (payment + IGTF Debit Note)",
         compute="_compute_total_amount_with_igtf_note_debit",
         currency_field="currency_id",
     )
@@ -27,6 +27,7 @@ class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
                 wizard.igtf_note_debit_mode == "debit_note"
                 and wizard.is_igtf
                 and not wizard.igtf_note_debit_include_in_payment
+                and not wizard.custom_user_amount
             ):
                 wizard.amount = wizard.amount_without_difference
                 wizard.last_computed_amount = wizard.amount
@@ -71,16 +72,25 @@ class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
 
      
         invoices = self.get_moves()
-   
+
         if isinstance(invoices, set):
             invoices = sum(invoices, self.env["account.move"])
         if not invoices:
             return payments
-        invoice = invoices[:1]
 
         for payment in payments:
             if not payment.igtf_amount or payment.igtf_amount <= 0.0:
                 continue
+
+            # Cada `payment` puede corresponder a una factura distinta
+            # (pago sin agrupar de varias facturas a la vez) -- se usa la
+            # factura realmente conciliada por ESTE pago cuando hay más de
+            # una factura en el batch; con una sola, se conserva el mismo
+            # comportamiento de siempre (evita depender de que
+            # `reconciled_invoice_ids` ya esté actualizado en este punto).
+            invoice = invoices[:1]
+            if len(invoices) > 1:
+                invoice = payment.reconciled_invoice_ids[:1] or invoice
 
             company_currency = payment.company_id.currency_id
             reconcilable_lines = payment.move_id.line_ids.filtered(
