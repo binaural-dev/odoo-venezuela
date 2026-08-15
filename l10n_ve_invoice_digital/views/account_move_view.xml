@@ -23,16 +23,22 @@
                        readonly="True"/>
             </xpath>
             <!-- Multi-moneda: checkbox + selector de moneda de línea.
-                 Solo visible si multi_currency_enabled (compañía) y el diario
-                 es de facturacion digital (journal_digital_invoice).
-                 line_currency se despliega solo cuando multi_currency_invoice está activo. -->
+                 Solo visible si multi_currency_enabled (compañía), el diario es
+                 de facturacion digital (journal_digital_invoice) y la tarifa
+                 está en una moneda distinta a la base (multi_currency_available).
+                 line_currency_id se despliega solo cuando multi_currency_invoice
+                 está activo, y su dominio son la moneda base y la de la tarifa. -->
             <xpath expr="//field[@name='invoice_date']" position="after">
                 <field name="multi_currency_enabled" invisible="1"/>
                 <field name="multi_currency_invoice_lock" invisible="1"/>
-                <field name="multi_currency_invoice" invisible="not multi_currency_enabled or not journal_digital_invoice"
+                <field name="multi_currency_available" invisible="1"/>
+                <field name="allowed_line_currency_ids" invisible="1"/>
+                <field name="multi_currency_invoice"
+                       invisible="not multi_currency_enabled or not journal_digital_invoice or not multi_currency_available"
                        readonly="is_digitalized or multi_currency_invoice_lock"/>
-                <field name="line_currency" invisible="not multi_currency_invoice"
-                       readonly="is_digitalized" required="1"/>
+                <field name="line_currency_id" invisible="not multi_currency_invoice"
+                       readonly="is_digitalized" required="multi_currency_invoice"
+                       options="{'no_create': True, 'no_open': True}"/>
                 <!-- Cuadro de pago: solo cuando la compañía está en modo "registro de pago"
                      y el diario es de facturacion digital. -->
                 <field name="digitalization_with_payment_active" invisible="1"/>

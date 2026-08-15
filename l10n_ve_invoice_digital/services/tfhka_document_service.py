@@ -104,11 +104,15 @@ class TfhkaDocumentService(models.AbstractModel):
         return self.generate_document_data(invoice, document_number, document_type, series)
 
     def generate_document_data(self, invoice, document_number, document_type, series):
-        document_identification = self._prepare_identification(invoice, document_type, document_number, series)
+        currency_context = self._get_currency_context(invoice)
+
+        document_identification = self._prepare_identification(
+            invoice, document_type, document_number, series, currency_context
+        )
         seller = self._get_seller(invoice)
         buyer = self._get_fiscal_party(invoice)
-        totals, foreign_totals = self._prepare_totals(invoice)
-        details_items = self._prepare_detail_lines(invoice)
+        totals, foreign_totals = self._prepare_totals(invoice, currency_context)
+        details_items = self._prepare_detail_lines(invoice, currency_context)
         additional_information = self._prepare_additional_information(invoice)
         dispatch_guide_reference = self._get_dispatch_guide_reference(invoice)
 
@@ -186,10 +190,191 @@ class TfhkaDocumentService(models.AbstractModel):
         return {}
 
     # ------------------------------------------------------------------
+    # Contexto de moneda
+    # ------------------------------------------------------------------
+
+    def _get_document_foreign_currency(self, invoice):
+        """Divisa en juego para esta factura, o un recordset vacío si no hay.
+
+        ``account_invoice_pricelist`` fuerza ``currency_id`` a la moneda de la
+        tarifa, así que la moneda de la factura ES la de la tarifa. Se cae a
+        ``_get_pricelist_currency`` (misma cadena que usa el modelo para el
+        dominio de ``line_currency_id``) para registros sin tarifa.
+
+        Fallback final: ``line_currency_id``. Cubre el modo pago-primero donde
+        la tarifa está en la moneda base pero el usuario eligió una divisa en
+        el selector (activado por un pago en divisa conciliado). En ese caso ni
+        ``currency_id`` ni ``_get_pricelist_currency`` difieren de la base, así
+        que la única fuente de verdad es la elección explícita del campo.
+        """
+        base_currency = invoice.company_id.currency_id
+        if invoice.currency_id and invoice.currency_id != base_currency:
+            return invoice.currency_id
+        pricelist_currency = invoice._get_pricelist_currency()
+        if pricelist_currency and pricelist_currency != base_currency:
+            return pricelist_currency
+        # Modo pago-primero: tarifa en moneda base, divisa viene de line_currency_id.
+        if invoice.line_currency_id and invoice.line_currency_id != base_currency:
+            return invoice.line_currency_id
+        return self.env["res.currency"]
+
+    def _get_currency_context(self, invoice):
+        """Resuelve en qué moneda va cada bloque del documento.
+
+        Devuelve ``document_currency`` (cabecera, ``totales`` y
+        ``detallesItems``), ``alt_currency`` (bloque ``totalesOtraMoneda``, vacío
+        si el documento es de una sola moneda) y ``rate`` (bolívares por unidad
+        de divisa, el ``tipoCambio``).
+
+        Sin ``multi_currency_invoice`` el documento entero viaja en la moneda
+        base de la compañía: el ajuste de compañía solo muestra el campo y la
+        mera existencia de una tasa (``foreign_rate``, poblada en toda factura
+        VE) no convierte el documento en bimoneda.
+        """
+        invoice.ensure_one()
+        base_currency = invoice.company_id.currency_id
+        foreign_currency = self._get_document_foreign_currency(invoice)
+        empty_currency = self.env["res.currency"]
+
+        if not self._should_report_foreign_totals(invoice):
+            document_currency = base_currency
+            alt_currency = empty_currency
+        else:
+            if not foreign_currency:
+                raise UserError(
+                    _(
+                        "This invoice is flagged as multi-currency but its pricelist is "
+                        "in the company base currency (%(currency)s), so there is no "
+                        "second currency to report."
+                    )
+                    % {"currency": base_currency.name}
+                )
+            if not invoice.line_currency_id:
+                raise UserError(
+                    _(
+                        "This invoice is flagged as multi-currency but no 'Line Currency' "
+                        "has been selected."
+                    )
+                )
+            document_currency = invoice.line_currency_id
+            alt_currency = (
+                foreign_currency if document_currency == base_currency else base_currency
+            )
+
+        rate = (
+            self._resolve_foreign_rate(invoice, foreign_currency)
+            if foreign_currency
+            else 1.0
+        )
+
+        self._check_currency_codes(document_currency | alt_currency)
+
+        return {
+            "multi_currency": bool(alt_currency),
+            "document_currency": document_currency,
+            "alt_currency": alt_currency,
+            "foreign_currency": foreign_currency,
+            "rate": rate,
+        }
+
+    def _resolve_foreign_rate(self, invoice, foreign_currency):
+        """Bolívares que vale una unidad de ``foreign_currency`` en esta factura.
+
+        Si coincide con la moneda extranjera de la compañía se reutiliza
+        ``invoice.foreign_rate``, que ya respeta la tasa fijada a mano. Para
+        cualquier otra divisa (p. ej. EUR con la compañía en USD) se busca en la
+        tabla de tasas a la fecha del documento, igual que hace
+        ``binaural_unidigital._resolve_foreign_rate``.
+        """
+        company = invoice.company_id
+        if company.foreign_currency_id and foreign_currency == company.foreign_currency_id:
+            return invoice.foreign_rate or 1.0
+
+        rate_date = invoice.invoice_date_display or invoice.invoice_date or invoice.date or fields.Date.today()
+        rate_values = (
+            self.env["res.currency.rate"]
+            .with_company(company)
+            .compute_rate(foreign_currency.id, rate_date)
+        )
+        rate = rate_values.get("foreign_rate")
+        if not rate:
+            raise UserError(
+                _(
+                    "No %(currency)s exchange rate found for %(date)s. Please configure "
+                    "the currency rate before digitalizing this document."
+                )
+                % {"currency": foreign_currency.name, "date": rate_date}
+            )
+        return rate
+
+    def _check_currency_codes(self, currencies):
+        """Exige ``code_tfhka`` en toda moneda que vaya a viajar en el payload.
+
+        Sin esto el documento sale con ``"moneda": false`` y The Factory lo
+        rechaza sin explicar por qué; el campo se carga a mano en la ficha de la
+        moneda y solo el bolívar viene sembrado.
+        """
+        missing = currencies.filtered(lambda currency: not currency.code_tfhka)
+        if missing:
+            raise UserError(
+                _(
+                    "The currency %(currencies)s has no 'Code TFHKA' configured. Set it "
+                    "in Accounting > Configuration > Currencies before digitalizing this "
+                    "document."
+                )
+                % {"currencies": ", ".join(missing.mapped("name"))}
+            )
+
+    def _convert_amount(self, invoice, amount, from_currency, to_currency, rate):
+        """Convierte entre la moneda base y una divisa usando ``rate``.
+
+        ``rate`` son bolívares por unidad de divisa, la misma convención que
+        ``foreign_rate`` y ``res.currency.rate.compute_rate``.
+        """
+        if not amount or from_currency == to_currency:
+            return amount
+        base_currency = invoice.company_id.currency_id
+        if to_currency == base_currency:
+            return amount * rate
+        if from_currency == base_currency:
+            return amount / rate if rate else amount
+        return amount
+
+    def _get_amount_in_currency(self, invoice, currency, ctx, amount, source_currency=None):
+        """Lleva un importe de la moneda de la factura a ``currency``."""
+        source_currency = source_currency or invoice.currency_id
+        return self._convert_amount(invoice, amount, source_currency, currency, ctx["rate"])
+
+    def _get_tax_totals_keys(self, invoice, currency):
+        """Sufijos de ``tax_totals`` que expresan los importes en ``currency``.
+
+        ``tax_totals`` publica tres juegos de claves y con ellos se cubre todo
+        caso real sin convertir a mano:
+
+        * ``*_amount_currency``          -> moneda de la factura (= tarifa)
+        * ``base_amount``/``tax_amount`` -> moneda de la compañía (VES)
+        * ``*_amount_foreign_currency``  -> ``move.foreign_currency_id``
+
+        Devuelve ``None`` si ninguno aplica; el llamador convierte con la tasa.
+        """
+        if currency == invoice.currency_id:
+            return "base_amount_currency", "tax_amount_currency", "total_amount_currency"
+        if currency == invoice.company_id.currency_id:
+            return "base_amount", "tax_amount", "total_amount"
+        if currency == invoice.foreign_currency_id:
+            return (
+                "base_amount_foreign_currency",
+                "tax_amount_foreign_currency",
+                "total_amount_foreign_currency",
+            )
+        return None
+
+    # ------------------------------------------------------------------
     # Secciones del payload
     # ------------------------------------------------------------------
 
-    def _prepare_identification(self, invoice, document_type, document_number, series):
+    def _prepare_identification(self, invoice, document_type, document_number, series, ctx=None):
+        ctx = ctx or self._get_currency_context(invoice)
         for record in invoice:
             now_local = self._get_emission_datetime(record)
             emission_time = now_local.strftime("%I:%M:%S %p").lower()
@@ -219,11 +404,9 @@ class TfhkaDocumentService(models.AbstractModel):
                 if record.debit_origin_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
-                if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    affected_invoice_amount = str(round(record.debit_origin_id.amount_total, 2))
-                else:
-                    tax_totals = record.debit_origin_id.tax_totals
-                    affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
+                affected_invoice_amount = self._get_affected_document_amount(
+                    record.debit_origin_id, ctx
+                )
 
                 if record.ref and ',' in record.ref:
                     affected_invoice_comment = record.ref.split(',', 1)[1].strip()
@@ -236,11 +419,9 @@ class TfhkaDocumentService(models.AbstractModel):
                 if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
-                if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    affected_invoice_amount = str(round(record.reversed_entry_id.amount_total, 2))
-                else:
-                    tax_totals = record.reversed_entry_id.tax_totals
-                    affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
+                affected_invoice_amount = self._get_affected_document_amount(
+                    record.reversed_entry_id, ctx
+                )
 
                 if record.ref and ',' in record.ref:
                     affected_invoice_comment = record.ref.split(',', 1)[1].strip()
@@ -250,14 +431,9 @@ class TfhkaDocumentService(models.AbstractModel):
             if not record.invoice_date_display:
                 raise UserError(_("The invoice date is not defined."))
 
-            # Multimoneda: si la factura es multimoneda con moneda de línea USD
-            # (is_invoice_multi_currency_enabled), la moneda del documento es USD.
-            if record.is_invoice_multi_currency_enabled():
-                currency_tfhka = 'USD'
-            else:
-                currency_tfhka = record.company_id.foreign_currency_id.code_tfhka
-                if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    currency_tfhka = record.company_id.currency_id.code_tfhka
+            # La moneda del encabezado es la del contexto, sin literales: cubre
+            # VES, USD, EUR o cualquier otra moneda con code_tfhka cargado.
+            currency_tfhka = ctx["document_currency"].code_tfhka
 
             return {
                 "tipoDocumento": document_type,
@@ -282,6 +458,31 @@ class TfhkaDocumentService(models.AbstractModel):
                 "urlPdf": ""
             }
 
+    def _get_affected_document_amount(self, affected_document, ctx):
+        """``montoFacturaAfectada`` de una NC/ND, en la moneda del documento.
+
+        Se toma el total CON IGTF del documento afectado, que es lo que el
+        cliente pagó. 17.0 elegía la clave según la moneda de la compañía, con
+        lo que una factura en divisa reportaba el monto afectado en bolívares.
+        """
+        tax_totals = affected_document.tax_totals or {}
+        document_currency = ctx["document_currency"]
+
+        if document_currency == affected_document.company_id.currency_id:
+            amount = tax_totals.get("foreign_amount_total_igtf")
+            if amount is None:
+                amount = affected_document.amount_total_signed
+        else:
+            amount = tax_totals.get("amount_total_igtf")
+            if amount is None:
+                amount = affected_document.amount_total
+            if document_currency != affected_document.currency_id:
+                amount = self._get_amount_in_currency(
+                    affected_document, document_currency, ctx, amount
+                )
+
+        return str(round(abs(amount), 2))
+
     # ------------------------------------------------------------------
     # Lectura de tax_totals (estructura Odoo 19)
     # ------------------------------------------------------------------
@@ -299,82 +500,72 @@ class TfhkaDocumentService(models.AbstractModel):
             groups.extend(subtotal.get("tax_groups", []))
         return groups
 
-    def _get_discount_amount(self, invoice, foreign=False):
-        """Descuento total del documento.
+    def _get_discount_amount(self, invoice, currency, ctx):
+        """Descuento total del documento, expresado en ``currency``.
 
         O19 solo expone ``formatted_total_discount`` (cadena ya formateada por
         ``formatLang``), no un numérico, así que se recalcula desde las líneas.
+        Las líneas están en la moneda de la factura, de ahí la conversión.
         """
         total = 0.0
         for line in invoice.invoice_line_ids.filtered(lambda l: l.display_type == "product"):
-            price = line.foreign_price if foreign else line.price_unit
-            total += price * line.quantity * (line.discount or 0.0) / 100.0
-        return total
+            total += line.price_unit * line.quantity * (line.discount or 0.0) / 100.0
+        return self._get_amount_in_currency(invoice, currency, ctx, total)
 
-    def _get_igtf_amounts(self, invoice):
-        """Importes de IGTF en moneda base y en moneda alterna.
+    def _get_igtf_block(self, invoice, currency, ctx):
+        """Base e importe de IGTF expresados en ``currency``.
 
-        ``tax_totals['igtf']['foreign_igtf_amount']`` no es fiable en O19:
-        ``l10n_ve_igtf`` lo sobreescribe con el valor de la variante free-form
-        por un shadowing de variable. El importe en divisa se recalcula desde
-        su base y el porcentaje de IGTF de la compañía.
+        ``l10n_ve_igtf`` publica el IGTF en dos monedas: las claves ``igtf_*``
+        van en la moneda de la factura y las ``foreign_igtf_*`` en la moneda de
+        la COMPAÑÍA (no en ``company.foreign_currency_id``, pese al nombre; ver
+        ``l10n_ve_igtf/models/account_tax.py``). Con eso se cubren las dos caras
+        del documento sin recalcular nada a partir de proporciones.
         """
-        tax_totals = invoice.tax_totals or {}
-        igtf = tax_totals.get("igtf") or {}
-        percentage = (invoice.company_id.igtf_percentage or 0.0) / 100.0
-        base = igtf.get("igtf_base_amount", 0.0) or 0.0
-        total = tax_totals.get("total_amount_currency", 0.0) or 0.0
-        return {
-            "apply": igtf.get("apply_igtf", False),
-            "name": igtf.get("name"),
-            "percentage": percentage,
-            "base": base,
-            "amount": igtf.get("igtf_amount", 0.0) or 0.0,
-            # Fracción del total sujeta a IGTF. Se guarda la PROPORCIÓN y no el
-            # importe en divisa porque ``foreign_igtf_base_amount`` no es
-            # comparable con las claves ``*_amount_foreign_currency``: cuál de
-            # las dos monedas llama "foreign" cada módulo depende de la
-            # configuración de la compañía, y mezclarlas sumaba un IGTF en
-            # bolívares a un total en dólares.
-            "ratio": (base / total) if total else 0.0,
-        }
-
-    def _get_igtf_block(self, invoice, foreign=False):
-        """Base e importe de IGTF expresados en la moneda de un bloque."""
-        igtf = self._get_igtf_amounts(invoice)
-        if not igtf["apply"]:
+        igtf = (invoice.tax_totals or {}).get("igtf") or {}
+        if not igtf.get("apply_igtf"):
             return 0.0, 0.0
-        if not foreign:
-            return igtf["base"], igtf["amount"]
-        total_foreign = (invoice.tax_totals or {}).get("total_amount_foreign_currency", 0.0) or 0.0
-        base = total_foreign * igtf["ratio"]
-        return base, base * igtf["percentage"]
+
+        if currency == invoice.company_id.currency_id:
+            return (
+                currency.round(igtf.get("foreign_igtf_base_amount", 0.0) or 0.0),
+                currency.round(igtf.get("foreign_igtf_amount", 0.0) or 0.0),
+            )
+
+        base = igtf.get("igtf_base_amount", 0.0) or 0.0
+        amount = igtf.get("igtf_amount", 0.0) or 0.0
+        if currency == invoice.currency_id:
+            return currency.round(base), currency.round(amount)
+        return (
+            currency.round(self._get_amount_in_currency(invoice, currency, ctx, base)),
+            currency.round(self._get_amount_in_currency(invoice, currency, ctx, amount)),
+        )
 
     def _should_report_foreign_totals(self, invoice):
         """Criterio ÚNICO para adjuntar el bloque ``totalesOtraMoneda``.
 
-        En 17.0 convivían tres criterios distintos (``foreign_rate`` truthy,
-        ``multi_currency_invoice`` crudo y ``is_invoice_multi_currency_enabled``),
-        lo que producía payloads incoherentes entre cabecera, totales y líneas.
+        Es el flag de la factura y solo el flag. En 17.0 convivían tres
+        criterios distintos —entre ellos ``foreign_rate`` truthy, que está
+        poblado en TODA factura venezolana—, así que en la práctica cualquier
+        factura salía bimoneda por el mero hecho de tener activada la opción en
+        la compañía. El ajuste de compañía únicamente muestra el campo.
         """
-        return bool(invoice.is_invoice_multi_currency_enabled() or invoice.foreign_rate)
+        return bool(invoice.multi_currency_invoice)
 
-    def _build_amounts(self, invoice, foreign=False):
-        """Bloque de totales en una de las dos monedas del documento.
+    def _build_amounts(self, invoice, currency, ctx):
+        """Bloque de totales expresado en ``currency``.
 
-        ``foreign=False`` -> moneda del documento (claves ``*_amount_currency``).
-        ``foreign=True``  -> moneda alterna (claves ``*_amount_foreign_currency``
-        que añade ``l10n_ve_accountant`` sobre el ``tax_totals`` del core).
+        Se leen del ``tax_totals`` las claves que ya vienen en esa moneda
+        (ver ``_get_tax_totals_keys``); si ninguna aplica se convierte desde la
+        moneda de la factura con la tasa del contexto.
         """
         tax_totals = invoice.tax_totals or {}
         groups = self._get_tax_groups(invoice)
 
-        if foreign:
-            base_key, tax_key = "base_amount_foreign_currency", "tax_amount_foreign_currency"
-            total_key = "total_amount_foreign_currency"
-        else:
-            base_key, tax_key = "base_amount_currency", "tax_amount_currency"
-            total_key = "total_amount_currency"
+        keys = self._get_tax_totals_keys(invoice, currency)
+        needs_conversion = keys is None
+        if needs_conversion:
+            keys = ("base_amount_currency", "tax_amount_currency", "total_amount_currency")
+        base_key, tax_key, total_key = keys
 
         exempt_base = sum(
             group.get(base_key, 0.0) for group in groups
@@ -385,11 +576,18 @@ class TfhkaDocumentService(models.AbstractModel):
             if group.get("group_name") not in EXEMPT_TAX_GROUPS
         )
         total_tax = sum(group.get(tax_key, 0.0) for group in groups)
-        untaxed = taxed_base + exempt_base
-        discount = self._get_discount_amount(invoice, foreign=foreign)
         total_with_tax = tax_totals.get(total_key, 0.0) or 0.0
 
-        _igtf_base, igtf_amount = self._get_igtf_block(invoice, foreign=foreign)
+        if needs_conversion:
+            exempt_base = self._get_amount_in_currency(invoice, currency, ctx, exempt_base)
+            taxed_base = self._get_amount_in_currency(invoice, currency, ctx, taxed_base)
+            total_tax = self._get_amount_in_currency(invoice, currency, ctx, total_tax)
+            total_with_tax = self._get_amount_in_currency(invoice, currency, ctx, total_with_tax)
+
+        untaxed = taxed_base + exempt_base
+        discount = self._get_discount_amount(invoice, currency, ctx)
+
+        _igtf_base, igtf_amount = self._get_igtf_block(invoice, currency, ctx)
 
         return {
             "montoGravadoTotal": str(round(taxed_base, 2)),
@@ -402,49 +600,37 @@ class TfhkaDocumentService(models.AbstractModel):
             "totalDescuento": str(abs(round(discount, 2))),
         }
 
-    def _prepare_totals(self, invoice):
+    def _prepare_totals(self, invoice, ctx=None):
+        ctx = ctx or self._get_currency_context(invoice)
         totals, foreign_totals = {}, False
         for record in invoice:
-            company = record.company_id
-            company_is_ves = company.currency_id.name in VES_CURRENCY_NAMES
-            # IGTF de cada bloque en SU moneda: sumar el de un bloque al total
-            # del otro descuadra totalAPagar.
-            _b, igtf_doc = self._get_igtf_block(record, foreign=False)
-            _b, igtf_alt = self._get_igtf_block(record, foreign=True)
-            # El bloque en bolívares es el del documento si la compañía es VES,
-            # y el alterno en caso contrario.
-            igtf_ves = igtf_doc if company_is_ves else igtf_alt
-            report_foreign = self._should_report_foreign_totals(record)
+            document_currency = ctx["document_currency"]
+            alt_currency = ctx["alt_currency"]
+            base_currency = record.company_id.currency_id
 
-            if company_is_ves:
-                # Compañía en bolívares: el documento va en la moneda base y la
-                # divisa (si aplica) en el bloque totalesOtraMoneda.
-                amounts = self._build_amounts(record, foreign=False)
-                taxes_subtotal = self._prepare_tax_subtotals(
-                    record, foreign=False, include_igtf=report_foreign
-                )
-                if report_foreign:
-                    amounts_foreign = self._build_amounts(record, foreign=True)
-                    taxes_subtotal_foreign = self._prepare_tax_subtotals(
-                        record, foreign=True, include_igtf=True
-                    )
-                    foreign_currency_code = company.foreign_currency_id.code_tfhka
-                else:
-                    amounts_foreign = {}
-                    taxes_subtotal_foreign = []
-                    foreign_currency_code = None
-            else:
-                # Compañía en divisa: se invierten los papeles — el documento va
-                # en la divisa y el bloque alterno lleva los importes en bolívares.
-                amounts = self._build_amounts(record, foreign=True)
-                amounts_foreign = self._build_amounts(record, foreign=False)
-                taxes_subtotal = self._prepare_tax_subtotals(
-                    record, foreign=True, include_igtf=True
-                )
+            # IGTF de cada bloque en SU moneda: sumar el de un bloque al total
+            # del otro descuadra totalAPagar. totalIGTF_VES va siempre en la
+            # moneda base, sea cual sea la moneda del documento.
+            _b, igtf_doc = self._get_igtf_block(record, document_currency, ctx)
+            _b, igtf_ves = self._get_igtf_block(record, base_currency, ctx)
+
+            amounts = self._build_amounts(record, document_currency, ctx)
+            taxes_subtotal = self._prepare_tax_subtotals(
+                record, document_currency, ctx, include_igtf=True
+            )
+
+            if alt_currency:
+                _b, igtf_alt = self._get_igtf_block(record, alt_currency, ctx)
+                amounts_foreign = self._build_amounts(record, alt_currency, ctx)
                 taxes_subtotal_foreign = self._prepare_tax_subtotals(
-                    record, foreign=False, include_igtf=True
+                    record, alt_currency, ctx, include_igtf=True
                 )
-                foreign_currency_code = company.currency_id.code_tfhka
+                foreign_currency_code = alt_currency.code_tfhka
+            else:
+                igtf_alt = 0.0
+                amounts_foreign = {}
+                taxes_subtotal_foreign = []
+                foreign_currency_code = None
 
             # nroItems debe cuadrar con detallesItems, que solo lleva líneas de
             # producto: contar invoice_line_ids incluiría secciones y notas.
@@ -469,7 +655,7 @@ class TfhkaDocumentService(models.AbstractModel):
             # Cuadro de pago: el bloque formasPago solo se adjunta cuando el
             # usuario activó "Mostrar cuadro de pago" en la factura.
             if record.show_payment_box:
-                payment_forms = self._prepare_payments(record)
+                payment_forms = self._prepare_payments(record, ctx)
 
                 if payment_forms:
                     if len(payment_forms) > 5:
@@ -481,7 +667,7 @@ class TfhkaDocumentService(models.AbstractModel):
             if amounts_foreign:
                 foreign_totals = {
                     "moneda": foreign_currency_code,
-                    "tipoCambio": "{:.4f}".format(record.foreign_rate),
+                    "tipoCambio": "{:.4f}".format(ctx["rate"]),
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
                     "subtotal": amounts_foreign["subtotal"],
@@ -498,18 +684,19 @@ class TfhkaDocumentService(models.AbstractModel):
                 foreign_totals = False
         return totals, foreign_totals
 
-    def _prepare_tax_subtotals(self, invoice, foreign=False, include_igtf=False):
-        """Detalle de impuestos (``impuestosSubtotal``) en una de las monedas.
+    def _prepare_tax_subtotals(self, invoice, currency, ctx, include_igtf=False):
+        """Detalle de impuestos (``impuestosSubtotal``) expresado en ``currency``.
 
         Devuelve una lista; en 17.0 devolvía una tupla (base, alterna) y el
         llamador decidía cuál usar según tres criterios distintos. Ahora cada
-        moneda se pide por separado con ``foreign``.
+        moneda se pide por separado.
         """
         invoice.ensure_one()
-        if foreign:
-            base_key, tax_key = "base_amount_foreign_currency", "tax_amount_foreign_currency"
-        else:
-            base_key, tax_key = "base_amount_currency", "tax_amount_currency"
+        keys = self._get_tax_totals_keys(invoice, currency)
+        needs_conversion = keys is None
+        if needs_conversion:
+            keys = ("base_amount_currency", "tax_amount_currency", "total_amount_currency")
+        base_key, tax_key, _total_key = keys
 
         tax_subtotals = []
         for group in self._get_tax_groups(invoice):
@@ -522,27 +709,33 @@ class TfhkaDocumentService(models.AbstractModel):
                     )
                     % {"group": group_name}
                 )
+            base_amount = group.get(base_key, 0.0)
+            tax_amount = group.get(tax_key, 0.0)
+            if needs_conversion:
+                base_amount = self._get_amount_in_currency(invoice, currency, ctx, base_amount)
+                tax_amount = self._get_amount_in_currency(invoice, currency, ctx, tax_amount)
             tax_subtotals.append({
                 "codigoTotalImp": TFHKA_TAX_CODE[group_name],
                 "alicuotaImp": TFHKA_TAX_RATE[group_name],
-                "baseImponibleImp": str(round(group.get(base_key, 0.0), 2)),
-                "valorTotalImp": str(round(group.get(tax_key, 0.0), 2)),
+                "baseImponibleImp": str(round(base_amount, 2)),
+                "valorTotalImp": str(round(tax_amount, 2)),
             })
 
         if include_igtf:
-            igtf = self._get_igtf_amounts(invoice)
-            if igtf["apply"]:
-                igtf_base, igtf_amount = self._get_igtf_block(invoice, foreign=foreign)
+            igtf = (invoice.tax_totals or {}).get("igtf") or {}
+            if igtf.get("apply_igtf"):
+                igtf_base, igtf_amount = self._get_igtf_block(invoice, currency, ctx)
                 tax_subtotals.append({
                     "codigoTotalImp": "IGTF",
-                    "alicuotaImp": TFHKA_TAX_RATE.get(igtf["name"], "3.0"),
+                    "alicuotaImp": TFHKA_TAX_RATE.get(igtf.get("name"), "3.0"),
                     "baseImponibleImp": str(round(igtf_base, 2)),
                     "valorTotalImp": str(round(igtf_amount, 2)),
                 })
 
         return tax_subtotals
 
-    def _prepare_detail_lines(self, invoice):
+    def _prepare_detail_lines(self, invoice, ctx=None):
+        ctx = ctx or self._get_currency_context(invoice)
         item_details = []
         line_number = 1
         for record in invoice:
@@ -559,15 +752,19 @@ class TfhkaDocumentService(models.AbstractModel):
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
-                # Multimoneda: si la factura es multimoneda (moneda de línea USD)
-                # o la moneda base no es VES, los montos de línea van en la
-                # moneda alterna (foreign_price/foreign_subtotal).
-                if not record.is_invoice_multi_currency_enabled() and record.company_id.currency_id.name in ("VEF", "VES"):
-                    base_price = line.price_unit
-                    base_subtotal = line.price_subtotal
-                else:
-                    base_price = line.foreign_price
-                    base_subtotal = line.foreign_subtotal
+                # Los montos de línea van en la moneda del documento. Se parte
+                # de price_unit/price_subtotal (que están en la moneda de la
+                # factura, o sea la de la tarifa) y se convierte con la tasa del
+                # contexto; NO se usa foreign_price, que siempre convierte a
+                # company.foreign_currency_id y rompería una tarifa en EUR con
+                # la compañía en USD.
+                document_currency = ctx["document_currency"]
+                base_price = self._get_amount_in_currency(
+                    record, document_currency, ctx, line.price_unit
+                )
+                base_subtotal = self._get_amount_in_currency(
+                    record, document_currency, ctx, line.price_subtotal
+                )
 
                 discount_factor = (line.discount or 0.0) / 100.0
                 unit_price = round(base_price, 2)
@@ -642,7 +839,8 @@ class TfhkaDocumentService(models.AbstractModel):
             else:
                 return "Inmediato"
 
-    def _prepare_payments(self, invoice):
+    def _prepare_payments(self, invoice, ctx=None):
+        ctx = ctx or self._get_currency_context(invoice)
         try:
             payment_data = []
             for record in invoice:
@@ -654,7 +852,7 @@ class TfhkaDocumentService(models.AbstractModel):
                         if not payment:
                             continue
 
-                        payment_info = self._build_payment_info(record, payment)
+                        payment_info = self._build_payment_info(record, payment, ctx)
                         payment_data.append(payment_info)
                     return payment_data
             return False
@@ -665,25 +863,22 @@ class TfhkaDocumentService(models.AbstractModel):
     def _get_payment(self, account_payment_id):
         return self.env['account.payment'].search([('id', '=', account_payment_id)])
 
-    def _build_payment_info(self, invoice, payment):
+    def _build_payment_info(self, invoice, payment, ctx=None):
+        ctx = ctx or self._get_currency_context(invoice)
         payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
-        payment_currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
+        payment_currency = payment_id.currency_id or invoice.company_id.currency_id
         payment_method = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else False
-        multi_currency = invoice.is_invoice_multi_currency_enabled()
 
-        if payment_currency == "VEF" or payment_currency == "VES":
-            if multi_currency:
-                # Multimoneda: el pago en VES se reporta como moneda local.
-                currency_code = invoice.company_id.currency_id.code_tfhka
-                exchange_rate = None
-            else:
-                currency_code = invoice.company_id.foreign_currency_id.code_tfhka
-                if invoice.company_id.currency_id.name in ('VEF', 'VES'):
-                    currency_code = invoice.company_id.currency_id.code_tfhka
-                exchange_rate = None
+        # La moneda del pago se reporta con su propio code_tfhka, igual que el
+        # resto del payload: 17.0 mandaba aquí el nombre de la moneda de Odoo,
+        # que no tiene por qué coincidir con el código de The Factory.
+        self._check_currency_codes(payment_currency)
+        currency_code = payment_currency.code_tfhka
+
+        if payment_currency.name in VES_CURRENCY_NAMES:
+            exchange_rate = None
         else:
-            # Pago en moneda extranjera: se incluye el tipo de cambio.
-            currency_code = payment_currency
+            # Pago en divisa: se incluye el tipo de cambio del propio pago.
             exchange_rate = "{:.4f}".format(payment_id.foreign_rate)
 
         payment_info = {
