@@ -14,6 +14,19 @@ class TestIvaEligiblePartners(TransactionCase):
         self.currency_vef = self.env.ref("base.VEF")
         self.company = self.env.ref("base.main_company")
 
+        # Tasa de cambio real, igual que en test_retention_bs.py: sin esto,
+        # _compute_rate_for_documents (l10n_ve_accountant) no encuentra ningun
+        # res.currency.rate y sobreescribe foreign_rate/foreign_inverse_rate a 0
+        # en cada factura, dejando el impuesto en moneda alterna en 0.
+        self.currency_vef.write({
+            "rate_ids": [
+                Command.create({
+                    "company_rate": 2.0,
+                    "name": fields.Date.today(),
+                })
+            ],
+        })
+
         iva_seq = self.env["ir.sequence"].create({
             "name": "IVA Retention Seq",
             "code": "payment.retention.iva",
