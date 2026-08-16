@@ -207,6 +207,15 @@ class TestAccumulatedRate(TransactionCase):
 
         retention = retention_form.save()
 
+        if type_retention == "iva":
+            # En retenciones de IVA el onchange de partner_id ya carga las lineas
+            # desde las facturas posteadas del proveedor
+            # (_load_retention_lines_for_iva_supplier_retention). Agregar una linea
+            # a mano con payment_concept_id -- que es un campo solo de ISLR -- crea
+            # una linea duplicada sin montos de IVA y revienta contra el constraint
+            # _constraint_amounts_in_zero de l10n_ve_payment_extension.
+            return retention
+
         with Form(retention) as retention_form_edit:
             with retention_form_edit.retention_line_ids.new() as line:
                 line.move_id = invoice
@@ -851,7 +860,6 @@ class TestAccumulatedRate(TransactionCase):
             "partner_id": self.partner_a.id,
             "journal_id": self.journal.id,
             "invoice_date": fields.Date.today(),
-            "reversed_entry_id": account_move.id,
             "invoice_line_ids": [(0, 0, {
                 "product_id": self.product.id,
                 "quantity": 1,
@@ -860,6 +868,11 @@ class TestAccumulatedRate(TransactionCase):
             })],
         })
         refund.action_post()
+        # reversed_entry_id se asigna despues de postear: si se pasa en el create,
+        # _post concilia la nota de credito contra su factura de origen, la deja en
+        # residual 0 y el onchange de partner_id la descarta al cargar las lineas
+        # de la retencion (el dominio exige amount_residual != 0).
+        refund.reversed_entry_id = account_move
         retention = self._create_retention("iva", refund)
         retention.action_post()
         ident = self.env['tfhka.retention.service']._prepare_identification(retention, "05", "1")
