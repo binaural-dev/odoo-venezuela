@@ -24,6 +24,13 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.currency_vef = self.env.ref("base.VEF")
 
+        # En una base sin datos de demo el VEF viene inactivo, y los tests que
+        # fuerzan la compañia a VEF (_force_company_currency) no pueden validar
+        # la factura: action_post rechaza las monedas inactivas. No se carga
+        # ninguna tasa a proposito -- los tests de este archivo fijan el rate a
+        # mano (manually_set_rate).
+        self.currency_vef.active = True
+
         self.company.write(
             {
                 "currency_id": self.currency_usd.id,
