@@ -224,7 +224,7 @@ class TestIvaEligiblePartners(TransactionCase):
             "date": fields.Date.today(),
             "date_accounting": fields.Date.today(),
         })
-        return retention.iva_eligible_partner_ids
+        return retention.iva_type_eligible_partner_ids
 
     # ---- Supplier side ----
 
@@ -291,3 +291,31 @@ class TestIvaEligiblePartners(TransactionCase):
         self.assertIn(self.partner, eligible)
 
     # NOTE: Customer side onchange (select eligible → load lines) is not tested here
+
+    # ---- Bulk read guard ----
+
+    def test_bulk_read_skips_invoice_search(self):
+        # Reading the field on more than one record at once (export, RPC, a read from
+        # another module) must not fire one search_invoices_with_taxes per record.
+        self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
+        retention_a = self.env["account.retention"].create({
+            "type_retention": "iva",
+            "type": "in_invoice",
+            "company_id": self.company.id,
+            "partner_id": self.partner.id,
+            "date": fields.Date.today(),
+            "date_accounting": fields.Date.today(),
+        })
+        retention_b = self.env["account.retention"].create({
+            "type_retention": "iva",
+            "type": "in_invoice",
+            "company_id": self.company.id,
+            "partner_id": self.partner.id,
+            "date": fields.Date.today(),
+            "date_accounting": fields.Date.today(),
+        })
+        retentions = retention_a + retention_b
+        retentions.invalidate_recordset(["iva_type_eligible_partner_ids"])
+        retentions._compute_iva_type_eligible_partner_ids()
+        self.assertFalse(retention_a.iva_type_eligible_partner_ids)
+        self.assertFalse(retention_b.iva_type_eligible_partner_ids)

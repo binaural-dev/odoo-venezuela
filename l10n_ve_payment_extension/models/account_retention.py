@@ -182,15 +182,22 @@ class AccountRetention(models.Model):
     date_emision = fields.Date('Emision Date', default=False)
 
 
-    iva_eligible_partner_ids = fields.Many2many(
+    iva_type_eligible_partner_ids = fields.Many2many(
         "res.partner",
         string="Eligible Partners for IVA",
-        compute="_compute_iva_eligible_partner_ids",
+        compute="_compute_iva_type_eligible_partner_ids",
     )
 
     @api.depends("type_retention", "type", "company_id")
-    def _compute_iva_eligible_partner_ids(self):
+    def _compute_iva_type_eligible_partner_ids(self):
         Partner = self.env["res.partner"]
+        if len(self) > 1:
+            # UI-only field used to filter partner_id's domain on the retention form,
+            # which only ever computes it for a single record. Skip the invoice search
+            # entirely for bulk reads (exports, RPC calls, reads from other modules)
+            # instead of firing one search_invoices_with_taxes per record.
+            self.iva_type_eligible_partner_ids = Partner
+            return
         for record in self:
             if record.type_retention == 'iva' and record.type:
                 if record.type in ('in_invoice', 'in_refund'):
@@ -198,7 +205,7 @@ class AccountRetention(models.Model):
                 elif record.type in ('out_invoice', 'out_refund'):
                     move_types = ('out_invoice', 'out_refund')
                 else:
-                    record.iva_eligible_partner_ids = Partner
+                    record.iva_type_eligible_partner_ids = Partner
                     continue
 
                 invoices = search_invoices_with_taxes(
@@ -215,9 +222,9 @@ class AccountRetention(models.Model):
                         ('retention_iva_line_ids.state', 'in', ('draft', 'emitted')),
                     ]
                 )
-                record.iva_eligible_partner_ids = invoices.mapped('partner_id')
+                record.iva_type_eligible_partner_ids = invoices.mapped('partner_id')
             else:
-                record.iva_eligible_partner_ids = Partner
+                record.iva_type_eligible_partner_ids = Partner
 
     @api.depends("retention_line_ids", "retention_line_ids.move_id")
     def _compute_actual_invoice_ids(self):
@@ -854,7 +861,6 @@ class AccountRetention(models.Model):
         that point.
 
         Returns
-        
         -------
         account.payment recordset
             The payments created for the retention.
