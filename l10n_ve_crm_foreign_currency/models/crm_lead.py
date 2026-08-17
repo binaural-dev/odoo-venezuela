@@ -36,6 +36,12 @@ class CrmLead(models.Model):
         inverse="_inverse_expected_revenue",
         currency_field="company_currency",
         store=False,
+        # El core (crm/models/crm_lead.py) define este campo con
+        # default=0.0. Ese default se hereda si no se cancela acá: Odoo lo
+        # agregaría a los vals de *todo* create() de crm.lead (aunque no se
+        # pida), lo que dispara _inverse_expected_revenue() y rompe la
+        # creación de cualquier lead/oportunidad con un UserError.
+        default=None,
     )
 
     recurring_revenue = fields.Monetary(
@@ -43,6 +49,7 @@ class CrmLead(models.Model):
         inverse="_inverse_recurring_revenue",
         currency_field="company_currency",
         store=False,
+        default=None,
     )
 
     prorated_revenue_foreign = fields.Monetary(
