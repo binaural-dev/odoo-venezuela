@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_picking_transport_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.form.transport.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='note']" position="before">
+                <page name="transport_info" string="Transport Info">
+                    <group>
+                        <group string="Driver">
+                            <field name="driver_id"/>
+                        </group>
+                        <group string="Vehicle">
+                            <field name="vehicle_id"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
+        </field>
+    </record>
+</odoo>

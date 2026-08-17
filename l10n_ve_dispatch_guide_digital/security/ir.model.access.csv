@@ -1,0 +1,5 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_logistic_vehicle_user,logistic.vehicle.user,model_logistic_vehicle,stock.group_stock_user,1,1,1,1
+access_logistic_vehicle_manager,logistic.vehicle.manager,model_logistic_vehicle,stock.group_stock_manager,1,1,1,1
+access_driver_license_type_user,driver.license.type.user,model_driver_license_type,stock.group_stock_user,1,0,0,0
+access_driver_license_type_manager,driver.license.type.manager,model_driver_license_type,stock.group_stock_manager,1,1,1,1

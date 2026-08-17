@@ -6,6 +6,7 @@
     "category": "Accounting/Accounting",
     "version": "19.0.1.0.0",
     "depends": [
+        "contacts",
         "l10n_ve_invoice_digital",
         "l10n_ve_stock_account",
         "stock",
@@ -14,6 +15,11 @@
     "images": ["static/description/icon.png"],
     "application": True,
     "data": [
+        "security/ir.model.access.csv",
+        "views/logistic_vehicle_views.xml",
+        "views/driver_license_type_views.xml",
+        "views/res_partner_views.xml",
         "views/stock_picking.xml",
+        "views/stock_picking_transport_views.xml",
     ],
 }

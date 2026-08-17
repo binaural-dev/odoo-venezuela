@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ── LIST VIEW ─────────────────────────────────────────────────── -->
+    <record id="driver_license_type_view_list" model="ir.ui.view">
+        <field name="name">driver.license.type.list</field>
+        <field name="model">driver.license.type</field>
+        <field name="arch" type="xml">
+            <list string="License Types">
+                <field name="name"/>
+                <field name="code"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ── FORM VIEW ─────────────────────────────────────────────────── -->
+    <record id="driver_license_type_view_form" model="ir.ui.view">
+        <field name="name">driver.license.type.form</field>
+        <field name="model">driver.license.type</field>
+        <field name="arch" type="xml">
+            <form string="License Type">
+                <sheet>
+                    <group>
+                        <field name="name"/>
+                        <field name="code"/>
+                    </group>
+                    <group string="Description">
+                        <field name="description" nolabel="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ── ACTION ────────────────────────────────────────────────────── -->
+    <record id="action_driver_license_type" model="ir.actions.act_window">
+        <field name="name">License Types</field>
+        <field name="res_model">driver.license.type</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- ── MENU: Inventory > Configuration > License Types ───────────── -->
+    <menuitem
+        id="menu_driver_license_type"
+        name="License Types"
+        parent="stock.menu_stock_config_settings"
+        action="action_driver_license_type"
+        sequence="51"
+    />
+</odoo>

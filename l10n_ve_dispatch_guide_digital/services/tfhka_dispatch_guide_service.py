@@ -1,4 +1,10 @@
 import re
+import logging
+import logging
+
+from odoo import models, fields
+
+_logger = logging.getLogger(__name__)
 
 from odoo import _, fields, models
 from odoo.exceptions import UserError
@@ -84,6 +90,9 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                 },
                 "detallesItems": details_items,
                 "guiaDespacho": dispatch_guide,
+                "conductor": self._prepare_driver_info(picking),
+                "vehiculo": self._prepare_vehicle_info(picking),
+                "transporte": self._prepare_transport_info(picking),
             }
         }
 
@@ -91,7 +100,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             payload["documentoElectronico"]["infoAdicional"] = additional_information
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(picking))
-
+        _logger.info(f"---| payload: {payload}")
         response = self.env["tfhka.api.client"].emit(picking.company_id, payload)
 
         if response:
@@ -257,3 +266,45 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                     "valor": record.partner_id.contact_address_complete or "no definida",
                 })
         return additional_information
+
+    def _prepare_driver_info(self, picking):
+        """Returns the 'conductor' node with data from the picking's driver_id."""
+        driver = picking.driver_id
+        if not driver:
+            return {
+                "NombreCompleto": "",
+                "numeroIdentificacion": "",
+                "tipoLicencia": "",
+                "infoContacto": "",
+            }
+        return {
+            "NombreCompleto": driver.name or "",
+            "numeroIdentificacion": driver.vat or "",
+            "tipoLicencia": driver.driver_license_type_id.code or "",
+            "infoContacto": driver.mobile or driver.phone or driver.email or "",
+        }
+
+    def _prepare_vehicle_info(self, picking):
+        """Returns the 'vehiculo' node with data from the picking's vehicle_id."""
+        vehicle = picking.vehicle_id
+        if not vehicle:
+            return {
+                "TipoVehiculo": "",
+                "numeroTransporte": "",
+            }
+        vehicle_type_labels = {
+            "light": "Liviano",
+            "heavy": "Pesado / Carga",
+            "other": "Otro",
+        }
+        return {
+            "TipoVehiculo": vehicle_type_labels.get(vehicle.vehicle_type, ""),
+            "numeroTransporte": vehicle.transport_number or "",
+        }
+
+    def _prepare_transport_info(self, picking):
+        """Returns the 'transporte' node with the license plate from the picking's vehicle_id."""
+        vehicle = picking.vehicle_id
+        return {
+            "placa": vehicle.license_plate if vehicle else "",
+        }

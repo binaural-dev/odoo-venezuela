@@ -5,6 +5,15 @@ class StockPicking(models.Model):
     _inherit = 'stock.picking'
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
+    driver_id = fields.Many2one(
+        comodel_name="res.partner",
+        string="Driver",
+        domain="[('is_driver', '=', True)]",
+    )
+    vehicle_id = fields.Many2one(
+        comodel_name="logistic.vehicle",
+        string="Vehicle",
+    )
     show_digital_dispatch_guide = fields.Boolean(string="Show Digital Dispatch Guide", compute="_compute_visibility_button", copy=False)
     control_number_tfhka = fields.Char(string="Control Number", copy=False)
 
