@@ -12,4 +12,18 @@
         font-size: 1.25rem;
         font-weight: 600;
     }
+
+    // El borde por defecto de Bootstrap casi no se distingue sobre el fondo
+    // claro del kiosko; lo reforzamos para que los campos se lean como cajas.
+    .form-control-lg,
+    .form-select-lg {
+        border: 2px solid $o-gray-300;
+        border-radius: 0.75rem;
+        background-color: $white;
+
+        &:focus {
+            border-color: var(--primary, #{$o-action});
+            box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.08);
+        }
+    }
 }
