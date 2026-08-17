@@ -91,24 +91,22 @@
 - [~] 5.2 Enganche pago-en-caja: FUERA DE ALCANCE por ahora — en pago-en-caja
       (sin terminal) el cobro y la factura fiscal los hace el CAJERO, no el
       Kiosko. Reevaluar solo si aparece un caso de Kiosko que factura sin cobrar.
-- [x] 5.3 Cola durable de reintento del registro (localStorage, NO se reactiva
-      el IndexedDB del PosData — demasiado invasivo, toca el arranque del kiosko).
-      `l10n_ve_pos_self_order/.../kiosk_sync_queue.js`: patch `SelfOrder` con
-      `enqueueKioskRegistration`/`flushKioskRegistrations`/`kioskPendingCount`.
-      Guarda el payload EXACTO del RPC que falló (dedup por uuid) y reintenta al
-      arrancar, en `online` y por timer (`auto_sync_interval`). Se detiene ante
-      `ConnectionLostError` y conserva la cola; un error de negocio saca la
-      entrada (la orden ya está pagada+impresa → respaldo caja). Enganche en
-      Megasoft `_finalizeMegasoftPayment`: serializa UNA vez (fix: los comandos
-      se consumen al serializar) y encola en el catch. Botón en el menú Debug MF
-      ("Reintentar registro pendiente (N)"). RPC idempotente → sin duplicados.
+- [x] 5.3 Cola durable de reintento del registro en **IndexedDB** (base propia
+      `l10n_ve_kiosk_queue_<config>`, reutilizando la MISMA clase `IndexedDB` del
+      POS — `@point_of_sale/app/models/utils/indexed_db` — SIN reactivar el
+      `PosData`, que también cachearía el dataset del servidor). Stores `pending`
+      y `failed` (keyPath `uuid`). `l10n_ve_pos_self_order/.../kiosk_sync_queue.js`:
+      patch `SelfOrder` con `enqueueKioskRegistration`/`flushKioskRegistrations`/
+      `retryFailedKioskRegistrations` + contadores reactivos `kioskPendingCount`/
+      `kioskFailedCount`. Reintenta al arrancar, en `online` y por timer
+      (`auto_sync_interval`). Dedup por uuid; RPC idempotente → sin duplicados.
 - [x] 5.4 Idempotencia: `printKioskFiscalInvoice` no reimprime si la orden ya
       tiene `mf_invoice_number`; la cola dedup por uuid + RPC idempotente en el
       server; no se recobra la tarjeta en reintentos (`_megasoftApproved`).
 - [x] 5.5 NO perder órdenes: un rechazo del servidor (error de negocio, NO de
-      red) ya no se descarta — la entrada se mueve a una cola de FALLIDAS
-      persistente (`l10n_ve_kiosk_failed_*`), reintentable a mano tras corregir
-      la causa (botón "Reintentar FALLIDAS" en el menú Debug MF, con contador).
+      red) ya no se descarta — la entrada se mueve al store `failed` de la
+      IndexedDB (no se pierde), reintentable a mano tras corregir la causa (botón
+      "Reintentar FALLIDAS" en el menú Debug MF, con contador).
       Los cortes de red siguen en pendientes (auto-reintento).
 
 ## 6. Menú de Debug MF + reimpresión de fallidas (Fase 3)
