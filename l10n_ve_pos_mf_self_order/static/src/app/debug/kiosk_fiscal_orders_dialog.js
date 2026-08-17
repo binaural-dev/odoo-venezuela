@@ -1,8 +1,9 @@
 /** @odoo-module */
 
-import { Component, useState } from "@odoo/owl";
+import { Component, useState, onWillStart } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
+import { rpc } from "@web/core/network/rpc";
 import { _t } from "@web/core/l10n/translation";
 
 /**
@@ -21,7 +22,29 @@ export class KioskFiscalOrdersDialog extends Component {
 
     setup() {
         this.selfOrder = useService("self_order");
-        this.state = useState({ selectedUuid: null, busy: false, message: "" });
+        this.state = useState({ selectedUuid: null, busy: false, message: "", loading: true });
+        // Cargar del SERVIDOR las órdenes de la sesión (persistencia real: no
+        // dependen de lo que quede en memoria del cliente, que se pierde al
+        // iniciar una orden nueva o recargar). connectNewData las mete al modelo
+        // para que el builder fiscal client-side las use tal cual.
+        onWillStart(() => this.loadOrders());
+    }
+
+    async loadOrders() {
+        this.state.loading = true;
+        try {
+            const data = await rpc("/l10n_ve_pos_mf_self_order/kiosk/session_orders", {
+                access_token: this.selfOrder.access_token,
+            });
+            if (data && Object.keys(data).length) {
+                this.selfOrder.models.connectNewData(data);
+            }
+        } catch (error) {
+            console.error("[MF Kiosk] no se pudieron cargar las órdenes de la sesión", error);
+            this.state.message = _t("No se pudieron cargar las órdenes del servidor.");
+        } finally {
+            this.state.loading = false;
+        }
     }
 
     get orders() {

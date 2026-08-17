@@ -5,7 +5,10 @@
             <div class="d-flex" style="gap: 12px; min-height: 320px;">
                 <!-- Lista de órdenes -->
                 <div class="d-flex flex-column" style="width: 42%; overflow-y: auto; max-height: 60vh;">
-                    <t t-if="!orders.length">
+                    <t t-if="state.loading">
+                        <div class="text-muted p-3">Cargando órdenes…</div>
+                    </t>
+                    <t t-elif="!orders.length">
                         <div class="text-muted p-3">No hay órdenes en esta sesión.</div>
                     </t>
                     <t t-foreach="orders" t-as="order" t-key="order.uuid">
@@ -67,6 +70,10 @@
                 </div>
             </div>
             <t t-set-slot="footer">
+                <button type="button" class="btn btn-outline-secondary"
+                        t-on-click="loadOrders" t-att-disabled="state.loading">
+                    Actualizar
+                </button>
                 <button type="button" class="btn btn-secondary" t-on-click="() => props.close()">
                     Cerrar
                 </button>

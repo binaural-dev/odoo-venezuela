@@ -128,8 +128,12 @@
       IMPRIME (sin nº) o REIMPRIME COPIA (con nº). Servicio: `kioskFiscalOrders`,
       `printOrReprintKioskOrder`, `reprintKioskFiscalCopy`
       (`TfhkaDriver.reprintDocument`, como `ReprintInvoiceButton` de la caja).
-      LÍMITE conocido: solo órdenes de la SESIÓN actual en memoria (traer
-      pendientes del servidor queda para después).
+- [x] 6.4 PERSISTENCIA (el panel no dependía de memoria): endpoint
+      `/l10n_ve_pos_mf_self_order/kiosk/session_orders` devuelve las órdenes de la
+      sesión abierta (pos.order/line/payment/partner en formato `connectNewData`);
+      el panel las carga del servidor al abrir (y botón "Actualizar") y hace
+      `connectNewData` → quedan en el modelo y el builder client-side las usa
+      igual. Así las órdenes ya no se pierden al iniciar una orden nueva o recargar.
 - [ ] 6.3 Respaldo en caja: la orden queda marcada para reimprimir desde el POS
       de caja (`write_mf_invoice_data` / `PrintPendingOrderButton`).
 
