@@ -58,12 +58,15 @@ export class MfDebugDialog extends Component {
         if (res === false) {
             return _t("No se pudo conectar la máquina fiscal.");
         }
+        // Chequear `message` ANTES que `valid`: algunas acciones (reintentar
+        // pendientes/fallidas) devuelven valid=true con un resumen propio
+        // ("Sin órdenes pendientes.") que el genérico "OK." de abajo pisaría.
+        if (res && res.message) {
+            return res.valid ? res.message : _t("Falló: %s", res.message);
+        }
         if (res && res.valid) {
             const ref = res.order && (res.order.pos_reference || res.order.uuid);
             return ref ? _t("OK — orden %s.", ref) : _t("OK.");
-        }
-        if (res && res.message) {
-            return _t("Falló: %s", res.message);
         }
         return _t("Listo.");
     }
@@ -115,13 +118,23 @@ export class MfDebugDialog extends Component {
             if (typeof this.selfOrder.retryFailedKioskRegistrations !== "function") {
                 return { valid: false, message: _t("No disponible") };
             }
-            await this.selfOrder.retryFailedKioskRegistrations();
-            const left = this.failedCount;
+            const result = await this.selfOrder.retryFailedKioskRegistrations();
+            const remaining = (result && result.remaining) || [];
+            if (!remaining.length) {
+                return { valid: true, message: _t("Sin órdenes fallidas.") };
+            }
+            // Mostrar el motivo real guardado por flushKioskRegistrations
+            // (`errorMessage`) en vez de un genérico "revisar la causa".
+            const reasons = remaining
+                .map((entry) => {
+                    const ref = (entry.uuid || "").slice(0, 8);
+                    const reason = entry.errorMessage || _t("(sin detalle)");
+                    return `${ref}: ${reason}`;
+                })
+                .join(" | ");
             return {
-                valid: left === 0,
-                message: left
-                    ? _t("Quedan %s orden(es) fallida(s) — revisar la causa.", left)
-                    : _t("Sin órdenes fallidas."),
+                valid: false,
+                message: _t("Quedan %s orden(es) fallida(s) — %s", remaining.length, reasons),
             };
         });
     }

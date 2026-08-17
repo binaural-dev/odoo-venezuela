@@ -142,12 +142,14 @@ patch(SelfOrder.prototype, {
 
     /**
      * Reintenta manualmente las FALLIDAS (tras corregir la causa): las devuelve a
-     * `pending` y dispara el flush. Las que sigan fallando vuelven a `failed`.
+     * `pending` y dispara el flush. Las que sigan fallando vuelven a `failed` con
+     * su `errorMessage` actualizado; se devuelven para que la UI (menú Debug MF)
+     * muestre el motivo real en vez de un "revisar la causa" genérico.
      */
     async retryFailedKioskRegistrations() {
         const failed = await this._kioskReadStore(FAILED);
         if (!failed.length) {
-            return;
+            return { retried: 0, remaining: [] };
         }
         for (const entry of failed) {
             await this._kioskDB.create(PENDING, [entry]);
@@ -155,5 +157,7 @@ patch(SelfOrder.prototype, {
         }
         await this._refreshKioskCounts();
         await this.flushKioskRegistrations();
+        const remaining = await this._kioskReadStore(FAILED);
+        return { retried: failed.length, remaining };
     },
 });
