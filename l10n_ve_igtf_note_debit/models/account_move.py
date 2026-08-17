@@ -47,7 +47,18 @@ class AccountMove(models.Model):
         # limpia, la ND que creamos a continuación hereda ese contexto y
         # Odoo nunca genera sus líneas de impuesto/por-cobrar (el total
         # queda en 0 aunque `price_unit` esté bien).
-        self = self.with_context(skip_invoice_sync=False)
+        # `l10n_ve_skip_refund_origin_validation`: la ND de IGTF lleva una
+        # única línea con el producto de "Percepción de IGTF", que por
+        # diseño NUNCA está en la factura de origen -- no es una corrección
+        # de lo vendido, es un documento fiscal aparte. La validación de
+        # `_validate_refund_lines_against_origin` (que exigirá que los
+        # productos de una ND/NC estén en la factura original) debe
+        # saltarse aquí, igual que se salta para las NC de diferencial
+        # cambiario.
+        self = self.with_context(
+            skip_invoice_sync=False,
+            l10n_ve_skip_refund_origin_validation=True,
+        )
         company = invoice.company_id
         is_customer = invoice.move_type in ("out_invoice", "in_refund")
 
