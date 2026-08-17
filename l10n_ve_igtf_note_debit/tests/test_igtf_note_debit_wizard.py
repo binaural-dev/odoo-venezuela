@@ -1,6 +1,7 @@
 from odoo.tests import tagged, Form
 from odoo.tools import float_compare
 from odoo import fields
+from odoo.exceptions import UserError
 
 from odoo.addons.l10n_ve_igtf.tests.test_igtf_common_partner_formal_VEF import IGTFTestCommon
 
@@ -157,12 +158,12 @@ class TestIgtfNoteDebitWizard(IGTFTestCommon):
             own_payment = payments.filtered(lambda p: invoice in p.reconciled_invoice_ids)
             self.assertEqual(debit_notes.origin_payment_to_pay_igtf, own_payment.move_id)
 
-    def test_multi_invoice_payment_grouped_generates_single_debit_note(self):
+    def test_multi_invoice_payment_grouped_is_blocked_in_debit_note_mode(self):
         """Pago AGRUPADO de varias facturas (`group_payment=True`, un solo
-        `account.payment` cubriendo ambas) -- espejo del flujo legado
-        (`test15` de `l10n_ve_igtf`, que embebe una única línea de IGTF
-        agregada): en modo ND debe generarse una única Nota de Débito por
-        el IGTF total, atribuida a una de las dos facturas del grupo."""
+        `account.payment` cubriendo ambas) no está soportado en modo ND: no
+        hay forma correcta de atribuir el documento fiscal a una sola
+        factura cuando el IGTF corresponde a varias. Debe bloquearse con un
+        error claro en vez de generar una ND mal atribuida."""
         self._activate_debit_note_mode()
         invoices = self._create_two_usd_invoices()
 
@@ -181,17 +182,11 @@ class TestIgtfNoteDebitWizard(IGTFTestCommon):
             pay_form.save()
 
         wizard = pay_form.record
-        action = wizard.action_create_payments()
-        payment = self.env["account.payment"].browse(action.get("res_id"))
+        with self.assertRaises(UserError):
+            wizard.action_create_payments()
 
-        self.assertEqual(len(payment.reconciled_invoice_ids), 2, "El pago agrupado debe cubrir ambas facturas.")
-        self.assertEqual(payment.state, "paid")
         for invoice in invoices:
-            self.assertEqual(invoice.payment_state, "paid")
-
-        all_debit_notes = invoices.debit_note_ids.filtered(lambda dn: dn.l10n_ve_igtf_note_debit_origin)
-        self.assertEqual(
-            len(all_debit_notes), 1,
-            "Un pago agrupado debe generar UNA sola ND por el IGTF total, no una por factura.",
-        )
-        self.assertEqual(all_debit_notes.origin_payment_to_pay_igtf, payment.move_id)
+            self.assertFalse(
+                invoice.debit_note_ids.filtered(lambda dn: dn.l10n_ve_igtf_note_debit_origin),
+                "No debe quedar ninguna ND generada tras el bloqueo.",
+            )

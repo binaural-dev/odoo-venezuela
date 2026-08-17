@@ -1,7 +1,6 @@
 from odoo.tests import tagged, Form
 from odoo.tools import float_compare
 from odoo import fields
-from odoo.exceptions import UserError
 
 from odoo.addons.l10n_ve_igtf.tests.test_igtf_common_partner_formal_VEF import IGTFTestCommon
 
@@ -177,78 +176,6 @@ class TestIgtfNoteDebitMulticurrency(IGTFTestCommon):
         ])
         self.assertTrue(vef_payments, "Debe existir un pago aparte en VEF por el IGTF.")
         self.assertEqual(vef_payments.state, "paid")
-
-    def _register_multi_invoice_payment(self, invoices, journal, group_payment):
-        """Registra un pago sobre varias facturas a la vez (mismo camino que
-        usan test14/test15 de `l10n_ve_igtf`: acción de pago desde las líneas
-        de `account.move.line`), con `group_payment` explícito."""
-        lines_to_pay = invoices.line_ids.filtered(
-            lambda l: l.account_id.account_type in ("asset_receivable", "liability_payable")
-            and not l.reconciled
-        )
-        action = lines_to_pay.action_register_payment()
-        ctx = action["context"]
-        ctx.update({
-            "active_model": "account.move.line",
-            "active_ids": lines_to_pay.ids,
-        })
-        with Form(self.env["account.payment.register"].with_context(ctx)) as pay_form:
-            pay_form.journal_id = journal
-            pay_form.payment_date = fields.Date.today()
-            pay_form.save()
-            pay_form.group_payment = group_payment
-        return pay_form.record
-
-    def test_multi_invoice_not_grouped_generates_one_debit_note_per_invoice(self):
-        """Con `group_payment=False`, cada factura se paga con su propio
-        `account.payment` -- cada uno debe generar su propia ND de IGTF,
-        vinculada a SU factura de origen (no a la primera del lote)."""
-        invoice_1 = self._create_invoice_usd(1000.00)
-        invoice_1.with_context(move_action_post_alert=True).action_post()
-        invoice_2 = self._create_invoice_usd(500.00)
-        invoice_2.with_context(move_action_post_alert=True).action_post()
-        invoices = invoice_1 | invoice_2
-
-        payment_register_wiz = self._register_multi_invoice_payment(
-            invoices, self.bank_journal_usd, group_payment=False,
-        )
-        action = payment_register_wiz.action_create_payments()
-        payments = self.env["account.payment"].search(action.get("domain"))
-
-        self.assertEqual(len(payments), 2, "Debe crearse un pago por factura.")
-
-        for invoice in (invoice_1, invoice_2):
-            debit_notes = invoice.debit_note_ids.filtered(
-                lambda dn: dn.l10n_ve_igtf_note_debit_origin
-            )
-            self.assertEqual(
-                len(debit_notes), 1,
-                f"La factura {invoice.name} debe tener exactamente una ND propia.",
-            )
-            payment_for_invoice = payments.filtered(
-                lambda p: invoice in p.invoices_origin_ids
-            )
-            self.assertEqual(len(payment_for_invoice), 1)
-            self.assertEqual(
-                debit_notes.origin_payment_to_pay_igtf, payment_for_invoice.move_id,
-                "La ND debe apuntar al pago de SU propia factura, no al de la otra.",
-            )
-
-    def test_multi_invoice_grouped_payment_is_blocked_in_debit_note_mode(self):
-        """Control: `group_payment=True` sobre varias facturas no es
-        soportado por el flujo de ND -- debe bloquearse con un error claro
-        en vez de generar una ND mal atribuida a una sola factura."""
-        invoice_1 = self._create_invoice_usd(1000.00)
-        invoice_1.with_context(move_action_post_alert=True).action_post()
-        invoice_2 = self._create_invoice_usd(500.00)
-        invoice_2.with_context(move_action_post_alert=True).action_post()
-        invoices = invoice_1 | invoice_2
-
-        payment_register_wiz = self._register_multi_invoice_payment(
-            invoices, self.bank_journal_usd, group_payment=True,
-        )
-        with self.assertRaises(UserError):
-            payment_register_wiz.action_create_payments()
 
     def test_vef_journal_without_igtf_does_not_generate_debit_note(self):
         """Control negativo: pagar por un diario que NO es IGTF (VEF local)
