@@ -45,6 +45,51 @@ El sistema SHALL persistir `mf_invoice_number`/`fiscal_machine`/`mf_reportz` en 
 `pos.order.write_mf_invoice_data`, expuesto al Kiosko público mediante un endpoint
 dedicado que valida el `access_token` y que la orden pertenezca a la caja.
 
+#### Scenario: Tras imprimir se persiste el número en orden y factura
+
+- **GIVEN** una orden del Kiosko registrada en Odoo que acaba de imprimirse en la
+  máquina fiscal, obteniendo un `mf_invoice_number`
+- **WHEN** el cliente invoca el endpoint público de persistencia con el número, el
+  serial y el `access_token` de la caja
+- **THEN** el servidor escribe `mf_invoice_number`/`fiscal_machine`/`mf_reportz` en
+  la `pos.order` y los propaga al `account.move` asociado
+
+#### Scenario: El endpoint rechaza una orden ajena a la caja
+
+- **GIVEN** un `access_token` de una caja y un `order_id` que no pertenece a esa
+  caja
+- **WHEN** se invoca el endpoint de persistencia
+- **THEN** no se escribe nada y se devuelve un error ("Orden no encontrada para
+  esta caja")
+
+### Requirement: El bus de pago del Kiosko incluye los pagos
+
+El sistema SHALL incluir los registros `pos.payment` en el evento `PAYMENT_STATUS`
+que el Kiosko emite al cliente, de modo que la orden confirmada tenga sus pagos en
+el cliente y la impresión fiscal pueda derivar el método (`code_fiscal_printer`) y
+el monto.
+
+#### Scenario: La confirmación recibe los pagos
+
+- **GIVEN** una orden del Kiosko registrada y pagada
+- **WHEN** el servidor emite `PAYMENT_STATUS` al confirmar
+- **THEN** el `data` del evento incluye `pos.payment` (además de `pos.order` y
+  `pos.order.line`), y en el cliente `order.payment_ids` queda poblado tras
+  `connectNewData`
+
+### Requirement: El panel de órdenes fiscales persiste entre sesiones
+
+El sistema SHALL poblar el panel de órdenes fiscales del Kiosko con las órdenes
+recientes de la caja traídas del servidor (no solo las que queden en memoria del
+cliente), para que no se pierdan al iniciar una orden nueva o recargar.
+
+#### Scenario: El panel muestra órdenes de turnos anteriores
+
+- **GIVEN** una caja con órdenes registradas en sesiones ya cerradas
+- **WHEN** el operador abre el panel de órdenes fiscales (o pulsa "Actualizar")
+- **THEN** el panel las lista (últimas N de la caja) con su estado fiscal, y
+  permite imprimir las pendientes o reimprimir la copia de las ya emitidas
+
 ### Requirement: La impresión fiscal del Kiosko es idempotente
 
 El sistema SHALL evitar reimprimir o volver a cobrar una orden del Kiosko cuando

@@ -158,5 +158,8 @@
 ## 9. OpenSpec
 
 - [x] 9.1 Proposal + spec delta + tasks escritos.
-- [ ] 9.2 `openspec change validate l10n-ve-pos-mf-self-order-fiscal-print`
+- [x] 9.2 `openspec validate --type change l10n-ve-pos-mf-self-order-fiscal-print`
       → válido.
+- [x] 9.3 Requirements añadidos: persistencia del nº fiscal (endpoint
+      write_mf_invoice_data), pagos en el bus PAYMENT_STATUS, panel de órdenes
+      persistente desde el servidor.
