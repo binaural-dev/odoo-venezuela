@@ -124,10 +124,20 @@ class TestCrmTeamForeignCurrency(TransactionCase):
 
     def test_04_invoiced_target_zero_without_foreign_currency(self):
         """No foreign_currency_id configured -> invoiced_target degrades to 0.0."""
+        # El constraint permanente de res.company (_check_foreign_currency_id_required,
+        # de este módulo) rechaza cualquier create()/write() sin
+        # foreign_currency_id, así que la compañía se crea con moneda
+        # comercial y se le quita por SQL directo, sin pasar por el ORM.
         company_without_foreign_currency = self.env["res.company"].create({
             "name": "Test Company Sin Moneda Alterna",
             "currency_id": self.vef.id,
+            "foreign_currency_id": self.usd.id,
         })
+        self.env.cr.execute(
+            "UPDATE res_company SET foreign_currency_id = NULL WHERE id = %s",
+            (company_without_foreign_currency.id,),
+        )
+        company_without_foreign_currency.invalidate_recordset()
         team = self.env["crm.team"].create({
             "name": "Equipo sin moneda alterna",
             "company_id": company_without_foreign_currency.id,

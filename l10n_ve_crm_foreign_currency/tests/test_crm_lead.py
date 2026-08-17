@@ -152,17 +152,22 @@ class TestCrmLeadForeignCurrency(TransactionCase):
         If the company has no foreign_currency_id configured, expected_revenue
         must safely default to 0.0 instead of raising.
 
-        Nota: se crea una compañía nueva sin foreign_currency_id desde el
-        create() (nunca se le hace write a ese campo) porque el write() de
-        res.company en l10n_ve_rate busca account.move.line en TODA la base
-        de datos (sin filtrar por compañía) para bloquear el cambio; en una
-        base con movimientos reales en la moneda alterna, cualquier write a
-        ese campo falla sin relación con esta funcionalidad.
+        Nota: el constraint permanente de res.company
+        (_check_foreign_currency_id_required, de este módulo) rechaza
+        cualquier create()/write() sin foreign_currency_id, así que la
+        compañía se crea con moneda comercial y se le quita por SQL directo,
+        sin pasar por el ORM.
         """
         company_without_foreign_currency = self.env["res.company"].create({
             "name": "Test Company Sin Moneda Alterna",
             "currency_id": self.vef.id,
+            "foreign_currency_id": self.usd.id,
         })
+        self.env.cr.execute(
+            "UPDATE res_company SET foreign_currency_id = NULL WHERE id = %s",
+            (company_without_foreign_currency.id,),
+        )
+        company_without_foreign_currency.invalidate_recordset()
         lead = self.env["crm.lead"].create({
             "name": "Oportunidad sin moneda alterna",
             "company_id": company_without_foreign_currency.id,
