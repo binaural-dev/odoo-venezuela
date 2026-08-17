@@ -25,6 +25,11 @@ import { buildKioskFiscalPayload } from "@l10n_ve_pos_mf_self_order/app/fiscal_p
 patch(SelfOrder.prototype, {
     setup() {
         super.setup(...arguments);
+        // Estado reactivo para el overlay "Espere mientras se imprime su
+        // factura" (self_order_index_fiscal.xml), leído desde la raíz del
+        // Kiosko para cubrir cualquier pantalla (la impresión ocurre ya en
+        // confirmationPage, ver más abajo).
+        this.printingFiscalInvoice = false;
         // Solo en modo kiosko y si la caja tiene habilitada la máquina fiscal.
         // Fire-and-forget: no bloquea el arranque de la app.
         if (this.kioskMode && this.config?.access_button_mf) {
@@ -45,7 +50,11 @@ patch(SelfOrder.prototype, {
      * (Megasoft/terminal → bus PAYMENT_STATUS → connectNewData → aquí). Se
      * imprime solo si la orden está pagada y aún no tiene número fiscal; el
      * pago se deriva de `order.payment_ids` (ya presentes tras el registro).
-     * Fire-and-forget: no bloquea la pantalla de confirmación.
+     * Fire-and-forget respecto a la navegación (no bloquea el paso a
+     * confirmationPage), pero `printingFiscalInvoice` queda en true mientras
+     * tanto para que el overlay (self_order_index_fiscal.xml) le avise al
+     * cliente que espere — sin eso, la orden ya se ve "confirmada" en pantalla
+     * mientras la máquina fiscal todavía está imprimiendo en segundo plano.
      */
     async confirmationPage(screen_mode, device, access_token) {
         const res = await super.confirmationPage(...arguments);
@@ -58,23 +67,28 @@ patch(SelfOrder.prototype, {
                 !order.mf_invoice_number &&
                 ["paid", "done", "invoiced"].includes(order.state)
             ) {
-                this.printKioskFiscalInvoice(order).then((result) => {
-                    if (!result || !result.valid) {
-                        console.error(
-                            "[MF Kiosk] impresión fiscal en confirmación falló:",
-                            result && result.message
-                        );
-                        this.dialog.add(AlertDialog, {
-                            title: _t("Factura fiscal no impresa"),
-                            body: _t(
-                                "La orden quedó registrada y facturada. La factura fiscal " +
-                                    "no se pudo imprimir (motivo: %s). Puede reimprimirse desde " +
-                                    "el menú de Debug MF.",
-                                (result && result.message) || "error desconocido"
-                            ),
-                        });
-                    }
-                });
+                this.printingFiscalInvoice = true;
+                this.printKioskFiscalInvoice(order)
+                    .then((result) => {
+                        if (!result || !result.valid) {
+                            console.error(
+                                "[MF Kiosk] impresión fiscal en confirmación falló:",
+                                result && result.message
+                            );
+                            this.dialog.add(AlertDialog, {
+                                title: _t("Factura fiscal no impresa"),
+                                body: _t(
+                                    "La orden quedó registrada y facturada. La factura fiscal " +
+                                        "no se pudo imprimir (motivo: %s). Puede reimprimirse desde " +
+                                        "el menú de Debug MF.",
+                                    (result && result.message) || "error desconocido"
+                                ),
+                            });
+                        }
+                    })
+                    .finally(() => {
+                        this.printingFiscalInvoice = false;
+                    });
             }
         }
         return res;

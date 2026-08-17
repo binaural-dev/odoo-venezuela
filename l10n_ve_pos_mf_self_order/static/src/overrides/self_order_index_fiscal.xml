@@ -9,6 +9,12 @@
                     t-on-click="openMfDebug">
                 🛠 Debug MF
             </button>
+            <div t-if="selfOrder.printingFiscalInvoice"
+                 class="position-fixed top-0 start-0 w-100 min-vh-100 d-flex flex-column justify-content-center align-items-center bg-black bg-opacity-75 text-white"
+                 style="z-index: 2100;">
+                <span class="spinner-border mb-3" style="width: 3rem; height: 3rem;" role="status"/>
+                <div class="fs-3 fw-bold text-center px-3">Espere mientras se imprime su factura...</div>
+            </div>
         </xpath>
     </t>
 </templates>

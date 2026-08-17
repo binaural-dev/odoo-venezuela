@@ -141,3 +141,20 @@ que el Kiosko usa loaders con lista explícita distintos del loader de caja.
   `serial_machine`, `has_cashbox`, etc.), `pos.payment.method` trae
   `code_fiscal_printer`, `account.tax` trae `fiscal_code`, y `pos.order` trae
   `mf_invoice_number`/`fiscal_machine`/`mf_reportz`
+
+### Requirement: El cliente ve feedback mientras se imprime la factura fiscal
+
+El sistema SHALL mostrar un overlay bloqueante ("Espere mientras se imprime su
+factura...") en toda la app del Kiosko mientras `printKioskFiscalInvoice` está en
+curso tras la confirmación, para que el cliente no vea la pantalla de
+confirmación como si ya estuviera todo listo mientras la máquina fiscal sigue
+imprimiendo en segundo plano.
+
+#### Scenario: Impresión en curso al llegar a la confirmación
+
+- **GIVEN** una orden del Kiosko recién registrada y facturada, sin
+  `mf_invoice_number`, con la máquina fiscal conectada
+- **WHEN** `confirmationPage` dispara `printKioskFiscalInvoice`
+- **THEN** el overlay se muestra desde que empieza la impresión hasta que
+  `printKioskFiscalInvoice` resuelve (éxito o fallo), sin bloquear la
+  navegación a la pantalla de confirmación en sí

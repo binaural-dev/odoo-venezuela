@@ -136,6 +136,16 @@
       igual. Así las órdenes ya no se pierden al iniciar una orden nueva o recargar.
 - [ ] 6.3 Respaldo en caja: la orden queda marcada para reimprimir desde el POS
       de caja (`write_mf_invoice_data` / `PrintPendingOrderButton`).
+- [x] 6.5 Overlay "Espere mientras se imprime su factura..." (raíz
+      `selfOrderIndex`, `self_order_index_fiscal.xml`): antes la impresión en
+      `confirmationPage` era puramente fire-and-forget, así que el cliente veía
+      la confirmación como si ya estuviera todo listo mientras la máquina
+      fiscal seguía imprimiendo detrás. Estado reactivo
+      `selfOrder.printingFiscalInvoice` (patch de `SelfOrder.setup`/
+      `confirmationPage` en `self_order_fiscal.js`), en true desde que arranca
+      `printKioskFiscalInvoice` hasta que resuelve (`finally`). No bloquea la
+      navegación a confirmación, solo cubre la pantalla con el overlay mientras
+      dura la impresión.
 
 ## 7. Tests (Python; el usuario los corre — convención del repo)
 
@@ -154,6 +164,9 @@
 - [ ] 8.4 Regresión (sanity): caja normal (cajero) imprime fiscal igual — no se
       tocó `PosStore` ni el driver; solo se comparte `window.fiscalPrinter` si
       conviven en el mismo navegador.
+- [ ] 8.5 Al confirmar una orden que dispara impresión fiscal, el overlay
+      "Espere mientras se imprime su factura..." aparece y desaparece solo al
+      terminar (éxito o fallo), sin quedarse pegado ni parpadear de más.
 
 ## 9. OpenSpec
 
