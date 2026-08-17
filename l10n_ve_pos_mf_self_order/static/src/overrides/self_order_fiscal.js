@@ -2,6 +2,9 @@
 
 import { patch } from "@web/core/utils/patch";
 import { SelfOrder } from "@pos_self_order/app/services/self_order_service";
+import { rpc } from "@web/core/network/rpc";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { _t } from "@web/core/l10n/translation";
 import { TfhkaDriver } from "@l10n_ve_mf_base/drivers/TfhkaDriver";
 import { buildKioskFiscalPayload } from "@l10n_ve_pos_mf_self_order/app/fiscal_payload";
 
@@ -27,6 +30,54 @@ patch(SelfOrder.prototype, {
         if (this.kioskMode && this.config?.access_button_mf) {
             this.ensureFiscalPrinterConnected();
         }
+    },
+
+    /**
+     * Enganche de impresión fiscal (modelo REGISTRAR-PRIMERO).
+     *
+     * Se imprime la factura fiscal SOLO al llegar a la confirmación, cuando la
+     * orden YA está registrada y facturada en Odoo (con id de servidor). Nunca
+     * antes — así jamás se emite un documento fiscal (número SENIAT) sin su
+     * orden/factura en Odoo. El número resultante se persiste en el servidor
+     * (orden + account.move) vía `write_mf_invoice_data`.
+     *
+     * `confirmationPage` es el punto genérico por el que pasan todos los pagos
+     * (Megasoft/terminal → bus PAYMENT_STATUS → connectNewData → aquí). Se
+     * imprime solo si la orden está pagada y aún no tiene número fiscal; el
+     * pago se deriva de `order.payment_ids` (ya presentes tras el registro).
+     * Fire-and-forget: no bloquea la pantalla de confirmación.
+     */
+    async confirmationPage(screen_mode, device, access_token) {
+        const res = await super.confirmationPage(...arguments);
+        if (this.kioskMode && access_token && this.config?.access_button_mf) {
+            const order = this.models["pos.order"].find(
+                (o) => o.access_token === access_token
+            );
+            if (
+                order &&
+                !order.mf_invoice_number &&
+                ["paid", "done", "invoiced"].includes(order.state)
+            ) {
+                this.printKioskFiscalInvoice(order).then((result) => {
+                    if (!result || !result.valid) {
+                        console.error(
+                            "[MF Kiosk] impresión fiscal en confirmación falló:",
+                            result && result.message
+                        );
+                        this.dialog.add(AlertDialog, {
+                            title: _t("Factura fiscal no impresa"),
+                            body: _t(
+                                "La orden quedó registrada y facturada. La factura fiscal " +
+                                    "no se pudo imprimir (motivo: %s). Puede reimprimirse desde " +
+                                    "el menú de Debug MF.",
+                                (result && result.message) || "error desconocido"
+                            ),
+                        });
+                    }
+                });
+            }
+        }
+        return res;
     },
 
     /** @returns {TfhkaDriver|null} */
@@ -160,13 +211,54 @@ patch(SelfOrder.prototype, {
             };
         }
 
-        // Guardar los datos de la MF en la orden (espejo de
+        // Guardar los datos de la MF en la orden en cliente (espejo de
         // PosStore.set_data_from_fiscal_machine).
         order.fiscal_machine = response.serial || response.serial_machine || "TFHKA-LOCAL";
         order.mf_invoice_number = response.invoiceNumber || response.invoice_number || "";
         order.mf_reportz = String(response.reportZ || response.mf_reportz || "");
 
-        return { valid: true, message: "", response };
+        // Persistir el número en el servidor (orden + account.move) vía
+        // write_mf_invoice_data, igual que la caja (PrintPendingOrderButton).
+        // Solo si la orden YA está registrada en Odoo (id numérico). Con el
+        // modelo "registrar-primero" siempre lo estará al llegar aquí.
+        const persisted = await this._persistKioskFiscalNumber(order);
+        return { valid: true, message: "", response, persisted };
+    },
+
+    /**
+     * Persiste `mf_invoice_number`/`fiscal_machine`/`mf_reportz` en el servidor
+     * (orden + account.move) vía el endpoint público del Kiosko, que delega en
+     * `pos.order.write_mf_invoice_data`. Devuelve true si persistió.
+     *
+     * Si la orden aún no está sincronizada (id no numérico) no hay nada que
+     * persistir por RPC (el número viajará con la orden al registrarse). Si el
+     * RPC falla, NO es fatal: el papel ya salió y la orden ya existe en Odoo;
+     * queda pendiente de persistir y se puede reintentar reimprimiendo.
+     */
+    async _persistKioskFiscalNumber(order) {
+        if (typeof order.id !== "number") {
+            return false;
+        }
+        try {
+            const res = await rpc(
+                "/l10n_ve_pos_mf_self_order/kiosk/write_mf_invoice_data",
+                {
+                    access_token: this.access_token,
+                    order_id: order.id,
+                    mf_invoice_number: order.mf_invoice_number,
+                    fiscal_machine: order.fiscal_machine,
+                    mf_reportz: order.mf_reportz || false,
+                }
+            );
+            if (!res || !res.success) {
+                console.error("[MF Kiosk] write_mf_invoice_data no persistió:", res && res.error);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error("[MF Kiosk] falló persistir el número fiscal en el servidor", error);
+            return false;
+        }
     },
 
     /**

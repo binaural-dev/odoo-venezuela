@@ -25,22 +25,33 @@ accesible (despliegues con Odoo remoto), una orden ya **pagada** puede quedarse
 factura no se imprime y la orden no se registra.
 
 El objetivo de esta característica es: **una vez el pago está aprobado y la orden
-confirmada, la impresión de la factura fiscal se hace en local y no se pierde por
-un fallo del servidor.** La impresión fiscal (Web Serial → TFHKA) ya es 100%
-local; lo que falta es (a) traerla al bundle del Kiosko reutilizando el driver y
-la lógica de `l10n_ve_pos_mf`, y (b) desacoplarla del RPC al servidor
-(imprimir-primero, sincronizar-después).
+confirmada y REGISTRADA en Odoo, se imprime la factura fiscal en local.** La
+impresión fiscal (Web Serial → TFHKA) ya es 100% local; lo que falta es (a)
+traerla al bundle del Kiosko reutilizando el driver y la lógica de
+`l10n_ve_pos_mf`, y (b) dispararla en el momento correcto.
 
 ## What Changes
 
-### Principio: imprimir-primero / sincronizar-después
+### Principio: REGISTRAR-PRIMERO, imprimir-después
 
-Al aprobarse el pago del Kiosko: **1)** imprimir la factura fiscal en local desde
-los datos en memoria, **2)** guardar `mf_invoice_number`/`fiscal_machine`/
-`mf_reportz` en la orden, **3)** enviar la orden al servidor **con reintento +
-cola local**, sin bloquear ni abortar el flujo. La factura contable
-(`account.move`) se crea en el servidor al sincronizar, arrastrando el número
-fiscal vía `_prepare_invoice_vals` (mecanismo ya existente en `l10n_ve_pos_mf`).
+Regla fiscal innegociable: **una factura fiscal (número SENIAT) nunca debe
+existir sin su orden/factura en Odoo.** Por eso el Kiosko REGISTRA primero y
+imprime después:
+
+1. Al aprobarse el pago, se **registra** la orden en Odoo (RPC `/kiosk/payment`),
+   que crea la `pos.order` + la factura contable (`account.move`).
+2. Solo cuando la orden ya existe en Odoo (al llegar a la **confirmación**) se
+   **imprime** la factura fiscal en la máquina, y el número resultante se
+   **persiste** en la orden y en el `account.move` vía
+   `pos.order.write_mf_invoice_data` (el MISMO método que usa la caja en
+   `PrintPendingOrderButton`), a través de un endpoint público del Kiosko.
+3. Si la impresión falla, la orden queda **pendiente de imprimir** (registrada y
+   facturada, sin número fiscal) y se reimprime luego (menú Debug MF / respaldo
+   caja) — la numeración fiscal no tiene huecos: la máquina numera solo lo que
+   imprime.
+4. Si el REGISTRO falla (servidor caído), NO se imprime (no hay orden en Odoo);
+   la orden se **encola** para reintento automático y la impresión queda
+   pendiente hasta que el registro entre.
 
 Se distinguen dos "facturas": la **fiscal** (impreso legal de la TFHKA →
 inmediata, local) y la **contable de Odoo** (`account.move` → diferida, al
@@ -84,12 +95,21 @@ inyecta los campos fiscales. Se replican para el Kiosko:
   rate` (que `recompute_prices` ya fija). Trade-off aceptado: la forma del payload
   del driver queda en dos sitios (caja + Kiosko), pero es el contrato estable de
   la TFHKA; a cambio, **cero riesgo para el `PosStore` de producción de la caja**.
-- **Conexión al puerto**: componente systray espejo reducido de
-  `FiscalPrinterButton` (`autoConnect()` silencioso + pareo inicial con gesto).
-- **Enganche imprimir-primero**: en el flujo de finalización del Kiosko
-  (finalización de pago Megasoft/Sitef y `SelfOrder.confirmationPage()` para pago
-  en caja), imprimir fiscal ANTES del RPC de registro; guardar el número en la
-  orden; RPC con reintento. Navegar a confirmación aunque el RPC falle.
+- **Conexión al puerto**: auto-conexión silenciosa al arrancar (kiosko
+  desatendido, sin botón de cara al cliente) + pareo manual desde el menú Debug.
+- **Enganche registrar-primero (genérico)**: la impresión se dispara en
+  `SelfOrder.confirmationPage()` — el punto por el que pasan TODOS los pagos
+  (Megasoft/terminal → bus `PAYMENT_STATUS` → `connectNewData` → confirmación),
+  cuando la orden YA está registrada y facturada en Odoo (con id de servidor). Se
+  imprime solo si la orden está pagada y sin `mf_invoice_number`; el pago se
+  deriva de `order.payment_ids`. **Megasoft NO imprime** (solo registra +
+  encola); toda la lógica fiscal vive en este módulo.
+- **Persistencia del número (reuso de `write_mf_invoice_data`)**: tras imprimir,
+  el número se persiste en la orden y el `account.move` con el MISMO método
+  server que la caja (`pos.order.write_mf_invoice_data`), expuesto al Kiosko
+  público por un endpoint dedicado (`controllers/main.py` →
+  `/l10n_ve_pos_mf_self_order/kiosk/write_mf_invoice_data`, valida `access_token`
+  y que la orden pertenezca a la caja).
 - **Persistencia + reintento reutilizando el motor del POS**: la orden pendiente
   se guarda en **IndexedDB** reutilizando el `PosData` que el Kiosko ya carga
   pero tiene desactivado en modo kiosko (`data_service.js` — no-op salvo
@@ -116,9 +136,10 @@ cobrar. Reutiliza el mismo driver (`printInvoice(payload)`).
 ### New Capabilities
 
 - `pos-self-order-kiosk-fiscal-print`: el Kiosko imprime la factura fiscal
-  (TFHKA, Web Serial) al confirmar la orden, en local, de forma resiliente al
-  servidor (imprimir-primero / sincronizar-después) y con reimpresión de
-  fallidas por modo debug.
+  (TFHKA, Web Serial) al confirmar la orden, en local, bajo el modelo
+  registrar-primero (la orden ya existe en Odoo antes de imprimir), persistiendo
+  el número con `write_mf_invoice_data`, y con reimpresión de fallidas por modo
+  debug + cola de reintento del registro ante servidor caído.
 
 ## Impact
 

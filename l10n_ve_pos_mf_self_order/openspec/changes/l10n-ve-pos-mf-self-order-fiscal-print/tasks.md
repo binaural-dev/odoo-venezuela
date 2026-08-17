@@ -65,21 +65,28 @@
       `payment_lines` EXPLÍCITAS (método aprobado + monto), porque el pago se
       registra server-side y la orden del cliente no tiene `payment_ids` al
       imprimir. (Ver 3.1.)
-- [x] 4.4 `SelfOrder.printKioskFiscalInvoice(order, {paymentMethod, amount})`:
-      conecta driver → `buildKioskFiscalPayload` → `printInvoice(payload)` →
-      guarda `mf_invoice_number`/`fiscal_machine`/`mf_reportz` en la orden.
-      Idempotente (`!order.mf_invoice_number`). Espejo de
-      `set_data_from_fiscal_machine`.
+- [x] 4.4 `SelfOrder.printKioskFiscalInvoice(order)`: conecta driver →
+      `buildKioskFiscalPayload` (deriva el pago de `order.payment_ids`) →
+      `printInvoice(payload)` → guarda datos en cliente → **persiste en el
+      servidor** (`_persistKioskFiscalNumber` → endpoint write_mf_invoice_data).
+      Idempotente (`!order.mf_invoice_number`).
+- [x] 4.5 Endpoint público de persistencia (`controllers/main.py`):
+      `/l10n_ve_pos_mf_self_order/kiosk/write_mf_invoice_data` — valida
+      `access_token` (`_verify_pos_config`) + que la orden pertenezca a la caja,
+      y delega en `pos.order.write_mf_invoice_data` (persiste en orden +
+      `account.move`, sudo por readonly). Reuso del método de la caja.
 
 ## 5. Resiliencia — imprimir-primero / sincronizar-después (Fase 2)
 
-- [x] 5.1 Enganche Megasoft (`binaural_megasoft_self_order/.../payment_page.js`):
-      en `_finalizeMegasoftPayment`, imprimir fiscal ANTES del RPC
-      `/kiosk/payment` (`_printMegasoftFiscalInvoice`, delega en
-      `SelfOrder.printKioskFiscalInvoice`). Guardado (modo simulación + módulo
-      fiscal ausente); si falla NO bloquea ni recobra (queda para reimprimir en
-      debug). El nº fiscal se guarda en la orden ANTES del `serializeForORM` del
-      RPC → viaja al servidor con la orden.
+- [x] 5.1 Enganche REGISTRAR-PRIMERO (genérico, en el módulo fiscal): la
+      impresión se dispara en `SelfOrder.confirmationPage()` (patch en
+      `self_order_fiscal.js`), cuando la orden YA está registrada y facturada en
+      Odoo (con id). Se imprime si está pagada y sin `mf_invoice_number`; el pago
+      se deriva de `order.payment_ids`. **Megasoft ya NO imprime**
+      (`_printMegasoftFiscalInvoice` eliminado): `_finalizeMegasoftPayment` solo
+      REGISTRA (RPC) y, si el servidor está caído, ENCOLA (no imprime — no hay
+      orden en Odoo). Si la impresión en confirmación falla, se avisa el motivo y
+      queda pendiente de reimprimir.
 - [~] 5.2 Enganche pago-en-caja: FUERA DE ALCANCE por ahora — en pago-en-caja
       (sin terminal) el cobro y la factura fiscal los hace el CAJERO, no el
       Kiosko. Reevaluar solo si aparece un caso de Kiosko que factura sin cobrar.

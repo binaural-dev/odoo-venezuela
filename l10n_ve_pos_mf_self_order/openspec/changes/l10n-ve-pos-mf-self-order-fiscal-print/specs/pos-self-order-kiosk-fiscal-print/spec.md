@@ -2,52 +2,47 @@
 
 ## ADDED Requirements
 
-### Requirement: El Kiosko imprime la factura fiscal en local al confirmar
+### Requirement: Registrar-primero — nunca imprimir sin orden en Odoo
 
-El sistema SHALL imprimir la factura fiscal de la orden del Kiosko en la máquina
-fiscal (TFHKA, Web Serial) desde el cliente del navegador, reutilizando el driver
-(`window.fiscalPrinter`) y la lógica de armado de comandos de `l10n_ve_pos_mf`,
-sin depender de una llamada al servidor Odoo para imprimir.
+El sistema SHALL registrar la orden del Kiosko en Odoo (crear `pos.order` +
+`account.move`) ANTES de imprimir la factura fiscal, e imprimir SOLO cuando la
+orden ya existe en Odoo. Nunca debe emitirse una factura fiscal (número SENIAT)
+sin su orden/factura en Odoo.
 
-#### Scenario: Orden pagada y confirmada en el Kiosko
+#### Scenario: Orden registrada y confirmada en el Kiosko
 
-- **GIVEN** una caja en modo Kiosko con `l10n_ve_pos_mf_self_order` instalado y
-  la máquina fiscal conectada y pareada por Web Serial
-- **WHEN** el pago de una orden se aprueba y la orden se confirma
-- **THEN** se imprime la factura fiscal en la máquina, y `mf_invoice_number`,
-  `fiscal_machine` y `mf_reportz` quedan guardados en la orden
+- **GIVEN** una caja en modo Kiosko con `l10n_ve_pos_mf_self_order` instalado, la
+  máquina fiscal conectada, y el pago aprobado
+- **WHEN** la orden se registra en el servidor y el cliente llega a la pantalla de
+  confirmación (`confirmationPage`)
+- **THEN** recién ahí se imprime la factura fiscal en la máquina, tomando el pago
+  de `order.payment_ids`, y el número resultante se persiste en la orden y en el
+  `account.move` vía `write_mf_invoice_data`
 
-#### Scenario: Las líneas de pago del comprobante se toman del pago aprobado
-
-- **GIVEN** que en el Kiosko el pago se registra en el servidor y la orden del
-  cliente no tiene `payment_ids` al momento de imprimir
-- **WHEN** se arma el payload fiscal
-- **THEN** las `payment_lines` del comprobante se construyen a partir del método
-  de pago aprobado y su monto (pasados explícitamente), con
-  `code_fiscal_printer` como código de la forma de pago
-
-### Requirement: La impresión fiscal no depende del servidor (imprimir-primero)
-
-El sistema SHALL imprimir la factura fiscal ANTES e independientemente del RPC de
-registro de la orden al servidor, de modo que un fallo o indisponibilidad del
-servidor Odoo no impida ni pierda la impresión de una orden ya pagada.
-
-#### Scenario: Servidor Odoo no accesible tras aprobar el pago
+#### Scenario: Servidor Odoo no accesible al momento del pago
 
 - **GIVEN** una orden del Kiosko cuyo pago fue aprobado, con el servidor Odoo
   temporalmente no accesible
 - **WHEN** el cliente finaliza la orden
-- **THEN** la factura fiscal se imprime igual, la orden se encola localmente para
-  sincronizar, y el flujo avanza a la pantalla de confirmación sin bloquearse
+- **THEN** la orden NO se imprime (no hay orden en Odoo), se encola para reintento
+  automático del registro, y la impresión queda pendiente hasta que la orden se
+  registre
 
-#### Scenario: Sincronización diferida al volver la conexión
+#### Scenario: La impresión falla con la orden ya registrada
 
-- **GIVEN** una orden del Kiosko impresa fiscalmente y encolada localmente porque
-  el RPC de registro falló
-- **WHEN** el servidor Odoo vuelve a estar accesible
-- **THEN** la orden se sincroniza automáticamente, el servidor registra el pago y
-  genera el `account.move`, y el `mf_invoice_number` impreso queda estampado en
-  ese asiento (`_prepare_invoice_vals`)
+- **GIVEN** una orden del Kiosko ya registrada y facturada en Odoo, sin
+  `mf_invoice_number`, y la máquina fiscal no disponible
+- **WHEN** se intenta imprimir en la confirmación y falla
+- **THEN** la orden queda "pendiente de imprimir" (registrada, sin número fiscal),
+  se avisa el motivo, y puede reimprimirse luego (menú Debug MF), que persiste el
+  número con `write_mf_invoice_data`
+
+### Requirement: El número fiscal se persiste en Odoo (orden + account.move)
+
+El sistema SHALL persistir `mf_invoice_number`/`fiscal_machine`/`mf_reportz` en la
+`pos.order` y propagarlos al `account.move` tras imprimir, reutilizando
+`pos.order.write_mf_invoice_data`, expuesto al Kiosko público mediante un endpoint
+dedicado que valida el `access_token` y que la orden pertenezca a la caja.
 
 ### Requirement: La impresión fiscal del Kiosko es idempotente
 
