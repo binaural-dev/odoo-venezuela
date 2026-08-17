@@ -135,3 +135,83 @@ class TestRetentionIvaUsdExchangeRateBug(RetentionTestCommon):
                 " (390.2944)."
             ),
         )
+
+    def test_retention_iva_usd_invoice_uses_invoice_exchange_rate_bidirectional(self):
+        """
+        Prueba de bidireccionalidad pedida explícitamente por el ticket 14574:
+        factura emitida a tasa ALTA (764,3486 Bs/USD) y retención registrada
+        al día siguiente a tasa MENOR (761,2167 Bs/USD), por 9.172,19 Bs (75%
+        del IVA calculado con la tasa de la factura).
+
+        Con el bug: 9.172,19 / 761,2167 ~= $12,05 (abono de más), dejando la
+        factura en $103,95 en vez de $104,00.
+
+        Comportamiento correcto esperado (igual que en el caso de tasa al
+        alza): la retención cancela $12,00 USD exactos, dejando $104,00
+        pendientes, sin importar si la tasa subió o bajó entre la fecha de
+        la factura y la fecha de la retención.
+        """
+        self.company.auto_fill_retention_amount_iva = True
+
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        self.currency_usd.rate_ids.filtered(
+            lambda r: r.name in (fields.Date.today(), yesterday)
+        ).unlink()
+        self.env["res.currency.rate"].create(
+            [
+                {
+                    "currency_id": self.currency_usd.id,
+                    "name": yesterday,
+                    "rate": 1 / 764.3486,
+                },
+                {
+                    "currency_id": self.currency_usd.id,
+                    "name": fields.Date.today(),
+                    "rate": 1 / 761.2167,
+                },
+            ]
+        )
+
+        invoice = self._create_invoice_usd_reten_iva(
+            amount=100.0, partner=self.partner_pnr_75, journal=self.sale_journal
+        )
+
+        self.assertEqual(invoice.currency_id, self.currency_usd)
+        self.assertAlmostEqual(invoice.amount_total, 116.0, places=2)
+
+        invoice.generate_iva_retention = True
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        ret = invoice.retention_iva_line_ids[0].retention_id
+        ret.number = ret.number or "12345678901235"
+        ret.action_post()
+
+        receivable_line = invoice.line_ids.filtered(
+            lambda l: l.account_id.account_type == "asset_receivable"
+        )
+        self.assertEqual(len(receivable_line), 1)
+
+        self.assertAlmostEqual(
+            receivable_line.amount_residual_currency,
+            104.00,
+            places=2,
+            msg=(
+                "Con tasa a la baja, la retención debería seguir cancelando"
+                " exactamente $12.00 USD (75% de $16 de IVA), dejando $104.00"
+                " pendientes, en vez del abono excedente de ~$12.05 que"
+                " produce el bug (usando la tasa de la retención en vez de"
+                " la tasa de la factura)."
+            ),
+        )
+
+        pay = ret.payment_ids[0]
+        self.assertAlmostEqual(
+            pay.retention_foreign_amount,
+            12.00,
+            places=2,
+            msg=(
+                "El monto en USD de la retención debe ser $12.00 exactos"
+                " también cuando la tasa baja entre la fecha de la factura y"
+                " la fecha de la retención."
+            ),
+        )
