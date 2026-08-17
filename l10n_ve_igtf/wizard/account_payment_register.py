@@ -52,7 +52,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         comodel_name='account.journal',
         compute='_compute_available_journal_ids',
     )
-    last_computed_amount = fields.Float("Last Computed Amount")
+    last_computed_amount = fields.Float()
 
     def get_moves(self):
         return self.env["l10n_ve_igtf.utils"].get_moves_from_context()
