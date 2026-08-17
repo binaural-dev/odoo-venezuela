@@ -49,27 +49,63 @@ patch(SelfOrder.prototype, {
         return `l10n_ve_kiosk_sync_${this.config.id}`;
     },
 
-    _readKioskQueue() {
+    // Cola de FALLIDAS: órdenes que el servidor rechazó por un error de negocio
+    // (no de red). NO se descartan NUNCA — quedan para acción manual (reintento
+    // desde debug o respaldo de caja). Es la garantía de "no perder órdenes".
+    _kioskFailedKey() {
+        return `l10n_ve_kiosk_failed_${this.config.id}`;
+    },
+
+    _readLsArray(key) {
         try {
-            const raw = browser.localStorage.getItem(this._kioskSyncKey());
+            const raw = browser.localStorage.getItem(key);
             const parsed = raw ? JSON.parse(raw) : [];
             return Array.isArray(parsed) ? parsed : [];
         } catch (error) {
-            console.error("[Kiosk sync] cola ilegible, se descarta", error);
+            console.error("[Kiosk sync] almacenamiento ilegible", key, error);
             return [];
         }
     },
 
-    _writeKioskQueue(queue) {
+    _writeLsArray(key, arr) {
         try {
-            browser.localStorage.setItem(this._kioskSyncKey(), JSON.stringify(queue));
+            browser.localStorage.setItem(key, JSON.stringify(arr));
         } catch (error) {
-            console.error("[Kiosk sync] no se pudo persistir la cola", error);
+            console.error("[Kiosk sync] no se pudo persistir", key, error);
         }
+    },
+
+    _readKioskQueue() {
+        return this._readLsArray(this._kioskSyncKey());
+    },
+
+    _writeKioskQueue(queue) {
+        this._writeLsArray(this._kioskSyncKey(), queue);
+    },
+
+    _readKioskFailed() {
+        return this._readLsArray(this._kioskFailedKey());
+    },
+
+    _writeKioskFailed(arr) {
+        this._writeLsArray(this._kioskFailedKey(), arr);
+    },
+
+    _pushKioskFailed(entry) {
+        const failed = this._readKioskFailed();
+        if (failed.some((e) => e.uuid === entry.uuid)) {
+            return;
+        }
+        failed.push({ ...entry, failedAt: Date.now() });
+        this._writeKioskFailed(failed);
     },
 
     get kioskPendingCount() {
         return this._readKioskQueue().length;
+    },
+
+    get kioskFailedCount() {
+        return this._readKioskFailed().length;
     },
 
     /**
@@ -91,10 +127,11 @@ patch(SelfOrder.prototype, {
 
     /**
      * Reintenta todos los registros pendientes. Si el servidor sigue caído
-     * (ConnectionLostError) se detiene y conserva la cola para el próximo
-     * disparo; los que entran se eliminan. Un error de negocio (no de red) NO
-     * bloquea la cola: se elimina la entrada y se registra en consola (la orden
-     * ya está pagada e impresa; se recupera desde el respaldo de caja).
+     * (ConnectionLostError) se detiene y CONSERVA la cola para el próximo
+     * disparo. Si el registro entra, se elimina de pendientes. Un error de
+     * negocio (no de red) NO se descarta: la entrada se MUEVE a la cola de
+     * fallidas (`kioskFailed`) para acción manual — así una orden ya pagada e
+     * impresa nunca se pierde silenciosamente.
      */
     async flushKioskRegistrations() {
         if (this._kioskFlushing) {
@@ -116,18 +153,46 @@ patch(SelfOrder.prototype, {
                         // Servidor aún inaccesible: conservar y reintentar luego.
                         break;
                     }
+                    // Error de negocio: NO descartar. Mover a fallidas.
                     console.error(
-                        "[Kiosk sync] error no recuperable al registrar la orden; se descarta de la cola",
+                        "[Kiosk sync] el servidor rechazó la orden; se mueve a FALLIDAS (no se pierde)",
                         entry.uuid,
                         error
                     );
+                    this._pushKioskFailed({
+                        ...entry,
+                        errorMessage: String((error && error.message) || error),
+                    });
                 }
-                // OK o error de negocio: sacar de la cola.
+                // OK o movida a fallidas: sacar de pendientes.
                 queue = this._readKioskQueue().filter((e) => e.uuid !== entry.uuid);
                 this._writeKioskQueue(queue);
             }
         } finally {
             this._kioskFlushing = false;
         }
+    },
+
+    /**
+     * Reintenta manualmente las órdenes que quedaron en FALLIDAS (p. ej. tras
+     * corregir la causa del rechazo — diario de factura, etc.). Las devuelve a
+     * la cola de pendientes y dispara el flush; las que sigan fallando vuelven a
+     * fallidas (no se pierden).
+     */
+    async retryFailedKioskRegistrations() {
+        const failed = this._readKioskFailed();
+        if (!failed.length) {
+            return;
+        }
+        const pending = this._readKioskQueue();
+        const known = new Set(pending.map((e) => e.uuid));
+        for (const entry of failed) {
+            if (!known.has(entry.uuid)) {
+                pending.push(entry);
+            }
+        }
+        this._writeKioskQueue(pending);
+        this._writeKioskFailed([]);
+        await this.flushKioskRegistrations();
     },
 });

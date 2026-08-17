@@ -29,6 +29,12 @@
                     <span t-if="pendingCount" class="badge text-bg-warning ms-2"
                           t-esc="pendingCount"/>
                 </button>
+                <button type="button" class="btn btn-outline-danger text-start"
+                        t-on-click="onRetryFailed" t-att-disabled="state.busy">
+                    Reintentar órdenes FALLIDAS (rechazadas por el servidor)
+                    <span t-if="failedCount" class="badge text-bg-danger ms-2"
+                          t-esc="failedCount"/>
+                </button>
 
                 <div t-if="state.message" class="alert alert-info mb-0 mt-2 py-2"
                      t-esc="state.message" role="status"/>

@@ -97,6 +97,11 @@
 - [x] 5.4 Idempotencia: `printKioskFiscalInvoice` no reimprime si la orden ya
       tiene `mf_invoice_number`; la cola dedup por uuid + RPC idempotente en el
       server; no se recobra la tarjeta en reintentos (`_megasoftApproved`).
+- [x] 5.5 NO perder órdenes: un rechazo del servidor (error de negocio, NO de
+      red) ya no se descarta — la entrada se mueve a una cola de FALLIDAS
+      persistente (`l10n_ve_kiosk_failed_*`), reintentable a mano tras corregir
+      la causa (botón "Reintentar FALLIDAS" en el menú Debug MF, con contador).
+      Los cortes de red siguen en pendientes (auto-reintento).
 
 ## 6. Menú de Debug MF + reimpresión de fallidas (Fase 3)
 

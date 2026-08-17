@@ -88,6 +88,12 @@ export class MfDebugDialog extends Component {
             : 0;
     }
 
+    get failedCount() {
+        return typeof this.selfOrder.kioskFailedCount === "number"
+            ? this.selfOrder.kioskFailedCount
+            : 0;
+    }
+
     onFlushQueue() {
         this._run(_t("Reintentar registro pendiente"), async () => {
             if (typeof this.selfOrder.flushKioskRegistrations !== "function") {
@@ -100,6 +106,22 @@ export class MfDebugDialog extends Component {
                 message: left
                     ? _t("Quedan %s orden(es) pendiente(s).", left)
                     : _t("Sin órdenes pendientes."),
+            };
+        });
+    }
+
+    onRetryFailed() {
+        this._run(_t("Reintentar órdenes FALLIDAS"), async () => {
+            if (typeof this.selfOrder.retryFailedKioskRegistrations !== "function") {
+                return { valid: false, message: _t("No disponible") };
+            }
+            await this.selfOrder.retryFailedKioskRegistrations();
+            const left = this.failedCount;
+            return {
+                valid: left === 0,
+                message: left
+                    ? _t("Quedan %s orden(es) fallida(s) — revisar la causa.", left)
+                    : _t("Sin órdenes fallidas."),
             };
         });
     }
