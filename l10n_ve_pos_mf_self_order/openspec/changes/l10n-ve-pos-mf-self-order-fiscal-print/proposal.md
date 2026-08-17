@@ -49,9 +49,14 @@ imprime después:
    facturada, sin número fiscal) y se reimprime luego (menú Debug MF / respaldo
    caja) — la numeración fiscal no tiene huecos: la máquina numera solo lo que
    imprime.
-4. Si el REGISTRO falla (servidor caído), NO se imprime (no hay orden en Odoo);
-   la orden se **encola** para reintento automático y la impresión queda
-   pendiente hasta que el registro entre.
+4. Si el REGISTRO falla (servidor caído), se **encola** la orden y se **imprime
+   igual** (como el PoS normal offline): la orden existe en la cola local, así el
+   papel fiscal no es huérfano; el `mf_invoice_number` impreso viaja en el payload
+   encolado y la orden se registra en Odoo con su número al volver la conexión.
+
+**Invariante:** la orden SIEMPRE existe antes de imprimir — en Odoo (online) o en
+la cola local (offline). Nunca se imprime un documento fiscal sin ningún registro
+de su orden.
 
 Se distinguen dos "facturas": la **fiscal** (impreso legal de la TFHKA →
 inmediata, local) y la **contable de Odoo** (`account.move` → diferida, al

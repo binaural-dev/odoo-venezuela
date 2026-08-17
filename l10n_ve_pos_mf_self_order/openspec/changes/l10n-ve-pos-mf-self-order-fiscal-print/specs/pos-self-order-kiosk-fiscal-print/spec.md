@@ -24,9 +24,10 @@ sin su orden/factura en Odoo.
 - **GIVEN** una orden del Kiosko cuyo pago fue aprobado, con el servidor Odoo
   temporalmente no accesible
 - **WHEN** el cliente finaliza la orden
-- **THEN** la orden NO se imprime (no hay orden en Odoo), se encola para reintento
-  automático del registro, y la impresión queda pendiente hasta que la orden se
-  registre
+- **THEN** la orden se encola localmente Y se imprime igual (la orden existe en la
+  cola local, el papel fiscal no es huérfano); el `mf_invoice_number` impreso se
+  mete en el payload encolado y, al volver la conexión, la orden se registra en
+  Odoo con su número fiscal — igual que el PoS normal offline
 
 #### Scenario: La impresión falla con la orden ya registrada
 

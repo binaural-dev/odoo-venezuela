@@ -82,11 +82,12 @@
       impresión se dispara en `SelfOrder.confirmationPage()` (patch en
       `self_order_fiscal.js`), cuando la orden YA está registrada y facturada en
       Odoo (con id). Se imprime si está pagada y sin `mf_invoice_number`; el pago
-      se deriva de `order.payment_ids`. **Megasoft ya NO imprime**
-      (`_printMegasoftFiscalInvoice` eliminado): `_finalizeMegasoftPayment` solo
-      REGISTRA (RPC) y, si el servidor está caído, ENCOLA (no imprime — no hay
-      orden en Odoo). Si la impresión en confirmación falla, se avisa el motivo y
-      queda pendiente de reimprimir.
+      se deriva de `order.payment_ids`. En el camino ONLINE Megasoft NO imprime
+      (lo hace `confirmationPage`). En el camino OFFLINE (servidor caído)
+      `_finalizeMegasoftPayment` ENCOLA la orden Y la IMPRIME igual (modelo PoS,
+      con el pago explícito porque aún no hay `payment_ids`), metiendo el
+      `mf_invoice_number` en el payload encolado para que viaje al registrarse.
+      Invariante: la orden siempre existe antes de imprimir (Odoo o cola local).
 - [~] 5.2 Enganche pago-en-caja: FUERA DE ALCANCE por ahora — en pago-en-caja
       (sin terminal) el cobro y la factura fiscal los hace el CAJERO, no el
       Kiosko. Reevaluar solo si aparece un caso de Kiosko que factura sin cobrar.
