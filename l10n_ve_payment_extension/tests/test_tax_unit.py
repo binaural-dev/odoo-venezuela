@@ -141,3 +141,50 @@ class TestTaxUnit(TransactionCase):
             "tax_unit_ids debe actualizarse aunque apply_subtracting=False"
         )
         self.assertEqual(retention_no_sub.amount_subtract, 0.0)
+
+    def test_07_unique_constraint_scoped_per_company(self):
+        """
+        La restricción de fecha/valor duplicados no debe cruzar compañías:
+        dos tax.unit con la misma available_date en compañías distintas
+        son válidas.
+        """
+        other_company = self.env['res.company'].create({'name': 'Otra Compañía UT'})
+
+        other_ut = self.env['tax.unit'].with_company(other_company).create({
+            'name': 'UT Otra Compañía',
+            'value': 999.0,
+            'available_date': self.ut_2025.available_date,
+            'company_id': other_company.id,
+        })
+
+        self.assertEqual(other_ut.available_date, self.ut_2025.available_date)
+
+    def test_08_active_status_scoped_per_company(self):
+        """
+        _update_active_status debe elegir "la más reciente" por compañía,
+        no globalmente: la UT activa de una compañía no puede desactivar
+        la UT activa de otra.
+        """
+        other_company = self.env['res.company'].create({'name': 'Otra Compañía UT Status'})
+
+        other_ut_old = self.env['tax.unit'].with_company(other_company).create({
+            'name': 'UT Otra Compañía Vieja',
+            'value': 10.0,
+            'available_date': '2020-01-01',
+            'company_id': other_company.id,
+        })
+        self.assertTrue(other_ut_old.status)
+
+        # UT más reciente en la compañía original: no debe tocar el status
+        # de la UT activa de la otra compañía.
+        self.env['tax.unit'].create({
+            'name': 'UT Winner Compañía Original',
+            'value': 1.0,
+            'available_date': '2099-01-01',
+        })
+
+        other_ut_old.invalidate_recordset()
+        self.assertTrue(
+            other_ut_old.status,
+            "La UT activa de otra compañía no debe desactivarse por un cambio ajeno"
+        )

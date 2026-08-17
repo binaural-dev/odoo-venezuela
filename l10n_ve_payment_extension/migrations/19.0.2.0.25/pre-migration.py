@@ -50,14 +50,7 @@ def migrate(cr, version):
                 f"""
                 INSERT INTO tax_unit ({columns_sql}, company_id)
                 SELECT {columns_sql}, %s
-                FROM tax_unit src
-                WHERE src.id = %s
-                  AND NOT EXISTS (
-                      SELECT 1 FROM tax_unit dst
-                      WHERE dst.company_id = %s
-                        AND dst.value = src.value
-                        AND dst.available_date = src.available_date
-                  )
+                FROM tax_unit WHERE id = %s
                 """,
                 (company_id, orphan_id, company_id),
             )
