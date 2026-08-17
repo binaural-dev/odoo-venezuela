@@ -19,6 +19,7 @@ class CrmLead(models.Model):
     expected_revenue_foreign = fields.Monetary(
         string="Ingreso Esperado (Moneda Comercial)",
         currency_field="foreign_currency_id",
+        required=True,
         tracking=True,
         help="Ingreso esperado ingresado en la moneda comercial. Este valor es fijo y nunca se recalcula por cambios de tasa.",
     )
@@ -26,6 +27,7 @@ class CrmLead(models.Model):
     recurring_revenue_foreign = fields.Monetary(
         string="Ingreso Recurrente (Moneda Comercial)",
         currency_field="foreign_currency_id",
+        tracking=True,
         help="Ingreso recurrente ingresado en la moneda comercial. Este valor es fijo y nunca se recalcula por cambios de tasa.",
     )
 
