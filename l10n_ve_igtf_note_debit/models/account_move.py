@@ -40,8 +40,14 @@ class AccountMove(models.Model):
 
   
     def prepare_igtf_payment_debit_note(self, igtf_amount_company_curr, invoice, payment):
-        
+
         self.ensure_one()
+        # `invoice`/`payment` pueden venir con `skip_invoice_sync=True` en su
+        # contexto (lo deja la reconciliación del pago de origen). Si no se
+        # limpia, la ND que creamos a continuación hereda ese contexto y
+        # Odoo nunca genera sus líneas de impuesto/por-cobrar (el total
+        # queda en 0 aunque `price_unit` esté bien).
+        self = self.with_context(skip_invoice_sync=False)
         company = invoice.company_id
         is_customer = invoice.move_type in ("out_invoice", "in_refund")
 
@@ -599,6 +605,10 @@ class AccountMove(models.Model):
         try:
             payment_move.button_draft()
         except Exception:
+            _logger.exception(
+                "IGTF: failed to reset to draft payment move %s (id=%s) while removing IGTF",
+                payment_move.name, payment_move.id,
+            )
             return False
         
         igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
@@ -650,6 +660,10 @@ class AccountMove(models.Model):
             else:
                 payment_move.action_post()
         except Exception:
+            _logger.exception(
+                "IGTF: failed to re-post/cancel payment move %s (id=%s) after removing IGTF",
+                payment_move.name, payment_move.id,
+            )
             return False
             
         return True
@@ -727,9 +741,13 @@ class AccountMove(models.Model):
                 "IGTF: credit note %s (id=%s) created and posted for debit note %s (id=%s)",
                 reversal_move.name, reversal_move.id, target_debit_note.name, target_debit_note.id)
         except Exception as e:
-            _logger.error(
-                "IGTF: failed to create/post credit note for debit note %s (id=%s): %s",
-                target_debit_note.name, target_debit_note.id, e)
+            _logger.exception(
+                "IGTF: failed to create/post credit note for debit note %s (id=%s)",
+                target_debit_note.name, target_debit_note.id)
+            raise UserError(_(
+                "Could not create the IGTF reversal Credit Note for debit "
+                "note %s. The operation was cancelled."
+            ) % target_debit_note.name) from e
 
     def _unreconcile_and_cancel_advance(self, line):
         partials = line.matched_debit_ids + line.matched_credit_ids

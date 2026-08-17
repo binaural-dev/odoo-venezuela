@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 
 class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
@@ -23,14 +24,22 @@ class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
 
         super()._compute_amount()
         for wizard in self:
-            if (
+            # Si el usuario ya escribió a mano el monto a pagar
+            # (`custom_user_amount`), con 'Incluir IGTF en el pago'
+            # desmarcado ese monto YA es el importe puro de la factura (sin
+            # IGTF) -- no hay que restarle nada. `amount_without_difference`
+            # en ese caso viene mal calculada desde `l10n_ve_igtf` (asume
+            # que el monto tecleado incluye el IGTF embebido, semántica del
+            # flujo 'inline').
+            if not (
                 wizard.igtf_note_debit_mode == "debit_note"
                 and wizard.is_igtf
                 and not wizard.igtf_note_debit_include_in_payment
                 and not wizard.custom_user_amount
             ):
-                wizard.amount = wizard.amount_without_difference
-                wizard.last_computed_amount = wizard.amount
+                continue
+            wizard.amount = wizard.amount_without_difference
+            wizard.last_computed_amount = wizard.amount
 
     @api.depends("amount", "igtf_to_show", "igtf_note_debit_include_in_payment", "is_igtf", "igtf_note_debit_mode")
     def _compute_total_amount_with_igtf_note_debit(self):
@@ -63,8 +72,24 @@ class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
             else:
                 wizard.payment_difference = total_amount_values["amount_for_difference"] - efective_amount
 
+    def _check_igtf_note_debit_group_payment(self):
+        if self.company_id.igtf_note_debit_mode != "debit_note" or not self.group_payment:
+            return
+        invoices = self.get_moves()
+        if isinstance(invoices, set):
+            invoices = sum(invoices, self.env["account.move"])
+        if len(invoices) > 1:
+            raise UserError(_(
+                "'Group Payments' cannot be used when the 'IGTF Perception "
+                "Mode' is 'Automatic Fiscal Debit Note': each invoice paid "
+                "through an IGTF journal must generate its own Debit Note. "
+                "Uncheck 'Group Payments' and register the payment for each "
+                "invoice separately."
+            ))
+
     def _create_payments(self):
-        
+        self._check_igtf_note_debit_group_payment()
+
         payments = super()._create_payments()
 
         if self.company_id.igtf_note_debit_mode != "debit_note":
@@ -91,6 +116,8 @@ class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
             invoice = invoices[:1]
             if len(invoices) > 1:
                 invoice = payment.reconciled_invoice_ids[:1] or invoice
+            if not invoice:
+                continue
 
             company_currency = payment.company_id.currency_id
             reconcilable_lines = payment.move_id.line_ids.filtered(
