@@ -1,13 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<odoo noupdate="1">
-    <record id="group_l10n_ve_invoice_digital_admin" model="res.groups">
-        <field name="name">The Factory HKA Admin</field>
-        <field name="category_id" ref="base.module_category_accounting_and_finance"/>
-        <field name="comment">Uninstall The factory HKA module</field>
-    </record>
+<odoo>
+    <data noupdate="1">
+        <record id="group_l10n_ve_invoice_digital_admin" model="res.groups">
+            <field name="name">The Factory HKA Admin</field>
+            <field name="category_id" ref="base.module_category_accounting_accounting"/>
+            <field name="comment">Uninstall The factory HKA module</field>
+        </record>
+    </data>
 
     <!-- El administrador del sistema hereda el grupo para poder desinstalar. -->
-    <record id="base.group_system" model="res.groups">
-        <field name="implied_ids" eval="[(4, ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin'))]"/>
-    </record>
+    <data>
+        <record id="base.group_system" model="res.groups">
+            <field name="implied_ids" eval="[(4, ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin'))]"/>
+        </record>
+    </data>
 </odoo>

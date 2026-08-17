@@ -53,6 +53,9 @@ class TfhkaDocumentService(models.AbstractModel):
         if not invoice.company_id.invoice_digital_tfhka:
             return
 
+        if invoice.is_digitalized:
+            raise UserError(_("The document has already been digitalized."))
+
         document_type = self._get_document_type(invoice)
         if not document_type:
             return
@@ -270,28 +273,26 @@ class TfhkaDocumentService(models.AbstractModel):
             amounts_foreign = {}
             multi_currency = record.multi_currency_invoice
 
+            base_groups = self._iter_tax_groups(tax_totals, 'groups_by_subtotal')
+            foreign_groups = self._iter_tax_groups(tax_totals, 'groups_by_foreign_subtotal')
+            exempt_base = next(
+                (g.get('tax_group_base_amount', 0) for g in base_groups
+                 if self._is_exempt_group(record, g)), 0
+            )
+            exempt_foreign = next(
+                (g.get('tax_group_base_amount', 0) for g in foreign_groups
+                 if self._is_exempt_group(record, g)), 0
+            )
+
             if currency == "VEF" or currency == "VES":
                 amounts["montoGravadoTotal"] = str(
-                    round(
-                        tax_totals.get('subtotal', 0) -
-                        next(
-                            (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
-                        ), 2
-                    )
+                    round(tax_totals.get('subtotal', 0) - exempt_base, 2)
                 )
-                amounts["montoExentoTotal"] = str(
-                    round(
-                        next((
-                            group.get('tax_group_base_amount', 0)
-                            for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
-                        ), 0), 2)
-                )
+                amounts["montoExentoTotal"] = str(round(exempt_base, 2))
                 amounts["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
                 amounts["subtotalAntesDescuento"] = str(round(tax_totals.get('subtotal', 0), 2))
                 amounts["totalAPagar"] = str(round(tax_totals.get("amount_total_igtf", 0), 2))
-                amounts["totalIVA"] = round(sum(group.get('tax_group_amount', 0) for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])), 2)
+                amounts["totalIVA"] = round(sum(g.get('tax_group_amount', 0) for g in base_groups), 2)
                 amounts["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
 
@@ -305,26 +306,13 @@ class TfhkaDocumentService(models.AbstractModel):
                 has_foreign_rate = bool(record.foreign_rate)
                 if multi_currency or has_foreign_rate:
                     amounts_foreign["montoGravadoTotal"] = str(
-                        round(
-                            tax_totals.get('foreign_subtotal', 0) -
-                            next(
-                                (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                                if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
-                            ), 2
-                        )
+                        round(tax_totals.get('foreign_subtotal', 0) - exempt_foreign, 2)
                     )
-                    amounts_foreign["montoExentoTotal"] = str(
-                        round(
-                            next((
-                                group.get('tax_group_base_amount', 0)
-                                for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                                if group.get('tax_group_name') in ("Exento", "IVA 0%")
-                            ), 0), 2)
-                    )
+                    amounts_foreign["montoExentoTotal"] = str(round(exempt_foreign, 2))
                     amounts_foreign["subtotal"] = str(round(tax_totals.get("foreign_amount_untaxed", 0), 2))
                     amounts_foreign["subtotalAntesDescuento"] = str(round(tax_totals.get("foreign_subtotal", 0), 2))
                     amounts_foreign["totalAPagar"] = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
-                    amounts_foreign["totalIVA"] = round(sum(group.get('tax_group_amount', 0) for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])), 2)
+                    amounts_foreign["totalIVA"] = round(sum(g.get('tax_group_amount', 0) for g in foreign_groups), 2)
                     amounts_foreign["montoTotalConIVA"] = str(round(tax_totals.get("foreign_amount_total", 0), 2))
                     amounts_foreign["totalDescuento"] = str(abs(round(tax_totals.get("foreign_discount_amount", 0), 2)))
                     taxes_subtotal, taxes_subtotal_foreign = self._prepare_tax_subtotals(record, currency, multi_currency=True)
@@ -336,50 +324,24 @@ class TfhkaDocumentService(models.AbstractModel):
 
             else:
                 amounts_foreign["montoGravadoTotal"] = str(
-                    round(
-                        tax_totals.get('subtotal', 0) -
-                        next(
-                            (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
-                        ), 2
-                    )
+                    round(tax_totals.get('subtotal', 0) - exempt_base, 2)
                 )
-                amounts_foreign["montoExentoTotal"] = str(
-                    round(
-                        next((
-                            group.get('tax_group_base_amount', 0)
-                            for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
-                        ), 0), 2)
-                )
+                amounts_foreign["montoExentoTotal"] = str(round(exempt_base, 2))
                 amounts_foreign["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
                 amounts_foreign["subtotalAntesDescuento"] = str(round(tax_totals.get('subtotal', 0), 2))
                 amounts_foreign["totalAPagar"] = str(round(tax_totals.get("amount_total_igtf", 0), 2))
-                amounts_foreign["totalIVA"] = round(sum(group.get('tax_group_amount', 0) for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])), 2)
+                amounts_foreign["totalIVA"] = round(sum(g.get('tax_group_amount', 0) for g in base_groups), 2)
                 amounts_foreign["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
                 amounts_foreign["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
 
                 amounts["montoGravadoTotal"] = str(
-                    round(
-                        tax_totals.get('foreign_subtotal', 0) -
-                        next(
-                            (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
-                        ), 2
-                    )
+                    round(tax_totals.get('foreign_subtotal', 0) - exempt_foreign, 2)
                 )
-                amounts["montoExentoTotal"] = str(
-                    round(
-                        next((
-                            group.get('tax_group_base_amount', 0)
-                            for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
-                        ), 0), 2)
-                )
+                amounts["montoExentoTotal"] = str(round(exempt_foreign, 2))
                 amounts["subtotal"] = str(round(tax_totals.get("foreign_amount_untaxed", 0), 2))
                 amounts["subtotalAntesDescuento"] = str(round(tax_totals.get("foreign_subtotal", 0), 2))
                 amounts["totalAPagar"] = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
-                amounts["totalIVA"] = round(sum(group.get('tax_group_amount', 0) for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])), 2)
+                amounts["totalIVA"] = round(sum(g.get('tax_group_amount', 0) for g in foreign_groups), 2)
                 amounts["montoTotalConIVA"] = str(round(tax_totals.get("foreign_amount_total", 0), 2))
                 amounts["totalDescuento"] = str(abs(round(tax_totals.get("foreign_discount_amount", 0), 2)))
 
@@ -436,95 +398,66 @@ class TfhkaDocumentService(models.AbstractModel):
     def _prepare_tax_subtotals(self, invoice, currency, multi_currency=False):
         tax_subtotals = []
         tax_subtotals_foreign = []
-        tax_code = {
-            "IVA 8%": "R",
-            "IVA 16%": "G",
-            "IVA 31%": "A",
-            "Exento": "E",
-            "IVA 0%": "E",
-        }
-        tax_rate = {
-            "IVA 8%": "8.0",
-            "IVA 16%": "16.0",
-            "IVA 31%": "31.0",
-            "Exento": "0.0",
-            "IVA 0%": "0.0",
-            "3.0 %": "3.0"
-        }
+
+        def tax_line_vals(record, group, base_key='tax_group_base_amount', amount_key='tax_group_amount'):
+            # Código y alícuota se derivan del impuesto, no del nombre del grupo
+            # (traducible y renombrable por el cliente). Ver
+            # tfhka.service.base._get_tax_group_code_and_rate.
+            code, rate = self._get_tax_group_code_and_rate(record, group)
+            return {
+                "codigoTotalImp": code,
+                "alicuotaImp": str(rate),
+                "baseImponibleImp": str(round(group.get(base_key) or 0.0, 2)),
+                "valorTotalImp": str(round(group.get(amount_key) or 0.0, 2)),
+            }
+
+        def igtf_vals(record, igtf, base_key, amount_key):
+            return {
+                "codigoTotalImp": "IGTF",
+                "alicuotaImp": str(self._get_igtf_rate(record)),
+                "baseImponibleImp": str(round(igtf.get(base_key) or 0.0, 2)),
+                "valorTotalImp": str(round(igtf.get(amount_key) or 0.0, 2)),
+            }
+
         for record in invoice:
+            base_groups = self._iter_tax_groups(record.tax_totals, 'groups_by_subtotal')
+            foreign_groups = self._iter_tax_groups(record.tax_totals, 'groups_by_foreign_subtotal')
+            igtf = (record.tax_totals or {}).get('igtf', {}) or {}
+            apply_igtf = igtf.get('apply_igtf')
+
             if currency in ("VEF", "VES") and not multi_currency:
-                for tax_totals in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
-                    tax_subtotals.append({
-                        "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
-                        "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
-                        "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    })
+                for group in base_groups:
+                    tax_subtotals.append(tax_line_vals(record, group))
                 return tax_subtotals, tax_subtotals_foreign
             elif multi_currency:
                 # Multimoneda: impuestos en la moneda base (groups_by_subtotal) y
                 # en la moneda alterna (groups_by_foreign_subtotal). Ambos se LEEN
                 # de Odoo; no se calcula nada dividiendo por la tasa.
-                for tax_line in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
-                    tax_subtotals.append({
-                        "codigoTotalImp": tax_code[tax_line.get('tax_group_name')],
-                        "alicuotaImp": tax_rate[tax_line.get('tax_group_name')],
-                        "baseImponibleImp": str(round(tax_line.get('tax_group_base_amount'), 2)),
-                        "valorTotalImp": str(round(tax_line.get('tax_group_amount'), 2)),
-                    })
-                if record.tax_totals.get('igtf', {}).get('apply_igtf'):
-                    igtf = record.tax_totals.get('igtf', {})
-                    tax_subtotals.append({
-                        "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax_rate.get(igtf.get('name'), "3.0"),
-                        "baseImponibleImp": str(round(igtf.get('igtf_base_amount'), 2)),
-                        "valorTotalImp": str(round(igtf.get('igtf_amount'), 2)),
-                    })
-                for tax_line in record.tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', []):
-                    tax_subtotals_foreign.append({
-                        "codigoTotalImp": tax_code[tax_line.get('tax_group_name')],
-                        "alicuotaImp": tax_rate[tax_line.get('tax_group_name')],
-                        "baseImponibleImp": str(round(tax_line.get('tax_group_base_amount'), 2)),
-                        "valorTotalImp": str(round(tax_line.get('tax_group_amount'), 2)),
-                    })
-                if record.tax_totals.get('igtf', {}).get('apply_igtf'):
-                    igtf = record.tax_totals.get('igtf', {})
-                    tax_subtotals_foreign.append({
-                        "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax_rate.get(igtf.get('name'), "3.0"),
-                        "baseImponibleImp": str(round(igtf.get('foreign_igtf_base_amount'), 2)),
-                        "valorTotalImp": str(round(igtf.get('foreign_igtf_amount'), 2)),
-                    })
+                for group in base_groups:
+                    tax_subtotals.append(tax_line_vals(record, group))
+                if apply_igtf:
+                    tax_subtotals.append(
+                        igtf_vals(record, igtf, 'igtf_base_amount', 'igtf_amount')
+                    )
+                for group in foreign_groups:
+                    tax_subtotals_foreign.append(tax_line_vals(record, group))
+                if apply_igtf:
+                    tax_subtotals_foreign.append(
+                        igtf_vals(record, igtf, 'foreign_igtf_base_amount', 'foreign_igtf_amount')
+                    )
                 return tax_subtotals, tax_subtotals_foreign
             else:
-                for tax_totals in record.tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', []):
-                    tax_subtotals.append({
-                        "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
-                        "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
-                        "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    })
-                for tax_totals in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
-                    tax_subtotals_foreign.append({
-                        "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
-                        "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
-                        "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    })
-                if record.tax_totals.get('igtf', {}).get('apply_igtf'):
-                    igtf = record.tax_totals.get('igtf', {})
-                    tax_subtotals_foreign.append({
-                        "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax_rate[igtf.get('name')],
-                        "baseImponibleImp": str(round(igtf.get('igtf_base_amount'), 2)),
-                        "valorTotalImp": str(round(igtf.get('igtf_amount'), 2)),
-                    })
-                    tax_subtotals.append({
-                        "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax_rate[igtf.get('name')],
-                        "baseImponibleImp": str(round(igtf.get('foreign_igtf_base_amount'), 2)),
-                        "valorTotalImp": str(round(igtf.get('foreign_igtf_amount'), 2)),
-                    })
+                for group in foreign_groups:
+                    tax_subtotals.append(tax_line_vals(record, group))
+                for group in base_groups:
+                    tax_subtotals_foreign.append(tax_line_vals(record, group))
+                if apply_igtf:
+                    tax_subtotals_foreign.append(
+                        igtf_vals(record, igtf, 'igtf_base_amount', 'igtf_amount')
+                    )
+                    tax_subtotals.append(
+                        igtf_vals(record, igtf, 'foreign_igtf_base_amount', 'foreign_igtf_amount')
+                    )
                 return tax_subtotals, tax_subtotals_foreign
 
     def _prepare_detail_lines(self, invoice):
@@ -535,12 +468,6 @@ class TfhkaDocumentService(models.AbstractModel):
                 lambda l: l.display_type == 'product'
             )
             for line in product_lines:
-                tax_mapping = {
-                    0.0: "E",
-                    8.0: "R",
-                    16.0: "G",
-                    31.0: "A",
-                }
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
@@ -565,13 +492,9 @@ class TfhkaDocumentService(models.AbstractModel):
                 vat = round(item_price * tax_rate / 100.0, 2)
                 total_item_value = round(item_price + vat, 2)
 
-                tax_code = tax_mapping.get(tax_rate)
-                if tax_code is None:
-                    raise UserError(_(
-                        "The tax rate %(rate)s%% on product '%(product)s' is not supported "
-                        "by TFHKA digitalization (allowed rates: 0, 8, 16, 31).",
-                        rate=tax_rate, product=line.product_id.display_name,
-                    ))
+                tax_code, _rate = self._get_tfhka_tax_code(
+                    tax_rate, line.product_id.display_name
+                )
 
                 item_details.append({
                     "numeroLinea": str(line_number),

@@ -130,6 +130,9 @@ class AccountMove(models.Model):
     # Requiere que multi_currency_invoice_tfhka esté activo en la compañía.
     multi_currency_invoice = fields.Boolean(
         string='Multi-Currency Invoice',
+        compute='_compute_multi_currency_invoice',
+        store=True,
+        readonly=False,
         default=False,
         tracking=True,
         help="When enabled, the 'Line Currency' selector appears, allowing you to "
@@ -137,6 +140,28 @@ class AccountMove(models.Model):
              "totals in both currencies). "
              "Requires 'Multi-currency digital invoicing' in company settings."
     )
+
+    @api.depends('show_payment_box', 'invoice_payments_widget')
+    def _compute_multi_currency_invoice(self):
+        """Se autocompleta a True cuando el cuadro de pago está activo y hay un
+        pago en USD conciliado: ahí el multimoneda es obligatorio.
+
+        Campo computado almacenado con ``readonly=False`` (patrón de Odoo para
+        "se sugiere solo, pero el usuario puede editarlo"): así la escritura la
+        hace el motor de recompute y no un compute ajeno. Antes esto vivía
+        dentro de ``_compute_multi_currency_invoice_lock``, que al estar su
+        campo en la vista escribía en account.move cada vez que se abría la
+        factura (AccessError para usuarios de solo lectura, escritura sobre
+        asientos publicados y un mensaje de chatter por apertura).
+
+        Fuera del caso obligatorio se conserva el valor persistido vía
+        ``_origin``, para que el recompute no pise lo que eligió el usuario.
+        """
+        for move in self:
+            if move.show_payment_box and move._has_usd_reconciled_payment():
+                move.multi_currency_invoice = True
+            else:
+                move.multi_currency_invoice = move._origin.multi_currency_invoice or False
     # Indica si la funcionalidad multi-moneda está disponible (según compañía).
     # Controla la visibilidad del campo multi_currency_invoice en vista.
     multi_currency_enabled = fields.Boolean(
@@ -160,11 +185,12 @@ class AccountMove(models.Model):
 
     @api.depends('show_payment_box', 'invoice_payments_widget')
     def _compute_multi_currency_invoice_lock(self):
+        # Solo calcula el lock. La auto-activación de multi_currency_invoice
+        # vive en su propio compute (ver _compute_multi_currency_invoice).
         for move in self:
-            has_usd_payment = move.show_payment_box and move._has_usd_reconciled_payment()
-            move.multi_currency_invoice_lock = has_usd_payment
-            if has_usd_payment:
-                move.multi_currency_invoice = True
+            move.multi_currency_invoice_lock = (
+                move.show_payment_box and move._has_usd_reconciled_payment()
+            )
 
     def _has_usd_reconciled_payment(self):
         """Check if any payment reconciled with this invoice is in USD."""
@@ -204,7 +230,7 @@ class AccountMove(models.Model):
             record.show_digital_debit_note = True
             record.show_digital_credit_note = True
 
-            if record.state != "posted" or record.is_digitalized or not self.company_id.invoice_digital_tfhka or not record.journal_id.digital_invoice:
+            if record.state != "posted" or record.is_digitalized or not record.company_id.invoice_digital_tfhka or not record.journal_id.digital_invoice:
                 continue
 
             if (

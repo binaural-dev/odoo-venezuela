@@ -199,14 +199,14 @@ class TfhkaRetentionService(models.AbstractModel):
 
         No asume el nombre del subtotal (en ventas es "Subtotal", en compras
         puede ser "Untaxed Amount"): recorre todos los subtotales del grupo.
+        Tampoco identifica el grupo exento por nombre, que es traducible y
+        renombrable; se resuelve por alicuota (ver _is_exempt_group).
         """
         key = "groups_by_subtotal" if base_currency_is_vef else "groups_by_foreign_subtotal"
-        subtotal_groups = move.tax_totals.get(key, {})
         return sum(
             group.get("tax_group_base_amount", 0)
-            for groups in subtotal_groups.values()
-            for group in groups
-            if group.get("tax_group_name") in ("Exento", "IVA 0%")
+            for group in self._iter_tax_groups(move.tax_totals, key)
+            if self._is_exempt_group(move, group)
         )
 
     def _prepare_detail_lines(self, retention, document_type):

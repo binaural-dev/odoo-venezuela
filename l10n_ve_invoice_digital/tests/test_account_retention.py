@@ -174,7 +174,7 @@ class TestAccumulatedRate(TransactionCase):
             "move_type": "in_invoice",
             "partner_id": self.partner_a.id,
             "journal_id": self.journal.id,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
             "invoice_line_ids": [
                 (
                     0,
@@ -199,7 +199,7 @@ class TestAccumulatedRate(TransactionCase):
         return invoice
 
     def _create_retention(self, type_retention, invoice):
-        today = fields.Date.today()
+        today = fields.Date.context_today(self.env.user)
 
         with Form(self.env["account.retention"].with_context(default_type="in_invoice", default_type_retention=type_retention)) as retention_form:
             retention_form.partner_id = self.partner_a
@@ -837,7 +837,7 @@ class TestAccumulatedRate(TransactionCase):
             "move_type": "in_invoice",
             "partner_id": self.partner_a.id,
             "journal_id": self.journal.id,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
             "debit_origin_id": account_move.id,
             "invoice_line_ids": [(0, 0, {
                 "product_id": self.product.id,
@@ -859,7 +859,7 @@ class TestAccumulatedRate(TransactionCase):
             "move_type": "in_refund",
             "partner_id": self.partner_a.id,
             "journal_id": self.journal.id,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
             "invoice_line_ids": [(0, 0, {
                 "product_id": self.product.id,
                 "quantity": 1,
@@ -997,7 +997,7 @@ class TestAccumulatedRate(TransactionCase):
             "move_type": "in_invoice",
             "partner_id": self.partner_a.id,
             "journal_id": self.journal.id,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
             "invoice_line_ids": [
                 (0, 0, {
                     "product_id": self.product.id,

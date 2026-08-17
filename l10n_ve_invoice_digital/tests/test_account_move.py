@@ -193,6 +193,22 @@ class TestAccountMoveApiCalls(TransactionCase):
             'tax_group_id': self.tax_group.id,
         })
 
+        # Grupo exento con el nombre EN INGLES a proposito: asi lo llama el
+        # template de localizacion (account.tax.group-ve.csv trae "VAT 0%" como
+        # nombre base e "IVA 0%" solo como traduccion name@es). Si el codigo
+        # vuelve a resolver el impuesto por nombre, estos tests fallan.
+        self.tax_group_exento = self.env['account.tax.group'].create({
+            'name': 'VAT 0%',
+        })
+
+        self.tax_iva0 = self.env['account.tax'].create({
+            'name': 'VAT 0%',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'tax_group_id': self.tax_group_exento.id,
+        })
+
         # Crear el producto
         self.product = self.env['product.product'].create({
             'name': 'Producto Prueba',
@@ -258,7 +274,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             "foreign_inverse_rate": foreign_inverse_rate,
             "manually_set_rate": True,
             "invoice_line_ids": invoice_lines,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
             "journal_id": self.journal.id,
             "correlative": 1,
         }
@@ -275,10 +291,13 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice = self.env["account.move"].create(invoice_vals)
 
         if do_post:
-            if post_context:
-                invoice.with_context(**post_context).action_post()
-            else:
-                invoice.action_post()
+            # move_action_post_alert=True por defecto: sin ese contexto,
+            # l10n_ve_accountant.action_post() devuelve el diccionario del wizard
+            # de alerta y NO postea, asi que la factura quedaba en borrador y las
+            # assertions de los tests se evaluaban sobre un asiento sin contabilizar.
+            # Para probar el camino del wizard hay que pasar post_context={} explicito.
+            context = {"move_action_post_alert": True} if post_context is None else post_context
+            invoice.with_context(**context).action_post()
         return invoice
 
     def _force_company_currency(self, company, currency):
@@ -330,7 +349,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             "currency_id": currency.id,
             "journal_id": journal.id,
             "payment_method_line_id": pm_line.id,
-            "date": fields.Date.today(),
+            "date": fields.Date.context_today(self.env.user),
         }
         if fx_rate:
             vals.update({"foreign_rate": fx_rate, "foreign_inverse_rate": fx_rate_inv})
@@ -878,6 +897,8 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.journal.digital_invoice = True
         self.company.digitalization_with_payment_tfhka = True
 
+        # Ambas facturas se dejan en borrador a proposito: el posteo lo hace el
+        # propio wizard en action_confirm(), que es el flujo que este test cubre.
         self.invoice = self._create_invoice(
             products=[
                 {
@@ -885,7 +906,8 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "price_unit": 1,
                     "tax_ids": [self.tax_iva16.id],
                 }
-            ]
+            ],
+            do_post=False,
         )
 
         self.env['move.action.post.alert.wizard'].create({
@@ -899,15 +921,16 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "price_unit": 1,
                     "tax_ids": [self.tax_iva16.id],
                 }
-            ]
+            ],
+            do_post=False,
         )
-        
-        with self.assertRaises(UserError) as e:        
+
+        with self.assertRaises(UserError) as e:
             self.env['move.action.post.alert.wizard'].create({
                 'move_id': invoice.id
             }).action_confirm()
 
-            _logger.info(e.exception)
+        _logger.info(e.exception)
         _logger.info("Test passed: ")
 
     # Validacion de fecha
@@ -924,7 +947,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]
         )
         
-        self.invoice.invoice_date_due = datetime.now() - timedelta(days=1)
+        # El servicio compara contra _get_emission_datetime(), que va en la zona
+        # del usuario; datetime.now() es UTC (Odoo fuerza TZ=UTC al arrancar).
+        # Mezclar los dos relojes hacía que el test dejara de fallar entre las
+        # 00:00 y las 04:00 UTC, cuando "ayer en UTC" y "hoy en Caracas" caen en
+        # el mismo día.
+        self.invoice.invoice_date_due = fields.Date.context_today(self.env.user) - timedelta(days=1)
 
         with self.assertRaises(UserError) as e:        
             self.invoice.generate_document_digital()
@@ -1105,6 +1133,9 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_31_compute_invisible_check(self, mock_call):
+        # Diario digital para que el discriminante sea is_digitalized y no el
+        # cortocircuito por diario no digital.
+        self.journal.digital_invoice = True
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
@@ -1224,6 +1255,10 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertTrue(methods or methods is False)
 
     def test_41_compute_invisible_check_credit_note(self):
+        # Complemento negativo de test_155: con la factura de origen SIN
+        # digitalizar, el boton de NC digital sigue visible. Necesita diario
+        # digital, si no el compute corta antes y la assertion no prueba nada.
+        self.journal.digital_invoice = True
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
@@ -1236,6 +1271,9 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertTrue(credit.show_digital_credit_note)
 
     def test_42_compute_invisible_check_debit_note(self):
+        # Complemento negativo de test_156: con la factura de origen SIN
+        # digitalizar, el boton de ND digital sigue visible.
+        self.journal.digital_invoice = True
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
@@ -1320,6 +1358,9 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertTrue(float(details[0]["descuentoMonto"]) > 0)
 
     def test_50_compute_invisible_check_draft(self):
+        # Diario digital a proposito: asi el unico motivo por el que los flags
+        # quedan en True es que la factura esta en borrador.
+        self.journal.digital_invoice = True
         inv = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
@@ -1341,6 +1382,9 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertTrue(inv.show_digital_invoice)
 
     def test_51_compute_invisible_check_company_disabled(self):
+        # Diario digital a proposito: asi el discriminante es el flag de
+        # compania y no el cortocircuito por diario.
+        self.journal.digital_invoice = True
         self.company.invoice_digital_tfhka = False
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
@@ -1348,40 +1392,10 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv._compute_invisible_check()
         self.assertTrue(inv.show_digital_invoice)
 
-    def test_52_compute_invisible_check_reversed_not_digitized(self):
-        inv = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
-        )
-        credit = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
-            move_type="out_refund",
-            reversed_entry_id=inv,
-        )
-        credit._compute_invisible_check()
-        self.assertTrue(credit.show_digital_credit_note)
-
-    def test_53_compute_invisible_check_debit_not_digitized(self):
-        inv = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
-        )
-        debit = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
-            debit_origin_id=inv,
-        )
-        debit._compute_invisible_check()
-        self.assertTrue(debit.show_digital_debit_note)
-
-    def test_54_compute_invisible_check_debit_note_posted(self):
-        inv = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
-        )
-        inv.is_digitalized = True
-        debit = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
-            debit_origin_id=inv,
-        )
-        debit._compute_invisible_check()
-        self.assertTrue(debit.show_digital_debit_note)
+    # test_52 y test_53 eran copias textuales de test_41 y test_42.
+    # test_54 afirmaba lo contrario del comportamiento real: con la ND posteada
+    # en diario digital y la factura de origen ya digitalizada,
+    # show_digital_debit_note queda en False. Ese caso ya lo cubre test_156.
 
     def test_55_get_totals_too_many_payments(self):
         invoice = self._create_invoice(
@@ -1601,7 +1615,11 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(ident["fechaFacturaAfectada"], "")
         self.assertEqual(ident["montoFacturaAfectada"], "")
 
-    def test_73_compute_invisible_check_posted_not_digitized(self):
+    def test_73_compute_invisible_check_non_digital_journal(self):
+        # Caso negativo explicito: con el diario NO digital los tres flags
+        # quedan en True aunque la factura este posteada y sin digitalizar.
+        # El caso complementario (diario digital) lo cubre test_154.
+        self.journal.digital_invoice = False
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
@@ -1850,17 +1868,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
 
 
-    def test_115_get_tax_subtotals_vef_no_taxes(self):
-        vef = self.env.ref("base.VEF")
-        self._force_company_currency(self.company, vef)
-        inv = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": []}],
-            currency_id=vef.id,
-            foreign_currency_id=self.currency_usd.id,
-            post_context={"move_action_post_alert": True},
-        )
-        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv, "VEF")
-        self.assertEqual(result, ([], []))
+    # test_115 era una copia textual de test_87.
 
     def test_120_is_eligible_for_tfhka_wrong_move_type(self):
         misc_journal = self.env['account.journal'].create({
@@ -1873,7 +1881,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         entry = self.env['account.move'].create({
             'move_type': 'entry',
             'journal_id': misc_journal.id,
-            'date': fields.Date.today(),
+            'date': fields.Date.context_today(self.env.user),
         })
         self.assertFalse(entry._is_eligible_for_tfhka())
 
@@ -1895,7 +1903,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         entry = self.env['account.move'].create({
             'move_type': 'entry',
             'journal_id': misc_journal.id,
-            'date': fields.Date.today(),
+            'date': fields.Date.context_today(self.env.user),
         })
         entry._tfhka_validate_mixed_invoicing()
 
@@ -2015,7 +2023,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             "foreign_rate": 38,
             "foreign_inverse_rate": 38,
             "manually_set_rate": True,
-            "invoice_date": fields.Date.today() - timedelta(days=3),
+            "invoice_date": fields.Date.context_today(self.env.user) - timedelta(days=3),
             "invoice_line_ids": [(0, 0, {
                 "product_id": self.product.id,
                 "quantity": 1,
@@ -2553,4 +2561,137 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertTrue(inv.journal_digital_invoice)
         self.journal.digital_invoice = False
         self.assertFalse(inv.journal_digital_invoice)
+
+    # ------------------------------------------------------------------
+    # Payload fiscal: el armado NO puede depender del idioma.
+    #
+    # Odoo arma la clave de groups_by_subtotal con
+    # `tax_group.preceding_subtotal or _("Untaxed Amount")`, o sea un string
+    # traducible ("Subtotal" en es_419, "Untaxed Amount" en ingles). Y el
+    # nombre del grupo de impuestos tambien es traducible y renombrable por el
+    # cliente. Indexar cualquiera de los dos por un literal hacia que el bloque
+    # de impuestos viajara vacio a TFHKA, sin ningun error.
+    # ------------------------------------------------------------------
+
+    def _vef_invoice(self, products):
+        """Factura posteada bajo compañía en VEF (moneda base del documento)."""
+        vef = self.env.ref("base.VEF")
+        self._force_company_currency(self.company, vef)
+        return self._create_invoice(
+            products=products,
+            currency_id=vef.id,
+            foreign_currency_id=self.currency_usd.id,
+            post_context={"move_action_post_alert": True},
+        )
+
+    def test_188_tax_subtotals_not_empty_with_real_invoice(self):
+        """El bloque de impuestos debe llegar armado con una factura real.
+
+        Este es el test que detecta el bug de fondo: con la clave 'Subtotal'
+        hardcodeada, en una base en ingles esto daba [] y totalIVA "0".
+        """
+        inv = self._vef_invoice(
+            [{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
+
+        self.assertTrue(
+            totals["impuestosSubtotal"],
+            "impuestosSubtotal vacio: se perdieron los impuestos del documento fiscal",
+        )
+        self.assertEqual(len(totals["impuestosSubtotal"]), 1)
+        subtotal = totals["impuestosSubtotal"][0]
+        self.assertEqual(subtotal["codigoTotalImp"], "G")
+        self.assertEqual(subtotal["alicuotaImp"], "16.0")
+        self.assertEqual(subtotal["baseImponibleImp"], "100.0")
+        self.assertEqual(subtotal["valorTotalImp"], "16.0")
+        self.assertEqual(totals["totalIVA"], "16.0")
+
+    def test_189_tax_subtotals_independent_of_subtotal_title(self):
+        """Mismo payload con el titulo del subtotal en español y en ingles."""
+        service = self.env['tfhka.document.service']
+
+        def fake(title):
+            return type("FakeMove", (), {"tax_totals": {"groups_by_subtotal": {title: [{
+                "tax_group_name": "VAT 16%",
+                "tax_group_id": self.tax_group.id,
+                "tax_group_base_amount": 100.0,
+                "tax_group_amount": 16.0,
+            }]}}})()
+
+        es, _f1 = service._prepare_tax_subtotals([fake("Subtotal")], "VEF")
+        en, _f2 = service._prepare_tax_subtotals([fake("Untaxed Amount")], "VEF")
+
+        self.assertEqual(es, en)
+        self.assertEqual(len(en), 1)
+        self.assertEqual(en[0]["codigoTotalImp"], "G")
+        self.assertEqual(en[0]["alicuotaImp"], "16.0")
+
+    def test_190_tax_code_independent_of_group_name(self):
+        """Renombrar el grupo de impuestos no puede cambiar el payload."""
+        inv = self._vef_invoice(
+            [{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        self.tax_group.name = "Cualquier Cosa 123"
+        inv.invalidate_recordset()
+
+        totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
+        self.assertEqual(totals["impuestosSubtotal"][0]["codigoTotalImp"], "G")
+        self.assertEqual(totals["impuestosSubtotal"][0]["alicuotaImp"], "16.0")
+
+    def test_191_exempt_amount_with_english_group_name(self):
+        """El monto exento se resuelve por alicuota, no por nombre del grupo."""
+        inv = self._vef_invoice([
+            {"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]},
+            {"product_id": self.product.id, "price_unit": 50, "tax_ids": [self.tax_iva0.id]},
+        ])
+        totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
+
+        self.assertEqual(totals["montoExentoTotal"], "50.0")
+        self.assertEqual(totals["montoGravadoTotal"], "100.0")
+        self.assertTrue(
+            any(t["codigoTotalImp"] == "E" for t in totals["impuestosSubtotal"]),
+            "falta la linea exenta en impuestosSubtotal",
+        )
+
+    def test_192_unsupported_rate_raises_user_error(self):
+        """Una alicuota fuera de {0, 8, 16, 31} debe dar UserError, no KeyError."""
+        tax_group_12 = self.env['account.tax.group'].create({'name': 'IVA 12%'})
+        tax_12 = self.env['account.tax'].create({
+            'name': 'IVA 12%',
+            'amount': 12,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'tax_group_id': tax_group_12.id,
+        })
+        inv = self._vef_invoice(
+            [{"product_id": self.product.id, "price_unit": 100, "tax_ids": [tax_12.id]}]
+        )
+        with self.assertRaises(UserError):
+            self.env['tfhka.document.service']._prepare_tax_subtotals(inv, "VEF")
+
+    def test_193_igtf_rate_read_from_company(self):
+        """La alicuota del IGTF sale de la compañía, no del nombre "3.0 %"."""
+        self.company.igtf_percentage = 2.0
+        service = self.env['tfhka.document.service']
+
+        fake = type("FakeMove", (), {
+            "company_id": self.company,
+            "tax_totals": {
+                "groups_by_subtotal": {"Untaxed Amount": []},
+                "groups_by_foreign_subtotal": {"Untaxed Amount": []},
+                "igtf": {
+                    "apply_igtf": True,
+                    "name": "2.0 %",
+                    "igtf_base_amount": 100.0,
+                    "igtf_amount": 2.0,
+                    "foreign_igtf_base_amount": 200.0,
+                    "foreign_igtf_amount": 4.0,
+                },
+            },
+        })()
+
+        local, _foreign = service._prepare_tax_subtotals([fake], "USD", multi_currency=True)
+        igtf_line = next(t for t in local if t["codigoTotalImp"] == "IGTF")
+        self.assertEqual(igtf_line["alicuotaImp"], "2.0")
 

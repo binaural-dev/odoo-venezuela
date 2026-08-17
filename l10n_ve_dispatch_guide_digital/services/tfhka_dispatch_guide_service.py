@@ -146,14 +146,14 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                 for move_line in record.move_ids_without_package:
                     sale_line = move_line.sale_line_id
 
-                    tax_mapping = {
-                        0.0: "E",
-                        8.0: "R",
-                        16.0: "G",
-                        31.0: "A",
-                    }
                     taxes = sale_line.tax_id.filtered(lambda t: t.amount)
                     tax_rate = taxes[0].amount if taxes else 0.0
+                    # Mismo mapeo por alicuota que el servicio de facturas
+                    # (tfhka.service.base): una alicuota fuera de {0,8,16,31}
+                    # da UserError explicativo y no un KeyError crudo.
+                    tax_code, _rate = self._get_tfhka_tax_code(
+                        tax_rate, sale_line.product_id.display_name
+                    )
 
                     if record.sale_id.currency_id.name == "VEF":
                         unit_price = round(sale_line.price_unit, 2)
@@ -172,7 +172,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                         "cantidad": str(move_line.quantity),
                         "precioUnitario": str(unit_price),
                         "precioItem": str(item_price),
-                        "codigoImpuesto": tax_mapping[tax_rate],
+                        "codigoImpuesto": tax_code,
                         "tasaIVA": str(round(sale_line.tax_id.amount, 2)),
                         "valorIVA": str(vat),
                         "valorTotalItem": str(total_item_value),

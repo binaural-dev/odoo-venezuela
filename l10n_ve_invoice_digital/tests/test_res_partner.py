@@ -1,10 +1,11 @@
+from odoo.exceptions import ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "res_partner_digital")
 class TestResPartnerEmailDuplicate(TransactionCase):
-    """Con l10n_ve_invoice_digital instalado, la validación de correos duplicados
-    de l10n_ve_contact queda desactivada (ticket 14242).
+    """En compañías que digitalizan con TFHKA, la validación de correos duplicados
+    de l10n_ve_contact queda desactivada (ticket 14242). En el resto sigue viva.
     """
 
     def setUp(self):
@@ -13,6 +14,7 @@ class TestResPartnerEmailDuplicate(TransactionCase):
         # se activan para que el test falle si el override desaparece.
         self.env.company.write({
             "validate_user_creation_by_company": True,
+            "invoice_digital_tfhka": True,
         })
         self.partner_1 = self.env["res.partner"].create({
             "name": "Partner 1",
@@ -42,3 +44,16 @@ class TestResPartnerEmailDuplicate(TransactionCase):
         self.assertIsNone(
             self.partner_1.check_duplicate_email("test_duplicate@example.com")
         )
+
+    def test_04_validation_still_applies_without_tfhka(self):
+        """En una compañía que NO digitaliza con TFHKA la validación sigue viva.
+
+        El override es un bypass para el flujo de digitalización, no una
+        desactivación global: si se vuelve incondicional, este test falla.
+        """
+        self.env.company.invoice_digital_tfhka = False
+        with self.assertRaises(ValidationError):
+            self.env["res.partner"].create({
+                "name": "Partner 3",
+                "email": "test_duplicate@example.com",
+            })

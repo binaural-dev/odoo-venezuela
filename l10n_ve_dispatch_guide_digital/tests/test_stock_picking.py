@@ -747,3 +747,43 @@ class TestStockPickingApiCalls(TransactionCase):
         picking.is_digitalized = False
         picking._set_guide_number()
         self.assertFalse(picking.guide_number)
+
+    # ==================================================================
+    # Mapeo de alicuota a codigo TFHKA
+    # ==================================================================
+
+    def test_prepare_detail_lines_unsupported_rate_raises_user_error(self):
+        """Una alicuota fuera de {0, 8, 16, 31} debe dar UserError, no KeyError.
+
+        El servicio de facturas ya validaba este caso; la guia de despacho
+        indexaba su propio tax_mapping con corchetes y reventaba con un
+        traceback crudo en la cara del usuario.
+        """
+        # El savepoint de assertRaises fuerza un flush que recomputa
+        # sale.order.tax_totals, y l10n_ve_tax exige moneda alterna configurada.
+        self.company.currency_foreign_id = self.currency_usd
+
+        tax_group_12 = self.env["account.tax.group"].create({"name": "IVA 12%"})
+        tax_12 = self.env["account.tax"].create({
+            "name": "IVA 12%",
+            "amount": 12,
+            "amount_type": "percent",
+            "type_tax_use": "sale",
+            "tax_group_id": tax_group_12.id,
+        })
+
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 1,
+                    "price_unit": 100,
+                    "tax_id": [Command.set([tax_12.id])],
+                    "name": "Línea con alícuota no soportada",
+                }
+            ],
+            currency=self.currency_vef,
+        )
+
+        with self.assertRaises(UserError):
+            self.DispatchGuideService._prepare_detail_lines(picking)
