@@ -34,6 +34,12 @@
 - [x] 2.5 `pos.order._load_pos_self_data_fields`: `mf_invoice_number`,
       `fiscal_machine`, `mf_reportz` (para que el número fiscal viaje en
       `serializeForORM` y se estampe en el `account.move` al sincronizar).
+- [x] 2.6 `pos.order._send_payment_result` (override): incluir `pos.payment` en
+      el `data` del bus `PAYMENT_STATUS`. El core solo emitía pos.order +
+      pos.order.line, así que en la confirmación `order.payment_ids` llegaba
+      VACÍO al cliente y la impresión fallaba con "método sin code_fiscal_printer".
+      Con los pagos en el bus, `connectNewData` los conecta y la derivación del
+      método (para el `code_fiscal_printer` y el monto) funciona.
 
 ## 3. Builder del payload del Kiosko (Fase 1) — SIN tocar PosStore
 
