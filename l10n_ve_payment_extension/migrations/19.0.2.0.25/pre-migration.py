@@ -1,3 +1,21 @@
+# Columnas técnicas que no se deben copiar al duplicar un registro huérfano
+# por compañía: id es autogenerado, company_id se asigna explícitamente, y el
+# resto son metadatos de auditoría propios de cada fila.
+_SKIP_COLUMNS = {
+    "id", "company_id",
+    "create_uid", "create_date", "write_uid", "write_date",
+}
+
+
+def _copyable_columns(cr):
+    cr.execute("""
+        SELECT column_name FROM information_schema.columns
+        WHERE table_name = 'tax_unit'
+        ORDER BY ordinal_position
+    """)
+    return [row[0] for row in cr.fetchall() if row[0] not in _SKIP_COLUMNS]
+
+
 def migrate(cr, version):
     cr.execute("""
         UPDATE tax_unit tu
@@ -16,6 +34,11 @@ def migrate(cr, version):
 
     cr.execute("SELECT id FROM tax_unit WHERE company_id IS NULL")
     orphan_ids = [row[0] for row in cr.fetchall()]
+    if not orphan_ids:
+        return
+
+    columns = _copyable_columns(cr)
+    columns_sql = ", ".join(columns)
 
     for orphan_id in orphan_ids:
         cr.execute(
@@ -24,9 +47,9 @@ def migrate(cr, version):
         )
         for company_id in company_ids[1:]:
             cr.execute(
-                """
-                INSERT INTO tax_unit (name, value, status, available_date, company_id)
-                SELECT name, value, status, available_date, %s
+                f"""
+                INSERT INTO tax_unit ({columns_sql}, company_id)
+                SELECT {columns_sql}, %s
                 FROM tax_unit WHERE id = %s
                 """,
                 (company_id, orphan_id),

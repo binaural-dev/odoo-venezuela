@@ -15,14 +15,16 @@ class TaxUnit(models.Model):
             
             domain_date = [
                 ('id', '!=', record.id),
+                ('company_id', '=', record.company_id.id),
                 ('available_date', '=', record.available_date),
             ]
             if self.search_count(domain_date) > 0:
-                raise UserError(_("There cannot be two tax units with the same date (%s).") 
+                raise UserError(_("There cannot be two tax units with the same date (%s).")
                                 % record.available_date)
 
             domain_both = [
                 ('id', '!=', record.id),
+                ('company_id', '=', record.company_id.id),
                 ('value', '=', record.value),
                 ('available_date', '=', record.available_date),
             ]
@@ -95,15 +97,21 @@ class TaxUnit(models.Model):
         return res
 
     def _update_active_status(self):
-        """ Lógica para que solo el registro con fecha mayor sea True """
-        latest_record = self.search([], order='available_date desc, id desc', limit=1)
-        if latest_record:
-            all_records = self.search([])
+        """ Lógica para que, por compañía, solo el registro con fecha mayor sea True """
+        companies = self.mapped('company_id') or self.env.company
+        for company in companies:
+            latest_record = self.search(
+                [('company_id', '=', company.id)], order='available_date desc, id desc', limit=1
+            )
+            if not latest_record:
+                continue
+
+            all_records = self.search([('company_id', '=', company.id)])
             for rec in all_records:
                 new_status = (rec.id == latest_record.id)
                 if rec.status != new_status:
                     super(TaxUnit, rec).write({'status': new_status})
-                
+
             self._trigger_retention_update(latest_record)
 
 
