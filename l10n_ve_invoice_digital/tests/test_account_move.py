@@ -298,18 +298,28 @@ class TestAccountMoveApiCalls(TransactionCase):
                 invoice.action_post()
         return invoice
 
-    def _force_company_currency(self, company, currency):
+    def _force_company_currency(self, company, currency, foreign=None):
         """Fuerza currency_id evitando el guard de account.company.write()
         ("no se puede cambiar la moneda si ya existen asientos"). Solo se
         usa para aislar la lógica de _prepare_totals/_prepare_tax_subtotals
         bajo compañía VEF; el UPDATE ocurre dentro de la transacción del
         test y se revierte con el rollback normal de TransactionCase.
+
+        Mover la moneda base obliga a mover tambien foreign_currency_id. Si la
+        compañia queda en VEF con la divisa tambien en VEF,
+        _resolve_foreign_rate deja de reconocer la divisa del documento (USD) y
+        se va a buscar la tasa a res.currency.rate, que este archivo no carga a
+        proposito (ver setUp): el servicio aborta con "No USD exchange rate
+        found". Por defecto se toma la contraparte de la moneda base.
         """
         self.env.cr.execute(
             "UPDATE res_company SET currency_id = %s WHERE id = %s",
             (currency.id, company.id),
         )
         company.invalidate_recordset(["currency_id"])
+        company.foreign_currency_id = foreign or (
+            self.currency_usd if currency == self.currency_vef else self.currency_vef
+        )
 
     def _create_subsidiary(self, name="Sucursal prueba"):
         analytic_plan = self.env['account.analytic.plan'].create({
@@ -500,6 +510,13 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     # El tipoCambio de TotalesOtraMoneda debe ir con 4 decimales (spec TFHKA). No usa API.
     def test_payload_foreign_totals_tipo_cambio_4_decimals(self):
+        # El bloque totalesOtraMoneda depende UNICAMENTE de multi_currency_invoice
+        # (ver _should_report_foreign_totals): que la factura tenga foreign_rate
+        # ya no la vuelve bimoneda, porque en Venezuela toda factura lo trae.
+        # Hay que pedir el bloque explicitamente, con la compañia en VEF para
+        # que USD sea de verdad la segunda moneda.
+        self._force_company_currency(self.company, self.currency_vef)
+        self.currency_vef.code_tfhka = "VES"
         invoice = self._create_invoice(
             products=[
                 {
@@ -509,7 +526,11 @@ class TestAccountMoveApiCalls(TransactionCase):
                 }
             ],
             foreign_rate=38,
+            currency_id=self.currency_usd.id,
+            foreign_currency_id=self.currency_usd.id,
         )
+        invoice.multi_currency_invoice = True
+        invoice.line_currency_id = self.currency_usd
         _totals, foreign_totals = self.env['tfhka.document.service']._prepare_totals(invoice)
         self.assertTrue(foreign_totals, "La factura en USD debe generar TotalesOtraMoneda")
         self.assertEqual(foreign_totals["tipoCambio"], "38.0000")
@@ -941,12 +962,15 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]
         )
         
-        self.invoice.invoice_date_due = datetime.now() - timedelta(days=1)
+        self.invoice.invoice_date_due = fields.Date.today() - timedelta(days=1)
 
-        with self.assertRaises(UserError) as e:        
+        # El _logger.info iba DENTRO del with y detras de la llamada: si esta
+        # levantaba, nunca se ejecutaba, y si no levantaba reventaba con
+        # AttributeError sobre e.exception (que solo existe al salir del with),
+        # enmascarando el fallo real. ValidationError hereda de UserError.
+        with self.assertRaises(UserError) as e:
             self.invoice.generate_document_digital()
-            _logger.info(e.exception)
-        _logger.info("Test passed: Invalid expiration date validation")
+        _logger.info("Test passed: Invalid expiration date validation: %s", e.exception)
 
     # # Factura con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
@@ -1568,19 +1592,15 @@ class TestAccountMoveApiCalls(TransactionCase):
                     self.assertTrue(inv.is_digitalized)
 
     def test_68_get_seller_with_seller_id(self):
-        if "seller_id" not in self.env["account.move"]._fields:
-            self.skipTest("seller_id field not installed")
         user = self.env["res.users"].create({
             "name": "Vendedor Test",
             "login": "vendedor_test",
         })
-        inv = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
-        )
-        inv.seller_id = user.partner_id
+        inv = self._fake_optional_field_record(seller_id=user.partner_id)
         seller = self.env['tfhka.document.service']._get_seller(inv)
         self.assertTrue(seller)
         self.assertEqual(seller["nombre"], "Vendedor Test")
+        self.assertEqual(seller["codigo"], str(user.partner_id.id))
 
     def test_69_get_totals_vef(self):
         vef = self.env.ref("base.VEF")
@@ -1592,7 +1612,11 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         totals, foreign = self.env['tfhka.document.service']._prepare_totals(inv)
         self.assertIn("montoGravadoTotal", totals)
-        self.assertTrue(isinstance(foreign, dict))
+        # Sin multi_currency_invoice no hay bloque totalesOtraMoneda: el
+        # segundo valor viene False, no un dict vacio (ver
+        # _should_report_foreign_totals). Antes SIEMPRE era dict porque bastaba
+        # con que la factura tuviera foreign_rate.
+        self.assertFalse(foreign)
 
     def test_70_get_tax_subtotals_vef(self):
         vef = self.env.ref("base.VEF")
@@ -1602,7 +1626,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             currency_id=vef.id,
             foreign_currency_id=self.currency_usd.id,
         )
-        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv)
+        service = self.env['tfhka.document.service']
+        ctx = service._get_currency_context(inv)
+        result = service._prepare_tax_subtotals(inv, ctx["document_currency"], ctx)
         self.assertTrue(isinstance(result, list))
 
     def test_71_get_item_details_vef(self):
@@ -1728,7 +1754,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             # calculo de tax_totals no requiere estar confirmada.
             do_post=False,
         )
-        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv)
+        service = self.env['tfhka.document.service']
+        ctx = service._get_currency_context(inv)
+        result = service._prepare_tax_subtotals(inv, ctx["document_currency"], ctx)
         self.assertEqual(result, [])
 
     def test_88_get_tax_subtotals_no_vef_no_taxes(self):
@@ -1751,7 +1779,9 @@ class TestAccountMoveApiCalls(TransactionCase):
         })
         # Sin impuestos no se puede confirmar en O19 (l10n_ve_invoice);
         # tax_totals se calcula igual en borrador.
-        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv, foreign=True)
+        service = self.env['tfhka.document.service']
+        ctx = service._get_currency_context(inv)
+        result = service._prepare_tax_subtotals(inv, inv.foreign_currency_id, ctx)
         self.assertEqual(result, [])
 
     def test_89_get_payment_type_empty(self):
@@ -1873,8 +1903,13 @@ class TestAccountMoveApiCalls(TransactionCase):
 
 
     def test_109_get_document_identification_empty_recordset(self):
-        result = self.env['tfhka.document.service']._prepare_identification(self.env['account.move'].browse([]), "01", "1", "")
-        self.assertIsNone(result)
+        # Mismo contrato que _prepare_tax_subtotals (ver test_173): al resolver
+        # el contexto de moneda se exige un unico registro, asi que un recordset
+        # vacio revienta en ensure_one() en vez de devolver None en silencio.
+        with self.assertRaises(ValueError):
+            self.env['tfhka.document.service']._prepare_identification(
+                self.env['account.move'].browse([]), "01", "1", ""
+            )
 
 
 
@@ -1893,7 +1928,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             # calculo de tax_totals no requiere estar confirmada.
             do_post=False,
         )
-        result = self.env['tfhka.document.service']._prepare_tax_subtotals(inv)
+        service = self.env['tfhka.document.service']
+        ctx = service._get_currency_context(inv)
+        result = service._prepare_tax_subtotals(inv, ctx["document_currency"], ctx)
         self.assertEqual(result, [])
 
     def test_120_is_eligible_for_tfhka_wrong_move_type(self):
@@ -2275,15 +2312,24 @@ class TestAccountMoveApiCalls(TransactionCase):
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_166_generate_document_data_with_seller(self, mock_call):
         mock_call.return_value = {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
-        if "seller_id" not in self.env["account.move"]._fields:
-            self.skipTest("seller_id field not installed")
+        # seller_id lo aporta binaural_seller, que no esta en depends. Lo que le
+        # toca verificar a ESTE modulo no es el campo sino el cableado: que un
+        # vendedor resuelto acabe en encabezado.vendedor. Se sustituye el helper
+        # y se afirma sobre el payload, en vez de omitir el test.
         user = self.env["res.users"].create({"name": "Vendedor Test 2", "login": "vendedor_test_2"})
+        seller = {"codigo": str(user.partner_id.id), "nombre": "Vendedor Test 2", "numCajero": ""}
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        inv.seller_id = user.partner_id
-        self.env['tfhka.document.service'].generate_document_data(inv, "141", "01", "")
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.'
+            'TfhkaDocumentService._get_seller',
+            return_value=seller,
+        ):
+            self.env['tfhka.document.service'].generate_document_data(inv, "141", "01", "")
         self.assertTrue(inv.is_digitalized)
+        payload = mock_call.call_args[0][2]
+        self.assertEqual(payload["documentoElectronico"]["encabezado"]["vendedor"], seller)
 
     def test_167_generate_document_data_falsy_response_no_register(self):
         inv = self._create_invoice(
@@ -2349,13 +2395,22 @@ class TestAccountMoveApiCalls(TransactionCase):
             currency_id=self.currency_vef.id,
             foreign_currency_id=self.currency_usd.id,
         )
+        # montoFacturaAfectada es el total CON IGTF del documento afectado (lo
+        # que el cliente pago realmente), no amount_total. Con el documento en
+        # la moneda de la compañia se lee de foreign_amount_total_igtf, que es
+        # donde l10n_ve_igtf publica el total en moneda de la compañia.
+        affected_total = (inv.tax_totals or {}).get("foreign_amount_total_igtf")
+        if affected_total is None:
+            affected_total = inv.amount_total_signed
+        expected_affected = str(round(abs(affected_total), 2))
+
         ident_debit = self.env['tfhka.document.service']._prepare_identification(debit, "03", "144", "B")
         self.assertTrue(ident_debit["serieFacturaAfectada"])
-        self.assertEqual(ident_debit["montoFacturaAfectada"], str(round(inv.amount_total, 2)))
+        self.assertEqual(ident_debit["montoFacturaAfectada"], expected_affected)
 
         ident_credit = self.env['tfhka.document.service']._prepare_identification(credit, "02", "145", "B")
         self.assertTrue(ident_credit["serieFacturaAfectada"])
-        self.assertEqual(ident_credit["montoFacturaAfectada"], str(round(inv.amount_total, 2)))
+        self.assertEqual(ident_credit["montoFacturaAfectada"], expected_affected)
 
     def test_170_prepare_identification_credit_note_ref_with_comma(self):
         inv = self._create_invoice(
@@ -2372,11 +2427,19 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(ident["comentarioFacturaAfectada"], "detalle credito")
 
     def test_171_prepare_identification_multi_currency_usd(self):
+        # multi_currency_invoice solo es valido si la tarifa NO esta en la
+        # moneda base (lo exige un constraint del modelo). Con la compañia en
+        # USD, como la deja setUp, activarlo revienta; el caso real es la
+        # compañia venezolana en VEF facturando en divisa.
+        self._force_company_currency(self.company, self.currency_vef)
+        self.currency_vef.code_tfhka = "VES"
         inv = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_usd.id,
+            foreign_currency_id=self.currency_usd.id,
         )
         inv.multi_currency_invoice = True
-        inv.line_currency = 'USD'
+        inv.line_currency_id = self.currency_usd
         ident = self.env['tfhka.document.service']._prepare_identification(inv, "01", "147", "")
         self.assertEqual(ident["moneda"], "USD")
 
@@ -2394,16 +2457,65 @@ class TestAccountMoveApiCalls(TransactionCase):
     def _fake_tax_record(self, tax_totals, igtf_percentage=3.0):
         """Doble de prueba para aislar el armado del payload de la capa ORM.
 
-        ``_prepare_tax_subtotals`` solo necesita ``ensure_one()``, ``tax_totals``
-        y ``company_id.igtf_percentage`` (este último para recalcular el IGTF en
-        divisa, que ``l10n_ve_igtf`` no expone de forma fiable).
+        ``_prepare_tax_subtotals`` necesita ``ensure_one()``, ``tax_totals``,
+        ``company_id.igtf_percentage`` y —desde que la firma pide la moneda de
+        salida— las tres monedas con las que ``_get_tax_totals_keys`` decide
+        que juego de claves de ``tax_totals`` leer.
+
+        Se modela la compañia venezolana real: base VEF (las claves
+        ``*_amount_currency`` de estos fixtures son los importes grandes, en
+        bolivares) y divisa USD (las ``*_amount_foreign_currency``).
         """
-        company = type("FakeCompany", (), {"igtf_percentage": igtf_percentage})()
+        company = type("FakeCompany", (), {
+            "igtf_percentage": igtf_percentage,
+            "currency_id": self.currency_vef,
+        })()
         return type("FakeTaxRecord", (), {
             "tax_totals": tax_totals,
             "company_id": company,
+            "currency_id": self.currency_vef,
+            "foreign_currency_id": self.currency_usd,
             "ensure_one": lambda self: None,
         })()
+
+    def _fake_optional_field_record(self, **values):
+        """Doble de ``account.move`` para las integraciones OPCIONALES del payload.
+
+        ``_get_seller`` y ``_get_dispatch_guide_reference`` consultan
+        ``record._fields`` antes de leer el campo, porque ``seller_id``
+        (binaural_seller) y ``guide_number`` (l10n_ve_stock_account) pertenecen
+        a modulos que este addon NO declara en ``depends``: son integraciones
+        opcionales. Con la base de test instalando solo l10n_ve_invoice_digital
+        y sus dependencias, esos campos no existen y los tests se omitian.
+
+        El doble declara el campo en ``_fields`` y expone su valor, asi la rama
+        "campo presente" se ejercita siempre sin arrastrar modulos ajenos al
+        manifest. Ambos metodos recorren el recordset, de ahi el ``__iter__``.
+        """
+        class FakeMove:
+            _fields = dict.fromkeys(values)
+
+            def __iter__(self):
+                yield self
+
+        record = FakeMove()
+        for name, value in values.items():
+            setattr(record, name, value)
+        return record
+
+    def _fake_ctx(self, record, rate):
+        """Equivalente de ``_get_currency_context`` para los dobles de prueba.
+
+        ``rate`` son bolivares por dolar, la misma convencion que ``foreign_rate``:
+        es lo que usa ``_convert_amount`` para reexpresar el IGTF entre bloques.
+        """
+        return {
+            "multi_currency": True,
+            "document_currency": record.currency_id,
+            "alt_currency": record.foreign_currency_id,
+            "foreign_currency": record.foreign_currency_id,
+            "rate": rate,
+        }
 
     def _fake_amounts_record(self, tax_totals, lines=(), igtf_percentage=3.0):
         """Doble de prueba para ``_build_amounts``.
@@ -2449,7 +2561,9 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_182_build_amounts_splits_taxed_and_exempt_base(self):
         record = self._fake_amounts_record(self._amounts_tax_totals())
-        amounts = self.env['tfhka.document.service']._build_amounts(record)
+        amounts = self.env['tfhka.document.service']._build_amounts(
+            record, record.currency_id, self._fake_ctx(record, 20.0)
+        )
         self.assertEqual(amounts["montoGravadoTotal"], "100.0")
         self.assertEqual(amounts["montoExentoTotal"], "40.0")
         # gravado + exento debe cuadrar siempre con el subtotal reportado.
@@ -2463,7 +2577,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             self._amounts_tax_totals(),
             lines=[{"price_unit": 100.0, "quantity": 1, "discount": 0.0, "foreign_price": 5.0}],
         )
-        amounts = self.env['tfhka.document.service']._build_amounts(record)
+        amounts = self.env['tfhka.document.service']._build_amounts(
+            record, record.currency_id, self._fake_ctx(record, 20.0)
+        )
         self.assertEqual(amounts["totalDescuento"], "0.0")
         self.assertEqual(amounts["subtotalAntesDescuento"], amounts["subtotal"])
 
@@ -2472,7 +2588,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             self._amounts_tax_totals(),
             lines=[{"price_unit": 100.0, "quantity": 1, "discount": 10.0, "foreign_price": 5.0}],
         )
-        amounts = self.env['tfhka.document.service']._build_amounts(record)
+        amounts = self.env['tfhka.document.service']._build_amounts(
+            record, record.currency_id, self._fake_ctx(record, 20.0)
+        )
         self.assertEqual(amounts["totalDescuento"], "10.0")
         self.assertEqual(amounts["subtotalAntesDescuento"], "150.0")
 
@@ -2491,7 +2609,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             tax_totals,
             lines=[{"price_unit": 100.0, "quantity": 1, "discount": 0.0, "foreign_price": 5.0}],
         )
-        amounts = self.env['tfhka.document.service']._build_amounts(record, foreign=True)
+        amounts = self.env['tfhka.document.service']._build_amounts(
+            record, record.foreign_currency_id, self._fake_ctx(record, 20.0)
+        )
         self.assertEqual(amounts["montoGravadoTotal"], "5.0")
         self.assertEqual(amounts["montoExentoTotal"], "2.0")
         self.assertEqual(amounts["montoTotalConIVA"], "7.8")
@@ -2503,7 +2623,9 @@ class TestAccountMoveApiCalls(TransactionCase):
         # ensure_one() debe fallar en vez de devolver None silenciosamente.
         with self.assertRaises(ValueError):
             self.env['tfhka.document.service']._prepare_tax_subtotals(
-                self.env['account.move'].browse([])
+                self.env['account.move'].browse([]),
+                self.currency_vef,
+                {"rate": 1.0},
             )
 
     def test_174_prepare_tax_subtotals_local_branch_subtotal_group(self):
@@ -2518,7 +2640,9 @@ class TestAccountMoveApiCalls(TransactionCase):
                 },
             ]}],
         })
-        result = self.env['tfhka.document.service']._prepare_tax_subtotals(fake)
+        result = self.env['tfhka.document.service']._prepare_tax_subtotals(
+            fake, fake.currency_id, self._fake_ctx(fake, 1.0)
+        )
         self.assertEqual(result[0]["codigoTotalImp"], "G")
         self.assertEqual(result[0]["baseImponibleImp"], "100.0")
         self.assertEqual(result[0]["valorTotalImp"], "16.0")
@@ -2536,16 +2660,19 @@ class TestAccountMoveApiCalls(TransactionCase):
                 },
             ]}],
         })
-        result = self.env['tfhka.document.service']._prepare_tax_subtotals(fake, foreign=True)
+        result = self.env['tfhka.document.service']._prepare_tax_subtotals(
+            fake, fake.foreign_currency_id, self._fake_ctx(fake, 1.0)
+        )
         self.assertEqual(result[0]["baseImponibleImp"], "2.0")
         self.assertEqual(result[0]["valorTotalImp"], "0.32")
 
     def test_176_prepare_tax_subtotals_includes_igtf_in_both_currencies(self):
-        # El IGTF de cada bloque se expresa en la moneda de ESE bloque. No se
-        # leen los importes en divisa de l10n_ve_igtf: se guarda la proporción
-        # del total sujeta a IGTF y se reexpresa. Aquí el total en moneda del
-        # documento es 116 y el IGTF 3.48 (3%), así que la proporción es 1.0;
-        # sobre el total en divisa (2.9) da 2.9 de base y 0.087 de IGTF.
+        # El IGTF de cada bloque se expresa en la moneda de ESE bloque.
+        # El bloque en moneda de la compañia (VEF, que aqui coincide con la del
+        # documento) sale de las claves foreign_igtf_*, que es donde
+        # l10n_ve_igtf publica los importes en moneda de la compañia pese al
+        # nombre. El bloque en divisa se reexpresa con la tasa: 116 / 40 = 2.9
+        # de base y 3.48 / 40 = 0.087 -> 0.09 de IGTF.
         tax_totals = {
             "subtotals": [{"tax_groups": [
                 {
@@ -2563,21 +2690,27 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "name": "3.0 %",
                 "igtf_base_amount": 116.0,
                 "igtf_amount": 3.48,
-                # Estos dos se ignoran a propósito: l10n_ve_igtf los publica en
-                # la otra moneda y sumarlos descuadraba totalAPagar.
-                "foreign_igtf_base_amount": 4640.0,
-                "foreign_igtf_amount": 139.2,
+                # Moneda de la compañia (VEF): mismo importe, porque en este
+                # fixture la compañia y el documento comparten moneda.
+                "foreign_igtf_base_amount": 116.0,
+                "foreign_igtf_amount": 3.48,
             },
         }
         service = self.env['tfhka.document.service']
+        local_fake = self._fake_tax_record(tax_totals)
 
-        local = service._prepare_tax_subtotals(self._fake_tax_record(tax_totals), include_igtf=True)
+        local = service._prepare_tax_subtotals(
+            local_fake, local_fake.currency_id, self._fake_ctx(local_fake, 40.0),
+            include_igtf=True,
+        )
         local_igtf = next(t for t in local if t["codigoTotalImp"] == "IGTF")
         self.assertEqual(local_igtf["baseImponibleImp"], "116.0")
         self.assertEqual(local_igtf["valorTotalImp"], "3.48")
 
+        foreign_fake = self._fake_tax_record(tax_totals)
         foreign = service._prepare_tax_subtotals(
-            self._fake_tax_record(tax_totals), foreign=True, include_igtf=True
+            foreign_fake, foreign_fake.foreign_currency_id,
+            self._fake_ctx(foreign_fake, 40.0), include_igtf=True,
         )
         foreign_igtf = next(t for t in foreign if t["codigoTotalImp"] == "IGTF")
         self.assertEqual(foreign_igtf["baseImponibleImp"], "2.9")
@@ -2590,7 +2723,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]}],
         })
         with self.assertRaises(UserError):
-            self.env['tfhka.document.service']._prepare_tax_subtotals(fake)
+            self.env['tfhka.document.service']._prepare_tax_subtotals(
+                fake, fake.currency_id, self._fake_ctx(fake, 1.0)
+            )
 
     def test_177_prepare_detail_lines_unsupported_tax_rate_raises(self):
         tax_group = self.env['account.tax.group'].create({'name': 'IVA Rara'})
@@ -2612,13 +2747,19 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertIsNone(result)
 
     def test_179_build_payment_info_multi_currency_ves_payment(self):
+        # Igual que test_171: el flag multi-moneda exige compañia en VEF y
+        # documento en divisa.
+        self._force_company_currency(self.company, self.currency_vef)
+        self.currency_vef.code_tfhka = "VES"
         pay = self._create_payment()
         pay.currency_id = self.currency_vef
         invoice = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_usd.id,
+            foreign_currency_id=self.currency_usd.id,
         )
         invoice.multi_currency_invoice = True
-        invoice.line_currency = 'USD'
+        invoice.line_currency_id = self.currency_usd
         info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
         self.assertEqual(info["moneda"], self.company.currency_id.code_tfhka)
         self.assertNotIn("tipoCambio", info)
@@ -2646,6 +2787,13 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertNotIn("formasPago", totals)
 
     def test_182_prepare_totals_payment_box_valid_payment_success(self):
+        # Con el cuadro de pago y un pago en divisa conciliado,
+        # _compute_multi_currency_invoice_lock fuerza multi_currency_invoice.
+        # Eso exige que exista una segunda moneda real: con la compañia en USD
+        # (como la deja setUp) el propio pago en USD seria la moneda base y
+        # _get_currency_context aborta. El caso real es la compañia en VEF.
+        self._force_company_currency(self.company, self.currency_vef)
+        self.currency_vef.code_tfhka = "VES"
         import random
         import string
         existing = self.env["payment.method.tfhka"].search([]).mapped("code")
@@ -2673,21 +2821,14 @@ class TestAccountMoveApiCalls(TransactionCase):
     # ------------------------------------------------------------------
 
     def test_183_get_factura_guia_with_guide_number(self):
-        if "guide_number" not in self.env["account.move"]._fields:
-            self.skipTest("guide_number field not installed")
-        inv = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
-        )
-        inv.guide_number = "00-00012345"
+        inv = self._fake_optional_field_record(guide_number="00-00012345")
         factura_guia = self.env['tfhka.document.service']._get_dispatch_guide_reference(inv)
         self.assertEqual(factura_guia, {"TipoDocumento": "04", "NumeroDocumento": "00-00012345"})
 
     def test_184_get_factura_guia_without_guide_number(self):
-        if "guide_number" not in self.env["account.move"]._fields:
-            self.skipTest("guide_number field not installed")
-        inv = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
-        )
+        # Campo presente pero sin valor: misma situacion que una factura que no
+        # proviene de una guia de despacho.
+        inv = self._fake_optional_field_record(guide_number=False)
         self.assertFalse(self.env['tfhka.document.service']._get_dispatch_guide_reference(inv))
 
     def test_185_get_factura_guia_empty_recordset(self):
@@ -2696,15 +2837,18 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_186_generate_document_data_includes_factura_guia(self, mock_call):
-        if "guide_number" not in self.env["account.move"]._fields:
-            self.skipTest("guide_number field not installed")
+        # guide_number lo aporta l10n_ve_stock_account, fuera de depends: se
+        # sustituye el helper opcional y se verifica el cableado del payload,
+        # que es la responsabilidad de este modulo (ver test_166).
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
-            do_post=False,
         )
-        inv.guide_number = "00-00099999"
-        inv.action_post()
+        guide = {"TipoDocumento": "04", "NumeroDocumento": "00-00099999"}
         with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.'
+            'TfhkaDocumentService._get_dispatch_guide_reference',
+            return_value=guide,
+        ), patch(
             'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit',
         ) as mock_emit:
             mock_emit.return_value = {"resultado": {"numeroControl": "00-00000001"}}
