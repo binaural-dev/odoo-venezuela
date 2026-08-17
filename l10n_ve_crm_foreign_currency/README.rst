@@ -20,9 +20,12 @@ Este módulo **no tiene un flag de configuración para activar o desactivar
 la moneda alterna**: la parametrización es la instalación misma del módulo.
 Si está instalado, el CRM trabaja en moneda alterna para todas las
 compañías de la base — se asume que toda compañía tiene una moneda
-comercial configurada en Binaural Settings (``l10n_ve_rate``); si a alguna
-le falta, la instalación se detiene con un error explicando qué compañía
-hay que configurar primero.
+comercial configurada en Binaural Settings (``l10n_ve_rate``), ya que
+ninguna instancia Binaural debería carecer de ella. La instalación **no**
+se detiene si a alguna compañía le falta: un constraint permanente avisa al
+intentar guardar una compañía sin moneda comercial configurada, pero no
+bloquea la carga del módulo (necesario para que el módulo se pueda instalar
+sobre bases de test/CI que no traen esa configuración por defecto).
 
 Si en el futuro se necesita una funcionalidad de CRM que **no** dependa de
 la moneda alterna (por ejemplo, para un cliente que no la usa), esa

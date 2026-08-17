@@ -105,10 +105,23 @@ class TestPostInitHook(TransactionCase):
         self.assertAlmostEqual(team.invoiced_target_foreign, 500.0, places=2)
 
     def test_04_skips_records_without_foreign_currency_configured(self):
-        company_without_foreign_currency = self.env["res.company"].create({
-            "name": "Test Company Sin Moneda Alterna",
-            "currency_id": self.vef.id,
-        })
+        # El constraint permanente de res.company (_check_foreign_currency_id_required)
+        # rechaza cualquier create()/write() sin foreign_currency_id, así que
+        # para simular una compañía en ese estado (el escenario que este test
+        # cubre) hay que insertarla por SQL directo, sin pasar por el ORM.
+        company_without_foreign_currency = self.env["res.company"].browse(
+            self.env["res.company"].create({
+                "name": "Test Company Sin Moneda Alterna",
+                "currency_id": self.vef.id,
+                "foreign_currency_id": self.usd.id,
+            }).id
+        )
+        self.env.cr.execute(
+            "UPDATE res_company SET foreign_currency_id = NULL WHERE id = %s",
+            (company_without_foreign_currency.id,),
+        )
+        company_without_foreign_currency.invalidate_recordset()
+
         team = self.env["crm.team"].create({
             "name": "Equipo sin moneda alterna",
             "company_id": company_without_foreign_currency.id,

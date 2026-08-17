@@ -1,17 +1,20 @@
-from odoo import _, fields
-from odoo.exceptions import UserError
+from odoo import fields
 
 
 def post_init_hook(env):
-    """1) Exige que toda compañía tenga moneda comercial configurada antes
-    de terminar de instalar el módulo (este módulo asume que la moneda
-    alterna es obligatoria, no opcional).
-    2) Puebla los campos en moneda comercial (*_foreign) a partir de los
+    """Puebla los campos en moneda comercial (*_foreign) a partir de los
     montos históricos que ya existían en moneda de la compañía, en las
     columnas que expected_revenue/recurring_revenue/invoiced_target dejan de
     leer al pasar de store=True a compute=/store=False. Odoo no elimina esas
     columnas al cambiar el campo a no-almacenado, así que todavía se pueden
     leer por SQL directo.
+
+    No se valida acá que toda compañía tenga moneda comercial configurada:
+    se asume que toda instancia Binaural la tiene (constraint permanente en
+    res.company), pero no se aborta la instalación por eso — una compañía
+    sin configurar simplemente no recibe backfill (ver guarda más abajo) y
+    queda en 0 hasta que se configure la moneda y se edite el registro a
+    mano.
 
     La escritura del backfill se hace también por SQL directo (no
     record.write()), a propósito:
@@ -28,24 +31,8 @@ def post_init_hook(env):
     La conversión usa la tasa vigente en la fecha de creación de cada
     registro (no la del día de la migración), para que el monto migrado sea
     fiel al momento real en que se cargó."""
-    _check_all_companies_have_foreign_currency(env)
     _backfill_crm_lead_foreign_amounts(env)
     _backfill_crm_team_foreign_amounts(env)
-
-
-def _check_all_companies_have_foreign_currency(env):
-    companies_without_foreign_currency = env["res.company"].search(
-        [("foreign_currency_id", "=", False)]
-    )
-    if companies_without_foreign_currency:
-        raise UserError(
-            _(
-                "Antes de instalar este módulo, configura la moneda "
-                "comercial (moneda alterna) en Binaural Settings para las "
-                "siguientes compañías: %(companies)s.",
-                companies=", ".join(companies_without_foreign_currency.mapped("name")),
-            )
-        )
 
 
 def _backfill_crm_lead_foreign_amounts(env):
