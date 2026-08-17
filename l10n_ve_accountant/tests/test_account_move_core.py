@@ -670,6 +670,44 @@ class TestAccountMoveCore(TransactionCase):
         with self.assertRaises(ValidationError):
             self._create_refund(invoice, line_mods=line_mods)
 
+    def _create_debit_note(self, invoice, line_mods=None):
+        """Create a debit note via the account.debit.note wizard (copy_lines=True,
+        so it starts from the origin's lines), then apply modifications via Form()
+        to trigger the onchange naturally. Mirrors _create_refund but for debit notes,
+        whose origin is `debit_origin_id`, not `reversed_entry_id`."""
+        line_mods = line_mods or {}
+        debit_wizard = self.env['account.debit.note'].with_context(
+            active_model="account.move",
+            active_ids=invoice.ids,
+        ).create({
+            'date': fields.Date.today(),
+            'copy_lines': True,
+        })
+        result = debit_wizard.create_debit()
+        debit_note = self.env['account.move'].browse(result['res_id'])
+
+        with Form(debit_note) as debit_form:
+            for _ in range(len(debit_note.invoice_line_ids)):
+                debit_form.invoice_line_ids.remove(index=0)
+            for i, inv_line in enumerate(invoice.invoice_line_ids):
+                with debit_form.invoice_line_ids.new() as line:
+                    if not inv_line.product_id:
+                        line.display_type = inv_line.display_type
+                        line.name = inv_line.name
+                    else:
+                        line.product_id = inv_line.product_id
+                        line.quantity = inv_line.quantity
+                        line.price_unit = inv_line.price_unit
+                    if i in line_mods:
+                        for field, value in line_mods[i].items():
+                            setattr(line, field, value)
+        return debit_note
+
+    def _assert_debit_note_error(self, invoice, line_mods):
+        """Assert that creating a debit note with given line_mods raises ValidationError."""
+        with self.assertRaises(ValidationError):
+            self._create_debit_note(invoice, line_mods=line_mods)
+
     # ═══════════════════════════════════════════════════════════════
     # out_refund validation tests (customer credit notes)
     # ═══════════════════════════════════════════════════════════════
@@ -1400,3 +1438,58 @@ class TestAccountMoveCore(TransactionCase):
                     line.product_id = other_product
                     line.quantity = 999.0
                     line.price_unit = 999999.0
+
+    # ═══════════════════════════════════════════════════════════════
+    # Debit note validation tests (out_invoice/in_invoice with debit_origin_id)
+    # Debit notes are NOT out_refund/in_refund -- they keep the original
+    # move_type and link back to their source via `debit_origin_id` instead
+    # of `reversed_entry_id`. Same origin-validation rules must apply.
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_76_debit_note_validation_quantity_equal(self):
+        """out_invoice debit note: Cantidad igual a la original -> OK."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        debit_note = self._create_debit_note(invoice)
+        self.assertEqual(debit_note.invoice_line_ids[0].quantity, 1.0)
+
+    def test_77_debit_note_validation_quantity_greater(self):
+        """out_invoice debit note: Cantidad mayor a la original -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_debit_note_error(invoice, line_mods={0: {"quantity": 5.0}})
+
+    def test_78_debit_note_validation_quantity_zero(self):
+        """out_invoice debit note: Cantidad cero -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_debit_note_error(invoice, line_mods={0: {"quantity": 0.0}})
+
+    def test_79_debit_note_validation_product_not_in_origin(self):
+        """out_invoice debit note: Producto nuevo no presente en origen -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        other_product = self.env["product.product"].create({
+            "name": "Other Product Debit", "type": "service",
+            "property_account_income_id": self.acc_inc.id,
+            "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
+        })
+        self._assert_debit_note_error(invoice, line_mods={0: {"product_id": other_product}})
+
+    def test_80_debit_note_validation_price_unit_negative(self):
+        """out_invoice debit note: Precio unitario negativo -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_debit_note_error(invoice, line_mods={0: {"price_unit": -10.0}})
+
+    def test_81_debit_note_validation_price_unit_greater(self):
+        """out_invoice debit note: Precio unitario mayor al original -> ValidationError."""
+        invoice = self._create_invoice()
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_debit_note_error(invoice, line_mods={0: {"price_unit": 150.0}})
+
+    def test_82_in_invoice_debit_note_validation_quantity_greater(self):
+        """in_invoice debit note (vendor bill): Cantidad mayor a la original -> ValidationError."""
+        invoice = self._create_invoice(move_type='in_invoice')
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_debit_note_error(invoice, line_mods={0: {"quantity": 5.0}})

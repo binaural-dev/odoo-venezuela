@@ -507,7 +507,8 @@ class AccountMoveLine(models.Model):
         # closes that gap so a line-level write on a credit/debit note is
         # still validated against its source invoice.
         moves = self.mapped("move_id").filtered(
-            lambda m: m.move_type in ("out_refund", "in_refund") and m.reversed_entry_id
+            lambda m: (m.move_type in ("out_refund", "in_refund") and m.reversed_entry_id)
+            or (m.move_type in ("out_invoice", "in_invoice") and m.debit_origin_id)
         )
         for move in moves:
             move._validate_refund_lines_against_origin()
