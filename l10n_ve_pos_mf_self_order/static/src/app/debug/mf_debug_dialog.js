@@ -4,6 +4,7 @@ import { Component, useState } from "@odoo/owl";
 import { Dialog } from "@web/core/dialog/dialog";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
+import { KioskFiscalOrdersDialog } from "@l10n_ve_pos_mf_self_order/app/debug/kiosk_fiscal_orders_dialog";
 
 /**
  * Panel de Debug de la Máquina Fiscal para el Kiosko.
@@ -22,6 +23,7 @@ export class MfDebugDialog extends Component {
 
     setup() {
         this.selfOrder = useService("self_order");
+        this.dialog = useService("dialog");
         this.state = useState({ busy: false, message: "" });
     }
 
@@ -76,10 +78,8 @@ export class MfDebugDialog extends Component {
         this._run(_t("Parear máquina fiscal"), () => this.selfOrder.pairFiscalPrinter());
     }
 
-    onReprint() {
-        this._run(_t("Reimprimir última factura"), () =>
-            this.selfOrder.reprintLastKioskFiscalInvoice()
-        );
+    onOpenOrders() {
+        this.dialog.add(KioskFiscalOrdersDialog, {});
     }
 
     get pendingCount() {

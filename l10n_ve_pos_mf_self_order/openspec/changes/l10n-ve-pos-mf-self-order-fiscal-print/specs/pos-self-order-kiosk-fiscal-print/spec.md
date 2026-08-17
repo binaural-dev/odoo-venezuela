@@ -58,26 +58,29 @@ la finalización se reintenta.
 - **THEN** no se emite un segundo comprobante fiscal ni se recobra la tarjeta; se
   reintenta solo el registro de la orden
 
-### Requirement: Reimpresión de facturas fiscales fallidas por modo debug
+### Requirement: Panel de órdenes fiscales del Kiosko (imprimir / reimprimir copia)
 
-El sistema SHALL permitir reenviar a la máquina fiscal una factura cuya impresión
-falló, sin volver a cobrar, mediante una acción disponible en modo debug.
+El sistema SHALL ofrecer, desde el modo debug, un panel estilo TicketScreen que
+liste las órdenes de la sesión y, al seleccionar una, muestre su resumen (cliente,
+líneas, total, estado fiscal) con una acción que IMPRIME la factura fiscal si la
+orden aún no tiene número, o REIMPRIME una COPIA si ya lo tiene.
 
-#### Scenario: Impresión fiscal fallida
+#### Scenario: Imprimir una orden pendiente
 
-- **GIVEN** una orden del Kiosko cuyo pago se aprobó pero cuya impresión fiscal
-  falló
-- **WHEN** ocurre el fallo
-- **THEN** el payload fiscal ya armado se persiste localmente marcado como
-  "pendiente de imprimir", sin recobrar la tarjeta
+- **GIVEN** una orden del Kiosko registrada y pagada, sin `mf_invoice_number`, y
+  la máquina fiscal conectada
+- **WHEN** el operador la selecciona en el panel y pulsa "Imprimir factura fiscal"
+- **THEN** se imprime en la máquina, el número resultante se guarda en la orden y
+  se propaga al `account.move` (`write_mf_invoice_data`)
 
-#### Scenario: Reenvío manual desde modo debug
+#### Scenario: Reimprimir la copia de una factura ya emitida
 
-- **GIVEN** una factura fiscal pendiente de imprimir y la máquina fiscal
+- **GIVEN** una orden del Kiosko con `mf_invoice_number` (ya impresa) y la máquina
   conectada
-- **WHEN** el operador activa el modo debug y ejecuta la acción de reimpresión
-- **THEN** el comprobante se reenvía a la máquina (`printInvoice(payload)`) y, si
-  imprime, se guarda su `mf_invoice_number` en la orden
+- **WHEN** el operador la selecciona y pulsa "Reimprimir copia"
+- **THEN** la máquina reimprime una COPIA del documento por su número
+  (`TfhkaDriver.reprintDocument`), sin emitir un documento nuevo ni cambiar la
+  numeración
 
 ### Requirement: Exposición de datos fiscales al cliente del Kiosko
 

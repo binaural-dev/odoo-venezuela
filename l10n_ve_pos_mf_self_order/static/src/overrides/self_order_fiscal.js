@@ -262,31 +262,65 @@ patch(SelfOrder.prototype, {
     },
 
     /**
-     * Reimprime en la máquina fiscal la última orden del Kiosko que quedó SIN
-     * número fiscal (impresión fallida u omitida por máquina desconectada).
-     * Herramienta de recuperación expuesta desde el modo debug. Deriva el pago
-     * de la propia orden (`payment_ids`).
-     *
-     * @returns {Promise<{valid:boolean, message?:string, order?:Object}>}
+     * Órdenes del Kiosko de la sesión gestionables desde el panel fiscal
+     * (registradas/pagadas, con líneas). Las que NO tienen `mf_invoice_number`
+     * están pendientes de imprimir; las que sí, se pueden reimprimir en copia.
+     * Ordenadas de más reciente a más antigua.
      */
-    async reprintLastKioskFiscalInvoice() {
-        const pending = (this.models["pos.order"] || [])
+    get kioskFiscalOrders() {
+        return (this.models["pos.order"] || [])
             .filter(
                 (o) =>
-                    !o.mf_invoice_number &&
-                    o.partner_id &&
                     (o.lines || []).length > 0 &&
-                    (o.payment_ids || []).length > 0
+                    ["paid", "done", "invoiced"].includes(o.state)
             )
-            .sort((a, b) => (b.id || 0) - (a.id || 0));
-        const order = pending[0];
+            .sort((a, b) =>
+                String(b.date_order || b.id || "").localeCompare(String(a.date_order || a.id || ""))
+            );
+    },
+
+    /**
+     * Imprime la orden si está pendiente (sin número), o reimprime una COPIA si
+     * ya tiene número fiscal. Punto único para el panel de órdenes fiscales.
+     */
+    async printOrReprintKioskOrder(order) {
         if (!order) {
-            return {
-                valid: false,
-                message: "No hay órdenes pendientes de imprimir en esta sesión",
-            };
+            return { valid: false, message: "Orden no válida" };
         }
-        const result = await this.printKioskFiscalInvoice(order);
-        return { ...result, order };
+        return order.mf_invoice_number
+            ? this.reprintKioskFiscalCopy(order)
+            : this.printKioskFiscalInvoice(order);
+    },
+
+    /**
+     * Reimprime una COPIA de una factura fiscal ya emitida, por su número, vía
+     * el comando de reimpresión de la máquina (`TfhkaDriver.reprintDocument`) —
+     * el mismo que usa la caja (`ReprintInvoiceButton`). No emite un documento
+     * nuevo ni cambia la numeración.
+     */
+    async reprintKioskFiscalCopy(order) {
+        if (!order || !order.mf_invoice_number) {
+            return { valid: false, message: "La orden no tiene número fiscal; usa Imprimir." };
+        }
+        const printer = await this.ensureFiscalPrinterConnected();
+        if (!printer || !printer.isConnected) {
+            return { valid: false, message: "Máquina fiscal no conectada" };
+        }
+        try {
+            const result = await printer.reprintDocument({
+                type: "out_invoice",
+                number: order.mf_invoice_number,
+            });
+            if (!result || !result.success) {
+                return {
+                    valid: false,
+                    message: (result && result.error) || "Error al reimprimir la copia",
+                };
+            }
+            return { valid: true };
+        } catch (error) {
+            console.error("[MF Kiosk] error al reimprimir copia", error);
+            return { valid: false, message: String((error && error.message) || error) };
+        }
     },
 });

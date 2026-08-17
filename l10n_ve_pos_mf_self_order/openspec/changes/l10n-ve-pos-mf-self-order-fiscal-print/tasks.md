@@ -113,16 +113,17 @@
 
 - [x] 6.1 Menú de Debug MF (`app/debug/mf_debug_dialog.{js,xml}`): panel único
       abierto desde un botón flotante "🛠 Debug MF" (raíz `selfOrderIndex`,
-      `t-if="env.debug"`). Extensible: cada herramienta es un botón + método que
-      delega en el servicio `self_order`. Opciones actuales: estado de conexión,
-      parear puerto, reimprimir última pendiente. Si la impresión falla, el
-      diálogo del pago muestra el MOTIVO exacto (no omisión silenciosa).
-- [x] 6.2 Reimpresión gated por debug: `SelfOrder.reprintLastKioskFiscalInvoice`
-      busca la última orden en memoria sin `mf_invoice_number` (con partner,
-      líneas y pago) y reintenta `printKioskFiscalInvoice`, derivando el pago de
-      `order.payment_ids`. Sin recobrar. LÍMITE conocido: solo órdenes de la
-      SESIÓN actual (IndexedDB off en kiosko → tras recargar se pierden). Traer
-      pendientes del servidor queda para después.
+      `t-if="env.debug"`). Opciones: estado de conexión, parear puerto, abrir el
+      panel de Órdenes fiscales, reintentar pendientes/fallidas. Si la impresión
+      falla, se muestra el MOTIVO exacto (no omisión silenciosa).
+- [x] 6.2 Panel de Órdenes fiscales (`app/debug/kiosk_fiscal_orders_dialog.{js,xml}`):
+      estilo TicketScreen — lista de órdenes de la sesión a la izquierda; al
+      seleccionar, resumen (cliente/líneas/total/estado fiscal) + botón que
+      IMPRIME (sin nº) o REIMPRIME COPIA (con nº). Servicio: `kioskFiscalOrders`,
+      `printOrReprintKioskOrder`, `reprintKioskFiscalCopy`
+      (`TfhkaDriver.reprintDocument`, como `ReprintInvoiceButton` de la caja).
+      LÍMITE conocido: solo órdenes de la SESIÓN actual en memoria (traer
+      pendientes del servidor queda para después).
 - [ ] 6.3 Respaldo en caja: la orden queda marcada para reimprimir desde el POS
       de caja (`write_mf_invoice_data` / `PrintPendingOrderButton`).
 

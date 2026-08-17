@@ -20,8 +20,8 @@
                     Parear máquina fiscal (autorizar puerto)
                 </button>
                 <button type="button" class="btn btn-secondary text-start"
-                        t-on-click="onReprint" t-att-disabled="state.busy">
-                    Reimprimir última factura pendiente
+                        t-on-click="onOpenOrders" t-att-disabled="state.busy">
+                    Órdenes fiscales (imprimir / reimprimir copia)…
                 </button>
                 <button type="button" class="btn btn-outline-primary text-start"
                         t-on-click="onFlushQueue" t-att-disabled="state.busy">
