@@ -53,15 +53,15 @@ class L10nVePosMfSelfOrderController(PosSelfOrderController):
         o reimprimir la copia.
         """
         pos_config = self._verify_pos_config(access_token)
-        session = pos_config.current_session_id
-        if not session:
-            return {}
+        # Últimas órdenes de ESTA caja (cualquier sesión), no solo la sesión
+        # abierta: así el panel muestra también las de turnos anteriores para
+        # reimprimir copias o completar impresiones pendientes. Acotado por límite.
         orders = (
             pos_config.env["pos.order"]
             .sudo()
             .search(
                 [
-                    ("session_id", "=", session.id),
+                    ("config_id", "=", pos_config.id),
                     ("state", "in", ["paid", "done", "invoiced"]),
                 ],
                 order="id desc",
