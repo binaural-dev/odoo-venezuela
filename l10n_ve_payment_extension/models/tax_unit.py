@@ -40,8 +40,14 @@ class TaxUnit(models.Model):
         return records
 
     def write(self, vals):
+        # 'install_mode' está activo durante la instalación/actualización de
+        # CUALQUIER módulo, no solo de este, así que usarlo como bypass aquí
+        # desactivaría esta protección en situaciones ajenas a este módulo.
+        # 'bypass_tax_unit_lock' es una clave propia que solo nuestro código
+        # puede activar deliberadamente (p.ej. para corregir el registro
+        # semilla, aunque hoy eso se hace con _write y no pasa por aquí).
         for record in self:
-            if not self.env.context.get('install_mode'):
+            if not self.env.context.get('bypass_tax_unit_lock'):
                 if not record.status and any(field not in {'status'} for field in vals):
                     raise UserError(_("You cannot edit a tax unit that is not active."))
 
@@ -122,7 +128,9 @@ class TaxUnit(models.Model):
 
         if not retentions:
             return
-        
+
+        # fees.retention.tax_unit_ids es un Many2one pese al sufijo _ids
+        # (ver fees_retention.py); esta asignación es correcta, no un error.
         retentions.write({'tax_unit_ids': tax_unit_record.id})
         
         for ret in retentions:

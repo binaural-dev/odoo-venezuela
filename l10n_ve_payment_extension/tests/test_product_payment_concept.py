@@ -5,7 +5,13 @@ class TestProductPaymentConcept(TransactionCase):
 
     def setUp(self):
         super().setUp()
-      
+
+        # Restringe env.companies a una sola compañía: con varias compañías
+        # demo permitidas al usuario, los defaults de producto (taxes_id)
+        # toman impuestos de TODAS las compañías permitidas y disparan un
+        # falso "Fiscal inconsistencies... Has 2 taxes assigned".
+        self.env = self.env(context=dict(self.env.context, allowed_company_ids=[self.env.company.id]))
+
         # 1. Creamos conceptos de pago de prueba
         self.concept_honorarios = self.env['payment.concept'].create({
             'name': 'Honorarios Profesionales',
