@@ -1,5 +1,5 @@
 {
-    "name": "Venezuela - CRM",
+    "name": "Venezuela - CRM Moneda Alterna",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
