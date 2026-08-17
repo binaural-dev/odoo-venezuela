@@ -11,18 +11,19 @@ class AccountMove(models.Model):
     )
     l10n_ve_exchange_original_id = fields.Many2one(
         'account.move',
-        string='Exchange Debit Note Reversed',
+        string='Nota de Débito de Diferencial Cambiario Revertida',
         copy=False,
         check_company=True,
-        help="Credit Note that reverses the original exchange difference "
-             "Debit Note. Only set on automatically generated reversal entries.",
+        help="Nota de Crédito que revierte la Nota de Débito original de "
+             "diferencial cambiario. Solo se establece en asientos de "
+             "reversión generados automáticamente.",
     )
     l10n_ve_exchange_is_credit_note = fields.Boolean(
         default=False,
         copy=False,
-        help="Set when this note was created directly as a Credit Note "
-             "(exchange gain), as opposed to being a reversal of a Debit "
-             "Note (see `l10n_ve_exchange_original_id`).",
+        help="Se establece cuando esta nota fue creada directamente como "
+             "Nota de Crédito (ganancia cambiaria), a diferencia de ser una "
+             "reversión de una Nota de Débito (ver `l10n_ve_exchange_original_id`).",
     )
     l10n_ve_exchange_invoice_id = fields.Many2one(
         'account.move',
