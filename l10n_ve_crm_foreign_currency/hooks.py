@@ -25,8 +25,9 @@ def post_init_hook(env):
       histórico ínfimo que redondee a 0 no puede abortar la instalación
       completa; ese caso puntual queda en 0 hasta que alguien lo edite.
     - El propio UPDATE es idempotente: solo toca columnas que sigan en su
-      valor por defecto (0), así que una reinstalación no pisa ediciones que
-      el usuario ya haya hecho a mano.
+      valor por defecto (0 o NULL — un campo *_foreign sin required=True
+      queda en NULL en un registro nuevo, no en 0), así que una
+      reinstalación no pisa ediciones que el usuario ya haya hecho a mano.
 
     La conversión usa la tasa vigente en la fecha de creación de cada
     registro (no la del día de la migración), para que el monto migrado sea
@@ -61,9 +62,9 @@ def _backfill_crm_lead_foreign_amounts(env):
         env.cr.execute(
             """
             UPDATE crm_lead
-            SET expected_revenue_foreign = CASE WHEN expected_revenue_foreign = 0
+            SET expected_revenue_foreign = CASE WHEN COALESCE(expected_revenue_foreign, 0) = 0
                     THEN %s ELSE expected_revenue_foreign END,
-                recurring_revenue_foreign = CASE WHEN recurring_revenue_foreign = 0
+                recurring_revenue_foreign = CASE WHEN COALESCE(recurring_revenue_foreign, 0) = 0
                     THEN %s ELSE recurring_revenue_foreign END
             WHERE id = %s
             """,
@@ -91,7 +92,7 @@ def _backfill_crm_team_foreign_amounts(env):
         env.cr.execute(
             """
             UPDATE crm_team
-            SET invoiced_target_foreign = CASE WHEN invoiced_target_foreign = 0
+            SET invoiced_target_foreign = CASE WHEN COALESCE(invoiced_target_foreign, 0) = 0
                     THEN %s ELSE invoiced_target_foreign END
             WHERE id = %s
             """,
