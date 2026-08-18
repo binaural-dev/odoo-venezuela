@@ -8,8 +8,8 @@
 
                     <!-- Step A: cédula -->
                     <t t-if="state.step === 'identify'">
-                        <h1 class="text-center mt-4">Identifícate para comenzar</h1>
-                        <p class="text-center text-muted mb-4">Ingresa tu cédula o RIF</p>
+                        <h1 class="text-center mt-4">Identify yourself to start</h1>
+                        <p class="text-center text-muted mb-4">Enter your ID number (cédula/RIF)</p>
                         <div class="mx-auto" style="max-width: 32rem;">
                             <div class="d-flex gap-2 mb-3">
                                 <select class="form-select form-select-lg flex-shrink-0 o_ve_prefix_select"
@@ -19,7 +19,7 @@
                                 </select>
                                 <input type="text" inputmode="numeric" autocomplete="off"
                                        class="form-control form-control-lg"
-                                       placeholder="Número de cédula/RIF"
+                                       placeholder="ID number (cédula/RIF)"
                                        t-model="state.vat"
                                        t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onIdentify()"/>
                             </div>
@@ -27,35 +27,35 @@
                             <button class="btn btn-lg btn-primary w-100"
                                     t-att-disabled="state.loading"
                                     t-on-click="() => this.onIdentify()">
-                                Continuar
+                                Continue
                             </button>
                         </div>
                     </t>
 
                     <!-- Step B: nuevo contacto (cédula no encontrada) -->
                     <t t-else="">
-                        <h1 class="text-center mt-4">Nuevo cliente</h1>
+                        <h1 class="text-center mt-4">New customer</h1>
                         <p class="text-center text-muted mb-4">
-                            Cédula/RIF: <b><t t-esc="state.prefixVat"/>-<t t-esc="state.vat"/></b>
+                            ID number (cédula/RIF): <b><t t-esc="state.prefixVat"/>-<t t-esc="state.vat"/></b>
                         </p>
                         <div class="mx-auto" style="max-width: 32rem;">
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="Nombre"
+                                   placeholder="First name"
                                    t-model="state.firstName"/>
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="Apellido"
+                                   placeholder="Last name"
                                    t-model="state.lastName"/>
                             <input type="tel" inputmode="tel" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="Teléfono"
+                                   placeholder="Phone"
                                    t-model="state.phone"/>
                             <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
                             <button class="btn btn-lg btn-primary w-100"
                                     t-att-disabled="state.loading"
                                     t-on-click="() => this.onCreate()">
-                                Crear y continuar
+                                Create and continue
                             </button>
                         </div>
                     </t>
@@ -68,7 +68,7 @@
                     <button class="btn btn-lg btn-light btn-back border-light"
                             t-on-click="() => this.onClickBack()">
                         <i class="oi oi-chevron-left d-md-none"/>
-                        <span class="d-none d-md-inline">Atrás</span>
+                        <span class="d-none d-md-inline">Back</span>
                     </button>
                 </div>
             </div>

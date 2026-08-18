@@ -2,6 +2,7 @@ import { Component, useState } from "@odoo/owl";
 import { useSelfOrder } from "@pos_self_order/app/services/self_order_service";
 import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
+import { _t } from "@web/core/l10n/translation";
 
 // Same cédula/RIF prefixes as l10n_ve_contact's prefix_vat Selection.
 const PREFIX_VAT_OPTIONS = ["V", "E", "J", "G", "P", "C"];
@@ -34,7 +35,7 @@ export class IdentificationPage extends Component {
     async onIdentify() {
         const vat = this.state.vat.trim();
         if (!vat) {
-            this.state.error = "Ingrese la cédula.";
+            this.state.error = _t("Enter the ID number.");
             return;
         }
         this.state.error = "";
@@ -62,7 +63,7 @@ export class IdentificationPage extends Component {
         const firstName = this.state.firstName.trim();
         const lastName = this.state.lastName.trim();
         if (!firstName) {
-            this.state.error = "Ingrese el nombre.";
+            this.state.error = _t("Enter the first name.");
             return;
         }
         this.state.error = "";
