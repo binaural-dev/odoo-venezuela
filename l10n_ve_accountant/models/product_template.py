@@ -60,13 +60,21 @@ class ProductTemplate(models.Model):
                             elif code == 5:   # Unlink all records
                                 current_ids.clear()
 
-            tax_ids = list(current_ids)
+            # Odoo's own default for these fields is computed from `self.env.companies`
+            # (all allowed companies, e.g. for the admin user during module installs),
+            # so the raw id list can legitimately contain one tax per allowed company.
+            # The "exactly one" policy only makes sense scoped to the product's own
+            # company, so ids belonging to other companies must not count towards it.
+            all_taxes = self.env['account.tax'].browse(current_ids)
+            own_company_taxes = all_taxes.filtered(lambda t: t.company_id == company)
+            tax_ids = own_company_taxes.ids
 
             # --- Fiscal Policy Rules Validation ---
             if not tax_ids:
                 default_tax = company[comp_field] or company.root_id.sudo()[comp_field]
                 if default_tax and default_tax.id:
-                    vals[field_name] = [fields.Command.set([default_tax.id])]
+                    other_company_ids = (all_taxes - own_company_taxes).ids
+                    vals[field_name] = [fields.Command.set(other_company_ids + [default_tax.id])]
                 else:
                     errors.append(_("- %s: No tax is assigned and the company has no default fiscal configuration.") % label)
             elif len(tax_ids) > 1:
