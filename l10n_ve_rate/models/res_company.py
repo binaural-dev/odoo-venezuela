@@ -37,3 +37,15 @@ class ResCompany(models.Model):
                 raise UserError(
                     _("The currency foreign must be different from the currency of the company")
                 )
+
+    def _get_effective_foreign_currency(self):
+        """
+        Return the foreign currency of the company, falling back to the
+        closest parent company (matriz) that has one configured when this
+        company does not define its own.
+        """
+        self.ensure_one()
+        company = self
+        while company and not company.foreign_currency_id:
+            company = company.parent_id
+        return company.foreign_currency_id
