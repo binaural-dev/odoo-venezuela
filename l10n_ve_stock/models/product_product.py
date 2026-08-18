@@ -12,12 +12,47 @@ _logger = logging.getLogger(__name__)
 class ProductProduct(models.Model):
     _inherit = "product.product"
 
+    lock_internal_reference_on_moves = fields.Boolean(
+        string="Bloquear referencia interna con movimientos",
+        default=True,
+        help=(
+            "Si está activo, la referencia interna (código) no podrá "
+            "modificarse una vez que el producto tenga movimientos de "
+            "inventario confirmados (incluye los generados por órdenes de "
+            "compra o venta confirmadas)."
+        ),
+    )
+
+    def _has_moves(self):
+        """Return True if self (variant) has done stock moves."""
+        self.ensure_one()
+        return bool(
+            self.env["stock.move"].search_count(
+                [("product_id", "=", self.id), ("state", "=", "done")], limit=1
+            )
+        )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Variante del maldito Raiver e.e
         return True
 
     def write(self, vals):
+        if "default_code" in vals:
+            for product in self:
+                if not product.lock_internal_reference_on_moves:
+                    continue
+                if vals["default_code"] == product.default_code:
+                    continue
+                if product._has_moves():
+                    raise ValidationError(
+                        _(
+                            "No se puede modificar la referencia interna del "
+                            "producto '%s' porque ya tiene movimientos de "
+                            "inventario confirmados.",
+                            product.display_name,
+                        )
+                    )
         res = super().write(vals)
         if "list_price" in vals:
             self._validate_list_price()
