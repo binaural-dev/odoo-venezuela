@@ -15,6 +15,13 @@ import { KioskFiscalOrdersDialog } from "@l10n_ve_pos_mf_self_order/app/debug/ki
  * factura pendiente). Pensado para ir agregando opciones: cada acción es un
  * botón + un método que delega en el servicio `self_order`
  * (l10n_ve_pos_mf_self_order/overrides/self_order_fiscal.js).
+ *
+ * El Kiosko conecta bajo demanda (abre el puerto solo durante cada
+ * impresión/pareo y lo libera al terminar, ver `self_order_fiscal.js`), así
+ * que el badge de estado NO puede leer un flag "conectado" en memoria — en
+ * reposo sería casi siempre falso aunque todo esté bien. Por eso el estado
+ * mostrado aquí es el resultado de la ÚLTIMA prueba explícita
+ * (pareo/"Comprobar estado"), no una lectura reactiva continua.
  */
 export class MfDebugDialog extends Component {
     static components = { Dialog };
@@ -24,14 +31,11 @@ export class MfDebugDialog extends Component {
     setup() {
         this.selfOrder = useService("self_order");
         this.dialog = useService("dialog");
-        this.state = useState({ busy: false, message: "" });
+        this.state = useState({ busy: false, message: "", connected: null });
     }
 
     get connected() {
-        return (
-            typeof this.selfOrder.useFiscalMachine === "function" &&
-            this.selfOrder.useFiscalMachine()
-        );
+        return this.state.connected;
     }
 
     async _run(label, fn) {
@@ -72,13 +76,22 @@ export class MfDebugDialog extends Component {
     }
 
     onCheckStatus() {
-        this.state.message = this.connected
-            ? _t("Máquina fiscal: CONECTADA.")
-            : _t("Máquina fiscal: DESCONECTADA.");
+        this._run(_t("Comprobar estado de conexión"), async () => {
+            if (typeof this.selfOrder.checkFiscalPrinterConnection !== "function") {
+                return { valid: false, message: _t("No disponible") };
+            }
+            const ok = await this.selfOrder.checkFiscalPrinterConnection();
+            this.state.connected = ok;
+            return ok;
+        });
     }
 
     onPair() {
-        this._run(_t("Parear máquina fiscal"), () => this.selfOrder.pairFiscalPrinter());
+        this._run(_t("Parear máquina fiscal"), async () => {
+            const ok = await this.selfOrder.pairFiscalPrinter();
+            this.state.connected = ok;
+            return ok;
+        });
     }
 
     onOpenOrders() {

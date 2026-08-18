@@ -4,8 +4,11 @@
         <Dialog title="'Debug — Máquina Fiscal'" size="'md'">
             <div class="d-flex flex-column gap-2">
                 <div class="d-flex align-items-center gap-2">
-                    <span>Estado:</span>
-                    <span t-att-class="connected ? 'badge text-bg-success' : 'badge text-bg-danger'">
+                    <span>Estado (última prueba):</span>
+                    <span t-if="connected === null" class="badge text-bg-secondary">
+                        Sin comprobar
+                    </span>
+                    <span t-else="" t-att-class="connected ? 'badge text-bg-success' : 'badge text-bg-danger'">
                         <t t-if="connected">Conectada</t>
                         <t t-else="">Desconectada</t>
                     </span>

@@ -12,15 +12,21 @@ import { buildKioskFiscalPayload } from "@l10n_ve_pos_mf_self_order/app/fiscal_p
  * Conexión a la máquina fiscal (TFHKA, Web Serial) en el Kiosko/Autopedido.
  *
  * El Kiosko es DESATENDIDO: a diferencia de la caja (que trae un botón visible
- * `FiscalPrinterButton` en el navbar), aquí no hay botón de cara al cliente. Al
- * arrancar la app se intenta una reconexión SILENCIOSA (`autoConnect` sobre un
- * puerto previamente autorizado, que NO requiere gesto del usuario). El pareo
- * inicial manual (`requestPermission`, que sí exige un gesto) y la reimpresión
- * de fallidas quedan bajo modo debug.
+ * `FiscalPrinterButton` en el navbar), aquí no hay botón de cara al cliente.
+ * Web Serial es EXCLUSIVO por puerto (una sola pestaña/app puede tenerlo
+ * abierto a la vez), así que el Kiosko conecta "bajo demanda": al arrancar
+ * solo verifica que el puerto siga PAREADO (`isPaired`, consulta
+ * `navigator.serial.getPorts()` sin abrirlo — no reserva el puerto ni compite
+ * con otro consumidor), y recién abre la conexión real justo antes de cada
+ * impresión/reimpresión, cerrándola de nuevo al terminar (ver
+ * `printKioskFiscalInvoice`/`reprintKioskFiscalCopy`/
+ * `_releaseFiscalPrinterConnection`). El pareo inicial manual
+ * (`requestPermission`, que sí exige un gesto) queda bajo modo debug.
  *
  * Se reutiliza el MISMO driver que la caja (`window.fiscalPrinter`, singleton
  * global del navegador): si el kiosko y un POS de caja conviven en el mismo
- * navegador, comparten la conexión.
+ * navegador, comparten la conexión (nunca simultáneamente, por el modelo
+ * bajo demanda).
  */
 patch(SelfOrder.prototype, {
     setup() {
@@ -31,9 +37,10 @@ patch(SelfOrder.prototype, {
         // confirmationPage, ver más abajo).
         this.printingFiscalInvoice = false;
         // Solo en modo kiosko y si la caja tiene habilitada la máquina fiscal.
-        // Fire-and-forget: no bloquea el arranque de la app.
+        // Fire-and-forget: no bloquea el arranque de la app. Solo VERIFICA el
+        // pareo (sin abrir el puerto) — ver comentario de cabecera.
         if (this.kioskMode && this.config?.access_button_mf) {
-            this.ensureFiscalPrinterConnected();
+            this.checkFiscalPrinterPairing();
         }
     },
 
@@ -107,16 +114,75 @@ patch(SelfOrder.prototype, {
         return window.fiscalPrinter || null;
     },
 
-    /** @returns {boolean} */
+    /**
+     * Refleja el estado LIVE de la conexión en memoria. En el modelo bajo
+     * demanda esto es `false` casi siempre (solo `true` mientras una
+     * impresión/reimpresión/pareo está en curso) — no sirve para "¿está todo
+     * OK para imprimir?" en reposo. Para eso, usar `checkFiscalPrinterConnection`
+     * (prueba real, conecta-verifica-libera) o `checkFiscalPrinterPairing`
+     * (solo pareo, sin tocar el hardware).
+     * @returns {boolean}
+     */
     useFiscalMachine() {
         const printer = this.getFiscalPrinter();
         return Boolean(printer && printer.isConnected);
     },
 
     /**
-     * Reconexión silenciosa al arrancar. Crea el singleton si no existe y trata
-     * de abrir un puerto ya autorizado (sin prompt). Espeja
-     * `FiscalPrinterButton._autoConnect` pero sin estado de UI.
+     * Prueba real de conexión bajo demanda, pensada para el botón "Comprobar
+     * estado de conexión" del modo debug: conecta, consulta el estado (ENQ) y
+     * libera el puerto de inmediato — a diferencia de `useFiscalMachine`, que
+     * solo lee un flag en memoria casi siempre `false` en reposo con este
+     * modelo.
+     * @returns {Promise<boolean>}
+     */
+    async checkFiscalPrinterConnection() {
+        const printer = await this.ensureFiscalPrinterConnected();
+        const ok = Boolean(printer && printer.isConnected);
+        await this._releaseFiscalPrinterConnection(printer);
+        return ok;
+    },
+
+    /**
+     * Chequeo de arranque: verifica que el puerto siga PAREADO (autorizado en
+     * una sesión anterior) SIN abrirlo. A diferencia de
+     * `ensureFiscalPrinterConnected`, esto NO reserva el puerto — Web Serial
+     * es exclusivo, así que si el Kiosko lo abriera aquí (al cargar la app y
+     * quedarse así todo el turno) ningún otro consumidor (otra caja, el
+     * pareo manual desde otra pestaña, el Fiscalizador del backoffice) podría
+     * tomarlo hasta que la pestaña del Kiosko se cerrara. Solo crea el
+     * singleton `window.fiscalPrinter` y deja un aviso en consola si no hay
+     * pareo; la conexión real ocurre bajo demanda en cada impresión.
+     */
+    async checkFiscalPrinterPairing() {
+        if (!("serial" in navigator)) {
+            console.error("[MF Kiosk] Web Serial API no soportada en este navegador");
+            return false;
+        }
+        if (!window.fiscalPrinter) {
+            window.fiscalPrinter = new TfhkaDriver();
+        }
+        try {
+            const paired = await window.fiscalPrinter.isPaired();
+            if (!paired) {
+                console.warn(
+                    "[MF Kiosk] Máquina fiscal no pareada; parear desde el menú Debug"
+                );
+            }
+            return paired;
+        } catch (error) {
+            console.error("[MF Kiosk] Error al verificar el pareo de la máquina fiscal", error);
+            return false;
+        }
+    },
+
+    /**
+     * Conexión bajo demanda: crea el singleton si no existe y abre el puerto
+     * ya autorizado (sin prompt) SOLO cuando hace falta imprimir/reimprimir.
+     * Quien la llama es responsable de liberar la conexión al terminar
+     * (`_releaseFiscalPrinterConnection`) — ver comentario de cabecera del
+     * archivo. Espeja `FiscalPrinterButton._autoConnect` pero sin estado de
+     * UI y sin mantener el puerto abierto entre operaciones.
      */
     async ensureFiscalPrinterConnected() {
         if (!("serial" in navigator)) {
@@ -140,8 +206,15 @@ patch(SelfOrder.prototype, {
 
     /**
      * Pareo inicial manual (modo debug): pide permiso para elegir el puerto
-     * serial (prompt del navegador — requiere gesto del usuario). Tras esto,
-     * `ensureFiscalPrinterConnected` podrá reconectar silenciosamente.
+     * serial (prompt del navegador — requiere gesto del usuario) y verifica
+     * que responda. La AUTORIZACIÓN del puerto (lo que le permite a
+     * `ensureFiscalPrinterConnected` reconectar sin prompt después) es
+     * independiente de mantenerlo abierto — persiste aunque se cierre la
+     * conexión — así que se libera el puerto al terminar la verificación,
+     * igual que cualquier otra operación puntual del Kiosko. Sin esto, hacer
+     * el pareo desde el modo debug dejaba el puerto tomado hasta la próxima
+     * impresión, bloqueando a otros consumidores (otra pestaña/caja) mientras
+     * tanto.
      */
     async pairFiscalPrinter() {
         if (!("serial" in navigator)) {
@@ -152,12 +225,16 @@ patch(SelfOrder.prototype, {
             window.fiscalPrinter = new TfhkaDriver();
         }
         const printer = window.fiscalPrinter;
-        const connected = await printer.connect({ requestPermission: true });
-        if (connected) {
-            const status = await printer.getStatus();
-            printer.isConnected = Boolean(status);
+        try {
+            const connected = await printer.connect({ requestPermission: true });
+            if (connected) {
+                const status = await printer.getStatus();
+                printer.isConnected = Boolean(status);
+            }
+            return printer.isConnected;
+        } finally {
+            await this._releaseFiscalPrinterConnection(printer);
         }
-        return printer.isConnected;
     },
 
     /**
@@ -202,49 +279,82 @@ patch(SelfOrder.prototype, {
             };
         }
 
-        const payload = buildKioskFiscalPayload(order, {
-            config: this.config,
-            company: this.company,
-            currency: this.currency,
-            paymentMethodCode: paymentMethod?.code_fiscal_printer,
-            paymentAmount: amount,
-        });
-        if (!payload.valid) {
-            return { valid: false, message: payload.message };
-        }
-
-        let response;
+        // A partir de aquí el puerto queda abierto SOLO durante esta
+        // impresión puntual (modelo "bajo demanda"): se libera en el
+        // `finally`, pase lo que pase. A diferencia de la caja
+        // (`FiscalPrinterButton`), el Kiosko es desatendido y no tiene botón
+        // para desconectar manualmente — sin este `finally`, el puerto
+        // (Web Serial es exclusivo) quedaba retenido por la pestaña del
+        // Kiosko indefinidamente tras la primera impresión, y ningún otro
+        // consumidor (otra caja, el backoffice) podía tomarlo hasta reiniciar
+        // el navegador. La próxima impresión reconecta sola (autoConnect, sin
+        // gesto del usuario, ya que el puerto ya fue autorizado antes).
         try {
-            response = await printer.printInvoice(payload);
+            const payload = buildKioskFiscalPayload(order, {
+                config: this.config,
+                company: this.company,
+                currency: this.currency,
+                paymentMethodCode: paymentMethod?.code_fiscal_printer,
+                paymentAmount: amount,
+            });
+            if (!payload.valid) {
+                return { valid: false, message: payload.message };
+            }
+
+            let response;
+            try {
+                response = await printer.printInvoice(payload);
+            } catch (error) {
+                console.error("[MF Kiosk] Error printing on the fiscal machine", error);
+                return {
+                    valid: false,
+                    message: String(error?.message || error || _t("Error while printing")),
+                    printer_connection: true,
+                };
+            }
+
+            if (!response || !response.success) {
+                return {
+                    valid: false,
+                    message: (response && response.error) || "Error al imprimir en la máquina fiscal",
+                    printer_connection: true,
+                };
+            }
+
+            // Guardar los datos de la MF en la orden en cliente (espejo de
+            // PosStore.set_data_from_fiscal_machine).
+            order.fiscal_machine = response.serial || response.serial_machine || "TFHKA-LOCAL";
+            order.mf_invoice_number = response.invoiceNumber || response.invoice_number || "";
+            order.mf_reportz = String(response.reportZ || response.mf_reportz || "");
+
+            // Persistir el número en el servidor (orden + account.move) vía
+            // write_mf_invoice_data, igual que la caja (PrintPendingOrderButton).
+            // Solo si la orden YA está registrada en Odoo (id numérico). Con el
+            // modelo "registrar-primero" siempre lo estará al llegar aquí.
+            const persisted = await this._persistKioskFiscalNumber(order);
+            return { valid: true, message: "", response, persisted };
+        } finally {
+            await this._releaseFiscalPrinterConnection(printer);
+        }
+    },
+
+    /**
+     * Libera (cierra) el puerto serial de la máquina fiscal tras una
+     * impresión/reimpresión puntual del Kiosko. Espeja `FiscalPrinterButton.
+     * _disconnect` de `l10n_ve_pos_mf`, pero automático: el Kiosko no tiene
+     * cajero que pueda pulsar "desconectar", así que cada operación debe
+     * soltar el puerto ella misma al terminar (haya salido bien o mal).
+     */
+    async _releaseFiscalPrinterConnection(printer) {
+        const target = printer || this.getFiscalPrinter();
+        if (!target || !target.isConnected) {
+            return;
+        }
+        try {
+            await target.disconnect();
         } catch (error) {
-            console.error("[MF Kiosk] Error printing on the fiscal machine", error);
-            return {
-                valid: false,
-                message: String(error?.message || error || _t("Error while printing")),
-                printer_connection: true,
-            };
+            console.error("[MF Kiosk] Error al liberar el puerto tras la operación", error);
         }
-
-        if (!response || !response.success) {
-            return {
-                valid: false,
-                message: (response && response.error) || "Error al imprimir en la máquina fiscal",
-                printer_connection: true,
-            };
-        }
-
-        // Guardar los datos de la MF en la orden en cliente (espejo de
-        // PosStore.set_data_from_fiscal_machine).
-        order.fiscal_machine = response.serial || response.serial_machine || "TFHKA-LOCAL";
-        order.mf_invoice_number = response.invoiceNumber || response.invoice_number || "";
-        order.mf_reportz = String(response.reportZ || response.mf_reportz || "");
-
-        // Persistir el número en el servidor (orden + account.move) vía
-        // write_mf_invoice_data, igual que la caja (PrintPendingOrderButton).
-        // Solo si la orden YA está registrada en Odoo (id numérico). Con el
-        // modelo "registrar-primero" siempre lo estará al llegar aquí.
-        const persisted = await this._persistKioskFiscalNumber(order);
-        return { valid: true, message: "", response, persisted };
     },
 
     /**
@@ -343,6 +453,8 @@ patch(SelfOrder.prototype, {
         } catch (error) {
             console.error("[MF Kiosk] error al reimprimir copia", error);
             return { valid: false, message: String((error && error.message) || error) };
+        } finally {
+            await this._releaseFiscalPrinterConnection(printer);
         }
     },
 
