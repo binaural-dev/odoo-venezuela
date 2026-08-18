@@ -79,6 +79,13 @@
             <xpath expr="//field[@name='barcode']" position="before">
                 <field name="alternate_code"/>
             </xpath>
+            <xpath expr="//field[@name='default_code']" position="after">
+                <field
+                    name="lock_internal_reference_on_moves"
+                    widget="boolean_toggle"
+                    help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos asociados."
+                />
+            </xpath>
         </field>
     </record>
     <record id="product_template_form_view_procurement_button" model="ir.ui.view">
