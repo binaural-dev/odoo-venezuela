@@ -1,4 +1,4 @@
-from odoo import models, _
+from odoo import models, fields, _
 from odoo.tools.misc import formatLang
 from odoo.tools.float_utils import float_round, float_is_zero
 from odoo.exceptions import UserError
@@ -82,16 +82,22 @@ class AccountTax(models.Model):
             base_igtf = res.get("amount_total", 0)
             foreign_base_igtf = res.get("foreign_amount_total", 0)
 
-        if invoice.bi_igtf:
-            if invoice.company_currency_id != self.env.ref("base.VEF"):
-               
+        if invoice and invoice.bi_igtf:
+            cc = invoice.company_id.currency_id
+            fc = invoice.company_id.currency_foreign_id
+            ic = invoice.currency_id
+            if ic == cc:
                 base_igtf = invoice.bi_igtf
-                foreign_base_igtf =invoice.foreign_bi_igtf
-
+                foreign_base_igtf = invoice.foreign_bi_igtf
+            elif ic == fc:
+                base_igtf = invoice.foreign_bi_igtf
+                foreign_base_igtf = invoice.foreign_bi_igtf
             else:
-
-                foreign_base_igtf = invoice.bi_igtf
-                base_igtf =  invoice.foreign_bi_igtf
+                base_igtf = cc._convert(
+                    invoice.bi_igtf, ic, invoice.company_id,
+                    invoice.invoice_date or fields.Date.today(),
+                )
+                foreign_base_igtf = invoice.foreign_bi_igtf
 
         igtf_base_amount = base_igtf 
         igtf_foreign_base_amount = foreign_base_igtf 

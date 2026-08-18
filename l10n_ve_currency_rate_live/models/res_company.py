@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from odoo import api, fields, models
 import pytz
@@ -18,11 +18,15 @@ BCV_HEADERS = {
         "Chrome/120.0.0.0 Safari/537.36"
     )
 }
-API_TIMEOUT = 15
-SOURCE_MAX_ATTEMPTS = 3
+# Keep each external attempt short so the cron stays inside Odoo.sh limits.
+API_TIMEOUT = 10
+SCRAPING_TIMEOUT = 10
+SOURCE_MAX_ATTEMPTS = 2
 BCV_TIMEZONE = "America/Caracas"
-BCV_WINDOW_START_HOUR = 4
-BCV_WINDOW_END_HOUR = 6
+BCV_CRON_XMLID = "currency_rate_live.ir_cron_currency_update"
+BCV_WINDOW_START_HOUR = 5
+BCV_WINDOW_END_HOUR = 7
+BCV_RETRY_INTERVAL_MINUTES = 30
 VEF_CURRENCY_CODE = "VEF"
 
 _logger = logging.getLogger(__name__)
@@ -51,9 +55,6 @@ class ResCompany(models.Model):
         result = {"USD": (1.0, current_date)}
         fallback_rate = None
 
-        if self[:1].can_update_habil_days and current_date.isoweekday() > 5:
-            return result
-
         rate_value, published_date = self._get_bcv_rate(expected_date=current_date)
         if not rate_value or not published_date:
             fallback_rate = self._get_last_system_rate(current_date)
@@ -77,6 +78,52 @@ class ResCompany(models.Model):
         return now_local.hour == BCV_WINDOW_END_HOUR and now_local.minute == 0
 
     @api.model
+    def _get_bcv_cron(self):
+        return self.env.ref(BCV_CRON_XMLID, raise_if_not_found=False)
+
+    @api.model
+    def _get_next_bcv_retry_time(self, now_local):
+        if not self._is_bcv_update_window(now_local):
+            return None
+
+        retry_at = now_local.replace(second=0, microsecond=0)
+        minutes_to_add = BCV_RETRY_INTERVAL_MINUTES - (
+            retry_at.minute % BCV_RETRY_INTERVAL_MINUTES
+        )
+        if minutes_to_add == 0:
+            minutes_to_add = BCV_RETRY_INTERVAL_MINUTES
+        retry_at += timedelta(minutes=minutes_to_add)
+
+        window_limit = retry_at.replace(
+            hour=BCV_WINDOW_END_HOUR,
+            minute=0,
+            second=0,
+            microsecond=0,
+        )
+        return retry_at if retry_at <= window_limit else None
+
+    @api.model
+    def _schedule_bcv_retry(self, retry_at_local):
+        cron = self._get_bcv_cron()
+        if not cron or not retry_at_local:
+            return False
+
+        retry_at_utc = retry_at_local.astimezone(pytz.UTC).replace(tzinfo=None)
+        trigger_model = self.env["ir.cron.trigger"].sudo()
+        existing_trigger = trigger_model.search(
+            [
+                ("cron_id", "=", cron.id),
+                ("call_at", "=", fields.Datetime.to_string(retry_at_utc)),
+            ],
+            limit=1,
+        )
+        if existing_trigger:
+            return False
+
+        cron.sudo()._trigger(at=retry_at_utc)
+        return True
+
+    @api.model
     def _is_valid_rate_date(self, current_date, published_date):
         if not published_date:
             return False
@@ -93,8 +140,13 @@ class ResCompany(models.Model):
     @api.model
     def _get_last_system_rate(self, current_date):
         company = self[:1] or self.env.company
-        vef = self.env["res.currency"].with_context(active_test=False).search(
-            [("name", "=", VEF_CURRENCY_CODE)], limit=1,
+        vef = (
+            self.env["res.currency"]
+            .with_context(active_test=False)
+            .search(
+                [("name", "=", VEF_CURRENCY_CODE)],
+                limit=1,
+            )
         )
         if not vef:
             return None
@@ -140,9 +192,13 @@ class ResCompany(models.Model):
                     headers=BCV_HEADERS,
                 )
                 status_response.raise_for_status()
-                api_status = (status_response.json().get("estado") or "").strip().lower()
+                api_status = (
+                    (status_response.json().get("estado") or "").strip().lower()
+                )
                 if api_status != "disponible":
-                    _logger.warning("DolarAPI healthcheck returned status '%s'", api_status)
+                    _logger.warning(
+                        "DolarAPI healthcheck returned status '%s'", api_status
+                    )
                     return (None, None)
 
                 official_response = requests.get(
@@ -156,16 +212,27 @@ class ResCompany(models.Model):
                 rate_value = payload.get("promedio")
                 if rate_value is None:
                     rate_value = payload.get("venta") or payload.get("compra")
-                published_date = self._parse_source_date(payload.get("fechaActualizacion"))
+                published_date = self._parse_source_date(
+                    payload.get("fechaActualizacion")
+                )
                 if rate_value is None or not published_date:
                     return (None, None)
-                if expected_date and published_date != expected_date:
-                    _logger.warning(
-                        "DolarAPI returned stale rate date %s while expecting %s",
-                        published_date,
-                        expected_date,
-                    )
-                    return (None, None)
+                if expected_date:
+                    prefers_next_rate = bool(self[:1].can_update_habil_days)
+                    if prefers_next_rate and published_date < expected_date:
+                        _logger.warning(
+                            "DolarAPI returned stale rate date %s while expecting %s",
+                            published_date,
+                            expected_date,
+                        )
+                        return (None, None)
+                    if not prefers_next_rate and published_date > expected_date:
+                        _logger.warning(
+                            "DolarAPI returned future rate date %s while expecting %s",
+                            published_date,
+                            expected_date,
+                        )
+                        return (None, None)
                 return (float(rate_value), published_date)
             except Exception as exc:
                 _logger.warning(
@@ -184,7 +251,7 @@ class ResCompany(models.Model):
                 response = requests.get(
                     BCV_URL,
                     verify=False,
-                    timeout=30,
+                    timeout=SCRAPING_TIMEOUT,
                     headers=BCV_HEADERS,
                 )
                 response.raise_for_status()
@@ -193,7 +260,11 @@ class ResCompany(models.Model):
                 # Extracting the USD value from the specific HTML ID used by BCV
                 usd_container = soup.find(id="dolar")
                 if not usd_container:
-                    _logger.warning("BCV scraping did not find #dolar on attempt %s/%s", attempt, SOURCE_MAX_ATTEMPTS)
+                    _logger.warning(
+                        "BCV scraping did not find #dolar on attempt %s/%s",
+                        attempt,
+                        SOURCE_MAX_ATTEMPTS,
+                    )
                     continue
 
                 usd_value = (
@@ -205,7 +276,9 @@ class ResCompany(models.Model):
                 rate = float(usd_value)
 
                 published_date = None
-                date_node = usd_container.find_next("span", class_="date-display-single")
+                date_node = usd_container.find_next(
+                    "span", class_="date-display-single"
+                )
                 if date_node and date_node.get("content"):
                     published_date = self._parse_source_date(date_node["content"])
                 if not published_date:
@@ -244,41 +317,70 @@ class ResCompany(models.Model):
     @api.model
     def run_update_bcv_currency(self):
         try:
-            timezone = pytz.timezone(BCV_TIMEZONE)
-        except Exception:
-            timezone = pytz.UTC
-        now_local = datetime.now(timezone)
-        if not self._is_bcv_update_window(now_local):
-            return
+            try:
+                timezone = pytz.timezone(BCV_TIMEZONE)
+            except Exception:
+                timezone = pytz.UTC
 
-        today = fields.Date.to_date(fields.Date.today())
-        Rate = self.env["res.currency.rate"]
-        vef = (
-            self.env["res.currency"]
-            .with_context(active_test=False)
-            .search(
-                [("name", "=", VEF_CURRENCY_CODE)],
-                limit=1,
+            now_local = datetime.now(timezone)
+            if not self._is_bcv_update_window(now_local):
+                return
+
+            today = fields.Date.to_date(fields.Date.today())
+            Rate = self.env["res.currency.rate"]
+            vef = (
+                self.env["res.currency"]
+                .with_context(active_test=False)
+                .search(
+                    [("name", "=", VEF_CURRENCY_CODE)],
+                    limit=1,
+                )
             )
-        )
-        if not vef:
-            return
+            if not vef:
+                return
 
-        bcv_companies = self.search(
-            [
-                ("currency_provider", "=", "bcv"),
-                # Child companies inherit the shared rate through their parent company.
-                ("parent_id", "=", False),
-            ]
-        )
-        for company in bcv_companies:
-            already_today = Rate.search_count(
+            bcv_companies = self.search(
                 [
-                    ("company_id", "=", company.id),
-                    ("currency_id", "=", vef.id),
-                    ("name", "=", today),
+                    ("currency_provider", "=", "bcv"),
+                    # Child companies inherit the shared rate through their parent company.
+                    ("parent_id", "=", False),
                 ]
             )
-            if already_today:
-                continue
-            company.with_context(suppress_errors=True).update_currency_rates()
+            missing_rate = False
+            for company in bcv_companies:
+                try:
+                    already_today = Rate.search_count(
+                        [
+                            ("company_id", "=", company.id),
+                            ("currency_id", "=", vef.id),
+                            ("name", "=", today),
+                        ]
+                    )
+                    if already_today:
+                        continue
+                    company.with_context(suppress_errors=True).update_currency_rates()
+                    company_updated = Rate.search_count(
+                        [
+                            ("company_id", "=", company.id),
+                            ("currency_id", "=", vef.id),
+                            ("name", "=", today),
+                        ]
+                    )
+                    if not company_updated:
+                        missing_rate = True
+                except Exception:
+                    missing_rate = True
+                    _logger.exception(
+                        "BCV currency update failed for company %s",
+                        company.display_name,
+                    )
+
+            if missing_rate:
+                retry_at = self._get_next_bcv_retry_time(now_local)
+                if retry_at and self._schedule_bcv_retry(retry_at):
+                    _logger.info(
+                        "Scheduled BCV currency retry for %s",
+                        retry_at.strftime("%Y-%m-%d %H:%M:%S %Z"),
+                    )
+        except Exception:
+            _logger.exception("Unexpected error in BCV currency cron")
