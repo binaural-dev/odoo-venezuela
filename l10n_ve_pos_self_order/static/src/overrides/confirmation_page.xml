@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_self_order.ConfirmationPage" t-inherit="pos_self_order.ConfirmationPage" t-inherit-mode="extension" owl="1">
+        <xpath expr="//h1[hasclass('mb-0')]" position="replace">
+            <h1 class="mb-0">Transaction successful</h1>
+        </xpath>
+        <xpath expr="//span[hasclass('tracking-number')]/parent::div" position="replace"/>
+    </t>
+</templates>

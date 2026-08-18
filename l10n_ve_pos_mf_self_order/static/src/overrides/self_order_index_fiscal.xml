@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf_self_order.selfOrderIndexMfPair"
+       t-inherit="pos_self_order.selfOrderIndex" t-inherit-mode="extension" owl="1">
+        <xpath expr="//MainComponentsContainer" position="after">
+            <button t-if="env.debug" type="button"
+                    class="btn btn-dark btn-sm position-fixed"
+                    style="top: 8px; left: 8px; z-index: 2000;"
+                    t-on-click="openMfDebug">
+                🛠 Debug MF
+            </button>
+            <div t-if="selfOrder.printingFiscalInvoice"
+                 class="position-fixed top-0 start-0 w-100 min-vh-100 d-flex flex-column justify-content-center align-items-center bg-black bg-opacity-75 text-white"
+                 style="z-index: 2100;">
+                <span class="spinner-border mb-3" style="width: 3rem; height: 3rem;" role="status"/>
+                <div class="fs-3 fw-bold text-center px-3">Espere mientras se imprime su factura...</div>
+            </div>
+        </xpath>
+    </t>
+</templates>

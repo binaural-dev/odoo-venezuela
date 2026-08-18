@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_self_order.IdentificationPage">
+        <div class="o_self_identification_box d-flex flex-column vh-100 overflow-hidden o_self_background o_self_fade"
+             t-attf-style="background-image:#{selfOrder.kioskBackgroundImageUrl};background-size: cover; background-position: center;">
+            <div class="d-flex flex-column flex-grow-1 overflow-y-auto">
+                <div class="container o_self_container my-auto">
+
+                    <!-- Step A: cédula -->
+                    <t t-if="state.step === 'identify'">
+                        <h1 class="text-center mt-4">Identify yourself to start</h1>
+                        <p class="text-center text-muted mb-4">Enter your ID number (cédula/RIF)</p>
+                        <div class="mx-auto" style="max-width: 32rem;">
+                            <div class="d-flex gap-2 mb-3">
+                                <select class="form-select form-select-lg flex-shrink-0 o_ve_prefix_select"
+                                        t-model="state.prefixVat">
+                                    <option t-foreach="prefixOptions" t-as="opt" t-key="opt"
+                                            t-att-value="opt" t-esc="opt"/>
+                                </select>
+                                <input type="text" inputmode="numeric" autocomplete="off"
+                                       class="form-control form-control-lg"
+                                       placeholder="ID number (cédula/RIF)"
+                                       t-model="state.vat"
+                                       t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onIdentify()"/>
+                            </div>
+                            <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
+                            <button class="btn btn-lg btn-primary w-100"
+                                    t-att-disabled="state.loading"
+                                    t-on-click="() => this.onIdentify()">
+                                Continue
+                            </button>
+                        </div>
+                    </t>
+
+                    <!-- Step B: nuevo contacto (cédula no encontrada) -->
+                    <t t-else="">
+                        <h1 class="text-center mt-4">New customer</h1>
+                        <p class="text-center text-muted mb-4">
+                            ID number (cédula/RIF): <b><t t-esc="state.prefixVat"/>-<t t-esc="state.vat"/></b>
+                        </p>
+                        <div class="mx-auto" style="max-width: 32rem;">
+                            <input type="text" autocomplete="off"
+                                   class="form-control form-control-lg mb-3"
+                                   placeholder="First name"
+                                   t-model="state.firstName"/>
+                            <input type="text" autocomplete="off"
+                                   class="form-control form-control-lg mb-3"
+                                   placeholder="Last name"
+                                   t-model="state.lastName"/>
+                            <input type="tel" inputmode="tel" autocomplete="off"
+                                   class="form-control form-control-lg mb-3"
+                                   placeholder="Phone"
+                                   t-model="state.phone"/>
+                            <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
+                            <button class="btn btn-lg btn-primary w-100"
+                                    t-att-disabled="state.loading"
+                                    t-on-click="() => this.onCreate()">
+                                Create and continue
+                            </button>
+                        </div>
+                    </t>
+
+                </div>
+            </div>
+
+            <div class="o_self_footer py-3">
+                <div class="container o_self_container d-flex justify-content-between align-items-center position-relative">
+                    <button class="btn btn-lg btn-light btn-back border-light"
+                            t-on-click="() => this.onClickBack()">
+                        <i class="oi oi-chevron-left d-md-none"/>
+                        <span class="d-none d-md-inline">Back</span>
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </t>
+</templates>

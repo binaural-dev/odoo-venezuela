@@ -1,0 +1,162 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_pos_self_order
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260817\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-17 00:00+0000\n"
+"PO-Revision-Date: 2026-08-17 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/confirmation_page.xml:0
+#, python-format
+msgid "Transaction successful"
+msgstr "Transacción exitosa"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#, python-format
+msgid "Enter the ID number."
+msgstr "Ingrese la cédula."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#, python-format
+msgid "Enter the first name."
+msgstr "Ingrese el nombre."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/kiosk_stepper/kiosk_stepper.js:0
+#, python-format
+msgid "Identification"
+msgstr "Identificación"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/kiosk_stepper/kiosk_stepper.js:0
+#, python-format
+msgid "Scan"
+msgstr "Escanear"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/kiosk_stepper/kiosk_stepper.js:0
+#, python-format
+msgid "Payment"
+msgstr "Pago"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "Identify yourself to start"
+msgstr "Identifícate para comenzar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "Enter your ID number (cédula/RIF)"
+msgstr "Ingresa tu cédula o RIF"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "ID number (cédula/RIF)"
+msgstr "Número de cédula/RIF"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "Continue"
+msgstr "Continuar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "New customer"
+msgstr "Nuevo cliente"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "ID number (cédula/RIF):"
+msgstr "Cédula/RIF:"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "First name"
+msgstr "Nombre"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "Last name"
+msgstr "Apellido"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "Phone"
+msgstr "Teléfono"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "Create and continue"
+msgstr "Crear y continuar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+#, python-format
+msgid "Back"
+msgstr "Atrás"
+
+#. module: l10n_ve_pos_self_order
+#: model:ir.actions.act_window,name:l10n_ve_pos_self_order.action_kiosk_pending_invoice_orders
+#: model:ir.ui.menu,name:l10n_ve_pos_self_order.menu_kiosk_pending_invoice_orders
+msgid "Kiosk: Orders Pending Invoice"
+msgstr "Kiosko: pendientes de facturar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/models/pos_order.py:0
+#, python-format
+msgid "The Kiosk invoice was not posted."
+msgstr "La factura del Kiosko no quedó publicada."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "Order not found for this POS"
+msgstr "Orden no encontrada para esta caja"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "The invoice was not posted."
+msgstr "La factura no quedó publicada."

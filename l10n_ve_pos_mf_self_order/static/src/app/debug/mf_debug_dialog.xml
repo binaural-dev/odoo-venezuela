@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf_self_order.MfDebugDialog">
+        <Dialog title="'Debug — Máquina Fiscal'" size="'md'">
+            <div class="d-flex flex-column gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span>Estado (última prueba):</span>
+                    <span t-if="connected === null" class="badge text-bg-secondary">
+                        Sin comprobar
+                    </span>
+                    <span t-else="" t-att-class="connected ? 'badge text-bg-success' : 'badge text-bg-danger'">
+                        <t t-if="connected">Conectada</t>
+                        <t t-else="">Desconectada</t>
+                    </span>
+                </div>
+
+                <button type="button" class="btn btn-outline-secondary text-start"
+                        t-on-click="onCheckStatus" t-att-disabled="state.busy">
+                    Comprobar estado de conexión
+                </button>
+                <button type="button" class="btn btn-warning text-start"
+                        t-on-click="onPair" t-att-disabled="state.busy">
+                    Parear máquina fiscal (autorizar puerto)
+                </button>
+                <button type="button" class="btn btn-secondary text-start"
+                        t-on-click="onOpenOrders" t-att-disabled="state.busy">
+                    Órdenes fiscales (imprimir / reimprimir copia)…
+                </button>
+                <button type="button" class="btn btn-outline-primary text-start"
+                        t-on-click="onFlushQueue" t-att-disabled="state.busy">
+                    Reintentar registro de órdenes pendientes
+                    <span t-if="pendingCount" class="badge text-bg-warning ms-2"
+                          t-esc="pendingCount"/>
+                </button>
+                <button type="button" class="btn btn-outline-danger text-start"
+                        t-on-click="onRetryFailed" t-att-disabled="state.busy">
+                    Reintentar órdenes FALLIDAS (rechazadas por el servidor)
+                    <span t-if="failedCount" class="badge text-bg-danger ms-2"
+                          t-esc="failedCount"/>
+                </button>
+
+                <div t-if="state.message" class="alert alert-info mb-0 mt-2 py-2"
+                     t-esc="state.message" role="status"/>
+            </div>
+            <t t-set-slot="footer">
+                <button type="button" class="btn btn-primary" t-on-click="() => props.close()">
+                    Cerrar
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

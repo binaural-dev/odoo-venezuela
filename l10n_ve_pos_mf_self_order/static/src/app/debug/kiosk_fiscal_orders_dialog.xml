@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf_self_order.KioskFiscalOrdersDialog">
+        <Dialog title="dialogTitle" size="'lg'">
+            <div class="d-flex" style="gap: 12px; min-height: 320px;">
+                <!-- Lista de órdenes -->
+                <div class="d-flex flex-column" style="width: 42%; overflow-y: auto; max-height: 60vh;">
+                    <t t-if="state.loading">
+                        <div class="text-muted p-3">Loading orders…</div>
+                    </t>
+                    <t t-elif="!orders.length">
+                        <div class="text-muted p-3">No orders in this session.</div>
+                    </t>
+                    <t t-foreach="orders" t-as="order" t-key="order.uuid">
+                        <button type="button"
+                                class="btn text-start d-flex justify-content-between align-items-center mb-1"
+                                t-att-class="selected and selected.uuid === order.uuid ? 'btn-primary' : 'btn-outline-secondary'"
+                                t-on-click="() => this.selectOrder(order)">
+                            <span class="text-truncate" t-esc="orderLabel(order)"/>
+                            <t t-set="st" t-value="orderStatus(order)"/>
+                            <span t-if="st === 'complete'" class="badge text-bg-success ms-2">
+                                Fiscal <t t-esc="order.mf_invoice_number"/>
+                            </span>
+                            <span t-elif="st === 'pending_fiscal'" class="badge text-bg-warning ms-2">
+                                Pending fiscal
+                            </span>
+                            <span t-else="" class="badge text-bg-danger ms-2">Pending invoice</span>
+                        </button>
+                    </t>
+                </div>
+
+                <!-- Detalle de la orden seleccionada -->
+                <div class="flex-grow-1 border-start ps-3" style="width: 58%;">
+                    <t t-if="!selected">
+                        <div class="text-muted p-3">Select an order to see the details.</div>
+                    </t>
+                    <t t-else="">
+                        <div class="fw-bold mb-1" t-esc="orderLabel(selected)"/>
+                        <div class="text-muted small mb-2">
+                            Customer: <t t-esc="selected.partner_id and selected.partner_id.name or '—'"/>
+                        </div>
+                        <div style="max-height: 32vh; overflow-y: auto;">
+                            <table class="table table-sm mb-2">
+                                <tbody>
+                                    <tr t-foreach="selected.lines" t-as="line" t-key="line.uuid || line.id">
+                                        <td class="text-nowrap"><t t-esc="line.qty"/> x</td>
+                                        <td t-esc="line.product_id and line.product_id.display_name or ''"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                            <span>Total</span>
+                            <span t-esc="money(selected.amount_total)"/>
+                        </div>
+                        <t t-set="st" t-value="orderStatus(selected)"/>
+                        <div class="mt-1 small">
+                            Status:
+                            <span t-if="st === 'complete'" class="text-success">
+                                fiscal invoice issued (no. <t t-esc="selected.mf_invoice_number"/>)
+                            </span>
+                            <span t-elif="st === 'pending_fiscal'" class="text-warning">
+                                invoiced, pending fiscal-machine printing
+                            </span>
+                            <span t-else="" class="text-danger">
+                                paid, pending invoice creation
+                            </span>
+                        </div>
+
+                        <!-- Pago verificado por el VPOS de Megasoft (prueba del cobro) -->
+                        <t t-if="selectedPayment">
+                            <div class="border rounded p-2 mt-2 small bg-body-tertiary">
+                                <div class="fw-bold mb-1">Verified payment</div>
+                                <div>Method:
+                                    <t t-esc="selectedPayment.payment_method_id and selectedPayment.payment_method_id.name or '—'"/>
+                                </div>
+                                <div t-if="selectedPayment.megasoft_auth">
+                                    Authorization: <t t-esc="selectedPayment.megasoft_auth"/>
+                                </div>
+                                <div t-if="selectedPayment.megasoft_reference">
+                                    Reference: <t t-esc="selectedPayment.megasoft_reference"/>
+                                </div>
+                                <div t-if="selectedPayment.megasoft_lote">
+                                    Batch: <t t-esc="selectedPayment.megasoft_lote"/>
+                                </div>
+                                <div t-if="selectedPayment.megasoft_card">
+                                    Card: <t t-esc="selectedPayment.megasoft_card"/>
+                                    <t t-if="selectedPayment.megasoft_card_type">
+                                        (<t t-esc="selectedPayment.megasoft_card_type"/>)
+                                    </t>
+                                </div>
+                                <div t-if="selectedPayment.megasoft_bank">
+                                    Bank: <t t-esc="selectedPayment.megasoft_bank"/>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Acción según el estado de recuperación -->
+                        <div class="mt-3 d-flex gap-2">
+                            <button t-if="st === 'pending_invoice'" type="button" class="btn btn-primary"
+                                    t-on-click="onCreateInvoice" t-att-disabled="state.busy">
+                                Create invoice
+                            </button>
+                            <button t-if="st === 'pending_fiscal'" type="button" class="btn btn-primary"
+                                    t-on-click="onPrint" t-att-disabled="state.busy">
+                                Print fiscal invoice
+                            </button>
+                            <button t-if="st === 'complete'" type="button" class="btn btn-outline-primary"
+                                    t-on-click="onPrint" t-att-disabled="state.busy">
+                                Reprint copy
+                            </button>
+                        </div>
+                        <div t-if="state.message" class="alert alert-info mt-2 mb-0 py-2"
+                             t-esc="state.message" role="status"/>
+                    </t>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button type="button" class="btn btn-outline-secondary"
+                        t-on-click="loadOrders" t-att-disabled="state.loading">
+                    Refresh
+                </button>
+                <button type="button" class="btn btn-secondary" t-on-click="() => props.close()">
+                    Close
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

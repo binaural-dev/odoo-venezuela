@@ -1,0 +1,29 @@
+.o_self_identification_box {
+    // El form-select-lg del kiosko hereda un padding horizontal grande
+    // ($input-btn-padding-x-lg: 2rem); con un ancho estrecho la letra del
+    // prefijo (V/E/J/...) queda comprimida y apenas visible. Le damos ancho
+    // suficiente, texto centrado y tamaño explícito para que se lea claro.
+    .o_ve_prefix_select {
+        width: 7rem;
+        padding-left: 1rem;
+        padding-right: 2.25rem;
+        text-align: center;
+        text-align-last: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    // El borde por defecto de Bootstrap casi no se distingue sobre el fondo
+    // claro del kiosko; lo reforzamos para que los campos se lean como cajas.
+    .form-control-lg,
+    .form-select-lg {
+        border: 2px solid $o-gray-300;
+        border-radius: 0.75rem;
+        background-color: $white;
+
+        &:focus {
+            border-color: var(--primary, #{$o-action});
+            box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.08);
+        }
+    }
+}
