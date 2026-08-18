@@ -63,3 +63,16 @@ class TestLockInternalReferenceOnMoves(TransactionCase):
         product.write({"default_code": "REF004-B"})
         self.assertEqual(product.default_code, "REF004-B")
 
+    def test_write_default_code_allowed_when_not_storable(self):
+        product = self.env["product.product"].create(
+            {
+                "name": "Producto No Almacenable",
+                "default_code": "REF005",
+                "type": "consu",
+                "is_storable": False,
+            }
+        )
+        self._create_done_move(product)
+        product.write({"default_code": "REF005-B"})
+        self.assertEqual(product.default_code, "REF005-B")
+
