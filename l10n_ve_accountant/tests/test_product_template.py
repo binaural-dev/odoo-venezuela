@@ -85,6 +85,27 @@ class TestProductTemplate(TransactionCase):
         self.assertEqual(len(product.supplier_taxes_id), 1)
         self.assertEqual(product.supplier_taxes_id.id, self.tax_purchase.id)
 
+    def test_04b_create_multi_company_default_taxes_no_error(self):
+        """Ids de impuestos de compra/venta de OTRA compañía en el vals (p.ej. por
+        el default de Odoo basado en self.env.companies) no deben contar como
+        'varios impuestos' para la compañía del producto."""
+        other_company = self.env['res.company'].create({'name': 'Other Company'})
+        other_tax_group = self.env['account.tax.group'].create({
+            'name': 'Other Tax Group', 'company_id': other_company.id,
+        })
+        other_purchase_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Other Company Purchase Tax", "amount": 21, "amount_type": "percent",
+            "type_tax_use": "purchase", "company_id": other_company.id,
+            "tax_group_id": other_tax_group.id,
+        })
+        product = self.env["product.product"].create({
+            "name": "Test Multi Company Default",
+            "type": "service",
+            "taxes_id": [(5, 0, 0)],
+            "supplier_taxes_id": [(6, 0, [other_purchase_tax.id, self.tax_purchase.id])],
+        })
+        self.assertEqual(set(product.supplier_taxes_id.ids), {other_purchase_tax.id, self.tax_purchase.id})
+
     def test_05_write_sale_tax(self):
         """Write con 1 sale tax sobre producto existente -> OK"""
         product = self.env["product.product"].create({
