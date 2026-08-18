@@ -41,10 +41,14 @@ export class KioskFiscalOrdersDialog extends Component {
             }
         } catch (error) {
             console.error("[MF Kiosk] no se pudieron cargar las órdenes de la sesión", error);
-            this.state.message = _t("No se pudieron cargar las órdenes del servidor.");
+            this.state.message = _t("Could not load orders from the server.");
         } finally {
             this.state.loading = false;
         }
+    }
+
+    get dialogTitle() {
+        return _t("Kiosk Fiscal Orders");
     }
 
     get orders() {
@@ -61,11 +65,77 @@ export class KioskFiscalOrdersDialog extends Component {
     }
 
     money(amount) {
-        return (Number(amount) || 0).toFixed(2);
+        return this.selfOrder.formatMonetary(Number(amount) || 0);
     }
 
     orderLabel(order) {
         return order.pos_reference || order.tracking_number || order.uuid;
+    }
+
+    /**
+     * Estado de recuperación de la orden, en tres niveles:
+     *  - "pending_invoice": pagada pero sin factura contable (`account_move`).
+     *    Acción: Crear factura.
+     *  - "pending_fiscal": facturada pero sin número fiscal. Acción: Imprimir.
+     *  - "complete": ya tiene número fiscal. Acción: Reimprimir copia.
+     */
+    orderStatus(order) {
+        if (!order) {
+            return "none";
+        }
+        if (order.mf_invoice_number) {
+            return "complete";
+        }
+        if (order.is_invoiced) {
+            return "pending_fiscal";
+        }
+        return "pending_invoice";
+    }
+
+    /** Pago verificado de la orden (Megasoft): el que traiga datos del VPOS. */
+    get selectedPayment() {
+        const order = this.selected;
+        if (!order) {
+            return null;
+        }
+        const payments = order.payment_ids || [];
+        return (
+            payments.find((p) => p.megasoft_auth || p.megasoft_reference) ||
+            payments[0] ||
+            null
+        );
+    }
+
+    /**
+     * Crea la factura contable de la orden pendiente (delega en el endpoint de
+     * `l10n_ve_pos_self_order`), luego recarga para reflejar el nuevo estado (que
+     * habilita la impresión fiscal).
+     */
+    async onCreateInvoice() {
+        const order = this.selected;
+        if (!order || this.state.busy) {
+            return;
+        }
+        this.state.busy = true;
+        this.state.message = _t("Creating the invoice…");
+        try {
+            const res = await this.selfOrder.createKioskInvoice(order);
+            if (res && res.success) {
+                this.state.message = res.already_invoiced
+                    ? _t("The order was already invoiced.")
+                    : _t("Invoice created. It can now be printed on the fiscal machine.");
+                await this.loadOrders();
+            } else {
+                this.state.message = _t(
+                    "Could not create the invoice: %s",
+                    (res && res.error) || "error"
+                );
+            }
+        } catch (error) {
+            this.state.message = _t("Error: %s", String((error && error.message) || error));
+        } finally {
+            this.state.busy = false;
+        }
     }
 
     async onPrint() {
@@ -75,15 +145,15 @@ export class KioskFiscalOrdersDialog extends Component {
         }
         const isCopy = Boolean(order.mf_invoice_number);
         this.state.busy = true;
-        this.state.message = _t("Enviando a la máquina fiscal…");
+        this.state.message = _t("Sending to the fiscal machine…");
         try {
             const result = await this.selfOrder.printOrReprintKioskOrder(order);
             if (result && result.valid) {
                 this.state.message = isCopy
-                    ? _t("Copia reimpresa.")
-                    : _t("Factura impresa (nº %s).", order.mf_invoice_number || "");
+                    ? _t("Copy reprinted.")
+                    : _t("Invoice printed (no. %s).", order.mf_invoice_number || "");
             } else {
-                this.state.message = _t("Falló: %s", (result && result.message) || "error");
+                this.state.message = _t("Failed: %s", (result && result.message) || "error");
             }
         } catch (error) {
             this.state.message = _t("Error: %s", String((error && error.message) || error));

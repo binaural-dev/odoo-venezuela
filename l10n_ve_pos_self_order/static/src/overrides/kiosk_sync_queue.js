@@ -25,6 +25,15 @@ import IndexedDB from "@point_of_sale/app/models/utils/indexed_db";
  *  - `failed`: registros rechazados por el servidor (error de negocio, NO de red)
  *    — NO se descartan nunca; reintento manual desde el menú Debug MF.
  *
+ * Nota (recuperación de factura): desde `l10n-ve-pos-self-order-kiosk-invoice-recovery`,
+ * un rechazo de FACTURACIÓN ya no llega aquí. `pos.order._process_saved_order`
+ * (server-side) aísla la factura en un savepoint: si falla, la orden se crea y
+ * queda PAGADA pendiente de facturar en el servidor (no rechaza el registro), así
+ * que el RPC responde OK y la orden nunca entra a `failed`. Esta cola `failed`
+ * queda para rechazos FATALES del registro completo (token inválido, payload
+ * corrupto). Las pendientes de facturar se resuelven desde el panel de órdenes
+ * fiscales (botón "Crear factura") o el menú de backend, no desde aquí.
+ *
  * El RPC de finalización del Kiosko es idempotente, así que reintentar el MISMO
  * payload no duplica pago ni factura. El `mf_invoice_number` (si la orden se
  * imprimió offline) viaja en el payload, así llega a Odoo con la orden.

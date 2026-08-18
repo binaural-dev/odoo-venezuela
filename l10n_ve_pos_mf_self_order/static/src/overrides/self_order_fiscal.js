@@ -65,6 +65,14 @@ patch(SelfOrder.prototype, {
             if (
                 order &&
                 !order.mf_invoice_number &&
+                // NO auto-imprimir si la factura CONTABLE de Odoo aún está
+                // pendiente (`is_invoiced === false`): la orden se pagó pero su
+                // facturación se difirió (ver pos.order._process_saved_order en
+                // l10n_ve_pos_self_order). Queda pendiente por facturar en la
+                // máquina fiscal también; se resuelve desde el panel de
+                // recuperación (crear factura → imprimir fiscal). Emitir un nº
+                // fiscal sin account.move donde estamparlo crearía un desfase.
+                order.is_invoiced &&
                 ["paid", "done", "invoiced"].includes(order.state)
             ) {
                 this.printingFiscalInvoice = true;
@@ -76,12 +84,12 @@ patch(SelfOrder.prototype, {
                                 result && result.message
                             );
                             this.dialog.add(AlertDialog, {
-                                title: _t("Factura fiscal no impresa"),
+                                title: _t("Fiscal invoice not printed"),
                                 body: _t(
-                                    "La orden quedó registrada y facturada. La factura fiscal " +
-                                        "no se pudo imprimir (motivo: %s). Puede reimprimirse desde " +
-                                        "el menú de Debug MF.",
-                                    (result && result.message) || "error desconocido"
+                                    "The order was registered and invoiced. The fiscal invoice " +
+                                        "could not be printed (reason: %s). It can be reprinted " +
+                                        "from the MF Debug menu.",
+                                    (result && result.message) || _t("unknown error")
                                 ),
                             });
                         }
@@ -189,7 +197,7 @@ patch(SelfOrder.prototype, {
         if (!printer || !printer.isConnected) {
             return {
                 valid: false,
-                message: "Máquina fiscal no conectada",
+                message: _t("Fiscal machine not connected"),
                 printer_connection: false,
             };
         }
@@ -209,10 +217,10 @@ patch(SelfOrder.prototype, {
         try {
             response = await printer.printInvoice(payload);
         } catch (error) {
-            console.error("[MF Kiosk] Error al imprimir en la máquina fiscal", error);
+            console.error("[MF Kiosk] Error printing on the fiscal machine", error);
             return {
                 valid: false,
-                message: String(error?.message || error || "Error al imprimir"),
+                message: String(error?.message || error || _t("Error while printing")),
                 printer_connection: true,
             };
         }
@@ -299,7 +307,7 @@ patch(SelfOrder.prototype, {
      */
     async printOrReprintKioskOrder(order) {
         if (!order) {
-            return { valid: false, message: "Orden no válida" };
+            return { valid: false, message: _t("Invalid order") };
         }
         return order.mf_invoice_number
             ? this.reprintKioskFiscalCopy(order)
@@ -314,11 +322,11 @@ patch(SelfOrder.prototype, {
      */
     async reprintKioskFiscalCopy(order) {
         if (!order || !order.mf_invoice_number) {
-            return { valid: false, message: "La orden no tiene número fiscal; usa Imprimir." };
+            return { valid: false, message: _t("The order has no fiscal number; use Print.") };
         }
         const printer = await this.ensureFiscalPrinterConnected();
         if (!printer || !printer.isConnected) {
-            return { valid: false, message: "Máquina fiscal no conectada" };
+            return { valid: false, message: _t("Fiscal machine not connected") };
         }
         try {
             const result = await printer.reprintDocument({
@@ -328,13 +336,39 @@ patch(SelfOrder.prototype, {
             if (!result || !result.success) {
                 return {
                     valid: false,
-                    message: (result && result.error) || "Error al reimprimir la copia",
+                    message: (result && result.error) || _t("Error while reprinting the copy"),
                 };
             }
             return { valid: true };
         } catch (error) {
             console.error("[MF Kiosk] error al reimprimir copia", error);
             return { valid: false, message: String((error && error.message) || error) };
+        }
+    },
+
+    /**
+     * Crea la factura CONTABLE de una orden del Kiosko que quedó pendiente de
+     * facturar (pagada, sin `account_move`). Delega en el endpoint público de
+     * `l10n_ve_pos_self_order` (`create_invoice`), que reusa `action_pos_order_
+     * invoice` server-side y es idempotente. Tras esto, la orden queda facturada
+     * y lista para imprimir en la máquina fiscal desde el panel.
+     *
+     * @param {Object} order orden del Kiosko (pendiente de facturar)
+     * @returns {Promise<{success:boolean, invoice_id?:number, error?:string}>}
+     */
+    async createKioskInvoice(order) {
+        if (!order || typeof order.id !== "number") {
+            return { success: false, error: _t("Invalid order") };
+        }
+        try {
+            const res = await rpc("/l10n_ve_pos_self_order/kiosk/create_invoice", {
+                access_token: this.access_token,
+                order_id: order.id,
+            });
+            return res || { success: false, error: _t("No response from server") };
+        } catch (error) {
+            console.error("[MF Kiosk] create_invoice falló", error);
+            return { success: false, error: String((error && error.message) || error) };
         }
     },
 });

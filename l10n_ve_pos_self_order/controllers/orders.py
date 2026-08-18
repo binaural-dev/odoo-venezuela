@@ -1,6 +1,11 @@
-from odoo import http
+import logging
+
+from odoo import _, http
+from odoo.exceptions import UserError
 
 from odoo.addons.pos_self_order.controllers.orders import PosSelfOrderController
+
+_logger = logging.getLogger(__name__)
 
 
 class L10nVePosSelfOrderController(PosSelfOrderController):
@@ -80,3 +85,57 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
                 ["id", "name", "phone", "vat", "prefix_vat"], load=False
             ),
         }
+
+    @http.route(
+        "/l10n_ve_pos_self_order/kiosk/create_invoice",
+        auth="public",
+        type="jsonrpc",
+        website=True,
+    )
+    def l10n_ve_kiosk_create_invoice(self, access_token, order_id):
+        """Crea la factura de una orden del Kiosko que quedó pendiente de facturar.
+
+        Contraparte pública del Kiosko para recuperar una orden pagada cuya
+        facturación falló al finalizar (ver ``pos.order._process_saved_order`` en
+        este módulo). Valida el ``access_token`` (``_verify_pos_config``) y que la
+        orden pertenezca a la caja, igual que el endpoint fiscal
+        (``write_mf_invoice_data``). Idempotente: si la orden ya tiene
+        ``account_move``, no crea una segunda; devuelve el estado actual.
+
+        A diferencia de la finalización automática, aquí NO se pone el flag
+        ``kiosk_defer_invoice``: si la facturación vuelve a fallar, la excepción se
+        captura y se devuelve el motivo real para que el panel lo muestre, sin
+        tragar el error en silencio.
+        """
+        pos_config = self._verify_pos_config(access_token)
+        order = pos_config.env["pos.order"].sudo().browse(int(order_id))
+        if not order.exists() or order.config_id.id != pos_config.id:
+            return {"success": False, "error": _("Order not found for this POS")}
+        if order.account_move:
+            return {
+                "success": True,
+                "invoice_id": order.account_move.id,
+                "already_invoiced": True,
+            }
+        # Facturar dentro de un savepoint: si la creación de la factura falla —o
+        # se crea pero NO llega a publicarse (`_post`)— se revierte TODO para no
+        # dejar un `account.move` en borrador colgado de la orden. Un borrador así
+        # bloquearía el cierre de la sesión (chequeo NATIVO
+        # `pos.session._check_invoices_are_posted`: "invoices are not posted") y
+        # dejaría la orden en un estado a medias. Con el rollback, la orden vuelve
+        # a quedar pagada/pendiente de facturar (recuperable de nuevo), sin basura.
+        try:
+            with pos_config.env.cr.savepoint():
+                order.action_pos_order_invoice()
+                if not order.account_move or order.account_move.state != "posted":
+                    raise UserError(_("The invoice was not posted."))
+        except Exception as error:  # noqa: BLE001 — devolver el motivo al panel
+            _logger.exception(
+                "Kiosk create_invoice falló para la orden %s", order.id
+            )
+            # El savepoint revirtió la BD (incl. el borrador y el enlace
+            # account_move); limpiar la caché para que la orden refleje su estado
+            # real (sin factura).
+            order.invalidate_recordset()
+            return {"success": False, "error": str(error)}
+        return {"success": True, "invoice_id": order.account_move.id}

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Órdenes del Kiosko que se pagaron pero cuya factura no se pudo crear
+         al finalizar (ver pos.order._process_saved_order en este módulo). El
+         formulario estándar de pos.order ya trae el botón "Invoice"
+         (action_pos_order_invoice), así que basta con una acción filtrada:
+         contabilidad corrige la causa y factura desde aquí. -->
+    <record id="action_kiosk_pending_invoice_orders" model="ir.actions.act_window">
+        <field name="name">Kiosk: Orders Pending Invoice</field>
+        <field name="res_model">pos.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('config_id.self_ordering_mode', '=', 'kiosk'), ('state', '=', 'paid'), ('to_invoice', '=', True), ('account_move', '=', False)]</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiley_face">No Kiosk orders are pending invoice</p>
+            <p>
+                These are Kiosk orders that were paid (the card was already
+                charged) but whose invoice could not be created on finalization.
+                Fix the cause (SENIAT sequence, journal, tax, customer data), open
+                the order and press <b>Invoice</b> to generate the invoice.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_kiosk_pending_invoice_orders"
+              name="Kiosk: Orders Pending Invoice"
+              parent="point_of_sale.menu_point_of_sale"
+              action="action_kiosk_pending_invoice_orders"
+              sequence="9"
+              groups="point_of_sale.group_pos_manager"/>
+
+</odoo>

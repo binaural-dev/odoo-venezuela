@@ -10,6 +10,9 @@
         "l10n_ve_pos",
         "pos_self_order",
     ],
+    "data": [
+        "views/pos_order_views.xml",
+    ],
     "assets": {
         "pos_self_order.assets": [
             "l10n_ve_pos_self_order/static/src/**/*",
