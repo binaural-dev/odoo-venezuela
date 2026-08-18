@@ -137,6 +137,7 @@ class TfhkaDocumentService(models.AbstractModel):
             payload["documentoElectronico"]["FacturaGuia"] = dispatch_guide_reference
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(invoice))
+        _logger.info("Payload: %s", payload)
         response = self.env["tfhka.api.client"].emit(invoice.company_id, payload)
 
         if response:
@@ -221,25 +222,32 @@ class TfhkaDocumentService(models.AbstractModel):
     def _get_currency_context(self, invoice):
         """Resuelve en qué moneda va cada bloque del documento.
 
-        Devuelve ``document_currency`` (cabecera, ``totales`` y
-        ``detallesItems``), ``alt_currency`` (bloque ``totalesOtraMoneda``, vacío
-        si el documento es de una sola moneda) y ``rate`` (bolívares por unidad
-        de divisa, el ``tipoCambio``).
+        Devuelve:
 
-        Sin ``multi_currency_invoice`` el documento entero viaja en la moneda
-        base de la compañía: el ajuste de compañía solo muestra el campo y la
-        mera existencia de una tasa (``foreign_rate``, poblada en toda factura
-        VE) no convierte el documento en bimoneda.
+        * ``document_currency``: moneda del encabezado (``moneda``) y de
+          ``detallesItems``. Es la moneda en la que se emitió la factura: la
+          ``line_currency_id`` elegida en las bimoneda, la divisa de la tarifa
+          en las facturas en divisa, y el bolívar en las facturas en bolívares.
+        * ``totals_currency``: moneda del bloque ``totales``. SIEMPRE el bolívar
+          (la moneda base de la compañía), porque el SENIAT exige los totales
+          del documento en moneda nacional independientemente de la moneda de
+          emisión.
+        * ``alt_currency``: moneda del bloque ``totalesOtraMoneda``. SIEMPRE la
+          divisa (la moneda distinta del bolívar que interviene en el
+          documento); vacío cuando el documento es solo en bolívares y por lo
+          tanto no hay segunda moneda que reportar.
+        * ``rate``: bolívares por unidad de divisa, el ``tipoCambio``.
+
+        Se equipara la moneda base de la compañía con el bolívar, igual que el
+        resto del servicio (``totalIGTF_VES``, ``_convert_amount``): en una
+        compañía venezolana ``company_id.currency_id`` es VES/VEF.
         """
         invoice.ensure_one()
         base_currency = invoice.company_id.currency_id
         foreign_currency = self._get_document_foreign_currency(invoice)
         empty_currency = self.env["res.currency"]
 
-        if not self._should_report_foreign_totals(invoice):
-            document_currency = base_currency
-            alt_currency = empty_currency
-        else:
+        if invoice.multi_currency_invoice:
             if not foreign_currency:
                 raise UserError(
                     _(
@@ -257,9 +265,20 @@ class TfhkaDocumentService(models.AbstractModel):
                     )
                 )
             document_currency = invoice.line_currency_id
-            alt_currency = (
-                foreign_currency if document_currency == base_currency else base_currency
-            )
+        else:
+            # Factura en divisa: el encabezado va en la divisa de emisión aunque
+            # no esté marcada como bimoneda. Sin divisa el documento es en
+            # bolívares y las tres monedas colapsan en la base.
+            document_currency = foreign_currency or base_currency
+
+        # totales -> bolívares; totalesOtraMoneda -> la divisa. No depende de
+        # cuál sea la moneda del encabezado.
+        totals_currency = base_currency
+        alt_currency = (
+            foreign_currency
+            if self._should_report_foreign_totals(invoice, foreign_currency)
+            else empty_currency
+        )
 
         rate = (
             self._resolve_foreign_rate(invoice, foreign_currency)
@@ -267,11 +286,12 @@ class TfhkaDocumentService(models.AbstractModel):
             else 1.0
         )
 
-        self._check_currency_codes(document_currency | alt_currency)
+        self._check_currency_codes(document_currency | totals_currency | alt_currency)
 
         return {
             "multi_currency": bool(alt_currency),
             "document_currency": document_currency,
+            "totals_currency": totals_currency,
             "alt_currency": alt_currency,
             "foreign_currency": foreign_currency,
             "rate": rate,
@@ -540,16 +560,19 @@ class TfhkaDocumentService(models.AbstractModel):
             currency.round(self._get_amount_in_currency(invoice, currency, ctx, amount)),
         )
 
-    def _should_report_foreign_totals(self, invoice):
+    def _should_report_foreign_totals(self, invoice, foreign_currency=None):
         """Criterio ÚNICO para adjuntar el bloque ``totalesOtraMoneda``.
 
-        Es el flag de la factura y solo el flag. En 17.0 convivían tres
-        criterios distintos —entre ellos ``foreign_rate`` truthy, que está
-        poblado en TODA factura venezolana—, así que en la práctica cualquier
-        factura salía bimoneda por el mero hecho de tener activada la opción en
-        la compañía. El ajuste de compañía únicamente muestra el campo.
+        Es la presencia de una divisa en el documento, no el flag
+        ``multi_currency_invoice``: ``totales`` viaja siempre en bolívares, así
+        que en cuanto hay una moneda distinta del bolívar hay que reportarla en
+        ``totalesOtraMoneda``, tanto en las bimoneda como en las facturas
+        emitidas en divisa. Solo la factura íntegramente en bolívares queda sin
+        el bloque.
         """
-        return bool(invoice.multi_currency_invoice)
+        if foreign_currency is None:
+            foreign_currency = self._get_document_foreign_currency(invoice)
+        return bool(foreign_currency) and foreign_currency != invoice.company_id.currency_id
 
     def _build_amounts(self, invoice, currency, ctx):
         """Bloque de totales expresado en ``currency``.
@@ -604,19 +627,19 @@ class TfhkaDocumentService(models.AbstractModel):
         ctx = ctx or self._get_currency_context(invoice)
         totals, foreign_totals = {}, False
         for record in invoice:
-            document_currency = ctx["document_currency"]
+            # El bloque ``totales`` va en bolívares (moneda base) sin importar la
+            # moneda del encabezado; ``totalesOtraMoneda`` lleva la divisa.
+            totals_currency = ctx["totals_currency"]
             alt_currency = ctx["alt_currency"]
-            base_currency = record.company_id.currency_id
 
             # IGTF de cada bloque en SU moneda: sumar el de un bloque al total
-            # del otro descuadra totalAPagar. totalIGTF_VES va siempre en la
-            # moneda base, sea cual sea la moneda del documento.
-            _b, igtf_doc = self._get_igtf_block(record, document_currency, ctx)
-            _b, igtf_ves = self._get_igtf_block(record, base_currency, ctx)
+            # del otro descuadra totalAPagar. Como ``totales`` ya está en
+            # bolívares, totalIGTF y totalIGTF_VES coinciden en ese bloque.
+            _b, igtf_ves = self._get_igtf_block(record, totals_currency, ctx)
 
-            amounts = self._build_amounts(record, document_currency, ctx)
+            amounts = self._build_amounts(record, totals_currency, ctx)
             taxes_subtotal = self._prepare_tax_subtotals(
-                record, document_currency, ctx, include_igtf=True
+                record, totals_currency, ctx, include_igtf=True
             )
 
             if alt_currency:
@@ -649,7 +672,7 @@ class TfhkaDocumentService(models.AbstractModel):
                 "montoTotalConIVA": amounts["montoTotalConIVA"],
                 "totalDescuento": amounts["totalDescuento"],
                 "impuestosSubtotal": taxes_subtotal,
-                "totalIGTF": str(round(igtf_doc, 2)),
+                "totalIGTF": str(round(igtf_ves, 2)),
                 "totalIGTF_VES": str(round(igtf_ves, 2)),
             }
             # Cuadro de pago: el bloque formasPago solo se adjunta cuando el
