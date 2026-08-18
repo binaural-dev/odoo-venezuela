@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
-    "version": "19.0.3.0.0",
+    "version": "19.0.3.0.2",
     "category": "Accounting",
     "summary": "Venezuela - Integración de Punto de Venta con Maquina Fiscal (Web Serial API)",
     "sequence": "1",
@@ -14,6 +14,7 @@
     ],
     "data": [
         "security/ir.model.access.csv",
+        "security/res_group.xml",
         "views/pos_config.xml",
         "views/pos_order.xml",
         "views/pos_session.xml",
