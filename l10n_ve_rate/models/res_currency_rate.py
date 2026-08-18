@@ -32,23 +32,33 @@ class ResCurrencyRate(models.Model):
             The date of the rate that is gonna be searched for the given currency
             (foreign_currency_id).
 
+        If no rate is found for the current company, the search falls back to the closest
+        parent company (matriz) that has a rate configured for the given currency and date,
+        following the same fallback pattern used in
+        `res.company._get_effective_foreign_currency()`.
+
         Returns
         -------
         dict
             A dictionary with the rate and inverse rate for the given currency and date.
         """
-        rate = self.env["res.currency.rate"].search(
-            [
-                ("currency_id", "=", foreign_currency_id),
-                ("company_id", "=", self.env.company.id),
-                ("name", "<=", rate_date),
-            ],
-            order="name DESC", limit=1,
-        )
+        company = self.env.company
+        rate = self.env["res.currency.rate"]
+        while company and not rate:
+            rate = self.env["res.currency.rate"].search(
+                [
+                    ("currency_id", "=", foreign_currency_id),
+                    ("company_id", "=", company.id),
+                    ("name", "<=", rate_date),
+                ],
+                order="name DESC", limit=1,
+            )
+            if not rate:
+                company = company.parent_id
         if not rate:
             return {}
 
-        vef_id = self.env.company.currency_id.id
+        vef_id = company.currency_id.id
         if vef_id == foreign_currency_id:
             return {
                 "foreign_rate": rate.company_rate,
@@ -80,6 +90,6 @@ class ResCurrencyRate(models.Model):
         base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
             "base.USD", raise_if_not_found=False
         )
-        foreign_currency_id = self.env.company.foreign_currency_id.id or False
+        foreign_currency_id = self.env.company._get_effective_foreign_currency().id or False
         inverse_rate = (1 / rate) if rate and foreign_currency_id == base_usd_id else rate
         return inverse_rate

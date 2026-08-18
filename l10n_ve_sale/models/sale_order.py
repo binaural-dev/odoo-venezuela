@@ -23,7 +23,7 @@ class SaleOrder(models.Model):
         type = int
             The id of the foreign currency of the company
         """
-        return self.env.company.foreign_currency_id.id or False
+        return self.env.company._get_effective_foreign_currency().id or False
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -48,7 +48,7 @@ class SaleOrder(models.Model):
             The rate of the payment
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
-            self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
+            self.env.company._get_effective_foreign_currency().id or self.env.ref("base.VEF").id,
             self.date_order or fields.Date.today(),
         )
         return rate_values.get("foreign_rate", 0)
@@ -63,7 +63,7 @@ class SaleOrder(models.Model):
             The inverse rate of the payment
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
-            self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
+            self.env.company._get_effective_foreign_currency().id or self.env.ref("base.VEF").id,
             self.date_order or fields.Date.today(),
         )
         return rate_values.get("foreign_inverse_rate", 0)
@@ -202,7 +202,7 @@ class SaleOrder(models.Model):
             order.foreign_total_billed = False
             if not order.order_line or not order.tax_totals:
                 continue
-            fc = order.company_id.foreign_currency_id
+            fc = order.company_id._get_effective_foreign_currency()
             if (
                 order.currency_id
                 and order.currency_id != order.company_id.currency_id
@@ -226,7 +226,7 @@ class SaleOrder(models.Model):
             order.foreign_untaxed_total = False
             if not order.order_line or not order.tax_totals:
                 continue
-            fc = order.company_id.foreign_currency_id
+            fc = order.company_id._get_effective_foreign_currency()
             if (
                 order.currency_id
                 and order.currency_id != order.company_id.currency_id
@@ -264,7 +264,7 @@ class SaleOrder(models.Model):
             The view of the account move form with the foreign currency symbol added to the page title
         """
         foreign_currency_symbol = ""
-        foreign_currency_id = self.env.company.foreign_currency_id
+        foreign_currency_id = self.env.company._get_effective_foreign_currency()
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
