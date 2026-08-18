@@ -116,12 +116,19 @@ class PosPayment(models.Model):
                 amounts["amount_converted"],
             )
 
+            # pos.session._lock_foreign_amount fija not_foreign_recalculate + foreign_credit/
+            # foreign_debit + foreign_credit_adjustment/foreign_debit_adjustment en un solo lugar
+            # (cubierto por l10n_ve_pos/tests/test_lock_foreign_amount.py), en vez de duplicar acá
+            # la misma logica sin test propio.
+            pos_session_model = self.env["pos.session"]
+
             if add_credit_line_vals:
                 receivable_line = self.env["account.move.line"].with_context(check_move_validity=False).create(
                     [add_credit_line_vals]
                 )
-                receivable_line.not_foreign_recalculate = True
-                receivable_line.foreign_credit = abs(payment.foreign_amount - payment.foreign_igtf_amount)
+                pos_session_model._lock_foreign_amount(
+                    receivable_line, payment.foreign_amount - payment.foreign_igtf_amount
+                )
 
             other_lines = self.env["account.move.line"].with_context(check_move_validity=False).create(
                 [credit_line_vals, debit_line_vals]
@@ -129,16 +136,14 @@ class PosPayment(models.Model):
             igtf_or_receivable_line = other_lines[0]
             debit_line = other_lines[1]
 
-            # Setear Bs correctos en la línea de débito (CUENTA POR COBRAR POS)
-            debit_line.not_foreign_recalculate = True
-            debit_line.foreign_debit = abs(payment.foreign_amount)
+            # Bs correctos en la línea de débito (CUENTA POR COBRAR POS)
+            pos_session_model._lock_foreign_amount(debit_line, payment.foreign_amount)
 
-            # Setear Bs correctos en crédito IGTF o cuenta por cobrar (pago sin IGTF split)
-            igtf_or_receivable_line.not_foreign_recalculate = True
-            if payment.include_igtf:
-                igtf_or_receivable_line.foreign_credit = abs(payment.foreign_igtf_amount)
-            else:
-                igtf_or_receivable_line.foreign_credit = abs(payment.foreign_amount)
+            # Bs correctos en crédito IGTF o cuenta por cobrar (pago sin IGTF split)
+            pos_session_model._lock_foreign_amount(
+                igtf_or_receivable_line,
+                payment.foreign_igtf_amount if payment.include_igtf else payment.foreign_amount,
+            )
 
             payment_move._post()
         return result
