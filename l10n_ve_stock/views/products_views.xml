@@ -69,6 +69,14 @@
             <xpath expr="//field[@name='default_code']" position="after">
                 <field name="alternate_code"/>
             </xpath>
+            <xpath expr="//group[@name='group_lots_and_weight']" position="inside">
+                <field
+                    name="lock_internal_reference_on_moves"
+                    widget="boolean_toggle"
+                    invisible="not is_storable"
+                    help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos asociados."
+                />
+            </xpath>
         </field>
     </record>
     <record id="product_normal_form_view" model="ir.ui.view">
@@ -79,10 +87,11 @@
             <xpath expr="//field[@name='barcode']" position="before">
                 <field name="alternate_code"/>
             </xpath>
-            <xpath expr="//field[@name='default_code']" position="after">
+            <xpath expr="//group[@name='group_lots_and_weight']" position="inside">
                 <field
                     name="lock_internal_reference_on_moves"
                     widget="boolean_toggle"
+                    invisible="not is_storable"
                     help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos asociados."
                 />
             </xpath>

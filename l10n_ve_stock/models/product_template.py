@@ -46,6 +46,19 @@ class ProductTemplate(models.Model):
 
     liters_per_unit = fields.Float(digits="Stock Weight")
 
+    lock_internal_reference_on_moves = fields.Boolean(
+        string="Bloquear referencia interna con movimientos",
+        compute="_compute_lock_internal_reference_on_moves",
+        inverse="_set_lock_internal_reference_on_moves",
+        store=True,
+        help=(
+            "Si está activo, la referencia interna (código) no podrá "
+            "modificarse una vez que el producto tenga movimientos de "
+            "inventario confirmados (incluye los generados por órdenes de "
+            "compra o venta confirmadas)."
+        ),
+    )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e
@@ -130,3 +143,12 @@ class ProductTemplate(models.Model):
         domain = [('free_qty', operator, value)]
         product_variant_query = self.env['product.product'].sudo()._search(domain)
         return [('product_variant_ids', 'in', product_variant_query)]
+
+    @api.depends("product_variant_ids.lock_internal_reference_on_moves")
+    def _compute_lock_internal_reference_on_moves(self):
+        self._compute_template_field_from_variant_field(
+            "lock_internal_reference_on_moves", default=True
+        )
+
+    def _set_lock_internal_reference_on_moves(self):
+        self._set_product_variant_field("lock_internal_reference_on_moves")
