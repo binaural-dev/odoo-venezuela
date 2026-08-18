@@ -40,7 +40,7 @@ class ProductProduct(models.Model):
     def write(self, vals):
         if "default_code" in vals:
             for product in self:
-                if not product.lock_internal_reference_on_moves:
+                if not product.is_storable or not product.lock_internal_reference_on_moves:
                     continue
                 if vals["default_code"] == product.default_code:
                     continue
