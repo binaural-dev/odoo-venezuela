@@ -32,6 +32,38 @@ export class IdentificationPage extends Component {
         return PREFIX_VAT_OPTIONS;
     }
 
+    get numpadKeys() {
+        // On-screen numeric keypad laid out as a 3×4 grid: 1-9, then
+        // backspace / 0 / clear on the last row.
+        return [
+            { label: "1", value: "1" },
+            { label: "2", value: "2" },
+            { label: "3", value: "3" },
+            { label: "4", value: "4" },
+            { label: "5", value: "5" },
+            { label: "6", value: "6" },
+            { label: "7", value: "7" },
+            { label: "8", value: "8" },
+            { label: "9", value: "9" },
+            { label: "⌫", value: "backspace", action: true },
+            { label: "0", value: "0" },
+            { label: "C", value: "clear", action: true },
+        ];
+    }
+
+    onNumpadKey(value) {
+        // Feeds the on-screen keypad into the cédula/RIF field so the kiosk
+        // does not depend on a physical keyboard.
+        this.state.error = "";
+        if (value === "backspace") {
+            this.state.vat = this.state.vat.slice(0, -1);
+        } else if (value === "clear") {
+            this.state.vat = "";
+        } else {
+            this.state.vat += value;
+        }
+    }
+
     async onIdentify() {
         const vat = this.state.vat.trim();
         if (!vat) {

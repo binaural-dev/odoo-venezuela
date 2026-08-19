@@ -26,4 +26,34 @@
             box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.08);
         }
     }
+
+    // Teclado numérico en pantalla para introducir la cédula/RIF sin depender
+    // del teclado físico del kiosko. Grid 3×4: 1-9, retroceso/0/limpiar.
+    .o_ve_numpad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        max-width: 24rem;
+        margin-left: auto;
+        margin-right: auto;
+
+        .o_ve_numpad_key {
+            padding: 0.9rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 2px solid $o-gray-300;
+            border-radius: 0.75rem;
+            background-color: $white;
+
+            &:active {
+                background-color: $o-gray-200;
+            }
+        }
+
+        // Retroceso (⌫) y limpiar (C): mismas cajas, acento de color para
+        // distinguirlas de los dígitos.
+        .o_ve_numpad_action {
+            color: $o-action;
+        }
+    }
 }
