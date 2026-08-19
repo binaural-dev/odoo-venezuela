@@ -530,8 +530,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             currency_id=self.currency_usd.id,
             foreign_currency_id=self.currency_usd.id,
         )
-        invoice.multi_currency_invoice = True
-        invoice.line_currency_id = self.currency_usd
+        # No hace falta marcar multi_currency_invoice: la factura ya está
+        # "en divisa" (currency_id=USD bajo compañía VEF), y eso alcanza
+        # para que _get_currency_context reporte totalesOtraMoneda. Forzar
+        # el flag aquí solo dispararía el constraint de multi_currency_available,
+        # que exige una tarifa realmente distinta de la moneda de la
+        # compañía (ver test_171/test_179).
         _totals, foreign_totals = self.env['tfhka.document.service']._prepare_totals(invoice)
         self.assertTrue(foreign_totals, "La factura en USD debe generar TotalesOtraMoneda")
         self.assertEqual(foreign_totals["tipoCambio"], "38.0000")
@@ -1606,10 +1610,17 @@ class TestAccountMoveApiCalls(TransactionCase):
     def test_69_get_totals_vef(self):
         vef = self.env.ref("base.VEF")
         self._force_company_currency(self.company, vef)
+        # foreign_currency_id = VEF (== moneda de la compañía), a propósito:
+        # _get_currency_context solo reporta totalesOtraMoneda vía el
+        # fallback de "toda factura VE trae su foreign_currency_id" cuando
+        # esa moneda difiere de la base (ver el comentario de ese fallback
+        # en tfhka_document_service). Con ambas en VEF no hay divisa que
+        # reportar, que es justo el escenario mono-moneda que este test
+        # quiere cubrir.
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
             currency_id=vef.id,
-            foreign_currency_id=self.currency_usd.id,
+            foreign_currency_id=vef.id,
         )
         totals, foreign = self.env['tfhka.document.service']._prepare_totals(inv)
         self.assertIn("montoGravadoTotal", totals)
@@ -1904,13 +1915,16 @@ class TestAccountMoveApiCalls(TransactionCase):
 
 
     def test_109_get_document_identification_empty_recordset(self):
-        # Mismo contrato que _prepare_tax_subtotals (ver test_173): al resolver
-        # el contexto de moneda se exige un unico registro, asi que un recordset
-        # vacio revienta en ensure_one() en vez de devolver None en silencio.
-        with self.assertRaises(ValueError):
-            self.env['tfhka.document.service']._prepare_identification(
-                self.env['account.move'].browse([]), "01", "1", ""
-            )
+        # A diferencia de _prepare_tax_subtotals (ver test_173), acá el
+        # propio método salta el cómputo de _get_currency_context cuando el
+        # recordset viene vacío (ver el comentario al inicio de
+        # _prepare_identification) precisamente para no reventar en
+        # ensure_one(); el for interno tampoco itera, así que el resultado
+        # es None en silencio, no una excepción.
+        result = self.env['tfhka.document.service']._prepare_identification(
+            self.env['account.move'].browse([]), "01", "1", ""
+        )
+        self.assertIsNone(result)
 
 
 
@@ -2440,14 +2454,17 @@ class TestAccountMoveApiCalls(TransactionCase):
             foreign_currency_id=self.currency_usd.id,
         )
         # multi_currency_available exige que la tarifa difiera de la moneda
-        # de la compañía (USD, sin forzar aquí); se le asigna una tarifa en
-        # VEF explícitamente para habilitar el flag sin depender de la
-        # tarifa por defecto del partner.
-        vef_pricelist = self.env['product.pricelist'].create({
-            'name': 'Tarifa VEF test (171)',
-            'currency_id': self.currency_vef.id,
+        # de la compañía (VEF, forzada arriba); se le asigna una tarifa en
+        # USD explícitamente para habilitar el flag. No alcanza con la
+        # tarifa por defecto del partner: _force_company_currency realinea
+        # a VEF la moneda de TODAS las tarifas existentes (para que otros
+        # tests no hereden una tarifa "en divisa" espuria), así que haría
+        # falta una tarifa nueva, creada después, en una moneda distinta.
+        usd_pricelist = self.env['product.pricelist'].create({
+            'name': 'Tarifa USD test (171)',
+            'currency_id': self.currency_usd.id,
         })
-        inv.pricelist_id = vef_pricelist.id
+        inv.pricelist_id = usd_pricelist.id
         inv.multi_currency_invoice = True
         inv.line_currency_id = self.currency_usd.id
         ident = self.env['tfhka.document.service']._prepare_identification(inv, "01", "147", "")
@@ -2478,14 +2495,18 @@ class TestAccountMoveApiCalls(TransactionCase):
         falta exponer monedas reales para que ``currency == invoice.currency_id``
         /``invoice.foreign_currency_id``/``company_id.currency_id`` puedan
         compararse -- de ahí los tres parámetros de moneda, con defaults que
-        cubren el caso "compañía y documento en la misma moneda, divisa
-        aparte" salvo que el test necesite otra combinación (p. ej. IGTF, que
-        exige distinguir compañía vs. documento para no leer el dato
-        corrupto que publica ``l10n_ve_igtf`` en la clave equivocada).
+        cubren el caso "documento y compañía en VES, divisa en USD" salvo
+        que el test necesite otra combinación (p. ej. IGTF, que exige
+        distinguir compañía vs. documento para no leer el dato corrupto que
+        publica ``l10n_ve_igtf`` en la clave equivocada). Compañía y divisa
+        NO pueden coincidir por default: ``_get_tax_totals_keys``/
+        ``_get_igtf_block`` comparan ``company_id.currency_id`` antes que
+        ``foreign_currency_id``, así que si ambas fueran USD cualquier
+        llamada pidiendo la divisa caería siempre en la rama de compañía.
         """
-        currency_id = currency_id or self.currency_usd
-        foreign_currency_id = foreign_currency_id or self.currency_vef
-        company_currency_id = company_currency_id or self.currency_usd
+        currency_id = currency_id or self.currency_vef
+        foreign_currency_id = foreign_currency_id or self.currency_usd
+        company_currency_id = company_currency_id or self.currency_vef
         company = type("FakeCompany", (), {
             "igtf_percentage": igtf_percentage,
             "currency_id": company_currency_id,
@@ -2495,8 +2516,6 @@ class TestAccountMoveApiCalls(TransactionCase):
             "currency_id": currency_id,
             "foreign_currency_id": foreign_currency_id,
             "company_id": company,
-            "currency_id": self.currency_vef,
-            "foreign_currency_id": self.currency_usd,
             "ensure_one": lambda self: None,
         })()
 
@@ -2524,6 +2543,24 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         record.invoice_line_ids = FakeLines(fake_lines)
         return record
+
+    def _fake_optional_field_record(self, **field_values):
+        """Doble de prueba para métodos que hacen ``for record in invoice``
+        y comprueban ``"campo" in record._fields`` antes de leerlo -- el
+        patrón usado para campos opcionales que aporta otro módulo (p. ej.
+        ``seller_id`` o ``guide_number``, de ``l10n_ve_stock_account``) y
+        que no siempre está instalado.
+
+        Cada kwarg se expone como campo declarado (presente en
+        ``_fields``) con el valor dado, incluido ``False``, para poder
+        simular "el campo existe pero está vacío" sin depender de que el
+        módulo real esté instalado.
+        """
+        record = type("FakeOptionalFieldRecord", (), {
+            "_fields": set(field_values.keys()),
+            **field_values,
+        })()
+        return [record]
 
     def _amounts_tax_totals(self):
         return {
@@ -2694,7 +2731,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         # Local: se pide en la moneda de la factura, distinta de la moneda de
         # la compañía en este doble -- así _get_igtf_block lee igtf_base_amount
         # /igtf_amount directos (116.0/3.48), sin pasar por la conversión.
-        local_fake = self._fake_tax_record(tax_totals, company_currency_id=self.currency_vef)
+        local_fake = self._fake_tax_record(tax_totals, company_currency_id=self.currency_usd)
         local = service._prepare_tax_subtotals(
             local_fake, local_fake.currency_id, {"rate": 1.0}, include_igtf=True
         )
@@ -2706,7 +2743,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         # con la moneda de la factura, así que _get_igtf_block convierte
         # igtf_base_amount/igtf_amount con la tasa (116/40=2.9, 3.48/40=0.087
         # -> 0.09), en vez de leer los foreign_igtf_* corruptos.
-        foreign_fake = self._fake_tax_record(tax_totals, company_currency_id=self.currency_usd)
+        foreign_fake = self._fake_tax_record(tax_totals, company_currency_id=self.currency_vef)
         foreign = service._prepare_tax_subtotals(
             foreign_fake, foreign_fake.foreign_currency_id, {"rate": 40}, include_igtf=True
         )
@@ -2756,18 +2793,20 @@ class TestAccountMoveApiCalls(TransactionCase):
             currency_id=self.currency_usd.id,
             foreign_currency_id=self.currency_usd.id,
         )
-        # Misma necesidad que test_171: una tarifa en VEF distinta de la
-        # moneda de la compañía (USD) para habilitar multi_currency_invoice.
-        vef_pricelist = self.env['product.pricelist'].create({
-            'name': 'Tarifa VEF test (179)',
-            'currency_id': self.currency_vef.id,
+        # Misma necesidad que test_171: una tarifa en USD distinta de la
+        # moneda de la compañía (VEF, forzada arriba) para habilitar
+        # multi_currency_invoice.
+        usd_pricelist = self.env['product.pricelist'].create({
+            'name': 'Tarifa USD test (179)',
+            'currency_id': self.currency_usd.id,
         })
-        invoice.pricelist_id = vef_pricelist.id
+        invoice.pricelist_id = usd_pricelist.id
         invoice.multi_currency_invoice = True
         invoice.line_currency_id = self.currency_usd.id
         info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
         # El pago se hizo en VES, así que "moneda" es el código de ESA
-        # moneda, no el de la compañía (que aquí sigue siendo USD).
+        # moneda, no el de la compañía (que aquí también es VEF, pero por
+        # coincidencia -- lo que importa es la moneda del pago).
         self.assertEqual(info["moneda"], self.currency_vef.code_tfhka)
         self.assertNotIn("tipoCambio", info)
 
