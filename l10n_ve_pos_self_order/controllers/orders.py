@@ -139,3 +139,57 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
             order.invalidate_recordset()
             return {"success": False, "error": str(error)}
         return {"success": True, "invoice_id": order.account_move.id}
+
+    @http.route(
+        "/l10n_ve_pos_self_order/kiosk/session_orders",
+        auth="public",
+        type="jsonrpc",
+        website=True,
+    )
+    def l10n_ve_kiosk_session_orders(self, access_token, limit=50):
+        """Órdenes recientes de la caja, para el panel de órdenes del Kiosko.
+
+        Persistencia real: el panel NO depende de lo que quede en memoria del
+        cliente (que se pierde al iniciar una orden nueva o recargar). Devuelve
+        ``pos.order``/``line``/``payment``/``partner`` en el mismo formato que
+        consume ``connectNewData`` en el cliente, así el panel las lista y —si el
+        módulo de máquina fiscal está instalado— el builder fiscal client-side las
+        usa igual (líneas, impuestos, pago) para imprimir o reimprimir la copia.
+
+        Datos genéricos: los campos fiscales (``mf_invoice_number``…) NO se piden
+        aquí; se añaden solos cuando ``l10n_ve_pos_mf_self_order`` está instalado,
+        porque extiende ``pos.order._load_pos_self_data_fields``. Así el panel de
+        recuperación de factura funciona en un Kiosko sin máquina fiscal.
+        """
+        pos_config = self._verify_pos_config(access_token)
+        # Últimas órdenes de ESTA caja (cualquier sesión), no solo la sesión
+        # abierta: así el panel muestra también las de turnos anteriores para
+        # recuperar facturas pendientes (o reimprimir copias con MF). Acotado por
+        # límite.
+        orders = (
+            pos_config.env["pos.order"]
+            .sudo()
+            .search(
+                [
+                    ("config_id", "=", pos_config.id),
+                    ("state", "in", ["paid", "done", "invoiced"]),
+                ],
+                order="id desc",
+                limit=int(limit) or 50,
+            )
+        )
+        if not orders:
+            return {}
+        env = pos_config.env
+        return {
+            "pos.order": env["pos.order"]._load_pos_self_data_read(orders, pos_config),
+            "pos.order.line": env["pos.order.line"]._load_pos_self_data_read(
+                orders.lines, pos_config
+            ),
+            "pos.payment": env["pos.payment"]._load_pos_self_data_read(
+                orders.payment_ids, pos_config
+            ),
+            "res.partner": env["res.partner"]._load_pos_self_data_read(
+                orders.partner_id, pos_config
+            ),
+        }

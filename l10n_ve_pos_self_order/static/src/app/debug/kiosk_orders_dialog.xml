@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="l10n_ve_pos_mf_self_order.KioskFiscalOrdersDialog">
+    <t t-name="l10n_ve_pos_self_order.KioskOrdersDialog">
         <Dialog title="dialogTitle" size="'lg'">
             <div class="d-flex" style="gap: 12px; min-height: 320px;">
                 <!-- Lista de órdenes -->
@@ -18,13 +18,11 @@
                                 t-on-click="() => this.selectOrder(order)">
                             <span class="text-truncate" t-esc="orderLabel(order)"/>
                             <t t-set="st" t-value="orderStatus(order)"/>
-                            <span t-if="st === 'complete'" class="badge text-bg-success ms-2">
-                                Fiscal <t t-esc="order.mf_invoice_number"/>
+                            <!-- Anclas de estado: el módulo fiscal inyecta aquí sus badges -->
+                            <span class="o_kiosk_order_badges d-inline-flex align-items-center">
+                                <span t-if="st === 'pending_invoice'" class="badge text-bg-danger ms-2">Pending invoice</span>
+                                <span t-if="st === 'invoiced'" class="badge text-bg-success ms-2">Invoiced</span>
                             </span>
-                            <span t-elif="st === 'pending_fiscal'" class="badge text-bg-warning ms-2">
-                                Pending fiscal
-                            </span>
-                            <span t-else="" class="badge text-bg-danger ms-2">Pending invoice</span>
                         </button>
                     </t>
                 </div>
@@ -54,60 +52,31 @@
                             <span t-esc="money(selected.amount_total)"/>
                         </div>
                         <t t-set="st" t-value="orderStatus(selected)"/>
-                        <div class="mt-1 small">
+                        <div class="mt-1 small o_kiosk_order_status">
                             Status:
-                            <span t-if="st === 'complete'" class="text-success">
-                                fiscal invoice issued (no. <t t-esc="selected.mf_invoice_number"/>)
-                            </span>
-                            <span t-elif="st === 'pending_fiscal'" class="text-warning">
-                                invoiced, pending fiscal-machine printing
-                            </span>
-                            <span t-else="" class="text-danger">
+                            <span t-if="st === 'pending_invoice'" class="text-danger">
                                 paid, pending invoice creation
+                            </span>
+                            <span t-if="st === 'invoiced'" class="text-success">
+                                invoiced
                             </span>
                         </div>
 
-                        <!-- Pago verificado por el VPOS de Megasoft (prueba del cobro) -->
+                        <!-- Pago (genérico). El módulo fiscal inyecta aquí el detalle verificado (Megasoft) -->
                         <t t-if="selectedPayment">
-                            <div class="border rounded p-2 mt-2 small bg-body-tertiary">
-                                <div class="fw-bold mb-1">Verified payment</div>
+                            <div class="border rounded p-2 mt-2 small bg-body-tertiary o_kiosk_order_payment">
+                                <div class="fw-bold mb-1">Payment</div>
                                 <div>Method:
                                     <t t-esc="selectedPayment.payment_method_id and selectedPayment.payment_method_id.name or '—'"/>
-                                </div>
-                                <div t-if="selectedPayment.megasoft_auth">
-                                    Authorization: <t t-esc="selectedPayment.megasoft_auth"/>
-                                </div>
-                                <div t-if="selectedPayment.megasoft_reference">
-                                    Reference: <t t-esc="selectedPayment.megasoft_reference"/>
-                                </div>
-                                <div t-if="selectedPayment.megasoft_lote">
-                                    Batch: <t t-esc="selectedPayment.megasoft_lote"/>
-                                </div>
-                                <div t-if="selectedPayment.megasoft_card">
-                                    Card: <t t-esc="selectedPayment.megasoft_card"/>
-                                    <t t-if="selectedPayment.megasoft_card_type">
-                                        (<t t-esc="selectedPayment.megasoft_card_type"/>)
-                                    </t>
-                                </div>
-                                <div t-if="selectedPayment.megasoft_bank">
-                                    Bank: <t t-esc="selectedPayment.megasoft_bank"/>
                                 </div>
                             </div>
                         </t>
 
-                        <!-- Acción según el estado de recuperación -->
-                        <div class="mt-3 d-flex gap-2">
+                        <!-- Acción según el estado. El módulo fiscal inyecta aquí Imprimir/Reimprimir -->
+                        <div class="mt-3 d-flex gap-2 o_kiosk_order_actions">
                             <button t-if="st === 'pending_invoice'" type="button" class="btn btn-primary"
                                     t-on-click="onCreateInvoice" t-att-disabled="state.busy">
                                 Create invoice
-                            </button>
-                            <button t-if="st === 'pending_fiscal'" type="button" class="btn btn-primary"
-                                    t-on-click="onPrint" t-att-disabled="state.busy">
-                                Print fiscal invoice
-                            </button>
-                            <button t-if="st === 'complete'" type="button" class="btn btn-outline-primary"
-                                    t-on-click="onPrint" t-att-disabled="state.busy">
-                                Reprint copy
                             </button>
                         </div>
                         <div t-if="state.message" class="alert alert-info mt-2 mb-0 py-2"

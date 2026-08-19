@@ -1,14 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="l10n_ve_pos_mf_self_order.selfOrderIndexMfPair"
+    <t t-name="l10n_ve_pos_mf_self_order.selfOrderIndexFiscalOverlay"
        t-inherit="pos_self_order.selfOrderIndex" t-inherit-mode="extension" owl="1">
         <xpath expr="//MainComponentsContainer" position="after">
-            <button t-if="env.debug" type="button"
-                    class="btn btn-dark btn-sm position-fixed"
-                    style="top: 8px; left: 8px; z-index: 2000;"
-                    t-on-click="openMfDebug">
-                🛠 Debug MF
-            </button>
+            <!-- Overlay "Espere mientras se imprime su factura": la impresión
+                 fiscal ocurre en confirmationPage (fire-and-forget) mientras la
+                 orden ya se ve confirmada; sin esto el cliente no sabría que la
+                 máquina fiscal todavía está imprimiendo en segundo plano.
+                 (El botón flotante de debug lo aporta ahora l10n_ve_pos_self_order;
+                 este módulo solo extiende el panel de debug con lo fiscal.) -->
             <div t-if="selfOrder.printingFiscalInvoice"
                  class="position-fixed top-0 start-0 w-100 min-vh-100 d-flex flex-column justify-content-center align-items-center bg-black bg-opacity-75 text-white"
                  style="z-index: 2100;">
