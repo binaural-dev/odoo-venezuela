@@ -138,12 +138,16 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has no fiscal machine assigned"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
-            if self.invoice_date_display != fields.Date.today():
+            if self.invoice_date_display != fields.Date.context_today(self):
                 raise ValidationError(_("Cannot print an invoice with a future date"))
             if self.is_credit and self.amount_residual != self.amount_total:
                 raise ValidationError(_("You cannot print a credit invoice with associated payments"))
 
             data = self
+            # base.VEF puede no existir (renombrada/eliminada en una
+            # redenominacion de moneda); con raise_if_not_found=False y este
+            # fallback, la comparacion sigue siendo segura (vef.id == False).
+            vef = data.env.ref("base.VEF", raise_if_not_found=False) or data.env["res.currency"]
 
             if not data:
                 return {"valid": False, "message": "No se envio datos"}
@@ -166,7 +170,7 @@ class AccountMoveInh(models.Model):
                         "amount": payment["amount"],
                         "payment_method": journal_id["payment_method"] or "01",
                     }
-                    if payment["currency_id"] != data.env.ref("base.VEF").id:
+                    if payment["currency_id"] != vef.id:
                         new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
 
                     payment_lines.append(new_payment)
@@ -175,7 +179,7 @@ class AccountMoveInh(models.Model):
 
             for line in data.invoice_line_ids:
                 price_vef = line.price_unit
-                if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
+                if data.company_id.currency_id.id != vef.id:
                     price_vef = line.foreign_price
                 _invoice_lines.append(
                     {
@@ -244,12 +248,16 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has no fiscal machine assigned"))
             # if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
             #     raise ValidationError(_("The credit note must be made in the same fiscal machine"))
-            if self.invoice_date_display != fields.Date.today():
+            if self.invoice_date_display != fields.Date.context_today(self):
                 raise ValidationError(_("The credit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
 
             data = self
+            # base.VEF puede no existir (renombrada/eliminada en una
+            # redenominacion de moneda); con raise_if_not_found=False y este
+            # fallback, la comparacion sigue siendo segura (vef.id == False).
+            vef = data.env.ref("base.VEF", raise_if_not_found=False) or data.env["res.currency"]
 
             if not data:
                 return {"valid": False, "message": "No se envio datos"}
@@ -272,7 +280,7 @@ class AccountMoveInh(models.Model):
                         "amount": payment["amount"],
                         "payment_method": journal_id["payment_method"] or "01",
                     }
-                    if payment["currency_id"] != data.env.ref("base.VEF").id:
+                    if payment["currency_id"] != vef.id:
                         new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
 
                     payment_lines.append(new_payment)
@@ -280,7 +288,7 @@ class AccountMoveInh(models.Model):
             _invoice_lines = []
             for line in data.invoice_line_ids:
                 price_vef = line.price_unit
-                if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
+                if data.company_id.currency_id.id != vef.id:
                     price_vef = line.foreign_price
                 _invoice_lines.append(
                     {
@@ -343,12 +351,16 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has no fiscal machine assigned"))
             # if self.iot_mf.serial_machine != self.debit_origin_id.mf_serial:
             #     raise ValidationError(_("The debit note must be made in the same fiscal machine"))
-            if self.invoice_date_display != fields.Date.today():
+            if self.invoice_date_display != fields.Date.context_today(self):
                 raise ValidationError(_("The debit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
 
             data = self
+            # base.VEF puede no existir (renombrada/eliminada en una
+            # redenominacion de moneda); con raise_if_not_found=False y este
+            # fallback, la comparacion sigue siendo segura (vef.id == False).
+            vef = data.env.ref("base.VEF", raise_if_not_found=False) or data.env["res.currency"]
 
             if not data:
                 return {"valid": False, "message": "No se envio datos"}
@@ -371,7 +383,7 @@ class AccountMoveInh(models.Model):
                         "amount": payment["amount"],
                         "payment_method": journal_id["payment_method"] or "01",
                     }
-                    if payment["currency_id"] != data.env.ref("base.VEF").id:
+                    if payment["currency_id"] != vef.id:
                         new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
 
                     payment_lines.append(new_payment)
@@ -379,7 +391,7 @@ class AccountMoveInh(models.Model):
             _invoice_lines = []
             for line in data.invoice_line_ids:
                 price_vef = line.price_unit
-                if data.company_id.currency_id.id != data.env.ref("base.VEF").id:
+                if data.company_id.currency_id.id != vef.id:
                     price_vef = line.foreign_price
                 _invoice_lines.append(
                     {

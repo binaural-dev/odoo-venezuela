@@ -10,10 +10,8 @@
             </xpath>
 
             <xpath expr="//field[@name='receivable_account_id']" position="after">
-                <field name="cross_account_journal" />
-                <field name="cross_journal" />
-                <field name="apply_one_cross_move" />
-
+                <field name="cross_account_journal" invisible="not is_foreign_currency" />
+                <field name="cross_journal" invisible="not is_foreign_currency" />
             </xpath>
         </field>
     </record>

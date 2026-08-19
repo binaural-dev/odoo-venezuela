@@ -114,6 +114,41 @@ class AccountPayment(models.Model):
                 )
             )
 
+    def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
+        line_vals_list = super()._prepare_move_line_default_vals(
+            write_off_line_vals=write_off_line_vals, force_balance=force_balance
+        )
+        self.ensure_one()
+        if not self.is_retention:
+            return line_vals_list
+
+        invoice = self.retention_line_ids.move_id
+        if len(invoice) != 1 or invoice.currency_id != self.env.company.foreign_currency_id:
+            return line_vals_list
+
+        foreign_amount = sum(self.retention_line_ids.mapped("foreign_retention_amount"))
+        if self.env.company.currency_id.is_zero(foreign_amount):
+            return line_vals_list
+
+        account_type = {
+            "supplier": "liability_payable",
+            "customer": "asset_receivable",
+        }.get(self.partner_type)
+
+        for vals in line_vals_list:
+            account = self.env["account.account"].browse(vals.get("account_id"))
+            if account.account_type == account_type:
+                # Fijamos el monto ya en la moneda de la factura (calculado con la
+                # tasa de emisión de la factura) desde el momento en que se
+                # construye la línea, antes de crear/postear el asiento, para
+                # que el core no la reconvierta con la tasa del día de la
+                # retención.
+                sign = -1 if vals["balance"] < 0 else 1
+                vals["currency_id"] = invoice.currency_id.id
+                vals["amount_currency"] = sign * abs(foreign_amount)
+
+        return line_vals_list
+
     def action_draft(self):
 
         if self.env.context.get('bypass_retention_lock'):
