@@ -10,3 +10,4 @@ from . import test_stock_quantity_history
 from . import test_stock_warehouse
 from . import test_lock_internal_reference
 from . import test_stock_picking_alter_location
+from . import test_product_company_edit_restriction
