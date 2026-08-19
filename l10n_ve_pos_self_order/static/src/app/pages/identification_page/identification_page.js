@@ -32,6 +32,21 @@ export class IdentificationPage extends Component {
         return PREFIX_VAT_OPTIONS;
     }
 
+    // Placeholders built from the already-translated base terms plus the
+    // required marker appended outside the translatable string, so the "*"
+    // never becomes part of the msgid (which would fall back to English).
+    get firstNamePlaceholder() {
+        return _t("First name") + " *";
+    }
+
+    get lastNamePlaceholder() {
+        return _t("Last name") + " *";
+    }
+
+    get phonePlaceholder() {
+        return _t("Phone");
+    }
+
     get numpadKeys() {
         // On-screen numeric keypad laid out as a 3×4 grid: 1-9, then
         // backspace / 0 / clear on the last row.
@@ -96,6 +111,10 @@ export class IdentificationPage extends Component {
         const lastName = this.state.lastName.trim();
         if (!firstName) {
             this.state.error = _t("Enter the first name.");
+            return;
+        }
+        if (!lastName) {
+            this.state.error = _t("Enter the last name.");
             return;
         }
         this.state.error = "";

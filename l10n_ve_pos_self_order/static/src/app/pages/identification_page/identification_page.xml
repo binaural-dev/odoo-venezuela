@@ -47,15 +47,15 @@
                         <div class="mx-auto" style="max-width: 32rem;">
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="First name"
+                                   t-att-placeholder="firstNamePlaceholder"
                                    t-model="state.firstName"/>
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="Last name"
+                                   t-att-placeholder="lastNamePlaceholder"
                                    t-model="state.lastName"/>
                             <input type="tel" inputmode="tel" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="Phone"
+                                   t-att-placeholder="phonePlaceholder"
                                    t-model="state.phone"/>
                             <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
                         </div>
@@ -81,7 +81,7 @@
                     </button>
                     <button t-else=""
                             class="btn btn-lg btn-primary px-5"
-                            t-att-disabled="state.loading"
+                            t-att-disabled="state.loading || !state.firstName.trim() || !state.lastName.trim()"
                             t-on-click="() => this.onCreate()">
                         Create and continue
                     </button>

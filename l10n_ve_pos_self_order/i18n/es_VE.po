@@ -39,6 +39,13 @@ msgstr "Ingrese el nombre."
 
 #. module: l10n_ve_pos_self_order
 #. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#, python-format
+msgid "Enter the last name."
+msgstr "Ingrese el apellido."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
 #: code:addons/l10n_ve_pos_self_order/static/src/app/kiosk_stepper/kiosk_stepper.js:0
 #, python-format
 msgid "Identification"
