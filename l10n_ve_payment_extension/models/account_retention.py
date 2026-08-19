@@ -725,7 +725,7 @@ class AccountRetention(models.Model):
                 raise ValidationError(
                     _("No registered lines found in the move to reconcile.")
                 )
-
+            
             payment.retention_line_ids.move_id.js_assign_outstanding_line(lines[0].id)
 
     @api.model
