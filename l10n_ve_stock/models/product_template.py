@@ -75,6 +75,13 @@ class ProductTemplate(models.Model):
         ),
     )
 
+    company_id = fields.Many2one(tracking=True)
+
+    can_edit_company_id = fields.Boolean(
+        compute="_compute_can_edit_company_id",
+        help="Indica si el usuario actual puede modificar la compañía del producto.",
+    )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e
@@ -412,3 +419,8 @@ class ProductTemplate(models.Model):
                         ('location_out_id', '=', location.id),
                     ])
                     rules.unlink()
+
+    def _compute_can_edit_company_id(self):
+        can_edit = self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
+        for product in self:
+            product.can_edit_company_id = can_edit

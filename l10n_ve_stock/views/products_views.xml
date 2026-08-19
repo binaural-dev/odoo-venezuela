@@ -67,6 +67,12 @@
                         invisible="not show_physical_locations"/>
                 </group>
             </xpath>
+            <xpath expr="//field[@name='company_id'][@options]" position="before">
+                <field name="can_edit_company_id" invisible="1"/>
+            </xpath>
+            <xpath expr="//field[@name='company_id'][@options]" position="attributes">
+                <attribute name="readonly">not can_edit_company_id</attribute>
+            </xpath>
         </field>
     </record>
     <record id="product_template_form_view" model="ir.ui.view">
