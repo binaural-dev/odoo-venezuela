@@ -425,3 +425,69 @@ msgstr "Reintentar registro de órdenes pendientes"
 #: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.xml:0
 msgid "Retry FAILED orders (rejected by the server)"
 msgstr "Reintentar órdenes FALLIDAS (rechazadas por el servidor)"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Hi %(name)s!"
+msgstr "¡Hola %(name)s!"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Hi!"
+msgstr "¡Hola!"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Search or scan a product…"
+msgstr "Busca o escanea un producto…"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Scan a product or type its name to search."
+msgstr "Escanea un producto o escribe su nombre para buscar."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "No products match your search."
+msgstr "Ningún producto coincide con tu búsqueda."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/models/pos_config.py:0
+msgid "Kiosk: hide catalog (scan / search only)"
+msgstr "Kiosko: ocultar catálogo (solo escaneo / búsqueda)"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/models/pos_config.py:0
+msgid ""
+"In Kiosk mode, hide the product catalog and let customers add products only "
+"by scanning a barcode or using the search box."
+msgstr ""
+"En modo Kiosko, oculta el catálogo de productos y permite que los clientes "
+"agreguen productos solo escaneando un código de barras o usando el buscador."
+
+#. module: l10n_ve_pos_self_order
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_self_order.res_config_settings_view_form_hide_catalog
+msgid "Kiosk: scan / search only"
+msgstr "Kiosko: solo escaneo / búsqueda"
+
+#. module: l10n_ve_pos_self_order
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_self_order.res_config_settings_view_form_hide_catalog
+msgid ""
+"Hide the product catalog in Kiosk mode; customers add products only by "
+"scanning a barcode or using the search box."
+msgstr ""
+"Oculta el catálogo de productos en modo Kiosko; los clientes agregan "
+"productos solo escaneando un código de barras o usando el buscador."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Your order"
+msgstr "Tu pedido"
