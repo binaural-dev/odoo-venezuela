@@ -273,16 +273,35 @@ class TfhkaDocumentService(models.AbstractModel):
 
         # totales -> bolívares; totalesOtraMoneda -> la divisa. No depende de
         # cuál sea la moneda del encabezado.
+        #
+        # Fallback: sin divisa detectada arriba (currency_id/tarifa/línea
+        # coinciden con la base) pero la compañía SÍ es bolívares y la
+        # factura trae su propio foreign_currency_id con una tasa real
+        # (foreign_rate distinto de cero, poblado en toda factura VE con
+        # conversión), esa es la divisa a reportar en totalesOtraMoneda. Solo
+        # aplica con base bolívares: en compañías con base en divisa (USD)
+        # ese mismo campo es la moneda "oficial" de reporte, no una segunda
+        # moneda puntual de este documento.
+        divisa_currency = foreign_currency
+        if (
+            not divisa_currency
+            and base_currency.name in VES_CURRENCY_NAMES
+            and invoice.foreign_currency_id
+            and invoice.foreign_currency_id != base_currency
+            and invoice.foreign_rate
+        ):
+            divisa_currency = invoice.foreign_currency_id
+
         totals_currency = base_currency
         alt_currency = (
-            foreign_currency
-            if self._should_report_foreign_totals(invoice, foreign_currency)
+            divisa_currency
+            if self._should_report_foreign_totals(invoice, divisa_currency)
             else empty_currency
         )
 
         rate = (
-            self._resolve_foreign_rate(invoice, foreign_currency)
-            if foreign_currency
+            self._resolve_foreign_rate(invoice, divisa_currency)
+            if divisa_currency
             else 1.0
         )
 
@@ -293,21 +312,25 @@ class TfhkaDocumentService(models.AbstractModel):
             "document_currency": document_currency,
             "totals_currency": totals_currency,
             "alt_currency": alt_currency,
-            "foreign_currency": foreign_currency,
+            "foreign_currency": divisa_currency,
             "rate": rate,
         }
 
     def _resolve_foreign_rate(self, invoice, foreign_currency):
         """Bolívares que vale una unidad de ``foreign_currency`` en esta factura.
 
-        Si coincide con la moneda extranjera de la compañía se reutiliza
-        ``invoice.foreign_rate``, que ya respeta la tasa fijada a mano. Para
-        cualquier otra divisa (p. ej. EUR con la compañía en USD) se busca en la
-        tabla de tasas a la fecha del documento, igual que hace
+        Si coincide con la moneda extranjera de la compañía O con la propia
+        de la factura (``invoice.foreign_currency_id``, que puede diferir de
+        la de la compañía) se reutiliza ``invoice.foreign_rate``, que ya
+        respeta la tasa fijada a mano para ESTE documento. Para cualquier
+        otra divisa (p. ej. EUR con la compañía en USD) se busca en la tabla
+        de tasas a la fecha del documento, igual que hace
         ``binaural_unidigital._resolve_foreign_rate``.
         """
         company = invoice.company_id
-        if company.foreign_currency_id and foreign_currency == company.foreign_currency_id:
+        if foreign_currency == invoice.foreign_currency_id or (
+            company.foreign_currency_id and foreign_currency == company.foreign_currency_id
+        ):
             return invoice.foreign_rate or 1.0
 
         rate_date = invoice.invoice_date_display or invoice.invoice_date or invoice.date or fields.Date.today()
@@ -394,7 +417,10 @@ class TfhkaDocumentService(models.AbstractModel):
     # ------------------------------------------------------------------
 
     def _prepare_identification(self, invoice, document_type, document_number, series, ctx=None):
-        ctx = ctx or self._get_currency_context(invoice)
+        # Recordset vacío: el for de abajo ya devuelve None sin iterar, pero
+        # _get_currency_context exige ensure_one() y rompería antes de llegar
+        # ahí. Se salta el cómputo de ctx en ese caso puntual.
+        ctx = ctx or (self._get_currency_context(invoice) if invoice else None)
         for record in invoice:
             now_local = self._get_emission_datetime(record)
             emission_time = now_local.strftime("%I:%M:%S %p").lower()
