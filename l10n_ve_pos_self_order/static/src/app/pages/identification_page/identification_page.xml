@@ -24,11 +24,17 @@
                                        t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onIdentify()"/>
                             </div>
                             <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
-                            <button class="btn btn-lg btn-primary w-100"
-                                    t-att-disabled="state.loading"
-                                    t-on-click="() => this.onIdentify()">
-                                Continue
-                            </button>
+                            <!-- On-screen numeric keypad for the cédula/RIF -->
+                            <div class="o_ve_numpad mt-2">
+                                <button t-foreach="numpadKeys" t-as="key" t-key="key.value"
+                                        type="button"
+                                        class="btn btn-lg o_ve_numpad_key"
+                                        t-att-class="{ 'o_ve_numpad_action': key.action }"
+                                        t-att-disabled="state.loading"
+                                        t-on-click="() => this.onNumpadKey(key.value)">
+                                    <t t-esc="key.label"/>
+                                </button>
+                            </div>
                         </div>
                     </t>
 
@@ -41,22 +47,17 @@
                         <div class="mx-auto" style="max-width: 32rem;">
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="First name"
+                                   t-att-placeholder="firstNamePlaceholder"
                                    t-model="state.firstName"/>
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="Last name"
+                                   t-att-placeholder="lastNamePlaceholder"
                                    t-model="state.lastName"/>
                             <input type="tel" inputmode="tel" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   placeholder="Phone"
+                                   t-att-placeholder="phonePlaceholder"
                                    t-model="state.phone"/>
                             <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
-                            <button class="btn btn-lg btn-primary w-100"
-                                    t-att-disabled="state.loading"
-                                    t-on-click="() => this.onCreate()">
-                                Create and continue
-                            </button>
                         </div>
                     </t>
 
@@ -69,6 +70,20 @@
                             t-on-click="() => this.onClickBack()">
                         <i class="oi oi-chevron-left d-md-none"/>
                         <span class="d-none d-md-inline">Back</span>
+                    </button>
+                    <!-- Primary action lives in the footer, right side, at the
+                         same height as Back. Its label/handler switch by step. -->
+                    <button t-if="state.step === 'identify'"
+                            class="btn btn-lg btn-primary px-5"
+                            t-att-disabled="state.loading"
+                            t-on-click="() => this.onIdentify()">
+                        Continue
+                    </button>
+                    <button t-else=""
+                            class="btn btn-lg btn-primary px-5"
+                            t-att-disabled="state.loading || !state.firstName.trim() || !state.lastName.trim()"
+                            t-on-click="() => this.onCreate()">
+                        Create and continue
                     </button>
                 </div>
             </div>

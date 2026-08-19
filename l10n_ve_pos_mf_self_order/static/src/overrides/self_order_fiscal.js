@@ -316,7 +316,7 @@ patch(SelfOrder.prototype, {
             if (!response || !response.success) {
                 return {
                     valid: false,
-                    message: (response && response.error) || "Error al imprimir en la máquina fiscal",
+                    message: (response && response.error) || _t("Error while printing on the fiscal machine"),
                     printer_connection: true,
                 };
             }
@@ -394,26 +394,12 @@ patch(SelfOrder.prototype, {
     },
 
     /**
-     * Órdenes del Kiosko de la sesión gestionables desde el panel fiscal
-     * (registradas/pagadas, con líneas). Las que NO tienen `mf_invoice_number`
-     * están pendientes de imprimir; las que sí, se pueden reimprimir en copia.
-     * Ordenadas de más reciente a más antigua.
-     */
-    get kioskFiscalOrders() {
-        return (this.models["pos.order"] || [])
-            .filter(
-                (o) =>
-                    (o.lines || []).length > 0 &&
-                    ["paid", "done", "invoiced"].includes(o.state)
-            )
-            .sort((a, b) =>
-                String(b.date_order || b.id || "").localeCompare(String(a.date_order || a.id || ""))
-            );
-    },
-
-    /**
      * Imprime la orden si está pendiente (sin número), o reimprime una COPIA si
      * ya tiene número fiscal. Punto único para el panel de órdenes fiscales.
+     *
+     * El listado de órdenes gestionables lo aporta el servicio de base
+     * (`kioskSessionOrders` en `l10n_ve_pos_self_order/self_order_recovery.js`);
+     * aquí solo vive la lógica de impresión/reimpresión.
      */
     async printOrReprintKioskOrder(order) {
         if (!order) {
@@ -455,32 +441,6 @@ patch(SelfOrder.prototype, {
             return { valid: false, message: String((error && error.message) || error) };
         } finally {
             await this._releaseFiscalPrinterConnection(printer);
-        }
-    },
-
-    /**
-     * Crea la factura CONTABLE de una orden del Kiosko que quedó pendiente de
-     * facturar (pagada, sin `account_move`). Delega en el endpoint público de
-     * `l10n_ve_pos_self_order` (`create_invoice`), que reusa `action_pos_order_
-     * invoice` server-side y es idempotente. Tras esto, la orden queda facturada
-     * y lista para imprimir en la máquina fiscal desde el panel.
-     *
-     * @param {Object} order orden del Kiosko (pendiente de facturar)
-     * @returns {Promise<{success:boolean, invoice_id?:number, error?:string}>}
-     */
-    async createKioskInvoice(order) {
-        if (!order || typeof order.id !== "number") {
-            return { success: false, error: _t("Invalid order") };
-        }
-        try {
-            const res = await rpc("/l10n_ve_pos_self_order/kiosk/create_invoice", {
-                access_token: this.access_token,
-                order_id: order.id,
-            });
-            return res || { success: false, error: _t("No response from server") };
-        } catch (error) {
-            console.error("[MF Kiosk] create_invoice falló", error);
-            return { success: false, error: String((error && error.message) || error) };
         }
     },
 });

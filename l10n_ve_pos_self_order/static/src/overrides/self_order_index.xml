@@ -6,5 +6,13 @@
                 <IdentificationPage />
             </t>
         </xpath>
+        <xpath expr="//MainComponentsContainer" position="after">
+            <button t-if="env.debug" type="button"
+                    class="btn btn-dark btn-sm position-fixed o_kiosk_debug_btn"
+                    style="top: 8px; left: 8px; z-index: 2000;"
+                    t-on-click="openKioskDebug">
+                🛠 Debug Kiosko
+            </button>
+        </xpath>
     </t>
 </templates>

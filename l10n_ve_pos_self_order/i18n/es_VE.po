@@ -10,6 +10,7 @@ msgstr ""
 "PO-Revision-Date: 2026-08-17 00:00+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
+"Language: es_VE\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
@@ -35,6 +36,13 @@ msgstr "Ingrese la cédula."
 #, python-format
 msgid "Enter the first name."
 msgstr "Ingrese el nombre."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#, python-format
+msgid "Enter the last name."
+msgstr "Ingrese el apellido."
 
 #. module: l10n_ve_pos_self_order
 #. odoo-javascript
@@ -160,3 +168,333 @@ msgstr "Orden no encontrada para esta caja"
 #, python-format
 msgid "The invoice was not posted."
 msgstr "La factura no quedó publicada."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/self_order_recovery.js:0
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.js:0
+#, python-format
+msgid "Invalid order"
+msgstr "Orden no válida"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/self_order_recovery.js:0
+#, python-format
+msgid "No response from server"
+msgstr "Sin respuesta del servidor"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.js:0
+#, python-format
+msgid "Could not load orders from the server."
+msgstr "No se pudieron cargar las órdenes del servidor."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.js:0
+#, python-format
+msgid "Kiosk Orders"
+msgstr "Órdenes del Kiosko"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.js:0
+#, python-format
+msgid "Creating the invoice…"
+msgstr "Creando la factura…"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.js:0
+#, python-format
+msgid "The order was already invoiced."
+msgstr "La orden ya estaba facturada."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.js:0
+#, python-format
+msgid "Invoice created."
+msgstr "Factura creada."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.js:0
+#, python-format
+msgid "Could not create the invoice: %s"
+msgstr "No se pudo crear la factura: %s"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.js:0
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+#, python-format
+msgid "Error: %s"
+msgstr "Error: %s"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+#, python-format
+msgid "Kiosk Debug"
+msgstr "Debug del Kiosko"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+#, python-format
+msgid "Running: %s…"
+msgstr "Ejecutando: %s…"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+#, python-format
+msgid "Failed: %s"
+msgstr "Falló: %s"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+#, python-format
+msgid "OK — order %s."
+msgstr "OK — orden %s."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "OK."
+msgstr "OK."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "Done."
+msgstr "Listo."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "Retry pending registration"
+msgstr "Reintentar registro pendiente"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "Queue not available"
+msgstr "Cola no disponible"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+#, python-format
+msgid "%s order(s) still pending."
+msgstr "Quedan %s orden(es) pendiente(s)."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "No pending orders."
+msgstr "Sin órdenes pendientes."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "Retry FAILED orders"
+msgstr "Reintentar órdenes FALLIDAS"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "Not available"
+msgstr "No disponible"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "No failed orders."
+msgstr "Sin órdenes fallidas."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+msgid "(no detail)"
+msgstr "(sin detalle)"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.js:0
+#, python-format
+msgid "%s failed order(s) remaining — %s"
+msgstr "Quedan %s orden(es) fallida(s) — %s"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Loading orders…"
+msgstr "Cargando órdenes…"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "No orders in this session."
+msgstr "No hay órdenes en esta sesión."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Pending invoice"
+msgstr "Pendiente factura"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Invoiced"
+msgstr "Facturada"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Select an order to see the details."
+msgstr "Selecciona una orden para ver el detalle."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Customer:"
+msgstr "Cliente:"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Total"
+msgstr "Total"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Status:"
+msgstr "Estado:"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "paid, pending invoice creation"
+msgstr "pagada, pendiente de crear la factura"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "invoiced"
+msgstr "facturada"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Method:"
+msgstr "Método:"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Create invoice"
+msgstr "Crear factura"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+msgid "Refresh"
+msgstr "Actualizar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.xml:0
+msgid "Close"
+msgstr "Cerrar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.xml:0
+msgid "Orders (create invoice / print)…"
+msgstr "Órdenes (crear factura / imprimir)…"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.xml:0
+msgid "Retry pending order registration"
+msgstr "Reintentar registro de órdenes pendientes"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_debug_dialog.xml:0
+msgid "Retry FAILED orders (rejected by the server)"
+msgstr "Reintentar órdenes FALLIDAS (rechazadas por el servidor)"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Hi %(name)s!"
+msgstr "¡Hola %(name)s!"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Hi!"
+msgstr "¡Hola!"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Search or scan a product…"
+msgstr "Busca o escanea un producto…"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Scan a product or type its name to search."
+msgstr "Escanea un producto o escribe su nombre para buscar."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "No products match your search."
+msgstr "Ningún producto coincide con tu búsqueda."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/models/pos_config.py:0
+msgid "Kiosk: hide catalog (scan / search only)"
+msgstr "Kiosko: ocultar catálogo (solo escaneo / búsqueda)"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/models/pos_config.py:0
+msgid ""
+"In Kiosk mode, hide the product catalog and let customers add products only "
+"by scanning a barcode or using the search box."
+msgstr ""
+"En modo Kiosko, oculta el catálogo de productos y permite que los clientes "
+"agreguen productos solo escaneando un código de barras o usando el buscador."
+
+#. module: l10n_ve_pos_self_order
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_self_order.res_config_settings_view_form_hide_catalog
+msgid "Kiosk: scan / search only"
+msgstr "Kiosko: solo escaneo / búsqueda"
+
+#. module: l10n_ve_pos_self_order
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_self_order.res_config_settings_view_form_hide_catalog
+msgid ""
+"Hide the product catalog in Kiosk mode; customers add products only by "
+"scanning a barcode or using the search box."
+msgstr ""
+"Oculta el catálogo de productos en modo Kiosko; los clientes agregan "
+"productos solo escaneando un código de barras o usando el buscador."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
+msgid "Your order"
+msgstr "Tu pedido"

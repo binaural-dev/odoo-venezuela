@@ -5,12 +5,13 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Point of Sale",
-    "version": "1.0",
+    "version": "1.1",
     "depends": [
         "l10n_ve_pos",
         "pos_self_order",
     ],
     "data": [
+        "views/res_config_settings_views.xml",
         "views/pos_order_views.xml",
     ],
     "assets": {
