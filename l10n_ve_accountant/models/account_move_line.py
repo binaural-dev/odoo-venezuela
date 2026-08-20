@@ -511,3 +511,23 @@ class AccountMoveLine(models.Model):
         )
         for move in moves:
             move._validate_refund_lines_against_origin()
+
+    def _check_constrains_account_id_journal_id(self):
+        for line in self.filtered(
+            lambda x: x.display_type not in ('line_section', 'line_subsection', 'line_note')
+        ):
+            journal = line.move_id.journal_id
+            journal_currency = journal.currency_id
+            # If the journal has no currency of its own, it accepts entries in
+            # any currency (core behavior). If it DOES force a currency, no
+            # line may use a different one -- block before running the core's
+            # own validations (archived account, account secondary currency).
+            if journal_currency and line.currency_id != journal_currency:
+                raise UserError(_(
+                    'The journal %(journal)s only accepts entries in %(journal_currency)s, '
+                    'but this line is in %(line_currency)s.',
+                    journal=journal.name,
+                    journal_currency=journal_currency.name,
+                    line_currency=line.currency_id.name,
+                ))
+        return super()._check_constrains_account_id_journal_id()

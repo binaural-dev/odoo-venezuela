@@ -118,6 +118,7 @@ class AccountMove(models.Model):
 
     @api.onchange("move_type")
     def _onchange_move_type(self):
+        super()._onchange_move_type()
         if self.move_type == "out_invoice":
             self.invoice_date = fields.Date.context_today(self)
 

@@ -175,7 +175,8 @@ class AccountPaymentAndIgtf(models.Model):
                         rec._fix_writeoff_balance(vals, write_off_line_vals)
                     else:
                         fechas_lista = set(rec.invoices_origin_ids.mapped('invoice_date'))
-                        if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1 and len(fechas_lista) == 1 and  rec.date in fechas_lista:
+                        conversion_date = rec.env.context.get('l10n_ve_conversion_date') or rec.date
+                        if abs(total_base_residual) - abs(vals[0]['balance']) <= 0.1 and len(fechas_lista) == 1 and conversion_date in fechas_lista:
 
                             # FIX balances when diference is decimal
                            
@@ -189,8 +190,9 @@ class AccountPaymentAndIgtf(models.Model):
             return vals
     
     def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, payment_date, base=False):
+        conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment_date
         return self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
-            invoice, amount_payment, payment_currency, payment_date,
+            invoice, amount_payment, payment_currency, conversion_date,
             company=self.company_id, base=base,
         )
 
@@ -258,12 +260,13 @@ class AccountPaymentAndIgtf(models.Model):
             diff = expected - current
             if comp_curr.is_zero(diff):
                 return
+            conversion_date = rec.env.context.get('l10n_ve_conversion_date') or rec.date
 
             # Force counterpart to match the invoice residual (solo balance)
             cpart['balance'] = expected
             # Recalculate amount_currency from the forced balance
             amt = comp_curr._convert(
-                abs(expected), currency, rec.company_id, rec.date,
+                abs(expected), currency, rec.company_id, conversion_date,
             )
             cpart['amount_currency'] = amt if expected > 0 else -amt
 
@@ -272,7 +275,7 @@ class AccountPaymentAndIgtf(models.Model):
             w_off['balance'] = w_off.get('balance', 0) - diff
             # Recalculate write-off amount_currency with correct sign
             w_amt = comp_curr._convert(
-                abs(w_off['balance']), currency, rec.company_id, rec.date,
+                abs(w_off['balance']), currency, rec.company_id, conversion_date,
             )
             w_off['amount_currency'] = w_amt if w_off['balance'] > 0 else -w_amt
 
@@ -415,6 +418,19 @@ class AccountPaymentAndIgtf(models.Model):
                     })
         return vals
   
+    def _is_same_within_rounding(self, amount1, amount2, currency, tolerance_units=1):
+        """Return True if amount1 and amount2 differ by at most
+        `tolerance_units` rounding units of `currency` (inclusive).
+
+        Used to treat two amounts computed via different paths (e.g. a
+        currency-converted value vs. a directly-stored residual) as "the
+        same debt" when they only differ by a small, expected rounding
+        artifact -- not a real accounting discrepancy.
+        """
+        tolerance = currency.rounding * tolerance_units
+        return abs(amount1 - amount2) <= tolerance + 1e-6
+
+    
 
     def _prepare_inbound_move_line_igtf_vals(self, vals, write_off_line_vals = False):
         """ Adjusts the journal items values (`vals`) to inject the IGTF tax calculation,
@@ -441,63 +457,75 @@ class AccountPaymentAndIgtf(models.Model):
         for rec in self:
             lines = [line for line in vals]
             if rec.payment_type == "inbound":
-                fechas_lista = set(rec.invoices_origin_ids.mapped('invoice_date'))
+                invoice_currencies = rec.invoices_origin_ids.mapped('currency_id')
+                comp_curr = rec.company_id.currency_id
 
-                total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
-                top_igtf = abs(sum(rec.invoices_origin_ids.mapped('igtf_top_aply')))
+                if invoice_currencies and invoice_currencies[0] == comp_curr:
+                    total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
+                    residual_currency = comp_curr
+                else:
+                    total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual')))
+                    residual_currency = invoice_currencies[0]
 
-                top_igtf_residual_base = total_base_residual + top_igtf
                 currency = rec.currency_id 
                 precision = currency.decimal_places
-
+                precision_base = self.env.company.currency_id.decimal_places
+                credit_line_unrounded = False
+              
                 credit_line_unrounded = lines[1]["amount_currency"] + rec.igtf_amount
-                credit_line = credit_line_unrounded
+                credit_line = float_round(credit_line_unrounded, precision_digits=precision)
                
                 
                 credit_amount = abs(lines[1]["balance"])
-                amount = credit_amount
+                amount = float_round(credit_amount, precision_digits=precision)
                 igtf_base = 0.0
                 total_base_residual_converted = 0.0
-                precision_base = self.env.company.currency_id.decimal_places
-                if rec.igtf_amount > 0.0: 
+                
+                conversion_date = rec.env.context.get('l10n_ve_conversion_date') or rec.date
+                if rec.igtf_amount > 0.0:
+
+                    total_base_residual_converted = residual_currency._convert(
+                        total_base_residual,
+                        currency,
+                        rec.company_id,
+                        conversion_date,
+                    )
+
+                    total_base_residual_converted_with_igtf = float_round(abs(total_base_residual_converted) + abs(rec.igtf_amount), precision_digits=precision)
                     balance = abs(lines[0]["balance"])
-                    # for exedent payment and multipayment
-                    if balance - top_igtf_residual_base >= 1.0 and len(fechas_lista) == 1 and rec.date in fechas_lista: 
-                        igtf_base = top_igtf
-                        amount = credit_amount - igtf_base
+                    porcion_igtf = False
+                    if total_base_residual_converted_with_igtf == abs(lines[0]["amount_currency"]) or abs(lines[0]["amount_currency"]) > total_base_residual_converted_with_igtf: 
+                        
+                        igtf_base = currency._convert(float_round(rec.igtf_amount, precision_digits=precision_base), comp_curr, rec.company_id, conversion_date)
+                        credit_amount = currency._convert(
+                                abs(lines[1]["amount_currency"]), 
+                                rec.company_id.currency_id, 
+                                rec.company_id, 
+                                conversion_date,
+                            )
+                    
                     else:
 
                         porcion_igtf = rec.igtf_amount / abs(lines[0]["amount_currency"])
+
                         igtf_base = float_round((balance * porcion_igtf), precision_digits=precision_base)
-                        
-                        #Prevent apply more IGTF than
-                        if top_igtf - igtf_base  <= 0.1: 
-                            igtf_base = float_round(top_igtf,precision_digits=precision_base)
-
-                        amount = credit_amount - igtf_base
-                        
-                    total_base_residual_converted =  rec.company_id.currency_id._convert( 
-                        total_base_residual, 
-                        currency, 
-                        rec.company_id, 
-                        rec.date,
-                    )
-                        
-
-                    total_base_residual_converted_with_igtf = float_round(abs(total_base_residual_converted) + abs(rec.igtf_amount), precision_digits=precision)
-                    if total_base_residual_converted_with_igtf == abs(lines[0]["amount_currency"]): 
-                        #Ajust cxc balance
-                        if abs(credit_amount) > abs(total_base_residual):
-                            amount = abs(total_base_residual)
-
+                    amount = credit_amount - igtf_base
+                
 
                 if float_compare(rec.igtf_amount, 0.0, precision_digits=precision) > 0.0:
+                    base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
+                    if self._is_same_within_rounding(amount, base_residual, comp_curr):
+                        amount = base_residual
                     if not write_off_line_vals:
+                        
                         
                         vals[1].update({"amount_currency": credit_line, "balance": -amount})
                     else:
-                        
-                        vals[1].update({"balance": -total_base_residual})
+                        if conversion_date != rec.date: 
+                            vals[1].update({"amount_currency": credit_line,"balance": -amount})
+                        else:
+                            vals[1].update({"amount_currency": credit_line,"balance": -total_base_residual})
+
                 
                 if write_off_line_vals:
                     # Recalculate write-off balance to compensate the adjusted counterpart
@@ -546,65 +574,68 @@ class AccountPaymentAndIgtf(models.Model):
         for rec in self:
             lines = [line for line in vals]
             if rec.payment_type == "outbound":
-                
-                total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
-                top_igtf = abs(sum(rec.invoices_origin_ids.mapped('igtf_top_aply')))
+                invoice_currencies = rec.invoices_origin_ids.mapped('currency_id')
+                comp_curr = rec.company_id.currency_id
 
-                top_igtf_residual_base = total_base_residual + top_igtf
-                currency = rec.currency_id 
+                if invoice_currencies and invoice_currencies[0] == comp_curr:
+                    total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
+                    residual_currency = comp_curr
+                else:
+                    total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual')))
+                    residual_currency = invoice_currencies[0]
+
+                currency = rec.currency_id
                 precision = currency.decimal_places
-
-                debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
-                debit_line = debit_line_unrounded
-               
-                
-                debit_amount = abs(lines[1]["balance"])
-                
-                amount = debit_amount
-                igtf_base = 0.0
-                total_base_residual_converted = 0.0
                 precision_base = self.env.company.currency_id.decimal_places
 
-                if rec.igtf_amount > 0.0: 
+                debit_line_unrounded = lines[1]["amount_currency"] - rec.igtf_amount
+                debit_line = float_round(debit_line_unrounded, precision_digits=precision)
 
-                    balance = abs(lines[0]["balance"])
-                    # for exedent payment and multipayment
-                    if balance - top_igtf_residual_base >= 1.0 or len(rec.invoices_origin_ids) > 1: 
-                        igtf_base = top_igtf
-                        amount = debit_amount - igtf_base
-                    else:
-                        
-                        porcion_igtf = rec.igtf_amount / abs(lines[0]["amount_currency"])
-                        igtf_base = float_round((balance * porcion_igtf), precision_digits=precision_base)
-                        
-                        #Prevent apply more IGTF than
-                        if top_igtf - igtf_base  <= 0.1: 
-                            igtf_base = float_round(top_igtf,precision_digits=precision_base)
+                debit_amount = abs(lines[1]["balance"])
+                amount = float_round(debit_amount, precision_digits=precision)
+                igtf_base = 0.0
+                total_base_residual_converted = 0.0
 
-                        amount = (debit_amount) - abs(igtf_base)
-                        
-                    total_base_residual_converted =  rec.company_id.currency_id._convert( 
-                        total_base_residual, 
-                        currency, 
-                        rec.company_id, 
-                        rec.date,
+                conversion_date = rec.env.context.get('l10n_ve_conversion_date') or rec.date
+                if rec.igtf_amount > 0.0:
+
+                    total_base_residual_converted = residual_currency._convert(
+                        total_base_residual,
+                        currency,
+                        rec.company_id,
+                        conversion_date,
                     )
-                        
 
                     total_base_residual_converted_with_igtf = float_round(abs(total_base_residual_converted) + abs(rec.igtf_amount), precision_digits=precision)
-                    if total_base_residual_converted_with_igtf == abs(lines[0]["amount_currency"]): 
-                        # Ajust cxp balance
-                        if abs(debit_amount) > abs(total_base_residual):
-                            amount = abs(total_base_residual)
-                
+                    balance = abs(lines[0]["balance"])
+                    if total_base_residual_converted_with_igtf == abs(lines[0]["amount_currency"]) or abs(lines[0]["amount_currency"]) > total_base_residual_converted_with_igtf:
+
+                        igtf_base = currency._convert(float_round(rec.igtf_amount, precision_digits=precision_base), comp_curr, rec.company_id, conversion_date)
+                        debit_amount = currency._convert(
+                                abs(lines[1]["amount_currency"]),
+                                rec.company_id.currency_id,
+                                rec.company_id,
+                                conversion_date,
+                            )
+
+                    else:
+
+                        porcion_igtf = rec.igtf_amount / abs(lines[0]["amount_currency"])
+                        igtf_base = float_round((balance * porcion_igtf), precision_digits=precision_base)
+                    amount = debit_amount - igtf_base
+
                 if float_compare(rec.igtf_amount, 0.0, precision_digits=precision) > 0.0:
+                    base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
+                    if self._is_same_within_rounding(amount, base_residual, comp_curr):
+                        amount = base_residual
                     if not write_off_line_vals:
 
-                        
                         vals[1].update({"amount_currency": debit_line, "balance": amount})
                     else:
-                        
-                        vals[1].update({"balance": total_base_residual})
+                        if conversion_date != rec.date:
+                            vals[1].update({"amount_currency": debit_line, "balance": amount})
+                        else:
+                            vals[1].update({"amount_currency": debit_line, "balance": total_base_residual})
                 
                 if write_off_line_vals:
                     # Recalculate write-off balance to compensate the adjusted counterpart
