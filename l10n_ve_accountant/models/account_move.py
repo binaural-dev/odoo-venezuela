@@ -18,6 +18,7 @@ _logger = logging.getLogger(__name__)
 class AccountMove(models.Model):
     _inherit = "account.move"
     
+    invoice_date = fields.Date(copy=True)
     invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.context_today)
     is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
 
