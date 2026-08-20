@@ -259,7 +259,15 @@ class AccountPaymentAndIgtf(models.Model):
 
             diff = expected - current
             if comp_curr.is_zero(diff):
-                return
+                continue
+            # Only absorb rounding-level gaps here (the wizard's per-installment
+            # conversion vs. the payment's own aggregate _convert landing a cent
+            # apart) -- a real partial payment settled via write-off produces a
+            # much larger, intentional diff that must NOT be forced to the full
+            # invoice residual; leave the wizard/core's own already-correct
+            # values alone in that case.
+            if not rec._is_same_within_rounding(current, expected, comp_curr):
+                continue
             conversion_date = rec.env.context.get('l10n_ve_conversion_date') or rec.date
 
             # Force counterpart to match the invoice residual (solo balance)
