@@ -1891,6 +1891,7 @@ msgstr "Tipo de Indexación"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Enable this to indexation payment in wizard of payment not grouping"
 msgstr "Active esto para indexar los pagos individuales en el asistente de pago sin agrupar"
+#. module: l10n_ve_accountant
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "The unit price cannot be negative."
 msgstr "El precio unitario no puede ser negativo."
