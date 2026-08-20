@@ -1,8 +1,9 @@
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
+from odoo.exceptions import UserError
 
 
-@tagged("post_install", "-at_install", "l10n_ve_crm")
+@tagged("post_install", "-at_install", "l10n_ve_crm_foreign_currency")
 class TestCrmTeamForeignCurrency(TransactionCase):
     """
     Tests for the "moneda alterna" (foreign currency) fields added to crm.team.
@@ -37,13 +38,18 @@ class TestCrmTeamForeignCurrency(TransactionCase):
             "company_rate": company_rate,
         })
 
-    def _create_invoice(self, team, amount_foreign, date, payment_state="paid"):
+    def _create_invoice(self, team, amount_foreign, date, payment_state="paid", move_type="out_invoice"):
         """
         Inserta una fila mínima directamente en account_move para poder probar
         la agregación SQL de _compute_invoiced_foreign (filtro por team_id,
         rango de fecha, state y payment_state) sin necesitar un plan de
         cuentas completo: no es objetivo de este test validar la
         contabilización real, sino nuestra query de suma.
+
+        amount_foreign siempre se inserta positivo, igual que el
+        foreign_untaxed_total real (que no tiene signo, ni para
+        out_invoice ni para out_refund) — el neteo de las notas de
+        crédito lo debe hacer la query, no el dato insertado.
         """
         journal = self.env["account.journal"].search([], limit=1)
         self.env.cr.execute(
@@ -51,11 +57,12 @@ class TestCrmTeamForeignCurrency(TransactionCase):
             INSERT INTO account_move
                 (journal_id, currency_id, state, move_type, auto_post, date,
                  team_id, payment_state, foreign_untaxed_total, company_id)
-            VALUES (%s, %s, 'posted', 'out_invoice', 'no', %s, %s, %s, %s, %s)
+            VALUES (%s, %s, 'posted', %s, 'no', %s, %s, %s, %s, %s)
             """,
             (
                 journal.id,
                 self.company.currency_id.id,
+                move_type,
                 date,
                 team.id,
                 payment_state,
@@ -118,10 +125,20 @@ class TestCrmTeamForeignCurrency(TransactionCase):
 
     def test_04_invoiced_target_zero_without_foreign_currency(self):
         """No foreign_currency_id configured -> invoiced_target degrades to 0.0."""
+        # El constraint permanente de res.company (_check_foreign_currency_id_required,
+        # de este módulo) rechaza cualquier create()/write() sin
+        # foreign_currency_id, así que la compañía se crea con moneda
+        # comercial y se le quita por SQL directo, sin pasar por el ORM.
         company_without_foreign_currency = self.env["res.company"].create({
             "name": "Test Company Sin Moneda Alterna",
             "currency_id": self.vef.id,
+            "foreign_currency_id": self.usd.id,
         })
+        self.env.cr.execute(
+            "UPDATE res_company SET foreign_currency_id = NULL WHERE id = %s",
+            (company_without_foreign_currency.id,),
+        )
+        company_without_foreign_currency.invalidate_recordset()
         team = self.env["crm.team"].create({
             "name": "Equipo sin moneda alterna",
             "company_id": company_without_foreign_currency.id,
@@ -185,3 +202,21 @@ class TestCrmTeamForeignCurrency(TransactionCase):
         raise and must default to 0.0 (same guard as core's _compute_invoiced)."""
         team = self.env["crm.team"].new({"name": "Equipo sin guardar"})
         self.assertEqual(team.invoiced_foreign, 0.0)
+
+    def test_11_invoiced_foreign_subtracts_credit_notes(self):
+        """
+        foreign_untaxed_total no tiene signo (positivo tanto para out_invoice
+        como para out_refund, igual que su análogo amount_untaxed). La query
+        debe restar explícitamente las notas de crédito, no sumarlas: un
+        equipo que facturó 200 y emitió una NC de 50 debe mostrar 150, no 250.
+        """
+        self._create_invoice(self.team, 200.0, self.today, move_type="out_invoice")
+        self._create_invoice(self.team, 50.0, self.today, move_type="out_refund")
+        self.team.invalidate_recordset(["invoiced_foreign"])
+        self.assertAlmostEqual(self.team.invoiced_foreign, 150.0, places=2)
+
+    def test_12_inverse_invoiced_target_raises_usererror(self):
+        """Escribir directo a invoiced_target (moneda de compañía) debe
+        rechazarse: el campo real es invoiced_target_foreign."""
+        with self.assertRaises(UserError):
+            self.team.write({"invoiced_target": 50000.0})

@@ -27,6 +27,13 @@
         <field name="arch" type="xml">
             <field name="expected_revenue" position="attributes">
                 <attribute name="optional">hide</attribute>
+                <!-- expected_revenue ya no está almacenado: sumarlo por SQL
+                     (lo que hace el widget de lista al reactivar una columna
+                     opcional con sum=) revienta con
+                     "Cannot convert crm.lead.expected_revenue to SQL because
+                     it is not stored". Se quita el atributo sum heredado del
+                     core en vez de solo ocultar la columna. -->
+                <attribute name="sum"></attribute>
             </field>
             <field name="expected_revenue" position="after">
                 <field name="foreign_currency_id" column_invisible="True"/>

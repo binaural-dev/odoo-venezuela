@@ -1,9 +1,11 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import UserError
 from odoo.tools import SQL
 
 
 class CrmTeam(models.Model):
-    _inherit = "crm.team"
+    _name = "crm.team"
+    _inherit = ["crm.team", "l10n.ve.crm.foreign.currency.mixin"]
 
     foreign_currency_id = fields.Many2one(
         "res.currency",
@@ -21,6 +23,7 @@ class CrmTeam(models.Model):
 
     invoiced_target = fields.Float(
         compute="_compute_invoiced_target",
+        inverse="_inverse_invoiced_target",
         store=False,
     )
 
@@ -37,32 +40,43 @@ class CrmTeam(models.Model):
             company = team.company_id or team.env.company
             team.foreign_currency_id = company.foreign_currency_id
 
-    def _convert_foreign_to_company(self, amount_foreign):
-        """Convierte un monto en moneda comercial a la moneda de la compañía
-        usando la tasa vigente. No modifica el monto en moneda comercial."""
-        self.ensure_one()
-        company = self.company_id or self.env.company
-        if not amount_foreign or not self.foreign_currency_id or not company.currency_id:
-            return 0.0
-        return self.foreign_currency_id._convert(
-            amount_foreign,
-            company.currency_id,
-            company,
-            fields.Date.context_today(self),
-        )
-
     @api.depends("invoiced_target_foreign", "foreign_currency_id", "company_id")
     def _compute_invoiced_target(self):
         for team in self:
             team.invoiced_target = team._convert_foreign_to_company(team.invoiced_target_foreign)
 
+    def _inverse_invoiced_target(self):
+        # invoiced_target ya no es un campo escribible (compute=/store=False,
+        # alimentado desde invoiced_target_foreign). Antes, una escritura
+        # externa se perdía en silencio; ahora se avisa con un error. El
+        # único punto de escritura del core (update_invoiced_target, usado
+        # por el widget del dashboard) ya está redirigido a
+        # invoiced_target_foreign y no pasa por acá.
+        raise UserError(
+            _(
+                "El campo Objetivo de Facturación (moneda de la compañía) "
+                "es de solo lectura: se calcula a partir del Objetivo de "
+                "Facturación en moneda comercial. Editá ese campo en su lugar."
+            )
+        )
+
+    @api.depends("foreign_currency_id")
     def _compute_invoiced_foreign(self):
         if self.ids:
             today = fields.Date.today()
+            # foreign_untaxed_total (l10n_ve_accountant) no tiene signo (igual
+            # que su análogo amount_untaxed): es positivo tanto para facturas
+            # como para notas de crédito. Hay que negarlo explícitamente para
+            # out_refund, igual que hace amount_untaxed_signed en el core.
             data_map = dict(self.env.execute_query(SQL(
                 ''' SELECT
                         move.team_id AS team_id,
-                        SUM(move.foreign_untaxed_total) AS foreign_untaxed_total
+                        SUM(
+                            CASE WHEN move.move_type = 'out_refund'
+                                THEN -move.foreign_untaxed_total
+                                ELSE move.foreign_untaxed_total
+                            END
+                        ) AS foreign_untaxed_total
                     FROM account_move move
                     WHERE move.move_type IN ('out_invoice', 'out_refund', 'out_receipt')
                     AND move.payment_state IN ('in_payment', 'paid', 'reversed')
