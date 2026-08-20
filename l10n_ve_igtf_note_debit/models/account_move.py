@@ -427,7 +427,7 @@ class AccountMove(models.Model):
             rec.bi_igtf = 0.0
             
             if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']: 
-                rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
+                rec.igtf_top_aply = abs(rec.amount_total_signed) * (rec.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
                 final_payment_moves = receivable_payable_lines.reconciled_lines_ids.mapped('move_id')
