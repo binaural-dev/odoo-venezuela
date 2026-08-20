@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_pricelist_page_inherit" inherit_id="product.report_pricelist_page">
+        <xpath expr="//table/thead" position="replace">
+            <th class="text-end" colspan="100%">Prices</th>
+            <tr>
+                <th>Products</th>
+                <th groups="uom.group_uom">UOM</th>
+                <t t-foreach="pricelists" t-as="pl">
+                    <th class="text-end">
+                        <a t-if="is_html_type" href="#" class="o_action"
+                            data-model="product.pricelist" t-att-data-res-id="pl.id">
+                            <span t-out="pl.display_name"/>
+                        </a>
+                        <span t-else="" t-out="pl.display_name"/>
+                    </th>
+                </t>
+            </tr>
+        </xpath>
+
+        <xpath expr="//table/tbody/t" position="replace">
+            <t t-foreach="products" t-as="product">
+                <tr>
+                    <td t-att-class="is_product_tmpl and 'fw-bold' or None">
+                        <a t-if="is_html_type" href="#" class="o_action"
+                            t-att-data-model="is_product_tmpl and 'product.template' or 'product.product'"
+                            t-att-data-res-id="product['id']">
+                            <span t-out="product['name']"/>
+                        </a>
+                        <span t-else="" t-out="product['name']"/>
+                    </td>
+                    <td groups="uom.group_uom" t-out="product['uom']"/>
+                    <t t-foreach="pricelists" t-as="pl">
+                        <td class="text-end">
+                            <label t-out="pl.currency_id.symbol"
+                                t-if="pl.currency_id.position == 'before'" />
+                            <span
+                                t-out="'{0:,.4f}'.format(product['prices'][pl.id]).replace(',', ' ').replace('.', ',').replace(' ', '.')" />
+                            <label t-out="pl.currency_id.symbol"
+                                t-if="pl.currency_id.position == 'after'" />
+                        </td>
+                    </t>
+                </tr>
+
+                <t t-if="is_product_tmpl and 'variants' in product">
+                    <tr t-foreach="product['variants']" t-as="variant">
+                        <td>
+                            <a t-if="is_html_type" href="#" class="o_action ms-4"
+                                data-model="product.product"
+                                t-att-data-res-id="variant['id']">
+                                <span t-out="variant['name']" />
+                            </a>
+                            <span t-else="" class="ms-4" t-out="variant['name']" />
+                        </td>
+                        <td groups="uom.group_uom" t-out="variant['uom']" />
+                        <t t-foreach="pricelists" t-as="pl">
+                            <td class="text-end">
+                                <label t-out="pl.currency_id.symbol"
+                                    t-if="pl.currency_id.position == 'before'" />
+                                <span
+                                    t-out="'{0:,.4f}'.format(variant['prices'][pl.id]).replace(',', ' ').replace('.', ',').replace(' ', '.')" />
+                                <label t-out="pl.currency_id.symbol"
+                                    t-if="pl.currency_id.position == 'after'" />
+                            </td>
+                        </t>
+                    </tr>
+                </t>
+            </t>
+        </xpath>
+    </template>
+</odoo>
