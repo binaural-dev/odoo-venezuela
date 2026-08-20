@@ -6,7 +6,7 @@ class AccountMoveReversal(models.TransientModel):
 
     def _prepare_default_reversal(self, move):
         values = super()._prepare_default_reversal(move)
-        if move.move_type == "out_invoice":
+        if move.move_type in ("out_invoice", "in_invoice"):
             values.pop("invoice_date", None)
             values["invoice_date_display"] = self.date
         return values

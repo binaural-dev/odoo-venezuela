@@ -11,7 +11,7 @@
                         name="foreign_balance" />. </div> -->
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="attributes">
-                <attribute name="readonly">state != 'draft' or move_type in ('out_invoice', 'out_refund', 'out_receipt')</attribute>
+                <attribute name="readonly">state != 'draft' or move_type in ('out_invoice', 'out_refund', 'out_receipt', 'in_refund')</attribute>
                 <attribute name="force_save">1</attribute>
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
