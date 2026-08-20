@@ -4,6 +4,8 @@ import { ProductPricelistReport } from "@product/js/pricelist_report/product_pri
 import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { Layout } from "@web/search/layout";
+import { Dropdown } from "@web/core/dropdown/dropdown";
+import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { user } from "@web/core/user";
 import { download } from "@web/core/network/download";
 import { useState, onWillStart } from "@odoo/owl";
@@ -12,7 +14,7 @@ const PAGE_SIZE = 20;
 
 export class L10nVeSalePriceListReport extends ProductPricelistReport {
     static template = "l10n_ve_sale_price_list.ProductPricelistReport";
-    static components = { Layout };
+    static components = { Layout, Dropdown, DropdownItem };
 
     setup() {
         super.setup();
