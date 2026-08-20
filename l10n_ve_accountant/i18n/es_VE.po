@@ -1421,6 +1421,16 @@ msgstr ""
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+msgid ""
+"The journal %(journal)s only accepts entries in %(journal_currency)s, but "
+"this line is in %(line_currency)s."
+msgstr ""
+"El diario %(journal)s solo acepta asientos en %(journal_currency)s, pero "
+"esta línea está en %(line_currency)s."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
 msgid "The price entered cannot be negative"
 msgstr "El precio ingresado no puede ser negativo."
 
