@@ -1,3 +1,4 @@
+from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -127,3 +128,30 @@ class TestProductPricelistReport(TransactionCase):
         )
 
         self.assertEqual({p["id"] for p in result["products"]}, set(all_ids))
+
+    def test_report_data_includes_printing_company_and_issue_date(self):
+        report_model = self.env["report.product.report_pricelist"]
+        result = report_model._get_report_data(
+            {
+                "pricelist_ids": [self.pricelist_1.id],
+                "active_model": "product.template",
+                "active_ids": [self.product.id],
+            }
+        )
+
+        self.assertEqual(result["company"], self.env.company)
+        self.assertEqual(result["issue_date"], fields.Date.context_today(report_model))
+
+    def test_pdf_template_renders_with_company_and_date_header(self):
+        report_model = self.env["report.product.report_pricelist"]
+        render_values = report_model._get_report_data(
+            {
+                "pricelist_ids": [self.pricelist_1.id],
+                "active_model": "product.template",
+                "active_ids": [self.product.id],
+            },
+            report_type="pdf",
+        )
+        html = self.env["ir.qweb"]._render("product.report_pricelist_page", render_values)
+        self.assertIn(self.product.name, html)
+        self.assertIn(str(fields.Date.context_today(report_model)), html)
