@@ -1,8 +1,9 @@
-from odoo import _
+from odoo import _, fields
 from odoo.tests import Form
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
 from odoo.tests import tagged
+from datetime import timedelta
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -225,3 +226,92 @@ class TestSaleOrderInvoice(TransactionCase):
             order.action_confirm()
             order._create_invoices()
         _logger.info("test_02_error_generate_invoice_from_sale_order --- successfully (%s)",e.exception,)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_sale")
+class TestSaleOrderDuplicateForeignRate(TransactionCase):
+
+    def setUp(self):
+        super().setUp()
+        self.currency_usd = self.env.ref("base.USD")
+        self.currency_vef = self.env.ref("base.VEF")
+        self.company = self.env.ref("base.main_company")
+        self.company.write({
+            "currency_id": self.currency_vef.id,
+            "currency_foreign_id": self.currency_usd.id,
+        })
+        self.partner = self.env["res.partner"].create({
+            "name": "Cliente Prueba",
+            "vat": "J12345678",
+            "prefix_vat": "J",
+            "country_id": self.env.ref("base.ve").id,
+        })
+
+    def _set_old_and_today_rates(self):
+        old_date = fields.Datetime.now() - timedelta(days=60)
+        rate_model = self.env["res.currency.rate"]
+        rate_model.search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+            ("name", "in", [old_date.date(), fields.Date.today()]),
+        ]).unlink()
+        rate_model.create({
+            "currency_id": self.currency_usd.id,
+            "company_id": self.company.id,
+            "name": old_date.date(),
+            "rate": 1 / 100.0,
+        })
+        rate_model.create({
+            "currency_id": self.currency_usd.id,
+            "company_id": self.company.id,
+            "name": fields.Date.today(),
+            "rate": 1 / 200.0,
+        })
+        return old_date
+
+    def test_01_duplicate_order_updates_foreign_rate(self):
+        self.company.update_sale_order_rate_using_date_order = False
+        old_date = self._set_old_and_today_rates()
+
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "date_order": old_date,
+        })
+        self.assertAlmostEqual(
+            order.foreign_rate, 100.0, places=4,
+            msg="test premise: the original order must pick up the old rate",
+        )
+
+        duplicate = order.copy()
+
+        self.assertAlmostEqual(
+            duplicate.foreign_rate, 200.0, places=4,
+            msg="duplicating an old order must refresh the alterno rate to "
+                "today's, not keep it frozen at the original order's rate",
+        )
+        _logger.info("test_01_duplicate_order_updates_foreign_rate --- successfully")
+
+    def test_02_duplicate_manual_rate_order_also_updates_rate(self):
+        self.company.update_sale_order_rate_using_date_order = False
+        old_date = self._set_old_and_today_rates()
+
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "date_order": old_date,
+            "manually_set_rate": True,
+            "foreign_rate": 999.99,
+            "foreign_inverse_rate": 1 / 999.99,
+        })
+
+        duplicate = order.copy()
+
+        self.assertFalse(
+            duplicate.manually_set_rate,
+            "manually_set_rate must not survive a duplicate",
+        )
+        self.assertAlmostEqual(
+            duplicate.foreign_rate, 200.0, places=4,
+            msg="a duplicate must get today's alterno rate even if the "
+                "original had manually_set_rate=True",
+        )
+        _logger.info("test_02_duplicate_manual_rate_order_also_updates_rate --- successfully")
