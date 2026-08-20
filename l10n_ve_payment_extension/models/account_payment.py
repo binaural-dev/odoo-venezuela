@@ -84,6 +84,32 @@ class AccountPayment(models.Model):
             move.write(vals_to_change)
         return res
 
+    def _generate_move_vals(self, write_off_line_vals=None, force_balance=None, line_ids=None):
+        """
+        A retention payment's move must land in the same fiscal period as (and use
+        the same exchange rate as) the invoice it retains from, even though
+        payment.date stays as the retention's own date_accounting chosen by the
+        user. Writing move.date after the move is created/posted is NOT enough
+        (and was tried and reverted): the move's amounts are already computed
+        using payment.date's rate at generation time, so forcing only the date
+        label afterwards desyncs date from the rate actually used, producing a
+        bogus exchange difference on reconciliation. Instead, inject
+        l10n_ve_conversion_date (read by l10n_ve_accountant's
+        _prepare_move_lines_per_type override) BEFORE generating the move, so the
+        liquidity line is converted with the invoice's rate, then align 'date' to
+        that same value so the two never drift apart.
+        """
+        self.ensure_one()
+        if self.is_retention and self.retention_line_ids:
+            invoice_date = self.retention_line_ids[0].move_id.date
+            if invoice_date:
+                vals = super(
+                    AccountPayment, self.with_context(l10n_ve_conversion_date=invoice_date)
+                )._generate_move_vals(write_off_line_vals, force_balance, line_ids)
+                vals['date'] = invoice_date
+                return vals
+        return super()._generate_move_vals(write_off_line_vals, force_balance, line_ids)
+
     def unlink(self):
         for payment in self:
             if any(isinstance(id, api.NewId) for id in self.retention_line_ids.ids):
