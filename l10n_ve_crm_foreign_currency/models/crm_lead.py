@@ -169,6 +169,10 @@ class CrmLead(models.Model):
 
     @api.constrains("expected_revenue_foreign", "type")
     def _check_expected_revenue_foreign_positive(self):
+        # Tarea 80213: se elimina el rechazo de expected_revenue_foreign == 0.
+        # El formulario de Lead no tiene este campo, así que convertir un
+        # Lead a Oportunidad enviaba 0 y esta validación bloqueaba el flujo
+        # de conversión. Se sigue rechazando un monto negativo.
         for lead in self:
             if lead._is_foreign_amount_check_exempt():
                 continue
@@ -178,10 +182,6 @@ class CrmLead(models.Model):
             if currency.compare_amounts(lead.expected_revenue_foreign, 0) < 0:
                 raise ValidationError(
                     _("El ingreso esperado en moneda comercial no puede ser negativo.")
-                )
-            if currency.is_zero(lead.expected_revenue_foreign):
-                raise ValidationError(
-                    _("El ingreso esperado en moneda comercial debe ser mayor a 0.")
                 )
 
     @api.constrains("recurring_revenue_foreign", "recurring_plan", "type")

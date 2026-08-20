@@ -177,7 +177,9 @@ class TestCrmLeadForeignCurrency(TransactionCase):
         self.assertEqual(lead.expected_revenue, 0.0)
 
     # ------------------------------------------------------------------
-    # expected_revenue_foreign: siempre estrictamente positivo
+    # expected_revenue_foreign: negativo rechazado; 0 permitido (tarea 80213:
+    # el formulario de Lead no tiene este campo, así que convertir un Lead a
+    # Oportunidad enviaba 0 y quedaba bloqueado por la validación anterior).
     # ------------------------------------------------------------------
 
     def test_07_expected_revenue_foreign_negative_is_rejected(self):
@@ -188,13 +190,27 @@ class TestCrmLeadForeignCurrency(TransactionCase):
                 "expected_revenue_foreign": -10.0,
             })
 
-    def test_08_expected_revenue_foreign_zero_is_rejected(self):
-        with self.assertRaises(ValidationError):
-            self.env["crm.lead"].create({
-                "name": "Oportunidad monto cero",
-                "company_id": self.company.id,
-                "expected_revenue_foreign": 0.0,
-            })
+    def test_08_expected_revenue_foreign_zero_is_allowed(self):
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad monto cero",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 0.0,
+        })
+        self.assertEqual(lead.expected_revenue_foreign, 0.0)
+
+    def test_08b_lead_to_opportunity_conversion_with_zero_revenue(self):
+        """Escenario de la tarea 80213: convertir un Lead (sin campo de
+        Ingreso Esperado en su formulario) a Oportunidad no debe bloquearse
+        por expected_revenue_foreign en 0."""
+        lead = self.env["crm.lead"].create({
+            "name": "Lead a convertir",
+            "company_id": self.company.id,
+            "type": "lead",
+            "expected_revenue_foreign": 0.0,
+        })
+        lead.write({"type": "opportunity"})
+        self.assertEqual(lead.type, "opportunity")
+        self.assertEqual(lead.expected_revenue_foreign, 0.0)
 
     # ------------------------------------------------------------------
     # recurring_revenue_foreign: 0 permitido sin recurring_plan, negativo
