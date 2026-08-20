@@ -1,4 +1,4 @@
-from odoo import api, models
+from odoo import api, fields, models
 
 
 class ProductPricelistReport(models.AbstractModel):
@@ -35,6 +35,12 @@ class ProductPricelistReport(models.AbstractModel):
         self._set_pricelist_prices(res["products"], pricelists, product_model)
 
         res["pricelists"] = pricelists
+        # Shown only in the PDF header (see the template's `t-if="not
+        # is_html_type"` block) — the report can combine pricelists from
+        # several companies, so "the company" printed is always the one
+        # the current user is printing from, not any pricelist's company.
+        res["company"] = self.env.company
+        res["issue_date"] = fields.Date.context_today(self)
         res.pop("pricelist", None)
         res.pop("quantities", None)
         return res

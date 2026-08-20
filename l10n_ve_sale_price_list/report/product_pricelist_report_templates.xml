@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
     <template id="report_pricelist_page_inherit" inherit_id="product.report_pricelist_page">
+        <xpath expr="//div[hasclass('row', 'my-3')]" position="before">
+            <div class="row mb-3" t-if="not is_html_type">
+                <div class="col-6">
+                    <img t-if="company.logo" t-att-src="image_data_uri(company.logo)"
+                        alt="Logo" style="max-height: 60px;"/>
+                </div>
+                <div class="col-6 text-end">
+                    <strong>Fecha de emisión: </strong>
+                    <span t-out="issue_date"/>
+                </div>
+            </div>
+        </xpath>
         <xpath expr="//table/thead" position="replace">
             <th class="text-end" colspan="100%">Prices</th>
             <tr>

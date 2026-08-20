@@ -20,6 +20,9 @@
                                     t-att-disabled="state.page &gt;= totalPages"/>
                         </div>
                         <button t-on-click="onClickPrint" type="button" class="btn btn-primary" title="Print">Print</button>
+                        <button t-on-click="onClickExportExcel" type="button" class="btn btn-secondary" title="Download Excel">
+                            <i class="fa fa-file-excel-o me-1"/>Excel
+                        </button>
                     </div>
                 </t>
                 <t t-set-slot="layout-actions">
