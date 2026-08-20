@@ -19,10 +19,17 @@
                                     t-on-click="onClickNextPage"
                                     t-att-disabled="state.page &gt;= totalPages"/>
                         </div>
-                        <button t-on-click="onClickPrint" type="button" class="btn btn-primary" title="Print">Print</button>
-                        <button t-on-click="onClickExportExcel" type="button" class="btn btn-secondary" title="Download Excel">
-                            <i class="fa fa-file-excel-o me-1"/>Excel
-                        </button>
+                        <Dropdown>
+                            <button type="button" class="btn btn-primary dropdown-toggle" title="Imprimir">Imprimir</button>
+                            <t t-set-slot="content">
+                                <DropdownItem onSelected.bind="onClickPrint">
+                                    <i class="fa fa-file-pdf-o me-1"/>PDF
+                                </DropdownItem>
+                                <DropdownItem onSelected.bind="onClickExportExcel">
+                                    <i class="fa fa-file-excel-o me-1"/>Excel
+                                </DropdownItem>
+                            </t>
+                        </Dropdown>
                     </div>
                 </t>
                 <t t-set-slot="layout-actions">
