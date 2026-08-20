@@ -21,5 +21,6 @@
     },
     "auto_install": True,
     "application": True,
+    "images": ["static/description/icon.png"],
     "binaural": True,
 }
