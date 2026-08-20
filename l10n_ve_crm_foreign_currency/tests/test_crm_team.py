@@ -1,5 +1,6 @@
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
+from odoo.exceptions import UserError
 
 
 @tagged("post_install", "-at_install", "l10n_ve_crm_foreign_currency")
@@ -213,3 +214,9 @@ class TestCrmTeamForeignCurrency(TransactionCase):
         self._create_invoice(self.team, 50.0, self.today, move_type="out_refund")
         self.team.invalidate_recordset(["invoiced_foreign"])
         self.assertAlmostEqual(self.team.invoiced_foreign, 150.0, places=2)
+
+    def test_12_inverse_invoiced_target_raises_usererror(self):
+        """Escribir directo a invoiced_target (moneda de compañía) debe
+        rechazarse: el campo real es invoiced_target_foreign."""
+        with self.assertRaises(UserError):
+            self.team.write({"invoiced_target": 50000.0})
