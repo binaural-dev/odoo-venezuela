@@ -5,6 +5,7 @@ import { registry } from "@web/core/registry";
 import { _t } from "@web/core/l10n/translation";
 import { Layout } from "@web/search/layout";
 import { user } from "@web/core/user";
+import { download } from "@web/core/network/download";
 import { useState, onWillStart } from "@odoo/owl";
 
 const PAGE_SIZE = 20;
@@ -136,6 +137,35 @@ export class L10nVeSalePriceListReport extends ProductPricelistReport {
             report_file: "product.report_pricelist",
             data: this.printParams,
         });
+    }
+
+    // Excel export always covers every selected product, same as the PDF —
+    // it reuses printParams (no page/page_size) rather than reportParams.
+    async onClickExportExcel() {
+        if (!this.state.selectedPricelists.length) {
+            await this.action.doAction({
+                type: "ir.actions.client",
+                tag: "display_notification",
+                params: { type: "warning", message: _t("Select at least one pricelist first.") },
+            });
+            return;
+        }
+        try {
+            await download({
+                url: "/product/export/pricelist/",
+                data: {
+                    report_data: JSON.stringify(this.printParams),
+                    export_format: "xlsx",
+                },
+            });
+        } catch (error) {
+            console.error("Error exporting XLSX file:", error);
+            await this.action.doAction({
+                type: "ir.actions.client",
+                tag: "display_notification",
+                params: { type: "danger", message: _t("Error exporting file. Please try again.") },
+            });
+        }
     }
 }
 
