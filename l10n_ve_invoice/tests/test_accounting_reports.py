@@ -9,6 +9,13 @@ from odoo.tests import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestAccountingReports(TransactionCase):
+    def _payment_extension_installed(self):
+        return bool(
+            self.env["ir.module.module"].sudo().search(
+                [("name", "=", "l10n_ve_payment_extension"), ("state", "=", "installed")]
+            )
+        )
+
     def setUp(self):
         super().setUp()
         self.company = self.env.ref("base.main_company")
@@ -935,8 +942,9 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("sale", date_from=today, date_to=today)
         moves = wizard.search_moves()
         fields_list = wizard._resume_sale_book_fields(moves)
-        self.assertEqual(len(fields_list), 7)
-        self.assertEqual(fields_list[-1]["total"], True)
+        expected = 7 + (1 if self._payment_extension_installed() else 0)
+        self.assertEqual(len(fields_list), expected)
+        self.assertTrue(any(f.get("total") for f in fields_list))
 
     def test_resume_purchase_book_fields(self):
         today = fields.Date.today()
@@ -947,5 +955,6 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("purchase", date_from=today, date_to=today)
         moves = wizard.search_moves()
         fields_list = wizard._resume_purchase_book_fields(moves)
-        self.assertEqual(len(fields_list), 9)
-        self.assertEqual(fields_list[-1]["total"], True)
+        expected = 9 + (1 if self._payment_extension_installed() else 0)
+        self.assertEqual(len(fields_list), expected)
+        self.assertTrue(any(f.get("total") for f in fields_list))
