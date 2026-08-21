@@ -277,11 +277,16 @@ class TestAccountingReports(TransactionCase):
         self.assertTrue(wizard.show_field_currency_system)
 
     def test_default_currency_system_non_vef(self):
-        self.company.write({
+        company = self.env["res.company"].create({
+            "name": "Non VEF Test Company",
+            "currency_id": self.currency_vef.id,
+            "foreign_currency_id": self.currency_usd.id,
+        })
+        company.write({
             "currency_id": self.currency_usd.id,
             "foreign_currency_id": self.currency_vef.id,
         })
-        wizard = self._create_wizard("sale")
+        wizard = self._create_wizard("sale", company_id=company.id)
         self.assertTrue(wizard)
 
     # ============================================================
@@ -942,8 +947,18 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("sale", date_from=today, date_to=today)
         moves = wizard.search_moves()
         fields_list = wizard._resume_sale_book_fields(moves)
-        expected = 7 + (1 if self._payment_extension_installed() else 0)
-        self.assertEqual(len(fields_list), expected)
+        expected_names = [
+            "Ventas Internas no Gravadas",
+            "Ventas de Exportación",
+            "Ventas Internas Gravadas sólo por Alícuota General",
+            "Ventas Internas Gravadas por Alícuota Reducida",
+            "Ventas Internas Gravadas por Alícuota General más Adicional",
+            "Ajustes a los Débitos Fiscales de Periodos Anteriores",
+            "Total Ventas y Débitos Fiscales del Periodo",
+        ]
+        if self._payment_extension_installed():
+            expected_names.append("Total Retenciones")
+        self.assertEqual([f.get("name") for f in fields_list], expected_names)
         self.assertTrue(any(f.get("total") for f in fields_list))
 
     def test_resume_purchase_book_fields(self):
@@ -955,6 +970,18 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("purchase", date_from=today, date_to=today)
         moves = wizard.search_moves()
         fields_list = wizard._resume_purchase_book_fields(moves)
-        expected = 9 + (1 if self._payment_extension_installed() else 0)
-        self.assertEqual(len(fields_list), expected)
+        expected_names = [
+            "Compras Internas no Gravadas",
+            "Importaciones Gravadas por Alícuota Reducida",
+            "Importaciones Gravadas por Alícuota General",
+            "Importaciones Gravadas por Alícuota General más Adicional",
+            "Compras Internas Gravadas sólo por Alícuota General",
+            "Compras Internas Gravadas por Alícuota General más Adicional",
+            "Compras Internas Gravadas por Alícuota Reducida",
+            "Ajustes a los Créditos Fiscales de Periodos Anteriores",
+            "Total Compras y Créditos Fiscales del Periodo",
+        ]
+        if self._payment_extension_installed():
+            expected_names.append("Total Retenciones")
+        self.assertEqual([f.get("name") for f in fields_list], expected_names)
         self.assertTrue(any(f.get("total") for f in fields_list))
