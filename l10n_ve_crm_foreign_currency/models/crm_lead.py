@@ -186,6 +186,12 @@ class CrmLead(models.Model):
 
     @api.constrains("recurring_revenue_foreign", "recurring_plan", "type")
     def _check_recurring_revenue_foreign_positive(self):
+        # Se elimina el rechazo de recurring_revenue_foreign == 0 cuando hay
+        # recurring_plan (mismo tratamiento que expected_revenue_foreign,
+        # tarea 80213). El formulario de Lead tampoco tiene el campo Ingreso
+        # Recurrente, así que "Fusionar con oportunidades existentes" trae
+        # recurring_plan de la oportunidad destino pero recurring_revenue_foreign
+        # llega en 0, bloqueando la conversión. Se sigue rechazando negativo.
         for lead in self:
             if lead._is_foreign_amount_check_exempt():
                 continue
@@ -195,13 +201,6 @@ class CrmLead(models.Model):
             if currency.compare_amounts(lead.recurring_revenue_foreign, 0) < 0:
                 raise ValidationError(
                     _("El ingreso recurrente en moneda comercial no puede ser negativo.")
-                )
-            if lead.recurring_plan and currency.is_zero(lead.recurring_revenue_foreign):
-                raise ValidationError(
-                    _(
-                        "El ingreso recurrente en moneda comercial debe ser mayor a 0 "
-                        "cuando la oportunidad tiene un plan recurrente definido."
-                    )
                 )
 
     def copy_data(self, default=None):
