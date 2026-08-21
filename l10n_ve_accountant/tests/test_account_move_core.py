@@ -652,16 +652,22 @@ class TestAccountMoveCore(TransactionCase):
             for _ in range(len(refund.invoice_line_ids)):
                 refund_form.invoice_line_ids.remove(index=0)
             for i, inv_line in enumerate(invoice.invoice_line_ids):
+                mods = line_mods.get(i, {})
                 with refund_form.invoice_line_ids.new() as line:
                     if not inv_line.product_id:
                         line.display_type = inv_line.display_type
                         line.name = inv_line.name
                     else:
-                        line.product_id = inv_line.product_id
-                        line.quantity = inv_line.quantity
-                        line.price_unit = inv_line.price_unit
-                    if i in line_mods:
-                        for field, value in line_mods[i].items():
+                        line.product_id = mods.get('product_id', inv_line.product_id)
+                        line.quantity = mods.get('quantity', inv_line.quantity)
+                        # Set last: Odoo's standard product/quantity onchange
+                        # recomputes price_unit from the product's cost (0 for
+                        # products with no purchase price configured), so
+                        # setting it before quantity/product_id would get it
+                        # silently clobbered back to 0.
+                        line.price_unit = mods.get('price_unit', inv_line.price_unit)
+                    for field, value in mods.items():
+                        if field not in ('product_id', 'quantity', 'price_unit'):
                             setattr(line, field, value)
         return refund
 
@@ -761,6 +767,31 @@ class TestAccountMoveCore(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         refund = self._create_refund(invoice)
         self.assertEqual(refund.invoice_line_ids[0].price_unit, 100.0)
+
+    def test_35b_refund_validation_amount_ignores_origin_discount(self):
+        """out_refund: la factura origen tiene descuento (neto 80 sobre 1x100),
+        una NC de 1x100 SIN descuento debe rechazarse: acreditaría 100 contra
+        los 80 realmente facturados."""
+        invoice = self._create_invoice(lines=[{
+            "product_id": self.product.id,
+            "quantity": 1.0,
+            "price_unit": 100.0,
+            "discount": 20.0,
+        }])
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self._assert_refund_error(invoice, line_mods={0: {"discount": 0.0}})
+
+    def test_35c_refund_validation_amount_with_matching_discount(self):
+        """out_refund: NC con el mismo descuento que el origen -> OK."""
+        invoice = self._create_invoice(lines=[{
+            "product_id": self.product.id,
+            "quantity": 1.0,
+            "price_unit": 100.0,
+            "discount": 20.0,
+        }])
+        invoice.with_context(move_action_post_alert=True).action_post()
+        refund = self._create_refund(invoice, line_mods={0: {"discount": 20.0}})
+        self.assertEqual(refund.invoice_line_ids[0].discount, 20.0)
 
     def test_36_refund_validation_section_line(self):
         """out_refund: Línea de sección/nota agregada en NC -> ignorada sin error."""

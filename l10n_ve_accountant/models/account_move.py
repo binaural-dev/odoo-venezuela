@@ -1853,7 +1853,7 @@ class AccountMove(models.Model):
             totals = origin_totals_by_product[line.product_id.id]
             totals["quantity"] += line.quantity
             totals["max_price_unit"] = max(totals["max_price_unit"], line.price_unit)
-            totals["amount"] += line.quantity * line.price_unit
+            totals["amount"] += line.price_subtotal
 
         precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
         currency_precision = self.currency_id.decimal_places
@@ -1898,7 +1898,7 @@ class AccountMove(models.Model):
                     "unit price in the source invoice (%s)."
                 ) % (line.product_id.name, line.price_unit, totals["max_price_unit"]))
 
-            refund_amount_by_product[line.product_id.id] += line.quantity * line.price_unit
+            refund_amount_by_product[line.product_id.id] += line.price_subtotal
 
             if float_compare(
                 refund_amount_by_product[line.product_id.id],
