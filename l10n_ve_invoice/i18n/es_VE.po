@@ -445,13 +445,17 @@ msgid "Invoice Configuration"
 msgstr "Configuración de Facturación"
 
 #. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date_display_datetime
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date_display_datetime
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.l10n_ve_invoice_view_invoice_tree_datetime
 msgid "Invoice Date"
 msgstr "Fecha de factura"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
+msgid "Rate Date"
+msgstr "Fecha de tasa"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__is_contingency
