@@ -132,7 +132,8 @@ class TestCancelVisibility(TransactionCase):
             return
         self.company.taxpayer_type = 'special'
         
-        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 10, 14)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
             mock_date.today.return_value = datetime.date(2025, 10, 14)
             mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
 
@@ -146,7 +147,8 @@ class TestCancelVisibility(TransactionCase):
             return
         self.company.taxpayer_type = 'special'
         
-        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 10, 16)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
             mock_date.today.return_value = datetime.date(2025, 10, 16)
             mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
 
@@ -158,7 +160,8 @@ class TestCancelVisibility(TransactionCase):
         """Vendor Bill: Should always be True"""
         self.company.taxpayer_type = 'ordinary'
         
-        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 12, 1)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
             mock_date.today.return_value = datetime.date(2025, 12, 1)
             mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
 
