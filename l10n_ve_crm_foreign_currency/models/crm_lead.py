@@ -214,6 +214,21 @@ class CrmLead(models.Model):
             default["recurring_revenue_foreign"] = 0
         return super().copy_data(default=default)
 
+    def _merge_get_fields(self):
+        # "Fusionar con oportunidades existentes" arma un dict con
+        # CRM_LEAD_FIELDS_TO_MERGE (incluye expected_revenue y
+        # recurring_revenue) y lo escribe con write() sobre la oportunidad
+        # resultante. Esos dos campos ahora son de solo lectura
+        # (_inverse_expected_revenue/_inverse_recurring_revenue rechazan
+        # cualquier escritura), así que el merge se rompía con un
+        # UserError. Se sustituyen por los campos reales en moneda
+        # comercial para que el merge escriba en el lugar correcto.
+        replacements = {
+            "expected_revenue": "expected_revenue_foreign",
+            "recurring_revenue": "recurring_revenue_foreign",
+        }
+        return [replacements.get(fname, fname) for fname in super()._merge_get_fields()]
+
     def _get_rainbowman_message(self):
         # El método del core compara expected_revenue (columna SQL cruda,
         # congelada con el valor histórico en moneda de la compañía antes de
