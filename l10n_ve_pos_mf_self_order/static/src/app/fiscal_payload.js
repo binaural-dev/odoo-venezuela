@@ -128,8 +128,12 @@ export function buildKioskFiscalPayload(order, ctx) {
         return { valid: false, message: "La orden no tiene líneas válidas para la máquina fiscal" };
     }
 
-    // Pago: monto en moneda fiscal (VES), método explícito (aprobado).
-    const payAmount = round_pr(Math.abs(Number(paymentAmount || 0)), rounding);
+    // Pago: convertido a moneda fiscal (VES) con el MISMO `toFiscal()` que las
+    // líneas. `paymentAmount` llega en la moneda BASE de la orden (suma de
+    // `order.payment_ids[].amount`); si la base no es VES hay que convertirlo,
+    // o el pago no cuadraría con el total de líneas en la máquina fiscal
+    // (pago≠total). `toFiscal` no convierte cuando la base ya es VES.
+    const payAmount = toFiscal(Math.abs(Number(paymentAmount || 0)));
     if (!(payAmount > 0)) {
         return { valid: false, message: "No hay un monto de pago válido para la máquina fiscal" };
     }

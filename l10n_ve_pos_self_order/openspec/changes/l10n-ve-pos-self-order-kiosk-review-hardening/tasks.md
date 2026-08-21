@@ -90,55 +90,64 @@
 
 ## 3. Correctitud fiscal (🟡)
 
-- [ ] 3.1 🟡 `recompute_prices` — `l10n_ve_pos_self_order/models/pos_order.py:53`.
-      Derivar `foreign_amount_total` de la MISMA cantidad que persiste el controller
-      del core (`sum(self.lines.mapped('price_subtotal_incl'))`), no del
-      `amount_total` intermedio de `super()`. Mantiene la invariante
-      `foreign_amount_total == convert(amount_total)` bajo `round_globally` (default
-      Odoo 19). `line.foreign_price` no tiene el problema (parte de `price_unit`).
-- [ ] 3.2 🟡 `buildKioskFiscalPayload` — `l10n_ve_pos_mf_self_order/static/src/app/fiscal_payload.js`.
-      Convertir `payAmount` a moneda fiscal con el mismo `toFiscal()` que las líneas
-      (hoy toma `order.payment_ids[].amount` en moneda base sin convertir → descuadre
-      pago≠total cuando la base ≠ VES).
-- [ ] 3.3 🟡 `confirmationPage` — `l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:66`.
-      Guard de reentrada por orden (el bus `PAYMENT_STATUS` puede reentrar antes de
-      que se setee `mf_invoice_number`) → evitar doble impresión.
-- [ ] 3.4 🟡 Fallo de persistencia del número fiscal — `self_order_fiscal.js`
-      (`_persistKioskFiscalNumber`). Si `write_mf_invoice_data` falla tras imprimir,
-      marcar la orden como "impresa pendiente de persistir" y reintentar el `write`
-      (NO reimprimir): hoy, tras un reload, la orden se ve "sin imprimir" y
-      `printOrReprintKioskOrder` emitiría un documento fiscal NUEVO.
+- [x] 3.1 🟡 `recompute_prices` — HECHO. `foreign_amount_total` se deriva de
+      `sum(self.lines.mapped('price_subtotal_incl'))` (base línea-a-línea que se
+      postea a la factura), no del `self.amount_total` global de `super()`. Bajo
+      `round_globally` el global puede diferir un céntimo de la suma de líneas;
+      así el total foráneo de cabecera queda consistente con la suma de los
+      importes foráneos por línea (`line.foreign_price`, que parte de `price_unit`,
+      no tiene el problema).
+- [x] 3.2 🟡 `buildKioskFiscalPayload` — HECHO. `payAmount` se convierte con el
+      mismo `toFiscal()` que las líneas (antes solo se redondeaba con `round_pr`,
+      sin aplicar la tasa → descuadre pago≠total cuando la base ≠ VES).
+- [x] 3.3 🟡 `confirmationPage` — HECHO. Guard de reentrada por `access_token`
+      (`this._fiscalPrintingOrders`, un Set): si ya hay una impresión en curso
+      para esa orden no se arranca otra; se limpia en el `finally`. Evita la doble
+      impresión cuando el bus `PAYMENT_STATUS` reentra antes de setearse
+      `mf_invoice_number`.
+- [x] 3.4 🟡 Fallo de persistencia — HECHO. `_persistKioskFiscalNumber` guarda el
+      número en localStorage (mapa durable por `order.id`) si el `write` falla;
+      `retryPendingFiscalPersists` (en `setup`) reintenta el WRITE al arrancar (no
+      reimprime); `_hydratePendingFiscalNumber` recupera el número en
+      `printOrReprintKioskOrder` para que una orden pendiente reimprima COPIA en
+      vez de emitir un documento nuevo. Idempotente con el guard de §1.2
+      (reenviar el mismo número no re-numera).
 
 ## 4. Tests (🟡 — la deuda de mayor riesgo)
 
-- [ ] 4.1 🟡 `HttpCase` para las 5 rutas públicas: `identify` (cédula
-      inexistente→[] vs existente), `identify_create` (cédula duplicada→no crea dos;
-      RIF inválido→rechaza), `create_invoice` (idempotente si ya hay `account_move`;
-      rollback si la factura no llega a `posted`; **orden de OTRA caja→rechazada**),
-      `session_orders` (**orden de otra caja/otro token→no aparece**),
-      `write_mf_invoice_data` (**orden ajena→rechazada**; no sobrescribe número
-      existente; no toca move `posted`).
-- [ ] 4.2 🟡 Facturación diferida — `l10n_ve_pos_self_order/models/pos_order.py:74`
-      (`_process_saved_order`) y `:107` (`_generate_pos_order_invoice`). Forzar un
-      fallo de factura (diario/secuencia inválidos) y assert: orden queda `paid` +
-      `to_invoice` sin `account_move`; el savepoint revierte el borrador no-`posted`;
-      la ruta explícita (sin `kiosk_defer_invoice`) SÍ propaga el error.
-- [ ] 4.3 🟡 Crear `l10n_ve_pos_mf_self_order/tests/` (módulo auto_install hoy sin
-      tests Python): cubrir `_send_payment_result` (que el payload del bus incluye
-      `pos.payment`) y los `_load_pos_self_data_fields` fiscales (estado instalado).
-- [ ] 4.4 🟡 Unit tests JS del Kiosko: `kiosk_sync_queue.js` (clasificación
-      `ConnectionLostError`→conservar cola vs error de negocio→`failed`, nunca
-      descartar; `retryFailedKioskRegistrations`), y `buildKioskFiscalPayload` (las
-      ~6 ramas de validación, conversión fiscal, neteo de descuento, `fiscal_code`
-      strip `t`, `prefix_vat+vat`, `normalizeProductName` ya está `export`ada).
-- [ ] 4.5 🟡 `l10n_ve_accountant/tests/test_product_template.py:88` (`test_04b`):
-      agregar la rama `not tax_ids` multi-compañía (producto con impuestos SOLO de
-      otra compañía → conserva los ajenos + agrega el default propio); fijar el
-      `account_sale_tax_id` del `base.main_company` en el propio test (hermético);
-      assert de "no error" en el lado venta.
-- [ ] 4.6 🟡 `res_partner._load_pos_self_data_read` —
-      `l10n_ve_pos_self_order/models/res_partner.py`: `TransactionCase` que verifique
-      el contrato de read consumido por Megasoft (`binaural_megasoft_self_order`).
+- [x] 4.1 🟡 HECHO. `tests/test_kiosk_public_routes.py`: (a) unit tests de las
+      funciones puras `_ve_vat_format_error` y `_ve_within_rate_limit`; (b)
+      `HttpCase` de las rutas reales: `identify` (inexistente→[]; existente NO
+      devuelve `phone`, sí `has_phone`), `identify_create` (dedup no duplica; RIF
+      inválido→rechaza; fill-only), `set_phone` (fill-only), `session_orders`
+      (tope de `limit`; solo órdenes de la caja), `create_invoice` (orden de otra
+      caja/ inexistente→rechazada), `write_mf_invoice_data` (orden ajena→rechaza;
+      no sobrescribe un número distinto). El chequeo de `posted` se descartó (ver
+      §1.2: escribir el número sobre un asiento posteado es el flujo normal).
+- [x] 4.2 🟡 HECHO. `tests/test_deferred_invoicing.py`: fuerza el fallo
+      parcheando el `_create_invoice` del core (l10n_ve_pos_mf llama a `super()`,
+      la cadena llega ahí). Asserts: con `kiosk_defer_invoice` la orden queda
+      `paid` + `to_invoice` sin `account_move` (savepoint revierte el `done`); vía
+      `_process_saved_order` igual; la ruta explícita SÍ propaga el error.
+- [x] 4.3 🟡 HECHO. Nuevo `l10n_ve_pos_mf_self_order/tests/test_mf_self_order.py`:
+      `_send_payment_result` (patch de `pos.config._notify` → el payload del bus
+      incluye `pos.payment` con el importe) y `_load_pos_self_data_fields` (expone
+      `mf_invoice_number`/`fiscal_machine`/`mf_reportz`).
+- [~] 4.4 🟡 PARCIAL. `l10n_ve_pos_mf_self_order/static/tests/unit/fiscal_payload.test.js`
+      (hoot, registrado en `web.assets_unit_tests`): `buildKioskFiscalPayload` (las
+      ramas de validación, conversión fiscal de líneas Y pago —§3.2—, neteo de
+      descuento, `fiscal_code` strip `t`, `prefix_vat+vat`) y `normalizeProductName`.
+      PENDIENTE: `kiosk_sync_queue.js` (la clasificación vive dentro de un `patch`
+      de `SelfOrder` con IndexedDB+rpc; testearla aislada exige mockear ese
+      entorno — es de nivel integración, se deja anotado).
+- [x] 4.5 🟡 HECHO. `l10n_ve_accountant/tests/test_product_template.py`
+      (`test_04c...`): rama `not tax_ids` del lado VENTA multi-compañía (impuesto
+      de venta SOLO de otra compañía → conserva el ajeno + agrega el default
+      propio); fija `account_sale_tax_id` de `base.main_company` en el test
+      (hermético); assert de "no error".
+- [x] 4.6 🟡 HECHO. `tests/test_res_partner_pos_self_data.py`: `TransactionCase`
+      que verifica que `_load_pos_self_data_read` inyecta `vat`/`prefix_vat`
+      (contrato de Megasoft), preserva `id`/`name` del core, y recordset vacío→[].
 
 ## 5. Verificación
 

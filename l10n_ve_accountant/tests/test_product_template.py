@@ -106,6 +106,36 @@ class TestProductTemplate(TransactionCase):
         })
         self.assertEqual(set(product.supplier_taxes_id.ids), {other_purchase_tax.id, self.tax_purchase.id})
 
+    def test_04c_sale_side_not_tax_ids_multi_company_no_error(self):
+        """Lado VENTA, rama `not tax_ids` multi-compañía: un producto cuyo ÚNICO
+        impuesto de venta pertenece a OTRA compañía (no cuenta como el 'exactly
+        one' de la compañía del producto) no da error; se conserva el ajeno y se
+        agrega el default de venta de la compañía propia.
+
+        Se fija `account_sale_tax_id` de `base.main_company` DENTRO del test
+        (hermético; TransactionCase lo revierte). `supplier_taxes_id` se deja con
+        un impuesto de compra propio válido para aislar el chequeo al lado venta.
+        """
+        self.company.account_sale_tax_id = self.tax_sale_1
+        other_company = self.env['res.company'].create({'name': 'Other Sale Company'})
+        other_tax_group = self.env['account.tax.group'].create({
+            'name': 'Other Sale Tax Group', 'company_id': other_company.id,
+        })
+        other_sale_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Other Company Sale Tax", "amount": 12, "amount_type": "percent",
+            "type_tax_use": "sale", "company_id": other_company.id,
+            "tax_group_id": other_tax_group.id,
+        })
+        product = self.env["product.product"].create({
+            "name": "Test Multi Company Sale Default",
+            "type": "service",
+            "taxes_id": [(6, 0, [other_sale_tax.id])],
+            "supplier_taxes_id": [(6, 0, [self.tax_purchase.id])],
+        })
+        # Conserva el impuesto de venta ajeno + agrega el default propio, sin error.
+        self.assertIn(other_sale_tax.id, product.taxes_id.ids)
+        self.assertIn(self.tax_sale_1.id, product.taxes_id.ids)
+
     def test_05_write_sale_tax(self):
         """Write con 1 sale tax sobre producto existente -> OK"""
         product = self.env["product.product"].create({

@@ -4,12 +4,12 @@
 
 ### Requirement: El panel de recuperación es una herramienta de administrador (token por-orden descartado)
 
-Las rutas `session_orders`, `create_invoice` y `write_mf_invoice_data` alimentan
-un **panel de administrador** cuyo propósito es operar sobre CUALQUIER orden de la
-caja (recuperar/crear factura, reimprimir la factura fiscal). Por diseño NO se
-acotan por token por-orden: hacerlo rompería esa función. El control de acceso al
-panel SHALL ser el **PIN de supervisor** en el cliente (gate de Debug,
-`binaural_pos_hr_self_order`), no un token por-orden. Se acepta el riesgo residual
+El acceso a las rutas de recuperación SHALL controlarse con el **PIN de
+supervisor** en el cliente (gate de Debug, `binaural_pos_hr_self_order`), NO con
+un token por-orden. Esas rutas (`session_orders`, `create_invoice`,
+`write_mf_invoice_data`) alimentan un **panel de administrador** cuyo propósito es
+operar sobre CUALQUIER orden de la caja (recuperar/crear factura, reimprimir la
+factura fiscal), y acotarlas por token por-orden rompería esa función. Se acepta el riesgo residual
 de que quien lea el `access_token` del dispositivo pueda invocar estas rutas a
 mano (mitigado por despliegue en red interna + los guards de esta spec). El
 enforcement server-side se limita a lo que NO estorba al admin: tope de `limit`,
@@ -25,10 +25,10 @@ identificación.
 
 ### Requirement: Las rutas públicas corren con `sudo` y hacen el enforcement en el controlador
 
-Como el Kiosko puede abrirse con un usuario deliberadamente restringido (que solo
-ve el Kiosko), las rutas públicas SHALL correr con `sudo()` para poder traer los
-datos que necesitan. Por tanto NO pueden apoyarse en las record rules para
-filtrar: el control de acceso SHALL hacerse **explícitamente en el controlador**
+Las rutas públicas del Kiosko SHALL correr con `sudo()` (el Kiosko puede abrirse
+con un usuario deliberadamente restringido que solo ve el Kiosko y aun así debe
+traer sus datos) y, por tanto, SHALL hacer el control de acceso
+**explícitamente en el controlador** en vez de apoyarse en las record rules
 — token por-orden con `consteq()` para toda acción sobre una orden concreta,
 proyección mínima de campos, guards de estado, y rate-limit por `access_token` en
 las rutas de identificación.
@@ -62,8 +62,8 @@ imprescindible (la propia orden del cliente, para reimprimir su copia fiscal).
 
 ### Requirement: Completar el teléfono faltante no sobrescribe el existente
 
-Cuando `identify` indica que un cliente existente no tiene teléfono
-(`has_phone` falso), el Kiosko SHALL poder registrarlo vía `set_phone`. Esa ruta
+El Kiosko SHALL poder registrar el teléfono de un cliente existente que no lo
+tenga (cuando `identify` devuelve `has_phone` falso) vía `set_phone`. Esa ruta
 SHALL re-localizar al partner por su cédula/RIF (no por un `id` arbitrario) y
 SHALL escribir el teléfono **solo si estaba vacío**, nunca sobrescribir uno ya
 registrado. `identify_create` SHALL aplicar la misma regla fill-only cuando la

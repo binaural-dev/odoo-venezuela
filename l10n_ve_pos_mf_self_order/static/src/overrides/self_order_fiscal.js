@@ -36,11 +36,20 @@ patch(SelfOrder.prototype, {
         // Kiosko para cubrir cualquier pantalla (la impresión ocurre ya en
         // confirmationPage, ver más abajo).
         this.printingFiscalInvoice = false;
+        // Órdenes con una impresión fiscal EN CURSO (por access_token), para el
+        // guard de reentrada de `confirmationPage` (ver allí): el bus
+        // PAYMENT_STATUS puede reentrar antes de que la impresión asíncrona
+        // setee `mf_invoice_number`.
+        this._fiscalPrintingOrders = new Set();
         // Solo en modo kiosko y si la caja tiene habilitada la máquina fiscal.
         // Fire-and-forget: no bloquea el arranque de la app. Solo VERIFICA el
         // pareo (sin abrir el puerto) — ver comentario de cabecera.
         if (this.kioskMode && this.config?.access_button_mf) {
             this.checkFiscalPrinterPairing();
+            // Reintentar en segundo plano las persistencias de número fiscal que
+            // quedaron pendientes (el papel salió pero `write_mf_invoice_data`
+            // falló y se guardó localmente). NO reimprime; solo re-persiste.
+            this.retryPendingFiscalPersists();
         }
     },
 
@@ -80,8 +89,17 @@ patch(SelfOrder.prototype, {
                 // recuperación (crear factura → imprimir fiscal). Emitir un nº
                 // fiscal sin account.move donde estamparlo crearía un desfase.
                 order.is_invoiced &&
-                ["paid", "done", "invoiced"].includes(order.state)
+                ["paid", "done", "invoiced"].includes(order.state) &&
+                // Guard de reentrada: `confirmationPage` es el punto por el que
+                // reentra el bus PAYMENT_STATUS, y puede hacerlo ANTES de que la
+                // impresión asíncrona (fire-and-forget de abajo) setee
+                // `mf_invoice_number`. Sin este guard, una segunda entrada vería
+                // `!mf_invoice_number` aún true y arrancaría una SEGUNDA
+                // impresión → doble documento fiscal. Se marca la orden como
+                // "imprimiéndose" hasta que la promesa termine.
+                !this._fiscalPrintingOrders.has(access_token)
             ) {
+                this._fiscalPrintingOrders.add(access_token);
                 this.printingFiscalInvoice = true;
                 this.printKioskFiscalInvoice(order)
                     .then((result) => {
@@ -103,6 +121,7 @@ patch(SelfOrder.prototype, {
                     })
                     .finally(() => {
                         this.printingFiscalInvoice = false;
+                        this._fiscalPrintingOrders.delete(access_token);
                     });
             }
         }
@@ -364,8 +383,12 @@ patch(SelfOrder.prototype, {
      *
      * Si la orden aún no está sincronizada (id no numérico) no hay nada que
      * persistir por RPC (el número viajará con la orden al registrarse). Si el
-     * RPC falla, NO es fatal: el papel ya salió y la orden ya existe en Odoo;
-     * queda pendiente de persistir y se puede reintentar reimprimiendo.
+     * RPC falla, el papel YA salió y la orden YA existe en Odoo: se guarda el
+     * número en un almacén DURABLE (localStorage) como "impreso pendiente de
+     * persistir", para reintentar el `write` más tarde (al recargar, o desde el
+     * panel) SIN reimprimir. Esto evita que, tras un reload, la orden se vea
+     * "sin imprimir" y `printOrReprintKioskOrder` emita un documento fiscal
+     * NUEVO (doble emisión).
      */
     async _persistKioskFiscalNumber(order) {
         if (typeof order.id !== "number") {
@@ -384,12 +407,125 @@ patch(SelfOrder.prototype, {
             );
             if (!res || !res.success) {
                 console.error("[MF Kiosk] write_mf_invoice_data no persistió:", res && res.error);
+                this._addPendingFiscalPersist(order);
                 return false;
             }
+            // Persistió (o el server confirmó un reintento idempotente del mismo
+            // número): limpiar cualquier marca pendiente de esta orden.
+            this._removePendingFiscalPersist(order.id);
             return true;
         } catch (error) {
             console.error("[MF Kiosk] falló persistir el número fiscal en el servidor", error);
+            this._addPendingFiscalPersist(order);
             return false;
+        }
+    },
+
+    // --- Persistencias de número fiscal pendientes (durables) --------------
+    // Mapa en localStorage { [order_id]: {mf_invoice_number, fiscal_machine,
+    // mf_reportz} } de órdenes cuyo papel fiscal SÍ salió pero cuyo
+    // `write_mf_invoice_data` falló. Sobrevive a un reload para reintentar el
+    // write (no la impresión) y para no re-emitir un documento nuevo.
+
+    _PENDING_FISCAL_KEY: "l10n_ve_pos_mf_self_order.pending_fiscal_persist",
+
+    _readPendingFiscalPersists() {
+        try {
+            const raw = window.localStorage.getItem(this._PENDING_FISCAL_KEY);
+            return raw ? JSON.parse(raw) : {};
+        } catch (error) {
+            console.error("[MF Kiosk] no se pudo leer persistencias fiscales pendientes", error);
+            return {};
+        }
+    },
+
+    _writePendingFiscalPersists(map) {
+        try {
+            window.localStorage.setItem(this._PENDING_FISCAL_KEY, JSON.stringify(map));
+        } catch (error) {
+            console.error("[MF Kiosk] no se pudo guardar persistencias fiscales pendientes", error);
+        }
+    },
+
+    _addPendingFiscalPersist(order) {
+        if (typeof order.id !== "number" || !order.mf_invoice_number) {
+            return;
+        }
+        const map = this._readPendingFiscalPersists();
+        map[order.id] = {
+            mf_invoice_number: order.mf_invoice_number,
+            fiscal_machine: order.fiscal_machine,
+            mf_reportz: order.mf_reportz || false,
+        };
+        this._writePendingFiscalPersists(map);
+    },
+
+    _removePendingFiscalPersist(orderId) {
+        const map = this._readPendingFiscalPersists();
+        if (orderId in map) {
+            delete map[orderId];
+            this._writePendingFiscalPersists(map);
+        }
+    },
+
+    /**
+     * Si la orden quedó "impresa pendiente de persistir", copia su número fiscal
+     * (guardado localmente) de vuelta a la orden en memoria. Así
+     * `printOrReprintKioskOrder` la ve como YA impresa y NO emite un documento
+     * nuevo. No pisa un número ya presente.
+     */
+    _hydratePendingFiscalNumber(order) {
+        if (!order || typeof order.id !== "number" || order.mf_invoice_number) {
+            return;
+        }
+        const pending = this._readPendingFiscalPersists()[order.id];
+        if (pending) {
+            order.mf_invoice_number = pending.mf_invoice_number;
+            order.fiscal_machine = pending.fiscal_machine;
+            order.mf_reportz = pending.mf_reportz || "";
+        }
+    },
+
+    /**
+     * Reintenta persistir en el servidor los números fiscales que quedaron
+     * pendientes (papel emitido, `write_mf_invoice_data` fallido). Reintenta el
+     * WRITE, nunca la impresión. Idempotente en el server: reenviar el mismo
+     * número no re-numera (guard de `write_mf_invoice_data`). Fire-and-forget.
+     */
+    async retryPendingFiscalPersists() {
+        const map = this._readPendingFiscalPersists();
+        const ids = Object.keys(map);
+        if (!ids.length) {
+            return;
+        }
+        for (const orderId of ids) {
+            const data = map[orderId];
+            if (!data || !data.mf_invoice_number) {
+                this._removePendingFiscalPersist(Number(orderId));
+                continue;
+            }
+            try {
+                const res = await rpc(
+                    "/l10n_ve_pos_mf_self_order/kiosk/write_mf_invoice_data",
+                    {
+                        access_token: this.access_token,
+                        order_id: Number(orderId),
+                        mf_invoice_number: data.mf_invoice_number,
+                        fiscal_machine: data.fiscal_machine,
+                        mf_reportz: data.mf_reportz || false,
+                    }
+                );
+                if (res && res.success) {
+                    this._removePendingFiscalPersist(Number(orderId));
+                }
+            } catch (error) {
+                // Sigue pendiente: se reintenta en el próximo arranque/panel.
+                console.error(
+                    "[MF Kiosk] reintento de persistencia fiscal falló para la orden",
+                    orderId,
+                    error
+                );
+            }
         }
     },
 
@@ -405,6 +541,11 @@ patch(SelfOrder.prototype, {
         if (!order) {
             return { valid: false, message: _t("Invalid order") };
         }
+        // Si la orden quedó "impresa pendiente de persistir" (el papel salió pero
+        // `write_mf_invoice_data` falló), recuperar su número local: así se
+        // reimprime una COPIA en vez de emitir un documento fiscal NUEVO. El
+        // reintento de la persistencia corre aparte (`retryPendingFiscalPersists`).
+        this._hydratePendingFiscalNumber(order);
         return order.mf_invoice_number
             ? this.reprintKioskFiscalCopy(order)
             : this.printKioskFiscalInvoice(order);

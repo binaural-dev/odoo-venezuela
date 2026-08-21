@@ -50,8 +50,19 @@ class PosOrder(models.Model):
         """
         super().recompute_prices()
         config = self.config_id
+        # Derivar el total foráneo de la MISMA base que se posteará a la factura:
+        # la suma de los subtotales con impuesto de las líneas
+        # (``sum(price_subtotal_incl)``), NO el ``self.amount_total`` que dejó
+        # ``super()``. Bajo ``round_globally`` (default de compañía en Odoo 19) el
+        # ``amount_total`` se redondea de forma GLOBAL y puede diferir en un
+        # céntimo de la suma línea-a-línea; como los importes foráneos de la
+        # factura se derivan por línea (vía ``line.foreign_price``), tomar la suma
+        # de líneas mantiene el total foráneo de cabecera consistente con la suma
+        # de los importes foráneos de las líneas. (``line.foreign_price`` parte de
+        # ``price_unit``, así que no arrastra este problema.)
+        local_total = sum(self.lines.mapped("price_subtotal_incl"))
         self.foreign_amount_total = config._convert(
-            self.amount_total, self.currency_id, config.foreign_currency_id
+            local_total, self.currency_id, config.foreign_currency_id
         )
         self.foreign_currency_rate = config._get_pos_conversion_rate(
             self.currency_id, config.foreign_currency_id

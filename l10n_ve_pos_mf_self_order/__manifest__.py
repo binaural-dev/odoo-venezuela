@@ -34,6 +34,10 @@
             # enganche imprimir-primero/sincronizar-después.
             "l10n_ve_pos_mf_self_order/static/src/**/*",
         ],
+        # Unit tests (hoot) del builder fiscal autocontenido.
+        "web.assets_unit_tests": [
+            "l10n_ve_pos_mf_self_order/static/tests/**/*",
+        ],
     },
     "auto_install": True,
     "application": True,
