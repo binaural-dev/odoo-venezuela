@@ -17,7 +17,7 @@ class AccountMove(models.Model):
     declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
 
     invoice_date = fields.Date(
-        string="Invoice Date",
+        string="Rate Date",
         default=fields.Date.context_today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
@@ -116,11 +116,6 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
-    @api.onchange("move_type")
-    def _onchange_move_type(self):
-        super()._onchange_move_type()
-        if self.move_type == "out_invoice":
-            self.invoice_date = fields.Date.context_today(self)
 
     def action_post(self):
         

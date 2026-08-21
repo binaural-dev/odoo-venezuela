@@ -96,7 +96,8 @@ class TestCancelVisibility(TransactionCase):
         # Invoice: 2025-10-29
         # Expect: True
         
-        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 10, 30)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
             mock_date.today.return_value = datetime.date(2025, 10, 30)
             mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
 
@@ -116,7 +117,8 @@ class TestCancelVisibility(TransactionCase):
         # Invoice: 2025-10-29
         # Expect: False
         
-        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 11, 1)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
             mock_date.today.return_value = datetime.date(2025, 11, 1)
             mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
 
