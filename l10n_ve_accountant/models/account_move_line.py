@@ -499,16 +499,22 @@ class AccountMoveLine(models.Model):
                     }
                 )
 
-    @api.constrains("quantity", "price_unit", "product_id")
-    def _check_refund_line_against_origin(self):
-        # Writing directly on a line (line.write(...)) does not change the
-        # parent's `invoice_line_ids` field value itself, so it does not
-        # trigger account.move's `@api.constrains('invoice_line_ids')`. This
-        # closes that gap so a line-level write on a credit/debit note is
-        # still validated against its source invoice.
-        moves = self.mapped("move_id").filtered(
-            lambda m: (m.move_type in ("out_refund", "in_refund") and m.reversed_entry_id)
-            or (m.move_type in ("out_invoice", "in_invoice") and m.debit_origin_id)
-        )
-        for move in moves:
-            move._validate_refund_lines_against_origin()
+    def _check_constrains_account_id_journal_id(self):
+        for line in self.filtered(
+            lambda x: x.display_type not in ('line_section', 'line_subsection', 'line_note')
+        ):
+            journal = line.move_id.journal_id
+            journal_currency = journal.currency_id
+            # If the journal has no currency of its own, it accepts entries in
+            # any currency (core behavior). If it DOES force a currency, no
+            # line may use a different one -- block before running the core's
+            # own validations (archived account, account secondary currency).
+            if journal_currency and line.currency_id != journal_currency:
+                raise UserError(_(
+                    'The journal %(journal)s only accepts entries in %(journal_currency)s, '
+                    'but this line is in %(line_currency)s.',
+                    journal=journal.name,
+                    journal_currency=journal_currency.name,
+                    line_currency=line.currency_id.name,
+                ))
+        return super()._check_constrains_account_id_journal_id()
