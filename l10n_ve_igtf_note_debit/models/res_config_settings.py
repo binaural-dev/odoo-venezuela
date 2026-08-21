@@ -6,16 +6,16 @@ class ResConfigSettings(models.TransientModel):
 
     igtf_note_debit_mode = fields.Selection(
         [
-            ("inline", "Línea en el mismo asiento (flujo actual)"),
-            ("debit_note", "Nota de Débito Fiscal automática (nuevo flujo)"),
+            ("inline", "Line in the same journal entry (current flow)"),
+            ("debit_note", "Automatic Fiscal Debit Note (new flow)"),
         ],
-        string="Modo de Percepción de IGTF",
+        string="IGTF Perception Mode",
         compute="_compute_igtf_note_debit_config",
         inverse="_inverse_igtf_note_debit_config",
     )
     igtf_note_debit_product_id = fields.Many2one(
         "product.product",
-        string="Producto de Percepción de IGTF",
+        string="IGTF Perception Product",
         compute="_compute_igtf_note_debit_config",
         inverse="_inverse_igtf_note_debit_config",
     )

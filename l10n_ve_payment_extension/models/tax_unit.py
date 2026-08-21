@@ -15,14 +15,16 @@ class TaxUnit(models.Model):
             
             domain_date = [
                 ('id', '!=', record.id),
+                ('company_id', '=', record.company_id.id),
                 ('available_date', '=', record.available_date),
             ]
             if self.search_count(domain_date) > 0:
-                raise UserError(_("There cannot be two tax units with the same date (%s).") 
+                raise UserError(_("There cannot be two tax units with the same date (%s).")
                                 % record.available_date)
 
             domain_both = [
                 ('id', '!=', record.id),
+                ('company_id', '=', record.company_id.id),
                 ('value', '=', record.value),
                 ('available_date', '=', record.available_date),
             ]
@@ -38,8 +40,14 @@ class TaxUnit(models.Model):
         return records
 
     def write(self, vals):
+        # 'install_mode' está activo durante la instalación/actualización de
+        # CUALQUIER módulo, no solo de este, así que usarlo como bypass aquí
+        # desactivaría esta protección en situaciones ajenas a este módulo.
+        # 'bypass_tax_unit_lock' es una clave propia que solo nuestro código
+        # puede activar deliberadamente (p.ej. para corregir el registro
+        # semilla, aunque hoy eso se hace con _write y no pasa por aquí).
         for record in self:
-            if not self.env.context.get('install_mode'):
+            if not self.env.context.get('bypass_tax_unit_lock'):
                 if not record.status and any(field not in {'status'} for field in vals):
                     raise UserError(_("You cannot edit a tax unit that is not active."))
 
@@ -95,15 +103,21 @@ class TaxUnit(models.Model):
         return res
 
     def _update_active_status(self):
-        """ Lógica para que solo el registro con fecha mayor sea True """
-        latest_record = self.search([], order='available_date desc, id desc', limit=1)
-        if latest_record:
-            all_records = self.search([])
+        """ Lógica para que, por compañía, solo el registro con fecha mayor sea True """
+        companies = self.mapped('company_id') or self.env.company
+        for company in companies:
+            latest_record = self.search(
+                [('company_id', '=', company.id)], order='available_date desc, id desc', limit=1
+            )
+            if not latest_record:
+                continue
+
+            all_records = self.search([('company_id', '=', company.id)])
             for rec in all_records:
                 new_status = (rec.id == latest_record.id)
                 if rec.status != new_status:
                     super(TaxUnit, rec).write({'status': new_status})
-                
+
             self._trigger_retention_update(latest_record)
 
 
@@ -114,7 +128,9 @@ class TaxUnit(models.Model):
 
         if not retentions:
             return
-        
+
+        # fees.retention.tax_unit_ids es un Many2one pese al sufijo _ids
+        # (ver fees_retention.py); esta asignación es correcta, no un error.
         retentions.write({'tax_unit_ids': tax_unit_record.id})
         
         for ret in retentions:

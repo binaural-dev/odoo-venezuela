@@ -5,13 +5,14 @@ class ResCompany(models.Model):
     _inherit = 'res.company'
 
     l10n_ve_exchange_use_nd_nc = fields.Boolean(
-        string='Use Debit/Credit Notes for Exchange Differences',
+        string='Usar Notas de Débito/Crédito para Diferencial Cambiario',
         default=False,
-        help="When enabled, the exchange rate difference left open when reconciling "
-             "a foreign-currency invoice/bill is NOT absorbed by Odoo's automatic "
-             "journal entry -- instead, it's documented as a real Debit Note (loss) "
-             "or Credit Note (gain), issued against the original invoice and "
-             "reconciled against the leftover residual.",
+        help="Cuando está activado, el diferencial cambiario que queda abierto "
+             "al conciliar una factura/documento en moneda extranjera NO es "
+             "absorbido por el asiento automático de Odoo -- en su lugar, se "
+             "documenta con una Nota de Débito (pérdida) o Nota de Crédito "
+             "(ganancia) real, emitida contra la factura original y conciliada "
+             "contra el residual restante.",
     )
 
     l10n_ve_exchange_note_product_id = fields.Many2one(

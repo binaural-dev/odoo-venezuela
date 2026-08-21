@@ -1799,8 +1799,11 @@ class AccountMove(models.Model):
 
     def _validate_refund_lines_against_origin(self):
         """
-        Validate invoice lines in credit/debit notes (refunds) against
-        their corresponding original invoice lines from the source document.
+        Validate invoice lines in credit/debit notes against their
+        corresponding original invoice lines from the source document.
+        Credit notes (out_refund/in_refund) link to their origin via
+        `reversed_entry_id`; debit notes keep the original move_type
+        (out_invoice/in_invoice) and link via `debit_origin_id`.
 
         Ensures that:
         1. Only products present in the original invoice are allowed.
@@ -1809,20 +1812,27 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
 
-        if not self.reversed_entry_id or self.move_type not in ['out_refund', 'in_refund']:
+        origin = self.reversed_entry_id if self.move_type in ('out_refund', 'in_refund') \
+            else self.debit_origin_id if self.move_type in ('out_invoice', 'in_invoice') \
+            else None
+
+        if not origin:
             return
 
-        # Exchange-difference credit notes (`l10n_ve_exchange_difference`,
-        # not a dependency of this module, in development on a separate
-        # PR) are built directly with `create()`/`reversed_entry_id`
-        # pointing at the real commercial invoice, but their single line
-        # is a dedicated "exchange difference" product that is
-        # legitimately never on that invoice -- it documents a
-        # currency-rate gain/loss, not a correction of what was sold.
-        # Since that module can't add a field/dependency here, the note's
-        # own creation code is expected to set this context key (instead
-        # of a persisted field) around the `create()`/`action_post()`
-        # call that builds it.
+        # Some credit/debit notes don't correct what was sold -- they document
+        # a separate fiscal adjustment unrelated to the original invoice
+        # lines. Two known cases: exchange-difference notes
+        # (`l10n_ve_exchange_difference`, not a dependency of this module, in
+        # development on a separate PR), whose single line is a dedicated
+        # "exchange difference" product for a currency-rate gain/loss; and
+        # IGTF adjustment notes, whose line is the IGTF tax amount itself, not
+        # a product sold on the original invoice. Both are built directly
+        # with `create()`/`reversed_entry_id` (or `debit_origin_id`) pointing
+        # at the real commercial invoice, but their line(s) are legitimately
+        # never on that invoice. Since those modules can't add a
+        # field/dependency here, their own creation code is expected to set
+        # this context key (instead of a persisted field) around the
+        # `create()`/`action_post()` call that builds the note.
         if self.env.context.get('l10n_ve_skip_refund_origin_validation'):
             return
 
@@ -1837,7 +1847,7 @@ class AccountMove(models.Model):
         # pairing (e.g. consuming a queue) would misattribute a refund line to
         # the wrong origin line mid-edit.
         origin_totals_by_product = defaultdict(lambda: {"quantity": 0.0, "max_price_unit": 0.0, "amount": 0.0})
-        for line in self.reversed_entry_id.invoice_line_ids:
+        for line in origin.invoice_line_ids:
             if not line.product_id:
                 continue
             totals = origin_totals_by_product[line.product_id.id]
@@ -1878,10 +1888,10 @@ class AccountMove(models.Model):
                     "quantity in the source invoice (%s)."
                 ) % (line.product_id.name, line.quantity, totals["quantity"]))
 
-            if line.price_unit < 0.0:
+            if float_compare(line.price_unit, 0.0, precision_digits=currency_precision) < 0:
                 raise ValidationError(_("The unit price cannot be negative."))
 
-            if line.price_unit > totals["max_price_unit"]:
+            if float_compare(line.price_unit, totals["max_price_unit"], precision_digits=currency_precision) > 0:
                 raise ValidationError(_(
                     "Product '%s':\n"
                     "The unit price (%s) cannot be greater than the original "

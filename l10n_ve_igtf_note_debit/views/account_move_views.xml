@@ -11,7 +11,7 @@
                 <div groups="account.group_account_invoice,account.group_account_readonly"
                          class="alert alert-warning" role="alert"
                          invisible="not has_pending_igtf_debit_note">
-                        <a class="alert-link" href="#outstanding" role="button">Tienes notas pendientes a pagar de IGTF</a>.
+                        <a class="alert-link" href="#outstanding" role="button">You have pending IGTF notes to pay</a>.
                     </div>
             </xpath>
         </field>

@@ -684,7 +684,23 @@ class AccountPaymentAndIgtf(models.Model):
                             "default_partial_id": False,
                         },
                     }
-            
+
+            # Cancelar el pago directo (sin pasar por "Fijar a borrador"
+            # primero) no ejecutaba `remove_igtf_from_account_move` -- el
+            # IGTF (línea embebida o Nota de Débito, según el modo) quedaba
+            # huérfano en un pago ya cancelado. Se replica aquí la misma
+            # lógica que ya usa `action_draft` para mantener ambos caminos
+            # consistentes.
+            partial_id = False
+            move_lines = record.move_id.line_ids
+            partial_rec = (move_lines.matched_debit_ids | move_lines.matched_credit_ids)[:1]
+            if partial_rec:
+                partial_id = partial_rec.id
+
+            if partial_id:
+                record.move_id.remove_igtf_from_account_move(partial_id)
+                record.move_id.line_ids.remove_move_reconcile()
+
             return super(AccountPaymentAndIgtf, self).action_cancel()
 
     def action_draft(self):

@@ -14,10 +14,10 @@ class AccountJournal(models.Model):
     # de crédito en cualquier diario) -- por eso este SÍ es necesario.
     l10n_ve_exchange_debit_note_sequence_id = fields.Many2one(
         'ir.sequence',
-        string='Exchange Debit Note Sequence',
+        string='Secuencia de Nota de Débito de Diferencial Cambiario',
         check_company=True,
         copy=False,
-        help="Sequence used to number exchange rate difference Debit Notes "
-             "(Nota de Débito). Configure the prefix, padding, and periodicity "
-             "from the sequence record itself.",
+        help="Secuencia usada para numerar las Notas de Débito de diferencial "
+             "cambiario. Configure el prefijo, el relleno (padding) y la "
+             "periodicidad desde el propio registro de la secuencia.",
     )

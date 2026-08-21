@@ -308,4 +308,22 @@
             </xpath>
         </field>
     </record>
+
+    <!-- `no_upload: True`: el botón "Subir"/"Upload" (OCR) de las vistas
+         List/Kanban de account.move NO depende del `create` del list view
+         (arriba), es un botón propio del controlador que se muestra igual
+         aunque `create=false`. Se apaga vía contexto, leído por los
+         parches en static/src/views/account_move_list y
+         account_move_kanban. -->
+    <record id="account.action_move_in_refund_type" model="ir.actions.act_window">
+        <field name="context">{'search_default_in_refund': 1, 'default_move_type': 'in_refund', 'create': False, 'no_upload': True}</field>
+    </record>
+
+    <record id="account.action_move_out_refund_type" model="ir.actions.act_window">
+        <field name="context">{'search_default_out_refund': 1, 'default_move_type': 'out_refund', 'create': False, 'display_account_trust': True, 'no_upload': True}</field>
+    </record>
+
+    <record id="account.action_move_out_refund_type_non_legacy" model="ir.actions.act_window">
+        <field name="context">{'search_default_out_refund': 1, 'default_move_type': 'out_refund', 'create': False, 'display_account_trust': True, 'no_upload': True}</field>
+    </record>
 </odoo>
