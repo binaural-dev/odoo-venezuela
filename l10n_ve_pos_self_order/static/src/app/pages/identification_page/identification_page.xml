@@ -38,7 +38,23 @@
                         </div>
                     </t>
 
-                    <!-- Step B: nuevo contacto (cédula no encontrada) -->
+                    <!-- Step B: completar teléfono (cédula encontrada, sin teléfono) -->
+                    <t t-elif="state.step === 'phone'">
+                        <h1 class="text-center mt-4">Complete your phone</h1>
+                        <p class="text-center text-muted mb-4">
+                            We need your phone number to continue
+                        </p>
+                        <div class="mx-auto" style="max-width: 32rem;">
+                            <input type="tel" inputmode="tel" autocomplete="off"
+                                   class="form-control form-control-lg mb-3"
+                                   t-att-placeholder="phonePlaceholder"
+                                   t-model="state.phone"
+                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onSavePhone()"/>
+                            <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
+                        </div>
+                    </t>
+
+                    <!-- Step C: nuevo contacto (cédula no encontrada) -->
                     <t t-else="">
                         <h1 class="text-center mt-4">New customer</h1>
                         <p class="text-center text-muted mb-4">
@@ -79,9 +95,15 @@
                             t-on-click="() => this.onIdentify()">
                         Continue
                     </button>
+                    <button t-elif="state.step === 'phone'"
+                            class="btn btn-lg btn-primary px-5"
+                            t-att-disabled="state.loading || !state.phone.trim()"
+                            t-on-click="() => this.onSavePhone()">
+                        Save and continue
+                    </button>
                     <button t-else=""
                             class="btn btn-lg btn-primary px-5"
-                            t-att-disabled="state.loading || !state.firstName.trim() || !state.lastName.trim()"
+                            t-att-disabled="state.loading || !state.firstName.trim() || !state.lastName.trim() || !state.phone.trim()"
                             t-on-click="() => this.onCreate()">
                         Create and continue
                     </button>

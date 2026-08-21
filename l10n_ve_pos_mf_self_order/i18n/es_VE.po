@@ -244,3 +244,17 @@ msgstr "Desconectada"
 #: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.xml:0
 msgid "Pair fiscal machine (authorize port)"
 msgstr "Parear máquina fiscal (autorizar puerto)"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf_self_order/controllers/main.py:0
+#, python-format
+msgid "Order not found for this POS"
+msgstr "Orden no encontrada para esta caja"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf_self_order/controllers/main.py:0
+#, python-format
+msgid "This order already has a fiscal number"
+msgstr "Esta orden ya tiene un número fiscal"

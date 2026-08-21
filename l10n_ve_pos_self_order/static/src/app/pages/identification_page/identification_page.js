@@ -6,6 +6,9 @@ import { _t } from "@web/core/l10n/translation";
 
 // Same cédula/RIF prefixes as l10n_ve_contact's prefix_vat Selection.
 const PREFIX_VAT_OPTIONS = ["V", "E", "J", "G", "P", "C"];
+// Cédula (V/E) and RIF (J/G) are digits-only; P (passport)/C are left free.
+// Mirrors the server validation in controllers/orders.py (_ve_vat_format_error).
+const NUMERIC_PREFIXES = ["V", "E", "J", "G"];
 
 export class IdentificationPage extends Component {
     static template = "l10n_ve_pos_self_order.IdentificationPage";
@@ -16,7 +19,8 @@ export class IdentificationPage extends Component {
         this.router = useService("router");
         this.state = useState({
             // "identify" = ask for cédula; "create" = cédula not found, ask
-            // for the rest of the contact data (cédula stays fixed).
+            // for the rest of the contact data (cédula stays fixed); "phone" =
+            // cédula found but the partner has no phone on file, ask for it.
             step: "identify",
             prefixVat: "V",
             vat: "",
@@ -44,7 +48,10 @@ export class IdentificationPage extends Component {
     }
 
     get phonePlaceholder() {
-        return _t("Phone");
+        // Phone is required both for a new customer and when completing a
+        // missing one on an existing customer (business rule: we register the
+        // phone whenever it is not on file).
+        return _t("Phone") + " *";
     }
 
     get numpadKeys() {
@@ -66,6 +73,19 @@ export class IdentificationPage extends Component {
         ];
     }
 
+    // Client-side format check, mirrored server-side. Returns an error message
+    // (already translated) or "" when the cédula/RIF is well formed.
+    vatFormatError(prefix, vat) {
+        const value = (vat || "").trim();
+        if (!value) {
+            return _t("Enter the ID number.");
+        }
+        if (NUMERIC_PREFIXES.includes(prefix) && !/^\d+$/.test(value)) {
+            return _t("The ID number must contain only digits.");
+        }
+        return "";
+    }
+
     onNumpadKey(value) {
         // Feeds the on-screen keypad into the cédula/RIF field so the kiosk
         // does not depend on a physical keyboard.
@@ -81,8 +101,9 @@ export class IdentificationPage extends Component {
 
     async onIdentify() {
         const vat = this.state.vat.trim();
-        if (!vat) {
-            this.state.error = _t("Enter the ID number.");
+        const formatError = this.vatFormatError(this.state.prefixVat, vat);
+        if (formatError) {
+            this.state.error = formatError;
             return;
         }
         this.state.error = "";
@@ -93,10 +114,22 @@ export class IdentificationPage extends Component {
                 prefix_vat: this.state.prefixVat,
                 vat,
             });
+            // Soft error (e.g. rate-limited): show it, do not navigate.
+            if (result?.error) {
+                this.state.error = result.error;
+                return;
+            }
             const partner = result?.["res.partner"]?.[0];
             if (partner?.id) {
-                this.assignPartner(result);
-                this.navigateNext();
+                if (result.has_phone) {
+                    this.assignPartner(result);
+                    this.navigateNext();
+                } else {
+                    // Found but with no phone on file: ask for it before
+                    // continuing (the partner is re-fetched server-side by
+                    // cédula in set_phone, so nothing to carry here).
+                    this.state.step = "phone";
+                }
             } else {
                 // Not found: move to the creation step keeping the typed cédula.
                 this.state.step = "create";
@@ -109,12 +142,22 @@ export class IdentificationPage extends Component {
     async onCreate() {
         const firstName = this.state.firstName.trim();
         const lastName = this.state.lastName.trim();
+        const phone = this.state.phone.trim();
+        const formatError = this.vatFormatError(this.state.prefixVat, this.state.vat.trim());
+        if (formatError) {
+            this.state.error = formatError;
+            return;
+        }
         if (!firstName) {
             this.state.error = _t("Enter the first name.");
             return;
         }
         if (!lastName) {
             this.state.error = _t("Enter the last name.");
+            return;
+        }
+        if (!phone) {
+            this.state.error = _t("Enter the phone number.");
             return;
         }
         this.state.error = "";
@@ -128,8 +171,42 @@ export class IdentificationPage extends Component {
                 prefix_vat: this.state.prefixVat,
                 vat: this.state.vat.trim(),
                 name,
-                phone: this.state.phone.trim(),
+                phone,
             });
+            if (result?.error) {
+                this.state.error = result.error;
+                return;
+            }
+            const partner = result?.["res.partner"]?.[0];
+            if (!partner?.id) {
+                return;
+            }
+            this.assignPartner(result);
+            this.navigateNext();
+        } finally {
+            this.state.loading = false;
+        }
+    }
+
+    async onSavePhone() {
+        const phone = this.state.phone.trim();
+        if (!phone) {
+            this.state.error = _t("Enter the phone number.");
+            return;
+        }
+        this.state.error = "";
+        this.state.loading = true;
+        try {
+            const result = await rpc("/l10n_ve_pos_self_order/kiosk/identify/set_phone", {
+                access_token: this.selfOrder.access_token,
+                prefix_vat: this.state.prefixVat,
+                vat: this.state.vat.trim(),
+                phone,
+            });
+            if (result?.error) {
+                this.state.error = result.error;
+                return;
+            }
             const partner = result?.["res.partner"]?.[0];
             if (!partner?.id) {
                 return;
@@ -144,8 +221,11 @@ export class IdentificationPage extends Component {
     assignPartner(result) {
         // Same wiring the native PresetInfoPopup uses to attach a partner to
         // the current order: persist, connect into the local models, assign.
-        this.selfOrder.data.synchronizeServerDataInIndexedDB(result);
-        const connectedData = this.selfOrder.models.connectNewData(result);
+        // Only forward the res.partner records — the response also carries
+        // scalar keys (has_phone/error) that are not models.
+        const payload = { "res.partner": result["res.partner"] };
+        this.selfOrder.data.synchronizeServerDataInIndexedDB(payload);
+        const connectedData = this.selfOrder.models.connectNewData(payload);
         const partner = connectedData["res.partner"][0];
         this.selfOrder.currentOrder.partner_id = partner;
     }
@@ -160,7 +240,7 @@ export class IdentificationPage extends Component {
     }
 
     onClickBack() {
-        if (this.state.step === "create") {
+        if (this.state.step === "create" || this.state.step === "phone") {
             // Step back to the cédula screen without losing what was typed.
             this.state.step = "identify";
             this.state.error = "";

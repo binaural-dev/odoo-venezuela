@@ -1,4 +1,4 @@
-from odoo import http
+from odoo import _, http
 
 from odoo.addons.pos_self_order.controllers.orders import PosSelfOrderController
 
@@ -31,7 +31,17 @@ class L10nVePosMfSelfOrderController(PosSelfOrderController):
         # La orden debe existir y pertenecer a la caja del access_token: el
         # Kiosko público no puede escribir el número fiscal de cualquier orden.
         if not order.exists() or order.config_id.id != pos_config.id:
-            return {"success": False, "error": "Orden no encontrada para esta caja"}
+            return {"success": False, "error": _("Order not found for this POS")}
+        # Guard de integridad: NO re-numerar una orden con un número fiscal
+        # DISTINTO al que ya tiene. Sobrescribir un correlativo SENIAT ya
+        # emitido con otro lo corrompe. Reenviar el MISMO número (reintento de
+        # persistencia tras un timeout, §3.4) es un no-op inofensivo y se
+        # permite, para que ese reintento sea idempotente. Un primer intento
+        # legítimo llega con el campo vacío, así que tampoco se bloquea. (No se
+        # comprueba el estado `posted` del account.move: escribir el número
+        # fiscal sobre una factura ya posteada ES el flujo normal en VE.)
+        if order.mf_invoice_number and order.mf_invoice_number != mf_invoice_number:
+            return {"success": False, "error": _("This order already has a fiscal number")}
         return order.write_mf_invoice_data(
             mf_invoice_number, fiscal_machine, mf_reportz or False
         )
