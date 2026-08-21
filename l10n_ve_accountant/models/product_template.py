@@ -29,7 +29,19 @@ class ProductTemplate(models.Model):
         the net final state of the Odoo M2M commands.
         """
         errors = []
-        company = self.env['res.company'].browse(vals.get('company_id')) if vals.get('company_id') else (records.company_id if records else self.env.company)
+        if vals.get('company_id'):
+            company = self.env['res.company'].browse(vals.get('company_id'))
+        elif records and records.company_id:
+            # product.template.company_id is optional (products can be
+            # shared across companies) — records.company_id is a falsy
+            # EMPTY recordset then, not a real company. Falling through to
+            # it directly (instead of self.env.company) made every tax
+            # comparison below (`t.company_id == company`) compare against
+            # an empty recordset and always be False, so write() rejected
+            # perfectly valid taxes as "no tax assigned".
+            company = records.company_id
+        else:
+            company = self.env.company
 
         for field_name, comp_field in [
             ('taxes_id', 'account_sale_tax_id'),
