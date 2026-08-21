@@ -81,6 +81,12 @@ class TestKioskDeferredInvoicing(TransactionCase):
         cls.product = cls.env["product.product"].create(
             {
                 "name": "Kiosk Deferred Product",
+                # `service`: `_process_saved_order` llama a `_create_order_picking`
+                # y un producto almacenable crearía un stock.move cuya ubicación
+                # (Clientes) es de la compañía principal, chocando con la compañía
+                # de test (`_check_company`). Un servicio no genera movimiento, así
+                # que el flujo llega a la facturación (que es lo que probamos).
+                "type": "service",
                 "lst_price": 100.0,
                 "available_in_pos": True,
                 "company_id": cls.company.id,

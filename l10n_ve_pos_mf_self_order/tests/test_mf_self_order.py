@@ -16,9 +16,6 @@ from unittest.mock import patch
 from odoo import Command
 from odoo.tests import TransactionCase, tagged
 
-POS_CONFIG = "odoo.addons.point_of_sale.models.pos_config.PosConfig"
-
-
 @tagged("post_install", "-at_install", "l10n_ve_pos_mf_self_order")
 class TestMfSelfOrder(TransactionCase):
     @classmethod
@@ -113,6 +110,9 @@ class TestMfSelfOrder(TransactionCase):
                 "journal_id": cash_journal.id,
             }
         )
+        # No se fuerza modo kiosko: `_send_payment_result` y
+        # `_load_pos_self_data_fields` no dependen del modo, y así el método de
+        # pago en efectivo es válido (el kiosko lo prohíbe).
         cls.config = cls.env["pos.config"].create(
             {
                 "name": "MF SelfOrder Config",
@@ -120,7 +120,6 @@ class TestMfSelfOrder(TransactionCase):
                 "currency_id": vef.id,
                 "journal_id": sale_journal.id,
                 "invoice_journal_id": sale_journal.id,
-                "self_ordering_mode": "kiosk",
                 "payment_method_ids": [(6, 0, [cls.cash_method.id])],
             }
         )
@@ -178,9 +177,11 @@ class TestMfSelfOrder(TransactionCase):
             captured["event"] = event
             captured["data"] = data
 
+        # `_notify` se resuelve por MRO en la clase dinámica de pos.config (no
+        # está en la clase core), así que se parchea sobre `type(self.config)`.
         # Se usa un resultado != "Success" para no disparar los envíos de
         # recibo/orden del core; el payload del bus se emite igual.
-        with patch(f"{POS_CONFIG}._notify", _capture):
+        with patch.object(type(self.config), "_notify", _capture):
             order._send_payment_result("Pending")
 
         self.assertEqual(captured.get("event"), "PAYMENT_STATUS")

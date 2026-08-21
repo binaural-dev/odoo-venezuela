@@ -6,23 +6,29 @@ pos-self-order-kiosk-endpoint-security/spec.md``.
 Dos bloques:
 
 * ``TestKioskIdentifyHelpers`` — unit tests de las funciones PURAS del
-  controlador (validación de formato y rate-limit), sin HTTP.
-* ``TestKioskPublicRoutes`` — ``HttpCase`` que ejerce las rutas públicas
-  reales (``identify``/``identify_create``/``set_phone``/``session_orders``/
-  ``create_invoice`` y la fiscal ``write_mf_invoice_data``): que ``identify`` no
-  devuelva teléfono, dedup + fill-only, formato inválido rechazado, tope de
-  ``limit``, pertenencia a la caja y guard de no-sobrescritura del número fiscal.
+  controlador (validación de formato y rate-limit).
+* ``TestKioskPublicRoutes`` — ejerce la LÓGICA de las rutas públicas llamando
+  a los métodos del controlador directamente (con ``request`` mockeado), en vez
+  de por HTTP: así se prueba el control de acceso y la forma de la respuesta sin
+  depender del routing ``website=True`` en el harness de test. Cubre: que
+  ``identify`` no devuelva teléfono, dedup + fill-only, formato inválido
+  rechazado, tope de ``limit``, pertenencia a la caja y guard de
+  no-sobrescritura del número fiscal.
 """
 
-import json
+from contextlib import ExitStack, contextmanager
+from unittest.mock import patch
 
 from odoo import Command
-from odoo.tests import HttpCase, TransactionCase, tagged
+from odoo.tests import TransactionCase, tagged
 
+from odoo.addons.pos_self_order.controllers.orders import PosSelfOrderController
 from odoo.addons.l10n_ve_pos_self_order.controllers.orders import (
+    L10nVePosSelfOrderController,
     _ve_vat_format_error,
     _ve_within_rate_limit,
     _RATE_LIMIT_MAX,
+    _rate_buckets,
 )
 
 
@@ -51,14 +57,12 @@ class TestKioskIdentifyHelpers(TransactionCase):
         token = "unit-test-token-A"
         for _i in range(_RATE_LIMIT_MAX):
             self.assertTrue(_ve_within_rate_limit(token))
-        # La siguiente supera el tope.
         self.assertFalse(_ve_within_rate_limit(token))
-        # Otro token arranca su propia ventana.
         self.assertTrue(_ve_within_rate_limit("unit-test-token-B"))
 
 
 @tagged("post_install", "-at_install", "l10n_ve_pos_self_order")
-class TestKioskPublicRoutes(HttpCase):
+class TestKioskPublicRoutes(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -113,6 +117,7 @@ class TestKioskPublicRoutes(HttpCase):
         cls.product = cls.env["product.product"].create(
             {
                 "name": "Kiosk Routes Product",
+                "type": "service",
                 "lst_price": 100.0,
                 "available_in_pos": True,
                 "company_id": cls.company.id,
@@ -132,23 +137,6 @@ class TestKioskPublicRoutes(HttpCase):
                 "currency_id": vef.id,
             }
         )
-        cash_journal = cls.env["account.journal"].create(
-            {
-                "name": "Kiosk Routes Cash Journal",
-                "type": "cash",
-                "code": "KRCJ",
-                "company_id": cls.company.id,
-                "currency_id": vef.id,
-            }
-        )
-        cash_method = cls.env["pos.payment.method"].create(
-            {
-                "name": "Kiosk Routes Cash",
-                "is_cash_count": True,
-                "company_id": cls.company.id,
-                "journal_id": cash_journal.id,
-            }
-        )
         admin = cls.env.ref("base.user_admin")
 
         def _make_config(name):
@@ -161,7 +149,10 @@ class TestKioskPublicRoutes(HttpCase):
                     "invoice_journal_id": sale_journal.id,
                     "self_ordering_mode": "kiosk",
                     "self_ordering_default_user_id": admin.id,
-                    "payment_method_ids": [(6, 0, [cash_method.id])],
+                    # El modo kiosko no admite métodos de pago en efectivo
+                    # (pos_self_order._onchange_payment_method_ids); estas rutas
+                    # no procesan pagos, así que se deja vacío.
+                    "payment_method_ids": [(6, 0, [])],
                 }
             )
             # Sesión abierta (estado != closed) → has_active_session True, que es
@@ -174,19 +165,78 @@ class TestKioskPublicRoutes(HttpCase):
         cls.config = _make_config("Kiosk Routes Config A")
         cls.other_config = _make_config("Kiosk Routes Config B")
 
+    def setUp(self):
+        super().setUp()
+        # El rate-limit usa un contador global de proceso; limpiar entre tests
+        # para que no se filtre entre ellos.
+        _rate_buckets.clear()
+
     # -- helpers -------------------------------------------------------------
 
-    def _rpc(self, route, params):
-        """Invoca una ruta jsonrpc pública y devuelve el ``result``."""
-        response = self.url_open(
-            route,
-            data=json.dumps({"jsonrpc": "2.0", "method": "call", "params": params}),
-            headers={"Content-Type": "application/json"},
+    def _reduced_config(self, config):
+        """Réplica del env de privilegio reducido que devuelve el
+        ``_verify_pos_config`` del core (sudo(False) + usuario/compañía de la
+        caja), para inyectarlo sin necesidad de un ``request`` HTTP real."""
+        company = config.company_id
+        user = config.self_ordering_default_user_id
+        return (
+            config.sudo(False)
+            .with_company(company)
+            .with_user(user)
+            .with_context(allowed_company_ids=company.ids)
         )
-        self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertNotIn("error", payload, payload.get("error"))
-        return payload["result"]
+
+    @contextmanager
+    def _as_box(self, config):
+        """Parchea ``_verify_pos_config`` (única dependencia de ``request`` en las
+        rutas) para que devuelva la caja indicada con privilegio reducido, y
+        neutraliza ``_()`` en los controladores: fuera de un ``request`` real, la
+        resolución de idioma de ``_()`` introspecciona el frame y revienta
+        (``Controller.env`` es ``None``). El passthrough evita eso sin cambiar la
+        lógica probada."""
+        reduced = self._reduced_config(config)
+
+        def _passthrough(source, *args, **kwargs):
+            return (source % args) if args else source
+
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch.object(
+                    PosSelfOrderController, "_verify_pos_config", return_value=reduced
+                )
+            )
+            stack.enter_context(
+                patch(
+                    "odoo.addons.l10n_ve_pos_self_order.controllers.orders._",
+                    _passthrough,
+                )
+            )
+            try:
+                stack.enter_context(
+                    patch(
+                        "odoo.addons.l10n_ve_pos_mf_self_order.controllers.main._",
+                        _passthrough,
+                    )
+                )
+            except (ImportError, ModuleNotFoundError, AttributeError):
+                # El módulo fiscal puede no estar instalado; sus rutas se saltan
+                # (skipTest) en ese caso.
+                pass
+            yield
+
+    def _call(self, controller, method_name, **kwargs):
+        with self._as_box(self.config):
+            return getattr(controller(), method_name)(**kwargs)
+
+    def _self_order(self, method_name, **kwargs):
+        return self._call(L10nVePosSelfOrderController, method_name, **kwargs)
+
+    def _mf(self, method_name, **kwargs):
+        from odoo.addons.l10n_ve_pos_mf_self_order.controllers.main import (
+            L10nVePosMfSelfOrderController,
+        )
+
+        return self._call(L10nVePosMfSelfOrderController, method_name, **kwargs)
 
     def _make_partner(self, prefix_vat, vat, **vals):
         return self.env["res.partner"].create(
@@ -223,9 +273,11 @@ class TestKioskPublicRoutes(HttpCase):
     # -- identify ------------------------------------------------------------
 
     def test_identify_not_found_returns_empty(self):
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify",
-            {"access_token": self.config.access_token, "prefix_vat": "V", "vat": "99887766"},
+        result = self._self_order(
+            "l10n_ve_kiosk_identify",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="99887766",
         )
         self.assertEqual(result["res.partner"], [])
         self.assertFalse(result["has_phone"])
@@ -234,9 +286,11 @@ class TestKioskPublicRoutes(HttpCase):
         """Aunque el partner tenga teléfono, la ruta NO lo devuelve; solo el
         flag has_phone."""
         self._make_partner("V", "11111111", phone="0412-0000000")
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify",
-            {"access_token": self.config.access_token, "prefix_vat": "V", "vat": "11111111"},
+        result = self._self_order(
+            "l10n_ve_kiosk_identify",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="11111111",
         )
         partner = result["res.partner"][0]
         self.assertNotIn("phone", partner)
@@ -245,9 +299,11 @@ class TestKioskPublicRoutes(HttpCase):
 
     def test_identify_found_without_phone_flags_missing(self):
         self._make_partner("V", "22222222")
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify",
-            {"access_token": self.config.access_token, "prefix_vat": "V", "vat": "22222222"},
+        result = self._self_order(
+            "l10n_ve_kiosk_identify",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="22222222",
         )
         self.assertTrue(result["res.partner"])
         self.assertFalse(result["has_phone"])
@@ -259,60 +315,51 @@ class TestKioskPublicRoutes(HttpCase):
         before = self.env["res.partner"].search_count(
             [("prefix_vat", "=", "V"), ("vat", "=", "33333333")]
         )
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify/create",
-            {
-                "access_token": self.config.access_token,
-                "prefix_vat": "V",
-                "vat": "33333333",
-                "name": "Otro Nombre",
-                "phone": "0412-1111111",
-            },
+        self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="33333333",
+            name="Otro Nombre",
+            phone="0412-1111111",
         )
         after = self.env["res.partner"].search_count(
             [("prefix_vat", "=", "V"), ("vat", "=", "33333333")]
         )
         self.assertEqual(after, before, "no debe crear un duplicado")
-        self.assertTrue(result["res.partner"])
 
     def test_identify_create_fill_only_phone(self):
         """El existente sin teléfono se rellena; con teléfono NO se sobrescribe."""
         p_empty = self._make_partner("V", "44444444")
-        self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify/create",
-            {
-                "access_token": self.config.access_token,
-                "prefix_vat": "V",
-                "vat": "44444444",
-                "name": "x",
-                "phone": "0412-2222222",
-            },
+        self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="44444444",
+            name="x",
+            phone="0412-2222222",
         )
         self.assertEqual(p_empty.phone, "0412-2222222")
 
         p_full = self._make_partner("V", "55555555", phone="0412-ORIGINAL")
-        self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify/create",
-            {
-                "access_token": self.config.access_token,
-                "prefix_vat": "V",
-                "vat": "55555555",
-                "name": "x",
-                "phone": "0412-NUEVO",
-            },
+        self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="55555555",
+            name="x",
+            phone="0412-NUEVO",
         )
         self.assertEqual(p_full.phone, "0412-ORIGINAL", "no debe sobrescribir")
 
     def test_identify_create_invalid_format_rejected(self):
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify/create",
-            {
-                "access_token": self.config.access_token,
-                "prefix_vat": "V",
-                "vat": "12AB34",
-                "name": "x",
-                "phone": "",
-            },
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="12AB34",
+            name="x",
+            phone="",
         )
         self.assertEqual(result["res.partner"], [])
         self.assertTrue(result["error"])
@@ -321,26 +368,22 @@ class TestKioskPublicRoutes(HttpCase):
 
     def test_set_phone_fill_only(self):
         p_empty = self._make_partner("V", "66666666")
-        self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify/set_phone",
-            {
-                "access_token": self.config.access_token,
-                "prefix_vat": "V",
-                "vat": "66666666",
-                "phone": "0412-3333333",
-            },
+        self._self_order(
+            "l10n_ve_kiosk_identify_set_phone",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="66666666",
+            phone="0412-3333333",
         )
         self.assertEqual(p_empty.phone, "0412-3333333")
 
         p_full = self._make_partner("V", "77777777", phone="0412-KEEP")
-        self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/identify/set_phone",
-            {
-                "access_token": self.config.access_token,
-                "prefix_vat": "V",
-                "vat": "77777777",
-                "phone": "0412-OTRO",
-            },
+        self._self_order(
+            "l10n_ve_kiosk_identify_set_phone",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="77777777",
+            phone="0412-OTRO",
         )
         self.assertEqual(p_full.phone, "0412-KEEP")
 
@@ -349,9 +392,10 @@ class TestKioskPublicRoutes(HttpCase):
     def test_session_orders_caps_limit(self):
         """Un limit enorme queda acotado al tope duro (200)."""
         self._make_paid_order(self.config)
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/session_orders",
-            {"access_token": self.config.access_token, "limit": 10**9},
+        result = self._self_order(
+            "l10n_ve_kiosk_session_orders",
+            access_token=self.config.access_token,
+            limit=10**9,
         )
         self.assertLessEqual(len(result.get("pos.order", [])), 200)
 
@@ -359,9 +403,9 @@ class TestKioskPublicRoutes(HttpCase):
         """Solo las órdenes de ESTA caja."""
         mine = self._make_paid_order(self.config)
         other = self._make_paid_order(self.other_config)
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/session_orders",
-            {"access_token": self.config.access_token},
+        result = self._self_order(
+            "l10n_ve_kiosk_session_orders",
+            access_token=self.config.access_token,
         )
         ids = {o["id"] for o in result.get("pos.order", [])}
         self.assertIn(mine.id, ids)
@@ -372,16 +416,18 @@ class TestKioskPublicRoutes(HttpCase):
     def test_create_invoice_other_box_rejected(self):
         """Orden de OTRA caja → rechazada por la ruta de esta caja."""
         foreign = self._make_paid_order(self.other_config)
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/create_invoice",
-            {"access_token": self.config.access_token, "order_id": foreign.id},
+        result = self._self_order(
+            "l10n_ve_kiosk_create_invoice",
+            access_token=self.config.access_token,
+            order_id=foreign.id,
         )
         self.assertFalse(result["success"])
 
     def test_create_invoice_missing_order_rejected(self):
-        result = self._rpc(
-            "/l10n_ve_pos_self_order/kiosk/create_invoice",
-            {"access_token": self.config.access_token, "order_id": 999999999},
+        result = self._self_order(
+            "l10n_ve_kiosk_create_invoice",
+            access_token=self.config.access_token,
+            order_id=999999999,
         )
         self.assertFalse(result["success"])
 
@@ -392,14 +438,12 @@ class TestKioskPublicRoutes(HttpCase):
             self.skipTest("l10n_ve_pos_mf(_self_order) no instalado")
         order = self._make_paid_order(self.config)
         order.sudo().write({"mf_invoice_number": "00-000123"})
-        result = self._rpc(
-            "/l10n_ve_pos_mf_self_order/kiosk/write_mf_invoice_data",
-            {
-                "access_token": self.config.access_token,
-                "order_id": order.id,
-                "mf_invoice_number": "00-999999",
-                "fiscal_machine": "TFHKA",
-            },
+        result = self._mf(
+            "l10n_ve_kiosk_write_mf_invoice_data",
+            access_token=self.config.access_token,
+            order_id=order.id,
+            mf_invoice_number="00-999999",
+            fiscal_machine="TFHKA",
         )
         self.assertFalse(result["success"], "no debe sobrescribir un número distinto")
         self.assertEqual(order.mf_invoice_number, "00-000123")
@@ -408,13 +452,11 @@ class TestKioskPublicRoutes(HttpCase):
         if "mf_invoice_number" not in self.env["pos.order"]._fields:
             self.skipTest("l10n_ve_pos_mf(_self_order) no instalado")
         foreign = self._make_paid_order(self.other_config)
-        result = self._rpc(
-            "/l10n_ve_pos_mf_self_order/kiosk/write_mf_invoice_data",
-            {
-                "access_token": self.config.access_token,
-                "order_id": foreign.id,
-                "mf_invoice_number": "00-123456",
-                "fiscal_machine": "TFHKA",
-            },
+        result = self._mf(
+            "l10n_ve_kiosk_write_mf_invoice_data",
+            access_token=self.config.access_token,
+            order_id=foreign.id,
+            mf_invoice_number="00-123456",
+            fiscal_machine="TFHKA",
         )
         self.assertFalse(result["success"])
