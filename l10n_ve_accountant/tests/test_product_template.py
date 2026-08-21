@@ -30,6 +30,9 @@ class TestProductTemplate(TransactionCase):
             "type_tax_use": "purchase", "company_id": self.company.id,
             "tax_group_id": self.tax_group.id,
         })
+        # The "more than one tax" rule only applies to companies that opted
+        # into it; the "zero taxes with no default" rule is unconditional.
+        self.company.unique_tax = True
 
     # ═══════════════════════════════════════════════════════════════
     # Positive tests — product creation / write should succeed
@@ -202,3 +205,62 @@ class TestProductTemplate(TransactionCase):
         })
         with self.assertRaises(UserError):
             product.write({"taxes_id": [(3, self.tax_sale_1.id)]})
+
+    # ═══════════════════════════════════════════════════════════════
+    # Regression tests — unique_tax gating and False/None write bypass
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_14_two_sale_taxes_allowed_when_unique_tax_disabled(self):
+        """Sin unique_tax, 2 sale taxes distintos -> OK (no bloquea a companias que no usan la opcion)"""
+        self.company.unique_tax = False
+        product = self.env["product.product"].create({
+            "name": "Test Two Sale Taxes Allowed",
+            "type": "service",
+            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+            "supplier_taxes_id": [(6, 0, [self.tax_purchase.id])],
+        })
+        self.assertEqual(len(product.taxes_id), 2)
+
+    def test_15_write_false_does_not_bypass_validation(self):
+        """write({'taxes_id': False}) debe re-evaluarse contra el estado vacio resultante, no contra el estado previo"""
+        self.company.write({
+            "account_sale_tax_id": self.tax_sale_1.id,
+        })
+        product = self.env["product.product"].create({
+            "name": "Test Write False",
+            "type": "service",
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        product.write({"taxes_id": False})
+        # With a company default configured, clearing the field auto-fills it
+        # instead of silently leaving the product without a sales tax.
+        self.assertEqual(len(product.taxes_id), 1)
+        self.assertEqual(product.taxes_id.id, self.tax_sale_1.id)
+
+        self.company.write({"account_sale_tax_id": False})
+        with self.assertRaises(UserError):
+            product.write({"taxes_id": False})
+
+    def test_16_write_governed_by_record_company_not_active_company(self):
+        """El unique_tax que aplica en un write es el de la compania del
+        producto (records.company_id), no el de la compania activa del
+        usuario que ejecuta la operacion.
+        """
+        company_b = self.env["res.company"].create({
+            "name": "Company B",
+            "unique_tax": False,
+        })
+        product = self.env["product.product"].with_company(self.company).create({
+            "name": "Test Multi-Company Governance",
+            "type": "service",
+            "company_id": self.company.id,
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        # Acting under Company B (unique_tax=False) should not bypass the
+        # unique_tax=True rule of the product's own company (Company A).
+        with self.assertRaises(UserError):
+            product.with_company(company_b).write({
+                "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+            })
