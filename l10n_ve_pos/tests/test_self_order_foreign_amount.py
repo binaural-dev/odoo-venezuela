@@ -55,6 +55,18 @@ class TestSelfOrderForeignAmount(TransactionCase):
                 "company_id": cls.company.id,
                 "currency_id": cls.foreign_currency.id,
                 "journal_id": cls.sale_journal.id,
+                # invoice_journal_id has the SAME ambient-company default
+                # pitfall as payment_method_ids below
+                # (point_of_sale/models/pos_config.py:90-95) — left unset
+                # it silently pulls in a journal from a DIFFERENT company
+                # and _check_company() rejects the whole record.
+                "invoice_journal_id": cls.sale_journal.id,
+                # payment_method_ids' default is computed from
+                # self.env.company (ambient), not from company_id above
+                # (point_of_sale/models/pos_config.py:170) — left unset it
+                # pulls in a payment method from a DIFFERENT company and
+                # trips _check_company_payment.
+                "payment_method_ids": [(6, 0, [])],
             }
         )
 
@@ -133,6 +145,10 @@ class TestSelfOrderForeignAmount(TransactionCase):
                 "name": "No Foreign Config",
                 "company_id": no_foreign_company.id,
                 "journal_id": journal.id,
+                # Same invoice_journal_id/payment_method_ids ambient-company
+                # default pitfall as setUpClass above.
+                "invoice_journal_id": journal.id,
+                "payment_method_ids": [(6, 0, [])],
             }
         )
         session = self.env["pos.session"].create(
