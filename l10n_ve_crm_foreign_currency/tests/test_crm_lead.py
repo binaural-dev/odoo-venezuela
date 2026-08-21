@@ -1,6 +1,6 @@
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 
 @tagged("post_install", "-at_install", "l10n_ve_crm_foreign_currency")
@@ -250,3 +250,221 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "recurring_revenue_foreign": 10.0,
         })
         self.assertEqual(lead.recurring_revenue_foreign, 10.0)
+
+    # ------------------------------------------------------------------
+    # expected_revenue / recurring_revenue: de solo lectura (E2)
+    # ------------------------------------------------------------------
+
+    def test_13_inverse_expected_revenue_raises_usererror(self):
+        """Escribir directo a expected_revenue (moneda de compañía) debe
+        rechazarse: el campo real es expected_revenue_foreign."""
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad USD",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 100.0,
+        })
+        with self.assertRaises(UserError):
+            lead.write({"expected_revenue": 50000.0})
+
+    def test_14_inverse_recurring_revenue_raises_usererror(self):
+        """Escribir directo a recurring_revenue (moneda de compañía) debe
+        rechazarse: el campo real es recurring_revenue_foreign."""
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad USD",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 100.0,
+        })
+        with self.assertRaises(UserError):
+            lead.write({"recurring_revenue": 5000.0})
+
+    # ------------------------------------------------------------------
+    # _round_foreign sin moneda comercial configurada
+    # ------------------------------------------------------------------
+
+    def test_15_round_foreign_without_foreign_currency_returns_amount_unchanged(self):
+        lead = self.env["crm.lead"].new({"name": "Sin moneda", "company_id": self.company.id})
+        lead.foreign_currency_id = False
+        self.assertEqual(lead._round_foreign(123.456), 123.456)
+
+    # ------------------------------------------------------------------
+    # Exenciones del constraint de monto > 0 (E1)
+    # ------------------------------------------------------------------
+
+    def test_16_lead_type_is_exempt_from_amount_check(self):
+        """Un lead (type='lead', no oportunidad) no requiere monto > 0."""
+        lead = self.env["crm.lead"].create({
+            "name": "Lead sin monto",
+            "company_id": self.company.id,
+            "type": "lead",
+            "expected_revenue_foreign": 0.0,
+        })
+        self.assertEqual(lead.type, "lead")
+
+    def test_17_mail_gateway_context_is_exempt_from_amount_check(self):
+        """Un registro creado desde la pasarela de correo/formulario web
+        (contexto mail_create_nosubscribe/mail_create_nolog) no requiere
+        monto > 0, aunque resuelva a type='opportunity'."""
+        lead = self.env["crm.lead"].with_context(mail_create_nosubscribe=True).create({
+            "name": "Oportunidad desde el gateway",
+            "company_id": self.company.id,
+            "type": "opportunity",
+            "expected_revenue_foreign": 0.0,
+        })
+        self.assertEqual(lead.expected_revenue_foreign, 0.0)
+
+    # ------------------------------------------------------------------
+    # Constraints: se saltan (continue) cuando no hay moneda comercial,
+    # incluso para una oportunidad real (no exenta por tipo/contexto)
+    # ------------------------------------------------------------------
+
+    def test_18_expected_revenue_check_skipped_without_foreign_currency(self):
+        company_without_foreign_currency = self.env["res.company"].create({
+            "name": "Test Company Sin Moneda Alterna 2",
+            "currency_id": self.vef.id,
+            "foreign_currency_id": self.usd.id,
+        })
+        self.env.cr.execute(
+            "UPDATE res_company SET foreign_currency_id = NULL WHERE id = %s",
+            (company_without_foreign_currency.id,),
+        )
+        company_without_foreign_currency.invalidate_recordset()
+        # No debe lanzar aunque el monto sea 0 y sea una oportunidad real,
+        # porque no hay moneda comercial a la que exigirle el monto.
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad sin moneda alterna",
+            "company_id": company_without_foreign_currency.id,
+            "type": "opportunity",
+            "expected_revenue_foreign": 0.0,
+        })
+        self.assertFalse(lead.foreign_currency_id)
+
+    def test_19_recurring_revenue_check_skipped_without_foreign_currency(self):
+        company_without_foreign_currency = self.env["res.company"].create({
+            "name": "Test Company Sin Moneda Alterna 3",
+            "currency_id": self.vef.id,
+            "foreign_currency_id": self.usd.id,
+        })
+        self.env.cr.execute(
+            "UPDATE res_company SET foreign_currency_id = NULL WHERE id = %s",
+            (company_without_foreign_currency.id,),
+        )
+        company_without_foreign_currency.invalidate_recordset()
+        plan = self.env["crm.recurring.plan"].create({
+            "name": "Mensual Test 2",
+            "number_of_months": 1,
+        })
+        # No debe lanzar aunque haya un plan recurrente y el monto sea 0,
+        # porque no hay moneda comercial a la que exigirle el monto.
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad recurrente sin moneda alterna",
+            "company_id": company_without_foreign_currency.id,
+            "type": "opportunity",
+            "expected_revenue_foreign": 0.0,
+            "recurring_plan": plan.id,
+            "recurring_revenue_foreign": 0.0,
+        })
+        self.assertFalse(lead.foreign_currency_id)
+
+    # ------------------------------------------------------------------
+    # copy_data (E10)
+    # ------------------------------------------------------------------
+
+    def test_20_copy_data_neutralizes_recurring_without_group(self):
+        """Sin crm.group_use_recurring_revenues, copiar una oportunidad debe
+        neutralizar recurring_revenue_foreign (y no romper por el
+        UserError de _inverse_recurring_revenue, ver E2/E10)."""
+        plan = self.env["crm.recurring.plan"].create({
+            "name": "Mensual Test 3",
+            "number_of_months": 1,
+        })
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad recurrente original",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 100.0,
+            "recurring_plan": plan.id,
+            "recurring_revenue_foreign": 10.0,
+        })
+        group_use_recurring_revenues = self.env.ref("crm.group_use_recurring_revenues")
+        self.env.user.write({"group_ids": [(3, group_use_recurring_revenues.id)]})
+        default = lead.copy_data()[0]
+        self.assertEqual(default.get("recurring_revenue_foreign"), 0)
+
+    # ------------------------------------------------------------------
+    # _get_rainbowman_message (E9): usa expected_revenue_foreign (congelado)
+    # en ambos lados de la comparación, no expected_revenue (recalculado).
+    # ------------------------------------------------------------------
+
+    def test_21_rainbowman_no_user_id_returns_false(self):
+        lead = self.env["crm.lead"].create({
+            "name": "Sin vendedor",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 100.0,
+            "user_id": False,
+        })
+        self.assertFalse(lead._get_rainbowman_message())
+
+    def test_22_rainbowman_default_false_when_nothing_matches(self):
+        """Una oportunidad recién creada (no cerrada) no dispara ningún
+        mensaje: cae al False final."""
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad abierta",
+            "company_id": self.company.id,
+            "user_id": self.env.user.id,
+            "expected_revenue_foreign": 100.0,
+        })
+        self.assertFalse(lead._get_rainbowman_message())
+
+    def test_23_rainbowman_first_deal_of_year_returns_message(self):
+        lead = self.env["crm.lead"].create({
+            "name": "Primer cierre del año",
+            "company_id": self.company.id,
+            "user_id": self.env.user.id,
+            "type": "opportunity",
+            "expected_revenue_foreign": 100.0,
+        })
+        lead.write({"probability": 100, "date_closed": fields.Datetime.now()})
+        message = lead._get_rainbowman_message()
+        self.assertTrue(message)
+
+    def test_24_rainbowman_team_record_uses_expected_revenue_foreign_not_recalculated(self):
+        """El monto histórico usado para comparar "récord de equipo" debe
+        ser expected_revenue_foreign (congelado), no expected_revenue
+        (recalculado a la tasa vigente) — así una devaluación entre el
+        cierre anterior y el actual no dispara falsos "récords"."""
+        team = self.env["crm.team"].create({
+            "name": "Equipo Rainbowman",
+            "company_id": self.company.id,
+        })
+        older_lead = self.env["crm.lead"].create({
+            "name": "Cierre anterior del equipo",
+            "company_id": self.company.id,
+            "team_id": team.id,
+            "user_id": self.env.user.id,
+            "type": "opportunity",
+            "expected_revenue_foreign": 1000.0,
+        })
+        older_lead.write({"probability": 100, "date_closed": fields.Datetime.now()})
+
+        # Devaluación fuerte después del cierre anterior: si el método
+        # comparara expected_revenue (recalculado), el segundo cierre —con
+        # menos dólares pero muchos más VEF por la devaluación— se leería
+        # como "récord", cuando en moneda comercial es menor.
+        self._create_rate(self.usd, self.today, 0.0002)
+
+        newer_lead = self.env["crm.lead"].create({
+            "name": "Cierre actual del equipo, monto menor en USD",
+            "company_id": self.company.id,
+            "team_id": team.id,
+            "user_id": self.env.user.id,
+            "type": "opportunity",
+            "expected_revenue_foreign": 500.0,
+        })
+        newer_lead.write({"probability": 100, "date_closed": fields.Datetime.now()})
+
+        message = newer_lead._get_rainbowman_message()
+        self.assertNotEqual(
+            message,
+            "Boom! Team record for the past 30 days.",
+            "500 USD no es récord frente a 1000 USD, aunque en VEF (con la "
+            "devaluación) sea un monto mayor.",
+        )
