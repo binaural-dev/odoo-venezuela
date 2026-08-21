@@ -211,6 +211,37 @@ class TestCrmLeadForeignCurrency(TransactionCase):
         self.assertEqual(lead.type, "opportunity")
         self.assertEqual(lead.expected_revenue_foreign, 0.0)
 
+    def test_08c_merge_with_existing_opportunity_with_recurring_plan(self):
+        """
+        Reporte real: "Fusionar con oportunidades existentes" al convertir
+        un Lead sin campos de moneda comercial, contra una oportunidad
+        destino que ya tiene recurring_plan. merge_opportunity() escribe
+        expected_revenue/recurring_revenue (core) sobre la oportunidad
+        resultante; esos campos son de solo lectura en este módulo, así
+        que el merge debe redirigir esa escritura a los campos en moneda
+        comercial en vez de romperse con UserError.
+        """
+        plan = self.env["crm.recurring.plan"].create({
+            "name": "Mensual Test Merge",
+            "number_of_months": 1,
+        })
+        existing_opportunity = self.env["crm.lead"].create({
+            "name": "Oportunidad existente",
+            "company_id": self.company.id,
+            "type": "opportunity",
+            "expected_revenue_foreign": 200.0,
+            "recurring_plan": plan.id,
+            "recurring_revenue_foreign": 50.0,
+        })
+        lead = self.env["crm.lead"].create({
+            "name": "Lead a fusionar",
+            "company_id": self.company.id,
+            "type": "lead",
+            "expected_revenue_foreign": 0.0,
+        })
+        result = (lead | existing_opportunity).merge_opportunity()
+        self.assertEqual(result.type, "opportunity")
+
     # ------------------------------------------------------------------
     # recurring_revenue_foreign: 0 permitido sin recurring_plan, negativo
     # nunca permitido, y >0 obligatorio solo si hay un plan recurrente.
