@@ -164,8 +164,10 @@ class PosSession(models.Model):
                 )
             except KeyError as e:
                 raise ValueError(
-                    _("The category %s does not belong to this company.")
-                    % category["parent_id"][1]
+                    _(
+                        "The category %s does not belong to this company.",
+                        category["parent_id"][1],
+                    )
                 ) from e
 
         return categories
@@ -195,8 +197,10 @@ class PosSession(models.Model):
                 product["categ"] = product_category_by_id[categ_id]
             else:
                 raise ValueError(
-                    _("The category %s does not belong to this company.")
-                    % product["categ_id"][1]
+                    _(
+                        "The category %s does not belong to this company.",
+                        product["categ_id"][1],
+                    )
                 )
 
             product["image_128"] = bool(product["image_128"])
@@ -561,12 +565,10 @@ class PosSession(models.Model):
             raise ValidationError(
                 _(
                     "No valid foreign inverse rate was found for POS session %(session)s. "
-                    "Check exchange rates for company %(company)s."
+                    "Check exchange rates for company %(company)s.",
+                    session=self.name,
+                    company=self.company_id.name,
                 )
-                % {
-                    "session": self.name,
-                    "company": self.company_id.name,
-                }
             )
 
         return foreign_rate, foreign_inverse_rate
@@ -587,7 +589,7 @@ class PosSession(models.Model):
             'journal_id': payment_method.journal_id.id,
             'force_outstanding_account_id': outstanding_account.id,
             'destination_account_id':  destination_account.id,
-            'ref': _('Combine %s POS payments from %s', payment_method.name, self.name),
+            'ref': _('Combine %(method)s POS payments from %(session)s', method=payment_method.name, session=self.name),
             'pos_payment_method_id': payment_method.id,
             'pos_session_id': self.id,
             'company_id': self.company_id.id,
@@ -650,7 +652,7 @@ class PosSession(models.Model):
             'journal_id': payment_method.journal_id.id,
             'force_outstanding_account_id': outstanding_account.id,
             'destination_account_id': destination_account.id,
-            'ref': _('%s POS payment of %s in %s', payment_method.name, payment.partner_id.display_name, self.name),
+            'ref': _('%(method)s POS payment of %(partner)s in %(session)s', method=payment_method.name, partner=payment.partner_id.display_name, session=self.name),
             'pos_payment_method_id': payment_method.id,
             'pos_session_id': self.id,
             'company_id': self.company_id.id,
@@ -702,7 +704,7 @@ class PosSession(models.Model):
         if not line_ids:
             return move
             
-        move_ref_value = _("Cross Move per Operation - Session: %s") % self.name
+        move_ref_value = _("Cross Move per Operation - Session: %s", self.name)
         move = self.env["account.move"].create(
             {
                 "name": move_name_value,
@@ -752,7 +754,7 @@ class PosSession(models.Model):
         foreign_rate = amounts["foreign_rate"]
 
         move_name_value = self.name
-        move_ref_value = _("Unique PoS Cross Move - Sesión: %s") % self.name
+        move_ref_value = _("Unique PoS Cross Move - Sesión: %s", self.name)
 
         move = self.env["account.move"].create(
             {
