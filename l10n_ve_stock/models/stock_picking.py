@@ -260,10 +260,15 @@ class StockPicking(models.Model):
     def button_validate(self):
         if self.env.company.not_allow_negative_stock_movement:
             res = super(StockPicking, self).button_validate()
-            if isinstance(res, dict) and res.get('res_model') == 'stock.backorder.confirmation':
+            if isinstance(res, dict):
                 return res
-            else:
-                self._check_stock_availability_for_pickings()
+            self._check_stock_availability_for_pickings()
+            if self.env.company.use_alternate_locations:
+                self._update_alter_location_lines_on_receive()
+            return res
+
+        if self.env.company.use_alternate_locations:
+            self._update_alter_location_lines_on_receive()
         return super().button_validate()
         
     def _check_stock_availability_for_pickings(self):
@@ -313,3 +318,45 @@ class StockPicking(models.Model):
                     "Insufficient stock:\n%s\n\nAdjust quantitys or request stock for this location."
                 ) % "\n".join(stock_msg)
                 raise ValidationError(error_msg)
+
+    def _update_alter_location_lines_on_receive(self):
+        if self.picking_type_id.code != "incoming":
+            return
+        alter_location_model = self.env["stock.picking.alter.location"]
+        for picking in self:
+            for move_line in picking.move_line_ids:
+                if not move_line.product_id.is_storable:
+                    continue
+                qty_done = move_line.quantity
+                if qty_done <= 0:
+                    continue
+                dest_location = move_line.location_dest_id
+                warehouse = self.env["stock.warehouse"].search(
+                    [("lot_stock_id", "in", dest_location.ids)], limit=1
+                )
+                if not warehouse:
+                    warehouse = self.env["stock.warehouse"].search(
+                        [("view_location_id", "in", dest_location.ids)], limit=1
+                    )
+                if not warehouse:
+                    parent = dest_location
+                    while parent:
+                        warehouse = self.env["stock.warehouse"].search(
+                            [("lot_stock_id", "=", parent.id)], limit=1
+                        )
+                        if warehouse:
+                            break
+                        parent = parent.location_id
+                if not warehouse:
+                    continue
+                alter_location = alter_location_model.search(
+                    [
+                        ("product_id", "=", move_line.product_id.id),
+                        ("warehouse_id", "=", warehouse.id),
+                    ],
+                    limit=1,
+                )
+                if not alter_location or not alter_location.pick_location:
+                    continue
+
+                alter_location.action_receive_quantity(warehouse.lot_stock_id.id, qty_done)
