@@ -1,6 +1,7 @@
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 from odoo.exceptions import ValidationError
+from odoo.tools import float_compare, float_round
 from lxml import etree
 import ast
 
@@ -526,4 +527,149 @@ class TestAccountant(TransactionCase):
         )
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]['id'], invoice.id)
+
+    # ═══════════════════════════════════════════════════════════════
+    # Ticket 14217 - impuesto incluido en el precio no debe duplicarse
+    # ni inflarse en la moneda alterna (Bs); regresion portada desde
+    # jumpi-rides/odoo-venezuela@56a44f0b9. El disparador es la rama
+    # "is_usd_base" de _compute_foreign_subtotal (moneda nativa de la
+    # compañía = USD, ver setUp), la misma que aquí sigue tasando
+    # foreign_price directamente con tax_ids.compute_all.
+    # ═══════════════════════════════════════════════════════════════
+
+    def _create_invoice_with_rate(self, price_unit, taxes, rate, quantity=1.0):
+        return self.env['account.move'].create({
+            'move_type': 'out_invoice',
+            'partner_id': self.partner.id,
+            'journal_id': self.sale_journal.id,
+            'date': fields.Date.today(),
+            'invoice_date': fields.Date.today(),
+            'foreign_currency_id': self.currency_vef.id,
+            'manually_set_rate': True,
+            'foreign_rate': 1 / rate,
+            'foreign_inverse_rate': rate,
+            'invoice_line_ids': [
+                Command.create({
+                    'product_id': self.product.id,
+                    'quantity': quantity,
+                    'price_unit': price_unit,
+                    'account_id': self.account_product.id,
+                    'tax_ids': [Command.set(taxes.ids)],
+                })
+            ],
+        })
+
+    def _tax_price_included(self, amount_type='percent'):
+        return self.env['account.tax'].create({
+            'name': 'IVA 16%% incluido %s' % amount_type,
+            'amount': 16,
+            'amount_type': amount_type,
+            'type_tax_use': 'sale',
+            'price_include': True,
+            'company_id': self.company.id,
+            'country_id': self.country_ve.id,
+            'tax_group_id': self.tax_group_iva.id,
+            'invoice_repartition_line_ids': [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0,
+                        'account_id': self.acc_tax.id}),
+            ],
+            'refund_repartition_line_ids': [
+                (0, 0, {'repartition_type': 'base', 'factor_percent': 100.0}),
+                (0, 0, {'repartition_type': 'tax', 'factor_percent': 100.0,
+                        'account_id': self.acc_tax.id}),
+            ],
+        })
+
+    def _assert_foreign_equal(self, amount, expected, msg):
+        """Compara importes con el factor de redondeo de la moneda alterna."""
+        rounding = self.currency_vef.rounding
+        self.assertEqual(
+            0,
+            float_compare(amount, expected, precision_rounding=rounding),
+            "%s (obtenido %s, esperado %s)" % (msg, amount, expected),
+        )
+
+    def test_14217_foreign_total_matches_price_times_quantity(self):
+        """Con impuesto incluido, total alterno = precio alterno x cantidad.
+
+        El impuesto ya viene dentro del precio, así que el total alterno no
+        puede desviarse del precio alterno bruto por la cantidad.
+        """
+        tax_included = self._tax_price_included('division')
+        rate = 756.7083
+
+        for quantity in (1.0, 2.0, 3.0, 7.0):
+            move = self._create_invoice_with_rate(
+                3.60, tax_included, rate, quantity=quantity
+            )
+            line = move.invoice_line_ids
+            expected = float_round(
+                line.foreign_price * quantity,
+                precision_rounding=self.currency_vef.rounding,
+            )
+            self._assert_foreign_equal(
+                line.foreign_price_total,
+                expected,
+                "cantidad %s: el total alterno debe ser el precio alterno "
+                "por la cantidad" % quantity,
+            )
+
+    def test_14217_foreign_price_uses_the_whole_rate(self):
+        """El precio alterno debe usar la tasa completa, sin truncarla."""
+        rate = 756.7083
+        move = self._create_invoice_with_rate(
+            3.60, self._tax_price_included('division'), rate
+        )
+        self.assertEqual(
+            0,
+            float_compare(move.foreign_inverse_rate, rate, precision_digits=6),
+            "la tasa usada como factor no debe perder decimales",
+        )
+        self._assert_foreign_equal(
+            move.invoice_line_ids.foreign_price,
+            float_round(3.60 * rate, precision_rounding=self.currency_vef.rounding),
+            "el precio alterno debe usar la tasa completa",
+        )
+
+    def test_14217_foreign_entry_is_balanced(self):
+        """Los apuntes contables deben cuadrar en moneda alterna."""
+        tax_included = self._tax_price_included('division')
+
+        for rate in (756.7083, 756.70786, 120.439, 732.5):
+            move = self._create_invoice_with_rate(
+                3.60, tax_included, rate, quantity=2.0
+            )
+            self._assert_foreign_equal(
+                sum(move.line_ids.mapped('foreign_debit')),
+                sum(move.line_ids.mapped('foreign_credit')),
+                "tasa %s: el asiento quedo descuadrado en Bs" % rate,
+            )
+
+    def test_14217_foreign_subtotal_with_price_included_tax(self):
+        """El impuesto incluido en el precio no debe duplicarse en moneda alterna.
+
+        Precio bruto 0,20 $ = 146,50 Bs con IVA 16% incluido: el subtotal
+        alterno debe ser la base neta (126,29 Bs) y el total alterno debe
+        mantenerse en 146,50 Bs, sin volver a recargar el IVA.
+        """
+        tax_included = self._tax_price_included()
+        rate = 732.5
+        move = self._create_invoice_with_rate(0.20, tax_included, rate)
+        line = move.invoice_line_ids
+
+        self.assertAlmostEqual(line.foreign_price, 146.50, places=2)
+        self.assertAlmostEqual(line.price_subtotal, 0.17, places=2)
+        self.assertAlmostEqual(line.foreign_subtotal, 126.29, places=2)
+        self.assertAlmostEqual(line.foreign_price_total, 146.50, places=2)
+
+    def test_14217_foreign_subtotal_with_price_excluded_tax(self):
+        """Con impuesto no incluido el total alterno sí suma el IVA por encima."""
+        rate = 732.5
+        move = self._create_invoice_with_rate(0.20, self.tax_iva16, rate)
+        line = move.invoice_line_ids
+
+        self.assertAlmostEqual(line.foreign_price, 146.50, places=2)
+        self.assertAlmostEqual(line.foreign_subtotal, 146.50, places=2)
+        self.assertAlmostEqual(line.foreign_price_total, 169.94, places=2)
         
