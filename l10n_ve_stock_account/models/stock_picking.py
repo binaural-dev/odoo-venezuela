@@ -63,7 +63,6 @@ class StockPicking(models.Model):
     )
 
     has_document = fields.Boolean(
-        string="Has Document",
         compute="_compute_has_document",
         help="Technical field to check if the related sale order has a document.",
     )
@@ -89,7 +88,6 @@ class StockPicking(models.Model):
     is_donation = fields.Boolean(related="sale_id.is_donation")
 
     is_dispatch_guide = fields.Boolean(
-        string="Is Dispatch Guide",
         tracking=True,
         store=True,
         readonly=False,
@@ -180,7 +178,6 @@ class StockPicking(models.Model):
             ("posted", "Posted"),
             ("cancel", "Canceled"),
         ],
-        string="Invoice State",
         compute="_compute_invoice_state",
     )
 
@@ -1261,7 +1258,7 @@ class StockPicking(models.Model):
             self._create_invoices_from_pickings()
 
     def _is_execution_day(self, config_type):
-        today = fields.Date.today()
+        today = fields.Date.context_today(self)
         last_day = (today.replace(day=1) + timedelta(days=32)).replace(
             day=1
         ) - timedelta(days=1)

@@ -48,6 +48,7 @@ class SaleOrder(models.Model):
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
+        digits=0,
         compute="_compute_rate",
         store=True,
         readonly=False,
@@ -359,7 +360,7 @@ class SaleOrder(models.Model):
             self.company_id.block_order_invoice_total_amount_overdue
         )
 
-        today_date = fields.Date.today()
+        today_date = fields.Date.context_today(self)
 
         invoice_ids = self.env["account.move"].search(
             [
@@ -513,7 +514,7 @@ class SaleOrder(models.Model):
     def cancel_order_after_date(self):
         orders = self.search(
             [
-                ("create_date", "<", fields.Date.today() - datetime.timedelta(days=1)),
+                ("create_date", "<", fields.Date.context_today(self) - datetime.timedelta(days=1)),
                 ("state", "not in", ["sale", "done", "cancel"]),
             ]
         )
