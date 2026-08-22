@@ -21,10 +21,10 @@ export class MfReportsWebSerialButtonComponent extends Component {
         this.notification = useService("notification");
 
         this.buttonLabels = {
-            report_x: _t("Imprimir Reporte X"),
-            report_z: _t("Imprimir Reporte Z"),
-            print_resume_date: _t("Impresion por rango de fecha"),
-            reprint_invoices_date: _t("Reimpresion facturas por fecha"),
+            report_x: _t("Reporte X (dia en curso)"),
+            report_z: _t("Reporte Z / Cierre diario (dia en curso)"),
+            memory_report: _t("Imprimir reporte de memoria fiscal"),
+            reprint_range: _t("Reimprimir documentos"),
         };
 
         this.state = useState({
@@ -148,6 +148,77 @@ export class MfReportsWebSerialButtonComponent extends Component {
         return { date_from, date_to };
     }
 
+    _getMemoryReportType() {
+        const type = this.props.record?.data?.memory_report_type;
+        return ["S", "A", "M"].includes(type) ? type : "S";
+    }
+
+    _normalizeNumber(rawValue) {
+        const cleaned = String(rawValue ?? "").replace(/[^0-9]/g, "");
+        if (!cleaned) {
+            return null;
+        }
+        const parsed = parseInt(cleaned, 10);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    // Mapa (tipo de documento) -> letra de comando de reimpresion segun el
+    // Manual de Protocolos y Comandos TFHKA V8.5.0. La familia "por fecha"
+    // usa minusculas (Tabla 40) y la "por numero" mayusculas (Tabla 39).
+    static REPRINT_DATE_CMD = {
+        invoice: "Rf",
+        refund: "Rc",
+        nofiscal: "Rt",
+        report_x: "Rx",
+        report_z: "Rz",
+        all: "Ra",
+    };
+
+    static REPRINT_NUMBER_CMD = {
+        invoice: "RF",
+        refund: "RC",
+        nofiscal: "RT",
+        report_x: "RX",
+        report_z: "RZ",
+        all: "R@",
+    };
+
+    async _runReprint(driver) {
+        const data = this.props.record?.data || {};
+        const scope = data.reprint_scope || "date";
+        const docType = data.reprint_doc_type || "report_z";
+
+        if (scope === "number") {
+            const from = this._normalizeNumber(data.number_from);
+            const to = this._normalizeNumber(data.number_to);
+            if (from === null || to === null) {
+                throw new Error(_t("Debes indicar un rango de numeros valido."));
+            }
+            if (to < from) {
+                throw new Error(
+                    _t("El numero hasta debe ser mayor o igual al numero desde.")
+                );
+            }
+            const command = MfReportsWebSerialButtonComponent.REPRINT_NUMBER_CMD[docType];
+            if (!command) {
+                throw new Error(_t("Tipo de documento a reimprimir invalido."));
+            }
+            const rangeFrom = String(from).padStart(7, "0");
+            const rangeTo = String(to).padStart(7, "0");
+            return await driver.sendCommand(`${command}${rangeFrom}${rangeTo}`, 60000);
+        }
+
+        // Por fecha: comando en minuscula + 7 digitos (0 + DDMMYY) por fecha.
+        const payload = await this._getDateRange();
+        const command = MfReportsWebSerialButtonComponent.REPRINT_DATE_CMD[docType];
+        if (!command) {
+            throw new Error(_t("Tipo de documento a reimprimir invalido."));
+        }
+        const rangeFrom = payload.date_from.padStart(7, "0");
+        const rangeTo = payload.date_to.padStart(7, "0");
+        return await driver.sendCommand(`${command}${rangeFrom}${rangeTo}`, 60000);
+    }
+
     async _syncReportZ(driver) {
         const s1Result = await driver._readS1Data();
         const counter = s1Result.data?.dailyClosureCounter;
@@ -179,7 +250,7 @@ export class MfReportsWebSerialButtonComponent extends Component {
             this.dialog.add(ConfirmationDialog, {
                 title: _t("Confirmar Reporte Z"),
                 body: _t(
-                    "El Reporte Z cerrara el dia fiscal actual. Esta accion es irreversible. Deseas continuar?"
+                    "El Reporte Z cierra el DIA FISCAL EN CURSO (hoy). No utiliza el rango de fechas seleccionado. Para reimprimir el Reporte Z de fechas pasadas usa la seccion 'Reimpresion de documentos' con el documento 'Reporte Z'. Esta accion es irreversible. Deseas continuar?"
                 ),
                 confirmLabel: _t("Imprimir Reporte Z"),
                 cancelLabel: _t("Cancelar"),
@@ -219,14 +290,15 @@ export class MfReportsWebSerialButtonComponent extends Component {
                 if (result.success) {
                     await this._syncReportZ(driver);
                 }
-            } else if (this.props.action === "print_resume_date") {
+            } else if (this.props.action === "memory_report") {
                 const payload = await this._getDateRange();
-                result = await driver.sendCommand(`I2S${payload.date_from}${payload.date_to}`, 30000);
-            } else if (this.props.action === "reprint_invoices_date") {
-                const payload = await this._getDateRange();
-                const from = payload.date_from.padStart(7, "0");
-                const to = payload.date_to.padStart(7, "0");
-                result = await driver.sendCommand(`Rf${from}${to}`, 60000);
+                const type = this._getMemoryReportType();
+                result = await driver.sendCommand(
+                    `I2${type}${payload.date_from}${payload.date_to}`,
+                    30000
+                );
+            } else if (this.props.action === "reprint_range") {
+                result = await this._runReprint(driver);
             } else {
                 this.notify(_t("Accion de maquina fiscal desconocida"), "danger", true);
                 return;

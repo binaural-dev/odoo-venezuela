@@ -38,24 +38,28 @@ The system SHALL allow printing fiscal documents (invoice, credit note, debit no
 - **THEN** `fields.Date.context_today(self)` is used (respects user timezone)
 
 ### Requirement: MF Reports Wizard
-The system SHALL provide a wizard accessible from the "Detalle de Ventas" menu for fiscal report operations.
+The system SHALL provide a wizard accessible from the "Detalle de Ventas" menu for fiscal report operations, organized in three clearly separated sections: current-day reports (X/Z), fiscal-memory report by date range, and document reprint from the audit memory. The `date_from`/`date_to` range applies ONLY to the last two sections; the current-day X/Z reports never use it.
 
-#### Scenario: Print Report X
-- **WHEN** the user clicks "Imprimir Reporte X" with the fiscal printer connected
-- **THEN** the driver sends the I0X command
+#### Scenario: Print Report X (current day only)
+- **WHEN** the user clicks "Reporte X (dia en curso)" with the fiscal printer connected
+- **THEN** the driver sends the I0X command for the current fiscal day
+- **AND** the selected date range is ignored (X is always the current day, per TFHKA protocol)
 
-#### Scenario: Print Report Z with backend sync
-- **WHEN** the user confirms "Imprimir Reporte Z" (explicit ConfirmationDialog)
-- **THEN** the driver sends I0Z, reads S1, and calls `account.move.report_z()` to assign Z+1 to all pending invoices of that machine
+#### Scenario: Print Report Z with backend sync (current day only)
+- **WHEN** the user confirms "Reporte Z / Cierre diario (dia en curso)" (explicit ConfirmationDialog)
+- **THEN** the driver sends I0Z (closes the current fiscal day), reads S1, and calls `account.move.report_z()` to assign Z+1 to all pending invoices of that machine
+- **AND** the confirmation dialog states that Z closes the current day (today), does NOT use the date range, and points to "Reimpresion de documentos" (doc type "Reporte Z") for past dates
 
-#### Scenario: Print resume by date range (I2S)
-- **WHEN** the user selects date_from/date_to and clicks "Impresion por rango de fecha"
-- **THEN** dates are read from the form record, formatted to DDMMYY, and the `I2S<from><to>` command is sent with 30s timeout
+#### Scenario: Fiscal-memory report by date range (I2)
+- **WHEN** the user selects date_from/date_to, picks `memory_report_type` (Resumen/Detallado/Mensual) and clicks "Imprimir reporte de memoria fiscal"
+- **THEN** dates are formatted to DDMMYY (6 digits) and the `I2<S|A|M><from><to>` command is sent with 30s timeout (Manual TFHKA V8.5.0, Tabla 61)
 - **AND** date_to >= date_from is validated
 
-#### Scenario: Reprint invoices by date range (Rf)
-- **WHEN** the user selects date_from/date_to and clicks "Reimpresion facturas por fecha"
-- **THEN** the `Rf<from><to>` command is sent with 60s timeout (7-digit zero-padded payload, parity with the v17 implementation)
+#### Scenario: Reprint documents by date or number range, with document-type selector
+- **WHEN** the user picks `reprint_scope` (date/number), `reprint_doc_type` (invoice/refund/nofiscal/report_x/report_z/all) and clicks "Reimprimir documentos"
+- **THEN** for scope "date" a lowercase command `Rf/Rc/Rt/Rx/Rz/Ra` is sent with the 7-digit zero-padded date range (`0`+DDMMYY, Tabla 40); for scope "number" an uppercase command `RF/RC/RT/RX/RZ/R@` is sent with the 7-digit zero-padded number range (Tabla 39), both with 60s timeout
+- **AND** `report_z` reprints the Z reports of the range (restores parity with the v17 `l10n_ve_iot_mf` reprint tool, lost in the WebSerial migration)
+- **AND** the range is validated (date_to >= date_from, or number_to >= number_from)
 - **AND** date parsing handles multiple formats: YYYY-MM-DD, DD/MM/YYYY, Date and Luxon DateTime objects
 
 ### Requirement: Fiscalizador (Debug Tool)
