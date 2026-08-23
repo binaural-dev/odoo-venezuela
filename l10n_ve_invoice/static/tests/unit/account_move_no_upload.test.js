@@ -9,7 +9,7 @@ defineAccountModels();
 // account_move_kanban_controller.js core), no depende del `create` de la
 // vista -- por eso las Notas de Crédito/Débito lo apagan por contexto
 // (`no_upload: True`, ver views/account_move.xml) y nuestro parche
-// (static/src/views/account_move_list, account_move_kanban) es lo único
+// (static/src/js/account_move_list, account_move_kanban) es lo único
 // que lo hace efectivo.
 
 test("no_upload=True oculta el botón Subir en la vista lista de account.move", async () => {

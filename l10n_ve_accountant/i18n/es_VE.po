@@ -1144,12 +1144,36 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid ""
 "Product '%s':\n"
+"The credited/debited amount (%s) cannot be greater than the "
+"original amount in the source invoice (%s)."
+msgstr ""
+"Producto '%s':\n"
+"El monto acreditado/debitado (%s) no puede ser mayor al monto "
+"original en la factura de origen (%s)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"Product '%s':\n"
 "The quantity (%s) cannot be greater than the original "
 "quantity in the source invoice (%s)."
 msgstr ""
 "Producto '%s':\n"
 "La cantidad (%s) no puede ser mayor a la cantidad "
 "original en la factura de origen (%s)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"Product '%s':\n"
+"The unit price after discount (%s) cannot be greater than the "
+"original unit price after discount in the source invoice (%s)."
+msgstr ""
+"Producto '%s':\n"
+"El precio unitario después del descuento (%s) no puede ser mayor al "
+"precio unitario después del descuento original en la factura de origen (%s)."
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
@@ -1448,6 +1472,12 @@ msgstr "El precio ingresado no puede ser negativo."
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "The unit price cannot be negative."
+msgstr "El precio unitario no puede ser negativo."
+
+#. module: l10n_ve_accountant
+#. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move_line.py:0
 msgid "The quantity entered cannot be negative"
 msgstr "La cantidad ingresada no puede ser negativa."
@@ -1637,6 +1667,16 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "You can only register payments for one foreign rate at a time."
 msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"You are not allowed to add new products ('%s') "
+"that were not present in the original invoice."
+msgstr ""
+"No está permitido agregar productos nuevos ('%s') "
+"que no estaban presentes en la factura original."
 
 #. module: l10n_ve_accountant
 #. odoo-python

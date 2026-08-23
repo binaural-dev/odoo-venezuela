@@ -1802,6 +1802,18 @@ class AccountMove(models.Model):
         # field/dependency here, their own creation code is expected to set
         # this context key (instead of a persisted field) around the
         # `create()`/`action_post()` call that builds the note.
+        #
+        # Known tradeoff (flagged in review, intentionally not closed here):
+        # this key is forgeable via RPC/import, so anyone could skip the
+        # whole validation. The safer alternative -- matching the line's
+        # product against a "diferencial cambiario" product configured on
+        # the company, instead of trusting a context flag -- isn't built yet
+        # because it depends on `l10n_ve_exchange_difference`, which doesn't
+        # exist as a dependency of this module. The context key is the
+        # intentional integration point for that future module (and for any
+        # other legitimate non-commercial note) until that dependency lands;
+        # tightening it now would just mean redoing this once that module is
+        # ready to plug in its own product-based check.
         if self.env.context.get('l10n_ve_skip_refund_origin_validation'):
             return
 
@@ -1815,13 +1827,21 @@ class AccountMove(models.Model):
         # lines are being added/removed/reordered in the UI, and a stateful
         # pairing (e.g. consuming a queue) would misattribute a refund line to
         # the wrong origin line mid-edit.
-        origin_totals_by_product = defaultdict(lambda: {"quantity": 0.0, "max_price_unit": 0.0, "amount": 0.0})
+        origin_totals_by_product = defaultdict(lambda: {"quantity": 0.0, "max_net_unit_price": 0.0, "amount": 0.0})
         for line in origin.invoice_line_ids:
             if not line.product_id:
                 continue
             totals = origin_totals_by_product[line.product_id.id]
             totals["quantity"] += line.quantity
-            totals["max_price_unit"] = max(totals["max_price_unit"], line.price_unit)
+            # Net of discount (price_subtotal / quantity), not the raw list
+            # price_unit: a line with a bigger discount can have a higher
+            # price_unit than one with none while still netting a lower (or
+            # equal) amount per unit, so comparing raw price_unit alone would
+            # reject legitimate refunds and, in the opposite direction, let
+            # a no-discount refund line slip in under a discounted origin's
+            # list price even though its real per-unit amount is higher.
+            if not float_is_zero(line.quantity, precision_digits=self.env['decimal.precision'].precision_get('Product Unit of Measure')):
+                totals["max_net_unit_price"] = max(totals["max_net_unit_price"], line.price_subtotal / line.quantity)
             totals["amount"] += line.price_subtotal
 
         precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
@@ -1860,12 +1880,13 @@ class AccountMove(models.Model):
             if float_compare(line.price_unit, 0.0, precision_digits=currency_precision) < 0:
                 raise ValidationError(_("The unit price cannot be negative."))
 
-            if float_compare(line.price_unit, totals["max_price_unit"], precision_digits=currency_precision) > 0:
+            net_unit_price = line.price_subtotal / line.quantity
+            if float_compare(net_unit_price, totals["max_net_unit_price"], precision_digits=currency_precision) > 0:
                 raise ValidationError(_(
                     "Product '%s':\n"
-                    "The unit price (%s) cannot be greater than the original "
-                    "unit price in the source invoice (%s)."
-                ) % (line.product_id.name, line.price_unit, totals["max_price_unit"]))
+                    "The unit price after discount (%s) cannot be greater than the "
+                    "original unit price after discount in the source invoice (%s)."
+                ) % (line.product_id.name, net_unit_price, totals["max_net_unit_price"]))
 
             refund_amount_by_product[line.product_id.id] += line.price_subtotal
 
