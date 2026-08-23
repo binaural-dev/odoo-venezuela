@@ -17,12 +17,17 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) depende únicamente de `invoice_date`, y en la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
 
 #### Scenario: Factura de venta
 
 - **WHEN** se establece o cambia la fecha de factura de un documento de venta sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a esa fecha
+
+#### Scenario: Factura de proveedor recién creada
+
+- **WHEN** se crea un documento `in_invoice`
+- **THEN** la creación no dispara el recálculo de tasa y el documento conserva la tasa por defecto de la fecha actual
 
 #### Scenario: Tasa fijada manualmente
 
@@ -43,14 +48,19 @@ El sistema DEBE (MUST) rechazar en el formulario del asiento una `foreign_rate` 
 - **WHEN** un usuario introduce una tasa inversa igual a cero
 - **THEN** se lanza un error de validación indicando que la tasa no puede ser cero
 
-### Requirement: Las notas de crédito y débito heredan la tasa del documento origen
+### Requirement: Las notas de crédito heredan la tasa del documento reversado
 
-Al crear un `account.move` de tipo `out_refund` o `in_refund` con `reversed_entry_id`, el sistema DEBE (MUST) copiar `foreign_rate` y `foreign_inverse_rate` del documento reversado en lugar de usar la tasa de la fecha de la nota.
+Al crear un `account.move` de tipo `out_refund` o `in_refund` con `reversed_entry_id`, el sistema DEBE (MUST) copiar `foreign_rate` y `foreign_inverse_rate` del documento reversado en lugar de usar la tasa de la fecha de la nota. Las notas de débito, que se crean como `in_invoice`/`out_invoice` con `debit_origin_id`, no heredan la tasa por esta vía.
 
 #### Scenario: Nota de crédito de una factura
 
 - **WHEN** se crea una nota de crédito a partir de una factura con tasa registrada
 - **THEN** la nota de crédito queda con la misma `foreign_rate` y `foreign_inverse_rate` que la factura origen
+
+#### Scenario: Nota de débito
+
+- **WHEN** se crea una nota de débito con `debit_origin_id`
+- **THEN** su tasa no se copia del documento de origen
 
 ### Requirement: Trazabilidad del cambio manual de tasa
 
@@ -77,17 +87,29 @@ Cada línea de asiento (`account.move.line`) DEBE (MUST) calcular `foreign_price
 
 ### Requirement: Débito y crédito alterno por apunte contable
 
-Cada apunte DEBE (MUST) calcular `foreign_debit`/`foreign_credit` (y su `foreign_balance` derivado) según la jerarquía de `_get_foreign_value`: (1) líneas `payment_term`/`tax` usan `foreign_balance`; (2) ajustes manuales `foreign_debit_adjustment`/`foreign_credit_adjustment` tienen prioridad; (3) líneas cuya moneda es la alterna usan `amount_currency`; (4) asientos que no son facturas usan el balance multiplicado por `foreign_inverse_rate` o la conversión correspondiente; (5) líneas `product`/`cogs` usan `foreign_subtotal` con el signo contable del documento. Los apuntes del diario de diferencia cambiaria de la compañía y los marcados con `not_foreign_recalculate` quedan excluidos del recálculo.
+Cada apunte DEBE (MUST) calcular `foreign_debit`/`foreign_credit` (y su `foreign_balance` derivado) según la jerarquía de `_get_foreign_value`, evaluada en este orden: (1) líneas `payment_term`/`tax` usan `foreign_balance`; (2) líneas `line_section`/`line_note` valen 0; (3) el ajuste manual `foreign_debit_adjustment` y (4) el ajuste manual `foreign_credit_adjustment`; (5) líneas cuya moneda es la alterna **y** con `amount_currency` distinto de cero usan `amount_currency`; (6) asientos que no son facturas usan `_get_non_invoice_foreign_value`; (7) líneas `product`/`cogs` usan `foreign_subtotal` con el signo contable del documento; cualquier otro caso devuelve `None` y el apunte no se modifica. Los apuntes del diario de diferencia cambiaria de la compañía y los marcados con `not_foreign_recalculate` quedan excluidos del recálculo.
+
+En asientos que no son facturas, `_get_non_invoice_foreign_value` DEBE (MUST) devolver, en este orden: el negativo de la suma de `amount_currency` de las líneas en moneda alterna cuando esa suma no es cero y existe exactamente una línea en moneda de la compañía; la conversión del balance a la moneda alterna a la fecha del apunte cuando la moneda de la línea no es la alterna; y en el resto de casos el balance multiplicado por `foreign_inverse_rate`.
 
 #### Scenario: Ajuste manual
 
-- **WHEN** un usuario establece `foreign_debit_adjustment` en una línea
+- **WHEN** un usuario establece `foreign_debit_adjustment` en una línea que no es de impuesto ni de término de pago
 - **THEN** `foreign_debit` toma el valor absoluto del ajuste y no se recalcula por tasa
+
+#### Scenario: Ajuste manual en una línea de término de pago
+
+- **WHEN** la línea con ajuste manual tiene `display_type` `payment_term` o `tax`
+- **THEN** el importe alterno se toma de `foreign_balance` y el ajuste manual no se aplica
 
 #### Scenario: Asiento manual sin factura
 
-- **WHEN** se crea un asiento de diario en moneda de la compañía
+- **WHEN** se crea un asiento de diario en moneda de la compañía sin líneas en moneda alterna
 - **THEN** el débito/crédito alterno de cada línea es el balance multiplicado por `foreign_inverse_rate`
+
+#### Scenario: Asiento espejo de una línea en moneda alterna
+
+- **WHEN** un asiento no factura tiene líneas en moneda alterna y exactamente una línea en moneda de la compañía
+- **THEN** esa línea recibe como importe alterno el negativo de la suma de `amount_currency` de las líneas en moneda alterna
 
 #### Scenario: Línea excluida del recálculo
 
@@ -96,17 +118,41 @@ Cada apunte DEBE (MUST) calcular `foreign_debit`/`foreign_credit` (y su `foreign
 
 ### Requirement: Distribución del contravalor alterno en líneas de término de pago
 
-Al sincronizar las líneas dinámicas de una factura en borrador, el sistema DEBE (MUST) distribuir el total alterno entre las líneas `payment_term` proporcionalmente a su balance nativo (asignando el remanente de redondeo a la última línea), forzando que la suma de `foreign_debit` iguale a la de `foreign_credit` del asiento (`_distribute_foreign_pt_residual`). Para documentos en una tercera moneda (ni la de la compañía ni la alterna) el total se obtiene convirtiendo `amount_total` a la moneda alterna, y una línea no-PT absorbe la diferencia de redondeo.
+Al sincronizar las líneas dinámicas de una factura **en borrador** (`_distribute_foreign_pt_residual` solo actúa sobre `state = draft` que además sea factura y tenga moneda alterna configurada), el sistema DEBE (MUST) distribuir el total alterno entre las líneas `payment_term` proporcionalmente a su balance nativo (asignando el remanente de redondeo a la última línea), forzando que la suma de `foreign_debit` iguale a la de `foreign_credit` del asiento y marcando cada línea reescrita con `not_foreign_recalculate` para que no vuelva a recalcularse por tasa. El total a repartir se toma del **neto** de las líneas que no son `payment_term` ni `cogs` (suma de `foreign_debit` menos suma de `foreign_credit`, y viceversa para el otro lado), volviendo al bruto de cada lado cuando ese neto resulta negativo. Para documentos en una tercera moneda (ni la de la compañía ni la alterna) el total se obtiene convirtiendo `amount_total` a la moneda alterna a la fecha de factura, y una línea no-PT absorbe la diferencia de redondeo.
 
 #### Scenario: Factura con dos cuotas
 
 - **WHEN** una factura en borrador tiene dos líneas de término de pago
-- **THEN** cada una recibe una porción del total alterno proporcional a su balance y la suma de ambas iguala el total alterno de las demás líneas
+- **THEN** cada una recibe una porción del total alterno proporcional a su balance, la suma de ambas iguala el total alterno de las demás líneas y ambas quedan con `not_foreign_recalculate` activo
+
+#### Scenario: Factura con líneas COGS
+
+- **WHEN** el asiento incluye pares autobalanceados de líneas `cogs`
+- **THEN** esas líneas se excluyen del total a repartir y no descuadran el importe alterno de las cuotas
+
+#### Scenario: Factura ya publicada
+
+- **WHEN** el asiento no está en borrador
+- **THEN** la distribución no se ejecuta
 
 #### Scenario: Factura en tercera moneda
 
 - **WHEN** la factura está en una moneda distinta a la de la compañía y a la alterna
 - **THEN** el total alterno distribuido es la conversión de `amount_total` a la moneda alterna a la fecha de factura
+
+### Requirement: Contravalor alterno en los términos de pago calculados
+
+`_compute_needed_terms` de `account.move` DEBE (MUST) agregar a cada entrada de `needed_terms` la clave `foreign_balance`, convirtiendo el `balance` de la entrada desde la moneda de la compañía a `foreign_currency_id` a la fecha de tasa de la factura (`_get_invoice_currency_rate_date`, o la fecha de hoy si no hay). El cálculo se omite cuando `needed_terms` no es un diccionario, cuando el documento no es factura o no tiene líneas, o cuando el documento no tiene moneda alterna.
+
+#### Scenario: Factura con término de pago
+
+- **WHEN** se recalculan los términos de pago de una factura con moneda alterna configurada
+- **THEN** cada entrada de `needed_terms` incluye `foreign_balance` con el balance convertido a la moneda alterna a la fecha de tasa del documento
+
+#### Scenario: Documento sin moneda alterna
+
+- **WHEN** el documento no tiene `foreign_currency_id`
+- **THEN** las entradas de `needed_terms` no reciben `foreign_balance`
 
 ### Requirement: Corrección de redondeo multi-moneda (porción real)
 
@@ -187,21 +233,31 @@ El formulario de líneas DEBE (MUST) rechazar cantidades negativas (`_onchange_q
 
 ### Requirement: Confirmación de facturas de venta con alerta previa
 
-`action_post` de `account.move` DEBE (MUST) interceptar la confirmación de documentos `out_invoice`/`out_refund` sin la clave de contexto `move_action_post_alert` y abrir el wizard `move.action.post.alert.wizard`; la publicación solo procede cuando el usuario confirma en el wizard (que reinvoca `action_post` con la clave en contexto).
+`action_post` de `account.move` DEBE (MUST) interceptar la confirmación cuando falta la clave de contexto `move_action_post_alert` y el recordset contiene algún documento `out_invoice`/`out_refund`, devolviendo la acción del wizard `move.action.post.alert.wizard` con `default_move_id` del primer documento de venta encontrado y abortando la publicación de todo el recordset; la publicación solo procede cuando el usuario confirma en el wizard (que reinvoca `action_post` con la clave en contexto).
 
 #### Scenario: Confirmación directa
 
 - **WHEN** un usuario pulsa confirmar en una factura de cliente
 - **THEN** se abre el wizard de alerta y la factura no se publica hasta confirmar en él
 
+#### Scenario: Confirmación masiva mixta
+
+- **WHEN** se confirman a la vez documentos de venta y de compra sin la clave de contexto
+- **THEN** se abre el wizard para el primer documento de venta y ningún documento del lote se publica en esa llamada
+
 ### Requirement: Límite de crédito del cliente al confirmar
 
-Cuando la compañía tiene `account_use_credit_limit` y el partner `use_partner_credit_limit`, `action_post` DEBE (MUST) impedir confirmar la factura si el crédito actual del partner más el residual de la factura supera su `credit_limit`.
+Cuando la compañía tiene `account_use_credit_limit` y el partner `use_partner_credit_limit`, `action_post` DEBE (MUST) impedir confirmar el asiento si el crédito actual del partner (`partner_id.credit`) más el residual del asiento supera su `credit_limit`. La verificación se aplica a todos los asientos del recordset sin filtrar por tipo de documento, de modo que también alcanza a documentos de compra del mismo partner.
 
 #### Scenario: Límite excedido
 
 - **WHEN** la suma del saldo por cobrar del cliente y el residual de la factura supera el límite de crédito
 - **THEN** se lanza un error de validación con los montos y la factura no se confirma
+
+#### Scenario: Documento de compra del mismo partner
+
+- **WHEN** se confirma una factura de proveedor de un partner con límite de crédito activo ya excedido
+- **THEN** la confirmación también se bloquea con el mismo error
 
 ### Requirement: Registro de pago para una sola tasa a la vez
 
@@ -331,14 +387,19 @@ Una regla de registro (`tax_support_no_archive_rule`) DEBE (MUST) limitar al gru
 - **WHEN** un usuario del grupo de soporte fiscal intenta archivar un impuesto
 - **THEN** la regla de registro bloquea la operación al salir el registro de su dominio
 
-### Requirement: Eliminación de facturas solo en borrador
+### Requirement: Acceso a asientos limitado a borradores para el grupo de facturación
 
-Una regla de registro (`account_move_unlink_draft_only`) DEBE (MUST) limitar el permiso de eliminación de `account.move` del grupo `account.group_account_invoice` a los documentos en estado `draft`.
+Una regla de registro (`account_move_unlink_draft_only`) DEBE (MUST) aplicar al grupo `account.group_account_invoice` el dominio `[('state','=','draft')]` sobre `account.move` con los cuatro permisos activos (`perm_read`, `perm_write`, `perm_create` y `perm_unlink`), de modo que la restricción no se limita a la eliminación: los asientos que no están en borrador quedan fuera del alcance de ese grupo también en lectura y escritura.
 
 #### Scenario: Eliminar factura publicada
 
 - **WHEN** un facturador intenta eliminar un asiento que no está en borrador
 - **THEN** la regla de registro impide la eliminación
+
+#### Scenario: Lectura de un asiento publicado
+
+- **WHEN** un usuario cuyo único grupo contable es `account.group_account_invoice` consulta un asiento publicado
+- **THEN** la regla lo excluye del dominio y el acceso es denegado
 
 ### Requirement: Fecha de factura desacoplada de la fecha contable
 

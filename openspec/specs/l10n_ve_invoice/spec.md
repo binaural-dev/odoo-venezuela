@@ -36,12 +36,17 @@ Cuando la compañía activa `group_sales_invoicing_series`, el número de contro
 
 ### Requirement: Unicidad del número de control en ventas
 
-El sistema DEBE (MUST) impedir que dos documentos de venta (`out_invoice`/`out_refund`) publicados de la misma compañía compartan `correlative` (constraint `_check_correlative` sobre documentos no contingencia).
+El sistema DEBE (MUST) impedir que un documento de venta (`out_invoice`/`out_refund`) de un diario no de contingencia lleve un `correlative` que ya use otro documento de venta **publicado** de la misma compañía (constraint `_check_correlative`). La validación se aplica cualquiera sea el estado del documento que se guarda: solo el documento con el que se compara debe estar en `posted`.
 
 #### Scenario: Número de control repetido
 
 - **WHEN** se guarda una factura de venta cuyo `correlative` ya está en uso por otra factura publicada de la compañía
 - **THEN** se lanza un error de validación indicando el número y la factura que lo usa
+
+#### Scenario: Duplicado contra un borrador
+
+- **WHEN** el `correlative` solo coincide con el de otro documento en borrador
+- **THEN** el guardado se permite
 
 ### Requirement: Correlativo en diarios de contingencia
 
@@ -127,7 +132,7 @@ Al crear o modificar `invoice_date_display`, el sistema DEBE (MUST) almacenar en
 
 ### Requirement: Período fiscal según tipo de contribuyente
 
-El campo `entry_in_period` DEBE (MUST) indicar si un documento entra en el período fiscal vigente: los documentos de compra no cancelados siempre entran; los de venta entran cuando su `invoice_date` pertenece al mes del límite del período, donde el límite es el día 15 para contribuyentes especiales antes del 15 y el último día del mes en el resto de casos (`_get_period_limit`), excluyendo para especiales los documentos de la primera quincena cuando el límite ya pasó al fin de mes.
+El campo `entry_in_period` DEBE (MUST) indicar si un documento entra en el período fiscal vigente: los documentos de compra no cancelados (`in_invoice`, `in_refund`, `in_receipt`) siempre entran; los de venta (`out_invoice`, `out_refund`) entran cuando su `invoice_date` pertenece al mismo mes y año del límite del período **y** no es posterior a ese límite, donde el límite es el día 15 para contribuyentes especiales antes del 15 y el último día del mes en el resto de casos (`_get_period_limit`), excluyendo para especiales los documentos de la primera quincena cuando el límite ya pasó al fin de mes. El tipo de contribuyente se lee de la compañía activa (`self.env.company.taxpayer_type`), no de la compañía del documento, y todo documento en estado `cancel` o de otro tipo de movimiento queda en falso.
 
 #### Scenario: Contribuyente especial en la primera quincena
 
@@ -177,7 +182,7 @@ Si un documento seleccionado para el libro no tiene `invoice_date_display`, la g
 
 ### Requirement: Clasificación de documentos y tipo de transacción en los libros
 
-Cada línea del libro DEBE (MUST) clasificar el documento como FAC (facturas), NC (notas de crédito) o ND (notas de débito, incluyendo facturas de diarios con `is_debit`), llenar la columna de número correspondiente al tipo, referenciar la factura afectada (`debit_origin_id` para ND, `reversed_entry_id` para NC) y asignar el tipo de transacción: `01-REG` facturas, `02-REG` notas de débito, `03-REG` notas de crédito y `03-ANU` documentos anulados.
+Cada línea del libro DEBE (MUST) clasificar el documento como FAC (facturas), NC (notas de crédito) o ND (notas de débito), tratando como ND cualquier documento cuyo diario tenga `is_debit` —el tipo se fuerza a `in_debit` en ambos libros, también en el de ventas—, llenar la columna de número correspondiente al tipo, referenciar la factura afectada (`debit_origin_id` cuando el diario es `is_debit`, `reversed_entry_id` en el resto) y asignar el tipo de transacción solo a documentos publicados (`01-REG` facturas, `02-REG` facturas de diario de débito y notas de débito, `03-REG` notas de crédito) o `03-ANU` cuando el documento está anulado.
 
 #### Scenario: Nota de débito por diario
 
@@ -200,7 +205,7 @@ Para documentos con estado distinto de `posted`, `_determinate_amount_taxeds` DE
 
 ### Requirement: Clasificación por alícuota según la configuración de la compañía
 
-Los montos de cada documento DEBEN (MUST) clasificarse por alícuota (exenta, reducida 8%, general 16%, adicional 31%) comparando el grupo de impuestos de cada `tax_group` de `tax_totals` con el grupo del impuesto configurado en la compañía para el libro correspondiente (`*_aliquot_sale`, `*_aliquot_purchase`, `*_aliquot_purchase_international`, campos de `l10n_ve_accountant`), tomando los montos en VES desde las claves `formatted_*_currency_ves`; un grupo con impuesto cero se clasifica como exento cuando no hay alícuota exenta configurada, y las notas de crédito invierten el signo de bases e impuestos.
+Los montos de cada documento DEBEN (MUST) clasificarse por alícuota (exenta, reducida 8%, general 16%, adicional 31%) comparando el `id` del grupo de impuestos de cada `tax_group` de `tax_totals` con el `tax_group_id` del impuesto configurado en la compañía para el libro correspondiente (`*_aliquot_sale`, `*_aliquot_purchase`, `*_aliquot_purchase_international`, campos de `l10n_ve_accountant`), leyendo los montos en VES desde las cadenas `formatted_base_amount_currency_ves` / `formatted_tax_amount_currency_ves` y convirtiéndolas a float con `convert_currency_to_float`; un grupo con impuesto cero se clasifica como exento cuando no hay alícuota exenta configurada, y las notas de crédito invierten el signo de bases e impuestos. En el libro de compras internacional, las alícuotas cuya columna está oculta por configuración (`not_show_*_purchase_international`) no se resuelven y sus grupos quedan sin clasificar. Los totales `amount_untaxed`/`amount_taxed` de la línea se recalculan sumando las bases (y las bases más los impuestos) ya clasificadas, no se toman del total del documento.
 
 #### Scenario: Factura con IVA general
 
@@ -246,18 +251,42 @@ Las columnas de alícuota reducida, adicional e internacionales de los libros DE
 
 ### Requirement: Resumen fiscal al pie del libro
 
-Al final de cada libro, el sistema DEBE (MUST) generar el resumen por categoría (exentas, alícuota general, reducida, adicional e importaciones en compras) con cuatro columnas —base e impuesto de facturas/ND y base e impuesto de notas de crédito— calculadas sobre los documentos del período (excluyendo del resumen los documentos con fecha fuera del rango), más las columnas de total neto, y una fila de totales con fórmulas de suma.
+Al final de cada libro, el sistema DEBE (MUST) generar el resumen por categoría con cuatro columnas —base e impuesto de facturas/ND y base e impuesto de notas de crédito— calculadas con `_determinate_resume_books` sobre los documentos del período (excluyendo los documentos cuya fecha contable cae fuera del rango) más dos columnas de total neto (suma de la columna de facturas y la de notas de crédito), y una fila final "Total ... del Periodo" cuyas cuatro primeras columnas se sobrescriben con fórmulas `SUM` del rango del resumen. Solo las categorías con alícuota asociada (exenta, general, reducida, adicional y sus variantes internacionales en compras) devuelven importes; las categorías sin alícuota —"Ventas de Exportación", "Ajustes a los Débitos/Créditos Fiscales de Periodos Anteriores" y la propia fila de totales— devuelven siempre cuatro ceros. Las categorías nacionales excluyen los documentos de diarios `is_purchase_international`. Si el dominio del libro no arroja documentos, la generación del resumen DEBE (MUST) fallar con "There are no moves to show".
 
 #### Scenario: Resumen del libro de ventas
 
 - **WHEN** se genera el libro de ventas
 - **THEN** el resumen muestra por categoría la base y el débito fiscal separando facturas/ND de notas de crédito, con el total neto por fila
 
+#### Scenario: Categoría sin alícuota asociada
+
+- **WHEN** el resumen incluye la fila de exportación o la de ajustes de períodos anteriores
+- **THEN** sus cuatro columnas de base e impuesto se emiten en cero
+
+### Requirement: Aislamiento multi-compañía de secuencias y del wizard de libros
+
+El módulo DEBE (MUST) instalar dos reglas de registro globales: `invoice_correlative_rule` sobre `ir.sequence` y `wizard_accounting_reports_restricted_multi_company` sobre `wizard.accounting.reports`, ambas con dominio `['|', ('company_id','=',False), ('company_id','in',company_ids)]`, de modo que las secuencias de número de control y los wizards de libros de otras compañías queden fuera del alcance del usuario. Las secuencias `invoice.correlative` (padding 5) y `series.invoice.correlative` (padding 5, inactiva) DEBEN (MUST) instalarse como datos `noupdate`.
+
+#### Scenario: Secuencia de otra compañía
+
+- **WHEN** un usuario consulta las secuencias sin tener activa la compañía dueña de una secuencia de número de control
+- **THEN** la regla global excluye esa secuencia del resultado
+
+#### Scenario: Instalación del módulo
+
+- **WHEN** se instala el módulo
+- **THEN** existen las secuencias `invoice.correlative` activa y `series.invoice.correlative` inactiva
+
 ### Requirement: Descarga del libro por controlador autenticado
 
-Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST) requerir usuario autenticado (`auth="user"`), tomar el último wizard `wizard.accounting.reports` creado y devolver el XLSX correspondiente como adjunto; la hoja generada queda protegida contra edición con contraseña.
+Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST) requerir usuario autenticado (`auth="user"`) y devolver el XLSX como adjunto (`Libro_de_venta.xlsx` / `Libro_de_compra.xlsx`), con la hoja protegida contra edición mediante contraseña. La lectura se hace con un entorno elevado a `SUPERUSER_ID`: se toma el último registro `wizard.accounting.reports` creado en la base —sin filtrar por usuario ni por compañía— y se le escribe como `company_id` el parámetro `company_id` de la URL (1 por defecto) antes de generar el libro, de modo que el contenido depende de ese parámetro y no de la compañía activa del usuario.
 
 #### Scenario: Descarga del libro de compras
 
 - **WHEN** un usuario autenticado ejecuta la generación del libro de compras
-- **THEN** el navegador descarga `Libro_de_compra.xlsx` generado con los datos del último wizard
+- **THEN** el navegador descarga `Libro_de_compra.xlsx` generado a partir del último wizard creado, con la compañía indicada en el parámetro `company_id`
+
+#### Scenario: Parámetro de compañía en la URL
+
+- **WHEN** se invoca la ruta con un `company_id` distinto del de la compañía activa
+- **THEN** el libro se genera para la compañía indicada en el parámetro, sin control de acceso adicional por parte del controlador

@@ -17,34 +17,51 @@ El `pre_init_hook` DEBE (MUST) reasignar en `ir_model_data` al módulo `l10n_ve_
 
 ### Requirement: Puertos fiscales y lista negra por caja IoT
 
-El modelo `iot.box` DEBE (MUST) exponer el indicador `has_fiscal_machine` con los puertos habilitados en `fiscal_port_ids`, y el indicador `blacklist` con los puertos vedados en `blacklist_port_ids`, ambos hacia el modelo `iot.port`.
+El modelo `iot.box` DEBE (MUST) exponer el indicador `has_fiscal_machine` con los puertos habilitados en `fiscal_port_ids`, y el indicador `blacklist` con los puertos vedados en `blacklist_port_ids`, ambos hacia el modelo `iot.port` (definido en este módulo, con un único campo `name`).
+
+Los cuatro campos Muchos-a-muchos (`iot.box.fiscal_port_ids`, `iot.box.blacklist_port_ids`, `iot.port.iot_box_ids`, `iot.port.iot_box_blacklist_ids`) reciben su segundo argumento posicional como **nombre de la tabla de relación**, no como campo inverso, así que cada uno DEBE (MUST) entenderse como una relación independiente: lo que se asigna desde la caja IoT no se refleja al abrir el puerto desde `iot.port`.
 
 #### Scenario: Caja con máquina fiscal declarada
 
 - **WHEN** un administrador marca `has_fiscal_machine` en una caja IoT y le asigna puertos
-- **THEN** esos puertos quedan registrados como puertos fiscales de esa caja
+- **THEN** esos puertos quedan registrados en `fiscal_port_ids` de esa caja
+
+#### Scenario: Lectura desde el puerto
+
+- **WHEN** se abre uno de esos `iot.port` y se consulta `iot_box_ids`
+- **THEN** la caja no aparece, porque ese campo usa otra tabla de relación
 
 ### Requirement: Publicación de los puertos fiscales a las cajas IoT
 
-Los endpoints HTTP `/iot_fiscal/ports` y `/iot_blacklist/ports` DEBEN (MUST) devolver un JSON que mapea el identificador de cada caja IoT a la lista de nombres de sus puertos: el primero para las cajas con `has_fiscal_machine` activo y el segundo para las cajas con `blacklist` activo.
+Los endpoints HTTP `/iot_fiscal/ports` y `/iot_blacklist/ports` DEBEN (MUST) devolver, como texto serializado con `json.dumps`, un mapa del `identifier` de cada caja IoT a la lista de nombres de sus puertos: el primero para las cajas con `has_fiscal_machine` activo y el segundo para las cajas con `blacklist` activo. Ambas rutas son `type="http"`, `methods=["GET"]`, `csrf=False` y `auth="public"`, y leen con `sudo()`: DEBEN (MUST) responder sin autenticación ni control de acceso, exponiendo los identificadores de todas las cajas y sus puertos a cualquiera que alcance la instancia.
 
 #### Scenario: Consulta de puertos fiscales
 
 - **WHEN** una caja IoT consulta `/iot_fiscal/ports`
-- **THEN** recibe un objeto JSON con el identificador de cada caja con máquina fiscal y los nombres de sus puertos habilitados
+- **THEN** recibe el mapa con el identificador de cada caja con máquina fiscal y los nombres de sus puertos habilitados
+
+#### Scenario: Consulta anónima
+
+- **WHEN** un cliente sin sesión ni credenciales hace GET a `/iot_fiscal/ports`
+- **THEN** recibe la misma respuesta completa, sin desafío de autenticación
 
 ### Requirement: Identificación del fabricante por el nombre del dispositivo
 
-El campo calculado `manufacturer_type` de `iot.device` DEBE (MUST) valer `HKA` cuando el nombre del dispositivo contiene "HKA", `PnP` cuando contiene "PnP", y quedar sin valor en cualquier otro caso.
+El campo calculado `manufacturer_type` de `iot.device` DEBE (MUST) valer `HKA` cuando el nombre del dispositivo contiene "HKA", `PnP` cuando contiene "PnP", y quedar sin valor cuando el nombre no contiene ninguna de las dos cadenas. La comparación es sensible a mayúsculas y se evalúa sobre `name` sin guarda: el cómputo no declara `@api.depends` ni almacena el resultado, y con `name` vacío (`False`) DEBE (MUST) entenderse que falla al evaluar la pertenencia en lugar de devolver "sin valor".
 
 #### Scenario: Dispositivo TFHKA
 
 - **WHEN** el nombre del dispositivo contiene "HKA"
 - **THEN** `manufacturer_type` es `HKA`
 
+#### Scenario: Dispositivo sin nombre
+
+- **WHEN** se calcula `manufacturer_type` de un dispositivo cuyo `name` está vacío
+- **THEN** el cómputo falla en la evaluación de la cadena y no devuelve un valor vacío
+
 ### Requirement: Registro del serial de la máquina fiscal en el dispositivo
 
-El método `set_serial_machine` DEBE (MUST) guardar en `serial_machine` el número de máquina registrado que devuelve la impresora (`_registeredMachineNumber`) y renombrar el dispositivo al formato `<serial> - Fiscal Printer HKA`.
+El método `set_serial_machine` DEBE (MUST) guardar en `serial_machine` el número de máquina registrado que devuelve la impresora (`res["data"]["_registeredMachineNumber"]`, de la acción `get_last_invoice_number` y solo cuando el frontend recibió `valid`) y renombrar el dispositivo al formato `<serial> - Fiscal Printer HKA`, con ese sufijo fijo incluso si el fabricante es PnP.
 
 #### Scenario: Alta del dispositivo tras consultar la máquina
 
@@ -73,6 +90,8 @@ El método `get_data_to_payment_method` DEBE (MUST) rechazar la operación cuand
 
 El método `get_range_reprint` DEBE (MUST) exigir ambos extremos del rango según el tipo elegido (`reprint_type` en `number` exige los campos de número, en `date` los de fecha) y rechazar los rangos invertidos (extremo final menor que el inicial). Para el tipo `date` los extremos se transmiten en formato `ddmmyy`, y el modo se toma de `reprint_type_number` o `reprint_type_date` según corresponda.
 
+El campo `reprint_type` no tiene valor por defecto y la construcción del payload solo distingue `number`: cualquier otro valor, incluido `reprint_type` sin seleccionar, DEBE (MUST) resolverse por la rama de fechas, con lo que un `reprint_type` vacío no dispara ninguna de las dos validaciones y devuelve el rango de fechas (que sí tiene por defecto la fecha de hoy) con el modo de `reprint_type_date`. La comparación del rango numérico convierte ambos extremos con `int()`, por lo que un número no íntegro aborta con un error de conversión y no con un error de validación.
+
 #### Scenario: Rango de números invertido
 
 - **WHEN** se solicita una reimpresión por número con el número final menor que el inicial
@@ -82,6 +101,11 @@ El método `get_range_reprint` DEBE (MUST) exigir ambos extremos del rango segú
 
 - **WHEN** se solicita una reimpresión por fechas con un rango válido
 - **THEN** los extremos se envían con formato `ddmmyy` junto al modo del tipo de documento
+
+#### Scenario: Tipo de reimpresión sin seleccionar
+
+- **WHEN** se invoca `get_range_reprint` con `reprint_type` vacío
+- **THEN** no se valida ningún extremo y se devuelve el rango de fechas por defecto con el modo de `reprint_type_date`
 
 ### Requirement: Validación del rango de resumen
 
@@ -103,12 +127,19 @@ La compañía DEBE (MUST) exponer el campo `invoice_print_type` con los valores 
 
 ### Requirement: Máquina fiscal asignada al documento
 
-El documento contable DEBE (MUST) exponer la máquina fiscal en `iot_mf` (limitada por dominio a dispositivos con `serial_machine` establecido y tomando por defecto el primer dispositivo de tipo `fiscal_data_module`), su caja IoT en el campo relacionado `iot_box`, y los datos de la impresión fiscal en `mf_serial`, `mf_invoice_number` y `mf_reportz`, todos con seguimiento en el chatter y excluidos de la duplicación (`copy=False`).
+El documento contable DEBE (MUST) exponer la máquina fiscal en `iot_mf` (limitada por dominio a dispositivos con `serial_machine` establecido), su caja IoT en el campo relacionado `iot_box`, y los datos de la impresión fiscal en `mf_serial`, `mf_invoice_number` y `mf_reportz`. Los cinco campos son `copy=False`, pero solo los tres campos de datos fiscales (`mf_serial`, `mf_invoice_number`, `mf_reportz`) llevan `tracking=True`: `iot_mf` e `iot_box` no se registran en el chatter.
+
+El valor por defecto de `iot_mf` es el primer `iot.device` de tipo `fiscal_data_module`, buscado **sin** el filtro de `serial_machine`, por lo que DEBE (MUST) poder preseleccionar un dispositivo que el dominio del campo no admite.
 
 #### Scenario: Documento nuevo en una instalación con una sola máquina
 
-- **WHEN** se crea un documento contable y existe un dispositivo de tipo `fiscal_data_module`
+- **WHEN** se crea un documento contable y existe un dispositivo de tipo `fiscal_data_module` con serial
 - **THEN** ese dispositivo queda preseleccionado como máquina fiscal del documento
+
+#### Scenario: Dispositivo fiscal sin serial registrado
+
+- **WHEN** el único dispositivo `fiscal_data_module` aún no tiene `serial_machine`
+- **THEN** queda igualmente preseleccionado en `iot_mf` aunque quede fuera del dominio del campo
 
 #### Scenario: Duplicación de un documento impreso
 
@@ -154,7 +185,7 @@ El método `_normalize_product_name` DEBE (MUST) descomponer los acentos y elimi
 
 ### Requirement: Conversión de pagos a la moneda fiscal
 
-Los pagos enviados a la impresora DEBEN (MUST) llevar el código de método de pago del diario del pago (`account.journal.payment_method`, de dos caracteres, por defecto `01`) y su monto convertido multiplicando por `foreign_inverse_rate` cuando la moneda del pago no es VEF. Un documento sin pagos aplicados se envía con una única línea de pago de monto `0` y método `01`.
+Los pagos enviados a la impresora se toman del widget de pagos (`invoice_payments_widget`) y DEBEN (MUST) llevar el código de método de pago (`account.journal.payment_method`, Char de dos caracteres, por defecto `01`) del diario que se localiza buscando un `account.journal` cuyo **nombre** coincida con el `journal_name` que trae el widget; si ninguna coincide, el recordset vacío hace que se use `01`. El monto se multiplica por `foreign_inverse_rate` cuando la moneda del pago no es VEF, resolviendo `base.VEF` con `raise_if_not_found=False` (si esa moneda no existe en la base, la comparación falla siempre y todos los pagos se convierten). Los montos se envían con su signo original, sin valor absoluto, también en notas de crédito. Un documento sin pagos aplicados se envía con una única línea de pago de monto `0` y método `01`.
 
 #### Scenario: Pago en moneda extranjera
 
@@ -177,16 +208,23 @@ Tras imprimir, los métodos `print_out_invoice`, `print_out_refund` y `print_deb
 
 ### Requirement: Alerta por número fiscal duplicado
 
-Cuando tras la impresión existe más de un documento con el mismo `mf_invoice_number` (`has_printed`), el sistema DEBE (MUST) abrir un aviso indicando el número repetido y pidiendo revisar las facturas anteriores.
+Cuando tras la impresión de una **factura** existe más de un documento con el mismo `mf_invoice_number` (`has_printed`), `print_out_invoice` DEBE (MUST) devolver una acción de ventana en modo formulario sobre el modelo `sh.message.wizard`, con el mensaje del número repetido y la indicación de revisar las facturas anteriores en el contexto. Ese modelo no lo define este módulo ni aparece en sus dependencias, de modo que el aviso solo funciona en bases donde el módulo que lo provee esté instalado. `print_out_refund` y `print_debit_note` no ejecutan esta verificación.
 
 #### Scenario: Secuencia fiscal repetida
 
 - **WHEN** se imprime una factura y ya existía otro documento con la misma secuencia fiscal
-- **THEN** se muestra un aviso con ese número y la indicación de revisar los documentos previos
+- **THEN** se devuelve la acción de ventana sobre `sh.message.wizard` con ese número en el contexto
+
+#### Scenario: Nota de crédito con secuencia repetida
+
+- **WHEN** se imprime una nota de crédito cuyo número fiscal ya existe en otro documento
+- **THEN** no se emite ningún aviso
 
 ### Requirement: Validaciones y datos de la nota de crédito fiscal
 
-El método `check_print_out_refund` DEBE (MUST) rechazar la impresión cuando no hay máquina fiscal asignada, cuando la fecha del documento no es la del día, o cuando el documento está en `draft` o `cancel`; y los datos enviados DEBEN (MUST) incluir el bloque de documento afectado con el número fiscal, el serial y la fecha (formato `dd/mm/aaaa`) del documento revertido (`reversed_entry_id`).
+El método `check_print_out_refund` DEBE (MUST) rechazar la impresión cuando no hay máquina fiscal asignada, cuando la fecha del documento (`invoice_date_display`) no es la del día, o cuando el documento está en `draft` o `cancel`; y los datos enviados DEBEN (MUST) incluir el bloque de documento afectado con el número fiscal, el serial y la fecha (formato `dd/mm/aaaa`) del documento revertido (`reversed_entry_id`).
+
+A diferencia de la factura, esta validación NO comprueba `mf_invoice_number`, por lo que una nota de crédito ya impresa puede volver a imprimirse y sobrescribir sus datos fiscales; tampoco comprueba que `reversed_entry_id` exista o tenga número fiscal, de modo que una NC sin asiento revertido falla al formatear la fecha del bloque afectado en lugar de emitir un error de validación.
 
 #### Scenario: Nota de crédito de otro día
 
@@ -197,6 +235,11 @@ El método `check_print_out_refund` DEBE (MUST) rechazar la impresión cuando no
 
 - **WHEN** se imprime una nota de crédito de una factura fiscal
 - **THEN** los datos enviados incluyen número, serial y fecha de la factura revertida
+
+#### Scenario: Nota de crédito ya impresa
+
+- **WHEN** se pulsa imprimir en una nota de crédito que ya tiene `mf_invoice_number`, del día y publicada
+- **THEN** la validación la deja pasar y se construyen de nuevo los datos de impresión
 
 ### Requirement: Validaciones y datos de la nota de débito fiscal
 
@@ -218,17 +261,19 @@ Al cambiar el indicador `is_credit` de un documento, el sistema DEBE (MUST) rech
 
 ### Requirement: Asignación del reporte Z a los documentos pendientes
 
-El método `report_z` DEBE (MUST) rechazar la operación cuando la respuesta de la impresora no es válida, y en caso válido asignar a todos los documentos de ese serial que aún no tienen reporte Z (`mf_reportz` vacío) el valor del contador de cierre diario de la máquina (`_dailyClosureCounter`) incrementado en uno. Si la máquina no devuelve el contador, se toma el mayor `mf_reportz` ya registrado para ese serial (o `0` si no hay ninguno) como base del incremento.
+El método `report_z` DEBE (MUST) rechazar la operación cuando la respuesta de la impresora no es válida, y en caso válido asignar a todos los documentos cuyo `mf_serial` coincida con el `_registeredMachineNumber` de la respuesta (el argumento `serial` recibido se descarta y se sobrescribe con ese valor) y que aún no tienen reporte Z (`mf_reportz` vacío) el valor del contador de cierre diario de la máquina (`_dailyClosureCounter`) incrementado en uno.
+
+Si la máquina no devuelve el contador, la base la da `_get_z_and_add_one`, que devuelve el `mf_reportz` del primer documento del serial ordenado `mf_reportz desc` — orden **lexicográfico**, porque `mf_reportz` es un `Char`, de modo que "9" gana a "10" — o `0` si no hay ninguno. El método no incrementa pese a su nombre: el `+1` lo aplica `report_z`.
 
 #### Scenario: Cierre Z con contador de la máquina
 
 - **WHEN** se ejecuta el reporte Z y la impresora devuelve su contador de cierre diario
 - **THEN** los documentos de ese serial sin reporte Z quedan con ese contador más uno
 
-#### Scenario: Máquina sin contador de cierre
+#### Scenario: Máquina sin contador y Z de distinta longitud
 
-- **WHEN** la impresora no devuelve el contador de cierre diario
-- **THEN** se usa como base el mayor reporte Z ya registrado para ese serial
+- **WHEN** la impresora no devuelve el contador de cierre diario y el serial tiene documentos con `mf_reportz` "9" y "10"
+- **THEN** la base tomada es "9" y los documentos pendientes quedan con `mf_reportz = 10`
 
 ### Requirement: Método de pago fiscal en el widget de pagos
 
@@ -259,17 +304,58 @@ Con `with_fiscal_machine` activo, las líneas del libro de ventas DEBEN (MUST) o
 
 ### Requirement: Resumen diario de ventas agrupado por reporte Z
 
-Con `with_fiscal_machine` activo, el libro de ventas DEBE (MUST) agrupar los documentos por fecha y luego por la combinación de serial y reporte Z, ordenándolos por número fiscal, y emitir líneas de resumen (identificadas con "RESUMEN" y el rango "Desde … Hasta …" de números fiscales) que acumulan las bases y montos por alícuota exenta, reducida y general. Las facturas de clientes con RIF de prefijo `J`, los contribuyentes no ordinarios, las notas de crédito y las facturas de diarios de débito se emiten como líneas individuales y cierran el resumen acumulado en curso.
+Con `with_fiscal_machine` activo, el libro de ventas DEBE (MUST) agrupar los documentos por la **fecha de creación del registro** (`create_date`, formateada `%d-%m-%Y`) y luego por la combinación `mf_serial` + `mf_reportz`, ordenando cada grupo por `int(mf_invoice_number)`, y emitir líneas de resumen (identificadas con "RESUMEN", `partner_name` "Resumen Diario de Ventas", el rango "Desde … Hasta …" de números fiscales y alícuotas fijas 0,08 y 0,16) que acumulan las bases y montos por alícuota exenta, reducida y general. La fecha que se imprime en la línea de resumen sí es la del documento (`invoice_date_display`), por lo que un documento creado en un día distinto al de su fecha de factura DEBE (MUST) entenderse agrupado por la fecha de creación.
+
+El cierre del acumulado no es uniforme:
+
+- Facturas de diario de débito (`journal_id.is_debit`): se emiten como línea individual y el acumulado en curso se descarta **sin** emitir línea de resumen.
+- Clientes con RIF de prefijo `J`, contribuyentes no ordinarios y notas de crédito: se emiten como línea individual, precedida de la línea de resumen solo si el acumulado difiere del monto del propio documento (`cumulative["amount_taxed"] != amounts["amount_taxed"]`); si coinciden, el resumen no se emite.
+- Solo los documentos de tipo `out_invoice` / `out_refund` participan del recorrido; cualquier otro tipo se cuenta en el acumulado sin generar línea propia.
 
 #### Scenario: Ventas a contribuyentes ordinarios consecutivas
 
-- **WHEN** varias facturas del mismo día, serial y reporte Z corresponden a contribuyentes ordinarios sin RIF de prefijo `J`
+- **WHEN** varias facturas creadas el mismo día, con igual serial y reporte Z, corresponden a contribuyentes ordinarios sin RIF de prefijo `J`
 - **THEN** se emite una línea de resumen con el rango de números fiscales y los montos acumulados por alícuota
 
-#### Scenario: Factura a persona jurídica
+#### Scenario: Factura a persona jurídica con acumulado previo
 
-- **WHEN** una de las facturas del grupo corresponde a un cliente con RIF de prefijo `J`
-- **THEN** esa factura se emite como línea individual y el resumen acumulado en curso se cierra antes
+- **WHEN** una de las facturas del grupo corresponde a un cliente con RIF de prefijo `J` y el acumulado en curso difiere del monto de esa factura
+- **THEN** se emite primero la línea de resumen del acumulado y luego la factura como línea individual
+
+#### Scenario: Factura de diario de débito en medio del grupo
+
+- **WHEN** una factura del grupo pertenece a un diario de débito y hay montos acumulados de facturas anteriores
+- **THEN** se emite solo su línea individual y el acumulado se reinicia sin emitir línea de resumen
+
+### Requirement: Flujo de impresión desde el widget iot-mf-button
+
+El widget `iot-mf-button` (registrado en `view_widgets`) DEBE (MUST) ejecutar la impresión en cuatro pasos: (1) llamar por RPC al método `check_<accion>` de `account.move` (`check_print_out_invoice`, `check_print_out_refund`, `check_print_debit_note`, `check_reprint`) con el id del documento; (2) reconstruir el `DeviceController` con el `iot_ip` y el `identifier` que devuelve ese payload; (3) enviar al dispositivo la acción con el nombre de la operación (`print_out_invoice`, `print_out_refund`, `print_debit_note` o `reprint`) y esperar el valor del evento de longpolling; (4) salvo en la reimpresión, llamar al método homónimo `print_*` del documento pasando ese valor tal cual —de donde se leen las claves de primer nivel `sequence` y `serial_machine`— y recargar la página.
+
+El manejo de error de este flujo invoca `onIoTError`, una función que no está definida ni importada en el módulo, de modo que cualquier fallo capturado (por ejemplo la `ValidationError` de las validaciones previas) DEBE (MUST) entenderse como un `ReferenceError` en el navegador en lugar de una notificación al usuario.
+
+#### Scenario: Impresión de factura exitosa
+
+- **WHEN** el usuario pulsa "Print Invoice" y el dispositivo responde con secuencia y serial
+- **THEN** se llama a `print_out_invoice` con ese valor y la página se recarga
+
+#### Scenario: Reimpresión
+
+- **WHEN** el usuario pulsa "Reprint Document" en un documento con número fiscal
+- **THEN** se envía la acción `reprint` al dispositivo y no se llama a ningún método de persistencia ni se recarga la vista
+
+#### Scenario: Validación rechazada por el backend
+
+- **WHEN** `check_print_out_invoice` lanza una `ValidationError` (por ejemplo, factura de otra fecha)
+- **THEN** el bloque de error intenta usar `onIoTError` y el fallo no llega al usuario como notificación
+
+### Requirement: Reprogramación de la impresora al configurar el dispositivo
+
+La acción `configure_device` del driver de la caja IoT DEBE (MUST), además de escribir los flags recibidos (`PJ21<flag_21>`, `PJ24<flag_24>` y `PJ77<show_version>` cuando la clave viene con valor no vacío — y `configure_device` del modelo siempre manda las tres, con `"00"` como valor apagado, así que las tres se escriben siempre), enviar siempre `PJ6300` y reprogramar la tabla de medios de pago de la impresora con una lista fija de 19 comandos `PE01`–`PE21` (efectivo, pago móvil, transferencias, PDV, crédito, divisas y Zelle), sobrescribiendo los nombres que la máquina tuviera programados. Al terminar devuelve `{"status": "true"}` como valor del evento.
+
+#### Scenario: Configuración de un dispositivo fiscal
+
+- **WHEN** se pulsa "Configure Device" en un dispositivo HKA con `flag_21 = "30"`, `flag_24 = "00"` y `show_version` inactivo
+- **THEN** se envían `PJ2130`, `PJ2400`, `PJ7700`, `PJ6300` y los 19 comandos `PE..` de la lista fija, reemplazando los medios de pago programados en la impresora
 
 ### Requirement: Código fiscal por impuesto
 

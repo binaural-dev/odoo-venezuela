@@ -54,31 +54,41 @@ Toda orden del PdV, incluidos los reembolsos, DEBE (MUST) emitir factura: el fro
 
 ### Requirement: Cantidades negativas solo en líneas de reembolso
 
-El sistema DEBE (MUST) impedir cantidades negativas en líneas que no sean de reembolso, en dos capas con las mismas exenciones: el frontend intercepta `setQuantity` y devuelve un diálogo de error, y el backend valida con el constraint `_check_qty_not_negative_outside_refund` sobre `pos.order.line.qty`. Están exentas las líneas con `refunded_orderline_id`, las líneas de órdenes con `is_refund` y las de órdenes con `preset_id.is_return`.
+El sistema DEBE (MUST) impedir cantidades negativas en líneas que no sean de reembolso, en dos capas con exenciones DISTINTAS:
+
+- Frontend (`pos_order_line.js`, `setQuantity` → `_isRefundLine()`): exime solo las líneas con `refunded_orderline_id` y las de órdenes con `preset_id.is_return`. Una línea añadida a mano a una orden con `is_refund` NO está exenta en esta capa.
+- Backend (constraint `_check_qty_not_negative_outside_refund` sobre `pos.order.line.qty`, con `@api.constrains("qty", "refunded_orderline_id", "order_id")`): exime `refunded_orderline_id`, `order_id.is_refund` y `order_id.preset_id.is_return`.
+
+La comparación usa la precisión `Product Unit`, así que la cantidad cero sigue permitida en ambas capas.
 
 #### Scenario: Cantidad negativa desde el numpad
 
 - **WHEN** el cajero intenta fijar una cantidad negativa en una línea de venta normal
-- **THEN** se muestra un diálogo "Negative quantity not allowed" y la cantidad no cambia (poner la línea en cero sigue permitido)
+- **THEN** `setQuantity` devuelve `{title: "Negative quantity not allowed", body: ...}`, `OrderSummary` lo muestra como diálogo y la cantidad no cambia (poner la línea en cero sigue permitido)
+
+#### Scenario: Línea nueva negativa dentro de una orden de reembolso
+
+- **WHEN** el cajero agrega al carrito de una orden con `is_refund` una línea sin `refunded_orderline_id` (y sin preset de devolución) y la pone en negativo desde el numpad
+- **THEN** el frontend la rechaza con el mismo diálogo, aunque el constraint del backend sí la habría aceptado
 
 #### Scenario: Línea negativa por RPC o edición backend
 
-- **WHEN** se escribe una `qty` negativa en una línea sin `refunded_orderline_id` cuya orden no es reembolso ni tiene preset de devolución
+- **WHEN** se escribe una `qty` negativa en una línea sin `refunded_orderline_id` cuya orden no tiene `is_refund` ni preset de devolución
 - **THEN** se lanza un error de validación indicando que solo las líneas de reembolso pueden ser negativas
 
 #### Scenario: Línea de reembolso real
 
 - **WHEN** el flujo de reembolso crea una línea con `refunded_orderline_id` y cantidad negativa
-- **THEN** la línea se acepta sin error
+- **THEN** la línea se acepta sin error en ambas capas
 
 ### Requirement: Totales alternos derivados del total local con una sola conversión
 
-Los totales de la orden en moneda alterna (`get_foreign_total_with_tax`, `get_foreign_total_without_tax`, `get_foreign_total_tax`) DEBEN (MUST) obtenerse convirtiendo una sola vez el total local correspondiente (`totalDue`, `prices.taxDetails`) mediante `localToForeign`, y los montos por línea (`get_foreign_price_with_tax`, etc.) convertir cada precio local del core con la misma regla, de modo que la suma de líneas coincide con el total sin recalcular impuestos en divisa. El restante (`get_foreign_due`) y el vuelto (`get_foreign_change`) se derivan del restante/vuelto LOCAL con una conversión, no de la resta de totales alternos.
+Cada total de la orden en moneda alterna (`get_foreign_total_with_tax`, `get_foreign_total_without_tax`, `get_foreign_total_tax`) DEBE (MUST) obtenerse convirtiendo una sola vez el total local correspondiente (`totalDue`, `prices.taxDetails.base_amount`, `prices.taxDetails.tax_amount_currency`) mediante `localToForeign`, y los montos por línea (`get_foreign_price_with_tax`, etc.) convertir cada precio local del core (`priceIncl`, `priceExcl`) con la misma regla, sin recalcular nunca impuestos en divisa. El restante (`get_foreign_due`) y el vuelto (`get_foreign_change`) se derivan del restante/vuelto LOCAL con una conversión, no de la resta de totales alternos.
 
 #### Scenario: Consistencia línea-total
 
 - **WHEN** una orden sin líneas de reembolso tiene varias líneas con impuestos
-- **THEN** la suma de `get_foreign_price_with_tax()` de las líneas coincide con `get_foreign_total_with_tax()` de la orden
+- **THEN** cada línea devuelve `localToForeign(priceIncl)` y la orden devuelve `localToForeign(totalDue)` — ambos con la misma tasa cruda y una sola multiplicación — sin recalcular impuestos en divisa; la suma de las líneas puede diferir del total de la orden en múltiplos del paso de redondeo de la moneda alterna, porque cada línea se redondea por separado y el total se redondea una sola vez sobre el agregado
 
 #### Scenario: Pago parcial en moneda local
 
@@ -128,17 +138,24 @@ Cuando el cajero teclea el monto en divisa (`set_foreign_amount`), el sistema DE
 
 ### Requirement: Línea de pago en divisa precargada y editada en divisa
 
-En la pantalla de pago, al agregar una línea con un método `is_foreign_currency`, el sistema DEBE (MUST) precargar la línea con el adeudado local convertido a divisa (`set_foreign_amount`) y poblar el buffer numérico con formato de locale (nunca `toFixed`, que rompe el parseo en `es_VE`); las ediciones posteriores del monto de esa línea pasan por `set_foreign_amount`, y si la caja no tiene método de efectivo, un monto que exceda en valor absoluto el adeudado se rechaza reponiendo el máximo permitido.
+En la pantalla de pago, al agregar una línea con un método `is_foreign_currency` y con adeudado local distinto de cero, el sistema DEBE (MUST) precargar la línea con el adeudado local convertido a divisa (`set_foreign_amount`) y poblar el buffer numérico con `formatForeignCurrency(..., false)` (formato de locale; nunca `toFixed`, que rompe el parseo en `es_VE`). Para los métodos NO `is_foreign_currency` solo se reformatea el buffer que ya llenó el core con `formatCurrency(..., false)`.
+
+`updateSelectedPaymentline` se reescribe SOLO para los métodos `is_foreign_currency` (cualquier otro método delega íntegramente en `super()`), y antes de todo, si todas las líneas de pago están marcadas `paid`, agrega una línea nueva con el PRIMER método de la caja. En esa rama en divisa el monto tecleado pasa por `set_foreign_amount`, y el guard de máximo tiene esta forma exacta: solo actúa si ningún método de la caja es de tipo `cash`, y compara el monto TECLEADO EN DIVISA contra el límite en MONEDA LOCAL (`remainingDue + amount de la propia línea`) con la precisión de la moneda local (`pos.currency.comp`); al dispararse fija la línea en cero, repone en el buffer la magnitud del adeudado LOCAL con `toString()` (separador decimal punto) y muestra `showMaxValueError()`. Es decir el guard mezcla monedas: con la moneda local más débil que la divisa, un sobrepago real en divisa normalmente no lo dispara.
 
 #### Scenario: Agregar método en divisa
 
 - **WHEN** el cajero pulsa un método de pago marcado `is_foreign_currency` con adeudado pendiente
 - **THEN** la línea nace con el adeudado expresado en divisa y el buffer muestra ese valor con el separador decimal del locale
 
-#### Scenario: Monto mayor al adeudado sin efectivo configurado
+#### Scenario: Monto mayor al límite local sin efectivo configurado
 
-- **WHEN** el cajero teclea en una línea en divisa un monto mayor al límite y ningún método de la caja es de efectivo
-- **THEN** se muestra el error de valor máximo y el monto se repone al adeudado
+- **WHEN** el cajero teclea en una línea en divisa un monto cuyo valor absoluto supera el adeudado expresado en MONEDA LOCAL y ningún método de la caja es de efectivo
+- **THEN** se muestra el error de valor máximo, la línea se pone en cero y el buffer queda con la magnitud del adeudado local en formato `toString()`
+
+#### Scenario: Sobrepago en divisa con moneda local débil
+
+- **WHEN** el adeudado son 675 Bs (1 divisa) y el cajero teclea 10 en la línea en divisa, sin método de efectivo en la caja
+- **THEN** el guard no se dispara (10 no supera 675) y `set_foreign_amount` procesa el monto por su rama de "cubre el adeudado" con el sobrepago convertido
 
 ### Requirement: Validación de orden sin líneas de pago en cero
 
@@ -178,12 +195,19 @@ La factura generada por una orden del PdV DEBE (MUST) crearse con `foreign_rate`
 
 ### Requirement: Asientos de pago de factura con montos alternos y tasa del pago
 
-`pos.payment._create_payment_moves` DEBE (MUST) escribir en el asiento de pago generado `foreign_rate`/`foreign_inverse_rate` iguales al `foreign_rate` del pago con `manually_set_rate = True`, y en cada apunte fijar `foreign_debit`/`foreign_credit` con el valor absoluto de `foreign_amount` del pago (según el lado con saldo) marcando `not_foreign_recalculate = True`.
+`pos.payment._create_payment_moves` DEBE (MUST) llamar al core y luego, para cada pago, IDENTIFICAR SU ASIENTO POR MONTO: se queda con los asientos devueltos cuyo `amount_total` sea igual a `abs(payment.amount)` (`float_compare` con el redondeo de la moneda de la orden). Solo sobre ese asiento escribe `foreign_rate` y `foreign_inverse_rate`, AMBOS iguales al `foreign_rate` del pago (no se escribe ningún inverso real), con `manually_set_rate = True`, y en cada apunte del asiento fija `foreign_debit`/`foreign_credit` con el valor absoluto de `foreign_amount` del pago según el lado con saldo (`line.debit > 0` / `line.credit > 0`), marcando `not_foreign_recalculate = True`.
+
+Si ningún asiento coincide en monto, el pago se salta EN SILENCIO (`continue`) y su asiento queda con la tasa que le puso el compute de `l10n_ve_accountant` y sin montos alternos. Si dos pagos de la misma llamada tienen el mismo importe, el `filtered` devuelve los dos asientos y ambos reciben los valores del pago que se esté iterando.
 
 #### Scenario: Pago de orden facturada
 
-- **WHEN** el cierre genera el asiento de pago de una factura del PdV
+- **WHEN** el cierre genera el asiento de pago de una factura del PdV y su `amount_total` coincide con el monto del pago
 - **THEN** los apuntes llevan los montos alternos del pago y la tasa pactada, sin que el compute base de `l10n_ve_accountant` los sobreescriba
+
+#### Scenario: Asiento cuyo total no coincide con el pago
+
+- **WHEN** el asiento generado no tiene un `amount_total` igual a `abs(payment.amount)` (p. ej. porque el core agrupó o ajustó importes)
+- **THEN** no se escribe nada para ese pago y el asiento queda sin `foreign_debit`/`foreign_credit` ni `manually_set_rate`
 
 ### Requirement: Cierre de sesión con montos alternos en la contabilidad
 
@@ -201,7 +225,9 @@ Durante el cierre de sesión, el sistema DEBE (MUST) acumular `foreign_amount` d
 
 ### Requirement: Cross moves de compensación para métodos en divisa
 
-Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago con `is_foreign_currency`, tipo distinto de `pay_later` y ambos diarios configurados (`cross_account_journal` y `cross_journal`), el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR que trasladan el saldo de la cuenta transitoria del método (cuenta por defecto del diario para efectivo; cuenta outstanding para banco) hacia la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, tasa del pago y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios se omite en silencio.
+Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago que pase `_is_cross_move_eligible` —`is_foreign_currency`, tipo distinto de `pay_later`, `cross_account_journal` y `cross_journal` presentes Y una cuenta transitoria resoluble— el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR (`state="draft"`) que trasladan el saldo de la cuenta transitoria del método hacia la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate = True`, la tasa del pago (`foreign_rate`, también en el encabezado junto con `foreign_currency_id`) y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios se omite en silencio.
+
+La cuenta transitoria la resuelve `_get_cross_transitory_account`: para `cash`, `journal_id.default_account_id`; para el resto, `outstanding_account_id` o, si está vacía, `journal_id.default_account_id`; y como último recurso, en ambos casos, `company_id.account_default_pos_receivable_account_id`. La cuenta real la resuelve `_get_cross_real_account` con la `payment_account_id` de las líneas de método de pago entrantes o salientes del `cross_journal` según el signo. Existe además una variante `use_suspense=True` (usada desde fuera, p. ej. `binaural_pos_close` para cash in/out) que drena `journal_id.suspense_account_id` hacia `cross_journal.suspense_account_id` invirtiendo el sentido del asiento.
 
 #### Scenario: Método en divisa completo
 
@@ -226,6 +252,31 @@ La granularidad de los cross moves DEBE (MUST) seguir el flag nativo `split_tran
 
 - **WHEN** el método no divide transacciones y las ventas y devoluciones del método se anulan entre sí
 - **THEN** no se crea ningún asiento para ese método
+
+### Requirement: Reescritura de totales de las órdenes al cerrar la sesión
+
+Al cerrar la sesión, después de `super().action_pos_session_close(...)` y de `_validate_cross_move()`, el sistema DEBE (MUST) recorrer TODAS las órdenes de la sesión (`pos.order` con `session_id = self.id`, sin filtrar por estado) y reescribir `order.amount_total` y el `price_subtotal` de cada una de sus líneas con `_apply_rounding`, que es `round(amount, 2)` de Python — NO el redondeo de la moneda (`currency_id.round`) ni el `rounding_method` de la caja. `_adjust_accounting_entries(order)` se invoca por cada orden y hoy no hace nada (`pass`).
+
+Esta escritura ocurre después de que el core ya generó los asientos de cierre, así que los asientos no se recalculan a partir de los nuevos valores.
+
+#### Scenario: Cierre de una sesión con órdenes
+
+- **WHEN** un usuario cierra una sesión con órdenes ya facturadas
+- **THEN** cada orden queda con `amount_total` y `price_subtotal` de sus líneas redondeados a 2 decimales con `round()` de Python, y los asientos contables ya creados no se ajustan
+
+#### Scenario: Moneda con precisión distinta de 2 decimales
+
+- **WHEN** la moneda de la caja tiene una precisión distinta de dos decimales
+- **THEN** el cierre igualmente fuerza dos decimales, porque `_apply_rounding` ignora la moneda
+
+### Requirement: Reasignación de los xml_ids de grupos del módulo antiguo al instalar
+
+El módulo DEBE (MUST) ejecutar el `pre_init_hook` `pre_init_hook` → `reassign_xml_groups_ids`, que por SQL reasigna en `ir_model_data` todas las filas con `module = 'binaural_pos'` y `name` que empiece por `group_` al módulo `l10n_ve_pos`, para que los grupos que ya existían con el nombre viejo del módulo no se dupliquen ni se pierdan las asignaciones de usuarios.
+
+#### Scenario: Instalación sobre una base con el módulo antiguo
+
+- **WHEN** se instala `l10n_ve_pos` en una base donde los grupos fueron creados por `binaural_pos`
+- **THEN** los `ir.model.data` de esos grupos pasan a pertenecer a `l10n_ve_pos` antes de cargar los datos del módulo, y los grupos se actualizan en vez de crearse de nuevo
 
 ### Requirement: Bloqueo de pasar a borrador asientos de una sesión abierta
 
@@ -306,12 +357,24 @@ Con `pos_show_free_qty` activo en la compañía, la tarjeta de producto DEBE (MU
 
 ### Requirement: Endpoints de validación de stock del PdV
 
-El controlador DEBE (MUST) exponer las rutas JSON `/validate_products_order` y `/validate_products_in_warehouse`: la primera devuelve `msg_error` con el nombre del producto si un producto almacenable tipo `consu` no tiene `qty_available` suficiente; la segunda valida las cantidades contra los quants del almacén de la caja y devuelve `msg_error` si no alcanza el stock en ese almacén o si el producto no existe en él — salvo que se pase `sell_kit_from_another_store` verdadero, que permite vender productos sin stock en el almacén de la caja.
+El controlador DEBE (MUST) exponer las rutas JSON `/validate_products_order` y `/validate_products_in_warehouse` (ambas `auth="public"`):
+
+- `/validate_products_order` recorre los ids recibidos y devuelve `msg_error` con el nombre del producto en cuanto una PLANTILLA (`product_tmpl_id`) con `is_storable` y `type == "consu"` tiene `qty_available` GLOBAL (sin acotar por almacén) menor a la cantidad pedida. Si se llama sin `lines` o sin `qty` no devuelve nada (`None`).
+- `/validate_products_in_warehouse` suma la `available_quantity` de los quants `on_hand` de la plantilla que pertenecen al almacén del `picking_type_id` recibido y distingue DOS fallos con tratamiento distinto:
+  - Stock insuficiente en ese almacén (el producto sí está en él): devuelve `msg_error` de inmediato, SIN importar el valor de `sell_kit_from_another_store`.
+  - Producto sin quants o sin presencia en el almacén de la caja: se acumula en una lista y solo se convierte en `msg_error` al final `if not sell_kit_from_another_store`.
+
+Es decir, `sell_kit_from_another_store` exime únicamente los productos ausentes del almacén de la caja; nunca el stock insuficiente.
 
 #### Scenario: Stock insuficiente en el almacén de la caja
 
-- **WHEN** se llama `/validate_products_in_warehouse` con una cantidad mayor a la disponible en el almacén del picking type
-- **THEN** la respuesta incluye un `msg_error` indicando el producto y el almacén
+- **WHEN** se llama `/validate_products_in_warehouse` con una cantidad mayor a la disponible en el almacén del picking type, con `sell_kit_from_another_store` verdadero
+- **THEN** la respuesta incluye igualmente un `msg_error` indicando el producto y el almacén
+
+#### Scenario: Producto ausente del almacén de la caja con la venta cruzada habilitada
+
+- **WHEN** el producto no tiene quants en el almacén del picking type y se pasa `sell_kit_from_another_store` verdadero
+- **THEN** la respuesta vuelve con `msg_error` en `False` y la venta se permite
 
 ### Requirement: Formulario reducido de contacto exclusivo del PdV
 
@@ -380,7 +443,7 @@ El PdV DEBE (MUST) mostrar la tasa operativa normalizada a la semántica "1 divi
 
 ### Requirement: Recibo y pantallas con totales en moneda alterna
 
-El recibo y las pantallas del PdV DEBEN (MUST) exponer los totales alternos: `export_for_printing` agrega `foreign_amount_total`, `foreign_total_without_tax`, `foreign_amount_tax` y `foreign_total_paid` al payload de impresión; la pantalla de recibo muestra el total alterno junto al local; la pantalla de pago muestra el total alterno adeudado y el panel de estado muestra Foreign Total / Foreign Remaining / Foreign Change (con clamp a cero de residuos negativos por redondeo); la pantalla de tickets muestra total, impuesto alterno y tasa de la orden seleccionada. El formateo usa `env.utils.formatForeignCurrency`, registrado por el override del servicio `contextual_utils_service` con la moneda alterna de la caja.
+El recibo y las pantallas del PdV DEBE (MUST) exponer los totales alternos: `export_for_printing` agrega `foreign_amount_total`, `foreign_total_without_tax`, `foreign_amount_tax` y `foreign_total_paid` al payload de impresión; la pantalla de recibo muestra el total alterno junto al local; la pantalla de pago muestra el total alterno adeudado y el panel de estado muestra Foreign Total / Foreign Remaining / Foreign Change (con clamp a cero de residuos negativos por redondeo); la pantalla de tickets muestra total, impuesto alterno y tasa de la orden seleccionada. El formateo usa `env.utils.formatForeignCurrency`, registrado por el override del servicio `contextual_utils_service` con la moneda alterna de la caja.
 
 #### Scenario: Impresión del recibo
 

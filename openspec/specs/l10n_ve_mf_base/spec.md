@@ -50,11 +50,11 @@ El método `read(timeout, delimiter)` de `SerialConnection` DEBE (MUST) acumular
 
 ### Requirement: Consulta de estado ENQ
 
-`getStatus()` del driver DEBE (MUST) enviar el byte ENQ (`0x05`) y parsear la respuesta de 5 bytes `STX|STS1|STS2|ETX|LRC`, validando que `LRC = STS1 ^ STS2 ^ ETX` (`FiscalProtocol.parseStatusENQ`). El parseo (`StatusParser`) interpreta STS2 por códigos exactos: `0x40` = sin errores, `0x41/0x42/0x43` = errores de papel/mecánicos, `0x50`-`0x6C` = errores generales (comando inválido, tasa inválida, error fiscal, memoria fiscal llena, etc.), y expone `errors` (lista legible), `isOperational` y `statusText`.
+`getStatus()` del driver DEBE (MUST) enviar el byte ENQ (`0x05`) y parsear la respuesta de 5 bytes `STX|STS1|STS2|ETX|LRC`, validando que `LRC = STS1 ^ STS2 ^ ETX` (`FiscalProtocol.parseStatusENQ`); STX y ETX inválidos solo se registran en consola y no invalidan el parseo. `StatusParser` interpreta STS2 por códigos exactos y expone `raw` (`sts1`/`sts2`), `errorFlags`, `errors`, `isOperational`, `hasErrors` (verdadero para cualquier STS2 distinto de `0x40`) y `statusText`.
 
 #### Scenario: Impresora sin errores
 
-- **WHEN** la respuesta al ENQ trae STS2 = `0x40` y LRC correcto
+- **WHEN** la respuesta al ENQ trae STS2 = `0x40`, STS1 sin los bits `0x08`/`0x10` y LRC correcto
 - **THEN** el estado parseado tiene `errors` vacío
 
 #### Scenario: LRC de ENQ inválido
@@ -62,23 +62,44 @@ El método `read(timeout, delimiter)` de `SerialConnection` DEBE (MUST) acumular
 - **WHEN** el LRC de la respuesta ENQ no coincide con `STS1 ^ STS2 ^ ETX`
 - **THEN** `parseStatusENQ` devuelve `null` y `getStatus()` reporta fallo
 
+### Requirement: Cobertura parcial de la lista legible de errores
+
+`StatusParser.getErrorList(sts1, sts2)` DEBE (MUST) devolver texto solo para los códigos que reconoce explícitamente: memoria fiscal llena (`0x6C`), error en memoria fiscal (`0x64`), error fiscal (`0x60`), papel (`0x41`/`0x42`/`0x43`), gaveta (cualquier STS2 con el bit `0x08` encendido) y los avisos de memoria de STS1 (bits `0x08`/`0x10`). Los códigos de error de comando/valor (`0x50` valor inválido, `0x54` tasa inválida, `0x58` sin directivas, `0x5C` comando inválido) NO producen entradas propias en `errors`: `0x50` y `0x54` devuelven lista vacía y `0x58`/`0x5C` solo reportan "Gaveta abierta o con fallo" por el bit `0x08`, aunque `hasErrors()` sea verdadero, `statusText` los nombre y `errorFlags.printerGeneralError` (`sts2 >= 0x50`) esté activo.
+
+#### Scenario: Tasa inválida no aparece en errors
+
+- **WHEN** la respuesta al ENQ trae STS2 = `0x54` (tasa inválida)
+- **THEN** `errors` queda vacío, `statusText` es "Tasa Inválida" y `hasErrors()` es verdadero
+
+#### Scenario: Comando inválido reportado como gaveta
+
+- **WHEN** la respuesta al ENQ trae STS2 = `0x5C` (comando inválido)
+- **THEN** el único texto en `errors` es el de gaveta, derivado del bit `0x08`
+
 ### Requirement: Chequeo de estado y recuperación de transacción antes de cada comando
 
-`sendCommand` DEBE (MUST), salvo para los comandos exentos `9`, `199` y `w` (o cuando se pasa `checkStatus = false`), consultar el estado vía ENQ antes de enviar: si la impresora reporta errores el comando se rechaza con el detalle, y si STS1 indica transacción en curso (`0x41/0x61/0x65/0x62/0x42`) se intenta `abortTransaction()` — que envía "9" (anular documento) y como respaldo "199" (fin de documento) hasta que STS1 vuelva a un estado de espera (`0x40/0x60/0x64`) — rechazando el comando si el aborto falla.
+`sendCommand` DEBE (MUST), salvo para los comandos exentos `9`, `199` y `w` (o cuando se pasa `checkStatus = false`), consultar el estado vía ENQ antes de enviar: el rechazo se decide únicamente por `status.errors` (la lista legible de `StatusParser`, no por `isOperational` ni `hasErrors`), y si STS1 indica transacción en curso (`0x41/0x61/0x65/0x62/0x42`) se intenta `abortTransaction()`, rechazando el comando si el aborto falla. Un STS1 que no sea de espera (`0x40/0x60/0x64`) ni de transacción solo genera una advertencia en consola y el comando se envía igual. `abortTransaction()` envía "9" (anular documento) y, si "9" no devuelve ACK ni deja la impresora en espera, "199" (fin de documento); DEBE (MUST) devolver verdadero en cuanto "9" o "199" reciben ACK, sin re-verificar STS1 en ese camino.
+
+Las tres rutinas de impresión (`printInvoice`, `printCreditNote`, `printDebitNote`) invocan cada comando de la secuencia con `checkStatus = false`, por lo que este chequeo NO ocurre comando a comando durante la impresión: el gate de estado del documento es la lectura de estado propia de cada rutina antes de la fase 1.
 
 #### Scenario: Impresora con error activo
 
-- **WHEN** el ENQ previo reporta errores (por ejemplo sin papel)
+- **WHEN** el ENQ previo devuelve `errors` no vacío (por ejemplo sin papel)
 - **THEN** el comando no se envía y el resultado es `success: false` con los errores concatenados
+
+#### Scenario: Error de STS2 fuera de la lista legible
+
+- **WHEN** el ENQ previo devuelve STS2 = `0x54` (tasa inválida), cuyo `errors` es vacío
+- **THEN** `sendCommand` no rechaza el comando y lo envía a la impresora
 
 #### Scenario: Transacción previa abierta recuperable
 
 - **WHEN** STS1 indica transacción en curso y el comando "9" es aceptado (ACK)
-- **THEN** la transacción previa se anula y el comando original continúa
+- **THEN** `abortTransaction()` devuelve verdadero y el comando original continúa
 
 #### Scenario: Transacción previa no recuperable
 
-- **WHEN** ni "9" ni "199" logran devolver la impresora a estado de espera
+- **WHEN** ni "9" ni "199" reciben ACK y el STS1 posterior sigue sin ser de espera
 - **THEN** el comando falla indicando que la impresora está ocupada y debe reiniciarse
 
 ### Requirement: Timeouts automáticos por tipo de comando y reintentos ante NAK
@@ -97,7 +118,7 @@ Cuando no se pasa timeout explícito, `sendCommand` DEBE (MUST) asignarlo según
 
 ### Requirement: Formato numérico según Flag 21
 
-El driver DEBE (MUST) formatear precios, cantidades y montos de pago con dígitos crudos rellenados con ceros (`_formatAmount`) según la configuración del flag 21 de la orden: `00` = 8+2 enteros/decimales de monto (5+3 cantidad, 10+2 pago), `01` = 7+3, `02` = 6+4 y `30` = 14+2 (14+3 cantidad, 15+2 pago); un valor desconocido o ausente usa `00`.
+El driver DEBE (MUST) formatear precios, cantidades y montos de pago con dígitos crudos rellenados con ceros (`_formatAmount`) según la configuración del flag 21 de la orden: `00` = 8+2 enteros/decimales de monto (5+3 cantidad, 10+2 pago, 7+2 descuento), `01` = 7+3, `02` = 6+4 y `30` = 14+2 (14+3 cantidad, 15+2 pago, 15+2 descuento); las configuraciones `00`, `01` y `02` comparten cantidad 5+3, pago 10+2 y descuento 7+2. Un valor desconocido o ausente usa `00`. La tabla está duplicada en `printInvoice`, `printCreditNote` y `printDebitNote`; solo `printInvoice` acepta un segundo argumento `flag21Config` que, cuando se pasa, DEBE (MUST) tener prioridad sobre `flag_21` de la orden.
 
 #### Scenario: Flag 30 para montos grandes
 
@@ -153,7 +174,9 @@ Cuando ningún pago es en divisas (códigos 01-19), `_appendPaymentCommands` DEB
 
 ### Requirement: Cierre vía 199 con pagos en divisas (IGTF)
 
-El driver DEBE (MUST) clasificar los códigos de método de pago 20-24 como pago en divisas (`_isDivisaPaymentMethod`) y, cuando la orden contiene al menos uno (`_hasDivisaPayment`), enviar TODOS los pagos como comandos `2XX` individuales — sin agrupar por método, un comando por pago — y NO enviar ningún cierre directo `1XX`, dejando que el `199` final cierre el documento para que la impresora calcule el IGTF (secuencia obligatoria del manual IGTF TFHKA con Flag 50=01). Antes de la fase de pagos se lee `S25` para diagnóstico del desglose IGTF del documento en curso.
+El driver DEBE (MUST) clasificar los códigos de método de pago 20-24 como pago en divisas (`_isDivisaPaymentMethod`) y, cuando la orden contiene al menos uno (`_hasDivisaPayment`), enviar TODOS los pagos como comandos `2XX` individuales — sin agrupar por método, un comando por pago, omitiendo los de monto cero o negativo — y NO enviar ningún cierre directo `1XX`, dejando que el `199` final cierre el documento para que la impresora calcule el IGTF (secuencia obligatoria del manual IGTF TFHKA con Flag 50=01).
+
+Los montos `2XX` se envían tal como los trae la orden: cuando hay pago en divisas, tras la fase 1 se lee `S25` únicamente para registrar el desglose en consola y su resultado se descarta — el driver NO suma el IGTF calculado por la impresora a ningún pago (`_adjustPaymentsWithIGTF` existe pero ninguna ruta lo invoca). Si la lectura del `S25` falla, la impresión continúa. Por lo tanto, cuando el IGTF hace que el total esperado por la impresora supere la suma de los `2XX` enviados, el `199` es rechazado con NAK y el documento no se cierra.
 
 #### Scenario: Pago mixto nacional + divisa
 
@@ -165,9 +188,14 @@ El driver DEBE (MUST) clasificar los códigos de método de pago 20-24 como pago
 - **WHEN** la orden tiene dos pagos con código 22
 - **THEN** se envían dos comandos `222...` separados, sin sumar los montos
 
+#### Scenario: IGTF leído pero no aplicado
+
+- **WHEN** el `S25` devuelve un `igtfAmount` mayor que cero para el documento en curso
+- **THEN** los comandos `2XX` conservan los montos originales de la orden y el monto del IGTF no se suma a ningún pago
+
 ### Requirement: Impresión de nota de crédito
 
-`printCreditNote(orderData)` DEBE (MUST) rechazar la operación si `invoice_affected` no trae `number`, `date` y `serial_machine`, y enviar la secuencia con los datos de la factura afectada: `iF*` con el número fiscal rellenado a 8 dígitos, `iI*` con el serial de la máquina e `iD*` con la fecha, usando para los ítems el prefijo `d` + código fiscal numérico. Las líneas con precio negativo se acumulan como descuento global y se envían tras el subtotal como comando `q-<monto>`. El número resultante se toma de `lastNCNumber` del S1.
+`printCreditNote(orderData)` DEBE (MUST) rechazar la operación si `invoice_affected` no trae `number`, `date` y `serial_machine`, y enviar la secuencia con los datos de la factura afectada: `iF*` con el número fiscal rellenado a 8 dígitos, `iI*` con el serial de la máquina e `iD*` con la fecha, usando para los ítems el prefijo `d` + código fiscal numérico (el código se envía crudo, sin el mapeo a caracteres `!`/`"`/`#` de la factura y sin quitar un eventual prefijo `t`). El monto del comando de descuento `q-<monto>` que se envía tras el subtotal DEBE (MUST) ser la suma de `|global_discount_amount|` de la orden más el valor absoluto de los precios de las líneas negativas, y solo se emite si esa suma es mayor que cero. El número resultante se toma de `lastNCNumber` del S1.
 
 #### Scenario: NC sin factura afectada
 
@@ -179,14 +207,24 @@ El driver DEBE (MUST) clasificar los códigos de método de pago 20-24 como pago
 - **WHEN** la NC trae la factura afectada completa y líneas válidas
 - **THEN** la secuencia incluye `iF*`, `iI*`, `iD*`, ítems con prefijo `d` y el resultado trae el número de NC leído del S1
 
+#### Scenario: NC con descuento global y línea negativa
+
+- **WHEN** la orden trae `global_discount_amount = 100` y una línea con `price_unit = -40`
+- **THEN** la línea negativa se excluye de los ítems y el comando enviado tras el subtotal es `q-` con 140
+
 ### Requirement: Impresión de nota de débito
 
-`printDebitNote(orderData)` DEBE (MUST) aplicar las mismas validaciones de factura afectada que la NC (`number`, `date`, `serial_machine` obligatorios, `iF*`/`iI*`/`iD*`) pero usando para los ítems el prefijo backtick (`` ` ``) + código fiscal, tomando el número resultante de `lastDebtNoteNumber` del S1.
+`printDebitNote(orderData)` DEBE (MUST) aplicar las mismas validaciones de factura afectada que la NC (`number`, `date`, `serial_machine` obligatorios, `iF*`/`iI*`/`iD*`) y el mismo tratamiento del descuento global (`q-` con `|global_discount_amount|` más los precios negativos), pero usando para los ítems el prefijo backtick (`` ` ``) + código fiscal, tomando el número resultante de `lastDebtNoteNumber` del S1.
 
 #### Scenario: ND válida
 
 - **WHEN** se imprime una ND con factura afectada completa
 - **THEN** los ítems se envían con prefijo backtick y el resultado trae el número de ND del S1
+
+#### Scenario: S1 en formato corto
+
+- **WHEN** el S1 posterior al `199` devuelve 15 campos o menos (formato corto), en el que `_parseS1Data` no asigna `lastDebtNoteNumber`
+- **THEN** la ND se reporta como `success: false` con "Nota de débito impresa, pero S1 no devolvió número de ND", aunque el documento ya se imprimió
 
 ### Requirement: Identificación fiscal tras imprimir
 
@@ -227,17 +265,19 @@ Tras el `199` final, el driver DEBE (MUST) leer `S1` y devolver en la respuesta 
 
 ### Requirement: Lecturas de datos S3, S4 y S25
 
-El driver DEBE (MUST) exponer lecturas parseadas de estados de la impresora: `readS3Data()` devuelve las tres tasas de impuesto, el bloque `igtf` (tipo, etiqueta y tasa, tomados de la cuarta línea) y los `systemFlags` crudos; `readS4Data()` devuelve los medios de pago programados como `{code, name}` (código = 2 primeros dígitos de cada línea); `readS25Data()` devuelve el desglose IGTF del documento fiscal en curso (bases, impuesto, total con y sin IGTF, contadores y tipo de documento) calculando `igtfAmount` como la diferencia entre el total con IGTF y el total sin IGTF. Los montos usan 2 decimales implícitos.
+El driver DEBE (MUST) exponer lecturas parseadas de estados de la impresora: `readS3Data()` devuelve las tres tasas de impuesto, el bloque `igtf` (tipo, etiqueta y tasa, tomados de la cuarta línea) y los `systemFlags` crudos; `readS4Data()` devuelve los medios de pago programados como `{code, name}` (código = 2 primeros dígitos de cada línea, o cadena vacía si la línea no empieza con dos dígitos); `readS25Data()` devuelve el desglose IGTF del documento fiscal en curso (bases, impuesto, total con y sin IGTF, contadores y tipo de documento) calculando `igtfAmount` como la diferencia entre el total con IGTF y el total sin IGTF. Los montos usan 2 decimales implícitos y las tres lecturas se envían con `checkStatus = false`.
+
+`_parseS25Data` DEBE (MUST) exigir al menos 6 campos (devuelve `null` con menos) y toma el tipo de documento del séptimo campo, quedando en `""` / "Desconocido" si no viene. El prefijo que elimina es `^S2` y no `^S25`, por lo que si la impresora ecoa el comando completo el dígito `5` sobrante queda como primer campo y el resto de los valores se lee desplazado una posición.
 
 #### Scenario: Tasa IGTF programada
 
 - **WHEN** se invoca `readS3Data()` en una impresora con IGTF al 3%
 - **THEN** `data.igtf.value` es `3.00` y `systemFlags` contiene los flags crudos del S3
 
-#### Scenario: S25 sin transacción abierta
+#### Scenario: S25 con menos de 6 campos
 
-- **WHEN** se invoca `readS25Data()` sin documento fiscal abierto
-- **THEN** los montos parseados son cero y `documentType` es `"0"` (Ninguno)
+- **WHEN** la respuesta al `S25` trae menos de 6 campos útiles
+- **THEN** `readS25Data()` devuelve `success: false` con el error de parseo
 
 ### Requirement: Formato de montos para líneas informativas
 
@@ -248,9 +288,9 @@ El driver DEBE (MUST) exponer lecturas parseadas de estados de la impresora: `re
 - **WHEN** se formatea `15`
 - **THEN** devuelve `"15,00"` sin separador de miles
 
-### Requirement: Línea informativa de descuento global en factura
+### Requirement: Línea informativa de descuento global
 
-Cuando la orden trae `global_discount_rate > 0` y `global_discount_amount > 0`, la fase de pie de la factura DEBE (MUST) emitir una línea informativa `iNN` con el texto `DESC. GLOBAL = <monto formateado>`, respetando el cupo de 10 líneas informativas (si no hay slot libre no se emite), y una segunda línea `DESC. GLOBAL EXCEDIO SUBTOTAL` cuando `global_clamped` es verdadero y queda cupo.
+Cuando la orden trae `global_discount_rate > 0` y `global_discount_amount > 0`, la fase de pie DEBE (MUST) emitir una línea informativa `iNN` con el texto `DESC. GLOBAL = <monto formateado>`, respetando el cupo de 10 líneas informativas (si no hay slot libre no se emite), y una segunda línea `DESC. GLOBAL EXCEDIO SUBTOTAL` cuando `global_clamped` es verdadero y queda cupo. `_appendFooterInfo` es el único punto de emisión y lo invocan las tres rutinas, así que la línea DEBE (MUST) emitirse también en notas de crédito y de débito (donde el mismo monto ya viaja además como comando `q-`). El contador de índices del pie arranca en `00` en cada documento, de modo que reutiliza los índices `iNN` ya usados por el encabezado.
 
 #### Scenario: Descuento global normal
 
@@ -261,6 +301,11 @@ Cuando la orden trae `global_discount_rate > 0` y `global_discount_amount > 0`, 
 
 - **WHEN** `global_clamped` es verdadero
 - **THEN** se emite además la línea `DESC. GLOBAL EXCEDIO SUBTOTAL`
+
+#### Scenario: Nota de crédito con descuento global
+
+- **WHEN** se imprime una NC cuya orden trae `global_discount_rate > 0` y `global_discount_amount > 0`
+- **THEN** el pie de la NC también incluye la línea `DESC. GLOBAL = <monto>`, además del comando `q-` enviado tras el subtotal
 
 ### Requirement: Reportes fiscales y gaveta
 

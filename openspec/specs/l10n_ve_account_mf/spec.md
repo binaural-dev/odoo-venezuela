@@ -8,12 +8,12 @@ Integra las impresoras fiscales TFHKA con Facturación/Contabilidad vía Web Ser
 
 ### Requirement: Tipo de impresión de factura por compañía
 
-La compañía DEBE (MUST) poder configurar `invoice_print_type` (`free` = forma libre, default; `fiscal` = máquina fiscal) desde ajustes (campo related en `res.config.settings`, `readonly=False`). En el formulario de factura, los botones de máquina fiscal solo son visibles cuando el related `print_type` es `fiscal` y `correlative` está vacío, mientras que el botón de forma libre `print_invoice_free_form` (de `l10n_ve_stock_account`) solo es visible cuando `print_type` es `free` y hay `correlative`.
+La compañía DEBE (MUST) poder configurar `invoice_print_type` (`free` = forma libre, default; `fiscal` = máquina fiscal) desde ajustes (campo related en `res.config.settings`, `readonly=False`). En el formulario de factura, los cuatro botones de máquina fiscal solo son visibles cuando el related almacenado `print_type` es `fiscal` y `correlative` está vacío, y además: "Imprimir Factura (MF)" exige `state = posted`, `move_type = out_invoice`, sin `mf_invoice_number` y `is_debit_journal` falso; "Imprimir ND (MF)" las mismas condiciones pero con `is_debit_journal` verdadero; "Imprimir NC (MF)" exige `move_type = out_refund` publicada y sin número fiscal; y "Reimprimir (MF)" exige `mf_invoice_number` presente. El botón de forma libre `print_invoice_free_form` (de `l10n_ve_stock_account`) solo es visible cuando `print_type` es `free` y hay `correlative`.
 
 #### Scenario: Compañía en modo fiscal
 
-- **WHEN** la compañía tiene `invoice_print_type = "fiscal"` y se abre una factura de cliente publicada sin número fiscal ni correlativo
-- **THEN** se muestra el botón "Imprimir Factura (MF)" y no el de impresión en forma libre
+- **WHEN** la compañía tiene `invoice_print_type = "fiscal"` y se abre una factura de cliente publicada, de diario no débito, sin número fiscal ni correlativo
+- **THEN** se muestra el botón "Imprimir Factura (MF)" y no el de impresión en forma libre ni el de ND
 
 #### Scenario: Compañía en forma libre
 
@@ -54,7 +54,11 @@ El onchange de `is_credit` DEBE (MUST) impedir marcar/desmarcar el campo cuando 
 
 ### Requirement: Construcción del payload de impresión
 
-El payload de impresión DEBE (MUST) construirse con: el cliente en formato `prefix_vat-vat`, nombre normalizado (NFKD sin acentos ni caracteres especiales vía `_normalize_product_name`), dirección y teléfono; líneas de producto con `fiscal_code` del primer impuesto (`account.tax.fiscal_code`, 0 sin impuestos), precio expresado en VEF (usa `foreign_price` cuando la moneda de la compañía no es VEF) con el descuento porcentual de línea ya aplicado; y pagos tomados del widget de pagos, mapeando cada uno al código del diario (`account.journal.payment_method`, default `01`) y convirtiendo a VEF con `foreign_inverse_rate` los pagos en otra moneda. Sin pagos registrados se envía una línea `{amount: 0, payment_method: "01"}`.
+El payload de impresión DEBE (MUST) construirse con las claves heredadas del flujo IoT: `flag_21`, `company_id.name`, `partner_id` (`vat` en formato `prefix_vat-vat`, `name` normalizado NFKD sin acentos ni caracteres especiales vía `_normalize_product_name`, `address` = `street`, `phone`), `invoice_lines` y `payment_lines`.
+
+Cada elemento de `invoice_lines` DEBE (MUST) llevar: `tax` (no `fiscal_code`) con el `fiscal_code` del primer impuesto de la línea (`account.tax.fiscal_code`, `0` si la línea no tiene impuestos), `price_unit` expresado en VEF (usa `foreign_price` cuando la moneda de la compañía no es VEF) con el descuento porcentual de línea ya aplicado, `quantity`, `code` siempre `False` (el backend nunca envía código de producto, por lo que el driver nunca emite el bloque `|code|`) y `name` con el formato `[<default_code>] <nombre normalizado>` cuando la línea tiene producto, o el nombre de la línea normalizado cuando no. No se excluyen líneas de precio cero o negativo: el filtrado lo hace el driver.
+
+Cada elemento de `payment_lines` DEBE (MUST) llevar `amount` y `payment_method`. El código se resuelve buscando un `account.journal` cuyo **nombre** coincida con el `journal_name` que trae el widget de pagos (`invoice_payments_widget`) y tomando su `payment_method`; si ninguna coincide, el recordset vacío hace que se use `01`. Los pagos cuya `currency_id` no sea `base.VEF` se multiplican por `foreign_inverse_rate` de la factura. Sin pagos registrados se envía una única línea `{amount: 0, payment_method: "01"}`.
 
 #### Scenario: Factura en moneda extranjera con descuento de línea
 
@@ -65,6 +69,11 @@ El payload de impresión DEBE (MUST) construirse con: el cliente en formato `pre
 
 - **WHEN** un pago del widget está en una moneda distinta de VEF
 - **THEN** su monto se multiplica por `foreign_inverse_rate` de la factura
+
+#### Scenario: Diario no localizable por nombre
+
+- **WHEN** el `journal_name` del widget de pagos no coincide con el nombre de ningún `account.journal`
+- **THEN** la línea de pago sale con `payment_method = "01"`
 
 ### Requirement: Persistencia de los datos fiscales y advertencia de duplicado
 
@@ -105,7 +114,7 @@ Tras una impresión exitosa, `print_out_invoice(values)` DEBE (MUST) escribir `m
 
 ### Requirement: Reimpresión del documento actual
 
-`check_reprint()` DEBE (MUST) rechazar la reimpresión si la factura no tiene `mf_invoice_number` y devolver `type` (move_type), `mf_number` e `is_debit_note` para que el frontend reimprima vía `TfhkaDriver.reprintDocument`. El botón "Reimprimir (MF)" solo es visible cuando el documento ya tiene número fiscal.
+`check_reprint()` DEBE (MUST) rechazar la reimpresión con `ValidationError` si la factura no tiene `mf_invoice_number`, devolver `{"valid": False}` con mensaje si no tiene líneas, y en caso válido devolver `type` (move_type), `mf_number` e `is_debit_note` (`is_debit_journal`) para que el frontend reimprima vía `TfhkaDriver.reprintDocument`. El frontend pasa `type` y `number` al driver, que solo mapea `out_invoice` → `RF` y `out_refund` → `RC`: `is_debit_note` viaja en el payload pero no altera el comando, por lo que una ND se reimprime como factura (`RF`). Tras una reimpresión exitosa se notifica al usuario sin recargar la vista y sin escribir nada en la factura.
 
 #### Scenario: Documento nunca impreso
 
@@ -137,21 +146,23 @@ El widget `mf-webserial-button` DEBE (MUST) ejecutar el flujo en tres pasos: (1)
 
 ### Requirement: Sincronización del Reporte Z con las facturas pendientes
 
-`account.move.report_z(serial, response)` DEBE (MUST) lanzar un error si `response.valid` es falso, y en caso contrario asignar `mf_reportz = contador + 1` a todas las facturas del serial (`_registeredMachineNumber`) que aún no tienen Z (`mf_reportz = False`), usando el `_dailyClosureCounter` recibido o, si falta, el último Z registrado en facturas de ese serial (`_get_z_and_add_one`, que devuelve 0 si no hay historial).
+`account.move.report_z(serial, response)` DEBE (MUST) lanzar un error si `response.valid` es falso, y en caso contrario asignar `mf_reportz = contador + 1` a todas las facturas cuyo `mf_serial` sea el `_registeredMachineNumber` que viene en `response.data` (el argumento `serial` se descarta y se sobrescribe con ese valor) y que aún no tienen Z (`mf_reportz = False`). El contador es el `_dailyClosureCounter` recibido; si falta, se usa `_get_z_and_add_one(serial)`, que devuelve el `mf_reportz` de la primera factura del serial ordenada `mf_reportz desc` — orden **lexicográfico**, porque `mf_reportz` es un `Char`, de modo que "9" gana a "10" — o `0` si no hay historial. Pese a su nombre, `_get_z_and_add_one` no incrementa: el `+1` lo aplica `report_z`.
 
 #### Scenario: Z impreso con contador
 
 - **WHEN** el frontend llama a `report_z` con el S1 leído tras imprimir el Z (contador N)
 - **THEN** todas las facturas pendientes de ese serial quedan con `mf_reportz = N + 1`
 
-#### Scenario: Contador no recuperado
+#### Scenario: Contador no recuperado con Z de distinta longitud
 
-- **WHEN** el S1 no trae `_dailyClosureCounter`
-- **THEN** se usa el mayor `mf_reportz` ya registrado para ese serial como base
+- **WHEN** el S1 no trae `_dailyClosureCounter` y el serial tiene facturas con `mf_reportz` "9" y "10"
+- **THEN** la base tomada es "9" (mayor en orden lexicográfico) y las facturas pendientes quedan con `mf_reportz = 10`
 
 ### Requirement: Wizard de reportes de máquina fiscal
 
-El wizard `l10n_ve.mf.reports.wizard` (menú "Reportes Maquina Fiscal" bajo Detalle de Ventas de `l10n_ve_accountant`) DEBE (MUST) ofrecer cuatro operaciones vía Web Serial: Reporte X (`I0X`, sin confirmación); Reporte Z con diálogo de confirmación explícito y posterior sincronización (`_readS1Data` + llamada a `account.move.report_z`); impresión de resumen por rango de fechas (comando `I2S<desde><hasta>` en formato DDMMYY, timeout 30s); y reimpresión de facturas por rango de fechas (comando `Rf<desde><hasta>` con los valores rellenados a 7 posiciones, timeout 60s). El rango DEBE (MUST) validarse con `date_to >= date_from` (tanto en el wizard como en el frontend) y las fechas del formulario se aceptan en múltiples formatos (YYYY-MM-DD, DD/MM/YYYY, Date, DateTime de Luxon).
+El wizard `l10n_ve.mf.reports.wizard` (menú "Reportes Maquina Fiscal" bajo Detalle de Ventas de `l10n_ve_accountant`) DEBE (MUST) ofrecer cuatro operaciones vía Web Serial: Reporte X (`I0X`, sin confirmación); Reporte Z con diálogo de confirmación explícito y posterior sincronización (`_readS1Data` + llamada a `account.move.report_z`); impresión de resumen por rango de fechas (comando `I2S<desde><hasta>` en formato DDMMYY, timeout 30s); y reimpresión de facturas por rango de fechas (comando `Rf<desde><hasta>`, timeout 60s, donde cada extremo es la misma fecha DDMMYY rellenada a 7 posiciones, es decir un cero a la izquierda).
+
+El rango y su formato los calcula el widget en el navegador leyendo `date_from`/`date_to` del registro (acepta YYYY-MM-DD, DD/MM/YYYY, `Date` y objetos Luxon) y ahí DEBE (MUST) rechazarse el rango invertido comparando en formato YYYYMMDD antes de enviar cualquier comando. Los métodos Python `_validate_date_range` y `get_date_range_payload` implementan la misma validación y el mismo formato DDMMYY, pero el widget no los invoca.
 
 #### Scenario: Reporte Z desde el wizard
 
@@ -160,8 +171,8 @@ El wizard `l10n_ve.mf.reports.wizard` (menú "Reportes Maquina Fiscal" bajo Deta
 
 #### Scenario: Rango de fechas invertido
 
-- **WHEN** `date_to` es anterior a `date_from`
-- **THEN** se lanza un error y no se envía ningún comando
+- **WHEN** `date_to` es anterior a `date_from` y se pulsa una de las dos operaciones por rango
+- **THEN** el widget lanza el error "Date To must be greater than or equal to Date From." y no se envía ningún comando a la impresora
 
 #### Scenario: Z sin sincronización posible
 

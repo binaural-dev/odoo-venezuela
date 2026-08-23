@@ -17,7 +17,7 @@ El sistema DEBE (MUST) proveer el modelo `transfer.reason` con las razones carga
 
 ### Requirement: Razones de traslado permitidas según la operación
 
-El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`) DEBE (MUST) limitar las razones seleccionables según la operación: salida con venta ofrece `sale` (por defecto) y `export`, o solo `self_consumption` si es donación; salida sin venta ofrece `self_consumption`, `other_causes`, `repair_improvement` y `external_storage`; interno ofrece `consignment`, `transfer` y `other_causes`, forzando `consignment` (en modo solo lectura) cuando el destino es un almacén de consignación. Si la razón asignada no está entre las permitidas, se reemplaza por la primera permitida.
+El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`) DEBE (MUST) limitar las razones seleccionables según la operación: salida con venta ofrece `sale` (asignada por defecto solo si el traslado aún no tiene razón) y `export`, o solo `self_consumption` si es donación; salida sin venta ofrece `self_consumption`, `other_causes`, `repair_improvement` y `external_storage`; interno ofrece `consignment`, `transfer` y `other_causes`, forzando `consignment` y `is_consignment_readonly` cuando el almacén del destino es de consignación. Si la razón asignada no está entre las permitidas, se reemplaza por la primera permitida. Cuando no se calculó ninguna razón permitida —caso de las entradas (`incoming`) y de cualquier otro código de operación— el campo DEBE (MUST) quedar con TODAS las razones del catálogo, no vacío.
 
 #### Scenario: Despacho de una venta
 
@@ -28,6 +28,11 @@ El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`)
 
 - **WHEN** el destino de un traslado interno pertenece al almacén de consignación
 - **THEN** la razón se fija en consignación y queda de solo lectura
+
+#### Scenario: Recepción de mercancía
+
+- **WHEN** el traslado es de entrada (`incoming`)
+- **THEN** `allowed_reason_ids` contiene las nueve razones del catálogo, sin restricción alguna
 
 ### Requirement: Razón de traslado obligatoria en internos
 
@@ -54,12 +59,17 @@ El campo `is_dispatch_guide` de `stock.picking` (`_compute_is_dispatch_guide`) D
 
 ### Requirement: Numeración de la guía de despacho por secuencia
 
-Al completar un traslado (`_action_done`), los pickings con `dispatch_guide_controls` activo DEBEN (MUST) recibir un `guide_number` tomado de la secuencia con código `guide.number` de su compañía (`get_sequence_guide_num`); si la compañía no tiene esa secuencia, se crea automáticamente con prefijo `GUIDE` y padding 5. `dispatch_guide_controls` solo se activa en traslados hechos cuyo documento es `dispatch_guide` o con `is_dispatch_guide` activo.
+Al completar un traslado (`_action_done`), los pickings con `dispatch_guide_controls` activo DEBEN (MUST) recibir un `guide_number` tomado de la secuencia con código `guide.number` de su compañía (`get_sequence_guide_num`); si la compañía no tiene esa secuencia, se crea automáticamente con prefijo `GUIDE` y padding 5 (el módulo precarga una para `base.main_company` en `data/ir_sequence.xml`). La asignación DEBE (MUST) hacerse sin comprobar si el traslado ya tenía número, por lo que cada nueva ejecución de `_action_done` sobre el mismo traslado consume y sobrescribe con un número nuevo. `dispatch_guide_controls` solo se activa en traslados hechos cuyo documento no es `invoice` y que tienen documento `dispatch_guide` o `is_dispatch_guide` activo.
 
 #### Scenario: Validación de una guía de despacho
 
 - **WHEN** se valida un traslado marcado como guía de despacho
 - **THEN** el traslado recibe el siguiente número de la secuencia `guide.number` de su compañía
+
+#### Scenario: Revalidación del mismo traslado
+
+- **WHEN** un traslado que ya tiene `guide_number` vuelve a pasar por `_action_done`
+- **THEN** su número se reemplaza por el siguiente de la secuencia
 
 #### Scenario: Compañía sin secuencia
 
@@ -77,26 +87,36 @@ Cada cliente (`res.partner`) DEBE (MUST) tener un `default_document` (`dispatch_
 
 ### Requirement: Estado de facturación de la guía
 
-El campo `state_guide_dispatch` de `stock.picking` DEBE (MUST) iniciar en `to_invoice`, pasar a `invoiced` cuando se genera una factura o nota desde el traslado (`create_invoice`, `create_bill`, `create_customer_credit`, `create_vendor_credit`, `create_multi_invoice`), y pasar a `emited` al validar un traslado interno con razón `transfer` (traslado entre almacenes) en `button_validate`.
+El campo `state_guide_dispatch` de `stock.picking` DEBE (MUST) iniciar en `to_invoice`, pasar a `invoiced` cuando se genera una factura o nota desde el traslado (`create_invoice`, `create_bill`, `create_customer_credit`, `create_vendor_credit`, `create_multi_invoice`), y pasar a `emited` al validar un traslado interno con razón `transfer` (traslado entre almacenes) en `button_validate`, escribiéndolo antes de delegar en `super()`, es decir sin exigir que la validación llegue a completarse. La opción `invoiced_partial` ("Partially Invoiced") DEBE (MUST) existir en la selección aunque ningún flujo del módulo la asigne.
 
 #### Scenario: Facturación de la guía
 
-- **WHEN** se crea la factura desde un traslado
+- **WHEN** se crea la factura desde un traslado de salida
 - **THEN** su `state_guide_dispatch` cambia a `invoiced`
 
 #### Scenario: Traslado entre almacenes
 
 - **WHEN** se valida un traslado interno con razón traslado entre almacenes
-- **THEN** su `state_guide_dispatch` cambia a `emited`
+- **THEN** su `state_guide_dispatch` cambia a `emited` antes de ejecutarse la validación estándar
+
+#### Scenario: Facturación parcial
+
+- **WHEN** solo se factura parte de las cantidades de una guía
+- **THEN** el estado no pasa a `invoiced_partial`: queda en `invoiced` porque ningún método asigna ese valor
 
 ### Requirement: Factura de cliente desde el traslado de salida
 
-El método `create_invoice` DEBE (MUST) crear, para traslados de salida, una factura `out_invoice` en el diario de clientes configurado en la compañía (`customer_journal_id`, con error si falta), con líneas construidas desde los movimientos (`_get_invoice_lines_for_invoice`): precio e impuestos de la línea de venta si existe (cantidad = `qty_delivered`), o precio de lista e impuesto de venta de la compañía en su defecto, exigiendo cuenta de ingreso en el producto o su categoría; la factura queda vinculada por `transfer_ids`/`picking_ids` con `from_picking = True`, hereda la lista de precios de la venta, y la orden de venta se marca facturada (`_update_order_sale_invoiced`).
+El método `create_invoice` DEBE (MUST) crear, para traslados de salida, una factura `out_invoice` en el diario de clientes configurado en la compañía (`customer_journal_id`, con error si falta), con líneas construidas desde los movimientos (`_get_invoice_lines_for_invoice`): precio e impuestos de la línea de venta si existe (cantidad = `qty_delivered`), o precio de lista e impuesto de venta de la compañía en su defecto, exigiendo cuenta de ingreso en el producto o su categoría; la factura queda vinculada por `transfer_ids`/`picking_ids` con `from_picking = True`, hereda la lista de precios de la venta, y la orden de venta se marca facturada. El método DEBE (MUST) retornar dentro del propio bucle de traslados, por lo que sobre un recordset de varios traslados solo factura el primero, aunque el `transfer_ids` de la factura creada apunte a todos los traslados de `self`; si el primer traslado no es de salida devuelve un `account.move` vacío. `_update_order_sale_invoiced` DEBE (MUST) además incrementar el `qty_invoiced` de cada línea de la orden con su `qty_delivered`, sin descontar lo ya facturado.
 
 #### Scenario: Guía con orden de venta
 
 - **WHEN** se crea la factura desde una guía de despacho originada en una venta
 - **THEN** las líneas usan el precio e impuestos de la línea de venta y la orden queda con `invoice_status = invoiced`
+
+#### Scenario: Varios traslados en el recordset
+
+- **WHEN** se invoca `create_invoice` sobre dos o más traslados de salida
+- **THEN** se crea una sola factura, la del primer traslado, y los demás quedan sin facturar aunque figuren en `transfer_ids`
 
 #### Scenario: Diario no configurado
 
@@ -110,21 +130,26 @@ El método `create_invoice` DEBE (MUST) crear, para traslados de salida, una fac
 
 ### Requirement: Factura de proveedor desde la recepción
 
-El método `create_bill` DEBE (MUST) crear, para traslados de entrada, una factura `in_invoice` en el diario de proveedores configurado (`vendor_journal_id`, con error si falta), con líneas por movimiento usando el precio de lista del producto y el impuesto de compra de la compañía (`account_purchase_tax_id`), marcando el traslado como `invoiced`.
+El método `create_bill` DEBE (MUST) exigir, para traslados de entrada, el diario de proveedores configurado (`vendor_journal_id`, con error si falta) y armar una línea por movimiento con el precio público del producto (`lst_price`), la cuenta de ingreso del producto o su categoría (no una cuenta de gasto) y el impuesto de compra de la compañía (`account_purchase_tax_id`). La creación del `account.move` DEBE (MUST) ocurrir dentro del bucle de movimientos con la lista de líneas acumulada, es decir tantas facturas como movimientos tenga el traslado, y DEBE (MUST) pasar la clave `picking_id`, que no es un campo de `account.move` en Odoo 19, por lo que la llamada falla con error de campo inválido antes de crear cualquier factura.
 
 #### Scenario: Recepción sin diario configurado
 
 - **WHEN** se intenta crear la factura de proveedor y la compañía no tiene `vendor_journal_id`
 - **THEN** se lanza un error pidiendo configurar el diario
 
+#### Scenario: Recepción con diario configurado
+
+- **WHEN** se ejecuta `create_bill` sobre una recepción hecha con el diario configurado
+- **THEN** la creación de la factura falla porque `picking_id` no existe en `account.move`, el traslado no queda marcado como `invoiced` y no se genera comprobante
+
 ### Requirement: Notas de crédito desde traslados devueltos
 
-Los métodos `create_customer_credit` y `create_vendor_credit` DEBEN (MUST) crear notas de crédito desde traslados devueltos: `out_refund` en el diario de clientes para traslados de entrada, e `in_refund` en el diario de proveedores para traslados de salida, con líneas por movimiento a precio de lista, marcando el traslado como `invoiced`.
+Cada uno de los métodos `create_customer_credit` y `create_vendor_credit` DEBE (MUST) preparar notas de crédito desde traslados devueltos: `out_refund` en el diario de clientes con el impuesto de venta de la compañía para traslados de entrada, e `in_refund` en el diario de proveedores con el impuesto de compra para traslados de salida, con una línea por movimiento a precio público (`lst_price`) y cuenta de ingreso del producto o su categoría. Igual que `create_bill`, cada método DEBE (MUST) crear el `account.move` dentro del bucle de movimientos y pasar la clave inexistente `picking_id`, por lo que en Odoo 19 la creación falla con error de campo inválido y no se emite la nota de crédito.
 
 #### Scenario: Nota de crédito de cliente
 
-- **WHEN** se ejecuta `create_customer_credit` sobre un traslado de entrada
-- **THEN** se crea una nota de crédito `out_refund` vinculada al traslado
+- **WHEN** se ejecuta `create_customer_credit` sobre un traslado de entrada devuelto
+- **THEN** la creación falla por el campo inexistente `picking_id` y el traslado permanece en `to_invoice`
 
 ### Requirement: Marcado de devoluciones
 
@@ -142,7 +167,7 @@ El wizard `stock.return.picking` DEBE (MUST) marcar con `is_return = True` el tr
 
 ### Requirement: Tipo de comprobante ofrecido según operación y devolución
 
-La visibilidad de los botones de facturación (`_compute_button_visibility`) DEBE (MUST) exigir traslado hecho, sin facturas vinculadas y `state_guide_dispatch = to_invoice`, y ofrecer: en entradas, factura de proveedor si no es devolución o nota de crédito si lo es; en salidas, factura de cliente solo si no es devolución, el documento de la venta no es `invoice` y la devolución no es total, o nota de crédito si es devolución; en internos de consignación, la factura interna.
+La visibilidad de los botones de facturación (`_compute_button_visibility`) DEBE (MUST) exigir traslado hecho, sin facturas vinculadas y `state_guide_dispatch = to_invoice`, y calcular: en entradas, `show_create_bill` si no es devolución y `show_create_vendor_credit` si lo es; en salidas, `show_create_invoice` solo si no es devolución, el documento de la venta no es `invoice` y la devolución no es total, y `show_create_customer_credit` si es devolución; en internos con razón consignación, `show_create_invoice_internal`. Los botones expuestos en la interfaz DEBEN (MUST) limitarse a: en el formulario del traslado, únicamente "Create Invoice" (`action_create_invoice`), restringido además al grupo `l10n_ve_stock_account.group_stock_account`; y en la lista "Report Guide Dispatch", los cuatro botones de factura, factura de proveedor y ambas notas de crédito. `show_create_invoice_internal` no tiene botón ni método asociado —no existe ninguna acción de "factura interna" de consignación—, se declara solo como campo invisible en las vistas.
 
 #### Scenario: Salida ya facturada por la venta
 
@@ -152,25 +177,40 @@ La visibilidad de los botones de facturación (`_compute_button_visibility`) DEB
 #### Scenario: Entrada sin devolución
 
 - **WHEN** un traslado de entrada hecho no es devolución y no tiene facturas
-- **THEN** solo se ofrece crear la factura de proveedor
+- **THEN** `show_create_bill` queda activo y el botón correspondiente solo aparece en la lista de guías de despacho, no en el formulario del traslado
+
+#### Scenario: Interno de consignación
+
+- **WHEN** un traslado interno con razón consignación cumple las condiciones y `show_create_invoice_internal` queda activo
+- **THEN** no se ofrece ningún botón ni acción, porque no existe método de factura interna
 
 ### Requirement: Bloqueo de refacturación con factura publicada
 
-Antes de crear cualquier comprobante desde un traslado, `_validate_one_invoice_posted` DEBE (MUST) impedir la operación si el traslado ya tiene una factura vinculada en estado `posted`.
+Antes de crear cualquier comprobante desde un traslado, `_validate_one_invoice_posted` DEBE (MUST) impedir la operación si existe un `account.move` en estado `posted` vinculado al traslado por el campo `picking_ids`. Al buscar solo por `picking_ids` —que únicamente pueblan `create_invoice` y `create_multi_invoice`— el bloqueo no alcanza a los comprobantes vinculados solo por `transfer_ids`.
 
 #### Scenario: Guía con factura publicada
 
-- **WHEN** se intenta crear otra factura desde un traslado con una factura publicada
+- **WHEN** se intenta crear otra factura desde un traslado con una factura publicada en `picking_ids`
 - **THEN** se lanza un error indicando que la guía ya tiene una factura publicada
+
+#### Scenario: Comprobante vinculado solo por transfer_ids
+
+- **WHEN** el traslado tiene un comprobante publicado que solo lo referencia en `transfer_ids`
+- **THEN** la validación no lo detecta y permite generar otro comprobante
 
 ### Requirement: Factura combinada de múltiples guías
 
-La opción `unique` del wizard `picking.invoice.wizard` DEBE (MUST) crear una sola factura para varios traslados seleccionados validando que todos estén hechos, pertenezcan al mismo cliente y tengan el mismo tipo de comprobante; `create_multi_invoice` exige además una única lista de precios y el diario de clientes configurado, agrupa las líneas por producto sumando cantidades (`group_products`) y marca todos los traslados como `invoiced`.
+La opción `unique` del wizard `picking.invoice.wizard` DEBE (MUST) operar sobre los traslados de `active_ids` del contexto (no sobre el campo `pickings_ids` del wizard) validando que todos estén en estado `done` —no que estén en `state_guide_dispatch = to_invoice`, pese al texto del error—, que pertenezcan al mismo cliente y que todos deriven en el mismo tipo de comprobante según sus flags `show_create_*`. La creación DEBE (MUST) ejecutarse únicamente cuando ese tipo común es `invoice`, delegando en `create_multi_invoice` del primer traslado; para los tipos `bill`, `vendor_credit` y `customer_credit` la opción termina sin crear nada ni avisar. `create_multi_invoice` DEBE (MUST) actuar solo si el `picking_type_id.code` del traslado que la invoca es `outgoing`, exigir una única lista de precios y el diario de clientes configurado, agrupar las líneas por producto sumando cantidades con `group_products` (tomando `move.quantity`, no `qty_delivered`) y marcar todos los traslados como `invoiced`.
 
 #### Scenario: Guías del mismo cliente
 
-- **WHEN** se seleccionan varias guías hechas del mismo cliente con la misma lista de precios y se elige factura única
+- **WHEN** se seleccionan varias guías hechas del mismo cliente con la misma lista de precios y tipo `invoice`, y se elige factura única
 - **THEN** se crea una sola factura con las cantidades agrupadas por producto y todas las guías quedan facturadas
+
+#### Scenario: Guías de tipo nota de crédito
+
+- **WHEN** todos los traslados seleccionados corresponden a notas de crédito o facturas de proveedor y se elige factura única
+- **THEN** no se crea ningún comprobante y el wizard cierra sin error ni mensaje
 
 #### Scenario: Clientes distintos
 
@@ -193,12 +233,17 @@ La opción `multiple` del wizard `picking.invoice.wizard` DEBE (MUST) validar qu
 
 ### Requirement: Facturación automática por cron
 
-El cron "Generate Invoices from Pickings" (inactivo por defecto) DEBE (MUST) ejecutar `_cron_generate_invoices_from_pickings`, que solo factura cuando el día actual coincide con el configurado en `invoice_cron_type` (`last_day`: último día del mes; `last_business_day`: último día hábil, retrocediendo sábados y domingos) y la hora actual está a lo sumo a media hora de `invoice_cron_time`. Procesa los traslados hechos con `state_guide_dispatch = to_invoice` y sin facturas, generando factura de cliente para no-entradas sin devolución, factura de proveedor para no-salidas sin devolución, nota de crédito de cliente para no-salidas devueltas y nota de crédito de proveedor para no-entradas devueltas; los errores se registran en el chatter del traslado sin detener el proceso.
+El cron "Generate Invoices from Pickings" (inactivo por defecto) DEBE (MUST) ejecutar `_cron_generate_invoices_from_pickings`, que solo factura cuando el día actual coincide con el configurado en `invoice_cron_type` (`last_day`: último día del mes; cualquier otro valor, incluido vacío: último día hábil, retrocediendo sábados y domingos) y la hora actual está a lo sumo a media hora de `invoice_cron_time`. Procesa los traslados de la compañía activa que estén hechos, con `state_guide_dispatch = to_invoice` y sin facturas, evaluando cuatro condiciones independientes por traslado: factura de cliente si el código de operación no es `incoming` y no es devolución, factura de proveedor si no es `outgoing` y no es devolución, nota de crédito de cliente si no es `outgoing` y es devolución, y nota de crédito de proveedor si no es `incoming` y es devolución. Como las condiciones se evalúan con `if` sucesivos y no distinguen `internal`, un traslado interno DEBE (MUST) entrar en dos de esas ramas a la vez. Los errores se registran en el log y en el chatter del traslado sin detener el proceso.
 
 #### Scenario: Ejecución en el día y hora configurados
 
 - **WHEN** el cron corre el último día hábil del mes a la hora configurada con `invoice_cron_type = last_business_day`
-- **THEN** se generan los comprobantes de los traslados pendientes de facturar
+- **THEN** se recorren los traslados pendientes y se intenta generar el comprobante correspondiente a cada rama que se cumpla
+
+#### Scenario: Traslado interno pendiente
+
+- **WHEN** el cron procesa un traslado interno sin devolución
+- **THEN** intenta a la vez factura de cliente y factura de proveedor; la primera no crea nada por no ser salida y la segunda falla, dejando el error en el chatter del traslado
 
 #### Scenario: Error en un traslado
 
@@ -233,6 +278,20 @@ El método `alert_views` de `stock.picking` DEBE (MUST) contar las guías pendie
 - **WHEN** la compañía es contribuyente ordinario
 - **THEN** la fecha límite anunciada es el último día del mes
 
+### Requirement: Guías incluidas en el reporte de guías de despacho
+
+El campo almacenado `match_guide_dispatch_domain` de `stock.picking` (`_compute_match_guide_dispatch_domain`) DEBE (MUST) quedar activo solo cuando se cumplen todas estas condiciones: estado `done`; `type_delivery_step` en (`out`, `int`); razón de traslado distinta de `self_consumption` (o sin razón); documento de la venta distinto de `invoice` (o sin venta); `type_delivery_step` igual a `out`, o igual a `int` con `is_dispatch_guide` activo; `is_return` falso; y `type_of_return` distinto de `total`. La acción "Report Guide Dispatch" DEBE (MUST) filtrar la lista de guías por ese campo, con el filtro por defecto `state_guide_dispatch = to_invoice`.
+
+#### Scenario: Traslado interno sin marca de guía
+
+- **WHEN** un traslado interno hecho no tiene `is_dispatch_guide` activo
+- **THEN** `match_guide_dispatch_domain` queda inactivo y el traslado no aparece en el reporte de guías de despacho
+
+#### Scenario: Devolución total
+
+- **WHEN** un traslado de salida hecho tiene `type_of_return = total`
+- **THEN** queda fuera del reporte de guías de despacho
+
 ### Requirement: Almacén de consignación único
 
 La constraint `_check_unique_consignation_warehouse` de `stock.warehouse` DEBE (MUST) impedir marcar `is_consignation_warehouse` en más de un almacén.
@@ -253,11 +312,11 @@ La constraint `_check_internal_location_only` de `stock.location` DEBE (MUST) ex
 
 ### Requirement: Validación de stock en ventas de consignación
 
-En órdenes de venta cuyo almacén es de consignación, las constraints de `sale.order` y `sale.order.line` DEBEN (MUST) exigir, para cada producto no servicio, que exista stock con cantidad positiva en una ubicación interna asignada al cliente de la orden, y que la cantidad vendida no supere `free_qty_today`.
+En órdenes de venta cuyo almacén es de consignación, el sistema DEBE (MUST) exigir —vía la constraint `_check_consignation_warehouse` de `sale.order` y las constraints `_check_product_in_consignation` y `_check_quantity_in_consignation` de `sale.order.line`— que para cada producto no servicio exista al menos un quant con cantidad positiva en alguna ubicación interna cuyo `partner_id` sea el cliente de la orden, y que la cantidad de la línea no supere `free_qty_today`. La búsqueda de quants NO se restringe al almacén de consignación: basta cualquier ubicación interna asignada a ese cliente; y `free_qty_today` es la disponibilidad estándar de `sale_stock`, no la existencia consignada de esa ubicación.
 
 #### Scenario: Producto sin stock en la ubicación del cliente
 
-- **WHEN** se agrega a la orden un producto sin quants positivos en la ubicación de consignación del cliente
+- **WHEN** se agrega a la orden un producto sin quants positivos en ninguna ubicación interna asignada al cliente
 - **THEN** se lanza un error indicando que el producto no está disponible en la ubicación de consignación
 
 #### Scenario: Cantidad mayor a la consignada
@@ -312,9 +371,14 @@ El campo `guide_number` de `account.move` DEBE (MUST) computarse concatenando co
 
 ### Requirement: Cantidad facturada por línea de movimiento
 
-El campo `qty_invoiced` de `stock.move.line` DEBE (MUST) computarse como la suma de las cantidades de las líneas de facturas publicadas (`state = posted`) vinculadas al traslado por `transfer_ids` para el mismo producto.
+El campo almacenado `qty_invoiced` de `stock.move.line` DEBE (MUST) computarse como la suma de las cantidades de las líneas de facturas publicadas (`state = posted`) vinculadas al traslado por `transfer_ids` para el mismo producto. Sus dependencias declaradas son solo `product_id` y `picking_id`, por lo que el valor se calcula al crear o modificar la línea y NO se recalcula cuando después se crea o se publica una factura.
 
 #### Scenario: Guía facturada parcialmente
 
-- **WHEN** existe una factura publicada que cubre parte del producto de la línea
+- **WHEN** existe una factura publicada que cubre parte del producto de la línea al momento de calcularse el campo
 - **THEN** `qty_invoiced` refleja la cantidad facturada en esas facturas
+
+#### Scenario: Factura publicada después del traslado
+
+- **WHEN** se publica la factura de una guía ya validada
+- **THEN** `qty_invoiced` de las líneas conserva el valor anterior (típicamente 0) hasta que cambie `product_id` o `picking_id` de la línea

@@ -8,7 +8,7 @@ Gestiona los pagos anticipados (cuentas puente de anticipo de clientes y proveed
 
 ### Requirement: Cuentas de anticipo restringidas por tipo
 
-Una cuenta contable con `is_advance_account` activo DEBE (MUST) ser de tipo `asset_current` o `liability_current` (onchange `_onchange_is_advance_account` de `account.account`), y las cuentas de anticipo por defecto de la compañía (`advance_customer_account_id`, `advance_supplier_account_id`) DEBEN (MUST) estar marcadas como cuenta de anticipo (onchange `_onchange_default_igtf_account` de `res.company`).
+Una cuenta contable con `is_advance_account` activo DEBE (MUST) ser de tipo `asset_current` o `liability_current` (onchange `_onchange_is_advance_account` de `account.account`), y las cuentas de anticipo por defecto de la compañía (`advance_customer_account_id`, `advance_supplier_account_id`) DEBEN (MUST) estar marcadas como cuenta de anticipo (onchange `_onchange_default_igtf_account` de `res.company`, que no valida cuando el contexto trae `install_mode` o `skip_check`).
 
 #### Scenario: Marcar una cuenta por cobrar como anticipo
 
@@ -31,7 +31,7 @@ Cuando un pago tiene `is_advance_payment` activo, `_compute_destination_account_
 
 ### Requirement: Validación de la cuenta destino según el tipo de pago
 
-El constraint `_check_advance_payment_account` de `account.payment` DEBE (MUST) exigir: en anticipos de proveedor una cuenta `asset_current` con `is_advance_account`; en anticipos de cliente una cuenta `liability_current` con `is_advance_account`; y en pagos estándar prohibir cuentas de anticipo y exigir tipos `asset_receivable` o `liability_payable`.
+El constraint `_check_advance_payment_account` de `account.payment` DEBE (MUST) exigir: en anticipos de proveedor una cuenta `asset_current` con `is_advance_account`; en anticipos de cliente una cuenta `liability_current` con `is_advance_account`; y en pagos estándar prohibir cuentas de anticipo y exigir tipos `asset_receivable` o `liability_payable`. La validación se omite cuando el pago no tiene cuenta destino y cuando el contexto trae `install_mode` o `skip_check`, y el error se lanza como `UserError`.
 
 #### Scenario: Anticipo de cliente con cuenta incorrecta
 
@@ -42,6 +42,11 @@ El constraint `_check_advance_payment_account` de `account.payment` DEBE (MUST) 
 
 - **WHEN** un pago sin marca de anticipo usa una cuenta con `is_advance_account`
 - **THEN** se lanza un error pidiendo desmarcar el anticipo o cambiar la cuenta
+
+#### Scenario: Carga de datos con contexto de instalación
+
+- **WHEN** se escribe un pago con `install_mode` o `skip_check` en el contexto
+- **THEN** el constraint no valida la cuenta destino
 
 ### Requirement: Diarios IGTF con moneda extranjera obligatoria
 
@@ -82,7 +87,7 @@ La compañía DEBE (MUST) definir el porcentaje del IGTF en `igtf_percentage` (p
 
 ### Requirement: Fórmula de cálculo del IGTF por pago
 
-`calculate_igtf_for_payment` de `l10n_ve_igtf.utils` DEBE (MUST) calcular el IGTF como el mínimo entre el monto pagado y la deuda residual (ambos convertidos a moneda de la compañía a la fecha del pago, o a la fecha de la factura si el pago no es indexado) multiplicado por `igtf_percentage/100`, topado por el IGTF restante de la factura (`igtf_top_aply - alter_bi_igtf`); devuelve 0 cuando el tope ya se consumió, cuando el tope iguala el residual o cuando el IGTF calculado supera el tope, y convierte el resultado a la moneda del pago salvo que se pida la base.
+`calculate_igtf_for_payment` de `l10n_ve_igtf.utils` DEBE (MUST) calcular el IGTF como el mínimo entre el monto pagado y la deuda residual de la factura (ambos convertidos a moneda de la compañía a la fecha del pago, o a la fecha de la factura cuando el pago no es indexado, según el parámetro `indexed_default`) multiplicado por `igtf_percentage/100`, topado por el IGTF restante de la factura (`igtf_top_aply - alter_bi_igtf`); devuelve 0 cuando ese restante es exactamente cero, cuando el tope iguala el residual convertido (con IGTF no nulo) o cuando el IGTF calculado supera el tope, y convierte el resultado desde la moneda de la compañía a la moneda del pago salvo que se pida la base (`base=True`).
 
 #### Scenario: Pago parcial en divisa
 
@@ -91,8 +96,13 @@ La compañía DEBE (MUST) definir el porcentaje del IGTF en `igtf_percentage` (p
 
 #### Scenario: Tope de IGTF consumido
 
-- **WHEN** el IGTF acumulado de la factura (`alter_bi_igtf`) ya alcanzó el tope (`igtf_top_aply`)
+- **WHEN** el IGTF acumulado de la factura (`alter_bi_igtf`) iguala exactamente el tope (`igtf_top_aply`)
 - **THEN** el cálculo devuelve 0 y no se genera más IGTF
+
+#### Scenario: Pago no indexado
+
+- **WHEN** el cálculo se invoca con `indexed_default` falso
+- **THEN** las conversiones a la moneda de la compañía usan la tasa de la fecha de la factura y no la del pago
 
 ### Requirement: Detección del IGTF en el wizard de pagos
 
@@ -133,7 +143,7 @@ Cuando `is_igtf` está activo, `_compute_amount` del wizard DEBE (MUST) fijar `a
 
 ### Requirement: Línea contable de IGTF en el asiento del pago
 
-Al generar las líneas del pago (`_prepare_move_line_default_vals`), un pago creado desde el wizard (`payment_from_wizard`) con `igtf_amount` mayor que cero DEBE (MUST) agregar una línea "IGTF" contra la cuenta IGTF de la compañía (`customer_account_igtf_id` o `supplier_account_igtf_id` según `partner_type`, con error si no está configurada), ajustando la contrapartida por cobrar/pagar para separar la porción del impuesto y recalculando la línea de write-off cuando existe; la línea no se genera cuando alguna factura origen pertenece al diario de compra internacional ni en flujos con contexto `from_pos`.
+Al generar las líneas del pago (`_prepare_move_line_default_vals`), un pago creado desde el wizard (`payment_from_wizard`) con `igtf_percentage` distinto de cero e `igtf_amount` mayor que cero DEBE (MUST) agregar una línea "IGTF" contra la cuenta IGTF de la compañía (`customer_account_igtf_id` o `supplier_account_igtf_id` según `partner_type`, con error si no está configurada), ajustando la contrapartida por cobrar/pagar para separar la porción del impuesto y recalculando la línea de write-off cuando existe; la línea no se genera cuando alguna factura origen pertenece al diario de compra internacional, ni en flujos con contexto `from_pos`, ni cuando las líneas ya incluyen una sobre la cuenta de anticipo del partner.
 
 #### Scenario: Pago de cliente con IGTF
 
@@ -150,9 +160,23 @@ Al generar las líneas del pago (`_prepare_move_line_default_vals`), un pago cre
 - **WHEN** las facturas origen del pago pertenecen a un diario de compra internacional
 - **THEN** el asiento del pago no incluye línea de IGTF
 
+### Requirement: Ajuste de balances en pagos del wizard sin IGTF
+
+Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` es cero o negativo, `_prepare_move_line_default_vals` DEBE (MUST) forzar la cuadratura contra el residual real de las facturas origen: cuando el pago trae líneas de write-off y el asiento tiene al menos tres líneas, `_fix_writeoff_balance` fija el balance de la contrapartida (`vals[1]`) en el negativo del residual firmado de las facturas origen (`-amount_residual_signed`), recalcula su `amount_currency` desde ese balance y absorbe la diferencia en la línea de write-off (`vals[2]`); cuando no hay write-off, y siempre que la diferencia entre ese residual y el balance de la línea de liquidez no supere 0,1, todas las facturas origen tengan la misma fecha de documento y esa fecha coincida con la del pago, fija los balances de las dos primeras líneas en ±`amount_residual_signed` según el `partner_type`.
+
+#### Scenario: Pago con write-off sin IGTF
+
+- **WHEN** se crea desde el wizard un pago sin IGTF con línea de write-off cuyo balance de contrapartida difiere del residual de la factura
+- **THEN** la contrapartida queda por el residual en moneda de la compañía y el write-off absorbe la diferencia
+
+#### Scenario: Pago exacto en la fecha de la factura
+
+- **WHEN** un pago sin IGTF ni write-off cancela una única factura cuya fecha de documento es la del pago y la diferencia de conversión es menor o igual a 0,1
+- **THEN** los balances de liquidez y contrapartida se fijan en el residual de la factura con los signos correspondientes al tipo de partner
+
 ### Requirement: Base imponible del IGTF acumulada en la factura
 
-`compute_bi_igtf` de `account.move` DEBE (MUST) mantener por factura: `igtf_top_aply` (tope = `amount_total_signed` por el porcentaje, menos la porción cubierta por pagos sin IGTF), `bi_igtf` (base imponible acumulada de los pagos con IGTF conciliados, limitada al total de la factura), `alter_bi_igtf` (IGTF acumulado aplicado) y `foreign_bi_igtf` (base convertida a la moneda del documento, limitada a `amount_total`), recorriendo los asientos de pago conciliados y sus conciliaciones parciales.
+`compute_bi_igtf` de `account.move` DEBE (MUST) mantener por factura: `igtf_top_aply` (tope = `amount_total_signed` por el porcentaje, menos el porcentaje de IGTF de los importes conciliados por pagos sin línea de IGTF), `bi_igtf` (base imponible acumulada de los pagos con IGTF conciliados, limitada a `amount_total_signed`), `alter_bi_igtf` (IGTF acumulado aplicado) y `foreign_bi_igtf` (base convertida a la moneda del documento, limitada a `amount_total`), recorriendo los asientos de pago conciliados y sus conciliaciones parciales. El cálculo solo se ejecuta cuando el residual del documento es distinto de cero o su `payment_state` es `paid`/`in_payment`; en cualquier otro caso los cuatro campos quedan en cero.
 
 #### Scenario: Factura pagada con IGTF
 
@@ -162,11 +186,16 @@ Al generar las líneas del pago (`_prepare_move_line_default_vals`), un pago cre
 #### Scenario: Pago sin IGTF
 
 - **WHEN** el pago conciliado no tiene línea de IGTF
-- **THEN** su porción reduce el tope `igtf_top_aply` disponible para pagos posteriores
+- **THEN** el tope `igtf_top_aply` se reduce en el porcentaje de IGTF del importe conciliado por ese pago
+
+#### Scenario: Documento sin residual y sin pagos
+
+- **WHEN** el documento tiene residual cero y su `payment_state` no es `paid` ni `in_payment`
+- **THEN** `igtf_top_aply`, `bi_igtf`, `alter_bi_igtf` y `foreign_bi_igtf` quedan en cero
 
 ### Requirement: Bloque IGTF en el resumen de impuestos
 
-`_get_tax_totals_summary` de `account.tax` DEBE (MUST) agregar al resumen la clave `igtf` con: `apply_igtf` (verdadero cuando `bi_igtf > 0`), la base y el monto del IGTF en moneda del documento y de la compañía con sus formatos, y `amount_total_igtf` (total del documento más IGTF); para `out_invoice` agrega además el bloque `igtf_free_form` con el IGTF sugerido sobre el total de la factura y el flag `show_igtf_suggested_account_move` de la compañía.
+`_get_tax_totals_summary` de `account.tax` DEBE (MUST) agregar al resumen la clave `igtf` con: `apply_igtf` (verdadero solo cuando `bi_igtf > 0`), `igtf_show` (verdadero cuando el importe es solo sugerido), el nombre con el porcentaje, y la base y el monto del IGTF en moneda del documento y de la compañía con sus formatos; cuando `bi_igtf` es cero la base usada es el total del documento, de modo que el bloque reporta un IGTF sugerido en lugar de cero. En la raíz del resumen (no dentro de `igtf`) DEBE (MUST) agregar `amount_total_igtf` / `foreign_amount_total_igtf` con sus versiones formateadas. Para `out_invoice` agrega además el bloque `igtf_free_form` con el IGTF calculado sobre el total de la factura y el flag `show_igtf_suggested_account_move` de la compañía, que se expone como dato del bloque y no condiciona su creación.
 
 #### Scenario: Factura con IGTF aplicado
 
@@ -176,11 +205,11 @@ Al generar las líneas del pago (`_prepare_move_line_default_vals`), un pago cre
 #### Scenario: Factura de venta sin pagos
 
 - **WHEN** la factura de cliente no tiene IGTF aplicado
-- **THEN** el bloque `igtf_free_form` sugiere el IGTF calculado sobre el total de la factura
+- **THEN** `tax_totals['igtf']` reporta `apply_igtf` falso con la base igual al total de la factura y el bloque `igtf_free_form` sugiere el IGTF sobre ese total
 
 ### Requirement: Widget de anticipos pendientes en la factura
 
-Las facturas publicadas con estado de pago `not_paid` o `partial` DEBEN (MUST) exponer en `invoice_outstanding_credits_debits_widget_advance_payment` las líneas no conciliadas del partner sobre cuentas de anticipo (pasivo corriente para ventas, activo corriente para compras) con el monto residual convertido a la moneda de la factura; el widget estándar de créditos pendientes DEBE (MUST) excluir las líneas de anticipo y los asientos de cruce (`is_advance_move`), y `invoice_has_outstanding` considera ambos widgets. La conversión respeta `keep_alter_value_vef` del pago: los pagos en VEF con la marca se convierten desde `amount_residual` a la fecha del pago (revalorización), y sin la marca desde `amount_residual_currency` a la fecha mayor entre factura y pago.
+Las facturas publicadas con estado de pago `not_paid` o `partial` DEBEN (MUST) exponer en `invoice_outstanding_credits_debits_widget_advance_payment` las líneas no conciliadas del partner comercial cuyo saldo tenga el signo contrario al documento, buscadas sobre las cuentas por cobrar/pagar de la propia factura más las cuentas de anticipo del tipo que corresponde al `move_type` (`liability_current` para `out_invoice` e `in_refund`; `asset_current` para el resto), y conservando solo las líneas que están en una cuenta de anticipo o que llevan `payment_id_advance`, con el monto residual convertido a la moneda de la factura. El widget estándar de créditos pendientes DEBE (MUST) excluir las líneas de anticipo y los asientos de cruce (`is_advance_move`), y `invoice_has_outstanding` considera ambos widgets. La conversión respeta `keep_alter_value_vef` del pago: los pagos en VEF con la marca se convierten desde `amount_residual` a la fecha del pago (revalorización), y sin la marca desde `amount_residual_currency` a la fecha mayor entre factura y pago; cuando la línea ya está en la moneda de la factura se usa `amount_residual_currency` sin conversión.
 
 #### Scenario: Factura con anticipo disponible
 
@@ -194,7 +223,7 @@ Las facturas publicadas con estado de pago `not_paid` o `partial` DEBEN (MUST) e
 
 ### Requirement: Cruce de anticipo al aplicarlo a una factura
 
-Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una línea de asiento de anticipo), el sistema DEBE (MUST) crear un asiento de cruce ("CRUCE DE ANTICIPO") en el diario `advance_payment_igtf_journal_id` con una línea en la cuenta de anticipo y su contrapartida en la cuenta por cobrar/pagar de la factura por el mínimo entre el residual y el anticipo disponible, agregar la línea "IGTF" cuando el diario del pago es IGTF y el partner aplica (calculándolo con `calculate_igtf_for_payment`), publicarlo y conciliarlo doblemente: las líneas de anticipo contra el pago original y las líneas por cobrar/pagar contra la factura (`_reconcile_move_with_payment_difference`).
+Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una línea cuyo asiento es de anticipo: `is_advance_move`, con `origin_payment_advanced_payment_id`, o cuyo pago origen tiene `is_advance_payment`), el sistema DEBE (MUST) crear un asiento de cruce ("CRUCE DE ANTICIPO") en el diario `advance_payment_igtf_journal_id` de la compañía activa, con una línea en la cuenta de anticipo y su contrapartida en la cuenta por cobrar/pagar de la factura por el mínimo entre el residual de la factura y el anticipo disponible según el widget, fechado en la fecha de conversión del widget (o en la fecha del pago cuando el pago tiene `keep_alter_value_vef`), publicarlo y conciliarlo doblemente: las líneas de anticipo contra el pago original y las líneas por cobrar/pagar contra la factura (`_reconcile_move_with_payment_difference`). DEBE (MUST) agregar la línea "IGTF" solo cuando el diario del pago es IGTF, el partner aplica IGTF según `_check_igtf_apply_improved`, el diario de la factura no es de compra internacional y el IGTF calculado con `calculate_igtf_for_payment` es mayor que cero; en ese caso, si el anticipo disponible alcanza, la base aplicada se incrementa con el IGTF convertido a la moneda del documento.
 
 #### Scenario: Aplicación de anticipo simple
 
@@ -203,8 +232,13 @@ Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una l
 
 #### Scenario: Anticipo con IGTF
 
-- **WHEN** el pago de anticipo proviene de un diario IGTF y el partner aplica IGTF
+- **WHEN** el pago de anticipo proviene de un diario IGTF, el partner aplica IGTF y el diario de la factura no es de compra internacional
 - **THEN** el asiento de cruce incluye una línea "IGTF" contra la cuenta IGTF correspondiente y la contrapartida ajustada
+
+#### Scenario: Anticipo aplicado a una importación
+
+- **WHEN** la factura pertenece a un diario con `is_purchase_international`
+- **THEN** el asiento de cruce se crea sin línea de IGTF
 
 #### Scenario: Anticipo agotado
 
@@ -213,7 +247,9 @@ Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una l
 
 ### Requirement: Desaplicación de pagos y anticipos
 
-`js_remove_outstanding_partial` DEBE (MUST): cuando la conciliación pertenece al asiento de un pago con cruces de anticipo activos (`advanced_move_ids`), abrir el wizard `move.action.cancel.advance.payment.wizard` en lugar de desconciliar directamente; en el resto de casos ejecutar `remove_igtf_from_account_move`, que pone el asiento del pago en borrador, elimina su línea IGTF trasladando el importe a la contrapartida (reclasificada a la cuenta de anticipo cuando la cuenta destino no lo era), marca el pago como anticipo con `igtf_amount` 0 y lo vuelve a publicar; los pagos en VEF sin cruce quedan exentos de este proceso.
+`js_remove_outstanding_partial` DEBE (MUST): cuando la conciliación pertenece al asiento de un pago con cruces de anticipo activos (`advanced_move_ids` no cancelados) y ese asiento es el del propio pago, abrir el wizard `move.action.cancel.advance.payment.wizard` en lugar de desconciliar directamente; cuando el asiento es el de un cruce, ejecutar `remove_igtf_from_account_move` y luego desconciliar, cancelar y desvincular ese cruce (`cancel_advance_payment_transaction`); en el resto de casos ejecutar `remove_igtf_from_account_move` y, si este no actuó, delegar en el comportamiento nativo.
+
+`remove_igtf_from_account_move` DEBE (MUST) pasar el asiento del pago a borrador, eliminar su línea IGTF trasladando el importe a la contrapartida por cobrar/pagar (reclasificada a la cuenta de anticipo del partner cuando la cuenta destino del pago no era de anticipo), marcar el pago como anticipo con `igtf_amount` 0, y finalmente volver a publicar el asiento —salvo que el asiento tenga `origin_payment_advanced_payment_id`, caso en el que se desvincula de `advanced_move_ids` y se cancela en lugar de publicarse—. Los pagos en la moneda VEF sin `origin_payment_advanced_payment_id` quedan fuera de este proceso y se desconcilian por el flujo nativo.
 
 #### Scenario: Quitar un pago con cruces activos
 
@@ -224,6 +260,11 @@ Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una l
 
 - **WHEN** se desaplica un pago en divisa cuyo asiento tiene línea IGTF
 - **THEN** la línea IGTF se elimina, su importe se reintegra a la contrapartida sobre la cuenta de anticipo y el pago queda como anticipo disponible
+
+#### Scenario: Quitar un pago en VEF sin cruces
+
+- **WHEN** se desaplica un pago en VEF cuyo asiento no proviene de un cruce de anticipo
+- **THEN** no se altera el asiento del pago y la conciliación se elimina por el flujo nativo
 
 ### Requirement: Wizard de cancelación de cruces de anticipo
 
@@ -241,12 +282,17 @@ Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una l
 
 ### Requirement: Asiento de remanente por pago en divisa con excedente
 
-Tras crear pagos con IGTF desde el wizard (`_create_payments`), cuando el monto del pago supera lo adeudado más el IGTF y el manejo de la diferencia no es `reconcile`, el sistema DEBE (MUST) crear y publicar un asiento "RESTANTE DE PAGO EN DIVISA (nombre del pago)" en el diario de cruces que traslada el residual del pago a la cuenta de anticipo del partner, conciliarlo con el pago y registrarlo en `advanced_move_ids`.
+Tras crear pagos con IGTF desde el wizard (`_create_payments`), cuando el monto del pago supera lo adeudado más el IGTF y el manejo de la diferencia no es `reconcile`, el sistema DEBE (MUST) crear y publicar un asiento "RESTANTE DE PAGO EN DIVISA (nombre del pago)" en el diario de cruces (`advance_payment_igtf_journal_id` de la compañía activa) marcado con `is_advance_move` y `origin_payment_advanced_payment_id`, cuyo importe es el residual de la línea por cobrar/pagar del pago (no la diferencia calculada) y que traslada ese residual a la cuenta de anticipo del partner, y registrarlo en `advanced_move_ids`. El asiento no se crea cuando ese residual es cero, y la conciliación con el pago solo se ejecuta si tanto el asiento como el pago tienen líneas de tipo `asset_receivable` (cliente) o `liability_payable` (proveedor) marcadas además como cuenta de anticipo.
 
 #### Scenario: Pago mayor a la deuda
 
 - **WHEN** un pago con IGTF excede el total adeudado y la diferencia se mantiene abierta
-- **THEN** el excedente queda en la cuenta de anticipo del partner mediante el asiento de remanente conciliado con el pago
+- **THEN** se publica el asiento de remanente por el residual de la contrapartida del pago contra la cuenta de anticipo del partner y queda vinculado en `advanced_move_ids`
+
+#### Scenario: Contrapartida del pago sin residual
+
+- **WHEN** la línea por cobrar/pagar del pago no tiene residual
+- **THEN** no se crea ningún asiento de remanente
 
 ### Requirement: Registro de pagos multi-factura homogéneo
 
@@ -273,7 +319,7 @@ Tras crear pagos con IGTF desde el wizard (`_create_payments`), cuando el monto 
 
 ### Requirement: Columna IGTF en los libros fiscales
 
-El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoice` con un grupo/columna "IGTF" que muestra el `foreign_igtf_amount` de `tax_totals` de cada documento cuando su `alter_bi_igtf` es mayor que cero (0 en caso contrario), con signo negativo en notas de crédito/débito de devolución; la columna se oculta con los flags `not_show_igtf_sale_order` / `not_show_igtf_purchase_order` de la compañía.
+El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoice` con un grupo/columna "IGTF" que muestra el `foreign_igtf_amount` de `tax_totals` de cada documento cuando su `alter_bi_igtf` es mayor que cero (0 en caso contrario), con signo negativo únicamente en las notas de crédito (`out_refund` en el libro de ventas, `in_refund` en el de compras); los flags `not_show_igtf_sale_order` / `not_show_igtf_purchase_order` de la compañía suprimen el grupo de columnas IGTF del Excel.
 
 #### Scenario: Factura con IGTF en el libro de ventas
 
@@ -296,9 +342,14 @@ El campo `keep_alter_value_vef` de los pagos DEBE (MUST) inicializarse con `reva
 
 ### Requirement: Clasificación de líneas del pago con cuentas de anticipo
 
-`_seek_for_lines` de `account.payment` DEBE (MUST) clasificar como contrapartida del pago las líneas cuyas cuentas sean por cobrar, por pagar o corrientes (`asset_receivable`, `liability_payable`, `liability_current`, `asset_current`), permitiendo que los pagos anticipados con cuenta puente se sincronicen correctamente con su asiento.
+`_seek_for_lines` de `account.payment` DEBE (MUST) clasificar como contrapartida del pago las líneas cuyas cuentas sean por cobrar, por pagar o corrientes (`asset_receivable`, `liability_payable`, `liability_current`, `asset_current`) —o cuyo partner sea el de la compañía—, permitiendo que los pagos anticipados con cuenta puente se sincronicen correctamente con su asiento. La contrapartida se devuelve por asignación y no por acumulación: cuando el asiento tiene varias líneas que cumplen la condición, solo la última recorrida se devuelve como contrapartida, y las líneas de liquidez y de write-off se siguen acumulando.
 
 #### Scenario: Pago anticipado con cuenta puente
 
 - **WHEN** el asiento de un pago anticipado tiene su contrapartida en una cuenta corriente de anticipo
 - **THEN** esa línea se reconoce como contrapartida y no como write-off
+
+#### Scenario: Asiento con varias líneas candidatas
+
+- **WHEN** el asiento del pago tiene más de una línea sobre cuentas por cobrar/pagar o corrientes
+- **THEN** la clasificación devuelve como contrapartida solo la última de esas líneas

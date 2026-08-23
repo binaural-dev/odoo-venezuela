@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Ajuste de seguridad sobre el cruce inventario/compras: restringe los permisos que el módulo estándar `purchase_stock` otorga a los usuarios de compras sobre los traslados de inventario. No agrega modelos ni vistas; su único contenido es la sobreescritura de ACLs en `security/ir.model.access.csv`. Depende de `purchase_stock` y complementa el bloqueo de eliminación de traslados que `l10n_ve_stock` aplica a los grupos de inventario.
+Ajuste de seguridad sobre el cruce inventario/compras: restringe los permisos que el módulo estándar `purchase_stock` otorga a los usuarios de compras sobre los traslados de inventario. No agrega modelos, vistas ni código Python; su único contenido es la sobreescritura de ACLs en `security/ir.model.access.csv`. Su única dependencia declarada es `purchase_stock` (no depende de `l10n_ve_stock`), y cumple el mismo propósito que el bloqueo de eliminación que `l10n_ve_stock` aplica a los grupos de inventario.
 
 ## Requirements
 
