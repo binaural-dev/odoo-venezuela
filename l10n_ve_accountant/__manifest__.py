@@ -58,9 +58,9 @@
     "assets": {
         "web.assets_backend": ["l10n_ve_accountant/static/src/components/**/*"],
         "web.assets_backend": [
-            "l10n_ve_accountant/static/src/components/**/*",
-            "l10n_ve_accountant/static/src/views/**/*",
-        ],
+            "l10n_ve_accountant/static/src/components/**/*"
+        ]
+       
     },
     "application": True,
     "pre_init_hook": "pre_init_hook",
