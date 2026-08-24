@@ -2,7 +2,7 @@ from odoo.exceptions import UserError
 import logging
 
 from odoo import _, api, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import ValidationError
 from odoo.fields import Domain
 from odoo.tools.safe_eval import safe_eval
 from datetime import date, datetime, timedelta
