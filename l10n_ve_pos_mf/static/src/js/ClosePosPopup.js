@@ -197,3 +197,44 @@ patch(ClosePosPopup.prototype, {
     await this.closeSession();
   },
 });
+    super.setup(...arguments)
+    this.orm = useService("orm")
+  },
+  generate_report_x() {
+    const fdm = this.pos.useFiscalMachine();
+    if (!fdm) return
+    new Promise(async (resolve, reject) => {
+      await fdm.action({
+        action: 'report_x',
+        data: {},
+      })
+    });
+  },
+  generate_report_z() {
+    const fdm = this.pos.useFiscalMachine();
+    if (!fdm) return
+    const promise = new Promise((resolve, reject) => {
+      const handler = (data) => {
+        fdm.removeListener();
+        if (data && data.value) {
+          resolve(data);
+        } else {
+          reject(data);
+        }
+      };
+      fdm.addListener(handler);
+      fdm.action({
+        action: 'report_z',
+        data: {},
+      }).catch(reject);
+    });
+    promise.then(async ({ value }) => {
+      await this.orm.call('account.move', 'report_z', [[], this.pos.config.serial_machine, value])
+      await this.orm.call('pos.session', 'set_report_z', [this.pos.pos_session.id, value],
+      )
+    }).catch((err) => {
+      console.error("Report Z failed:", err);
+    })
+  },
+})
+
