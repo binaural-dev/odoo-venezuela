@@ -19,7 +19,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.2.13",
+    "version": "19.0.1.2.16",
 
     "depends": [
         "base",
@@ -40,7 +40,7 @@
         "views/res_config_settings.xml",
         "views/res_partner.xml",
         "wizard/move_action_cancel_advance_payment.xml",
-        
+
     ],
     "images": ["static/description/icon.png"],
     "assets": {
