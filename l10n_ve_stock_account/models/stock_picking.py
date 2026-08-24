@@ -1334,7 +1334,7 @@ class StockPicking(models.Model):
     def get_foreign_currency_is_vef(self):
         return self.env.company.foreign_currency_id == self.env.ref("base.VEF")
 
-    @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id')
+    @api.depends('is_consignment', 'is_dispatch_guide', 'transfer_reason_id', 'location_dest_id')
     def _compute_partner_required(self):
         consignment_reason = self.env.ref('l10n_ve_stock_account.transfer_reason_consignment', raise_if_not_found=False)
         for picking in self.filtered(lambda p: p.transfer_reason_id):
@@ -1342,6 +1342,8 @@ class StockPicking(models.Model):
                 picking.transfer_reason_id.id == consignment_reason.id
                 and picking.is_dispatch_guide
                 and picking.is_consignment
+                and picking.location_dest_id
+                and picking.location_dest_id.partner_id
             )
             picking._assign_partner_from_location()
 
@@ -1364,7 +1366,8 @@ class StockPicking(models.Model):
         for picking in self:
             if picking.partner_required:
                 partner = picking.location_dest_id.partner_id
-                picking.partner_id = partner.id if partner else False
+                if partner:
+                    picking.partner_id = partner.id
 
     @api.model_create_multi
     def create(self, vals_list):
