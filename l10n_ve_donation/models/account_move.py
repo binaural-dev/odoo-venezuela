@@ -99,6 +99,13 @@ class AccountMove(models.Model):
                 reverse_move = self.env['account.move'].with_context(
                     check_move_validity=False,
                     skip_invoice_sync=True,
+                    # This credit note's line is the donation product, not a
+                    # product sold on the original invoice -- it documents a
+                    # fiscal reclassification, not a correction of what was
+                    # sold, so it's exempt from l10n_ve_accountant's
+                    # NC-vs-origin validation (see
+                    # AccountMove._validate_refund_lines_against_origin).
+                    l10n_ve_skip_refund_origin_validation=True,
                 ).create(move_vals)
                 reverse_moves += reverse_move
             return reverse_moves

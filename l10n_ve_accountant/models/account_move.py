@@ -1768,11 +1768,15 @@ class AccountMove(models.Model):
 
     def _validate_refund_lines_against_origin(self):
         """
-        Validate invoice lines in credit/debit notes against their
-        corresponding original invoice lines from the source document.
-        Credit notes (out_refund/in_refund) link to their origin via
-        `reversed_entry_id`; debit notes keep the original move_type
-        (out_invoice/in_invoice) and link via `debit_origin_id`.
+        Validate invoice lines in credit notes (out_refund/in_refund)
+        against their corresponding original invoice lines from the
+        source document (linked via `reversed_entry_id`).
+
+        Debit notes (out_invoice/in_invoice with `debit_origin_id`) are
+        intentionally out of scope: a debit note exists to ADD an amount
+        on top of the original invoice (exchange difference, interest,
+        price correction), so capping it against the origin's
+        quantity/price would contradict its purpose.
 
         Ensures that:
         1. Only products present in the original invoice are allowed.
@@ -1781,14 +1785,15 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
 
-        origin = self.reversed_entry_id if self.move_type in ('out_refund', 'in_refund') \
-            else self.debit_origin_id if self.move_type in ('out_invoice', 'in_invoice') \
-            else None
+        if self.move_type not in ('out_refund', 'in_refund'):
+            return
+
+        origin = self.reversed_entry_id
 
         if not origin:
             return
 
-        # Some credit/debit notes don't correct what was sold -- they document
+        # Some credit notes don't correct what was sold -- they document
         # a separate fiscal adjustment unrelated to the original invoice
         # lines. Two known cases: exchange-difference notes
         # (`l10n_ve_exchange_difference`, not a dependency of this module, in
@@ -1796,12 +1801,12 @@ class AccountMove(models.Model):
         # "exchange difference" product for a currency-rate gain/loss; and
         # IGTF adjustment notes, whose line is the IGTF tax amount itself, not
         # a product sold on the original invoice. Both are built directly
-        # with `create()`/`reversed_entry_id` (or `debit_origin_id`) pointing
-        # at the real commercial invoice, but their line(s) are legitimately
-        # never on that invoice. Since those modules can't add a
-        # field/dependency here, their own creation code is expected to set
-        # this context key (instead of a persisted field) around the
-        # `create()`/`action_post()` call that builds the note.
+        # with `create()`/`reversed_entry_id` pointing at the real commercial
+        # invoice, but their line(s) are legitimately never on that invoice.
+        # Since that module can't add a field/dependency here, its own
+        # creation code is expected to set this context key (instead of a
+        # persisted field) around the `create()`/`action_post()` call that
+        # builds the note.
         #
         # Known tradeoff (flagged in review, intentionally not closed here):
         # this key is forgeable via RPC/import, so anyone could skip the

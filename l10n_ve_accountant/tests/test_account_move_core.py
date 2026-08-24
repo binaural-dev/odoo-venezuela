@@ -709,11 +709,6 @@ class TestAccountMoveCore(TransactionCase):
                             setattr(line, field, value)
         return debit_note
 
-    def _assert_debit_note_error(self, invoice, line_mods):
-        """Assert that creating a debit note with given line_mods raises ValidationError."""
-        with self.assertRaises(ValidationError):
-            self._create_debit_note(invoice, line_mods=line_mods)
-
     # ═══════════════════════════════════════════════════════════════
     # out_refund validation tests (customer credit notes)
     # ═══════════════════════════════════════════════════════════════
@@ -1471,10 +1466,15 @@ class TestAccountMoveCore(TransactionCase):
                     line.price_unit = 999999.0
 
     # ═══════════════════════════════════════════════════════════════
-    # Debit note validation tests (out_invoice/in_invoice with debit_origin_id)
-    # Debit notes are NOT out_refund/in_refund -- they keep the original
-    # move_type and link back to their source via `debit_origin_id` instead
-    # of `reversed_entry_id`. Same origin-validation rules must apply.
+    # Debit note tests (out_invoice/in_invoice with debit_origin_id)
+    # By design, `_validate_refund_lines_against_origin` only applies to
+    # out_refund/in_refund (credit notes). Debit notes keep the original
+    # move_type and are intentionally out of scope for this constrain --
+    # a debit note exists precisely to ADD an amount on top of the
+    # original invoice (exchange difference, interest, price correction),
+    # so capping it against the origin's quantity/price would contradict
+    # its purpose. These tests assert that out-of-range values on a
+    # debit note do NOT raise, to lock in that intent.
     # ═══════════════════════════════════════════════════════════════
 
     def test_76_debit_note_validation_quantity_equal(self):
@@ -1485,19 +1485,21 @@ class TestAccountMoveCore(TransactionCase):
         self.assertEqual(debit_note.invoice_line_ids[0].quantity, 1.0)
 
     def test_77_debit_note_validation_quantity_greater(self):
-        """out_invoice debit note: Cantidad mayor a la original -> ValidationError."""
+        """out_invoice debit note: Cantidad mayor a la original -> permitido (fuera de alcance de la validación de NC)."""
         invoice = self._create_invoice()
         invoice.with_context(move_action_post_alert=True).action_post()
-        self._assert_debit_note_error(invoice, line_mods={0: {"quantity": 5.0}})
+        debit_note = self._create_debit_note(invoice, line_mods={0: {"quantity": 5.0}})
+        self.assertEqual(debit_note.invoice_line_ids[0].quantity, 5.0)
 
     def test_78_debit_note_validation_quantity_zero(self):
-        """out_invoice debit note: Cantidad cero -> ValidationError."""
+        """out_invoice debit note: Cantidad cero -> permitido (fuera de alcance de la validación de NC)."""
         invoice = self._create_invoice()
         invoice.with_context(move_action_post_alert=True).action_post()
-        self._assert_debit_note_error(invoice, line_mods={0: {"quantity": 0.0}})
+        debit_note = self._create_debit_note(invoice, line_mods={0: {"quantity": 0.0}})
+        self.assertEqual(debit_note.invoice_line_ids[0].quantity, 0.0)
 
     def test_79_debit_note_validation_product_not_in_origin(self):
-        """out_invoice debit note: Producto nuevo no presente en origen -> ValidationError."""
+        """out_invoice debit note: Producto nuevo no presente en origen -> permitido (fuera de alcance de la validación de NC)."""
         invoice = self._create_invoice()
         invoice.with_context(move_action_post_alert=True).action_post()
         other_product = self.env["product.product"].create({
@@ -1505,22 +1507,26 @@ class TestAccountMoveCore(TransactionCase):
             "property_account_income_id": self.acc_inc.id,
             "taxes_id": [(5, 0, 0)], "supplier_taxes_id": [(5, 0, 0)],
         })
-        self._assert_debit_note_error(invoice, line_mods={0: {"product_id": other_product}})
+        debit_note = self._create_debit_note(invoice, line_mods={0: {"product_id": other_product}})
+        self.assertEqual(debit_note.invoice_line_ids[0].product_id, other_product)
 
     def test_80_debit_note_validation_price_unit_negative(self):
-        """out_invoice debit note: Precio unitario negativo -> ValidationError."""
+        """out_invoice debit note: Precio unitario negativo -> permitido (fuera de alcance de la validación de NC)."""
         invoice = self._create_invoice()
         invoice.with_context(move_action_post_alert=True).action_post()
-        self._assert_debit_note_error(invoice, line_mods={0: {"price_unit": -10.0}})
+        debit_note = self._create_debit_note(invoice, line_mods={0: {"price_unit": -10.0}})
+        self.assertEqual(debit_note.invoice_line_ids[0].price_unit, -10.0)
 
     def test_81_debit_note_validation_price_unit_greater(self):
-        """out_invoice debit note: Precio unitario mayor al original -> ValidationError."""
+        """out_invoice debit note: Precio unitario mayor al original -> permitido (es el propósito de una ND: diferencial cambiario, intereses, corrección de precio)."""
         invoice = self._create_invoice()
         invoice.with_context(move_action_post_alert=True).action_post()
-        self._assert_debit_note_error(invoice, line_mods={0: {"price_unit": 150.0}})
+        debit_note = self._create_debit_note(invoice, line_mods={0: {"price_unit": 150.0}})
+        self.assertEqual(debit_note.invoice_line_ids[0].price_unit, 150.0)
 
     def test_82_in_invoice_debit_note_validation_quantity_greater(self):
-        """in_invoice debit note (vendor bill): Cantidad mayor a la original -> ValidationError."""
+        """in_invoice debit note (vendor bill): Cantidad mayor a la original -> permitido (fuera de alcance de la validación de NC)."""
         invoice = self._create_invoice(move_type='in_invoice')
         invoice.with_context(move_action_post_alert=True).action_post()
-        self._assert_debit_note_error(invoice, line_mods={0: {"quantity": 5.0}})
+        debit_note = self._create_debit_note(invoice, line_mods={0: {"quantity": 5.0}})
+        self.assertEqual(debit_note.invoice_line_ids[0].quantity, 5.0)
