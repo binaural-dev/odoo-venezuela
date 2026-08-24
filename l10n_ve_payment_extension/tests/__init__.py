@@ -29,5 +29,6 @@ from . import test_wizard_accounting_reports_full
 from . import test_data_files
 from . import test_allowed_lines_move_ids
 from . import test_retention_line_compute_amounts
-from . import test_migration_19_0_2_0_25
+from . import test_migration_19_0_2_0_26
+from . import test_migration_19_0_2_0_27
 from . import test_retention_payment_move_date

@@ -18,4 +18,13 @@
         </field>
     </record>
 
+    <record id="fees_retention_restricted_multi_company" model="ir.rule">
+        <field name="name">Fees Retention multi-company</field>
+        <field name="model_id" ref="model_fees_retention"/>
+        <field name="global" eval="True"/>
+        <field name="domain_force">
+            ['|',('company_id','=',False),('company_id', 'in', company_ids)]
+        </field>
+    </record>
+
 </odoo>
