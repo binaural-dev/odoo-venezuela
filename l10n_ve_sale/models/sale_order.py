@@ -443,11 +443,9 @@ class SaleOrder(models.Model):
                             _(
                                 "Does not have enough units available for the product %(product)s. "
                                 "Only has %(available)s units of the %(requested)s demanded.",
-                                {
-                                    "product": line.product_id.display_name,
-                                    "available": line.product_id.qty_available,
-                                    "requested": line.product_uom_qty,
-                                },
+                                product=line.product_id.display_name,
+                                available=line.product_id.qty_available,
+                                requested=line.product_uom_qty,
                             )
                         )
 
@@ -461,12 +459,10 @@ class SaleOrder(models.Model):
                     raise ValidationError(
                         _(
                             "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta por cobrar del cliente es de %(credit)s más %(amount_total)s en presupuesto da un total de %(total_pay)s superando el límite de ventas de %(credit_limit)s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
-                            {
-                                "credit": round(order.partner_id.credit, decimal_places),
-                                "amount_total": round(order.amount_total, decimal_places),
-                                "total_pay": round(total_pay, decimal_places),
-                                "credit_limit": round(order.partner_id.credit_limit, decimal_places),
-                            }
+                            credit=round(order.partner_id.credit, decimal_places),
+                            amount_total=round(order.amount_total, decimal_places),
+                            total_pay=round(total_pay, decimal_places),
+                            credit_limit=round(order.partner_id.credit_limit, decimal_places),
                         )
                     )
 
