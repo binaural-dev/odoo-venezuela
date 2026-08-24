@@ -10,6 +10,13 @@ class FeesRetention(models.Model):
     _description = "Fees"
     _inherit = ["mail.thread", "mail.activity.mixin"]
 
+    company_id = fields.Many2one(
+        "res.company",
+        string="Company",
+        required=True,
+        default=lambda self: self.env.company,
+        tracking=True,
+    )
     name = fields.Char(string="Description", required=True, store=True)
     percentage = fields.Float(string="Fees percentage", store=True)
     subtract_money = fields.Float(string="Quantity to subtract to fees", store=True)

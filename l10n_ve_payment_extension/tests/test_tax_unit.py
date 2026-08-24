@@ -72,9 +72,9 @@ class TestTaxUnit(TransactionCase):
         self.assertEqual(retention.tax_unit_ids.id, ut_2026.id)
         self.assertAlmostEqual(retention.amount_subtract, 500.0004, places=4)
 
-    def test_03_change_active_by_date_edit(self):
-        """ Si muevo la fecha de la activa al pasado, la otra debe activarse """
-       
+    def test_03_edit_value_via_form_updates_retention(self):
+        """ Editar 'value' de la UT activa vía Form debe recalcular el sustraendo """
+
         with Form(self.ut_2025) as f:
             f.value = 150.0
             f.save()
@@ -140,4 +140,122 @@ class TestTaxUnit(TransactionCase):
             ut_2026.id,
             "tax_unit_ids debe actualizarse aunque apply_subtracting=False"
         )
+        self.assertEqual(retention_no_sub.amount_subtract, 0.0)
+
+    def test_07_national_value_must_match_across_companies(self):
+        """
+        La UT es nacional: dos tax.unit con la misma available_date deben
+        tener el mismo value sin importar la compañía. Un valor divergente
+        para la misma fecha debe rechazarse (evita que fees.retention, que
+        es global, quede corrupta por una UT de compañía distinta).
+        """
+        other_company = self.env['res.company'].create({'name': 'Otra Compañía UT'})
+
+        with self.assertRaises(UserError):
+            self.env['tax.unit'].with_company(other_company).create({
+                'name': 'UT Otra Compañía Divergente',
+                'value': 999.0,
+                'available_date': self.ut_2025.available_date,
+                'company_id': other_company.id,
+            })
+
+        other_ut = self.env['tax.unit'].with_company(other_company).create({
+            'name': 'UT Otra Compañía Igual',
+            'value': self.ut_2025.value,
+            'available_date': self.ut_2025.available_date,
+            'company_id': other_company.id,
+        })
+        self.assertEqual(other_ut.value, self.ut_2025.value)
+        self.assertEqual(other_ut.available_date, self.ut_2025.available_date)
+
+    def test_08_active_status_scoped_per_company(self):
+        """
+        _update_active_status debe elegir "la más reciente" por compañía,
+        no globalmente: la UT activa de una compañía no puede desactivar
+        la UT activa de otra.
+        """
+        other_company = self.env['res.company'].create({'name': 'Otra Compañía UT Status'})
+
+        other_ut_old = self.env['tax.unit'].with_company(other_company).create({
+            'name': 'UT Otra Compañía Vieja',
+            'value': 10.0,
+            'available_date': '2020-01-01',
+            'company_id': other_company.id,
+        })
+        self.assertTrue(other_ut_old.status)
+
+        # UT más reciente en la compañía original: no debe tocar el status
+        # de la UT activa de la otra compañía.
+        self.env['tax.unit'].create({
+            'name': 'UT Winner Compañía Original',
+            'value': 1.0,
+            'available_date': '2099-01-01',
+        })
+
+        other_ut_old.invalidate_recordset()
+        self.assertTrue(
+            other_ut_old.status,
+            "La UT activa de otra compañía no debe desactivarse por un cambio ajeno"
+        )
+
+    def test_09_change_active_by_date_edit(self):
+        """
+        Escenario real del ticket 13821: editar available_date de la UT
+        activa hacia una fecha anterior a otra UT existente debe reactivar
+        esa otra UT, y TODAS las tarifas activas (con y sin sustraendo)
+        deben quedar apuntando a la nueva activa.
+        """
+        retention_no_sub = self.env['fees.retention'].create({
+            'name': 'Retención sin sustraendo (fecha)',
+            'percentage': 5.0,
+            'apply_subtracting': False,
+            'status': True,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+
+        ut_older = self.env['tax.unit'].create({
+            'name': 'UT Vieja',
+            'value': 50.0,
+            'available_date': '2020-01-01',
+        })
+        self.assertFalse(ut_older.status)
+
+        self.ut_2025.write({'available_date': '2010-01-01'})
+
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        self.assertFalse(self.ut_2025.status)
+        self.assertTrue(ut_older.status)
+
+        self.assertEqual(self.retention.tax_unit_ids.id, ut_older.id)
+        self.assertEqual(retention_no_sub.tax_unit_ids.id, ut_older.id)
+        self.assertAlmostEqual(self.retention.amount_subtract, 50.0 * 83.3334 * 3 / 100, places=4)
+        self.assertEqual(retention_no_sub.amount_subtract, 0.0)
+
+    def test_10_edit_value_updates_retention_without_subtract(self):
+        """
+        Escenario real del ticket 13821 pt.3: cambiar 'value' de la UT
+        activa debe notificar/recalcular también las tarifas sin
+        sustraendo, no solo las que tienen apply_subtracting=True.
+        """
+        retention_no_sub = self.env['fees.retention'].create({
+            'name': 'Retención sin sustraendo (value)',
+            'percentage': 5.0,
+            'apply_subtracting': False,
+            'status': True,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+
+        self.ut_2025.write({'value': 150.0})
+
+        messages = self.env['mail.message'].search([
+            ('model', '=', 'fees.retention'),
+            ('res_id', '=', retention_no_sub.id),
+        ])
+        self.assertTrue(
+            len(messages) > 0,
+            "La tarifa sin sustraendo también debe recibir la notificación al cambiar 'value'"
+        )
+        self.assertEqual(retention_no_sub.tax_unit_ids.id, self.ut_2025.id)
         self.assertEqual(retention_no_sub.amount_subtract, 0.0)

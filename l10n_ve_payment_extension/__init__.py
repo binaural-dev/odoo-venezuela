@@ -78,7 +78,12 @@ def reassign_xml_ir_rule_ids(env):
     execute_script_sql(env, "retention_")
 
 def post_init_hook(env):
-    """Fix seed tax.unit record so its available_date doesn't conflict with today."""
+    """Fix seed tax.unit record so its available_date doesn't conflict with today.
+
+    Mirrors migrations/19.0.2.0.26/pre-migration.py's UPDATE for existing databases;
+    this hook covers the fresh-install case, where the ORM (and this module's code)
+    isn't available yet at pre-migration time.
+    """
     seed = env.ref('l10n_ve_accountant.tax_unit_data_l10n_ve_payment_extension', raise_if_not_found=False)
     if seed and (not seed.available_date or seed.available_date == fields.Date.today()):
         seed._write({'available_date': '2000-01-01'})

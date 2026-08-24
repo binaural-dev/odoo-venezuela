@@ -6,16 +6,16 @@ from odoo.tests import tagged, TransactionCase
 
 def _load_migrate():
     path = os.path.join(
-        os.path.dirname(__file__), "..", "migrations", "19.0.2.0.25", "pre-migration.py"
+        os.path.dirname(__file__), "..", "migrations", "19.0.2.0.26", "pre-migration.py"
     )
-    spec = importlib.util.spec_from_file_location("l10n_ve_payment_extension_migration_19_0_2_0_25", path)
+    spec = importlib.util.spec_from_file_location("l10n_ve_payment_extension_migration_19_0_2_0_26", path)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module.migrate
 
 
 @tagged('post_install', '-at_install', 'tax_unit')
-class TestMigration19_0_2_0_25(TransactionCase):
+class TestMigration19_0_2_0_26(TransactionCase):
 
     def setUp(self):
         super().setUp()
@@ -41,7 +41,7 @@ class TestMigration19_0_2_0_25(TransactionCase):
         company_ids = [row[0] for row in self.cr.fetchall()]
         self.assertGreaterEqual(len(company_ids), 2, "El test necesita al menos dos compañías")
 
-        self.migrate(self.cr, "19.0.2.0.25")
+        self.migrate(self.cr, "19.0.2.0.26")
 
         self.cr.execute("""
             SELECT company_id FROM tax_unit
@@ -62,8 +62,41 @@ class TestMigration19_0_2_0_25(TransactionCase):
         self.cr.execute("SELECT COUNT(*) FROM tax_unit")
         before = self.cr.fetchone()[0]
 
-        self.migrate(self.cr, "19.0.2.0.25")
+        self.migrate(self.cr, "19.0.2.0.26")
 
         self.cr.execute("SELECT COUNT(*) FROM tax_unit")
         after = self.cr.fetchone()[0]
         self.assertEqual(before, after)
+
+    def test_migrate_is_idempotent_on_rerun(self):
+        """
+        Correr migrate() dos veces sobre los mismos datos no debe duplicar
+        copias por compañía (la migración no es transaccionalmente atómica
+        con el resto de la actualización, así que puede reintentarse).
+        """
+        orphan_id = self._create_orphan_tax_unit()
+
+        self.cr.execute("SELECT id FROM res_company ORDER BY id")
+        company_ids = [row[0] for row in self.cr.fetchall()]
+
+        self.migrate(self.cr, "19.0.2.0.26")
+        self.cr.execute("""
+            SELECT COUNT(*) FROM tax_unit
+            WHERE name = 'UT huérfana' AND value = 0.4 AND available_date = '2024-01-01'
+        """)
+        count_after_first_run = self.cr.fetchone()[0]
+        self.assertEqual(count_after_first_run, len(company_ids))
+
+        # Re-ejecutar con los mismos huérfanos ya migrados (ahora ya tienen
+        # company_id, así que el segundo run no debería encontrar huérfanos
+        # nuevos ni insertar copias adicionales).
+        self.migrate(self.cr, "19.0.2.0.26")
+        self.cr.execute("""
+            SELECT COUNT(*) FROM tax_unit
+            WHERE name = 'UT huérfana' AND value = 0.4 AND available_date = '2024-01-01'
+        """)
+        count_after_second_run = self.cr.fetchone()[0]
+        self.assertEqual(
+            count_after_second_run, count_after_first_run,
+            "Un segundo run no debe duplicar las copias ya migradas",
+        )

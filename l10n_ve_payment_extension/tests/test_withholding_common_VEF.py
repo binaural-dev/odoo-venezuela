@@ -21,8 +21,20 @@ class RetentionTestCommon(TransactionCase):
         self.currency_usd.decimal_places = 2
         self.currency_vef.decimal_places = 2
         self.currency_vef.write({
-            
-            'active':True
+            'active': True,
+            # VEF es la moneda de la compañía: sin una tasa propia en estas
+            # fechas, Odoo usa la tasa demo obsoleta (2010-01-01) como base
+            # de conversión, distorsionando toda conversión VEF<->USD.
+            'rate_ids': [
+                Command.create({
+                    'rate': 1.0,
+                    'name': fields.Date.today(),
+                }),
+                Command.create({
+                    'rate': 1.0,
+                    'name': fields.Date.subtract(fields.Date.today(), days=1),
+                }),
+            ],
         })
 
         self.rate = 390.2944  # 1 USD = 201.47bs

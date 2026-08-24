@@ -10,6 +10,11 @@ class TestRetentionFlowRestriction(TransactionCase):
     def setUpClass(cls):
         super(TestRetentionFlowRestriction, cls).setUpClass()
         cls.company = cls.env.user.company_id
+        # Restringe env.companies a una sola compañía: con varias compañías
+        # demo permitidas al usuario, los defaults de producto (taxes_id)
+        # toman impuestos de TODAS las compañías permitidas y disparan un
+        # falso "Fiscal inconsistencies... Has 2 taxes assigned".
+        cls.env = cls.env(context=dict(cls.env.context, allowed_company_ids=[cls.company.id]))
         cls.company.currency_id = cls.env.ref('base.VEF')
         cls.company.foreign_currency_id = cls.env.ref("base.USD")
 

@@ -8,6 +8,28 @@ class TaxUnit(models.Model):
     available_date = fields.Date(string="Publish Date", store=True, tracking=True, required=True, default=fields.Date.today)
 
     @api.constrains('value', 'available_date')
+    def _check_national_value_consistency(self):
+        # La UT es nacional: un mismo available_date debe tener el mismo
+        # value en todas las compañías. fees.retention es global (no tiene
+        # company_id) y toma la UT de la fecha vigente sin filtrar por
+        # compañía, así que un valor divergente entre compañías corrompería
+        # las retenciones de todas.
+        for record in self:
+            if not record.available_date:
+                continue
+
+            mismatched = self.sudo().search([
+                ('id', '!=', record.id),
+                ('available_date', '=', record.available_date),
+                ('value', '!=', record.value),
+            ], limit=1)
+            if mismatched:
+                raise UserError(_(
+                    "The tax unit value must be the same for every company on a given "
+                    "date. Company '%s' already has a different value (%s) for %s."
+                ) % (mismatched.company_id.name, mismatched.value, record.available_date))
+
+    @api.constrains('value', 'available_date')
     def _check_unique_tax_unit(self):
         for record in self:
             if not record.available_date:
@@ -58,9 +80,14 @@ class TaxUnit(models.Model):
                 if not record.status:
                     continue
 
+                # Sin filtro de apply_subtracting a propósito: las tarifas sin
+                # sustraendo también deben recibir la actualización/notificación
+                # (bug 13821 pt.3). Unificado con _trigger_retention_update.
+                # Filtrado por compañía: fees.retention ya no es global, cada
+                # compañía tiene su propio catálogo de tarifas.
                 retentions = self.env['fees.retention'].search([
-                    ('apply_subtracting', '=', True),
                     ('status', '=', True),
+                    ('company_id', '=', record.company_id.id),
                 ])
 
                 for ret in retentions:
@@ -122,8 +149,14 @@ class TaxUnit(models.Model):
 
 
     def _trigger_retention_update(self, tax_unit_record):
+        # La UT es nacional (mismo value para todas las compañías en una
+        # misma fecha, garantizado por _check_national_value_consistency),
+        # pero fees.retention es por compañía: cada compañía puede tener su
+        # propio catálogo de tarifas (o ninguno). Por eso se filtra por la
+        # compañía de la UT que disparó la actualización.
         retentions = self.env['fees.retention'].search([
-            ('status', '=', True)
+            ('status', '=', True),
+            ('company_id', '=', tax_unit_record.company_id.id),
         ])
 
         if not retentions:
