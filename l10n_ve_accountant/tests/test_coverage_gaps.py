@@ -1,5 +1,6 @@
 import logging
 import random
+from collections import defaultdict
 from datetime import timedelta
 
 from odoo.tests import TransactionCase, tagged
@@ -197,6 +198,7 @@ class TestCoverageGaps(TransactionCase):
         return ok
 
     def _assert_tax_totals_foreign(self, move, label=""):
+        fc = move.foreign_currency_id
         tt = move.tax_totals or {}
         for key in ('foreign_amount_untaxed', 'foreign_amount_total',
                     'groups_by_foreign_subtotal', 'foreign_subtotals',
@@ -242,6 +244,9 @@ class TestCoverageGaps(TransactionCase):
         self._log_cmp(label, "tax_totals group taxes == entry tax lines",
                       tax_lines_fd, group_tax_total,
                       extra=f"tax_lines={tax_lines_fd} groups={group_tax_total}")
+        # `groups_by_foreign_subtotal` is now synced directly from the real
+        # journal tax lines (see _sync_foreign_taxes_with_entry), so this
+        # must match exactly, not just approximately.
         self.assertAlmostEqual(tax_lines_fd, group_tax_total, places=1,
                                msg=f"{label}: tax_totals taxes vs entry tax lines")
 
@@ -286,7 +291,22 @@ class TestCoverageGaps(TransactionCase):
                 actual, exp_sub, places=1,
                 msg=f"{label}: alterno subtotal line {bl.id}")
 
-        per_key = self._foreign_tax_expected(move)
+        manual_alterno = any(move.invoice_line_ids.filtered(
+            lambda l: l.display_type == 'product').mapped('foreign_price_manual'))
+        if manual_alterno:
+            # A manual override means there's no single document rate all
+            # components should reconcile to -- taxes are computed from each
+            # product's own (possibly manual) foreign_price, legacy style.
+            per_key = self._foreign_tax_expected(move)
+        else:
+            # Normal case: _compute_foreign_tax_balance now derives each tax
+            # line from its OWN native amount times the single document
+            # rate (not an independent re-tax in foreign currency), so the
+            # oracle here must match that -- not the legacy per-line method.
+            per_key = defaultdict(list)
+            for tl in move.line_ids.filtered('tax_repartition_line_id'):
+                key = (tl.tax_repartition_line_id.id, tl.account_id.id)
+                per_key[key].append(tl.balance * rate)
         tax_amls = move.line_ids.filtered(
             lambda l: l.tax_repartition_line_id
             and l.tax_repartition_line_id.repartition_type == 'tax')
@@ -319,8 +339,22 @@ class TestCoverageGaps(TransactionCase):
             self._log_cmp(label, f"tax rep={rep_line} acct={acct}",
                           actual, expected,
                           extra=f"lines={len(lines)} amounts={len(amounts)}")
+            # Largest-remainder apportionment (see _compute_foreign_tax_balance)
+            # only guarantees the GLOBAL tax total matches exactly; a single
+            # key can be handed a few extra cents of rounding remainder for
+            # two independent reasons: (1) it competed with other tax lines
+            # for the largest-remainder distribution, and (2) the anchor
+            # itself (target_total - product_total) absorbs whatever tiny
+            # drift the product lines' OWN rounding (per-unit foreign price
+            # at high decimal precision x a large quantity) introduced. Both
+            # scale with the size of the move, not with a fixed cent amount,
+            # so use a relative tolerance instead of an absolute one -- an
+            # absolute cent or two is irrelevant noise on a multi-million
+            # amount, but would be a real bug on a small one.
+            n_tax_lines = len(tax_amls)
+            delta = max(fc.rounding * max(1, n_tax_lines), abs(expected) * 1e-6)
             self.assertAlmostEqual(
-                actual, expected, places=1,
+                actual, expected, delta=delta,
                 msg=f"{label}: tax foreign rep={rep_line} acct={acct}")
 
         rec = move.line_ids.filtered(
@@ -1092,6 +1126,152 @@ class TestCoverageGaps(TransactionCase):
             self.assertGreater(rec_line.foreign_debit, 0)
             self.assertEqual(rec_line.foreign_credit, 0.0)
 
+    # ═══════════════════════════════════════════════════════════════
+    # account_move_line.py - _compute_foreign_subtotal: base VEF vs base
+    # USD must use DIFFERENT formulas for the tax portion of
+    # foreign_price_total (base VEF converts the native tax delta; base
+    # USD taxes the alterno base directly, since converting an
+    # already-2-decimal-rounded USD tax amount by a large VEF rate
+    # amplifies sub-cent noise into several bolivares -- see
+    # _compute_foreign_subtotal's docstring).
+    # ═══════════════════════════════════════════════════════════════
+
+    def _direct_foreign_tax(self, line):
+        """Replicates taxing the alterno base directly (compute_all on
+        `foreign_price`), the formula base USD must use."""
+        foreign_price_unit = line.foreign_price * (1 - line.discount / 100.0)
+        taxed = line.tax_ids.compute_all(
+            foreign_price_unit, quantity=line.quantity,
+            currency=line.foreign_currency_id, product=line.product_id,
+            partner=line.partner_id, is_refund=line.is_refund,
+        )["total_included"]
+        return line.foreign_currency_id.round(taxed) - line.foreign_subtotal
+
+    def _converted_native_tax(self, line):
+        """Replicates converting the native tax delta, the formula base
+        VEF must use."""
+        return line.currency_id._convert(
+            line.price_total - line.price_subtotal, line.foreign_currency_id,
+            line.company_id, line.move_id.invoice_date or fields.Date.today(),
+            custom_rate=line.foreign_inverse_rate,
+        )
+
+    def test_foreign_price_total_vef_base_converts_native_tax(self):
+        """Base VEF (this class' default setUp): `foreign_price_total`'s
+        tax portion must match converting the native tax delta, not
+        taxing the alterno base directly -- the two formulas are
+        expected to diverge slightly (see the USD-base test below), and
+        this asserts the VEF-base branch picks the conversion one."""
+        invoice = self._create_invoice(self.currency_vef, 99.99)
+        line = invoice.invoice_line_ids[:1]
+        self.assertTrue(line)
+        actual_tax = line.foreign_price_total - line.foreign_subtotal
+        self.assertAlmostEqual(
+            actual_tax, self._converted_native_tax(line), places=2,
+            msg="base VEF must convert the native tax delta")
+
+    def test_foreign_price_total_usd_base_taxes_alterno_directly(self):
+        """Base USD: `foreign_price_total`'s tax portion must tax the
+        alterno base directly (like `price_subtotal` is taxed natively),
+        NOT convert the native (already USD-2-decimal-rounded) tax delta
+        -- converting it would amplify the native rounding noise by the
+        (large) VEF rate into a visibly wrong bolivar amount.
+
+        99.99 x 16% = 15.9984, which native tax rounds to 16.00 (a real
+        +0.0016 USD rounding bump); multiplied by a ~710 VEF rate that
+        alone is already a ~1.1 Bs difference from the direct-tax
+        result, well above float noise, proving which formula actually
+        ran.
+        """
+        self.company.write({
+            "currency_id": self.currency_usd.id,
+            "currency_foreign_id": self.currency_vef.id,
+        })
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "manually_set_rate": True,
+            "foreign_rate": 709.6935,
+            "foreign_inverse_rate": 709.6935,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 99.99,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        line = invoice.invoice_line_ids[:1]
+        self.assertTrue(line)
+        actual_tax = line.foreign_price_total - line.foreign_subtotal
+        direct_tax = self._direct_foreign_tax(line)
+        converted_tax = self._converted_native_tax(line)
+
+        self.assertNotAlmostEqual(
+            direct_tax, converted_tax, places=1,
+            msg="test premise: the two formulas must actually diverge here")
+        self.assertAlmostEqual(
+            actual_tax, direct_tax, places=2,
+            msg="base USD must tax the alterno base directly")
+        self.assertNotAlmostEqual(
+            actual_tax, converted_tax, places=1,
+            msg="base USD must NOT convert the native tax delta")
+
+    def test_compute_foreign_tax_balance_usd_base_matches_direct_lines(self):
+        """The REAL posted tax line (`_compute_foreign_tax_balance` in
+        account_move.py) must follow the same base-USD rule: its
+        `foreign_debit`/`foreign_credit` must match
+        `_compute_foreign_tax_balance_from_lines` (taxing each product's
+        `foreign_price` directly), not the `amount_total x rate`-anchored
+        apportionment used for base VEF.
+        """
+        self.company.write({
+            "currency_id": self.currency_usd.id,
+            "currency_foreign_id": self.currency_vef.id,
+        })
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": fields.Date.today(),
+            "date": fields.Date.today(),
+            "manually_set_rate": True,
+            "foreign_rate": 709.6935,
+            "foreign_inverse_rate": 709.6935,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0, "price_unit": 99.99,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        tax_line = invoice.line_ids.filtered(lambda l: l.display_type == 'tax')[:1]
+        self.assertTrue(tax_line)
+        product_line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')[:1]
+        self.assertTrue(product_line)
+        expected_per_key = self._foreign_tax_expected(invoice)
+        # _foreign_tax_expected keys by the BASE (product) line's account,
+        # not the tax line's own account -- see its docstring.
+        key = (tax_line.tax_repartition_line_id.id, product_line.account_id.id)
+        expected_amount = sum(expected_per_key.get(key, []))
+        self.assertAlmostEqual(
+            tax_line.foreign_debit - tax_line.foreign_credit,
+            expected_amount, places=2,
+            msg="posted tax line must match the direct per-line method under base USD")
+
     def test_inverse_foreign_price(self):
         invoice = self._create_invoice(self.currency_usd, 100.0)
         line = invoice.line_ids.filtered(lambda l: l.display_type == 'product')[:1]
@@ -1302,6 +1482,14 @@ class TestCoverageGaps(TransactionCase):
         usd_rate.inverse_company_rate = 723.999
         self.currency_usd.write({"rounding": 0.0001, "decimal_places": 4})
         self.currency_vef.write({"rounding": 0.0001, "decimal_places": 4})
+        # `foreign_price` respeta la precisión de "Foreign Product Price" (antes
+        # era un Monetary que la ignoraba). Con monedas a 4 decimales hay que
+        # subir también esta precisión, igual que haría un admin real, o el
+        # redondeo a 2 decimales colapsa 723.0/723.999=0.9986 en 1.00 y lo
+        # confunde con el valor manual que se escribe más abajo.
+        self.env["decimal.precision"].search(
+            [("name", "=", "Foreign Product Price")]
+        ).digits = 4
         acc_exp2 = self._get_or_create('550100', 'Expense 2', 'expense')
         tax_16_p = self.env["account.tax"].with_company(self.company).create({
             "name": "16% DE COMPRAS", "amount": 16.0, "amount_type": "percent",
@@ -1400,6 +1588,7 @@ class TestCoverageGaps(TransactionCase):
 
         line_ids_before = inv.invoice_line_ids.ids
         form = Form(inv, view="account.view_move_form")
+        self._set_correlative_if_required(form, "TEST-MANUAL-ALTERNO-1")
         computed = None
         edited = None
         with form.invoice_line_ids.edit(1) as line2_form:
@@ -1549,6 +1738,132 @@ class TestCoverageGaps(TransactionCase):
         self.env.flush_all()
         self.env.invalidate_all()
         self.assertAlmostEqual(line.foreign_price, 1000.0 * rate, places=4)
+
+    def test_manual_alterno_survives_post_stress_many_lines(self):
+        """Reported bug: editing several lines' alterno price by hand and
+        then confirming (posting) the invoice silently reset them back to
+        the auto-computed value, because `_compute_foreign_price` never
+        checked `foreign_price_manual` -- ANY trigger of that compute
+        (posting touches `move_id.foreign_inverse_rate` and other
+        dependencies even without the user changing anything relevant)
+        overwrote the manual edit. Stress case: 12 lines, half of them
+        manually overridden with distinct values, confirm the invoice, and
+        verify every manual line kept EXACTLY its overridden value while
+        every untouched line still reflects price_unit x rate."""
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases ManualStress", "code": "PMST",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        prices = [100.0 + i * 37.5 for i in range(12)]
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0 + (i % 3), "price_unit": price,
+                    "account_id": self.acc_exp.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                })
+                for i, price in enumerate(prices)
+            ],
+        })
+        self.assertEqual(len(inv.invoice_line_ids), 12)
+        rate = inv.foreign_inverse_rate
+        self.assertTrue(rate)
+
+        manual_idx = [1, 3, 5, 7, 9, 11]
+        manual_overrides = {}
+        for i in manual_idx:
+            line = inv.invoice_line_ids[i]
+            overridden = self.env.company.currency_foreign_id.round(
+                line.foreign_price * 1.2345 + i
+            )
+            line.foreign_price = overridden
+            manual_overrides[i] = overridden
+            self.assertTrue(
+                line.foreign_price_manual,
+                f"line {i}: manual flag must be set right after the manual edit")
+
+        # Untouched lines must still reflect price_unit x rate BEFORE posting.
+        for i, price in enumerate(prices):
+            if i in manual_idx:
+                continue
+            line = inv.invoice_line_ids[i]
+            self.assertAlmostEqual(
+                line.foreign_price, price * rate, places=2,
+                msg=f"line {i}: non-manual alterno should track price_unit x rate before posting")
+
+        inv.action_post()
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        for i in manual_idx:
+            line = inv.invoice_line_ids[i]
+            self.assertTrue(
+                line.foreign_price_manual,
+                f"line {i}: manual flag must survive posting")
+            self.assertAlmostEqual(
+                line.foreign_price, manual_overrides[i], places=4,
+                msg=f"line {i}: manually-edited alterno price was reset by posting the invoice")
+
+        for i, price in enumerate(prices):
+            if i in manual_idx:
+                continue
+            line = inv.invoice_line_ids[i]
+            self.assertFalse(line.foreign_price_manual, f"line {i}: must not be flagged manual")
+            self.assertAlmostEqual(
+                line.foreign_price, price * rate, places=2,
+                msg=f"line {i}: non-manual alterno drifted after posting")
+
+    def test_manual_alterno_cleared_when_price_unit_changes_then_post(self):
+        """A manual alterno override tied to the OLD price_unit must reset
+        (not survive) once price_unit itself changes -- the write() hook
+        that clears `foreign_price_manual` on a price_unit write must fire
+        for a plain ORM write (not just a Form onchange), and the
+        subsequent post must not resurrect the stale manual value either.
+        """
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases ManualReinitPost", "code": "PMRP",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0, "price_unit": 500.0,
+                "account_id": self.acc_exp.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            })],
+        })
+        line = inv.invoice_line_ids[:1]
+        rate = inv.foreign_inverse_rate
+
+        line.foreign_price = line.foreign_price + 5.0
+        self.assertTrue(line.foreign_price_manual)
+
+        line.price_unit = 900.0
+        self.assertFalse(
+            line.foreign_price_manual,
+            "changing price_unit via a plain write() must clear the manual flag")
+        self.assertAlmostEqual(line.foreign_price, 900.0 * rate, places=4)
+
+        inv.action_post()
+        self.env.flush_all()
+        self.env.invalidate_all()
+        self.assertFalse(line.foreign_price_manual)
+        self.assertAlmostEqual(line.foreign_price, 900.0 * rate, places=4)
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - tax_totals ALL keys with foreign values
@@ -1802,6 +2117,7 @@ class TestCoverageGaps(TransactionCase):
             "invoice_line_ids": [],
         })
         form = Form(inv, view="account.view_move_form")
+        self._set_correlative_if_required(form, "TEST-STRESS")
         for i, price in enumerate(prices):
             prod = products[['16', '8', 'noacct', 'exempt'][i % 4]]
             account = acc_exp2 if i % 3 == 0 else self.acc_exp
@@ -1871,6 +2187,125 @@ class TestCoverageGaps(TransactionCase):
             form.invoice_line_ids.remove(idx)
             inv = form.save()
             self._assert_foreign_consistency(inv, f"del{step}")
+
+    # ═══════════════════════════════════════════════════════════════
+    # 30 products, 3 tax rates (8%/16%/31%), high precision (5 decimals)
+    # on native price, quantity AND foreign price at once.
+    # ═══════════════════════════════════════════════════════════════
+
+    def _setup_stress_multi_rate(self):
+        acc_pay = self._get_or_create('210000', 'Accounts Payable',
+                                      'liability_payable', reconcile=True)
+        acc_exp2 = self._get_or_create('550100', 'Expense 2', 'expense')
+        acc_tax8 = self._get_or_create('200100', 'Tax Payable 8%',
+                                       'liability_current', reconcile=True)
+        acc_tax31 = self._get_or_create('200200', 'Tax Payable 31%',
+                                        'liability_current', reconcile=True)
+        self.partner.property_account_payable_id = acc_pay.id
+        purchase_journal = self.env["account.journal"].sudo().create({
+            "name": "Purchases Stress MR", "code": "PSTRMR",
+            "type": "purchase", "company_id": self.company.id,
+            "default_account_id": self.acc_exp.id,
+        })
+        taxes = {
+            '8': self._create_tax_ext('IVA 8% MR', 8.0, account_id=acc_tax8.id,
+                                      type_tax_use='purchase'),
+            '16': self._create_tax_ext('IVA 16% MR', 16.0, account_id=self.acc_tax.id,
+                                       type_tax_use='purchase'),
+            '31': self._create_tax_ext('IVA 31% MR', 31.0, account_id=acc_tax31.id,
+                                       type_tax_use='purchase'),
+        }
+        products = {}
+        for key, tax in taxes.items():
+            products[key] = self.env["product.product"].create({
+                "name": f"Stress MR Serv {key}", "type": "service",
+                "list_price": 100.0,
+                "property_account_income_id": self.acc_inc.id,
+                "property_account_expense_id": self.acc_exp.id,
+                "taxes_id": [(5, 0, 0)],
+                "supplier_taxes_id": [(6, 0, tax.ids)],
+            })
+        return purchase_journal, products, acc_exp2
+
+    def _stress_invoice_30_products_high_precision(self, currency, seed):
+        # Native price, quantity AND alterno price all at 5 decimals --
+        # exactly the combination that used to amplify rounding error the
+        # most (see _compute_foreign_subtotal / _compute_foreign_tax_balance
+        # fixes: big quantity x rounded unit price x independently-rounded
+        # per-tax-group amounts).
+        self.env["decimal.precision"].search([("name", "=", "Foreign Product Price")]).digits = 5
+        self.env["decimal.precision"].search([("name", "=", "Product Price")]).digits = 5
+        self.env["decimal.precision"].search([("name", "=", "Product Unit of Measure")]).digits = 5
+
+        purchase_journal, products, acc_exp2 = self._setup_stress_multi_rate()
+        random.seed(seed)
+        keys = ['8', '16', '31']
+        inv = self.env["account.move"].with_context(check_move_validity=False).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": purchase_journal.id,
+            "currency_id": currency.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [],
+        })
+        form = Form(inv, view="account.view_move_form")
+        self._set_correlative_if_required(form, f"TEST-STRESS30-{currency.name}-0001")
+        for i in range(30):
+            key = keys[i % 3]
+            prod = products[key]
+            account = acc_exp2 if i % 2 == 0 else self.acc_exp
+            price = round(random.uniform(1_000.0, 9_999_999.99999), 5)
+            qty = round(random.uniform(1.0, 500.0), 5)
+            with form.invoice_line_ids.new() as nl:
+                nl.product_id = prod
+                nl.quantity = qty
+                nl.price_unit = price
+                nl.account_id = account
+            inv = form.save()
+            self._assert_foreign_consistency(inv, f"add{i}")
+        return inv
+
+    def test_form_vef_base_stress_30_products_3_taxes_high_precision(self):
+        inv = self._stress_invoice_30_products_high_precision(self.currency_vef, seed=101)
+        self.assertEqual(len(inv.invoice_line_ids), 30)
+        self.assertGreater(inv.foreign_inverse_rate, 0)
+
+        for step in range(5):
+            form = Form(inv, view="account.view_move_form")
+            idx = random.randrange(len(form.invoice_line_ids))
+            with form.invoice_line_ids.edit(idx) as lf:
+                lf.quantity = round(lf.quantity * random.choice([1.03, 0.97, 1.15]), 5)
+            inv = form.save()
+            self._assert_foreign_consistency(inv, f"edit{step}")
+
+    def test_form_usd_base_stress_30_products_3_taxes_high_precision(self):
+        usd_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id)], limit=1)
+        vef_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_vef.id),
+            ("company_id", "=", self.company.id)], limit=1)
+        if usd_rate:
+            usd_rate.inverse_company_rate = 1.0
+        if vef_rate:
+            vef_rate.inverse_company_rate = 0.02
+        self.company.write({
+            "currency_id": self.currency_usd.id,
+            "currency_foreign_id": self.currency_vef.id,
+        })
+        self.env.flush_all()
+
+        inv = self._stress_invoice_30_products_high_precision(self.currency_usd, seed=202)
+        self.assertEqual(len(inv.invoice_line_ids), 30)
+        self.assertGreater(inv.foreign_inverse_rate, 0)
+
+        for step in range(5):
+            form = Form(inv, view="account.view_move_form")
+            idx = random.randrange(len(form.invoice_line_ids))
+            with form.invoice_line_ids.edit(idx) as lf:
+                lf.quantity = round(lf.quantity * random.choice([1.03, 0.97, 1.15]), 5)
+            inv = form.save()
+            self._assert_foreign_consistency(inv, f"edit{step}")
 
     def test_real_case_stale_alterno_tax_totals_matches_entry(self):
         usd_rate = self.env["res.currency.rate"].search([
@@ -2472,6 +2907,7 @@ class TestCoverageGaps(TransactionCase):
         invoice = self._create_in_invoice(journal, fields.Date.today())
         with Form(invoice, view="account.view_move_form") as form:
             form.foreign_rate = 25.0
+            self._set_correlative_if_required(form, "TEST-ONCHANGE-RATE")
         invoice = form.save()
         self.assertAlmostEqual(invoice.foreign_inverse_rate, 1 / 25.0, places=6)
 
@@ -2864,11 +3300,20 @@ class TestCoverageGaps(TransactionCase):
     # ═══════════════════════════════════════════════════════════════
 
     def test_action_register_payment_multiple_rates_raises(self):
+        """Explicit correlatives on inv1/inv2: posting two out_invoice moves
+        back to back in the same transaction races with the shared
+        auto-numbering sequence when left unset (unrelated to what this
+        test covers - see l10n_ve_invoice's action_post()/_post()).
+        """
         inv1 = self._create_invoice(self.currency_usd, 100.0)
+        if "correlative" in inv1._fields:
+            inv1.correlative = "TEST-MULTI-RATE-INV1"
         inv1.with_context(move_action_post_alert=True).action_post()
         inv2 = self._create_invoice(self.currency_usd, 100.0)
         inv2.manually_set_rate = True
         inv2.foreign_rate = inv1.foreign_rate + 10.0
+        if "correlative" in inv2._fields:
+            inv2.correlative = "TEST-MULTI-RATE-INV2"
         inv2.with_context(move_action_post_alert=True).action_post()
         with self.assertRaises(UserError):
             (inv1 | inv2).action_register_payment()
@@ -2902,7 +3347,7 @@ class TestCoverageGaps(TransactionCase):
     # account_move.py - _compute_needed_terms (entry / no foreign currency)
     # ═══════════════════════════════════════════════════════════════
 
-    def test_compute_needed_terms_skips_entry_and_no_foreign_currency(self):
+    def test_compute_needed_terms_skips_entry(self):
         entry = self.env["account.move"].with_context(
             check_move_validity=False,
         ).create({
@@ -2921,11 +3366,19 @@ class TestCoverageGaps(TransactionCase):
         entry._compute_needed_terms()
         self.assertTrue(entry)
 
+    def test_compute_needed_terms_with_foreign_currency(self):
+        """A move's `foreign_currency_id` is derived from the company's
+        configured `currency_foreign_id`, which is a required company
+        setting for this localization -- it should never be unset on a
+        posted-able move, so the invoice here keeps both `currency_id`
+        and `foreign_currency_id` established (no `False`-ing them out).
+        """
         invoice = self._create_invoice(self.currency_usd, 100.0)
-        invoice.foreign_currency_id = False
+        self.assertTrue(invoice.currency_id)
+        self.assertTrue(invoice.foreign_currency_id)
         invoice._compute_needed_terms()
         for term_values in invoice.needed_terms.values():
-            self.assertNotIn('foreign_balance', term_values)
+            self.assertIn('foreign_balance', term_values)
 
     # ═══════════════════════════════════════════════════════════════
     # account_move_line.py - _get_non_invoice_foreign_value
@@ -3115,6 +3568,15 @@ class TestCoverageGaps(TransactionCase):
         self.assertTrue(st_line.is_reconciled)
 
     def test_bank_rec_widget_action_validate_rounding_adjustment(self):
+        """Odoo core's own `_action_validate()` must land a balanced move
+        even when a manually-edited line leaves a sub-cent rounding
+        residual (e.g. -999.99 against a 1000.0 statement line) -- this
+        localization no longer overrides that method (the previous
+        `bank.rec.widget` override that manually re-rounded and absorbed
+        the residual into the liquidity line was removed as unnecessary).
+        Assert the actual invariant (the posted move balances to
+        company-currency rounding), not just that some line exists.
+        """
         bank_journal = self.env["account.journal"].create({
             "name": "Bank RecW2", "code": "BRECW2", "type": "bank",
             "default_account_id": self.acc_bank.id, "company_id": self.company.id,
@@ -3135,6 +3597,13 @@ class TestCoverageGaps(TransactionCase):
         wizard._action_validate()
         liquidity = wizard.line_ids.filtered(lambda l: l.flag in ("liquidity", "aml"))
         self.assertTrue(liquidity)
+        move = st_line.move_id
+        self.assertTrue(move)
+        company_currency = st_line.company_id.currency_id
+        self.assertTrue(
+            company_currency.is_zero(sum(move.line_ids.mapped("balance"))),
+            "The posted move must balance to company-currency rounding.",
+        )
 
     # ═══════════════════════════════════════════════════════════════
     # report/account_invoice_details_report.py
@@ -3168,6 +3637,12 @@ class TestCoverageGaps(TransactionCase):
         self.assertEqual(data["payments"], {})
 
     def test_invoice_details_report_get_sale_details_full(self):
+        """Every out_invoice/out_refund posted below gets an explicit
+        `correlative`: posting several of them back to back in the same
+        transaction races with the shared auto-numbering sequence used
+        when no correlative is set yet (unrelated to what this test
+        covers - see l10n_ve_invoice's action_post()/_post()).
+        """
         self.env.user.tz = "America/Caracas"
         report = self.env["report.l10n_ve_accountant.report_account_invoices_details"]
         term_2_lines = self.env["account.payment.term"].create({
@@ -3194,9 +3669,13 @@ class TestCoverageGaps(TransactionCase):
                 }),
             ],
         })
+        if "correlative" in invoice_with_term._fields:
+            invoice_with_term.correlative = "TEST-DETAILS-TERM"
         invoice_with_term.with_context(move_action_post_alert=True).action_post()
 
         invoice_cash = self._create_invoice(self.currency_vef, 50.0)
+        if "correlative" in invoice_cash._fields:
+            invoice_cash.correlative = "TEST-DETAILS-CASH"
         invoice_cash.with_context(move_action_post_alert=True).action_post()
 
         refund = self.env["account.move"].with_context(check_move_validity=False).create({
@@ -3213,6 +3692,8 @@ class TestCoverageGaps(TransactionCase):
                 }),
             ],
         })
+        if "correlative" in refund._fields:
+            refund.correlative = "TEST-DETAILS-REFUND"
         refund.with_context(move_action_post_alert=True).action_post()
 
         bank = self._bank_journal_with_methods('BNKO7')
@@ -3386,9 +3867,14 @@ class TestCoverageGaps(TransactionCase):
         no_tax_invoice._compute_foreign_tax_balance(no_tax_invoice)
         self.assertTrue(no_tax_invoice)
 
-    def test_compute_foreign_tax_balance_no_foreign_currency(self):
+    def test_compute_foreign_tax_balance_with_foreign_currency(self):
+        """`foreign_currency_id` always comes from the company's configured
+        `currency_foreign_id`; keep both currency and foreign currency
+        established instead of forcing an invalid unset state.
+        """
         invoice = self._create_invoice(self.currency_usd, 100.0)
-        invoice.foreign_currency_id = False
+        self.assertTrue(invoice.currency_id)
+        self.assertTrue(invoice.foreign_currency_id)
         invoice._compute_foreign_tax_balance(invoice)
         self.assertTrue(invoice)
 
@@ -3403,9 +3889,14 @@ class TestCoverageGaps(TransactionCase):
     # account_move.py - _distribute_foreign_pt_residual
     # ═══════════════════════════════════════════════════════════════
 
-    def test_distribute_foreign_pt_residual_no_foreign_currency(self):
+    def test_distribute_foreign_pt_residual_with_foreign_currency(self):
+        """Same rationale as `test_compute_foreign_tax_balance_with_foreign_currency`:
+        currency and foreign currency must both be established, matching
+        how this model is always configured.
+        """
         invoice = self._create_invoice(self.currency_usd, 100.0)
-        invoice.foreign_currency_id = False
+        self.assertTrue(invoice.currency_id)
+        self.assertTrue(invoice.foreign_currency_id)
         invoice._distribute_foreign_pt_residual(invoice)
         self.assertTrue(invoice)
 
