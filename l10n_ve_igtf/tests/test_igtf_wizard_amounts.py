@@ -1,3 +1,4 @@
+import ast
 import logging
 
 from odoo.tests import tagged
@@ -193,7 +194,7 @@ class TestIgtfWizardAmounts(TestIndexedPayments):
             "journal_id": self._get_foreign_bank_journal(self.currency_usd).id,
             "payment_method_id": self.manual_in.id,
         })
-        domain = eval(payment.destination_account_id_domain)
+        domain = ast.literal_eval(payment.destination_account_id_domain)
         self.assertIn(("account_type", "=", "asset_receivable"), domain)
         self.assertNotIn(("account_type", "=", "liability_payable"), domain)
 
@@ -208,7 +209,7 @@ class TestIgtfWizardAmounts(TestIndexedPayments):
             "journal_id": self._get_foreign_bank_journal(self.currency_usd).id,
             "payment_method_id": self.manual_out.id,
         })
-        domain = eval(payment.destination_account_id_domain)
+        domain = ast.literal_eval(payment.destination_account_id_domain)
         self.assertIn(("account_type", "=", "liability_payable"), domain)
         self.assertNotIn(("account_type", "=", "asset_receivable"), domain)
 
