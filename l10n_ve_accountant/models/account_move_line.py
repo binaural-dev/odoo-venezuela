@@ -304,8 +304,8 @@ class AccountMoveLine(models.Model):
                 and self.move_id.payment_id.is_retention:
             retention_amount = self.move_id.payment_id.retention_foreign_amount
             if self.credit:
-                return retention_amount
-            return -retention_amount
+                return -retention_amount
+            return retention_amount
 
         if not self.move_id.is_invoice(include_receipts=True):
             return self._get_non_invoice_foreign_value()
