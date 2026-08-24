@@ -129,11 +129,8 @@ class AccountMoveLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate", "move_id.currency_id")
     def _compute_foreign_price(self):
         for line in self:
-            company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
-            if line.currency_id.id == company_currency.id:
-                line.foreign_price = line.price_unit * line.foreign_inverse_rate
-            elif line.currency_id.id == foreign_currency.id:
+            if line.currency_id.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
             else:
                 line.foreign_price = line.currency_id._convert(
@@ -184,20 +181,12 @@ class AccountMoveLine(models.Model):
         if balance and len(currency_lines) == 1:
             return -balance
 
-        # others currency (neither base nor alternate)
-        cur = self.currency_id
-        if cur and cur != self.company_id.foreign_currency_id :
-            return self.company_id.currency_id._convert(
-                self.debit - self.credit,
-
-                self.company_id.foreign_currency_id,
-                self.company_id,
-                self.date or fields.Date.context_today(self),
-            )
-
-        # Standard rate
-        
-        return (self.debit - self.credit) * self.foreign_inverse_rate 
+        return self.company_id.currency_id._convert(
+            self.debit - self.credit,
+            self.company_id.foreign_currency_id,
+            self.company_id,
+            self.date or fields.Date.context_today(self),
+        )
 
     def _get_foreign_value(self):
         """Return the foreign value (signed) for this line, or None."""

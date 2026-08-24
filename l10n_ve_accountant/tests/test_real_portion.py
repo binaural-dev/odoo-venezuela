@@ -1435,3 +1435,149 @@ class TestRealPortion(TransactionCase):
             total_gastos, total_vef_correcto, places=2,
             msg=f"RIGHT: gastos deben sumar {total_vef_correcto} VEF"
         )
+
+    # ═══════════════════════════════════════════════════════════════
+    # TESTS: COGS Y REDONDEO ACUMULADO (openspec l10n-ve-foreign-pt-cogs-imbalance)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_23_invoice_with_cogs_pair_stays_balanced(self):
+        """Factura VEF con un par COGS autobalanceado, igual al que
+           stock_account._post() inyecta en line_ids ANTES de postear
+           (ver openspec/changes/l10n-ve-foreign-pt-cogs-imbalance).
+
+           El par tiene el mismo costo con price_unit de signo opuesto
+           (igual que _stock_account_prepare_realtime_out_lines_vals).
+           Con _compute_foreign_price basado en _convert (lineal), negar
+           el costo debe negar exactamente el monto alterno, así que el
+           par se autobalancea sin depender de que _distribute_foreign_pt_residual
+           lo excluya de 'other'.
+        """
+        acc_stock = self._get_or_create('110100', 'Stock Account', 'asset_current')
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 23200.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        # Par COGS, mismo patrón que _stock_account_prepare_realtime_out_lines_vals:
+        # price_unit de signo opuesto, mismo costo.
+        cogs_cost = 9000.00
+        invoice.write({
+            "line_ids": [
+                Command.create({
+                    "name": "COGS interim",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": cogs_cost,
+                    "account_id": acc_stock.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+                Command.create({
+                    "name": "COGS expense",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": -cogs_cost,
+                    "account_id": self.acc_expense.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, 'posted')
+        self._log_lines(invoice, "test_23_cogs")
+
+        cogs_lines = invoice.line_ids.filtered(lambda l: l.display_type == 'cogs')
+        self.assertEqual(len(cogs_lines), 2, "Debe haber 2 lineas COGS")
+
+        # El par COGS debe autobalancearse en moneda alterna por construccion
+        cogs_fd = sum(cogs_lines.mapped('foreign_debit'))
+        cogs_fc = sum(cogs_lines.mapped('foreign_credit'))
+        self.assertAlmostEqual(
+            cogs_fd, cogs_fc, places=2,
+            msg=f"COGS: foreign_debit ({cogs_fd}) != foreign_credit ({cogs_fc})"
+        )
+
+        # Y el asiento completo (COGS incluidas) sigue cuadrando
+        self._assert_balances(invoice, "test_23")
+        self._assert_foreign_squares(invoice, "test_23")
+
+    def test_24_invoice_many_lines_decimal_rounding(self):
+        """Factura VEF con 50 lineas de precios con muchos decimales y
+           una tasa con muchos decimales - hallazgo #2 del proposal
+           (redondeo acumulado en facturas grandes).
+
+           No es una regresion de hoy: foreign_subtotal sigue siendo
+           foreign_price (ya redondeado) x cantidad, sin tocar. Lo que
+           se verifica es que, aun con esa desviacion por linea,
+           _distribute_foreign_pt_residual sigue cuadrando el total.
+        """
+        self._set_usd_rate(37.6543)
+
+        lines = []
+        n = 50
+        for i in range(n):
+            price = round(13.3333 + i * 0.7777, 4)
+            lines.append(Command.create({
+                "product_id": self.product.id,
+                "quantity": 3.0,
+                "price_unit": price,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            }))
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, 'posted')
+
+        self.assertEqual(
+            len(invoice.invoice_line_ids), n,
+            "Deben crearse las 50 lineas de producto"
+        )
+
+        # El cuadre total debe mantenerse pese al redondeo por linea
+        self._assert_balances(invoice, "test_24")
+        fd, fc = self._assert_foreign_squares(invoice, "test_24")
+
+        # Medicion informativa (no regresion): cuanto se desvia la suma
+        # "ingenua" de foreign_subtotal por linea (cada una ya redondeada)
+        # respecto de convertir el total una sola vez.
+        product_lines = invoice.line_ids.filtered(lambda l: l.display_type == 'product')
+        naive_foreign_total = sum(product_lines.mapped('foreign_subtotal'))
+        direct_convert_total = self.currency_vef._convert(
+            sum(product_lines.mapped('price_subtotal')),
+            self.currency_usd, self.company, fields.Date.today(),
+        )
+        deviation = abs(naive_foreign_total - direct_convert_total)
+        _logger.info(
+            f"test_24: desviacion redondeo acumulado (50 lineas) = "
+            f"{deviation:.4f} USD (hallazgo #2 del proposal, no regresion)"
+        )
+        # El total del asiento SIEMPRE debe cuadrar, sin importar la
+        # desviacion por linea - eso es lo que garantiza la distribucion.
+        self.assertAlmostEqual(fd, fc, places=2)
