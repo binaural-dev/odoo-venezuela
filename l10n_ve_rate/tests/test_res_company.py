@@ -8,10 +8,12 @@ class TestResCompanyEffectiveForeignCurrency(TransactionCase):
         super().setUpClass()
         cls.usd = cls.env.ref("base.USD")
         cls.eur = cls.env.ref("base.EUR")
+        cls.vef = cls.env.ref("base.VEF")
 
         cls.parent_company = cls.env["res.company"].create(
             {
                 "name": "Matriz Test",
+                "currency_id": cls.vef.id,
                 "foreign_currency_id": cls.usd.id,
             }
         )

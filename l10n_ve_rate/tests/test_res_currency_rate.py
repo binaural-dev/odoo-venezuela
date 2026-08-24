@@ -7,10 +7,12 @@ class TestResCurrencyRateComputeRate(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.usd = cls.env.ref("base.USD")
+        cls.vef = cls.env.ref("base.VEF")
 
         cls.parent_company = cls.env["res.company"].create(
             {
                 "name": "Matriz Test Rate",
+                "currency_id": cls.vef.id,
             }
         )
         cls.child_company = cls.env["res.company"].create(
@@ -54,6 +56,7 @@ class TestResCurrencyRateComputeRate(TransactionCase):
         other_root_company = self.env["res.company"].create(
             {
                 "name": "Otra Matriz Test Rate",
+                "currency_id": self.vef.id,
             }
         )
         other_rate = self.env["res.currency.rate"].create(
