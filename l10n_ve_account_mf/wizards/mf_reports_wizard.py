@@ -44,16 +44,17 @@ class MfReportsWizard(models.TransientModel):
     )
 
     # ------------------------------------------------------------------
-    # Reimpresion de documentos de la memoria de auditoria.
-    # Por fecha  -> comando en minuscula + rango DDMMYY (Tabla 40).
-    # Por numero -> comando en mayuscula + rango numerico (Tabla 39).
+    # Reimpresion de documentos de la memoria de auditoria, POR NUMERO
+    # (comando en mayuscula + rango numerico de 7 digitos, Tabla 39 del
+    # Manual TFHKA V8.5.0).
+    #
+    # La reimpresion "por fecha" (comandos en minuscula Rf/Rz/..., Tabla 40)
+    # se retiro a proposito: en los equipos probados (HKA80) el firmware
+    # acepta el comando pero NO devuelve el documento por fecha (imprime
+    # vacio o responde NAK), aunque el mismo documento si se reimprime por
+    # numero. Para consultas por rango de fechas esta el "Reporte de memoria
+    # fiscal" (I2), que si funciona.
     # ------------------------------------------------------------------
-    reprint_scope = fields.Selection(
-        selection=[("date", "Por fecha"), ("number", "Por numero")],
-        string="Reimpresion por",
-        default="date",
-        required=True,
-    )
     reprint_doc_type = fields.Selection(
         selection=[
             ("invoice", "Facturas"),
@@ -66,8 +67,8 @@ class MfReportsWizard(models.TransientModel):
         string="Documento a reimprimir",
         default="report_z",
         required=True,
-        help="Tipo de documento a reimprimir desde la memoria de auditoria. "
-        "'Reporte Z' reimprime los cierres Z del rango indicado.",
+        help="Tipo de documento a reimprimir desde la memoria de auditoria, "
+        "por rango de numero. 'Reporte Z' reimprime los cierres Z del rango.",
     )
     number_from = fields.Char(string="Numero desde")
     number_to = fields.Char(string="Numero hasta")

@@ -38,7 +38,7 @@ The system SHALL allow printing fiscal documents (invoice, credit note, debit no
 - **THEN** `fields.Date.context_today(self)` is used (respects user timezone)
 
 ### Requirement: MF Reports Wizard
-The system SHALL provide a wizard accessible from the "Detalle de Ventas" menu for fiscal report operations, organized in three clearly separated sections: current-day reports (X/Z), fiscal-memory report by date range, and document reprint from the audit memory. The `date_from`/`date_to` range applies ONLY to the last two sections; the current-day X/Z reports never use it.
+The system SHALL provide a wizard accessible from the "Detalle de Ventas" menu for fiscal report operations, organized in three clearly separated sections: current-day reports (X/Z), fiscal-memory report by date range, and document reprint by number from the audit memory. The `date_from`/`date_to` range applies ONLY to the fiscal-memory report; the current-day X/Z reports and the by-number reprint never use it.
 
 #### Scenario: Print Report X (current day only)
 - **WHEN** the user clicks "Reporte X (dia en curso)" with the fiscal printer connected
@@ -48,19 +48,24 @@ The system SHALL provide a wizard accessible from the "Detalle de Ventas" menu f
 #### Scenario: Print Report Z with backend sync (current day only)
 - **WHEN** the user confirms "Reporte Z / Cierre diario (dia en curso)" (explicit ConfirmationDialog)
 - **THEN** the driver sends I0Z (closes the current fiscal day), reads S1, and calls `account.move.report_z()` to assign Z+1 to all pending invoices of that machine
-- **AND** the confirmation dialog states that Z closes the current day (today), does NOT use the date range, and points to "Reimpresion de documentos" (doc type "Reporte Z") for past dates
+- **AND** the confirmation dialog states that Z closes the current day (today), does NOT use the date range, and points to "Reporte de memoria fiscal" for past dates
 
 #### Scenario: Fiscal-memory report by date range (I2)
 - **WHEN** the user selects date_from/date_to, picks `memory_report_type` (Resumen/Detallado/Mensual) and clicks "Imprimir reporte de memoria fiscal"
 - **THEN** dates are formatted to DDMMYY (6 digits) and the `I2<S|A|M><from><to>` command is sent with 30s timeout (Manual TFHKA V8.5.0, Tabla 61)
 - **AND** date_to >= date_from is validated
 
-#### Scenario: Reprint documents by date or number range, with document-type selector
-- **WHEN** the user picks `reprint_scope` (date/number), `reprint_doc_type` (invoice/refund/nofiscal/report_x/report_z/all) and clicks "Reimprimir documentos"
-- **THEN** for scope "date" a lowercase command `Rf/Rc/Rt/Rx/Rz/Ra` is sent with the 7-digit zero-padded date range (`0`+DDMMYY, Tabla 40); for scope "number" an uppercase command `RF/RC/RT/RX/RZ/R@` is sent with the 7-digit zero-padded number range (Tabla 39), both with 60s timeout
-- **AND** `report_z` reprints the Z reports of the range (restores parity with the v17 `l10n_ve_iot_mf` reprint tool, lost in the WebSerial migration)
-- **AND** the range is validated (date_to >= date_from, or number_to >= number_from)
-- **AND** date parsing handles multiple formats: YYYY-MM-DD, DD/MM/YYYY, Date and Luxon DateTime objects
+#### Scenario: Reprint documents by number range, with document-type selector
+- **WHEN** the user picks `reprint_doc_type` (invoice/refund/nofiscal/report_x/report_z/all), fills `number_from`/`number_to` and clicks "Reimprimir documentos"
+- **THEN** an uppercase command `RF/RC/RT/RX/RZ/R@` is sent with the 7-digit zero-padded number range (Manual TFHKA V8.5.0, Tabla 39) and 60s timeout
+- **AND** `report_z` reprints the Z reports of the number range (restores parity with the v17 `l10n_ve_iot_mf` reprint tool, lost in the WebSerial migration)
+- **AND** number_to >= number_from is validated
+- **AND** on failure the notification surfaces the fiscal machine's own response verbatim
+
+#### Scenario: Reprint by date is intentionally not offered
+- **WHEN** deciding how to expose reprint by date range (lowercase `Rf/Rz/...`, Tabla 40)
+- **THEN** the wizard does NOT offer reprint by date, because the tested firmware (HKA80) accepts the command but returns no document by date (prints blank / NAK) even for a range containing a known Z, while the same document reprints correctly by number
+- **AND** the fiscal-memory report by date (I2) is the supported path for date-range Z reports
 
 ### Requirement: Fiscalizador (Debug Tool)
 The system SHALL provide a debug dialog accessible from the Developer Tools menu (bug icon) for technical diagnostics.

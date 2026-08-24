@@ -11,9 +11,8 @@
                 <group string="Reportes del dia fiscal en curso">
                     <div class="text-muted o_form_label" colspan="2">
                         El Reporte X y el Reporte Z corresponden siempre al
-                        <b>dia fiscal en curso</b>; no utilizan el rango de
-                        fechas. Para fechas pasadas usa "Reporte de memoria
-                        fiscal" o "Reimpresion de documentos".
+                        <b>dia fiscal en curso</b>; no utilizan fechas. Para
+                        fechas pasadas usa "Reporte de memoria fiscal".
                     </div>
                     <group>
                         <widget name="mf-reports-webserial-button" action="report_x"/>
@@ -22,24 +21,16 @@
                 </group>
 
                 <!-- ===================================================== -->
-                <!-- Rango de fechas compartido por los reportes de abajo  -->
+                <!-- Reporte de memoria fiscal por rango de fechas (I2)     -->
                 <!-- ===================================================== -->
-                <group string="Rango de fechas">
+                <group string="Reporte de memoria fiscal por rango de fechas">
                     <div class="text-muted o_form_label" colspan="2">
-                        Aplica al reporte de memoria fiscal y a la reimpresion
-                        de documentos por fecha.
+                        Lee la memoria fiscal (permanente). Es la via para
+                        obtener los cierres Z de fechas pasadas.
                     </div>
                     <group>
                         <field name="date_from"/>
                         <field name="date_to"/>
-                    </group>
-                </group>
-
-                <!-- ===================================================== -->
-                <!-- Reporte de memoria fiscal por rango de fechas (I2)     -->
-                <!-- ===================================================== -->
-                <group string="Reporte de memoria fiscal por rango de fechas">
-                    <group>
                         <field name="memory_report_type"/>
                     </group>
                     <group>
@@ -48,21 +39,19 @@
                 </group>
 
                 <!-- ===================================================== -->
-                <!-- Reimpresion de documentos (memoria de auditoria)      -->
+                <!-- Reimpresion de documentos POR NUMERO (memoria auditoria)-->
                 <!-- ===================================================== -->
-                <group string="Reimpresion de documentos (memoria de auditoria)">
+                <group string="Reimpresion de documentos por numero (memoria de auditoria)">
+                    <div class="text-muted o_form_label" colspan="2">
+                        Reimpresion por rango de <b>numero</b> de documento.
+                        Para reportes por <b>fecha</b> usa el "Reporte de memoria
+                        fiscal" de arriba. Se mostrara el mensaje que devuelva la
+                        maquina fiscal.
+                    </div>
                     <group>
-                        <field name="reprint_scope" widget="radio" options="{'horizontal': True}"/>
                         <field name="reprint_doc_type"/>
-                        <field name="number_from"
-                               invisible="reprint_scope != 'number'"
-                               required="reprint_scope == 'number'"/>
-                        <field name="number_to"
-                               invisible="reprint_scope != 'number'"
-                               required="reprint_scope == 'number'"/>
-                        <div class="text-muted" colspan="2" invisible="reprint_scope != 'date'">
-                            Se usa el rango de fechas indicado arriba.
-                        </div>
+                        <field name="number_from" required="1"/>
+                        <field name="number_to" required="1"/>
                     </group>
                     <group>
                         <widget name="mf-reports-webserial-button" action="reprint_range"/>

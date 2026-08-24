@@ -162,18 +162,14 @@ export class MfReportsWebSerialButtonComponent extends Component {
         return Number.isNaN(parsed) ? null : parsed;
     }
 
-    // Mapa (tipo de documento) -> letra de comando de reimpresion segun el
-    // Manual de Protocolos y Comandos TFHKA V8.5.0. La familia "por fecha"
-    // usa minusculas (Tabla 40) y la "por numero" mayusculas (Tabla 39).
-    static REPRINT_DATE_CMD = {
-        invoice: "Rf",
-        refund: "Rc",
-        nofiscal: "Rt",
-        report_x: "Rx",
-        report_z: "Rz",
-        all: "Ra",
-    };
-
+    // Mapa (tipo de documento) -> letra de comando de reimpresion POR NUMERO
+    // segun el Manual de Protocolos y Comandos TFHKA V8.5.0 (Tabla 39).
+    //
+    // La reimpresion "por fecha" (comandos en minuscula Rf/Rz/..., Tabla 40)
+    // se retiro a proposito: en los equipos probados (HKA80) el firmware
+    // acepta el comando pero NO devuelve el documento por fecha (imprime vacio
+    // o responde NAK), aunque el mismo documento si se reimprime por numero.
+    // Para consultas por rango de fechas esta el "Reporte de memoria fiscal".
     static REPRINT_NUMBER_CMD = {
         invoice: "RF",
         refund: "RC",
@@ -185,38 +181,54 @@ export class MfReportsWebSerialButtonComponent extends Component {
 
     async _runReprint(driver) {
         const data = this.props.record?.data || {};
-        const scope = data.reprint_scope || "date";
         const docType = data.reprint_doc_type || "report_z";
 
-        if (scope === "number") {
-            const from = this._normalizeNumber(data.number_from);
-            const to = this._normalizeNumber(data.number_to);
-            if (from === null || to === null) {
-                throw new Error(_t("Debes indicar un rango de numeros valido."));
-            }
-            if (to < from) {
-                throw new Error(
-                    _t("El numero hasta debe ser mayor o igual al numero desde.")
-                );
-            }
-            const command = MfReportsWebSerialButtonComponent.REPRINT_NUMBER_CMD[docType];
-            if (!command) {
-                throw new Error(_t("Tipo de documento a reimprimir invalido."));
-            }
-            const rangeFrom = String(from).padStart(7, "0");
-            const rangeTo = String(to).padStart(7, "0");
-            return await driver.sendCommand(`${command}${rangeFrom}${rangeTo}`, 60000);
+        const from = this._normalizeNumber(data.number_from);
+        const to = this._normalizeNumber(data.number_to);
+        if (from === null || to === null) {
+            throw new Error(_t("Debes indicar un rango de numeros valido."));
         }
-
-        // Por fecha: comando en minuscula + 7 digitos (0 + DDMMYY) por fecha.
-        const payload = await this._getDateRange();
-        const command = MfReportsWebSerialButtonComponent.REPRINT_DATE_CMD[docType];
+        if (to < from) {
+            throw new Error(_t("El numero hasta debe ser mayor o igual al numero desde."));
+        }
+        const command = MfReportsWebSerialButtonComponent.REPRINT_NUMBER_CMD[docType];
         if (!command) {
             throw new Error(_t("Tipo de documento a reimprimir invalido."));
         }
-        const rangeFrom = payload.date_from.padStart(7, "0");
-        const rangeTo = payload.date_to.padStart(7, "0");
-        return await driver.sendCommand(`${command}${rangeFrom}${rangeTo}`, 60000);
+        const rangeFrom = String(from).padStart(7, "0");
+        const rangeTo = String(to).padStart(7, "0");
+        return await this._sendManaged(driver, `${command}${rangeFrom}${rangeTo}`, 60000);
+    }
+
+    /**
+     * Envia un comando de reporte/reimpresion sin reintentar ante un NAK.
+     *
+     * Un NAK en estos comandos es deterministico: el rango no tiene datos, o
+     * el documento ya no esta en la memoria de auditoria (buffer rotativo).
+     * Reintentar (3 veces por defecto en el driver) no ayuda y solo ensucia
+     * la consola. Bajamos temporalmente retryAttempts a 1 y lo restauramos.
+     */
+    async _sendManaged(driver, command, timeout) {
+        const prevRetries = driver.retryAttempts;
+        driver.retryAttempts = 1;
+        try {
+            return await driver.sendCommand(command, timeout);
+        } finally {
+            driver.retryAttempts = prevRetries;
+        }
+    }
+
+    _failureMessage(result) {
+        const base = result?.error || _t("Operacion fiscal fallida");
+        if (this.props.action === "memory_report") {
+            return _t(
+                "No se pudo generar el reporte de memoria fiscal. " +
+                    "Prueba un rango de fechas mas amplio que contenga cierres Z."
+            );
+        }
+        // reprint_range y demas: mostrar el mensaje que devuelve la maquina
+        // fiscal tal cual (la impresora es la autoridad sobre el resultado).
+        return _t("Respuesta de la maquina fiscal: ") + base;
     }
 
     async _syncReportZ(driver) {
@@ -293,7 +305,8 @@ export class MfReportsWebSerialButtonComponent extends Component {
             } else if (this.props.action === "memory_report") {
                 const payload = await this._getDateRange();
                 const type = this._getMemoryReportType();
-                result = await driver.sendCommand(
+                result = await this._sendManaged(
+                    driver,
                     `I2${type}${payload.date_from}${payload.date_to}`,
                     30000
                 );
@@ -305,7 +318,7 @@ export class MfReportsWebSerialButtonComponent extends Component {
             }
 
             if (!result?.success) {
-                this.notify(result?.error || _t("Operacion fiscal fallida"), "danger", true);
+                this.notify(this._failureMessage(result), "danger", true);
                 return;
             }
 
