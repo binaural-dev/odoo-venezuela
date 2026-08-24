@@ -80,7 +80,7 @@ def reassign_xml_ir_rule_ids(env):
 def post_init_hook(env):
     """Fix seed tax.unit record so its available_date doesn't conflict with today.
 
-    Mirrors migrations/19.0.2.0.25/pre-migration.py's UPDATE for existing databases;
+    Mirrors migrations/19.0.2.0.26/pre-migration.py's UPDATE for existing databases;
     this hook covers the fresh-install case, where the ORM (and this module's code)
     isn't available yet at pre-migration time.
     """
