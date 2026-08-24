@@ -860,14 +860,16 @@ class AccountPaymentAndIgtf(models.Model):
             else:
                 if rec.partner_type == 'supplier':
                     domain = company_domain + [
-                        ('account_type', '=', 'asset_receivable'),
-                        ('is_advance_account', '=', False)
-                    ]
-                else:
-                    domain = company_domain + [
                         ('account_type', '=', 'liability_payable'),
                         ('is_advance_account', '=', False)
                     ]
+                    
+                else:
+                    domain = company_domain + [
+                        ('account_type', '=', 'asset_receivable'),
+                        ('is_advance_account', '=', False)
+                    ]
+                    
             
             rec.destination_account_id_domain = str(domain)
 

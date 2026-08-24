@@ -134,6 +134,84 @@ class TestIgtfWizardAmounts(TestIndexedPayments):
             msg="payment_difference must equal amount_for_difference (debt) minus effective_amount.",
         )
 
+    def test_foreign_amount_total_igtf_uses_absolute_value_for_credit_notes(self):
+        """foreign_amount_total_igtf must add igtf on top of abs(amount_total_signed).
+        Credit notes carry a negative amount_total_signed (direction_sign flips it),
+        so without the abs() this figure would come out negative instead of the
+        expected positive foreign total, showing a wrong IGTF amount on the
+        document."""
+        credit_note = self.env["account.move"].create({
+            "move_type": "out_refund",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "invoice_date": self.invoice_date,
+            "invoice_date_display": self.invoice_date,
+            "date": self.invoice_date,
+            "invoice_line_ids": [
+                fields.Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 100.0,
+                    "account_id": self.account_income.id,
+                    "tax_ids": [fields.Command.set([self.test_tax.id])],
+                })
+            ],
+        })
+        credit_note.with_context(move_action_post_alert=True).action_post()
+
+        self.assertLess(
+            credit_note.amount_total_signed, 0.0,
+            "Sanity check: a credit note's amount_total_signed must be negative.",
+        )
+
+        igtf_totals = credit_note.tax_totals["igtf"]
+        foreign_igtf_base_amount = igtf_totals["foreign_igtf_amount"]
+        foreign_amount_total_igtf = credit_note.tax_totals["foreign_amount_total_igtf"]
+
+        expected = abs(credit_note.amount_total_signed) + foreign_igtf_base_amount
+        self.assertAlmostEqual(
+            foreign_amount_total_igtf, expected, places=2,
+            msg="foreign_amount_total_igtf must be abs(amount_total_signed) + igtf, "
+            "never a negative or reduced figure on a credit note.",
+        )
+        self.assertGreaterEqual(
+            foreign_amount_total_igtf, 0.0,
+            "foreign_amount_total_igtf must never be negative on a credit note.",
+        )
+
+    def test_destination_account_id_domain_customer_uses_receivable(self):
+        """A non-advance payment to a customer must offer receivable accounts
+        (Por Cobrar), not payable ones -- the two branches were swapped
+        (ticket 14769: Clientes showed "Por Pagar" and Proveedores showed
+        "Por Cobrar")."""
+        payment = self.env["account.payment"].create({
+            "payment_type": "inbound",
+            "partner_type": "customer",
+            "partner_id": self.partner.id,
+            "amount": 100.0,
+            "journal_id": self._get_foreign_bank_journal(self.currency_usd).id,
+            "payment_method_id": self.manual_in.id,
+        })
+        domain = eval(payment.destination_account_id_domain)
+        self.assertIn(("account_type", "=", "asset_receivable"), domain)
+        self.assertNotIn(("account_type", "=", "liability_payable"), domain)
+
+    def test_destination_account_id_domain_supplier_uses_payable(self):
+        """A non-advance payment to a supplier must offer payable accounts
+        (Por Pagar), not receivable ones."""
+        payment = self.env["account.payment"].create({
+            "payment_type": "outbound",
+            "partner_type": "supplier",
+            "partner_id": self.partner.id,
+            "amount": 100.0,
+            "journal_id": self._get_foreign_bank_journal(self.currency_usd).id,
+            "payment_method_id": self.manual_out.id,
+        })
+        domain = eval(payment.destination_account_id_domain)
+        self.assertIn(("account_type", "=", "liability_payable"), domain)
+        self.assertNotIn(("account_type", "=", "asset_receivable"), domain)
+
     def test_is_same_within_rounding_helper(self):
         """Direct unit test of the rounding-tolerance helper: a one-cent
         difference (one full VEF rounding unit) must be treated as the same
