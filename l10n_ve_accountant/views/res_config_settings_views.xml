@@ -51,7 +51,7 @@
                             <div class="o_setting_right_pane" >
                                 <group>
                                     <field name="indexaxion_payment_mode" />
-                                    <field name="indexed_default" readonly="indexaxion_payment_mode != 'to_agreed'"/>
+                                    <field name="indexed_default" readonly="indexaxion_payment_mode != 'to_agreed'" force_save="1"/>
                                 </group>
                             </div>
                         </div>
