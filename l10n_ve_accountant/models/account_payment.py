@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 import logging
 
@@ -68,6 +69,85 @@ class AccountPayment(models.Model):
     company_currency_symbol = fields.Char(related="company_id.currency_id.symbol")
 
     foreign_amount = fields.Monetary('foreign_amount',currency_field="foreign_currency_id",  compute="_compute_foreign_amount", store=True, readonly=False)
+
+    def _prepare_move_lines_per_type(self, write_off_line_vals=None, force_balance=None):
+        """
+        Same as the core method (account.payment), except the liquidity line is
+        converted to company currency using the l10n_ve_conversion_date context key
+        (the invoice date when the payment is not indexed) instead of always using
+        the payment date. The wizard sets this context key when creating payments
+        (see account_payment_register._create_payments); no field is persisted.
+        Duplicated instead of temporarily reassigning self.date, since that would
+        trigger a real write() on a stored field and cascade recomputes.
+        """
+        self.ensure_one()
+        conversion_date = self.env.context.get('l10n_ve_conversion_date')
+        
+        if not conversion_date:
+            return super()._prepare_move_lines_per_type(
+                write_off_line_vals=write_off_line_vals, force_balance=force_balance
+            )
+
+        if not self.outstanding_account_id:
+            raise UserError(_(
+                "You can't create a new payment without an outstanding payments/receipts account set either on the company or the %(payment_method)s payment method in the %(journal)s journal.",
+                payment_method=self.payment_method_line_id.name, journal=self.journal_id.display_name))
+
+        line_name = ''.join(x[1] for x in self._get_aml_default_display_name_list() if x[1])
+
+        write_off_lines = write_off_line_vals or []
+        write_off_amount_currency = sum(x['amount_currency'] for x in write_off_lines)
+        write_off_balance = sum(x['balance'] for x in write_off_lines)
+
+        withholding_lines = self._prepare_move_withholding_lines({})
+        withholding_amount_currency = sum(x['amount_currency'] for x in withholding_lines)
+        withholding_balance = sum(x['balance'] for x in withholding_lines)
+
+        if withholding_lines and write_off_lines:
+            write_off_lines = []
+            write_off_amount_currency = 0.0
+            write_off_balance = 0.0
+
+        if self.payment_type == 'inbound':
+            liquidity_amount_currency = self.amount
+        elif self.payment_type == 'outbound':
+            liquidity_amount_currency = -self.amount
+        else:
+            liquidity_amount_currency = 0.0
+
+        if not write_off_line_vals and force_balance is not None:
+            sign = 1 if liquidity_amount_currency > 0 else -1
+            liquidity_balance = sign * abs(force_balance)
+        else:
+            liquidity_balance = self.currency_id._convert(
+                liquidity_amount_currency,
+                self.company_id.currency_id,
+                self.company_id,
+                conversion_date,
+            )
+        liquidity_amount_currency -= withholding_amount_currency
+        liquidity_balance -= withholding_balance
+
+        liquidity_lines = self._prepare_move_liquidity_lines({
+            'name': line_name,
+            'balance': liquidity_balance,
+            'amount_currency': liquidity_amount_currency,
+        })
+
+        counterpart_amount_currency = -liquidity_amount_currency - write_off_amount_currency - withholding_amount_currency
+        counterpart_balance = -liquidity_balance - write_off_balance - withholding_balance
+        counterpart_lines = self._prepare_move_counterpart_lines({
+            'name': line_name,
+            'balance': counterpart_balance,
+            'amount_currency': counterpart_amount_currency,
+        })
+
+        return {
+            'liquidity_lines': liquidity_lines,
+            'counterpart_lines': counterpart_lines,
+            'write_off_lines': write_off_lines,
+            'withholding_lines': withholding_lines,
+        }
 
     @api.depends("amount", "currency_id","date")
     def _compute_foreign_amount(self):
@@ -141,11 +221,20 @@ class AccountPayment(models.Model):
     def _compute_rate(self):
         """
         Compute the rate of the payment using the compute_rate method of the res.currency.rate model.
+
+        foreign_rate/foreign_inverse_rate are stored+readonly=False, so the wizard's
+        create() call can set them explicitly with the indexation-aware rate. But
+        being @api.depends("date", "currency_id") means ANY later write to those
+        fields (e.g. a manual date correction) silently recomputes and overwrites
+        that value with today's rate, discarding the invoice-date rate for
+        non-indexed payments. Honor l10n_ve_conversion_date here too so a recompute
+        never reverts what the wizard set.
         """
         Rate = self.env["res.currency.rate"]
         for payment in self:
+            conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment.date or fields.Date.today()
             rate_values = Rate.compute_rate(
-                payment.foreign_currency_id.id, payment.date or fields.Date.today()
+                payment.foreign_currency_id.id, conversion_date
             )
             payment.update(rate_values)
 
@@ -156,12 +245,13 @@ class AccountPayment(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for payment in self:
+            conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment.date or fields.Date.today()
             if (
                 payment.currency_id != payment.company_id.currency_id
                 and payment.currency_id != payment.company_id.foreign_currency_id
             ):
                 rate_values = Rate.compute_rate(
-                    payment.currency_id.id, payment.date or fields.Date.today()
+                    payment.currency_id.id, conversion_date
                 )
                 payment.other_rate = rate_values.get("foreign_rate", 0)
                 payment.other_rate_inverse = rate_values.get("foreign_inverse_rate", 0)
