@@ -267,9 +267,12 @@ class StockPicking(models.Model):
                 self._update_alter_location_lines_on_receive()
             return res
 
+        res = super().button_validate()
+        if isinstance(res, dict):
+            return res
         if self.env.company.use_alternate_locations:
             self._update_alter_location_lines_on_receive()
-        return super().button_validate()
+        return res
         
     def _check_stock_availability_for_pickings(self):
         if self.picking_type_id.code in ['internal', 'outgoing']:
