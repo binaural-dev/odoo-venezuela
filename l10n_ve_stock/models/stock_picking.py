@@ -257,15 +257,11 @@ class StockPicking(models.Model):
                 picking = picking.with_context(skip_physical_location=True)
         return super().action_assign()
 
-    def button_validate(self):
+    def _pre_action_done_hook(self):
         if self.env.company.not_allow_negative_stock_movement:
-            res = super(StockPicking, self).button_validate()
-            if isinstance(res, dict) and res.get('res_model') == 'stock.backorder.confirmation':
-                return res
-            else:
-                self._check_stock_availability_for_pickings()
-        return super().button_validate()
-        
+            self._check_stock_availability_for_pickings()
+        return super()._pre_action_done_hook()
+
     def _check_stock_availability_for_pickings(self):
         if self.picking_type_id.code in ['internal', 'outgoing']:
             group_product_location_lot = {}
