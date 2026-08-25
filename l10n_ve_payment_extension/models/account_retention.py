@@ -281,8 +281,9 @@ class AccountRetention(models.Model):
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
-            ("move_type", "in", ("in_refund", "in_invoice")),
-            ("amount_residual", "!=", 0),
+            "|",
+            "&", ("move_type", "=", "in_invoice"), ("amount_residual", ">", 0),
+            "&", ("move_type", "=", "in_refund"), ("amount_residual", "!=", 0),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain
@@ -324,8 +325,9 @@ class AccountRetention(models.Model):
             ("company_id", "=", self.company_id.id),
             ("partner_id", "=", self.partner_id.id),
             ("state", "=", "posted"),
-            ("move_type", "in", ("out_refund", "out_invoice")),
-            ("amount_residual", "!=", 0),
+            "|",
+            "&", ("move_type", "=", "out_invoice"), ("amount_residual", ">", 0),
+            "&", ("move_type", "=", "out_refund"), ("amount_residual", "!=", 0),
         ]
         invoices_with_taxes = search_invoices_with_taxes(
             self.env["account.move"], search_domain
