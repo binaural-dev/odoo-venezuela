@@ -920,17 +920,23 @@ class AccountMove(models.Model):
     )
     def _compute_tax_totals(self):
         # El `with_context(active_id=..., active_model=...)` por registro que
-        # había aquí antes era redundante: `account_tax._get_tax_totals_summary`
-        # (l10n_ve_accountant) ya deriva el `record` (la factura) directo de
-        # `base_lines[0]['record'].move_id` como fallback cuando no hay
-        # `active_id`/`active_model` en el contexto -- da exactamente el mismo
-        # resultado. Además, `with_context()` crea un `Environment` nuevo por
-        # cada factura (iterando el registro de entornos vivos de la
-        # transacción), que en este proyecto (con cadenas de `super()` muy
-        # profundas) es uno de varios puntos que puede terminar en un
-        # `RecursionError` real al conciliar pagos. Se mantiene el
-        # `@api.depends` (necesario por `foreign_rate`, específico de este
-        # proyecto) pero se delega directo, sin el contexto por registro.
+        # había aquí antes se quitó porque `with_context()` crea un
+        # `Environment` nuevo por cada factura (iterando el registro de
+        # entornos vivos de la transacción), que en este proyecto (con
+        # cadenas de `super()` muy profundas) es uno de varios puntos que
+        # puede terminar en un `RecursionError` real al conciliar pagos.
+        # `account_tax._get_tax_totals_summary` (l10n_ve_accountant) deriva
+        # el `record` (la factura) directo de `base_lines[0]['record'].move_id`
+        # como fallback cuando no hay `active_id`/`active_model` en el
+        # contexto -- pero la rama de moneda/tasa/descuento de ese método
+        # bifurcaba comparando el STRING `active_model == "account.move"`
+        # (nunca seteado por este fallback) en vez de `record._name`, así
+        # que quitar el `with_context()` sin corregir esa condición dejaba
+        # esa rama muerta fuera de una acción de UI real (crons, recomputes
+        # por conciliación, reportes) -- ver el fix en `account_tax.py`.
+        # Se mantiene el `@api.depends` (necesario por `foreign_rate`,
+        # específico de este proyecto) pero se delega directo, sin el
+        # contexto por registro.
         super()._compute_tax_totals()
 
 

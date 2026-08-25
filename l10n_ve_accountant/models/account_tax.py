@@ -104,7 +104,7 @@ class AccountTax(models.Model):
         foreign_currency_id = self.env.company.foreign_currency_id or False
         company_rate = 1.0
         has_discount= False
-        if active_model == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+        if record._name == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
             company_rate = record.company_currency_rate
             currency_id = record.currency_id
             foreign_currency_id =record.foreign_currency_id

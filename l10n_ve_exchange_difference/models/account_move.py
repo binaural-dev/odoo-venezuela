@@ -6,43 +6,67 @@ class AccountMove(models.Model):
     _inherit = 'account.move'
 
     l10n_ve_exchange_diff_entry = fields.Boolean(
+        string='Is Exchange Difference Note/Entry',
         default=False,
         copy=False,
     )
     l10n_ve_exchange_original_id = fields.Many2one(
         'account.move',
-        string='Nota de Débito de Diferencial Cambiario Revertida',
+        string='Reversed Exchange Difference Debit Note',
         copy=False,
         check_company=True,
-        help="Nota de Crédito que revierte la Nota de Débito original de "
-             "diferencial cambiario. Solo se establece en asientos de "
-             "reversión generados automáticamente.",
+        help="Credit Note that reverses the original exchange difference "
+             "Debit Note. Only set on automatically generated reversal "
+             "entries.",
     )
     l10n_ve_exchange_is_credit_note = fields.Boolean(
+        string='Is Direct Exchange Difference Credit Note',
         default=False,
         copy=False,
-        help="Se establece cuando esta nota fue creada directamente como "
-             "Nota de Crédito (ganancia cambiaria), a diferencia de ser una "
-             "reversión de una Nota de Débito (ver `l10n_ve_exchange_original_id`).",
+        help="Set when this note was created directly as a Credit Note "
+             "(exchange gain), as opposed to being the reversal of a Debit "
+             "Note (see `l10n_ve_exchange_original_id`).",
     )
     l10n_ve_exchange_invoice_id = fields.Many2one(
         'account.move',
-        string='Factura de Origen (Diferencial Cambiario)',
+        string='Source Customer Invoice (Exchange Difference)',
         copy=False,
         check_company=True,
-        help="Factura/Nota original cuyo residual (en moneda de compañía) "
-             "esta Nota de Débito/Crédito de diferencial cambiario liquida.",
+        help="Original CUSTOMER invoice/note whose residual (in company "
+             "currency) this exchange difference Debit/Credit Note "
+             "settles.",
+    )
+    l10n_ve_exchange_payment_id = fields.Many2one(
+        'account.move',
+        string='Settled Payment (Exchange Difference)',
+        copy=False,
+        check_company=True,
+        help="Payment entry whose reconciliation against the source "
+             "invoice originated this exchange difference Debit/Credit "
+             "Note. Used to tell apart the note from a SPECIFIC partial "
+             "payment from a note already issued for the same invoice "
+             "from an EARLIER partial payment -- an invoice paid in "
+             "several installments can accrue a distinct exchange "
+             "difference note per installment.",
     )
 
     def _is_exchange_debit_note(self):
+        """True if this document is an exchange difference Debit Note
+        issued by this module -- never a native Odoo generic entry tagged
+        with `l10n_ve_exchange_diff_entry`."""
         return (
-            self.l10n_ve_exchange_diff_entry
+            self.move_type == 'out_invoice'
+            and self.l10n_ve_exchange_diff_entry
             and not self.l10n_ve_exchange_original_id
             and not self.l10n_ve_exchange_is_credit_note
         )
 
     def _is_exchange_credit_note(self):
-        return bool(self.l10n_ve_exchange_original_id) or bool(self.l10n_ve_exchange_is_credit_note)
+        """True if this document is an exchange difference Credit Note
+        (issued directly, or as the reversal of our own Debit Note)."""
+        return self.move_type == 'out_refund' and (
+            bool(self.l10n_ve_exchange_original_id) or bool(self.l10n_ve_exchange_is_credit_note)
+        )
 
     @api.depends(
         'posted_before', 'state', 'journal_id', 'date', 'move_type',
@@ -50,11 +74,12 @@ class AccountMove(models.Model):
         'l10n_ve_exchange_original_id',
     )
     def _compute_name_by_sequence(self):
-        # `od_journal_sequence` reemplaza por completo el compute nativo del
-        # campo `name` (`_compute_name` -> `_compute_name_by_sequence`) --
-        # por eso hay que enganchar la numeración de ND/NC de diferencial
-        # cambiario aquí, y NO en `_compute_name` (quedaría muerto: el ORM
-        # ya no invoca ese método para este campo).
+        """Numbers exchange difference Debit/Credit Notes with their own
+        sequence (`l10n_ve_exchange_debit_note_sequence_id` for Debit
+        Notes, native `refund_sequence_id` for Credit Notes) instead of
+        the journal's normal sequence -- hooked here, not in
+        `_compute_name`, because `od_journal_sequence` already replaced
+        that native compute."""
         exchange_moves = self.filtered(
             lambda m: m._is_exchange_debit_note() or m._is_exchange_credit_note()
         )
@@ -69,10 +94,6 @@ class AccountMove(models.Model):
             if move.name and move.name != '/':
                 continue
 
-            # Notas de crédito: reutilizamos `refund_sequence_id`, ya
-            # provisto por `od_journal_sequence` para cualquier diario --
-            # no hace falta un campo propio (a diferencia de las notas de
-            # débito, que no tienen equivalente nativo).
             sequence = (
                 move.journal_id.l10n_ve_exchange_debit_note_sequence_id
                 if move._is_exchange_debit_note()
@@ -82,95 +103,85 @@ class AccountMove(models.Model):
             if sequence and move.date:
                 move.name = sequence.next_by_id()
             else:
-                # Sin secuencia dedicada configurada: cae al comportamiento
-                # nativo (sequence_id del diario).
                 super(AccountMove, move)._compute_name_by_sequence()
 
     def _sequence_matches_date(self):
+        """Exchange difference Debit/Credit Notes (and their reversals)
+        use their own dedicated sequence, unrelated to the journal's --
+        validating them against the native sequence's date makes no
+        sense."""
         if self.l10n_ve_exchange_diff_entry or self.l10n_ve_exchange_original_id:
             return True
         return super()._sequence_matches_date()
 
     def js_remove_outstanding_partial(self, partial_id):
-        # Mismo patrón que `l10n_ve_igtf_note_debit`/`l10n_ve_igtf` para su
-        # propia ND (ver `l10n_ve_igtf/models/account_move.py`,
-        # `js_remove_outstanding_partial` -> `create_note_credit_igtf`): si
-        # la conciliación que se está rompiendo es la de la factura de
-        # origen (no la de nuestra propia ND/NC contra ella), y esa factura
-        # ya tiene una ND/NC de diferencial cambiario emitida, hay que
-        # revertirla ANTES de romper la conciliación -- igual que hace
-        # Odoo con su propio asiento genérico de diferencial
-        # (`account.partial.reconcile.unlink()`, `account_partial_reconcile.py`:
-        # revierte si está posteado, borra directo si sigue en borrador --
-        # nunca se cancela/borra un documento fiscal ya posteado).
+        """If breaking this reconciliation actually unreconciles the
+        invoice-payment pair that generated an exchange difference
+        Debit/Credit Note, reverses that note -- an already posted fiscal
+        document cannot simply be cancelled. Also blocks breaking the
+        note<->invoice/payment reconciliation directly (that should only
+        be undone as a consequence of the above).
+
+        `super()` is called FIRST, and the note is only reversed if
+        `partial` no longer exists afterwards. A subclass earlier in the
+        MRO (`l10n_ve_igtf`, for an advance-payment reconciliation) can
+        return a wizard action instead of actually unreconciling -- if we
+        reversed the note before calling `super()`, the note would end up
+        reversed even though the user hasn't confirmed anything yet and
+        the original reconciliation is still intact.
+        """
         self.ensure_one()
         partial = self.env['account.partial.reconcile'].browse(partial_id)
         related_moves = partial.debit_move_id.move_id | partial.credit_move_id.move_id
 
-        # La conciliación de la NOTA contra la factura/pago (la que la
-        # cierra) NO se puede romper suelta -- solo debe desconciliarse
-        # como CONSECUENCIA de que se rompa la conciliación ORIGINAL
-        # factura<->pago (manejado más abajo). Si alguno de los dos lados
-        # de este `partial` ya es una nota nuestra, se bloquea: da igual
-        # si el click vino desde la propia nota o desde la factura viendo
-        # esa reconciliación puntual en su lista de pagos.
         if any(related_moves.mapped('l10n_ve_exchange_diff_entry')):
             raise UserError(_(
-                "No se puede desconciliar directamente una Nota de Débito/Crédito "
-                "de diferencial cambiario. Para deshacerla, rompa la conciliación "
-                "original entre la factura y el pago -- la nota se revertirá "
-                "automáticamente."
+                "You cannot directly unreconcile an exchange difference "
+                "Debit/Credit Note. To undo it, break the original "
+                "reconciliation between the invoice and the payment -- the "
+                "note will be reversed automatically."
             ))
 
         invoice = related_moves.filtered(
             lambda m: m.move_type in ('out_invoice', 'out_refund')
         )[:1]
-        if invoice:
-            # No se condiciona a `company_id.l10n_ve_exchange_use_nd_nc`: la
-            # sola existencia de una nota vinculada a esta factura ya prueba
-            # que se usó este flujo al conciliar -- revisar el toggle aquí
-            # es redundante (y frágil: si alguien desactiva la opción
-            # después de emitida la nota, esta seguiría necesitando
-            # revertirse correctamente al desconciliar).
+        payment = related_moves - invoice
+
+        result = super().js_remove_outstanding_partial(partial_id)
+
+        if invoice and not partial.exists():
+            # Buscada por (factura, pago) y no solo por factura: una misma
+            # factura pagada en varias cuotas puede acumular una ND/NC
+            # distinta por cada pago parcial (ver `l10n_ve_exchange_payment_id`)
+            # -- al romper la conciliación de UN pago puntual, solo debe
+            # revertirse la nota de ESE pago.
             note = self.env['account.move'].search([
                 ('l10n_ve_exchange_invoice_id', '=', invoice.id),
+                ('l10n_ve_exchange_payment_id', '=', payment.id),
                 ('state', '!=', 'cancel'),
             ], limit=1)
             if note:
                 note._reverse_exchange_note()
-        return super().js_remove_outstanding_partial(partial_id)
+
+        return result
 
     def _reverse_exchange_note(self):
-        """Revierte esta ND/NC de diferencial cambiario porque la
-        conciliación factura/pago que la originó se está rompiendo -- por
-        lógica de negocio, un documento fiscal ya posteado (con
-        correlativo real) no se puede cancelar/borrar sin más, hay que
-        revertirlo (mismo criterio que usa Odoo con su propio asiento
-        genérico de diferencial al desconciliar)."""
+        """Reverses this exchange difference Debit/Credit Note because the
+        invoice/payment reconciliation that originated it is being broken
+        -- an already posted fiscal document (with a real sequence number)
+        gets reversed, never cancelled or deleted."""
         self.ensure_one()
         if self.state == 'draft':
             self.unlink()
             return
         if self.state != 'posted':
             return
-        # `cancel=True`: además de crear la reversión, desconcilia y
-        # concilia la reversión contra esta nota para cerrarla por
-        # completo -- mismo parámetro que usa
-        # `account.partial.reconcile.unlink()` para el asiento genérico de
-        # diferencial y las entradas de base imponible en caja (CABA).
-        # `l10n_ve_skip_refund_origin_validation`: la reversión que crea
-        # `_reverse_moves()` queda con `reversed_entry_id` apuntando a
-        # esta ND/NC de diferencial -- misma razón que en
-        # `_create_exchange_difference_note()` (ver `account_move_line.py`):
-        # su línea es el producto dedicado de diferencial, nunca uno de
-        # los de la nota que revierte, así que no debe pasar por
-        # `_validate_refund_lines_against_origin()`.
         self.with_context(
             move_reverse_cancel=True,
             l10n_ve_skip_refund_origin_validation=True,
         )._reverse_moves(
             default_values_list=[{
-                'ref': _('Reversión de: %s', self.name),
+                'ref': _('Reversal of: %s', self.name),
                 'l10n_ve_exchange_diff_entry': True,
                 'l10n_ve_exchange_invoice_id': self.l10n_ve_exchange_invoice_id.id,
             }],
@@ -178,6 +189,9 @@ class AccountMove(models.Model):
         )
 
     def _reverse_moves(self, default_values_list=None, cancel=False):
+        """When reversing an exchange difference Debit Note, links the
+        reversal (Credit Note) via `l10n_ve_exchange_original_id` instead
+        of letting it be numbered with the normal sequence."""
         if default_values_list is None:
             default_values_list = [{} for _ in self]
 
