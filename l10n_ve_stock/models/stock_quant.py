@@ -1,6 +1,7 @@
 import traceback
 import logging
 from odoo import _, api, fields, models
+from odoo.orm.identifiers import NewId
 from odoo.tools.float_utils import float_compare, float_is_zero
 from odoo.exceptions import ValidationError
 
@@ -38,7 +39,7 @@ class StockQuan(models.Model):
                 ("product_id", "=", record.product_id.id),
                 ("location_id.usage", "=", "internal"),
             ]
-            if not isinstance(record.id, models.NewId):
+            if not isinstance(record.id, NewId):
                 domain.append(("id", "!=", record.id))
 
             record.product_alter_location_ids = record.search(domain)
