@@ -7,7 +7,7 @@ class TestStockPickingAlterLocation(TransactionCase):
         super().setUp()
 
         self.env.company.use_alternate_locations = True
-        self.category = self.env.ref('product.product_category_all')
+        self.category = self.env.ref('product.product_category_goods')
         self.partner = self.env['res.partner'].create({'name': 'Proveedor de prueba'})
 
         self.warehouse = self.env['stock.warehouse'].create({
@@ -45,8 +45,7 @@ class TestStockPickingAlterLocation(TransactionCase):
             'partner_id': self.partner.id,
             'location_id': self.env.ref('stock.stock_location_suppliers').id,
             'location_dest_id': self.location.id,
-            'move_ids_without_package': [(0, 0, {
-                'name': product_variant.name,
+            'move_ids': [(0, 0, {
                 'product_id': product_variant.id,
                 'product_uom_qty': 20,
                 'product_uom': product_variant.uom_id.id,
