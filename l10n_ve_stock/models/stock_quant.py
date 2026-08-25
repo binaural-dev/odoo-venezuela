@@ -30,13 +30,18 @@ class StockQuan(models.Model):
         self = self.sudo()
         for record in self:
 
-            record.product_alter_location_ids = record.search(
-                [
-                    ("product_id", "=", record.product_id.id),
-                    ("location_id.usage", "=", "internal"),
-                    ("id", "!=", record.id),
-                ]
-            )
+            if not record.product_id:
+                record.product_alter_location_ids = False
+                continue
+
+            domain = [
+                ("product_id", "=", record.product_id.id),
+                ("location_id.usage", "=", "internal"),
+            ]
+            if not isinstance(record.id, models.NewId):
+                domain.append(("id", "!=", record.id))
+
+            record.product_alter_location_ids = record.search(domain)
 
     @api.model
     def _update_reserved_quantity(
