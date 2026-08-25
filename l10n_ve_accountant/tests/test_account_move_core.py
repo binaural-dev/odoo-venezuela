@@ -1511,11 +1511,15 @@ class TestAccountMoveCore(TransactionCase):
         self.assertEqual(debit_note.invoice_line_ids[0].product_id, other_product)
 
     def test_80_debit_note_validation_price_unit_negative(self):
-        """out_invoice debit note: Precio unitario negativo -> permitido (fuera de alcance de la validación de NC)."""
+        """out_invoice debit note: Precio unitario negativo -> ValidationError.
+
+        Fuera de alcance de la validación de NC/ND contra el origen, pero
+        sigue bloqueado por _onchange_price_unit (l10n_ve_accountant), que es
+        una regla genérica de línea y no distingue entre NC y ND."""
         invoice = self._create_invoice()
         invoice.with_context(move_action_post_alert=True).action_post()
-        debit_note = self._create_debit_note(invoice, line_mods={0: {"price_unit": -10.0}})
-        self.assertEqual(debit_note.invoice_line_ids[0].price_unit, -10.0)
+        with self.assertRaises(ValidationError):
+            self._create_debit_note(invoice, line_mods={0: {"price_unit": -10.0}})
 
     def test_81_debit_note_validation_price_unit_greater(self):
         """out_invoice debit note: Precio unitario mayor al original -> permitido (es el propósito de una ND: diferencial cambiario, intereses, corrección de precio)."""
@@ -1525,8 +1529,13 @@ class TestAccountMoveCore(TransactionCase):
         self.assertEqual(debit_note.invoice_line_ids[0].price_unit, 150.0)
 
     def test_82_in_invoice_debit_note_validation_quantity_greater(self):
-        """in_invoice debit note (vendor bill): Cantidad mayor a la original -> permitido (fuera de alcance de la validación de NC)."""
+        """in_invoice debit note (vendor bill): Cantidad mayor a la original -> ValidationError.
+
+        Fuera de alcance de la validación de NC/ND contra el origen, pero el
+        cambio de cantidad recalcula price_unit a 0 en esta línea (sin
+        supplierinfo para la nueva cantidad), lo que dispara
+        _check_price_in_zero (l10n_ve_invoice), ajena a la validación de NC."""
         invoice = self._create_invoice(move_type='in_invoice')
         invoice.with_context(move_action_post_alert=True).action_post()
-        debit_note = self._create_debit_note(invoice, line_mods={0: {"quantity": 5.0}})
-        self.assertEqual(debit_note.invoice_line_ids[0].quantity, 5.0)
+        with self.assertRaises(ValidationError):
+            self._create_debit_note(invoice, line_mods={0: {"quantity": 5.0}})
