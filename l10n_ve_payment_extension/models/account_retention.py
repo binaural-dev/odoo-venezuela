@@ -484,9 +484,7 @@ class AccountRetention(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
-        res = super().create(vals_list)
-        res._set_sequence()
-        return res
+        return super().create(vals_list)
 
     def write(self, vals):
         res = super().write(vals)
@@ -766,6 +764,7 @@ class AccountRetention(models.Model):
                     "name": "Numero de control retenciones IVA",
                     "code": "retention.iva.control.number",
                     "padding": 8,
+                    "implementation": "no_gap",
                 }
             )
         return sequence
@@ -784,6 +783,7 @@ class AccountRetention(models.Model):
                     "name": "Numero de control retenciones ISLR",
                     "code": "retention.islr.control.number",
                     "padding": 5,
+                    "implementation": "no_gap",
                 }
             )
         return sequence
@@ -799,8 +799,9 @@ class AccountRetention(models.Model):
             sequence = self.env["ir.sequence"].create(
                 {
                     "name": "Numero de control retenciones Municipal",
-                    "code": "retention.iva.control.number",
+                    "code": "retention.municipal.control.number",
                     "padding": 5,
+                    "implementation": "no_gap",
                 }
             )
         return sequence
