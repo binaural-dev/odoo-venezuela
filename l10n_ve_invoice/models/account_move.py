@@ -17,7 +17,7 @@ class AccountMove(models.Model):
     declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
 
     invoice_date = fields.Date(
-        string="Invoice Date",
+        string="Rate Date",
         default=fields.Date.context_today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
@@ -116,17 +116,6 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty:
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
-    @api.onchange("move_type")
-    def _onchange_move_type(self):
-        # `l10n_ve_accountant._onchange_move_type()` (que corre antes en la
-        # cadena de `super()`, ya que este módulo depende de aquel) limpia
-        # `invoice_date`/`invoice_date_display` para `entry` -- sin este
-        # `super()`, este método la pisaba por completo (ningún onchange
-        # llamaba al otro), dejando esos campos con la fecha de hoy en
-        # cualquier asiento manual.
-        super()._onchange_move_type()
-        if self.move_type == "out_invoice":
-            self.invoice_date = fields.Date.context_today(self)
 
     def action_post(self):
         

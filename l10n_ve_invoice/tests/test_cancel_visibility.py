@@ -115,7 +115,11 @@ class TestCancelVisibility(TransactionCase):
         # Invoice: 2025-10-29
         # Expect: True
         
-        with self._mock_today(datetime.date(2025, 10, 30)):
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 10, 30)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+            mock_date.today.return_value = datetime.date(2025, 10, 30)
+            mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
+
             inv = self._create_invoice('out_invoice', '2025-10-29')
             # Trigger compute
             inv._compute_entry_in_period()
@@ -131,7 +135,11 @@ class TestCancelVisibility(TransactionCase):
         # Invoice: 2025-10-29
         # Expect: False
         
-        with self._mock_today(datetime.date(2025, 11, 1)):
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 11, 1)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+            mock_date.today.return_value = datetime.date(2025, 11, 1)
+            mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
+
             inv = self._create_invoice('out_invoice', '2025-10-29')
             inv._compute_entry_in_period()
             self.assertFalse(inv.entry_in_period, "Ordinary: Invoice last month should be False")
@@ -142,7 +150,11 @@ class TestCancelVisibility(TransactionCase):
             return
         self.company.taxpayer_type = 'special'
         
-        with self._mock_today(datetime.date(2025, 10, 14)):
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 10, 14)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+            mock_date.today.return_value = datetime.date(2025, 10, 14)
+            mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
+
             inv = self._create_invoice('out_invoice', '2025-10-10')
             inv._compute_entry_in_period()
             self.assertTrue(inv.entry_in_period, "Special: Same fortnight (1st) should be True")
@@ -153,7 +165,11 @@ class TestCancelVisibility(TransactionCase):
             return
         self.company.taxpayer_type = 'special'
         
-        with self._mock_today(datetime.date(2025, 10, 16)):
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 10, 16)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+            mock_date.today.return_value = datetime.date(2025, 10, 16)
+            mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
+
             inv = self._create_invoice('out_invoice', '2025-10-10')
             inv._compute_entry_in_period()
             self.assertFalse(inv.entry_in_period, "Special: Cross fortnight should be False")
@@ -162,7 +178,11 @@ class TestCancelVisibility(TransactionCase):
         """Vendor Bill: Should always be True"""
         self.company.taxpayer_type = 'ordinary'
         
-        with self._mock_today(datetime.date(2025, 12, 1)):
+        with patch('odoo.fields.Date.context_today', return_value=datetime.date(2025, 12, 1)), \
+             patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date:
+            mock_date.today.return_value = datetime.date(2025, 12, 1)
+            mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
+
             inv = self._create_invoice('in_invoice', '2025-01-01')
             inv._compute_entry_in_period()
 
