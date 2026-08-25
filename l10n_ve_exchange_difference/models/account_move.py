@@ -35,14 +35,30 @@ class AccountMove(models.Model):
     )
 
     def _is_exchange_debit_note(self):
+        # `move_type == 'out_invoice'` es imprescindible acá: el asiento
+        # GENÉRICO nativo de Odoo (`move_type='entry'`, ej. de una factura
+        # de PROVEEDOR o de asientos misceláneos) también puede quedar con
+        # `l10n_ve_exchange_diff_entry=True` (ver
+        # `account_move_line._prepare_exchange_difference_move_vals`, con
+        # el toggle de la compañía activo) sin ser jamás una ND real -- sin
+        # este chequeo, esos 3 booleanos por sí solos también dan `True`
+        # para ese asiento genérico, y `_compute_name_by_sequence` lo
+        # numeraría (o intentaría) como si fuera nuestra propia ND.
         return (
-            self.l10n_ve_exchange_diff_entry
+            self.move_type == 'out_invoice'
+            and self.l10n_ve_exchange_diff_entry
             and not self.l10n_ve_exchange_original_id
             and not self.l10n_ve_exchange_is_credit_note
         )
 
     def _is_exchange_credit_note(self):
-        return bool(self.l10n_ve_exchange_original_id) or bool(self.l10n_ve_exchange_is_credit_note)
+        # Mismo motivo que en `_is_exchange_debit_note()`: sin el chequeo
+        # de `move_type`, un asiento genérico nativo con
+        # `l10n_ve_exchange_original_id`/`l10n_ve_exchange_is_credit_note`
+        # puesto por error en algún flujo ajeno pasaría como NC nuestra.
+        return self.move_type == 'out_refund' and (
+            bool(self.l10n_ve_exchange_original_id) or bool(self.l10n_ve_exchange_is_credit_note)
+        )
 
     @api.depends(
         'posted_before', 'state', 'journal_id', 'date', 'move_type',

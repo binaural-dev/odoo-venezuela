@@ -173,6 +173,15 @@ class AccountMoveLine(models.Model):
             # para su propio post-procesamiento): Odoo lo ejecuta más
             # tarde, en el próximo flush de la transacción -- momento en
             # que la pila ya se desenrolló y volvió a un nivel normal.
+            #
+            # Dos conciliaciones casi simultáneas contra la misma factura
+            # (doble clic, o un batch de pagos) pueden encolar dos
+            # precommits para la misma `invoice` antes de que el primero
+            # llegue a correr -- `_create_exchange_difference_note()`
+            # vuelve a chequear justo antes de crear (mismo criterio que ya
+            # usa `js_remove_outstanding_partial` para ubicar la nota
+            # existente), así que el segundo precommit no duplica el
+            # documento.
             self.env.cr.precommit.add(
                 lambda invoice_line=invoice_line, invoice=invoice, payment=payment, residual=residual: (
                     invoice_line._create_exchange_difference_note(invoice, payment, residual)
@@ -230,6 +239,17 @@ class AccountMoveLine(models.Model):
         self = self.with_context(skip_invoice_sync=False, active_model=False, active_id=False)
         company = self.company_id
 
+        # Guarda contra dos precommits encolados para la misma factura
+        # (dos conciliaciones casi simultáneas, ver `reconcile()` arriba):
+        # si para cuando este precommit corre ya existe una ND/NC de
+        # diferencial vinculada a `invoice`, no se crea una segunda.
+        existing_note = self.env['account.move'].search([
+            ('l10n_ve_exchange_invoice_id', '=', invoice.id),
+            ('state', '!=', 'cancel'),
+        ], limit=1)
+        if existing_note:
+            return
+
         product = company.l10n_ve_exchange_note_product_id
         if not product:
             raise UserError(_(
@@ -243,13 +263,6 @@ class AccountMoveLine(models.Model):
         # Crédito pendiente/sobrante (sobra) -> Nota de Débito (se concilia
         # contra ese sobrante).
         is_credit_note = company.currency_id.compare_amounts(residual, 0.0) > 0
-
-        debit_journal = self.env['account.journal'].search([
-            ('company_id', '=', company.id),
-            ('is_debit', '=', True),
-            ('type', '=', 'sale'),
-        ], limit=1)
-        journal = debit_journal or invoice.journal_id
 
         line_vals = {
             'product_id': product.id,
@@ -265,6 +278,16 @@ class AccountMoveLine(models.Model):
         today = fields.Date.context_today(self)
 
         if not is_credit_note:
+            # Nota de Débito: journal propio, distinto del de la factura de
+            # origen -- si no hay ninguno configurado, cae al diario de
+            # venta de la factura (mismo comportamiento que antes).
+            debit_journal = self.env['account.journal'].search([
+                ('company_id', '=', company.id),
+                ('is_debit', '=', True),
+                ('type', '=', 'sale'),
+            ], limit=1)
+            journal = debit_journal or invoice.journal_id
+
             # Nota de Débito: construida directamente con `create()` --
             # `debit_origin_id` apuntando a la factura deja el mismo botón
             # inteligente que dejaría el asistente `account.debit.note`.
@@ -325,6 +348,11 @@ class AccountMoveLine(models.Model):
             # `reversed_entry_id`). Ese módulo no puede depender de este ni
             # viceversa, así que se coordina con esta llave de contexto en
             # vez de un campo persistido.
+            # Nota de Crédito: usa el mismo diario de venta de la factura de
+            # origen -- a diferencia de la Nota de Débito, Odoo ya provee
+            # `refund_sequence_id` en cualquier diario de venta para
+            # numerar notas de crédito, así que no hace falta (ni
+            # corresponde) el diario dedicado de ND.
             note = self.env['account.move'].with_context(
                 l10n_ve_skip_refund_origin_validation=True,
             ).create({
@@ -333,7 +361,7 @@ class AccountMoveLine(models.Model):
                 'invoice_date': today,
                 'date': today,
                 'currency_id': company.currency_id.id,
-                'journal_id': journal.id,
+                'journal_id': invoice.journal_id.id,
                 'reversed_entry_id': invoice.id,
                 'invoice_origin': invoice.name,
                 'invoice_line_ids': [(0, 0, line_vals)],
