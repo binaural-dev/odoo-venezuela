@@ -59,6 +59,31 @@ class TestRecomputePricesForeignAmount(TransactionCase):
                 "property_account_expense_categ_id": cls.account_income.id,
             }
         )
+        # l10n_ve_accountant enforces exactly one company-scoped sale AND
+        # purchase tax per product (product_template.py::_enforce_single_tax_vals);
+        # a company-level default satisfies that without setting
+        # taxes_id/supplier_taxes_id on the product itself. 0% so the
+        # product stays effectively tax-free — this test's assertions
+        # (amount_total == 100.0, the bare catalog price) predate this
+        # fixture fix and must not change because of it.
+        tax_group = cls.env["account.tax.group"].create(
+            {"name": "Self Order Recompute Tax Group", "company_id": cls.company.id}
+        )
+        cls.tax = cls.env["account.tax"].create(
+            {
+                "name": "Self Order Recompute Tax",
+                "amount": 0.0,
+                "type_tax_use": "sale",
+                "tax_group_id": tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
+        cls.company.write(
+            {
+                "account_sale_tax_id": cls.tax.id,
+                "account_purchase_tax_id": cls.tax.id,
+            }
+        )
         cls.product = cls.env["product.product"].create(
             {
                 "name": "Self Order Recompute Product",
@@ -67,6 +92,14 @@ class TestRecomputePricesForeignAmount(TransactionCase):
                 "company_id": cls.company.id,
                 "categ_id": cls.product_category.id,
             }
+        )
+        # `property_account_income_id` is company_dependent — the category
+        # default set above is NOT enough for
+        # point_of_sale/models/pos_order.py::_prepare_base_line_for_taxes_computation
+        # ("Please define income account for this product"), it must be
+        # written FOR this company explicitly.
+        cls.product.with_company(cls.company).write(
+            {"property_account_income_id": cls.account_income.id}
         )
 
         cls.sale_journal = cls.env["account.journal"].create(
@@ -78,12 +111,42 @@ class TestRecomputePricesForeignAmount(TransactionCase):
                 "currency_id": cls.foreign_currency.id,
             }
         )
+        # pos.config.payment_method_ids' default is computed from
+        # self.env.company (the ambient/current company), NOT from the
+        # company_id being assigned here (point_of_sale/models/pos_config.py:170)
+        # — without an explicit value it silently pulls in a payment method
+        # belonging to a DIFFERENT company and trips
+        # pos_config.py::_check_company_payment ("must belong to its company").
+        cls.cash_journal = cls.env["account.journal"].create(
+            {
+                "name": "Self Order Recompute Cash Journal",
+                "type": "cash",
+                "code": "SORCJ",
+                "company_id": cls.company.id,
+                "currency_id": cls.foreign_currency.id,
+            }
+        )
+        cls.cash_method = cls.env["pos.payment.method"].create(
+            {
+                "name": "Self Order Recompute Cash",
+                "is_cash_count": True,
+                "company_id": cls.company.id,
+                "journal_id": cls.cash_journal.id,
+            }
+        )
         cls.config = cls.env["pos.config"].create(
             {
                 "name": "Self Order Recompute Config",
                 "company_id": cls.company.id,
                 "currency_id": cls.foreign_currency.id,
                 "journal_id": cls.sale_journal.id,
+                # invoice_journal_id has the SAME ambient-company default
+                # pitfall as payment_method_ids below
+                # (point_of_sale/models/pos_config.py:90-95) — left unset
+                # it silently pulls in a journal from a DIFFERENT company
+                # and _check_company() rejects the whole record.
+                "invoice_journal_id": cls.sale_journal.id,
+                "payment_method_ids": [(6, 0, [cls.cash_method.id])],
             }
         )
         cls.session = cls.env["pos.session"].create(

@@ -5,3 +5,5 @@ from . import test_pos_session_accounting_common
 from . import test_pos_session_accounting_accumulators
 from . import test_pos_session_accounting_move_creation
 from . import test_pos_session_cross_account_move
+from . import test_self_order_foreign_amount
+from . import test_pos_config_convert_precision

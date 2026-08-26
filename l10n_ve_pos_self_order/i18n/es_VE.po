@@ -498,3 +498,51 @@ msgstr ""
 #: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
 msgid "Your order"
 msgstr "Tu pedido"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#, python-format
+msgid "Enter the phone number."
+msgstr "Ingrese el número de teléfono."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "The ID number must contain only digits."
+msgstr "La cédula/RIF solo puede contener dígitos."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "Too many attempts. Please wait a moment."
+msgstr "Demasiados intentos. Espere un momento."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "Customer not found."
+msgstr "Cliente no encontrado."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+msgid "Complete your phone"
+msgstr "Completa tu teléfono"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+msgid "We need your phone number to continue"
+msgstr "Necesitamos tu número de teléfono para continuar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
+msgid "Save and continue"
+msgstr "Guardar y continuar"

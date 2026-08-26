@@ -106,6 +106,11 @@ class TestPosSerialization(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        # l10n_ve_accountant enforces a company-scoped PURCHASE tax too
+        # (product_template.py::_enforce_single_tax_vals), not just sale —
+        # the product below only sets taxes_id (sale); this company default
+        # satisfies the purchase side without touching the product vals.
+        cls.company.write({"account_purchase_tax_id": cls.tax.id})
         cls.product_category = cls.env["product.category"].create(
             {
                 "name": "Slice B Category",
