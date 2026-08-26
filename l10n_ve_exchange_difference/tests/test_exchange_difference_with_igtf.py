@@ -36,11 +36,22 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         # las cuentas nativas de ganancia/pérdida por diferencial
         # cambiario de la compañía, y el mismo impuesto exento por
         # defecto (`company.exent_aliquot_sale`).
+        # `supplier_taxes_id` explícito -- sin esto, el default que arma
+        # Odoo para ese campo en `create()` puede traer más de un
+        # impuesto de compra al 0% en bases con varios configurados, y
+        # `l10n_ve_accountant` (`_enforce_single_tax_vals`) rechaza
+        # cualquier producto con más de un impuesto de compra asignado --
+        # mismo patrón que usa `test_exchange_note_reversal.py`.
+        exent_purchase = self.env["account.tax"].search([
+            ("type_tax_use", "=", "purchase"), ("amount", "=", 0.0),
+            ("company_id", "=", self.company.id),
+        ], limit=1)
         self.company.exent_aliquot_sale = exent.id
         self.note_product = self.env["product.product"].create({
             "name": "Diferencial Test IGTF",
             "type": "service",
             "taxes_id": [(6, 0, exent.ids)],
+            "supplier_taxes_id": [(6, 0, exent_purchase.ids)],
             "property_account_income_id": self.company.income_currency_exchange_account_id.id,
             "property_account_expense_id": self.company.expense_currency_exchange_account_id.id,
         })
@@ -305,17 +316,22 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         self.assertNotIn(self.acc_igtf_cli, note.line_ids.account_id)
 
         # Rama pineada, no autoconsistente (verificada contra el resultado
-        # real -- el signo depende de cómo el motor de Odoo atribuye el
-        # residual entre factura/pago, no solo de comparar las tasas):
-        # este caso produce NC. El monto (147921577.6 Bs) es el que el
-        # propio `_prepare_reconciliation_single_partial` de Odoo calculó
-        # para esta línea -- confirmado imprimiendo el `amounts` crudo
-        # que recibe `_prepare_exchange_difference_move_vals` antes de
-        # cualquier procesamiento de este módulo, así que no es un
+        # real bajo `--without-demo=True` -- MISMO modo que usa
+        # `scripts/coverage`, representativo de CI/producción; correr sin
+        # ese flag, con datos demo cargados, produce una atribución
+        # DISTINTA (`out_invoice`/ND en vez de `out_refund`/NC) para este
+        # mismo escenario -- el signo depende de cómo el motor de Odoo
+        # atribuye el residual entre factura/pago, y evidentemente
+        # también de qué otros datos existen en la base al momento de
+        # conciliar, no solo de comparar las tasas). El monto
+        # (147921577.6 Bs) es el que el propio
+        # `_prepare_reconciliation_single_partial` de Odoo calculó para
+        # esta línea bajo `--without-demo=True` -- confirmado imprimiendo
+        # `note.amount_total` antes de esta aserción, así que no es un
         # artefacto propio: es la combinación real de las tasas del
         # fixture (380.0 / 390.2944) con el 3% de IGTF ya cobrado sobre
-        # el pago (1030 USD en vez de 1000), no una simple resta de
-        # tasas contra el monto nominal de la factura.
+        # el pago (1030 USD en vez de 1000), no una simple resta de tasas
+        # contra el monto nominal de la factura.
         self.assertEqual(note.move_type, "out_refund")
         self.assertEqual(note.reversed_entry_id, invoice)
         self.assertTrue(note._is_exchange_credit_note())

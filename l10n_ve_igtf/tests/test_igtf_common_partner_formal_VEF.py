@@ -274,12 +274,22 @@ class IGTFTestCommon(TransactionCase):
             'country_id': self.company.country_id.id,
         })
 
+        # `supplier_taxes_id` explícito: sin esto, el default que arma
+        # Odoo para ese campo en `create()` puede traer más de un
+        # impuesto de compra al 0% en bases con varios configurados, y
+        # `l10n_ve_accountant` (`_enforce_single_tax_vals`) rechaza
+        # cualquier producto con más de un impuesto de compra asignado.
+        purchase_exent = self.env["account.tax"].search([
+            ("type_tax_use", "=", "purchase"), ("amount", "=", 0.0),
+            ("company_id", "=", self.company.id),
+        ], limit=1)
         self.product = self.env["product.product"].create(
             {
                 "name": "Servicio",
                 "list_price": 100,
                 "property_account_income_id": self.acc_income.id,
                 "taxes_id": [(6, 0, [self.tax_iva_exent.id])],
+                "supplier_taxes_id": [(6, 0, purchase_exent.ids)],
 
             }
         )

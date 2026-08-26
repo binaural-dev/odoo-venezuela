@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import Form, tagged
@@ -611,6 +613,120 @@ class TestExchangeNoteReversal(TransactionCase):
         new_note_line = new_note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         self.assertTrue(new_note_line.reconciled, "La ND/NC nueva debió quedar cerrada por su propia conciliación.")
 
+    def test_break_reconcile_break_reverses_only_the_active_note(self):
+        """Continuación de `test_reconciling_again_after_reversal_generates_new_note`:
+        rompe->reconcilia->rompe de nuevo la MISMA factura contra el MISMO
+        pago. `js_remove_outstanding_partial` localiza la nota a revertir
+        buscando por (factura, pago, state != 'cancel') -- el MISMO patrón
+        que tenía el guard de duplicados de `_create_exchange_difference_note`
+        antes de su fix (bloqueante ya corregido). Sin excluir también
+        `reversal_move_ids`, esa búsqueda puede encontrar la nota VIEJA ya
+        revertida (sigue `posted`, nunca pasa a `cancel`) en vez de la nota
+        NUEVA vigente, revirtiendo la vieja una segunda vez en lugar de la
+        que corresponde.
+
+        NOTA: el orden por defecto de `account.move` (`date desc, name
+        desc, ..., id desc`) hace que, en el flujo de negocio completo, la
+        nota más reciente normalmente ya salga primero en un `search()`
+        sin filtro explícito -- por eso esta prueba, además de ejercitar
+        el flujo completo, verifica el DOMINIO de búsqueda en sí mismo
+        (igual al que usa `js_remove_outstanding_partial`), que es donde
+        el bug realmente vivía y donde un caso con orden desfavorable
+        (ej. igual fecha/nombre por reindexación de secuencia) lo
+        expondría."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        payment = self.env["account.payment"].browse(action.get("res_id"))
+
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        original_note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+            ("l10n_ve_exchange_payment_id", "=", payment.move_id.id),
+        ])
+        self.assertEqual(len(original_note), 1)
+
+        # Primera ruptura: revierte la nota original.
+        partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+        )
+        invoice.js_remove_outstanding_partial(partial[:1].id)
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        original_note.invalidate_recordset()
+        self.assertTrue(original_note.reversal_move_ids, "La nota original debió quedar revertida.")
+
+        # Vuelve a asignar el mismo pago -- genera la ND/NC nueva.
+        payment_line = payment.move_id.line_ids.filtered(
+            lambda l: l.account_type == "asset_receivable" and not l.reconciled
+        )
+        invoice.js_assign_outstanding_line(payment_line.id)
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        new_note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+            ("l10n_ve_exchange_payment_id", "=", payment.move_id.id),
+        ]) - original_note
+        self.assertEqual(len(new_note), 1)
+        self.assertFalse(new_note.reversal_move_ids)
+
+        # Segunda ruptura: debe revertir la nota NUEVA (la única vigente),
+        # y NO tocar de nuevo la original (ya revertida). El orden por
+        # defecto de `account.move` (`date desc, name desc, ..., id
+        # desc`) favorece naturalmente a la nota más reciente, lo que
+        # enmascararía el bug en un `search(..., limit=1)` sin el filtro
+        # `reversal_move_ids` -- se fuerza aquí `id asc` (la nota
+        # ORIGINAL, de menor id, ganaría el `limit=1` de existir el bug)
+        # para que esta prueba realmente ejercite el dominio de
+        # `js_remove_outstanding_partial` bajo el peor caso posible, en
+        # vez de aprobar por casualidad del orden natural.
+        new_partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+        )
+        with patch.object(type(self.env["account.move"]), "_order", "id asc"):
+            invoice.js_remove_outstanding_partial(new_partial[:1].id)
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        original_note.invalidate_recordset()
+        new_note.invalidate_recordset()
+
+        self.assertFalse(inv_line.reconciled, "La factura debió quedar desconciliada tras la segunda ruptura.")
+        self.assertTrue(new_note.reversal_move_ids, "La ND/NC nueva debió quedar revertida por la segunda ruptura.")
+
+        original_reversals = self.env["account.move"].search([
+            ("reversed_entry_id", "=", original_note.id),
+        ])
+        self.assertEqual(
+            len(original_reversals), 1,
+            "La nota original solo debe tener UNA reversión -- la segunda ruptura no "
+            "debe generar una segunda reversión sobre una nota que ya estaba revertida.",
+        )
+
+        new_note_reversals = self.env["account.move"].search([
+            ("reversed_entry_id", "=", new_note.id),
+        ])
+        self.assertEqual(
+            len(new_note_reversals), 1,
+            "La ND/NC nueva debió recibir exactamente una reversión propia por la segunda ruptura.",
+        )
+
     def test_exchange_note_own_reconciliation_cannot_be_broken_directly(self):
         """La conciliación que cierra la ND/NC contra la factura/pago NO
         se puede romper suelta -- ni haciendo click desde la propia nota,
@@ -1007,6 +1123,13 @@ class TestExchangeNoteReversal(TransactionCase):
             "name": name,
             "type": "service",
             "taxes_id": [(6, 0, self.exent.ids)],
+            # Explícito por la misma razón documentada en `setUpClass` al
+            # crear `cls.note_product`: sin esto, el default de Odoo para
+            # `supplier_taxes_id` puede traer más de un impuesto de compra
+            # al 0% en bases con varios configurados, y
+            # `_enforce_single_tax_vals` (`l10n_ve_accountant`) rechaza
+            # cualquier producto con más de un impuesto de compra asignado.
+            "supplier_taxes_id": [(6, 0, self.exent_purchase.ids)],
             "property_account_income_id": self.company.income_currency_exchange_account_id.id,
             "property_account_expense_id": self.company.expense_currency_exchange_account_id.id,
         }
@@ -2039,3 +2162,237 @@ class TestExchangeNoteReversal(TransactionCase):
             "Una factura de percepción de IGTF (l10n_ve_igtf_note_debit_origin) no "
             "debió generar una ND/NC propia de diferencial.",
         )
+
+    def test_reverse_exchange_note_on_draft_note_unlinks_it(self):
+        """`_reverse_exchange_note` sobre una nota en borrador (nunca
+        llegó a postearse -- por ejemplo, quedó a medias por cualquier
+        motivo antes de este punto) la BORRA directamente en vez de
+        intentar revertirla -- no hay ningún documento fiscal real (sin
+        correlativo posteado) que preservar."""
+        draft_note = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "l10n_ve_exchange_diff_entry": True,
+        })
+        self.assertEqual(draft_note.state, "draft")
+        note_id = draft_note.id
+
+        draft_note._reverse_exchange_note()
+
+        self.assertFalse(
+            self.env["account.move"].search([("id", "=", note_id)]),
+            "Una nota en borrador debió BORRARSE al revertirla, no dejarse a medias.",
+        )
+
+    def test_reverse_exchange_note_noop_when_cancelled(self):
+        """`_reverse_exchange_note` sobre una nota que NO está ni en
+        borrador ni posteada (ej. cancelada por cualquier otra vía) no
+        hace nada -- ni la revierte, ni lanza error. Solo se revierten
+        notas efectivamente posteadas (documento fiscal real)."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertEqual(len(note), 1)
+        self.assertEqual(note.state, "posted")
+
+        # Se fuerza directo por SQL a un estado que `_reverse_exchange_note`
+        # no maneja (ni 'draft' ni 'posted') -- se salta el ORM a propósito
+        # para simular ese estado sin pasar por el flujo real de cancelación
+        # (que de por sí ya rompería la conciliación y la revertiría antes).
+        self.env.cr.execute(
+            "UPDATE account_move SET state = 'cancel' WHERE id = %s", (note.id,),
+        )
+        note.invalidate_recordset()
+        self.assertEqual(note.state, "cancel")
+
+        # No debe lanzar ni crear ninguna reversión.
+        note._reverse_exchange_note()
+
+        reversals = self.env["account.move"].search([("reversed_entry_id", "=", note.id)])
+        self.assertFalse(reversals, "Una nota que no está 'posted' no debe generar ninguna reversión.")
+
+    def test_compute_name_by_sequence_skips_already_named_note(self):
+        """`_compute_name_by_sequence` no debe re-numerar una ND/NC que ya
+        tiene un nombre real asignado (`move.name and move.name != '/'`) --
+        se ejercita llamando el método una SEGUNDA vez sobre una nota ya
+        posteada y numerada; el nombre no debe cambiar."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertEqual(len(note), 1)
+        original_name = note.name
+        self.assertTrue(original_name and original_name != "/")
+
+        note._compute_name_by_sequence()
+
+        self.assertEqual(
+            note.name, original_name,
+            "Una nota ya numerada no debe recibir un nuevo número al recomputar el nombre.",
+        )
+
+    def test_sequence_matches_date_true_for_exchange_entries(self):
+        """`_sequence_matches_date` siempre retorna `True` para una ND/NC
+        propia (o su reversión) -- su secuencia es independiente del
+        diario, comparar contra la fecha de la secuencia nativa no aplica
+        (a diferencia de una factura/nota normal, donde Odoo sí valida
+        esa consistencia)."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertEqual(len(note), 1)
+        self.assertTrue(note.l10n_ve_exchange_diff_entry)
+
+        self.assertTrue(
+            note._sequence_matches_date(),
+            "Una ND/NC de diferencial cambiario debe reportar su secuencia como "
+            "consistente con la fecha, sin importar la fecha real del diario.",
+        )
+
+    def test_breaking_partial_without_invoice_side_does_not_search_for_note(self):
+        """`js_remove_outstanding_partial` solo busca una nota que revertir
+        cuando alguno de los dos movimientos de la conciliación rota es
+        `out_invoice`/`out_refund` (`invoice` no vacío) -- se ejercita el
+        caso contrario (dos asientos MISCELÁNEOS, `move_type='entry'`,
+        igual que en `test_fallback_tags_generic_exchange_move_for_misc_entries`)
+        rompiendo su conciliación: debe desconciliarse con normalidad, sin
+        buscar ni intentar revertir ninguna nota."""
+        partner = self.env["res.partner"].create({"name": "Cliente Prueba Ruptura Misc"})
+        receivable = self.env["account.account"].search(
+            [*self.env["account.account"]._check_company_domain(self.company), ("account_type", "=", "asset_receivable")],
+            limit=1,
+        )
+        income = self.env["account.account"].search(
+            [*self.env["account.account"]._check_company_domain(self.company), ("account_type", "=", "income")],
+            limit=1,
+        )
+
+        entry_1 = self.env["account.move"].create({
+            "move_type": "entry",
+            "journal_id": self.sale_journal.id,
+            "date": "2033-01-01",
+            "line_ids": [
+                (0, 0, {
+                    "account_id": receivable.id, "partner_id": partner.id,
+                    "currency_id": self.usd.id, "amount_currency": 100.0,
+                    "debit": 4000.0, "credit": 0.0,
+                }),
+                (0, 0, {"account_id": income.id, "partner_id": partner.id, "debit": 0.0, "credit": 4000.0}),
+            ],
+        })
+        entry_1.action_post()
+
+        entry_2 = self.env["account.move"].create({
+            "move_type": "entry",
+            "journal_id": self.sale_journal.id,
+            "date": "2033-08-01",
+            "line_ids": [
+                (0, 0, {
+                    "account_id": receivable.id, "partner_id": partner.id,
+                    "currency_id": self.usd.id, "amount_currency": -100.0,
+                    "debit": 0.0, "credit": 3600.0,
+                }),
+                (0, 0, {"account_id": income.id, "partner_id": partner.id, "debit": 3600.0, "credit": 0.0}),
+            ],
+        })
+        entry_2.action_post()
+
+        receivable_lines = (entry_1 + entry_2).line_ids.filtered(lambda l: l.account_id == receivable)
+        receivable_lines.reconcile()
+        self.env.cr.flush()
+        receivable_lines.invalidate_recordset()
+        self.assertTrue(all(receivable_lines.mapped("reconciled")))
+
+        partial = receivable_lines[0].matched_debit_ids or receivable_lines[0].matched_credit_ids
+        self.assertTrue(partial, "Debía existir un partial entre los dos asientos misceláneos.")
+
+        # No debe lanzar ningún error (ninguna nota de negocio involucrada)
+        # y debe desconciliar con normalidad.
+        entry_1.js_remove_outstanding_partial(partial[:1].id)
+        self.env.cr.flush()
+        receivable_lines.invalidate_recordset()
+        self.assertFalse(
+            any(receivable_lines.mapped("reconciled")),
+            "Los asientos misceláneos debieron quedar desconciliados tras romper el partial.",
+        )
+
+    def test_breaking_reconciliation_without_generated_note_is_noop(self):
+        """`js_remove_outstanding_partial` busca una nota por (factura,
+        pago) solo cuando ambos existen -- si esa búsqueda no encuentra
+        ninguna (porque nunca se generó, ej. factura y pago EXACTAMENTE a
+        la misma tasa y fecha, sin residual de diferencial alguno), no
+        debe lanzar error: simplemente no hay nada que revertir."""
+        same_day_invoice = self._create_invoice("2026-01-01")
+        same_day_invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = same_day_invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, same_day_invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            # Mismo día Y misma tasa que la factura -- sin residual de
+            # diferencial cambiario posible.
+            pay_form.payment_date = "2026-01-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        same_day_invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        self.assertTrue(inv_line.reconciled)
+
+        notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", same_day_invoice.id),
+        ])
+        self.assertFalse(notes, "Sin diferencial real, no debió generarse ninguna ND/NC.")
+
+        partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: same_day_invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+        )
+        self.assertTrue(partial)
+
+        # No debe lanzar error aunque no exista ninguna nota que buscar.
+        same_day_invoice.js_remove_outstanding_partial(partial[:1].id)
+        self.env.cr.flush()
+        inv_line.invalidate_recordset()
+        self.assertFalse(inv_line.reconciled, "La factura debió quedar desconciliada con normalidad.")
