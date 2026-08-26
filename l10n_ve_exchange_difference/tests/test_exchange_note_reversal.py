@@ -121,6 +121,29 @@ class TestExchangeNoteReversal(TransactionCase):
             "currency_id": cls.company.currency_id.id,
         })
         cls.company.l10n_ve_exchange_note_pricelist_id = cls.note_pricelist.id
+
+        # Diario dedicado de ND, con su secuencia propia asignada -- desde
+        # este fix, `_create_exchange_difference_note` exige AMBOS
+        # (diario `type='sale'`/`is_debit=True` Y su secuencia
+        # configurada) antes de emitir cualquier ND: sin esto, una ND
+        # terminaría numerada con la secuencia de FACTURAS del diario de
+        # venta (bug real corregido, ver `models/account_journal_views.xml`
+        # y `_create_exchange_difference_note`).
+        cls.debit_note_sequence = cls.env["ir.sequence"].create({
+            "name": "ND Diferencial Cambiario Test",
+            "code": "l10n.ve.exchange.debit.note.test",
+            "company_id": cls.company.id,
+            "prefix": "NDDIFT/%(year)s/",
+            "padding": 4,
+        })
+        cls.debit_note_journal = cls.env["account.journal"].create({
+            "name": "ND Diferencial Cambiario Test",
+            "type": "sale",
+            "code": "NDDIFT",
+            "company_id": cls.company.id,
+            "is_debit": True,
+            "l10n_ve_exchange_debit_note_sequence_id": cls.debit_note_sequence.id,
+        })
         cls.company.l10n_ve_exchange_use_nd_nc = True
 
         cls.sale_journal = cls.env["account.journal"].search(
@@ -501,6 +524,92 @@ class TestExchangeNoteReversal(TransactionCase):
 
         note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         self.assertTrue(note_line.reconciled, "La nota original debió quedar cerrada por su propia reversión.")
+
+    def test_reconciling_again_after_reversal_generates_new_note(self):
+        """Continuación directa de `test_exchange_note_reversed_on_unreconcile`:
+        tras romper la conciliación factura<->pago (revirtiendo la ND/NC
+        original) y volver a asignar el MISMO pago pendiente a la
+        factura (botón "Añadir" del widget de pagos,
+        `js_assign_outstanding_line`), se debe generar una ND/NC NUEVA --
+        el guard de duplicados de `_create_exchange_difference_note`
+        buscaba por (factura, pago) con `state != 'cancel'` únicamente, y
+        una nota YA REVERTIDA sigue `posted` (nunca se cancela, ver
+        `_reverse_exchange_note`) -- sin excluir también las revertidas
+        (`reversal_move_ids`), este segundo intento encontraba la nota
+        vieja ya revertida y salía sin crear una nueva NI conciliar
+        nada: la factura quedaba con un residual abierto sin ningún
+        documento (ni ND/NC ni asiento genérico) que lo respaldara."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        payment = self.env["account.payment"].browse(action.get("res_id"))
+
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        original_note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+            ("l10n_ve_exchange_payment_id", "=", payment.move_id.id),
+        ])
+        self.assertEqual(len(original_note), 1)
+
+        # Rompe la conciliación factura<->pago -- revierte la ND/NC
+        # original (queda `posted`, no `cancel`).
+        partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+        )
+        invoice.js_remove_outstanding_partial(partial[:1].id)
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        original_note.invalidate_recordset()
+        self.assertFalse(inv_line.reconciled, "La factura debió quedar desconciliada tras romper el partial.")
+        self.assertEqual(original_note.state, "posted", "La ND/NC original sigue posteada -- solo revertida.")
+        self.assertTrue(original_note.reversal_move_ids, "La ND/NC original debió quedar marcada como revertida.")
+
+        # Vuelve a asignar el MISMO pago pendiente a la factura -- botón
+        # "Añadir" del widget de pagos.
+        payment_line = payment.move_id.line_ids.filtered(
+            lambda l: l.account_type == "asset_receivable" and not l.reconciled
+        )
+        self.assertTrue(payment_line, "El pago debía quedar con su línea por cobrar disponible para re-asignar.")
+        invoice.js_assign_outstanding_line(payment_line.id)
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        self.assertTrue(
+            inv_line.reconciled,
+            "La factura debió quedar conciliada de nuevo al reasignar el mismo pago.",
+        )
+        self.assertTrue(self.company.currency_id.is_zero(inv_line.amount_residual))
+
+        notes_after = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+            ("l10n_ve_exchange_payment_id", "=", payment.move_id.id),
+        ])
+        self.assertEqual(
+            len(notes_after), 2,
+            "Debió existir la ND/NC original (revertida) MÁS una ND/NC NUEVA para "
+            "la re-conciliación -- el guard de duplicados no debe confundir una "
+            "nota ya revertida con una todavía vigente.",
+        )
+        new_note = notes_after - original_note
+        self.assertEqual(new_note.state, "posted")
+        self.assertFalse(new_note.reversal_move_ids, "La ND/NC nueva no debe estar revertida.")
+        new_note_line = new_note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertTrue(new_note_line.reconciled, "La ND/NC nueva debió quedar cerrada por su propia conciliación.")
 
     def test_exchange_note_own_reconciliation_cannot_be_broken_directly(self):
         """La conciliación que cierra la ND/NC contra la factura/pago NO
@@ -1073,13 +1182,7 @@ class TestExchangeNoteReversal(TransactionCase):
         CRÉDITO debe seguir usando el propio diario de venta de la factura
         de origen (Odoo ya provee `refund_sequence_id` ahí para numerar
         NC), nunca el diario dedicado de ND."""
-        debit_journal = self.env["account.journal"].create({
-            "name": "ND Diferencial Cambiario Test",
-            "type": "sale",
-            "code": "NDDIFT",
-            "company_id": self.company.id,
-            "is_debit": True,
-        })
+        debit_journal = self.debit_note_journal
 
         # Rama de Nota de Débito (tasa de la factura MENOR que la del
         # pago -- mismas tasas que `test_exchange_difference_debit_note_branch`).
@@ -1587,29 +1690,39 @@ class TestExchangeNoteReversal(TransactionCase):
             self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))
 
     def test_grouped_payment_gain_direction_invoice_attribution_limitation(self):
-        """Un pago AGRUPADO que liquida DOS facturas a la vez, en
-        dirección de GANANCIA (Odoo suele atribuir el residual al lado
-        del PAGO, no de la factura, en esa dirección -- a diferencia de
+        """Un pago AGRUPADO que liquida DOS facturas de montos DISTINTOS
+        (100 y 500 USD) a la vez, en dirección de GANANCIA (Odoo suele
+        atribuir el residual al lado del PAGO, no de la factura, en esa
+        dirección -- a diferencia de
         `test_grouped_payment_documents_exchange_difference_for_every_invoice`,
         que usa dirección de pérdida y por eso no dispara este caso).
 
-        Cuando el residual cae del lado del PAGO, Odoo no expone en
-        `_prepare_exchange_difference_move_vals` a cuál factura
-        pertenece cada residual puntual si hay MÁS de una candidata en
-        el mismo pago agrupado. Asumir siempre "la primera factura" para
-        AMBAS hacía colisionar dos residuales DISTINTOS contra el mismo
-        par (factura, pago) -- el guard de duplicados descartaba el
-        segundo como si fuera repetido, PERDIENDO un diferencial real
-        (confirmado con este mismo test: antes del fix solo se creaba 1
-        nota en vez de 2, sin que el segundo residual quedara
-        documentado en ningún lado).
+        Monto distinto por factura a propósito: con dos facturas
+        IDÉNTICAS, cualquier atribución (correcta o no) produce el mismo
+        resultado observable y no distingue un swap -- este test
+        confirma que cada nota queda vinculada a la factura que
+        REALMENTE originó su residual (400 Bs -> factura de 100 USD,
+        2000 Bs -> factura de 500 USD), no una adivinanza por orden.
 
-        El fix (`_next_payment_side_invoice_line`): la nota SIEMPRE se
-        crea y se cierra cruzando contra el pago -- nunca cae al
-        asiento genérico nativo de Odoo. Cada residual atribuido al lado
-        del pago se reparte, EN ORDEN, contra una factura candidata
-        distinta del mismo pago agrupado, así que dos residuales nunca
-        colisionan contra el mismo par (factura, pago)."""
+        Antes de dos fixes distintos, este caso falló de dos formas
+        reales, ambas confirmadas ejecutando este mismo test contra
+        cada versión:
+        1. Atribuir siempre "la primera factura" a cualquier residual del
+           lado del pago colisionaba dos residuales DISTINTOS contra el
+           mismo par (factura, pago) -- el guard de duplicados
+           descartaba el segundo como repetido, PERDIENDO un diferencial
+           real (solo se creaba 1 nota en vez de 2).
+        2. Repartir esos residuales EN ORDEN (round-robin) entre las
+           facturas candidatas evitaba la pérdida, pero podía
+           intercambiar a cuál factura se vincula cada nota cuando sus
+           montos difieren (confirmado con un swap real: la nota de 2000
+           Bs quedaba vinculada a la factura de 100 en vez de la de 500).
+
+        El fix final (`_prepare_reconciliation_single_partial` sobrescrito
+        para capturar la pareja REAL de cada partial antes de que Odoo
+        calcule el residual) elimina la adivinanza por completo: se
+        deriva la factura exacta de la propia conciliación, nunca del
+        orden de aparición."""
         self.usd.write({
             "active": True,
             "rate_ids": [
@@ -1621,6 +1734,10 @@ class TestExchangeNoteReversal(TransactionCase):
         invoice_1 = self._create_invoice("2035-01-01")
         invoice_1.with_context(move_action_post_alert=True).action_post()
         invoice_2 = self._create_invoice("2035-01-01")
+        with Form(invoice_2) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.edit(0) as line:
+                line.price_unit = 500.0
+        invoice_2 = inv_form_edit.save()
         invoice_2.with_context(move_action_post_alert=True).action_post()
         invoices = invoice_1 | invoice_2
 
@@ -1658,12 +1775,22 @@ class TestExchangeNoteReversal(TransactionCase):
         )
         self.assertEqual(
             set(notes.mapped("l10n_ve_exchange_invoice_id").ids), {invoice_1.id, invoice_2.id},
-            "El reparto ordenado debió vincular cada nota a una factura distinta, "
-            "sin colisionar ambas sobre la misma.",
+            "Cada nota debe quedar vinculada a una factura distinta, sin colisionar "
+            "ambas sobre la misma.",
         )
-        self.assertEqual(sum(notes.mapped("amount_total")), 800.0)
+
+        # Atribución EXACTA, no una adivinanza: la nota de la factura de
+        # 100 USD es 100 × (40 - 36) = 400 Bs; la de la factura de 500
+        # USD es 500 × (40 - 36) = 2000 Bs -- si el fix adivinara por
+        # orden en vez de derivar la pareja real del partial, estos dos
+        # montos podrían aparecer intercambiados entre las facturas.
+        note_1 = notes.filtered(lambda n: n.l10n_ve_exchange_invoice_id == invoice_1)
+        note_2 = notes.filtered(lambda n: n.l10n_ve_exchange_invoice_id == invoice_2)
+        self.assertEqual(note_1.amount_total, 400.0, "La nota de la factura de 100 USD debió ser de 400 Bs.")
+        self.assertEqual(note_2.amount_total, 2000.0, "La nota de la factura de 500 USD debió ser de 2000 Bs.")
+        self.assertEqual(sum(notes.mapped("amount_total")), 2400.0)
+
         for note in notes:
-            self.assertEqual(note.amount_total, 400.0)
             note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
             self.assertTrue(note_line.reconciled, "Cada nota debió quedar cerrada, sin excepción.")
             self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))

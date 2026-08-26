@@ -27,14 +27,18 @@ How it works:
 - Only applies to CUSTOMER invoices/credit notes. Any other case (vendor
   bills, manual entries) follows Odoo's native behavior unmodified.
 
-Configuration:
+Configuration (all required once enabled -- reconciliation fails with a
+clear error, checked both at company save time and at reconciliation
+time, instead of leaving an incomplete note):
 
 - Enabled per company (`Settings > Accounting`).
 - Dedicated product (with an exempt tax) for the Debit/Credit Note line.
 - Dedicated pricelist (in the company's own currency) for the Debit/Credit
   Note, required by `account_invoice_pricelist`.
-- Dedicated sales journal, with its own sequence for Debit Notes.
-    """,
+- A sales journal with `Is Debit` enabled and its own dedicated sequence
+  assigned, for Debit Notes -- a Debit Note is never numbered with the
+  invoice journal's own sequence.
+""",
     'author': 'Binaural',
     'depends': [
         'account', 'l10n_ve_accountant', 'od_journal_sequence', 'l10n_ve_invoice',

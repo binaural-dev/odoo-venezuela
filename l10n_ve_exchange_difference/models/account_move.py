@@ -189,15 +189,28 @@ class AccountMove(models.Model):
         )
 
     def _reverse_moves(self, default_values_list=None, cancel=False):
-        """When reversing an exchange difference Debit Note, links the
-        reversal (Credit Note) via `l10n_ve_exchange_original_id` instead
-        of letting it be numbered with the normal sequence."""
+        """When reversing any of this module's own exchange difference
+        notes -- a Debit Note (ND) OR a Credit Note (NC, whether issued
+        directly or itself already a reversal of a ND) -- links the
+        reversal via `l10n_ve_exchange_original_id` instead of letting it
+        be numbered with the normal sequence.
+
+        Checked via `l10n_ve_exchange_diff_entry` (true for ANY of our
+        own notes), not `_is_exchange_debit_note()` alone: reversing a
+        NC produces an `out_invoice` reversal that, without
+        `l10n_ve_exchange_original_id` set, would satisfy
+        `_is_exchange_debit_note()` on its own merits (right
+        `move_type`, `diff_entry` copied over, no `original_id`/
+        `is_credit_note` set) -- misclassifying a mere reversal as a
+        genuine new ND, consuming the (already scarce) dedicated ND
+        sequence for a document that isn't actually one."""
         if default_values_list is None:
             default_values_list = [{} for _ in self]
 
         for move, default_values in zip(self, default_values_list):
             if (
-                move._is_exchange_debit_note()
+                move.l10n_ve_exchange_diff_entry
+                and move.move_type in ('out_invoice', 'out_refund')
                 and move.company_id.l10n_ve_exchange_use_nd_nc
             ):
                 default_values.update({

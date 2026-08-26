@@ -14,6 +14,9 @@ cambio distinta, usando Notas de Débito/Crédito **fiscales reales** (con
 correlativo, vinculadas a la factura de origen) en vez del asiento contable
 genérico e interno que Odoo crea por defecto.
 
+.. image:: static/description/diagrama_flujo.svg
+   :alt: Flujo de conciliación y creación de la Nota de Débito/Crédito de diferencial cambiario
+
 Cómo funciona
 """""""""""""
 
@@ -41,9 +44,13 @@ Cómo funciona
 
    - Una **Nota de Débito** (ganancia cambiaria) si el residual quedó del
      lado del crédito -- vinculada a la factura mediante ``debit_origin_id``,
-     posteada en el diario dedicado de ND (si hay uno configurado; si no,
-     cae al diario de venta de la factura) y en la cuenta de GANANCIA
-     cambiaria de la compañía (``income_currency_exchange_account_id``).
+     posteada en el diario dedicado de ND (``is_debit=True``, con su
+     secuencia propia asignada) y en la cuenta de GANANCIA cambiaria de
+     la compañía (``income_currency_exchange_account_id``). Si no hay
+     ningún diario así configurado -- o le falta la secuencia -- la
+     conciliación falla con un ``UserError`` claro en vez de caer en
+     silencio al diario de venta de la factura (eso numeraría la ND con
+     la secuencia de FACTURAS, un documento fiscal distinto).
    - Una **Nota de Crédito** (pérdida cambiaria) si el residual quedó del
      lado del débito -- vinculada a la factura mediante ``reversed_entry_id``,
      posteada en el MISMO diario de venta de la factura de origen (Odoo ya
@@ -73,11 +80,16 @@ Cómo funciona
    propia nota directamente (sin pasar por la conciliación original) está
    bloqueado.
 
-5. Este comportamiento **solo aplica a facturas y notas de crédito de
-   cliente**. Cualquier otro caso (facturas de proveedor, asientos
-   manuales, compañías con el modo desactivado) sigue el comportamiento
-   nativo de Odoo, sin modificaciones -- incluyendo su propio asiento
-   genérico de diferencial, que de todas formas queda etiquetado
+5. Este comportamiento **solo aplica a documentos de cliente con
+   ``move_type`` igual a** ``out_invoice`` **o** ``out_refund``. Esto
+   incluye tanto facturas normales como Notas de Débito de cliente
+   nativas (``out_invoice`` con ``debit_origin_id``, ya que Odoo las
+   trata como una factura más), y tanto notas de crédito normales como
+   la propia Nota de Crédito que emite este módulo. Cualquier otro caso
+   (facturas de proveedor, asientos manuales, compañías con el modo
+   desactivado) sigue el comportamiento nativo de Odoo, sin
+   modificaciones -- incluyendo su propio asiento genérico de
+   diferencial, que de todas formas queda etiquetado
    (``l10n_ve_exchange_diff_entry``) para identificarlo.
 
 Configuración
@@ -87,20 +99,34 @@ Configuración
 
   * Usar Notas de Débito/Crédito para diferencial cambiario (activable/desactivable).
   * Producto de Nota de Diferencial Cambiario (debe tener un impuesto exento configurado).
+  * Lista de Precios de Nota de Diferencial Cambiario -- requerida por el
+    módulo ``account_invoice_pricelist`` (toda factura/nota necesita una
+    en su propia moneda). Debe estar en la moneda de la compañía, nunca
+    en moneda extranjera -- estas notas siempre se emiten en moneda de
+    compañía.
+  * Con el toggle activado, tanto el producto como la lista de precios
+    son OBLIGATORIOS -- la compañía no se puede guardar sin ambos
+    configurados (``_check_l10n_ve_exchange_use_nd_nc_requires_config``).
 
 * Diario de venta (``account.journal``):
 
-  * Secuencia dedicada para las Notas de Débito de diferencial cambiario.
+  * ``Es Débito`` activado, con su secuencia dedicada para las Notas de
+    Débito de diferencial cambiario asignada -- ambos son obligatorios
+    para poder emitir una ND (ver Limitaciones).
 
 Limitaciones
 """"""""""""
 
-* Solo cubre facturas/notas de crédito de **cliente** (``out_invoice``/
-  ``out_refund``). Facturas de proveedor y otros documentos no se ven
-  afectados por este módulo.
-* Requiere el producto de diferencial cambiario configurado -- si falta,
-  la conciliación falla con un error claro en vez de dejar una nota
-  incompleta.
+* Solo cubre documentos de **cliente** con ``move_type in
+  ('out_invoice', 'out_refund')`` -- incluye Notas de Débito de cliente
+  nativas, ya que Odoo las trata como ``out_invoice``. Facturas de
+  proveedor y otros documentos no se ven afectados por este módulo.
+* Requiere el producto y la lista de precios de diferencial cambiario
+  configurados (validado al guardar la compañía, y de nuevo en tiempo de
+  conciliación como defensa en profundidad) -- si falta cualquiera, la
+  conciliación falla con un error claro en vez de dejar una nota
+  incompleta. Para la rama de GANANCIA (ND) además se exige el diario
+  dedicado con su secuencia propia.
 * Una factura en moneda de compañía (Bs) no tiene exposición cambiaria
   real -- su monto no fluctúa con la tasa -- pero SÍ puede generar una
   ND/NC si se paga en moneda extranjera: Odoo calcula un residual de
@@ -113,16 +139,13 @@ Limitaciones
 * En un pago AGRUPADO (un solo pago liquidando varias facturas a la
   vez), si Odoo atribuye el residual al lado del PAGO en vez de a la
   factura (típico en la dirección de ganancia) y hay MÁS de una factura
-  candidata en ese mismo pago, este módulo no puede saber con certeza,
-  en el momento de la conciliación, a cuál factura pertenece cada
-  residual puntual (Odoo no expone esa correspondencia ahí). En vez de
-  dejar esa porción sin ND/NC propia, cada residual se reparte, EN
-  ORDEN, contra una factura candidata distinta del mismo pago agrupado
-  -- la nota SIEMPRE se crea y se cierra cruzando contra el pago, nunca
-  se pierde ni cae al asiento genérico nativo. Lo único que depende de
-  ese orden es a cuál factura específica queda vinculada cada nota para
-  trazabilidad (``l10n_ve_exchange_invoice_id``); el monto y el cierre
-  contable son siempre correctos sin importar el orden.
+  candidata en ese mismo pago, este módulo determina la factura exacta
+  de cada residual sobrescribiendo
+  ``_prepare_reconciliation_single_partial`` para capturar la pareja
+  REAL (factura, pago) de cada partial antes de que Odoo calcule el
+  residual -- nunca adivina por orden de aparición. La nota siempre se
+  crea, se vincula a la factura correcta, y se cierra cruzando contra el
+  pago.
 * **Widget de Conciliación Bancaria (Odoo Enterprise, `account_accountant`)**:
   cuando se empareja una línea de extracto bancario directamente contra
   una factura desde ese widget, es un flujo completamente legítimo y

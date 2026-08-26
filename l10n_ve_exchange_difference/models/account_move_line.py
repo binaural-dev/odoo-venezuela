@@ -51,33 +51,46 @@ class AccountMoveLine(models.Model):
             lambda l: l.account_type == 'asset_receivable'
         )
 
-        # Reinicia el reparto ordenado de residuales atribuidos al lado
-        # del pago (ver `_next_payment_side_invoice_line`) para ESTA
-        # llamada -- evita que un pago agrupado reconciliado en dos
-        # `reconcile()` distintos arrastre el índice de una llamada
-        # anterior no relacionada.
-        self.env.cr._l10n_ve_exchange_payment_side_index = {}
-
         return super(AccountMoveLine, self.with_context(
             l10n_ve_exchange_payment_line_ids=payment_lines.ids,
             l10n_ve_exchange_invoice_line_ids=invoice_lines.ids,
         )).reconcile()
 
-    def _next_payment_side_invoice_line(self, payment_move, invoice_lines_ctx):
-        """Returns the next candidate invoice line, in order, for a
-        residual Odoo attributed to the PAYMENT side of `payment_move`
-        (see `_prepare_exchange_difference_move_vals`) -- a per-payment
-        counter (reset once per `reconcile()` call, see above) advances
-        each time this is called for the SAME payment, so N distinct
-        residuals against the same grouped payment get matched to N
-        distinct candidate invoices instead of all collapsing onto the
-        first one. Clamped to the last candidate if there somehow end up
-        more payment-side residuals than candidate invoices (should not
-        happen structurally, but never raises)."""
-        index_map = self.env.cr._l10n_ve_exchange_payment_side_index
-        idx = index_map.get(payment_move.id, 0)
-        index_map[payment_move.id] = idx + 1
-        return invoice_lines_ctx[min(idx, len(invoice_lines_ctx) - 1)]
+    def _prepare_reconciliation_single_partial(self, debit_values, credit_values, shadowed_aml_values=None):
+        """Stashes the REAL pairing of this single partial (`debit_values['aml']`,
+        `credit_values['aml']`) on the cursor right before delegating to
+        `super()` -- `super()` calls our own
+        `_prepare_exchange_difference_move_vals` override synchronously,
+        from inside this very call, for whichever of the two lines needs
+        a currency fix. That override reads (and clears) this stash to
+        find the EXACT counterpart line Odoo just matched, instead of
+        guessing which candidate invoice a payment-side residual belongs
+        to when a grouped payment has more than one -- a per-payment
+        round-robin guess used to be the only option here (no direct
+        access to the counterpart otherwise) and could silently attribute
+        a residual to the WRONG invoice when their amounts differ (see
+        `test_grouped_payment_gain_direction_invoice_attribution_limitation`,
+        which exposed exactly this by using two invoices of different
+        amounts -- confirmed with a real swap before this fix).
+
+        NOTE on core coupling: this overrides an INTERNAL method of
+        Odoo's reconciliation engine (`account.move.line`, core
+        `addons/account/models/account_move_line.py`), not the public
+        `_prepare_exchange_difference_move_vals` hook this module
+        otherwise relies on -- verified against Odoo 19.0-20260710,
+        where the signature is exactly
+        `(self, debit_values, credit_values, shadowed_aml_values=None)`
+        and `debit_values['aml']`/`credit_values['aml']` hold the two
+        matched lines. If a future Odoo 19.x point release changes this
+        signature or drops the `'aml'` key, the `**kwargs`-less call
+        below raises a loud `TypeError` on the very next reconciliation
+        instead of silently mis-attributing notes -- deliberately NOT
+        swallowed with a `try/except`, so an incompatible core update
+        fails fast instead of guessing again."""
+        self.env.cr._l10n_ve_exchange_current_partial_amls = (debit_values['aml'], credit_values['aml'])
+        return super()._prepare_reconciliation_single_partial(
+            debit_values, credit_values, shadowed_aml_values=shadowed_aml_values,
+        )
 
     def _prepare_exchange_difference_move_vals(
         self, amounts_list, company=None, exchange_date=None, **kwargs
@@ -114,31 +127,31 @@ class AccountMoveLine(models.Model):
         invoice_lines_ctx = self.env['account.move.line'].browse(invoice_line_ids) if invoice_line_ids else self.env['account.move.line']
         default_payment = payment_lines[:1].move_id
 
+        partial_amls = getattr(self.env.cr, '_l10n_ve_exchange_current_partial_amls', None)
+        self.env.cr._l10n_ve_exchange_current_partial_amls = None
+        counterpart_of = self.env['account.move.line']
+        if partial_amls:
+            counterpart_of = partial_amls[0] + partial_amls[1]
+
         pending_notes = []
         remaining_lines = []
         remaining_amounts = []
         for line, amounts in zip(self, amounts_list):
             # El ajuste puede caer del lado de la FACTURA (caso común) o
             # del lado del PAGO (Odoo suele atribuírselo así en la
-            # dirección de ganancia). Cuando cae del lado del pago y hay
-            # MÁS de una factura candidata (pago agrupado), Odoo no
-            # expone en este punto a cuál factura pertenece cada
-            # residual puntual -- pero la nota se DEBE crear igual (no
-            # cae al asiento genérico nativo): se reparte cada residual
-            # del lado del pago, EN ORDEN, contra una factura candidata
-            # distinta cada vez (`_next_payment_side_invoice_line`),
-            # nunca repitiendo la misma dos veces para el mismo pago --
-            # así nunca colisiona contra el guard de duplicados de
-            # `_create_exchange_difference_note` (que sí bloquearía dos
-            # residuales DISTINTOS que compartieran por error el mismo
-            # par factura/pago). El cierre contable en sí (contra `line`,
-            # la línea real que Odoo flageó) es correcto sin importar el
-            # orden -- lo único que depende del orden es a cuál factura
-            # queda vinculada la nota para trazabilidad.
+            # dirección de ganancia). Cuando cae del lado del pago,
+            # `_prepare_reconciliation_single_partial` (sobrescrito
+            # arriba) ya dejó la pareja REAL de este partial puntual en
+            # `partial_amls` -- se usa esa contraparte real, nunca se
+            # adivina por orden (un pago agrupado con más de una factura
+            # candidata de montos distintos SÍ puede confundir cuál
+            # residual pertenece a cuál factura si solo se mira el orden
+            # de aparición, confirmado con
+            # `test_grouped_payment_gain_direction_invoice_attribution_limitation`).
             if line in invoice_lines_ctx:
                 invoice_line, invoice, payment = line, line.move_id, default_payment
-            elif line in payment_lines and invoice_lines_ctx:
-                invoice_line = self._next_payment_side_invoice_line(line.move_id, invoice_lines_ctx)
+            elif line in payment_lines and (counterpart_of - line) & invoice_lines_ctx:
+                invoice_line = (counterpart_of - line) & invoice_lines_ctx
                 invoice, payment = invoice_line.move_id, line.move_id
             else:
                 invoice_line = None
@@ -296,10 +309,21 @@ class AccountMoveLine(models.Model):
         self = self.with_context(skip_invoice_sync=False, active_model=False, active_id=False)
         company = self.company_id
 
+        # `state != 'cancel'` NO alcanza: revertir una nota
+        # (`_reverse_exchange_note`) NO la cancela -- queda `posted`
+        # (comportamiento nativo de `_reverse_moves`, igual que
+        # cualquier reversión de Odoo). Sin excluir también las ya
+        # revertidas (`reversal_move_ids`, nativo -- el One2many inverso
+        # de `reversed_entry_id`, se llena en CUALQUIER reversión sea
+        # ND o NC), re-conciliar el mismo (factura, pago) tras romper y
+        # re-asignar el pago encontraría la nota vieja ya revertida y
+        # saldría aquí sin crear una nueva NI conciliar nada -- el
+        # residual quedaría sin ningún documento que lo respalde.
         existing_note = self.env['account.move'].search([
             ('l10n_ve_exchange_invoice_id', '=', invoice.id),
             ('l10n_ve_exchange_payment_id', '=', payment.id),
             ('state', '!=', 'cancel'),
+            ('reversal_move_ids', '=', False),
         ], limit=1)
         if existing_note:
             return existing_note
@@ -327,6 +351,33 @@ class AccountMoveLine(models.Model):
             ))
 
         is_credit_note = company.currency_id.compare_amounts(residual, 0.0) > 0
+
+        debit_journal = self.env['account.journal']
+        if not is_credit_note:
+            # Requerido -- nunca cae en silencio al diario de venta de la
+            # factura: ese diario numera facturas normales, así que una
+            # ND ahí consumiría un número de FACTURA en vez de uno propio
+            # de ND. `is_debit=True` solo puede marcarse desde la UI en
+            # diarios `type in ('sale', 'purchase')` (l10n_ve_invoice), y
+            # la vista de este módulo solo expone
+            # `l10n_ve_exchange_debit_note_sequence_id` quando ese diario
+            # además tiene `is_debit=True` -- así que exigir AMBOS aquí
+            # (diario Y secuencia configurada) es justo lo que la UI deja
+            # configurar, nunca más.
+            debit_journal = self.env['account.journal'].search([
+                ('company_id', '=', company.id),
+                ('is_debit', '=', True),
+                ('type', '=', 'sale'),
+            ], order='id', limit=1)
+            if not debit_journal or not debit_journal.l10n_ve_exchange_debit_note_sequence_id:
+                raise UserError(_(
+                    "Configure a sale journal with 'Is Debit' enabled and "
+                    "its dedicated Exchange Difference Debit Note sequence "
+                    "assigned before reconciling foreign-currency invoices "
+                    "with the exchange difference Debit/Credit Note mode "
+                    "enabled -- a Debit Note must never be numbered with "
+                    "the invoice journal's own sequence."
+                ))
 
         line_vals = {
             'product_id': product.id,
@@ -357,13 +408,6 @@ class AccountMoveLine(models.Model):
         # note's creation/posting.
         with self.env['account.move']._disable_recursion({}, 'skip_invoice_sync', target=False):
             if not is_credit_note:
-                debit_journal = self.env['account.journal'].search([
-                    ('company_id', '=', company.id),
-                    ('is_debit', '=', True),
-                    ('type', '=', 'sale'),
-                ], limit=1)
-                journal = debit_journal or invoice.journal_id
-
                 note = self.env['account.move'].create({
                     'move_type': 'out_invoice',
                     'partner_id': invoice.partner_id.id,
@@ -371,7 +415,7 @@ class AccountMoveLine(models.Model):
                     'date': note_date,
                     'currency_id': company.currency_id.id,
                     'pricelist_id': pricelist.id,
-                    'journal_id': journal.id,
+                    'journal_id': debit_journal.id,
                     'debit_origin_id': invoice.id,
                     'invoice_origin': invoice.name,
                     'invoice_line_ids': [(0, 0, line_vals)],

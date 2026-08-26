@@ -1,4 +1,4 @@
-from odoo import fields
+from odoo import Command, fields
 from odoo.tests import Form, tagged
 
 from odoo.addons.l10n_ve_igtf.tests.test_igtf_common_partner_formal_VEF import IGTFTestCommon
@@ -52,6 +52,181 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         })
         self.company.l10n_ve_exchange_note_pricelist_id = self.note_pricelist.id
         self.company.l10n_ve_exchange_use_nd_nc = True
+
+        # Diario dedicado de ND con secuencia propia -- requerido desde
+        # el fix del bloqueante de numeración (ver
+        # `test_exchange_note_reversal.setUpClass`): sin esto, cualquier
+        # escenario de este archivo que termine en rama de GANANCIA (ND)
+        # fallaría con UserError en vez de la nota.
+        self.debit_note_sequence = self.env["ir.sequence"].create({
+            "name": "ND Diferencial Cambiario Test IGTF",
+            "code": "l10n.ve.exchange.debit.note.test.igtf",
+            "company_id": self.company.id,
+            "prefix": "NDDIFTIGTF/%(year)s/",
+            "padding": 4,
+        })
+        self.debit_note_journal = self.env["account.journal"].create({
+            "name": "ND Diferencial Cambiario Test IGTF",
+            "type": "sale",
+            "code": "NDDIFTIGTF",
+            "company_id": self.company.id,
+            "is_debit": True,
+            "l10n_ve_exchange_debit_note_sequence_id": self.debit_note_sequence.id,
+        })
+
+    def test_grouped_payment_with_igtf_attributes_each_note_to_its_own_invoice(self):
+        """Combina el fix de atribución en pagos agrupados (ver
+        `test_exchange_note_reversal.test_grouped_payment_gain_direction_invoice_attribution_limitation`)
+        con IGTF real de por medio: un pago AGRUPADO en el diario
+        `bank_journal_usd` (`is_igtf=True`), liquidando DOS facturas de
+        montos DISTINTOS (100 y 500 USD) a la vez, en dirección de
+        ganancia (donde Odoo suele atribuir el residual al lado del
+        pago). El IGTF retenido sobre el pago combinado no debe alterar
+        la atribución exacta de cada ND a su propia factura -- verificado
+        con montos distintos (no dos facturas idénticas) para que un
+        swap entre ellas sea detectable."""
+        self.currency_usd.write({
+            "rate_ids": [
+                Command.create({"name": "2041-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2041-08-01", "company_rate": 1 / 40.0}),
+            ],
+        })
+
+        invoice_1 = self._create_invoice_usd(100.0, date="2041-01-01")
+        invoice_1.with_context(move_action_post_alert=True).action_post()
+        invoice_2 = self._create_invoice_usd(500.0, date="2041-01-01")
+        invoice_2.with_context(move_action_post_alert=True).action_post()
+        invoices = invoice_1 | invoice_2
+
+        lines_to_pay = invoices.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        action = lines_to_pay.action_register_payment()
+        ctx = dict(action["context"], active_model="account.move.line", active_ids=lines_to_pay.ids)
+        with Form(self.env["account.payment.register"].with_context(ctx)) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = "2041-08-01"
+            pay_form.group_payment = True
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        payment = self.env["account.payment"].browse(action.get("res_id"))
+
+        self.env.cr.flush()
+        invoice_1.invalidate_recordset()
+        invoice_2.invalidate_recordset()
+
+        # IGTF se siguió cobrando con normalidad sobre el pago agrupado.
+        igtf_moves = self.env["account.move.line"].search([
+            ("account_id", "=", self.acc_igtf_cli.id),
+            ("partner_id", "=", self.partner.id),
+        ])
+        self.assertTrue(igtf_moves, "El cobro de IGTF debió seguir aplicándose con normalidad.")
+
+        self.assertEqual(invoice_1.payment_state, "paid")
+        self.assertEqual(invoice_2.payment_state, "paid")
+
+        notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("move_type", "in", ("out_invoice", "out_refund")),
+            ("l10n_ve_exchange_payment_id", "=", payment.move_id.id),
+        ])
+        self.assertEqual(
+            len(notes), 2,
+            "El pago agrupado con IGTF debió generar una ND/NC por cada factura.",
+        )
+        self.assertEqual(
+            set(notes.mapped("l10n_ve_exchange_invoice_id").ids), {invoice_1.id, invoice_2.id},
+            "Cada nota debe quedar vinculada a una factura distinta.",
+        )
+
+        note_1 = notes.filtered(lambda n: n.l10n_ve_exchange_invoice_id == invoice_1)
+        note_2 = notes.filtered(lambda n: n.l10n_ve_exchange_invoice_id == invoice_2)
+        self.assertAlmostEqual(note_1.amount_total, 400.0, places=1, msg="ND de la factura de 100 USD.")
+        self.assertAlmostEqual(note_2.amount_total, 2000.0, places=1, msg="ND de la factura de 500 USD.")
+
+        for note in notes:
+            note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+            self.assertTrue(note_line.reconciled, "Cada nota debió quedar cerrada, sin excepción.")
+            self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))
+
+    def test_advance_payment_applied_to_two_invoices_each_gets_correct_note(self):
+        """Vía "anticipo" (`is_advance_payment`, patrón usado en
+        `l10n_ve_igtf/tests/test_igtf_partner_formal_VEF.py`): un único
+        pago de ANTICIPO en USD se aplica, uno a la vez
+        (`js_assign_outstanding_line`, el mecanismo real del widget de
+        pagos para anticipos -- cada aplicación es su PROPIA
+        conciliación, a diferencia del pago agrupado), a DOS facturas de
+        montos distintos creadas DESPUÉS del anticipo. Confirma que
+        reconciliaciones sucesivas contra el mismo anticipo no
+        contaminan la atribución entre sí (cada una debe recibir su
+        propia ND exacta), y que el guard de duplicados por (factura,
+        pago) sigue distinguiendo cada aplicación como un evento propio
+        aunque ambas compartan el mismo `payment.move_id`."""
+        self.currency_usd.write({
+            "rate_ids": [
+                Command.create({"name": "2042-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2042-06-01", "company_rate": 1 / 40.0}),
+            ],
+        })
+
+        advance_amount = 700.0
+        context = {
+            "default_payment_type": "inbound", "default_partner_type": "customer",
+            "default_move_journal_types": ("bank", "cash"), "display_account_trust": True,
+            "default_is_advance_payment": True,
+        }
+        with Form(self.env["account.payment"].with_context(context)) as pay_form:
+            pay_form.partner_id = self.partner
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.date = "2042-06-01"
+            pay_form.amount = advance_amount
+        advance_payment = pay_form.save()
+        advance_payment.action_post()
+
+        invoice_1 = self._create_invoice_usd(100.0, date="2042-01-01")
+        invoice_1.with_context(move_action_post_alert=True).action_post()
+        invoice_2 = self._create_invoice_usd(500.0, date="2042-01-01")
+        invoice_2.with_context(move_action_post_alert=True).action_post()
+
+        outstanding_line = advance_payment.move_id.line_ids.filtered(
+            lambda l: l.account_id == self.advance_cust_acc and l.credit > 0
+        )
+        self.assertTrue(outstanding_line, "El anticipo debió quedar con su línea de crédito disponible.")
+
+        invoice_1.with_context({}).js_assign_outstanding_line(outstanding_line.id)
+        self.env.cr.flush()
+
+        # La línea de crédito ORIGINAL del anticipo (700 USD) no se
+        # reemplaza por una nueva al aplicarse parcialmente contra la
+        # primera factura (100 USD) -- Odoo la deja parcialmente
+        # conciliada, con el residual restante todavía disponible para
+        # aplicar contra la segunda factura, la misma línea de siempre.
+        outstanding_line.invalidate_recordset()
+        self.assertFalse(
+            outstanding_line.reconciled,
+            "La línea del anticipo debía quedar con residual disponible tras la primera aplicación parcial.",
+        )
+        invoice_2.with_context({}).js_assign_outstanding_line(outstanding_line.id)
+        self.env.cr.flush()
+
+        invoice_1.invalidate_recordset()
+        invoice_2.invalidate_recordset()
+
+        notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("move_type", "in", ("out_invoice", "out_refund")),
+            ("l10n_ve_exchange_invoice_id", "in", (invoice_1 + invoice_2).ids),
+        ])
+        self.assertEqual(
+            len(notes), 2,
+            "Cada aplicación del anticipo (una por factura) debió generar su propia ND.",
+        )
+        note_1 = notes.filtered(lambda n: n.l10n_ve_exchange_invoice_id == invoice_1)
+        note_2 = notes.filtered(lambda n: n.l10n_ve_exchange_invoice_id == invoice_2)
+        self.assertTrue(note_1, "La factura de 100 USD debió recibir su propia ND.")
+        self.assertTrue(note_2, "La factura de 500 USD debió recibir su propia ND.")
+        for note in notes:
+            note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+            self.assertTrue(note_line.reconciled, "Cada nota debió quedar cerrada, sin excepción.")
 
     def test_exchange_difference_note_alongside_igtf_payment_different_dates(self):
         """Factura en USD (`_create_invoice_usd`, mismo helper que usan los

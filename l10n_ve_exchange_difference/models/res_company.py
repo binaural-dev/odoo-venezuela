@@ -12,7 +12,7 @@ class ResCompany(models.Model):
              "enabled, the exchange difference left open when reconciling "
              "a foreign-currency customer invoice is NOT absorbed by "
              "Odoo's automatic entry -- instead, it is documented with a "
-             "real Debit Note (loss) or Credit Note (gain), issued "
+             "real Debit Note (gain) or Credit Note (loss), issued "
              "against the original invoice and reconciled against the "
              "remaining residual.",
     )
