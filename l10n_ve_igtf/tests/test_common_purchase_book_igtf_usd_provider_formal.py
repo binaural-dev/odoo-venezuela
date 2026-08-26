@@ -33,16 +33,23 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
         })
 
         self.rate = 390.2944  # 1 USD = 201.47bs
+        # `rate` explícito en AMBAS entradas -- ver el mismo fix y su
+        # explicación completa en
+        # `l10n_ve_igtf/tests/test_igtf_common_partner_formal_VEF.py`
+        # (`_sanitize_vals`/`_inverse_company_rate` del núcleo componen
+        # `(1/380) * (1/rate)` para la entrada de "ayer" si le falta
+        # `rate` propio y la de "hoy" ya existe en el mismo `write()`).
         self.currency_usd.write({
             'rate_ids': [
                 Command.create({
-                    'company_rate': 1 / self.rate,  
-                    'rate': 1 / self.rate,  
+                    'company_rate': 1 / self.rate,
+                    'rate': 1 / self.rate,
                     'inverse_company_rate': self.rate,
                     'name': fields.Date.today(),
                 }),
                 Command.create({
-                    'company_rate': 1 / 380.0000,  
+                    'company_rate': 1 / 380.0000,
+                    'rate': 1 / 380.0000,
                     'inverse_company_rate': 380.0000,
                     'name': fields.Date.subtract(fields.Date.today(), days=1),
                 })
