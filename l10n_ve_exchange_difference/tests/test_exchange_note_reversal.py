@@ -1,4 +1,5 @@
 from unittest.mock import patch
+import inspect
 
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
@@ -231,6 +232,41 @@ class TestExchangeNoteReversal(TransactionCase):
                     "payment_account_id": vef_bank_account.id,
                 })],
             })
+
+    def test_odoo_core_api_compatibility(self):
+        """COMPATIBILITY GUARD: verifica que Odoo 19.x `_prepare_reconciliation_single_partial`
+        tenga la firma y estructura exacta esperada. Este módulo sobrescribe un método
+        INTERNO de Odoo (no público), acoplándose fuertemente a su implementación.
+
+        Si esta prueba falla, es señal de que Odoo cambió internamente de forma
+        incompatible, y el código que stashea `debit_values['aml']` y `credit_values['aml']`
+        puede haber quedado obsoleto -- necesita revisión manual.
+
+        Verificado contra: Odoo 19.0-20260710
+        See: l10n_ve_exchange_difference/models/account_move_line.py:59-93
+        """
+        aml_model = self.env['account.move.line']
+
+        # Verificar que el método exista y tenga la firma esperada
+        method = getattr(aml_model, '_prepare_reconciliation_single_partial', None)
+        self.assertIsNotNone(method,
+            "Odoo core method _prepare_reconciliation_single_partial not found or was removed"
+        )
+
+        # Verificar parámetros exactos
+        sig = inspect.signature(method)
+        expected_params = {'self', 'debit_values', 'credit_values', 'shadowed_aml_values'}
+        actual_params = set(sig.parameters.keys())
+        self.assertEqual(expected_params, actual_params,
+            f"_prepare_reconciliation_single_partial signature changed. "
+            f"Expected params: {expected_params}, got: {actual_params}. "
+            f"l10n_ve_exchange_difference may be incompatible with this Odoo version."
+        )
+
+        # Verificar que shadowed_aml_values tenga default (es opcional)
+        self.assertIsNotNone(sig.parameters['shadowed_aml_values'].default,
+            "_prepare_reconciliation_single_partial shadowed_aml_values should have a default value"
+        )
 
     def _create_invoice(self, invoice_date):
         """Mismo patrón que usa `l10n_ve_igtf` para sus facturas de prueba

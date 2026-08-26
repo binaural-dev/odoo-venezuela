@@ -87,6 +87,21 @@ class AccountMoveLine(models.Model):
         instead of silently mis-attributing notes -- deliberately NOT
         swallowed with a `try/except`, so an incompatible core update
         fails fast instead of guessing again."""
+        # Runtime guard: verify the expected keys exist before stashing
+        # (line 1: signature change is caught by TypeError above, but key
+        # changes are silent -- catch them here as early as possible).
+        if 'aml' not in debit_values or 'aml' not in credit_values:
+            raise RuntimeError(_(
+                "Odoo core API incompatibility detected in "
+                "`_prepare_reconciliation_single_partial`: expected keys "
+                "'aml' in debit_values and credit_values, but got "
+                "debit_values.keys()=%(debit_keys)s, credit_values.keys()=%(credit_keys)s. "
+                "This module is tightly coupled to Odoo 19.0-20260710 internal API. "
+                "Reconciliation aborted to prevent silent mis-attribution of "
+                "exchange difference notes to the wrong invoice.",
+                debit_keys=', '.join(debit_values.keys()),
+                credit_keys=', '.join(credit_values.keys()),
+            ))
         self.env.cr._l10n_ve_exchange_current_partial_amls = (debit_values['aml'], credit_values['aml'])
         return super()._prepare_reconciliation_single_partial(
             debit_values, credit_values, shadowed_aml_values=shadowed_aml_values,
