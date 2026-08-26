@@ -318,7 +318,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         is_last_move = True
 
                     amounts = self._determinate_amount_taxeds(move)
-                    is_igtf = bool(move.alter_bi_igtf > 0 or move.foreign_alter_bi_igtf > 0)
+                    # alter_bi_igtf/foreign_alter_bi_igtf los agrega l10n_ve_igtf,
+                    # que l10n_ve_iot_mf no declara como dependencia.
+                    is_igtf = bool(
+                        getattr(move, "alter_bi_igtf", 0) > 0
+                        or getattr(move, "foreign_alter_bi_igtf", 0) > 0
+                    )
                     if is_igtf:
                         multiplier = -1 if move.move_type == "out_refund" else 1
                         igtf_val = (
