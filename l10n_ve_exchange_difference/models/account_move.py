@@ -160,7 +160,7 @@ class AccountMove(models.Model):
                 ('l10n_ve_exchange_payment_id', '=', payment.id),
                 ('state', '!=', 'cancel'),
                 ('reversal_move_ids', '=', False),
-            ], limit=1)
+            ], order='id desc', limit=1)
             if note:
                 note._reverse_exchange_note()
 

@@ -324,7 +324,7 @@ class AccountMoveLine(models.Model):
             ('l10n_ve_exchange_payment_id', '=', payment.id),
             ('state', '!=', 'cancel'),
             ('reversal_move_ids', '=', False),
-        ], limit=1)
+        ], order='id desc', limit=1)
         if existing_note:
             return existing_note
 

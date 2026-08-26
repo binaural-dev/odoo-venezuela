@@ -1,5 +1,3 @@
-from unittest.mock import patch
-
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import Form, tagged
@@ -625,15 +623,17 @@ class TestExchangeNoteReversal(TransactionCase):
         NUEVA vigente, revirtiendo la vieja una segunda vez en lugar de la
         que corresponde.
 
-        NOTA: el orden por defecto de `account.move` (`date desc, name
-        desc, ..., id desc`) hace que, en el flujo de negocio completo, la
-        nota más reciente normalmente ya salga primero en un `search()`
-        sin filtro explícito -- por eso esta prueba, además de ejercitar
-        el flujo completo, verifica el DOMINIO de búsqueda en sí mismo
-        (igual al que usa `js_remove_outstanding_partial`), que es donde
-        el bug realmente vivía y donde un caso con orden desfavorable
-        (ej. igual fecha/nombre por reindexación de secuencia) lo
-        expondría."""
+        NOTA: `js_remove_outstanding_partial` fija `order='id desc'`
+        explícito en su búsqueda (no depende del orden por defecto de
+        `account.move`, `date desc, name desc, ..., id desc`, que además
+        coincidiría por casualidad con `id desc` en este caso ya que la
+        nota nueva siempre tiene fecha/nombre posteriores a la vieja) --
+        por eso esta prueba, ADEMÁS de ejercitar el flujo de negocio
+        completo, verifica el DOMINIO de búsqueda por separado
+        (`test_search_domain_for_active_note_excludes_reversed_notes`,
+        más abajo), que es donde el bug realmente vivía: sin el filtro
+        `reversal_move_ids`, ese dominio devolvería 2 notas en vez de 1,
+        sin importar el orden que se use para desempatar."""
         invoice = self._create_invoice("2026-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
@@ -686,20 +686,11 @@ class TestExchangeNoteReversal(TransactionCase):
         self.assertFalse(new_note.reversal_move_ids)
 
         # Segunda ruptura: debe revertir la nota NUEVA (la única vigente),
-        # y NO tocar de nuevo la original (ya revertida). El orden por
-        # defecto de `account.move` (`date desc, name desc, ..., id
-        # desc`) favorece naturalmente a la nota más reciente, lo que
-        # enmascararía el bug en un `search(..., limit=1)` sin el filtro
-        # `reversal_move_ids` -- se fuerza aquí `id asc` (la nota
-        # ORIGINAL, de menor id, ganaría el `limit=1` de existir el bug)
-        # para que esta prueba realmente ejercite el dominio de
-        # `js_remove_outstanding_partial` bajo el peor caso posible, en
-        # vez de aprobar por casualidad del orden natural.
+        # y NO tocar de nuevo la original (ya revertida).
         new_partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
             lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
         )
-        with patch.object(type(self.env["account.move"]), "_order", "id asc"):
-            invoice.js_remove_outstanding_partial(new_partial[:1].id)
+        invoice.js_remove_outstanding_partial(new_partial[:1].id)
         self.env.cr.flush()
 
         invoice.invalidate_recordset()
@@ -725,6 +716,79 @@ class TestExchangeNoteReversal(TransactionCase):
         self.assertEqual(
             len(new_note_reversals), 1,
             "La ND/NC nueva debió recibir exactamente una reversión propia por la segunda ruptura.",
+        )
+
+    def test_search_domain_for_active_note_excludes_reversed_notes(self):
+        """Verifica el DOMINIO de búsqueda que usa `js_remove_outstanding_partial`
+        (y, de forma simétrica, `_create_exchange_difference_note`) de
+        forma aislada, sin depender de qué `order` se use para desempatar
+        -- el bug real no era de orden, era que sin el filtro
+        `reversal_move_ids` el dominio devuelve 2 registros (la original
+        revertida MÁS la nueva) en vez de 1. Este es el caso que
+        realmente importa: si algún día se relaja el guard y llegan a
+        coexistir dos notas activas por error, esta prueba lo detecta
+        directamente en el dominio, sin necesidad de mockear ordenamiento
+        interno del framework (frágil para mantenimiento)."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        payment = self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        original_note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+            ("l10n_ve_exchange_payment_id", "=", payment.move_id.id),
+        ])
+        self.assertEqual(len(original_note), 1)
+
+        partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+        )
+        invoice.js_remove_outstanding_partial(partial[:1].id)
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        original_note.invalidate_recordset()
+        self.assertTrue(original_note.reversal_move_ids)
+
+        payment_line = payment.move_id.line_ids.filtered(
+            lambda l: l.account_type == "asset_receivable" and not l.reconciled
+        )
+        invoice.js_assign_outstanding_line(payment_line.id)
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+
+        new_note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+            ("l10n_ve_exchange_payment_id", "=", payment.move_id.id),
+        ]) - original_note
+        self.assertEqual(len(new_note), 1)
+
+        # Sin el filtro `reversal_move_ids`, este dominio devolvería 2
+        # registros (original_note + new_note) -- CON el filtro, debe
+        # devolver exactamente 1: la nueva.
+        active_notes_by_domain = self.env["account.move"].search([
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+            ("l10n_ve_exchange_payment_id", "=", payment.move_id.id),
+            ("state", "!=", "cancel"),
+            ("reversal_move_ids", "=", False),
+        ])
+        self.assertEqual(
+            active_notes_by_domain, new_note,
+            "El dominio de búsqueda de la nota activa debió resolver a exactamente "
+            "1 registro (la nota nueva) -- si incluye también la original ya "
+            "revertida, el guard anti-duplicado dejó de ser efectivo.",
         )
 
     def test_exchange_note_own_reconciliation_cannot_be_broken_directly(self):

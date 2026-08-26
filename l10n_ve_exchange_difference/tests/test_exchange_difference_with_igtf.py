@@ -341,6 +341,73 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         self.assertEqual(note.invoice_line_ids.account_id, self.company.expense_currency_exchange_account_id)
         self.assertEqual(note.date, fields.Date.today())
 
+    def test_igtf_base_computation_correct_with_exchange_note_present(self):
+        """Regresión para `l10n_ve_igtf.models.account_move.compute_bi_igtf`
+        (`l10n_ve_igtf/models/account_move.py`): el campo que identifica
+        los movimientos "de pago" contra los que calcular la base de
+        IGTF cambió de `reconciled_lines_ids.mapped('move_id')` a
+        `matched_debit_ids.debit_move_id | matched_credit_ids.credit_move_id`.
+        Esta prueba no asume CUÁL es la diferencia exacta entre ambas
+        expresiones (ambas terminan involucrando tanto el pago real como
+        la propia ND/NC de diferencial cambiario, confirmado
+        empíricamente) -- en su lugar verifica el resultado observable
+        que le importa al usuario: que la base de IGTF calculada
+        (`foreign_bi_igtf`) siga siendo correcta (coincide con el IGTF
+        realmente cobrado sobre el pago, ya confirmado por
+        `igtf_moves` en `test_exchange_difference_note_alongside_igtf_payment_different_dates`)
+        aun con la ND/NC de diferencial conviviendo en la misma
+        conciliación -- este es exactamente el escenario nuevo que
+        introduce este módulo y que no existía cuando se escribieron los
+        tests originales de `l10n_ve_igtf`."""
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        invoice = self._create_invoice_usd(1000.00, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertEqual(len(note), 1, "Debió crearse la ND/NC de diferencial (mismo escenario del test base).")
+
+        # El IGTF que Odoo realmente cobró y posteó (cuenta dedicada de
+        # IGTF de clientes) es la fuente de verdad independiente contra
+        # la que se compara el campo COMPUTADO.
+        igtf_moves = self.env["account.move.line"].search([
+            ("account_id", "=", self.acc_igtf_cli.id),
+            ("partner_id", "=", self.partner.id),
+        ])
+        self.assertTrue(igtf_moves, "El cobro de IGTF debió aplicarse con normalidad.")
+        igtf_charged = sum(igtf_moves.mapped(lambda l: abs(l.amount_currency)))
+
+        invoice.invalidate_recordset()
+        self.assertGreater(
+            invoice.foreign_bi_igtf, 0.0,
+            "La base de IGTF en moneda extranjera debió calcularse con normalidad, sin "
+            "romperse por la presencia de la ND/NC de diferencial en la conciliación.",
+        )
+        self.assertAlmostEqual(
+            invoice.foreign_bi_igtf * (self.company.igtf_percentage / 100),
+            igtf_charged,
+            places=1,
+            msg="La base de IGTF calculada debió corresponder exactamente al IGTF "
+                "realmente cobrado sobre el pago -- no debió inflarse ni anularse por "
+                "la presencia de la ND/NC de diferencial cambiario en la misma "
+                "conciliación.",
+        )
+
     def test_ves_invoice_paid_in_usd_generates_rounding_exchange_difference_note(self):
         """Complemento del test anterior: una factura en VES (moneda de
         COMPAÑÍA), pagada en USD con IGTF de por medio, en fechas y tasas
