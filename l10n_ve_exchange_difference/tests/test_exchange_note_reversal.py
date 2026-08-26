@@ -265,7 +265,7 @@ class TestExchangeNoteReversal(TransactionCase):
         )
 
         # Verificar que shadowed_aml_values tenga default (es opcional)
-        self.assertIsNotNone(sig.parameters['shadowed_aml_values'].default,
+        self.assertIsNot(sig.parameters['shadowed_aml_values'].default, inspect.Parameter.empty,
             "_prepare_reconciliation_single_partial shadowed_aml_values should have a default value"
         )
 
