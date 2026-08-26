@@ -27,6 +27,7 @@
         <field name="inherit_id" ref="account.view_account_invoice_filter"/>
         <field name="arch" type="xml">
             <filter name="posted" position="after">
+                <separator/>
                 <filter
                     name="l10n_ve_exchange_diff_entry"
                     string="Exchange Difference Notes"

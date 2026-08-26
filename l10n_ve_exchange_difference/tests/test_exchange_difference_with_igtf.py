@@ -315,23 +315,32 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         # dos ajustes independientes sobre la misma conciliación.
         self.assertNotIn(self.acc_igtf_cli, note.line_ids.account_id)
 
-        # Rama pineada, no autoconsistente (verificada contra el resultado
-        # real bajo `--without-demo=True` -- MISMO modo que usa
-        # `scripts/coverage`, representativo de CI/producción; correr sin
-        # ese flag, con datos demo cargados, produce una atribución
-        # DISTINTA (`out_invoice`/ND en vez de `out_refund`/NC) para este
-        # mismo escenario -- el signo depende de cómo el motor de Odoo
-        # atribuye el residual entre factura/pago, y evidentemente
-        # también de qué otros datos existen en la base al momento de
-        # conciliar, no solo de comparar las tasas). El monto
-        # (147921577.6 Bs) es el que el propio
-        # `_prepare_reconciliation_single_partial` de Odoo calculó para
-        # esta línea bajo `--without-demo=True` -- confirmado imprimiendo
-        # `note.amount_total` antes de esta aserción, así que no es un
-        # artefacto propio: es la combinación real de las tasas del
-        # fixture (380.0 / 390.2944) con el 3% de IGTF ya cobrado sobre
-        # el pago (1030 USD en vez de 1000), no una simple resta de tasas
-        # contra el monto nominal de la factura.
+        # Rama pineada, no autoconsistente -- INVESTIGADO a fondo (no solo
+        # "verificado contra un resultado"): con trazas temporales en
+        # `_prepare_exchange_difference_move_vals` se confirmó que, con
+        # datos demo cargados, Odoo marca para corrección la línea del
+        # PAGO (`move_type='entry'`, cuenta de banco, `amount_residual`
+        # ~-1.908.686,36); sin demo (`--without-demo=True`, el modo que
+        # usa `scripts/coverage`, representativo de CI/producción)
+        # marca la línea de la FACTURA (`move_type='out_invoice'`,
+        # cuenta por cobrar, `amount_residual` ~147.921.577,6). No es
+        # solo un cambio de signo -- es una línea distinta del motor de
+        # conciliación NATIVO de Odoo (`_prepare_reconciliation_single_partial`/
+        # `_reconcile_plan`, core), con una magnitud ~77x diferente. Este
+        # módulo nunca recalcula el monto ni decide qué línea corregir
+        # -- toma fielmente lo que el motor de Odoo determina (ver
+        # docstring de `_prepare_exchange_difference_move_vals`), así que
+        # la causa raíz de esta divergencia vive en el core, no acá.
+        # Relevante para decidir el valor a pinnear: en un despliegue
+        # real de producción la base NUNCA tiene datos demo (son solo
+        # para desarrollo/sandbox), y `scripts/coverage` -- el mecanismo
+        # oficial de validación de este repo -- ya corre con
+        # `--without-demo=True`. Por eso se pinea contra ESE modo, que es
+        # el único representativo de un cliente real. Investigar la causa
+        # raíz exacta en el motor de Odoo (por qué datos demo no
+        # relacionados con este partner/factura cambian qué línea se
+        # marca) queda fuera de alcance de este módulo -- amerita un
+        # ticket propio contra el core si se quiere profundizar.
         self.assertEqual(note.move_type, "out_refund")
         self.assertEqual(note.reversed_entry_id, invoice)
         self.assertTrue(note._is_exchange_credit_note())

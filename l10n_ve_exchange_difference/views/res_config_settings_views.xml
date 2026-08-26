@@ -17,12 +17,17 @@
                     <setting string="Customer Invoice Exchange Difference Note Product"
                              invisible="not l10n_ve_exchange_use_nd_nc"
                              help="Product used on the line of the Debit/Credit Note for CUSTOMER invoices. Must have the sale and purchase Exempt tax configured.">
-                        <field name="l10n_ve_exchange_note_product_id" required="l10n_ve_exchange_use_nd_nc"/>
+                        <field name="l10n_ve_exchange_note_product_id"
+                               invisible="not group_multi_currency or not l10n_ve_exchange_use_nd_nc"
+                               required="group_multi_currency and l10n_ve_exchange_use_nd_nc"/>
                     </setting>
                     <setting string="Customer Invoice Exchange Difference Note Pricelist"
                              invisible="not l10n_ve_exchange_use_nd_nc"
                              help="Pricelist used on the Debit/Credit Note for CUSTOMER invoices (required by account_invoice_pricelist). Must be in the company's own currency -- these notes are always issued in company currency.">
-                        <field name="l10n_ve_exchange_note_pricelist_id" required="l10n_ve_exchange_use_nd_nc"/>
+                        <field name="l10n_ve_exchange_note_pricelist_id"
+                               invisible="not group_multi_currency or not l10n_ve_exchange_use_nd_nc"
+                               required="group_multi_currency and l10n_ve_exchange_use_nd_nc"
+                               domain="[('currency_id', '=', company_id.currency_id)]"/>
                     </setting>
                 </block>
             </xpath>

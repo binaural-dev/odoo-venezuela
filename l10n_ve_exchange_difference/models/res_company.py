@@ -90,7 +90,12 @@ class ResCompany(models.Model):
                     currency=company.currency_id.name,
                 ))
 
-    @api.constrains('l10n_ve_exchange_note_product_id')
+    @api.constrains(
+        'l10n_ve_exchange_note_product_id',
+        'income_currency_exchange_account_id',
+        'expense_currency_exchange_account_id',
+        'exent_aliquot_sale',
+    )
     def _check_l10n_ve_exchange_note_product_id(self):
         """The exchange difference note product must be a service whose
         income AND expense accounts are the company's own exchange

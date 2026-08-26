@@ -306,7 +306,20 @@ class AccountMoveLine(models.Model):
         invoice.
         """
         self.ensure_one()
-        self = self.with_context(skip_invoice_sync=False, active_model=False, active_id=False)
+        # `l10n_ve_exchange_invoice_line_ids`/`l10n_ve_exchange_payment_line_ids`
+        # (stashed by `reconcile()` above) also need clearing here, not
+        # just `skip_invoice_sync` -- the note we're about to `create()`
+        # inherits this env's context, and if a nested reconciliation
+        # triggered later by closing the note's own line (see
+        # `reconciled_lines_ids` below) ever re-entered
+        # `_prepare_exchange_difference_move_vals` while these were
+        # still set, it would consume a stash meant for the ORIGINAL
+        # reconciliation, not this note's own closing.
+        self = self.with_context(
+            skip_invoice_sync=False, active_model=False, active_id=False,
+            l10n_ve_exchange_invoice_line_ids=False,
+            l10n_ve_exchange_payment_line_ids=False,
+        )
         company = self.company_id
 
         # `state != 'cancel'` NO alcanza: revertir una nota
@@ -458,5 +471,15 @@ class AccountMoveLine(models.Model):
                 ).action_post()
 
         note_line = note.line_ids.filtered(lambda l: l.account_type == 'asset_receivable')
-        note_line.write({'reconciled_lines_ids': [Command.set(self.ids)]})
+        # `no_exchange_difference=True` -- SAME context key Odoo's own
+        # `_reconcile_plan` uses to close its own generic exchange-diff
+        # entry (`account_move_line.py`, core: `self.env['account.move']
+        # .with_context(no_exchange_difference=True, ...).create(...)`)
+        # -- without it, this nested conciliation (triggered by the
+        # `reconciled_lines_ids` inverse) would re-enter the exchange
+        # difference engine and could queue a SPURIOUS residual for this
+        # note's own closing line.
+        note_line.with_context(no_exchange_difference=True).write(
+            {'reconciled_lines_ids': [Command.set(self.ids)]}
+        )
         return note
