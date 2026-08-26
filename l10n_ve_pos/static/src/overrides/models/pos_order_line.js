@@ -159,8 +159,30 @@ patch(PosOrderline.prototype, {
       return order.localToForeign(baseUnitPrice, false);
     },
 
+    // Ticket 14352: una línea de descuento no puede volverse positiva.
+    // El botón "+/-" del numpad (SWITCHSIGN, en modo precio) invierte el
+    // signo del precio; sobre la línea de descuento (precio negativo) la
+    // volvería positiva, convirtiéndola en un RECARGO sobre la factura.
+    // En reembolsos no aplica (ahí los signos ya van invertidos).
+    _isDiscountProductLine() {
+      const discountProductId = this.config?.discount_product_id?.id;
+      return !!discountProductId && this.product_id?.id === discountProductId;
+    },
+
     setUnitPrice(price) {
-      super.setUnitPrice(...arguments);
+      // Si el precio de la línea de descuento llega en positivo (por "+/-" o
+      // al teclear el monto en modo precio), se fuerza a negativo en vez de
+      // bloquear. Así el cajero SÍ puede cambiar el monto del descuento, pero
+      // nunca se convierte en recargo.
+      let unitPrice = price;
+      if (
+        this._isDiscountProductLine() &&
+        !this._isRefundLine() &&
+        Number(price) > 0
+      ) {
+        unitPrice = -Math.abs(Number(price));
+      }
+      super.setUnitPrice(unitPrice);
       const dp = this._foreignUnitPriceDp();
 
       if (this._is_order_in_foreign_currency()) {
