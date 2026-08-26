@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 17.0+e-20250522\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260702\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-08 16:19+0000\n"
-"PO-Revision-Date: 2025-11-08 16:19+0000\n"
+"POT-Creation-Date: 2026-08-22 04:22+0000\n"
+"PO-Revision-Date: 2026-08-22 04:22+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -18,7 +18,6 @@ msgstr ""
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#, python-format
 msgid "%s%s"
 msgstr ""
 
@@ -30,8 +29,6 @@ msgstr "'Etiqueta de Cajas- %s' % (object.name)"
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_product.py:0
-#: code:addons/l10n_ve_stock/models/product_product.py:0
-#, python-format
 msgid "- Barcode \"%s\" already assigned to product(s): %s"
 msgstr "- Còdigo de barras \"%s\" ya ha sido asignado al producto(s): %s"
 
@@ -75,37 +72,44 @@ msgstr ""
 "                                <strong>Cuando está desmarcado:</strong> Se filtrará la cantidad de productos ('Cantidad disponible') por ubicaciones padre e hijo que solo sean de tipo 'Stock'"
 
 #. module: l10n_ve_stock
-#. odoo-python
-#: code:addons/l10n_ve_stock/models/product_product.py:0
-#: code:addons/l10n_ve_stock/models/product_product.py:0
-#, python-format
-msgid "A packaging already uses the barcode"
-msgstr "Un empaque ya usa el código de barras"
-
-#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_needaction
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_needaction
 msgid "Action Needed"
 msgstr "Acción Necesaria"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__active
+msgid "Active"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_ids
 msgid "Activities"
 msgstr "Actividades"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_exception_decoration
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_exception_decoration
 msgid "Activity Exception Decoration"
 msgstr "Decoración de Excepción de Actividad"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_state
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_state
 msgid "Activity State"
 msgstr "Estado de la Actividad"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_type_icon
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_type_icon
 msgid "Activity Type Icon"
 msgstr "Tipo de Actividad Icono"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.actions.act_window,help:l10n_ve_stock.action_stock_picking_alter_location_view
+msgid "Add a Physical Location to the product."
+msgstr "Agregue una Ubicación Física al producto."
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
@@ -140,6 +144,16 @@ msgid "Allow to scrap more than available quantity in stock."
 msgstr "Permitir desechar más que la cantidad disponible en inventario."
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__allowed_from_location_ids
+msgid "Allowed From Location"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__allowed_to_location_ids
+msgid "Allowed To Location"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid ""
 "Allows to show the available quantity (Total minus reserved) in both product"
@@ -156,6 +170,16 @@ msgid "Alternate Code"
 msgstr "Còdigo Alterno"
 
 #. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_picking_alter_location_line
+msgid "Alternate Location Line"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_stock_picking_alter_location
+msgid "Alternate Locations"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_product_product__alternate_code
 #: model:ir.model.fields,help:l10n_ve_stock.field_product_template__alternate_code
 msgid "Alternate code for the product"
@@ -167,20 +191,19 @@ msgid "Artículo"
 msgstr ""
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__partner_id
-msgid "Assigned Customer"
-msgstr "Cliente"
-
-#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_attachment_count
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_attachment_count
 msgid "Attachment Count"
 msgstr "Nº de archivos adjuntos"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__available_qty
+msgid "Available Quantities"
+msgstr ""
+
+#. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_product.py:0
-#: code:addons/l10n_ve_stock/models/product_product.py:0
-#, python-format
 msgid ""
 "Barcode(s) already assigned:\n"
 "\n"
@@ -189,6 +212,11 @@ msgstr ""
 "Código de barra(s) ya ha sido asignado:\n"
 "\n"
 "%s"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_physical_location_edit
+msgid "Binaural - Editar Ubicaciones Físicas Alternas"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:res.groups,name:l10n_ve_stock.group_block_liters_per_unit
@@ -201,6 +229,17 @@ msgid ""
 "Block Type Inventory Transfers Expeditions (Do not add a new product to the "
 "Dispatch)"
 msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.move_alter_location_qtities_wizard_view_form
+msgid "Cancel"
+msgstr "Cancelar"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking_alter_location.py:0
+msgid "Change Quantities Between Locations"
+msgstr "Cambiar Cantidades Entre Ubicaciones"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__change_weight
@@ -221,6 +260,8 @@ msgstr "Empresas"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_category__company_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__company_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__company_id
 msgid "Company"
 msgstr "Compañía"
 
@@ -230,6 +271,11 @@ msgid "Config Settings"
 msgstr "Ajustes de configuración"
 
 #. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.move_alter_location_qtities_wizard_view_form
+msgid "Confirm"
+msgstr "Confirmar"
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Costo"
 msgstr ""
@@ -237,6 +283,20 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Costo Total"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__create_uid
+msgid "Created by"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__create_date
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__create_date
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__create_date
+msgid "Created on"
 msgstr ""
 
 #. module: l10n_ve_stock
@@ -264,14 +324,52 @@ msgid "Descripción"
 msgstr ""
 
 #. module: l10n_ve_stock
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
-msgid "Dispatch Guide"
-msgstr "Configuración de guía de despacho"
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__destination_physical_address
+msgid "Destination Address"
+msgstr "Dirección de Destino"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_warehouse__physical_address
+msgid ""
+"Detailed warehouse address (Street, Avenue, Industrial Zone, State, City, "
+"etc.)"
+msgstr ""
+"Dirección detallada del almacén (Calle, Avenida, Zona Industrial, Estado, "
+"Ciudad, etc.)"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_category__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_type__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quant__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_scrap__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_warehouse__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_stock_quantity_history_inherit_binaural_stock
 msgid "Download"
 msgstr "Descargar"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid ""
+"Enable alternate locations tracking and transfers between physical and "
+"alternate locations."
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__except_products_at_zero
@@ -285,36 +383,19 @@ msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_follower_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_follower_ids
 msgid "Followers"
 msgstr "Seguidores"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_partner_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_partner_ids
 msgid "Followers (Partners)"
 msgstr "Seguidores (Contactos)"
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__destination_physical_address
-msgid "Destination Address"
-msgstr "Dirección de Destino"
-
-#. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_warehouse__physical_address
-msgid "Physical Address"
-msgstr "Dirección Física"
-
-#. module: l10n_ve_stock
-#: model:ir.model.fields,help:l10n_ve_stock.field_stock_warehouse__physical_address
-msgid "Detailed warehouse address (Street, Avenue, Industrial Zone, State, City, etc.)"
-msgstr "Dirección detallada del almacén (Calle, Avenida, Zona Industrial, Estado, Ciudad, etc.)"
-
-#. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__source_physical_address
-msgid "Source Address"
-msgstr "Dirección de Origen"
-
-#. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_type_icon
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__activity_type_icon
 msgid "Font awesome icon e.g. fa-tasks"
 msgstr "Icono Font awesome, por ejemplo fa-tasks"
 
@@ -322,6 +403,11 @@ msgstr "Icono Font awesome, por ejemplo fa-tasks"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__free_qty
 msgid "Free To Use Quantity"
 msgstr "Cantidad de uso libre"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__from_location
+msgid "From"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__group_product_available_quantity_on_sale
@@ -335,6 +421,7 @@ msgstr "Grupo de Cantidad Disponible para Vender"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__has_message
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__has_message
 msgid "Has Message"
 msgstr "Tiene Mensaje"
 
@@ -375,6 +462,27 @@ msgid "Hide Validate Inventory Transfers Button"
 msgstr "Ocultar Botón Validar de las Transferencias de Inventario"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_category__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_type__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quant__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quantity_history__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_scrap__id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_warehouse__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking__type_delivery_step__in
 #: model:ir.model.fields.selection,name:l10n_ve_stock.selection__stock_picking_type__type_steps__in
 msgid "IN"
@@ -388,22 +496,27 @@ msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_exception_icon
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_exception_icon
 msgid "Icon"
 msgstr "Icono"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_exception_icon
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__activity_exception_icon
 msgid "Icon to indicate an exception activity."
 msgstr "Icono para indicar una actividad de excepción."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_needaction
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__message_needaction
 msgid "If checked, new messages require your attention."
 msgstr "Si está marcado hay nuevos mensajes que requieren su atención."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_has_error
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_has_sms_error
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__message_has_error
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__message_has_sms_error
 msgid "If checked, some messages have a delivery error."
 msgstr "Si se encuentra marcado, algunos mensajes tienen error de envío."
 
@@ -419,7 +532,6 @@ msgstr ""
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#, python-format
 msgid ""
 "Insufficient stock:\n"
 "%s\n"
@@ -430,13 +542,6 @@ msgstr ""
 "%s\n"
 "\n"
 "Ajuste las cantidades o solicite más stock para esta ubicación."
-
-#. module: l10n_ve_stock
-#. odoo-python
-#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
-#, python-format
-msgid "Internal Transfers"
-msgstr "Traslados internos"
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_location
@@ -450,6 +555,7 @@ msgstr "Inventario:"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_is_follower
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_is_follower
 msgid "Is Follower"
 msgstr "Es Seguidor"
 
@@ -457,6 +563,20 @@ msgstr "Es Seguidor"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_quant__is_physical_location
 msgid "Is Physical Location"
 msgstr "Es Ubicación Física"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__write_uid
+msgid "Last Updated by"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__write_date
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__write_date
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__write_date
+msgid "Last Updated on"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__limit_product_qty_out
@@ -475,10 +595,26 @@ msgid "Liters Per Unit"
 msgstr "Litros por unidad"
 
 #. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_form_view_from_binaural_stock
+msgid "Locations..."
+msgstr ""
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking.py:0
+msgid "Lot/Serial"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__main_warehouse_id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__main_warehouse_id
 msgid "Main Warehouse"
 msgstr "Almacén Principal"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__max_quantity
+msgid "Maximum Quantity"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
@@ -487,43 +623,59 @@ msgstr "Máxima cantidad de líneas de productos por guía de despacho."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_error
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_has_error
 msgid "Message Delivery error"
 msgstr "Error de Envío de Mensaje"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_ids
 msgid "Messages"
 msgstr "Mensajes"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__min_quantity
+msgid "Minimum Quantity"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.stock_picking_alter_location_view_form
+msgid "Move quantities between locations"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__my_activity_date_deadline
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__my_activity_date_deadline
 msgid "My Activity Deadline"
 msgstr "Mi fecha límite de actividad"
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_calendar_event_id
-msgid "Next Activity Calendar Event"
-msgstr "Próximo evento de calendario de actividad"
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking_alter_location_line.py:0
+msgid "New location '%(name)s' added with quantity: %(qty)s"
+msgstr "Nueva ubicación '%(name)s' agregada con cantidad: %(qty)s"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_date_deadline
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_date_deadline
 msgid "Next Activity Deadline"
 msgstr "Fecha límite para la próxima actividad"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_summary
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_summary
 msgid "Next Activity Summary"
 msgstr "Resumen de la siguiente actividad"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_type_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_type_id
 msgid "Next Activity Type"
 msgstr "Siguiente tipo de actividad"
 
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_scrap.py:0
-#, python-format
 msgid "No more than what is manufactured can be discarded in this operation."
 msgstr "En esta operación no se puede desechar más de lo fabricado."
 
@@ -551,21 +703,25 @@ msgstr "Nota"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_needaction_counter
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_needaction_counter
 msgid "Number of Actions"
 msgstr "Número de acciones"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_error_counter
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_has_error_counter
 msgid "Number of errors"
 msgstr "Número de errores"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_needaction_counter
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__message_needaction_counter
 msgid "Number of messages requiring action"
 msgstr "Número de mensajes que requieren una acción"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__message_has_error_counter
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__message_has_error_counter
 msgid "Number of messages with delivery error"
 msgstr "Número de mensajes con error de envío"
 
@@ -579,6 +735,12 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
 msgid "OUTS"
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__stock_alter_location_lines
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.stock_picking_alter_location_view_form
+msgid "Other Product Locations"
+msgstr "Otras Ubicaciones del Producto"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__outs_count
@@ -603,16 +765,14 @@ msgid "PICK"
 msgstr ""
 
 #. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.stock_picking_alter_location_view_tree
+msgid "PICK Locations"
+msgstr "Ubicaciones PICK"
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_picking_form
 msgid "PICKS"
 msgstr ""
-
-#. module: l10n_ve_stock
-#. odoo-python
-#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
-#, python-format
-msgid "Pack"
-msgstr "Empaquetar"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.packaging_picking_item
@@ -635,23 +795,31 @@ msgid "Packs Count"
 msgstr "Cantidad de Packs"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_warehouse__physical_address
+msgid "Physical Address"
+msgstr "Dirección Física"
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__physical_location_id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__physical_location_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__pick_location
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.stock_picking_alter_location_view_form
 msgid "Physical Location"
-msgstr "Ubicacion Física"
+msgstr "Ubicación Física"
 
 #. module: l10n_ve_stock
 #: model:ir.actions.act_window,name:l10n_ve_stock.action_stock_quant
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__physical_locations_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__physical_locations_ids
 #: model:ir.ui.menu,name:l10n_ve_stock.menu_stock_quant
+#: model:ir.ui.menu,name:l10n_ve_stock.stock_picking_alter_location_view_menu
 msgid "Physical Locations"
 msgstr "Ubicaciones Físicas"
 
 #. module: l10n_ve_stock
-#. odoo-python
-#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
-#, python-format
-msgid "Pick"
-msgstr "Elegir"
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__pick_quantity
+msgid "Physical Quantities"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking_type
@@ -688,8 +856,6 @@ msgstr "Precio sin impuestos"
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_template.py:0
-#: code:addons/l10n_ve_stock/models/product_template.py:0
-#, python-format
 msgid "Price cannot be negative or zero."
 msgstr "El precio no puede ser negativo o cero."
 
@@ -704,6 +870,7 @@ msgstr "Prioridad"
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_product_template
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__product_id
 msgid "Product"
 msgstr "Producto"
 
@@ -718,19 +885,34 @@ msgid "Product Category"
 msgstr "Categoría del producto"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__location_id
+msgid "Product Location"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_move_line
 msgid "Product Moves (Stock Move Line)"
 msgstr "Movimientos de producto (línea de movimiento de stock)"
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move_line__product_tag_ids
-msgid "Product Template Tags"
-msgstr "Etiquetas de Producto"
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__name
+msgid "Product Name"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.actions.act_window,name:l10n_ve_stock.action_stock_picking_alter_location_view
+msgid "Product Physical Locations"
+msgstr "Ubicaciones Físicas del Producto"
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_product_product
 msgid "Product Variant"
 msgstr "Variante del producto"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__transfer_quantity
+msgid "Quantities to Transfer"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__quantity
@@ -739,21 +921,31 @@ msgid "Quantity"
 msgstr "Cantidad"
 
 #. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking_alter_location_line.py:0
+msgid "Quantity in %s"
+msgstr "Cantidad en %s"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__total_quantity
+msgid "Quantity in Other Locations"
+msgstr ""
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking_alter_location_line.py:0
+msgid "Quantity updated"
+msgstr "Cantidad actualizada"
+
+#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quant
 msgid "Quants"
-msgstr "Cantidades"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "Rango:"
 msgstr ""
-
-#. module: l10n_ve_stock
-#. odoo-python
-#: code:addons/l10n_ve_stock/models/stock_warehouse.py:0
-#, python-format
-msgid "Receipts"
-msgstr "Recepciones"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__reception_date
@@ -762,11 +954,13 @@ msgstr "Fecha de Recepción"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__activity_user_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__activity_user_id
 msgid "Responsible User"
 msgstr "Usuario Responsable"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__message_has_sms_error
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__message_has_sms_error
 msgid "SMS Delivery error"
 msgstr "Error de entrega de SMS"
 
@@ -791,12 +985,24 @@ msgid "Show Location Available"
 msgstr "Otras Ubicaciones del Producto"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__show_physical_locations
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__show_physical_locations
+msgid "Show Physical Locations"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:res.groups,name:l10n_ve_stock.group_show_standard_price
 msgid "Show standard price on the product form view"
 msgstr "Mostrar costo en la vista del producto"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__source_physical_address
+msgid "Source Address"
+msgstr "Dirección de Origen"
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_state
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__activity_state
 msgid ""
 "Status based on activities\n"
 "Overdue: Due date is already passed\n"
@@ -814,6 +1020,12 @@ msgid "Stock"
 msgstr "Inventario"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__stock_alter_location_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__stock_alter_location_id
+msgid "Stock Alter Location"
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_move
 msgid "Stock Move"
 msgstr "Movimiento de stock"
@@ -821,12 +1033,22 @@ msgstr "Movimiento de stock"
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_quantity_history
 msgid "Stock Quantity History"
-msgstr "Historial de cantidad de existencias "
+msgstr "Historial de cantidad de existencias"
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid "Stock Settings"
 msgstr "Configuración de Inventario: General"
+
+#. module: l10n_ve_stock
+#: model:ir.actions.server,name:l10n_ve_stock.sync_physical_quantities
+msgid "Synchronize Quantities with Real Quants"
+msgstr "Sincronizar Cantidades con Quants Reales"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_move_line__product_tag_ids
+msgid "Tags"
+msgstr "Etiquetas de Producto"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_product_product__quantity
@@ -836,35 +1058,54 @@ msgstr "La Disponibilidad del Producto para la Venta."
 
 #. module: l10n_ve_stock
 #. odoo-python
-#: code:addons/l10n_ve_stock/models/product_template.py:0
-#: code:addons/l10n_ve_stock/models/product_template.py:0
-#, python-format
-msgid "The name contains a character that is not allowed for registration."
-msgstr ""
-"El nombre contiene al menos un carácter que no está permitido para el "
-"registro"
-
-#. module: l10n_ve_stock
-#. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_location.py:0
-#: code:addons/l10n_ve_stock/models/stock_location.py:0
-#, python-format
 msgid "The priority must be greater than 0."
 msgstr "La prioridad debe ser mayor que 0."
 
 #. module: l10n_ve_stock
-#: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__partner_id
-msgid "This location is assigned to a specific customer for consignation."
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking_alter_location.py:0
+#: code:addons/l10n_ve_stock/wizard/move_alter_location_qtities.py:0
+msgid ""
+"The resulting quantity (%(qty)s) exceeds the maximum allowed quantity in the"
+" Physical Location (%(maximum)s)."
 msgstr ""
-"Esta ubicación está asignada a un cliente específico para consignación."
+"La cantidad resultante (%(qty)s) excede la cantidad máxima permitida en la"
+" Ubicación Física (%(maximum)s)."
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking_alter_location.py:0
+#: code:addons/l10n_ve_stock/wizard/move_alter_location_qtities.py:0
+msgid ""
+"The resulting quantity (%(qty)s) would fall below the minimum required "
+"quantity in the Physical Location (%(minimum)s)."
+msgstr ""
+"La cantidad resultante (%(qty)s) caería por debajo de la cantidad mínima "
+"requerida en la Ubicación Física (%(minimum)s)."
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking_alter_location.py:0
+#: code:addons/l10n_ve_stock/wizard/move_alter_location_qtities.py:0
+msgid "There is no stock in the source location."
+msgstr "No hay stock en la ubicación de origen."
 
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_template.py:0
-#: code:addons/l10n_ve_stock/models/product_template.py:0
-#, python-format
 msgid "This product must have only one tax."
 msgstr "Este producto debe tener solo un impuesto."
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__to_location
+msgid "To"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__total_alter_quantity
+msgid "Total in Alter Locations"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
@@ -874,7 +1115,7 @@ msgstr ""
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking
 msgid "Transfer"
-msgstr "Transferencia"
+msgstr "Transferir"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__type_delivery_step
@@ -888,6 +1129,7 @@ msgstr "Operación"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__activity_exception_decoration
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__activity_exception_decoration
 msgid "Type of the exception activity on record."
 msgstr "Tipo de actividad excepcional registrada"
 
@@ -904,6 +1146,12 @@ msgid ""
 msgstr ""
 "Al confirmar esta operación, se generará automáticamente el número de "
 "secuencia de la guía de despacho correspondiente"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__use_alternate_locations
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__use_alternate_locations
+msgid "Use Alternate Locations"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__use_free_qty_odoo
@@ -935,6 +1183,7 @@ msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_warehouse
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__warehouse_id
 msgid "Warehouse"
 msgstr "Almacén"
 
@@ -945,52 +1194,48 @@ msgstr "Buscar en Almacen"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_location__website_message_ids
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__website_message_ids
 msgid "Website Messages"
 msgstr "Mensajes del sitio web"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,help:l10n_ve_stock.field_stock_location__website_message_ids
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking_alter_location__website_message_ids
 msgid "Website communication history"
 msgstr "Historial de comunicación de la web"
 
 #. module: l10n_ve_stock
+#: model:ir.model,name:l10n_ve_stock.model_move_alter_location_qtities_wizard
+msgid "Wizard to move physical quantities to other product locations."
+msgstr ""
+
+#. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_product.py:0
-#: code:addons/l10n_ve_stock/models/product_product.py:0
-#, python-format
 msgid "You can't create products"
 msgstr "No puedes crear productos"
 
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#, python-format
 msgid "You cannot add products to shipment-type transfers"
 msgstr "No puedes agregar productos a transferencias de tipo envío"
 
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#, python-format
 msgid "You cannot make transfers larger than the demand"
 msgstr "No puedes hacer transferencias mayores que la demanda"
 
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#, python-format
 msgid "You cannot make transfers larger than the reserved quantity"
 msgstr "No puedes hacer transferencias mayores que la cantidad reservada"
 
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_scrap.py:0
-#, python-format
 msgid ""
 "You cannot scrap more than the available product quantity in this location."
 msgstr ""
@@ -1000,15 +1245,19 @@ msgstr ""
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_quant.py:0
-#, python-format
 msgid "You cannot set the physical quantity of '%s' to a negative value."
 msgstr "No puedes ajustar la cantidad física de '%s' a un valor negativo."
 
 #. module: l10n_ve_stock
 #. odoo-python
+#: code:addons/l10n_ve_stock/models/stock_picking_alter_location.py:0
+#: code:addons/l10n_ve_stock/wizard/move_alter_location_qtities.py:0
+msgid "You cannot transfer more than the available quantity in the location."
+msgstr "No puede transferir más que la cantidad disponible en la ubicación."
+
+#. module: l10n_ve_stock
+#. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#, python-format
 msgid "You do not have permission to make shipment-type transfers"
 msgstr "No tienes permiso para hacer transferencias de tipo envío"
 
@@ -1020,10 +1269,13 @@ msgstr "plantilla de producto de cantidad de corrección"
 #. module: l10n_ve_stock
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#: code:addons/l10n_ve_stock/models/stock_picking.py:0
-#, python-format
 msgid "does not have results from other pickings"
 msgstr "No tiene resultados de otros pickings"
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.view_warehouse_inherit_l10n_ve_stock
+msgid "e.g. Av. Principal, Zona Industrial, Caracas"
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.actions.report,name:l10n_ve_stock.inventory_valuation_report

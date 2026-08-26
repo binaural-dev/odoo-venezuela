@@ -29,6 +29,63 @@ import { parseFloat as parseFloatLocale } from "@web/views/fields/parsers";
 // -----------------------------------------------------------------------------
 
 patch(PosOrderline.prototype, {
+    // -------------------------------------------------------------------------
+    // Descuento mostrado sobre la BASE IMPONIBLE (sin IVA).
+    //
+    // El descuento (global o de línea) YA se calcula sobre la base imponible:
+    // la línea de descuento se crea con `price_unit` = base descontada y su
+    // impuesto asociado, de modo que el motor reduce base e IVA por separado
+    // (la base baja `%`, el IVA recalcula sobre la base menor). Eso es lo que
+    // espera la máquina fiscal.
+    //
+    // Sin embargo, con la caja configurada en "impuestos incluidos"
+    // (`iface_tax_included === "total"`), el core pinta CADA línea con IVA,
+    // incluida la de descuento → el cajero ve el descuento + su IVA
+    // (p. ej. 1,08 en vez de 1,00). Aquí forzamos que SOLO la línea de
+    // descuento se muestre por su monto sin IVA (la base real descontada),
+    // dejando intacto el resto del carrito y el dato subyacente de la línea
+    // (sigue con su IVA, así base y total se calculan bien).
+    // -------------------------------------------------------------------------
+
+    get _isVeDiscountLine() {
+        const discountProductId = this.config?.discount_product_id?.id;
+        return !!discountProductId && this.product_id?.id === discountProductId;
+    },
+
+    get displayPrice() {
+        if (this._isVeDiscountLine) {
+            return this.currency.round(this.priceExcl);
+        }
+        return super.displayPrice;
+    },
+
+    get displayPriceUnit() {
+        if (this._isVeDiscountLine) {
+            return this.currency.round(this.displayPriceUnitExcl);
+        }
+        return super.displayPriceUnit;
+    },
+
+    // Referencia del descuento POR LÍNEA ("X% discount off on Y"): debe
+    // mostrarse sobre la BASE IMPONIBLE (sin IVA), aunque la caja esté en
+    // impuestos incluidos. Ej.: producto base 10.000 + IVA 31% = 13.100 con
+    // 10% de descuento → "10% off on 10.000" (no sobre 13.100). Solo afecta
+    // esa referencia visual (getter de display; no entra en cálculos) y solo
+    // cuando la línea tiene descuento.
+    get displayPriceNoDiscount() {
+        const hasDiscount = Number(this.discount || 0) > 0;
+        if (!hasDiscount) {
+            return super.displayPriceNoDiscount;
+        }
+        if (!this.combo_line_ids.length) {
+            return this.priceExclNoDiscount;
+        }
+        return this.combo_line_ids.reduce(
+            (total, cl) => total + cl.priceExclNoDiscount,
+            0
+        );
+    },
+
     _is_order_in_foreign_currency() {
       const foreignCurrency = this.get_foreign_currency?.();
       const orderCurrencyId = this.order_id?.currency?.id ?? this.order_id?.currency;
@@ -169,6 +226,16 @@ patch(PosOrderline.prototype, {
 
     get_foreign_price_with_tax() {
       return this._conv(this.priceIncl);
+    },
+
+    // Monto en divisa mostrado por línea. La línea de descuento se muestra
+    // sin IVA (base real descontada), igual que en moneda local; el resto
+    // conserva el comportamiento previo (con IVA). Ver displayPrice arriba.
+    get_foreign_display_price() {
+      if (this._isVeDiscountLine) {
+        return this.get_foreign_price_without_tax();
+      }
+      return this.get_foreign_price_with_tax();
     },
 
     get_foreign_total_tax() {

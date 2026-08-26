@@ -3,11 +3,12 @@
     "summary": """
         Inventario para la localización en Venezuela
     """,
+    "description": "Binaural Inventario",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock",
-    "version": "19.0.1.0.6",
+    "version": "19.0.1.0.7",
     "depends": [
         "stock",
         "product",
@@ -15,9 +16,9 @@
         "stock_delivery",
     ],
     "data": [
+        "security/l10n_ve_stock_groups.xml",
         "security/ir.model.access.csv",
         "security/security_l10n_ve_stock.xml",
-        "security/l10n_ve_stock_groups.xml",
         "data/inventory_valuation_paperformat.xml",
         "data/ir_actions_server.xml",
         "report/packaging_picking_template.xml",
@@ -30,7 +31,10 @@
         "views/stock_picking_views.xml",
         "views/stock_location_views.xml",
         "views/stock_warehouse_views.xml",
+        "views/stock_picking_alter_location_line_views.xml",
+        "views/stock_picking_alter_location_views.xml",
         "wizard/stock_quantity_history.xml",
+        "wizard/move_alter_location_qtities.xml",
     ],
     "application": True,
     "pre_init_hook": "pre_init_hook",
