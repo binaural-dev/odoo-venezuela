@@ -1174,6 +1174,69 @@ class TestExchangeNoteReversal(TransactionCase):
         with self.assertRaises(UserError):
             payment_wizard.action_create_payments()
 
+    def test_payment_side_counterpart_is_always_same_account_as_invoice_receivable(self):
+        """Documenta por qué el filtro `account_type == 'asset_receivable'`
+        sobre `payment_lines` (línea 50-52 de `reconcile()`) NUNCA puede
+        vaciarse cuando `invoice_lines` no está vacío -- no es una
+        suposición, es una garantía que impone el propio `reconcile()`
+        NATIVO de Odoo, verificada acá construyendo el escenario que en
+        teoría lo rompería: una línea de factura (`asset_receivable`)
+        conciliada DIRECTO contra una línea en una cuenta DISTINTA
+        (`liability_current`, ej. una cuenta de anticipo, sin pasar por
+        el asiento puente `asset_receivable` que usa el mecanismo real
+        de anticipos de `l10n_ve_igtf` -- ver
+        `test_advance_payment_applied_to_two_invoices_each_gets_correct_note`).
+
+        El propio núcleo de Odoo (`account/models/account_move_line.py`,
+        `reconcile()`) EXIGE que todas las líneas a conciliar compartan
+        la MISMA `account_id` -- lanza `UserError` ("Entries are not
+        from the same account") antes de cualquier otra lógica, sin
+        importar el `account_type`. Como `account_type` es una
+        propiedad de la CUENTA (no de la línea), si `invoice_lines` ya
+        es `asset_receivable`, cualquier otra línea que sobreviva ese
+        chequeo del núcleo está forzosamente en ESA MISMA cuenta -- por
+        lo tanto también `asset_receivable`. El filtro de `payment_lines`
+        es, en este punto exacto del flujo, tautológicamente imposible
+        de vaciar."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        liability_account = self.env["account.account"].search(
+            [
+                *self.env["account.account"]._check_company_domain(self.company),
+                ("account_type", "=", "liability_current"),
+            ],
+            limit=1,
+        )
+        income = self.env["account.account"].search(
+            [*self.env["account.account"]._check_company_domain(self.company), ("account_type", "=", "income")],
+            limit=1,
+        )
+        counterpart_entry = self.env["account.move"].create({
+            "move_type": "entry",
+            "journal_id": self.sale_journal.id,
+            "date": "2026-08-01",
+            "line_ids": [
+                (0, 0, {
+                    "account_id": liability_account.id, "partner_id": self.partner.id,
+                    "currency_id": self.usd.id, "amount_currency": -100.0,
+                    "debit": 0.0, "credit": self.rate_payment_date * 100.0,
+                }),
+                (0, 0, {
+                    "account_id": income.id, "partner_id": self.partner.id,
+                    "debit": self.rate_payment_date * 100.0, "credit": 0.0,
+                }),
+            ],
+        })
+        counterpart_entry.action_post()
+        counterpart_line = counterpart_entry.line_ids.filtered(
+            lambda l: l.account_id == liability_account
+        )
+
+        with self.assertRaises(UserError):
+            (inv_line + counterpart_line).reconcile()
+
     def test_note_without_receivable_line_raises_instead_of_silently_orphaning(self):
         """Defensa en profundidad en `_create_exchange_difference_note`
         (`account_move_line.py`): si la nota recién creada/posteada NO
