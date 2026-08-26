@@ -396,7 +396,7 @@ class AccountMoveLine(models.Model):
             'product_id': product.id,
             'quantity': 1.0,
             'price_unit': abs(residual),
-            'tax_ids': [(6, 0, product.taxes_id.ids)],
+            'tax_ids': [Command.set(product.taxes_id.ids)],
             'name': _(
                 'Exchange difference (%(concept)s) on %(invoice)s',
                 concept=_('loss') if is_credit_note else _('gain'),
@@ -431,7 +431,7 @@ class AccountMoveLine(models.Model):
                     'journal_id': debit_journal.id,
                     'debit_origin_id': invoice.id,
                     'invoice_origin': invoice.name,
-                    'invoice_line_ids': [(0, 0, line_vals)],
+                    'invoice_line_ids': [Command.create(line_vals)],
                     'l10n_ve_exchange_diff_entry': True,
                     'l10n_ve_exchange_is_credit_note': False,
                     'l10n_ve_exchange_invoice_id': invoice.id,
@@ -459,7 +459,7 @@ class AccountMoveLine(models.Model):
                     'journal_id': invoice.journal_id.id,
                     'reversed_entry_id': invoice.id,
                     'invoice_origin': invoice.name,
-                    'invoice_line_ids': [(0, 0, line_vals)],
+                    'invoice_line_ids': [Command.create(line_vals)],
                     'l10n_ve_exchange_diff_entry': True,
                     'l10n_ve_exchange_is_credit_note': True,
                     'l10n_ve_exchange_invoice_id': invoice.id,
@@ -471,6 +471,22 @@ class AccountMoveLine(models.Model):
                 ).action_post()
 
         note_line = note.line_ids.filtered(lambda l: l.account_type == 'asset_receivable')
+        if not note_line:
+            # Defensa en profundidad: nunca debería pasar (la nota es
+            # `out_invoice`/`out_refund` con una línea de producto, Odoo
+            # siempre agrega la línea `asset_receivable` automáticamente
+            # al postear), pero si alguna vez ocurriera, un `.write()`
+            # sobre un recordset vacío no haría NADA ni lanzaría error --
+            # la nota quedaría posteada (correlativo fiscal ya consumido)
+            # pero SIN conciliar contra `self`, dejando el residual
+            # cambiario abierto sin ningún aviso. Falla ruidoso en vez de
+            # silencioso.
+            raise UserError(_(
+                "Could not find the receivable line on the newly created "
+                "exchange difference note '%(note)s' -- this should never "
+                "happen for a posted customer invoice/note.",
+                note=note.display_name,
+            ))
         # `no_exchange_difference=True` -- SAME context key Odoo's own
         # `_reconcile_plan` uses to close its own generic exchange-diff
         # entry (`account_move_line.py`, core: `self.env['account.move']

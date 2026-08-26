@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import Form, tagged
@@ -1171,6 +1173,46 @@ class TestExchangeNoteReversal(TransactionCase):
         # desde `action_create_payments()`, no en un `flush()` posterior.
         with self.assertRaises(UserError):
             payment_wizard.action_create_payments()
+
+    def test_note_without_receivable_line_raises_instead_of_silently_orphaning(self):
+        """Defensa en profundidad en `_create_exchange_difference_note`
+        (`account_move_line.py`): si la nota recién creada/posteada NO
+        tuviera línea `asset_receivable` (nunca debería pasar para un
+        `out_invoice`/`out_refund` con línea de producto -- Odoo siempre
+        la agrega al postear), un `.write()` sobre un recordset VACÍO no
+        haría nada ni lanzaría error: la nota quedaría posteada
+        (correlativo fiscal ya consumido) pero sin conciliar contra la
+        factura/pago, con el residual cambiario abierto y sin ningún
+        aviso. Se simula ese estado imposible parcheando `filtered` para
+        que devuelva vacío SOLO para el filtro de `account_type ==
+        'asset_receivable'` sobre la nota recién creada -- confirma que
+        el guard nuevo lanza `UserError` en vez de dejar la nota huérfana
+        en silencio."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        AccountMoveLine = type(self.env["account.move.line"])
+        original_filtered = AccountMoveLine.filtered
+
+        def fake_filtered(self_lines, func):
+            result = original_filtered(self_lines, func)
+            if (
+                result
+                and all(l.move_id.l10n_ve_exchange_diff_entry for l in result)
+                and all(l.account_type == "asset_receivable" for l in result)
+            ):
+                return self.env["account.move.line"]
+            return result
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+
+        with patch.object(AccountMoveLine, "filtered", fake_filtered):
+            with self.assertRaises(UserError):
+                payment_wizard.action_create_payments()
 
     def _create_note_product(self, name, **overrides):
         """Crea un producto con la MISMA configuración base válida que

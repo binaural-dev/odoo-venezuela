@@ -30,16 +30,34 @@ class IGTFTestCommon(TransactionCase):
         })
 
         self.rate = 390.2944  # 1 USD = 201.47bs
+        # `rate` explícito en AMBAS entradas -- no basta con `company_rate`/
+        # `inverse_company_rate` solos: `res.currency.rate._sanitize_vals()`
+        # (núcleo, `base/models/res_currency.py`) descarta
+        # `inverse_company_rate` en cuanto también viene `company_rate`, y
+        # el `inverse` de `company_rate` (`_inverse_company_rate`) calcula
+        # `rate = company_rate * last_rate[company]` usando la tasa más
+        # reciente YA CREADA como referencia -- si la tasa de HOY se crea
+        # primero en este mismo `write()` (índice 0 de la lista), la de
+        # AYER (índice 1, sin `rate` propio) terminaba componiendo
+        # `(1/380) * (1/390.2944)` en vez de `1/380` -- confirmado
+        # empíricamente: sin este fix, `res.currency.rate` para "ayer"
+        # quedaba con `company_rate=6.74e-06` (inverso de 380*390.2944 =
+        # 148311.872) en vez de `1/380 = 0.00263`, inflando cualquier
+        # factura/nota fechada "ayer" en esta magnitud. Mismo patrón ya
+        # usado (sin este bug) en la entrada de "hoy": fijar `rate`
+        # directo deja `company_rate` sin efecto (se descarta en
+        # `_sanitize_vals`), así que no hace falta calcularlo aparte.
         self.currency_usd.write({
             'rate_ids': [
                 Command.create({
-                    'company_rate': 1 / self.rate,  
-                    'rate': 1 / self.rate,  
+                    'company_rate': 1 / self.rate,
+                    'rate': 1 / self.rate,
                     'inverse_company_rate': self.rate,
                     'name': fields.Date.today(),
                 }),
                 Command.create({
-                    'company_rate': 1 / 380.0000,  
+                    'company_rate': 1 / 380.0000,
+                    'rate': 1 / 380.0000,
                     'inverse_company_rate': 380.0000,
                     'name': fields.Date.subtract(fields.Date.today(), days=1),
                 })

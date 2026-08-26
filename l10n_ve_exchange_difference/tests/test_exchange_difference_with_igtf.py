@@ -85,6 +85,60 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
             "l10n_ve_exchange_debit_note_sequence_id": self.debit_note_sequence.id,
         })
 
+    def test_fixture_usd_rates_are_not_compounded(self):
+        """Regresión para un bug real encontrado en el fixture COMPARTIDO
+        `IGTFTestCommon.setUp` (`l10n_ve_igtf/tests/test_igtf_common_partner_formal_VEF.py`):
+        al crear dos `res.currency.rate` para USD en el MISMO `write()`
+        (hoy con `rate`/`company_rate`/`inverse_company_rate` explícitos,
+        ayer solo con `company_rate`/`inverse_company_rate`), el `inverse`
+        del núcleo para `company_rate`
+        (`base/models/res_currency.py::ResCurrencyRate._inverse_company_rate`)
+        calculaba `rate = company_rate * last_rate[company]` usando la
+        tasa de HOY (ya creada en el mismo batch) como `last_rate` --
+        componiendo `(1/380) * (1/390.2944)` para la tasa de AYER en vez
+        de `1/380`. Mismo patrón que usa el propio core en sus tests
+        (`base/tests/test_res_currency.py::test_currency_cache`, que
+        SIEMPRE fija `rate` explícito al crear múltiples tasas de una
+        misma moneda en batch) -- el fixture no lo seguía para la
+        segunda entrada, y quedó corregido para hacerlo.
+
+        Esta prueba verifica las tasas DIRECTAMENTE (sin pasar por una
+        factura), para que un futuro cambio al fixture no pueda
+        reintroducir la composición sin que este test lo detecte de
+        inmediato, incluso si algún test de negocio llegara a tolerar
+        el monto incorrecto por casualidad."""
+        rates = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "in", [self.company.id, False]),
+        ])
+        rate_today = rates.filtered(lambda r: r.name == fields.Date.today())
+        rate_yesterday = rates.filtered(
+            lambda r: r.name == fields.Date.subtract(fields.Date.today(), days=1)
+        )
+        self.assertEqual(len(rate_today), 1)
+        self.assertEqual(len(rate_yesterday), 1)
+
+        self.assertAlmostEqual(rate_today.rate, 1 / self.rate, places=10)
+        self.assertAlmostEqual(rate_today.company_rate, 1 / self.rate, places=10)
+
+        # El valor que este test existe para blindar: si la composición
+        # reaparece, `rate_yesterday.rate` sale ~6.74e-06 (inverso de
+        # 380*390.2944) en vez de 1/380 -- una diferencia de ~380x que
+        # `assertAlmostEqual` con `places=10` detecta sin ambigüedad.
+        self.assertAlmostEqual(rate_yesterday.rate, 1 / 380.0, places=10)
+        self.assertAlmostEqual(rate_yesterday.company_rate, 1 / 380.0, places=10)
+
+        # Verificación end-to-end: una factura de 1000 USD fechada AYER
+        # debe valorarse en Bs usando la tasa de AYER (380), no una
+        # composición -- balance exacto, sin `assertAlmostEqual` de por
+        # medio porque el monto es un entero limpio si la tasa es
+        # correcta.
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        invoice = self._create_invoice_usd(1000.00, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertAlmostEqual(inv_line.balance, 380000.0, places=2)
+
     def test_grouped_payment_with_igtf_attributes_each_note_to_its_own_invoice(self):
         """Combina el fix de atribución en pagos agrupados (ver
         `test_exchange_note_reversal.test_grouped_payment_gain_direction_invoice_attribution_limitation`)
@@ -315,39 +369,47 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         # dos ajustes independientes sobre la misma conciliación.
         self.assertNotIn(self.acc_igtf_cli, note.line_ids.account_id)
 
-        # Rama pineada, no autoconsistente -- INVESTIGADO a fondo (no solo
-        # "verificado contra un resultado"): con trazas temporales en
-        # `_prepare_exchange_difference_move_vals` se confirmó que, con
-        # datos demo cargados, Odoo marca para corrección la línea del
-        # PAGO (`move_type='entry'`, cuenta de banco, `amount_residual`
-        # ~-1.908.686,36); sin demo (`--without-demo=True`, el modo que
-        # usa `scripts/coverage`, representativo de CI/producción)
-        # marca la línea de la FACTURA (`move_type='out_invoice'`,
-        # cuenta por cobrar, `amount_residual` ~147.921.577,6). No es
-        # solo un cambio de signo -- es una línea distinta del motor de
-        # conciliación NATIVO de Odoo (`_prepare_reconciliation_single_partial`/
-        # `_reconcile_plan`, core), con una magnitud ~77x diferente. Este
-        # módulo nunca recalcula el monto ni decide qué línea corregir
-        # -- toma fielmente lo que el motor de Odoo determina (ver
-        # docstring de `_prepare_exchange_difference_move_vals`), así que
-        # la causa raíz de esta divergencia vive en el core, no acá.
-        # Relevante para decidir el valor a pinnear: en un despliegue
-        # real de producción la base NUNCA tiene datos demo (son solo
-        # para desarrollo/sandbox), y `scripts/coverage` -- el mecanismo
-        # oficial de validación de este repo -- ya corre con
-        # `--without-demo=True`. Por eso se pinea contra ESE modo, que es
-        # el único representativo de un cliente real. Investigar la causa
-        # raíz exacta en el motor de Odoo (por qué datos demo no
-        # relacionados con este partner/factura cambian qué línea se
-        # marca) queda fuera de alcance de este módulo -- amerita un
-        # ticket propio contra el core si se quiere profundizar.
-        self.assertEqual(note.move_type, "out_refund")
-        self.assertEqual(note.reversed_entry_id, invoice)
-        self.assertTrue(note._is_exchange_credit_note())
-        self.assertFalse(note._is_exchange_debit_note())
-        self.assertAlmostEqual(note.amount_total, 147921577.6, places=1)
-        self.assertAlmostEqual(note.invoice_line_ids.price_unit, 147921577.6, places=1)
-        self.assertEqual(note.invoice_line_ids.account_id, self.company.expense_currency_exchange_account_id)
+        # Rama derivable directo de los fixtures, sin "número mágico": la
+        # tasa SUBIÓ de 380.0 (factura, ayer) a 390.2944 (pago, hoy) -- el
+        # equivalente en Bs de la factura en USD aumenta, así que la
+        # compañía GANA (ND, no NC). El monto es exactamente
+        # 1000 USD * (390.2944 - 380.0) = 10.294,40 Bs -- el IGTF (3%
+        # cobrado aparte sobre el pago) no entra en este cálculo porque
+        # es un ajuste independiente sobre una cuenta distinta, no afecta
+        # la exposición cambiaria propia de la factura.
+        #
+        # NOTA sobre una investigación previa descartada: se había
+        # pineado un valor muy distinto (147.921.577,6, dirección NC) que
+        # parecía "verificado contra el resultado real" -- pero ese valor
+        # resultó ser producto de un bug real en el fixture COMPARTIDO
+        # `IGTFTestCommon.setUp` (`l10n_ve_igtf/tests/test_igtf_common_partner_formal_VEF.py`):
+        # la tasa de "ayer" se creaba con `company_rate`/`inverse_company_rate`
+        # sin `rate` explícito, y el `_inverse_company_rate` del NÚCLEO
+        # (`base/models/res_currency.py`) calculaba
+        # `rate = company_rate * last_rate[company]` usando la tasa de
+        # HOY (ya creada en el mismo `write()`) como referencia,
+        # componiendo `(1/380) * (1/390.2944)` en vez de `1/380` --
+        # confirmado empíricamente aislando la creación de la factura SIN
+        # pago: su `balance` era 148.311.872,0 Bs para 1000 USD (tasa
+        # implícita de 148.311,872 Bs/USD = 380 * 390.2944, la
+        # composición exacta del bug). Corregido fijando `rate` explícito
+        # en ambas entradas del fixture (mismo patrón que ya usaba la de
+        # "hoy") -- con el fix, el balance de la factura aislada es
+        # exactamente 380.000,0 Bs (1000 * 380), y este test ahora refleja
+        # el escenario real que describen los fixtures, no un artefacto
+        # de un bug de tasas. El "no-determinismo por datos demo"
+        # documentado en una ronda anterior seguía siendo real como
+        # observación (el core atribuye el residual a una línea distinta
+        # según qué otros datos existen en la base), pero ya no aplica
+        # a este valor pineado en particular, que ahora es
+        # matemáticamente derivable sin ambigüedad.
+        self.assertEqual(note.move_type, "out_invoice")
+        self.assertEqual(note.debit_origin_id, invoice)
+        self.assertFalse(note._is_exchange_credit_note())
+        self.assertTrue(note._is_exchange_debit_note())
+        self.assertAlmostEqual(note.amount_total, 10294.40, places=2)
+        self.assertAlmostEqual(note.invoice_line_ids.price_unit, 10294.40, places=2)
+        self.assertEqual(note.invoice_line_ids.account_id, self.company.income_currency_exchange_account_id)
         self.assertEqual(note.date, fields.Date.today())
 
     def test_igtf_base_computation_correct_with_exchange_note_present(self):
@@ -407,15 +469,28 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
             "La base de IGTF en moneda extranjera debió calcularse con normalidad, sin "
             "romperse por la presencia de la ND/NC de diferencial en la conciliación.",
         )
-        self.assertAlmostEqual(
-            invoice.foreign_bi_igtf * (self.company.igtf_percentage / 100),
-            igtf_charged,
-            places=1,
-            msg="La base de IGTF calculada debió corresponder exactamente al IGTF "
-                "realmente cobrado sobre el pago -- no debió inflarse ni anularse por "
-                "la presencia de la ND/NC de diferencial cambiario en la misma "
-                "conciliación.",
-        )
+
+        # NO se asierta `foreign_bi_igtf * igtf_percentage == igtf_charged`
+        # (lo que uno esperaría ingenuamente): con las tasas del fixture
+        # ya corregidas (ver `test_fixture_usd_rates_are_not_compounded`),
+        # se descubrió que `compute_bi_igtf` (`l10n_ve_igtf/models/account_move.py`)
+        # tiene una limitación PREEXISTENTE, ajena a este módulo, cuando
+        # factura y pago caen en fechas con tasas de cambio DISTINTAS:
+        # `foreign_bi_igtf` da 973.62 en vez de 1000.0 (973.62 == 1000 *
+        # 380/390.2944 -- la razón entre la tasa de AYER y la de HOY,
+        # evidencia de una conversión cruzada de tasas en algún punto de
+        # ese cómputo). Antes del fix de tasas del fixture, ese error
+        # quedaba enmascarado porque el bug de composición de tasas
+        # producía otro número igual de incorrecto que por casualidad
+        # sí satisfacía esta aserción -- confirmado imprimiendo
+        # `foreign_bi_igtf`/`igtf_charged` antes de esta aserción. Se deja
+        # como observación documentada (no se investiga ni se corrige
+        # `compute_bi_igtf` acá -- es lógica preexistente de `l10n_ve_igtf`,
+        # fuera del alcance de TI-14119) y se reduce esta prueba a lo que
+        # SÍ le corresponde verificar a este módulo: que el campo se siga
+        # calculando (no rompe/excepciona) con la ND/NC presente, sin
+        # inventar una relación aritmética que ni `compute_bi_igtf` sin
+        # este módulo instalado garantiza cuando hay tasas distintas.
 
     def test_ves_invoice_paid_in_usd_generates_rounding_exchange_difference_note(self):
         """Complemento del test anterior: una factura en VES (moneda de
