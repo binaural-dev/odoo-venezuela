@@ -254,8 +254,9 @@ class TestExchangeNoteReversal(TransactionCase):
         )
 
         # Verificar parámetros exactos
+        # NOTA: inspect.signature() NO incluye 'self' en métodos de instancia
         sig = inspect.signature(method)
-        expected_params = {'self', 'debit_values', 'credit_values', 'shadowed_aml_values'}
+        expected_params = {'debit_values', 'credit_values', 'shadowed_aml_values'}
         actual_params = set(sig.parameters.keys())
         self.assertEqual(expected_params, actual_params,
             f"_prepare_reconciliation_single_partial signature changed. "
