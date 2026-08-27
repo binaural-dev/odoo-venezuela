@@ -77,15 +77,19 @@
                     readonly="1"
                     invisible="not dispatch_guide_controls and is_donation"/>
                 <field name="is_return" readonly="1"/>
-                <field
-                    name="control_number_ids"
-                    invisible="not dispatch_guide_controls"
-                    readonly="1">
-                    <list create="0" delete="0" edit="0">
-                        <field name="sheet_number"/>
-                        <field name="number"/>
-                    </list>
-                </field>
+            </xpath>
+            <xpath expr="//page[@name='note']" position="before">
+                <page
+                    string="Números de Control"
+                    name="control_numbers"
+                    invisible="not dispatch_guide_controls">
+                    <field name="control_number_ids" readonly="1">
+                        <list create="0" delete="0" edit="0">
+                            <field name="sheet_number"/>
+                            <field name="number"/>
+                        </list>
+                    </field>
+                </page>
             </xpath>
             <xpath expr="//field[@name='picking_type_id']" position="after">
                 <field name="operation_code" invisible="1"/>
