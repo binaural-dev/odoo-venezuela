@@ -878,7 +878,9 @@ class AccountMove(models.Model):
         for move in self:
             move.foreign_taxable_income = False
             if move.is_invoice() and move.invoice_line_ids:
-                move.foreign_taxable_income = move.tax_totals["base_amount_foreign_currency"]
+                move.foreign_taxable_income = move.tax_totals.get(
+                    "base_amount_foreign_currency", 0
+                )
 
     @api.depends("tax_totals", "currency_id", "invoice_date", "amount_total")
     def _compute_foreign_total_billed(self):
@@ -890,22 +892,15 @@ class AccountMove(models.Model):
                 and move.tax_totals
             ):
                 continue
-            fc = move.company_id.foreign_currency_id
-            if (
-                move.currency_id
-                and move.currency_id != move.company_id.currency_id
-                and move.currency_id != fc
-            ):
-                move.foreign_total_billed = move.currency_id._convert(
-                    move.amount_total,
-                    fc,
-                    move.company_id,
-                    move.invoice_date or fields.Date.today(),
-                )
-            else:
-                move.foreign_total_billed = move.tax_totals.get(
-                    "total_amount_foreign_currency", 0
-                )
+            # Una sola via de conversion: tax_totals ya trae el total en
+            # moneda alterna, tambien cuando el documento esta en una tercera
+            # moneda, porque total_amount_foreign_currency se arma desde el
+            # foreign_price de cada linea. Convertir aparte con _convert()
+            # daria un valor que no cuadra con la suma de los foreign_subtotal
+            # de las lineas.
+            move.foreign_total_billed = move.tax_totals.get(
+                "total_amount_foreign_currency", 0
+            )
 
     #override of base 
     @api.depends(
