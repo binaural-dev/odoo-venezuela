@@ -14,7 +14,7 @@ class TestAccountRetentionAlertWizard(TransactionCase):
             "token_auth_tfhka": "token_fake",
         })
 
-    def _mock_api(endpoint_key, payload):
+    def _mock_api(company, endpoint_key, payload, *args, **kwargs):
         if endpoint_key == "emision":
             return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
         elif endpoint_key == "ultimo_documento":
@@ -28,7 +28,7 @@ class TestAccountRetentionAlertWizard(TransactionCase):
                 "mensaje": "Consulta realizada exitosamente",
             }
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_retention.AccountRetention.call_tfhka_api', side_effect=_mock_api)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=_mock_api)
     def test_01_wizard_action_confirm(self, mock_call):
         partner = self.env["res.partner"].create({
             "name": "Test",

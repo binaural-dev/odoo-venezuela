@@ -8,7 +8,7 @@
             <field name="type" position="after">
                 <field name="digital_invoice_lock" invisible="1"/>
                 <field name="digital_invoice" readonly="digital_invoice_lock" invisible="type not in ['sale', 'purchase', 'cash', 'bank']"/>
-                <field name="payment_method_code"/>
+                <field name="payment_method_code" invisible="not digital_invoice or type not in ['bank', 'cash']"/>
             </field>
         </field>
     </record>

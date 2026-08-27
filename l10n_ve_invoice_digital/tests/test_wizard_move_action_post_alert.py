@@ -68,7 +68,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
             "journal_id": self.journal.id,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
             "currency_id": self.currency_usd.id,
             "foreign_currency_id": self.currency_vef.id,
             "foreign_rate": 38,
@@ -86,7 +86,80 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             inv.action_post()
         return inv
 
-    def mock_api(endpoint_key, payload):
+    def _create_debit_or_credit(self, move_type, product, related_id_field, related_move):
+        vals = {
+            "move_type": move_type,
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "invoice_date": fields.Date.context_today(self.env.user),
+            "currency_id": self.currency_usd.id,
+            "foreign_currency_id": self.currency_vef.id,
+            "foreign_rate": 38,
+            "foreign_inverse_rate": 38,
+            "manually_set_rate": True,
+            related_id_field: related_move.id,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": product.id,
+                "quantity": 1,
+                "price_unit": 100,
+                "account_id": self.acc_income.id,
+                "tax_ids": [(5, 0, 0)],
+            })],
+        }
+        return self.env["account.move"].create(vals)
+
+    def _advance_correlative_sequence(self):
+        # l10n_ve_invoice.action_post() valida el correlativo "espiando" el
+        # number_next_actual de la secuencia "invoice.correlative" en vez de
+        # consumirlo (get_sequence() solo lo hace cuando la facturacion por
+        # series esta desactivada); sin este avance manual, el siguiente
+        # action_post() de la prueba choca con el correlativo recien asignado.
+        seq = self.env["ir.sequence"].sudo().search(
+            [("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)], limit=1
+        )
+        if seq:
+            seq.sudo().write({"number_next_actual": seq.number_next_actual + 1})
+
+    def test_07_wizard_previous_debit_note_not_digitized(self):
+        prod = self.env['product.product'].create({
+            'name': 'Prod Debit', 'type': 'service', 'list_price': 100, 'taxes_id': [(5, 0, 0)],
+        })
+        inv1 = self._create_invoice(post=False)
+        inv1.with_context(move_action_post_alert=True).action_post()
+        self._advance_correlative_sequence()
+        # Se excluye de la búsqueda: solo la nota de débito queda como "no digitalizada".
+        inv1.is_digitalized = True
+
+        debit_note = self._create_debit_or_credit("out_invoice", prod, "debit_origin_id", inv1)
+        debit_note.with_context(move_action_post_alert=True).action_post()
+        self._advance_correlative_sequence()
+
+        inv3 = self._create_invoice(post=False)
+        wizard = self.env['move.action.post.alert.wizard'].create({'move_id': inv3.id})
+        with self.assertRaises(UserError) as e:
+            wizard.action_confirm()
+        self.assertIn("debit note", str(e.exception).lower())
+
+    def test_08_wizard_previous_credit_note_not_digitized(self):
+        prod = self.env['product.product'].create({
+            'name': 'Prod Credit', 'type': 'service', 'list_price': 100, 'taxes_id': [(5, 0, 0)],
+        })
+        base_inv = self._create_invoice(post=False)
+        base_inv.with_context(move_action_post_alert=True).action_post()
+        self._advance_correlative_sequence()
+
+        credit1 = self._create_debit_or_credit("out_refund", prod, "reversed_entry_id", base_inv)
+        credit1.with_context(move_action_post_alert=True).action_post()
+        self._advance_correlative_sequence()
+        # credit1 queda sin digitalizar, con la menor sequence_number de los out_refund.
+
+        credit2 = self._create_debit_or_credit("out_refund", prod, "reversed_entry_id", base_inv)
+        wizard = self.env['move.action.post.alert.wizard'].create({'move_id': credit2.id})
+        with self.assertRaises(UserError) as e:
+            wizard.action_confirm()
+        self.assertIn("credit note", str(e.exception).lower())
+
+    def mock_api(company, endpoint_key, payload, *args, **kwargs):
         if endpoint_key == "emision":
             return {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
         elif endpoint_key == "ultimo_documento":
@@ -110,9 +183,9 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             wizard.action_confirm()
         self.assertEqual(inv2.state, "draft")
 
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api')
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
     def test_01b_wizard_previous_digitized(self, mock_call):
-        def side_effect(endpoint_key, payload):
+        def side_effect(company, endpoint_key, payload, *args, **kwargs):
             if endpoint_key == "consulta_numeraciones":
                 return {
                     "numeraciones": [{"serie": "NO APLICA", "hasta": "100000", "correlativo": "01"}],

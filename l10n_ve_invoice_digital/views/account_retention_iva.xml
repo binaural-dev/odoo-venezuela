@@ -7,10 +7,13 @@
             <field name="arch" type="xml">
                 <xpath expr="//header" position="inside">
                     <field name="show_digital_retention_iva" invisible="1"/>
-                    <field name="control_number_tfhka" invisible="1"/>
                     <button name="generate_document_digital" string="Generate Digital Retention" type="object"
-                            context="{'document_type': '05'}" 
+                            context="{'document_type': '05'}"
                             invisible="show_digital_retention_iva"/>
+                    <field name="annulled_tfhka" invisible="1"/>
+                </xpath>
+                <xpath expr="//button[@name='action_cancel']" position="attributes">
+                    <attribute name="name">action_cancel_retention</attribute>
                 </xpath>
                 <xpath expr="//field[@name='type']" position="before">
                     <field name="is_digitalized" string="Digitized" readonly="True"/>
