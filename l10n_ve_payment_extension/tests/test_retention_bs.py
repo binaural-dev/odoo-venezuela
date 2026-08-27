@@ -237,6 +237,12 @@ class TestAccountRetentionSequence(TransactionCase):
 
         retention = retention_form.save()
 
+        if type_retention == "iva":
+            # onchange_partner_id already auto-loaded the line above; adding
+            # a second one via payment_concept_id (an ISLR-only field) would
+            # just create a duplicate, zero-amount line.
+            return retention
+
         with Form(retention) as retention_form_edit:
             with retention_form_edit.retention_line_ids.new() as line:
                 line.move_id = invoice
@@ -315,6 +321,52 @@ class TestAccountRetentionSequence(TransactionCase):
             "test_06_approve_islr_without_payment_concept --- successfully."
         )
 
+    def test_08_iva_supplier_retention_survives_recompute_after_save(self):
+        """Regression: retention_amount must survive a forced recompute on an
+        IVA supplier line, not reset to 0 (see _compute_retention_amount)."""
+        self.company.write({
+            "currency_id": self.currency_vef.id,
+            "currency_foreign_id": self.currency_usd.id,
+        })
+        self.currency_usd.write(
+            {
+                "rate_ids": [
+                    Command.create(
+                        {
+                            "company_rate": 766.8603,
+                            "name": fields.Date.today(),
+                        }
+                    )
+                ],
+            }
+        )
+
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        with Form(
+            self.env["account.retention"].with_context(
+                default_type="in_invoice", default_type_retention="iva"
+            )
+        ) as retention_form:
+            retention_form.partner_id = self.partner_a
+        retention = retention_form.save()
+
+        line = retention.retention_line_ids
+        self.assertGreater(line.retention_amount, 0.0)
+
+        # Force the same kind of recompute the web client triggers on
+        # web_save -> web_read after saving a record.
+        line.invalidate_recordset(
+            ["invoice_amount", "foreign_invoice_amount", "retention_amount", "foreign_retention_amount"]
+        )
+        self.assertGreater(
+            line.retention_amount,
+            0.0,
+            "retention_amount must survive a recompute triggered by a shared "
+            "dependency, not silently reset to 0 for a non-ISLR-supplier line.",
+        )
+
     def test_07_no_islr_supplier_journal_in_company(self):
         """Try creating a retention with a company that does not have a ISLR supplier journal and attempt to get it approved."""
         invoice = self._create_invoice_simple()
@@ -329,4 +381,129 @@ class TestAccountRetentionSequence(TransactionCase):
             retention.action_post()
         _logger.info(
             "test_06_approve_islr_without_payment_concept --- successfully."
+        )
+
+    def test_09_iva_supplier_amounts_survive_recompute_on_usd_base_company(self):
+        """Regression: invoice_amount/foreign_invoice_amount must survive a
+        forced recompute on a non-VEF-base company (see _compute_amounts)."""
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        with Form(
+            self.env["account.retention"].with_context(
+                default_type="in_invoice", default_type_retention="iva"
+            )
+        ) as retention_form:
+            retention_form.partner_id = self.partner_a
+        retention = retention_form.save()
+
+        line = retention.retention_line_ids
+        self.assertGreater(line.invoice_amount, 0.0)
+        self.assertGreater(line.foreign_invoice_amount, 0.0)
+        self.assertGreater(line.retention_amount, 0.0)
+
+        # Force the same kind of recompute the web client triggers on
+        # web_save -> web_read after saving a record.
+        line.invalidate_recordset(
+            ["invoice_amount", "foreign_invoice_amount", "retention_amount", "foreign_retention_amount"]
+        )
+        self.assertGreater(
+            line.foreign_invoice_amount,
+            0.0,
+            "foreign_invoice_amount must survive a recompute on a non-VEF-base "
+            "company, not silently reset to 0.",
+        )
+        self.assertGreater(
+            line.invoice_amount,
+            0.0,
+            "invoice_amount must survive a recompute (it reads "
+            "foreign_invoice_amount as its source on this branch).",
+        )
+        self.assertGreater(
+            line.retention_amount,
+            0.0,
+            "retention_amount must survive a recompute, not cascade to 0 via "
+            "invoice_amount/foreign_invoice_amount resetting first.",
+        )
+
+    def test_10_islr_supplier_retention_survives_recompute_after_save(self):
+        """Regression: same recompute-survival guarantee as test_08, but for
+        an ISLR supplier line (the other branch of other_lines)."""
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        retention = self._create_retention(invoice, "islr")
+
+        line = retention.retention_line_ids
+        self.assertGreater(line.retention_amount, 0.0)
+
+        line.invalidate_recordset(
+            ["invoice_amount", "foreign_invoice_amount", "retention_amount", "foreign_retention_amount"]
+        )
+        self.assertGreater(
+            line.retention_amount,
+            0.0,
+            "retention_amount must survive a recompute triggered by a shared "
+            "dependency, not silently reset to 0 for an ISLR supplier line.",
+        )
+
+    def test_11_municipal_retention_survives_recompute_after_save(self):
+        """Regression: same recompute-survival guarantee as test_08, but for
+        a municipal line (the other branch of other_lines)."""
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        country = self.env["res.country"].search([("code", "=", "TC")], limit=1) or \
+            self.env["res.country"].create({"name": "Test Country", "code": "TC"})
+        state = self.env["res.country.state"].search(
+            [("code", "=", "TS"), ("country_id", "=", country.id)], limit=1
+        ) or self.env["res.country.state"].create(
+            {"name": "Test State", "code": "TS", "country_id": country.id}
+        )
+        municipality = self.env["res.country.municipality"].search(
+            [("code", "=", "MUN-TEST-BS")], limit=1
+        ) or self.env["res.country.municipality"].create({
+            "name": "Test Municipality BS",
+            "code": "MUN-TEST-BS",
+            "country_id": country.id,
+            "state_id": [(6, 0, [state.id])],
+        })
+        branch = self.env["economic.branch"].search(
+            [("name", "=", "Test Branch BS")], limit=1
+        ) or self.env["economic.branch"].create({"name": "Test Branch BS", "status": "active"})
+        economic_activity = self.env["economic.activity"].create({
+            "name": "Test Activity for Recompute",
+            "aliquot": 5.0,
+            "municipality_id": municipality.id,
+            "branch_id": branch.id,
+            "description": "Test Description",
+            "minimum_monthly": 0,
+            "minimum_annual": 0,
+        })
+        if not self.company.municipal_supplier_retention_journal_id:
+            self.company.municipal_supplier_retention_journal_id = self.iva_journal.id
+
+        with Form(
+            self.env["account.retention"].with_context(
+                default_type="in_invoice", default_type_retention="municipal"
+            ),
+            view="l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension",
+        ) as retention_form:
+            retention_form.partner_id = self.partner_a
+            with retention_form.retention_line_ids.new() as line:
+                line.move_id = invoice
+                line.economic_activity_id = economic_activity
+        retention = retention_form.save()
+
+        line = retention.retention_line_ids
+        self.assertGreater(line.retention_amount, 0.0)
+
+        line.invalidate_recordset(
+            ["invoice_amount", "foreign_invoice_amount", "retention_amount", "foreign_retention_amount"]
+        )
+        self.assertGreater(
+            line.retention_amount,
+            0.0,
+            "retention_amount must survive a recompute triggered by a shared "
+            "dependency, not silently reset to 0 for a municipal line.",
         )

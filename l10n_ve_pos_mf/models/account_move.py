@@ -38,51 +38,17 @@ class AccountMoveInh(models.Model):
                 record.sales_book_type = "01-REG"
 
     def report_z(self, serial, response):
-        parent = super()
-        if hasattr(parent, "report_z"):
-            # l10n_ve_iot_mf (u otro módulo fiscal) está instalado y define la base
-            res = parent.report_z(serial, response)
-        else:
-            # Fallback standalone: POS con Web Serial sin módulo de facturación fiscal
-            res = self._report_z_base(serial, response)
+        z_number = super().report_z(serial, response)
 
-        data = response.get("data", False)
-        serial = data.get("_registeredMachineNumber")
+        data = response.get("data") or {}
+        machine_serial = data.get("_registeredMachineNumber") or serial
+
         pos_order_ids = self.env["pos.order"].search(
-            ["&", ("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]
+            ["&", ("fiscal_machine", "=", machine_serial), ("mf_reportz", "=", False)]
         )
         _logger.info(pos_order_ids)
 
         for order in pos_order_ids:
-            order.write({"mf_reportz": int(res) + 1})
+            order.write({"mf_reportz": int(z_number) + 1})
 
-        return res
-
-    def _report_z_base(self, serial, response):
-        """Réplica de la lógica base de report_z (l10n_ve_iot_mf) para que el POS
-        funcione aunque el módulo de facturación fiscal no esté instalado."""
-        from odoo.exceptions import ValidationError
-
-        data = response.get("data", False)
-
-        if not response.get("valid", False):
-            raise ValidationError(response.get("message", "No se pudo imprimir el reporte Z"))
-
-        serial = data.get("_registeredMachineNumber")
-
-        account_moves = self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
-        )
-
-        number_of_last_z = data.get("_dailyClosureCounter", False)
-        if False in [data, number_of_last_z]:
-            last_move = self.env["account.move"].search(
-                ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)],
-                order="mf_reportz desc",
-                limit=1,
-            )
-            number_of_last_z = last_move.mf_reportz if last_move else 0
-
-        for invoice in account_moves:
-            invoice.write({"mf_reportz": int(number_of_last_z) + 1})
-        return number_of_last_z
+        return z_number
