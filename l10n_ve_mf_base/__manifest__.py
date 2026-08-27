@@ -3,7 +3,7 @@
     "summary": "Driver base Web Serial API para impresoras fiscales The Factory HKA (TFHKA).",
     "license": "LGPL-3",
     "category": "Accounting",
-    "version": "17.0.1.0.0",
+    "version": "17.0.1.0.1",
     "author": "Binaural",
     "website": "https://binauraldev.com",
     "depends": ["web"],
