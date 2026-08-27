@@ -72,11 +72,20 @@
                     required="operation_code == 'outgoing' and show_other_causes_transfer_reason" />
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="dispatch_guide_controls" invisible="1" />
-                <field 
+                <field
                     name="guide_number"
                     readonly="1"
                     invisible="not dispatch_guide_controls and is_donation"/>
                 <field name="is_return" readonly="1"/>
+                <field
+                    name="control_number_ids"
+                    invisible="not dispatch_guide_controls"
+                    readonly="1">
+                    <list create="0" delete="0" edit="0">
+                        <field name="sheet_number"/>
+                        <field name="number"/>
+                    </list>
+                </field>
             </xpath>
             <xpath expr="//field[@name='picking_type_id']" position="after">
                 <field name="operation_code" invisible="1"/>

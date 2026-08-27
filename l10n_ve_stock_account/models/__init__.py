@@ -12,4 +12,5 @@ from . import (
     account_move_line,
     stock_move_line,
     stock_warehouse,
+    stock_picking_control_number_line,
 )

@@ -52,3 +52,14 @@ class ResCompany(models.Model):
         help="If enabled, the weight field will be hidden in the dispatch guide.",
     )
 
+    dispatch_guide_control_number_max_lines = fields.Integer(
+        string="Máximo de líneas por hoja (número de control)",
+        default=15,
+        help=(
+            "Cantidad máxima de líneas de producto que entran en una hoja "
+            "impresa de la guía de despacho. Cuando una guía tiene más "
+            "líneas que esta cantidad, se reserva un número de control "
+            "adicional por cada hoja extra."
+        ),
+    )
+

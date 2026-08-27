@@ -216,6 +216,13 @@ class StockPicking(models.Model):
         compute="_compute_dispatch_guide_controls", store=True
     )
 
+    control_number_ids = fields.One2many(
+        comodel_name="stock.picking.control.number.line",
+        inverse_name="picking_id",
+        string="Números de Control",
+        copy=False,
+    )
+
     invoice_state = fields.Selection(
         selection=[
             ("draft", "Draft"),
@@ -255,6 +262,61 @@ class StockPicking(models.Model):
                 }
             )
         return guide_number.next_by_id(guide_number.id)
+
+    def _get_control_number_max_lines(self):
+        self.ensure_one()
+        return self.company_id.dispatch_guide_control_number_max_lines or 15
+
+    def _get_control_number_sequence(self):
+        """Same search-or-create pattern as get_sequence_guide_num(), so the
+        control number sequence is also isolated per company."""
+        self.ensure_one()
+        sequence = self.env["ir.sequence"].sudo()
+        control_number_sequence = sequence.search(
+            [
+                ("code", "=", "stock.picking.control.number"),
+                ("company_id", "=", self.company_id.id),
+            ],
+            limit=1,
+        )
+        if not control_number_sequence:
+            control_number_sequence = sequence.create(
+                {
+                    "name": "Dispatch Guide Control Number",
+                    "code": "stock.picking.control.number",
+                    "company_id": self.company_id.id,
+                    "padding": 4,
+                }
+            )
+        return control_number_sequence
+
+    def _assign_control_numbers(self):
+        """Reserve one control number per sheet the dispatch guide occupies.
+
+        A sheet is full once it reaches the company's configured maximum of
+        move lines per page. Never reassigns numbers to a picking that
+        already has some (idempotent, mirrors the 'do not overwrite' guard
+        used for guide_number)."""
+        for picking in self:
+            if not picking.dispatch_guide_controls or picking.control_number_ids:
+                continue
+            max_lines = picking._get_control_number_max_lines()
+            line_count = len(picking.move_line_ids)
+            sheet_count = max(1, -(-line_count // max_lines)) if line_count else 1
+            control_number_sequence = picking._get_control_number_sequence()
+            picking.control_number_ids = [
+                (
+                    0,
+                    0,
+                    {
+                        "sheet_number": sheet_number,
+                        "number": control_number_sequence.next_by_id(
+                            control_number_sequence.id
+                        ),
+                    },
+                )
+                for sheet_number in range(1, sheet_count + 1)
+            ]
 
     # === MAIN FUNCTIONS ===#
 
@@ -612,6 +674,7 @@ class StockPicking(models.Model):
     def _action_done(self):
         res = super()._action_done()
         self._set_guide_number()
+        self._assign_control_numbers()
         # TODO Add picking type logic either here or in the set_guide_number method
         return res
 
