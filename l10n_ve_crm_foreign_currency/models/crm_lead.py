@@ -169,6 +169,10 @@ class CrmLead(models.Model):
 
     @api.constrains("expected_revenue_foreign", "type")
     def _check_expected_revenue_foreign_positive(self):
+        # Tarea 80213: se elimina el rechazo de expected_revenue_foreign == 0.
+        # El formulario de Lead no tiene este campo, así que convertir un
+        # Lead a Oportunidad enviaba 0 y esta validación bloqueaba el flujo
+        # de conversión. Se sigue rechazando un monto negativo.
         for lead in self:
             if lead._is_foreign_amount_check_exempt():
                 continue
@@ -179,13 +183,15 @@ class CrmLead(models.Model):
                 raise ValidationError(
                     _("El ingreso esperado en moneda comercial no puede ser negativo.")
                 )
-            if currency.is_zero(lead.expected_revenue_foreign):
-                raise ValidationError(
-                    _("El ingreso esperado en moneda comercial debe ser mayor a 0.")
-                )
 
     @api.constrains("recurring_revenue_foreign", "recurring_plan", "type")
     def _check_recurring_revenue_foreign_positive(self):
+        # Se elimina el rechazo de recurring_revenue_foreign == 0 cuando hay
+        # recurring_plan (mismo tratamiento que expected_revenue_foreign,
+        # tarea 80213). El formulario de Lead tampoco tiene el campo Ingreso
+        # Recurrente, así que "Fusionar con oportunidades existentes" trae
+        # recurring_plan de la oportunidad destino pero recurring_revenue_foreign
+        # llega en 0, bloqueando la conversión. Se sigue rechazando negativo.
         for lead in self:
             if lead._is_foreign_amount_check_exempt():
                 continue
@@ -195,13 +201,6 @@ class CrmLead(models.Model):
             if currency.compare_amounts(lead.recurring_revenue_foreign, 0) < 0:
                 raise ValidationError(
                     _("El ingreso recurrente en moneda comercial no puede ser negativo.")
-                )
-            if lead.recurring_plan and currency.is_zero(lead.recurring_revenue_foreign):
-                raise ValidationError(
-                    _(
-                        "El ingreso recurrente en moneda comercial debe ser mayor a 0 "
-                        "cuando la oportunidad tiene un plan recurrente definido."
-                    )
                 )
 
     def copy_data(self, default=None):
@@ -214,6 +213,21 @@ class CrmLead(models.Model):
         if not self.env.user.has_group("crm.group_use_recurring_revenues"):
             default["recurring_revenue_foreign"] = 0
         return super().copy_data(default=default)
+
+    def _merge_get_fields(self):
+        # "Fusionar con oportunidades existentes" arma un dict con
+        # CRM_LEAD_FIELDS_TO_MERGE (incluye expected_revenue y
+        # recurring_revenue) y lo escribe con write() sobre la oportunidad
+        # resultante. Esos dos campos ahora son de solo lectura
+        # (_inverse_expected_revenue/_inverse_recurring_revenue rechazan
+        # cualquier escritura), así que el merge se rompía con un
+        # UserError. Se sustituyen por los campos reales en moneda
+        # comercial para que el merge escriba en el lugar correcto.
+        replacements = {
+            "expected_revenue": "expected_revenue_foreign",
+            "recurring_revenue": "recurring_revenue_foreign",
+        }
+        return [replacements.get(fname, fname) for fname in super()._merge_get_fields()]
 
     def _get_rainbowman_message(self):
         # El método del core compara expected_revenue (columna SQL cruda,
