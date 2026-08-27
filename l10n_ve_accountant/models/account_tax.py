@@ -354,9 +354,23 @@ class AccountTax(models.Model):
         def load(field, fallback, from_base_line=False):
             return self._get_base_line_field_value_from_record(record, field, kwargs, fallback, from_base_line=from_base_line)
 
+        # kwargs['currency_id'] (explicitly passed by every real caller --
+        # purchase.order.line, sale.order.line) must win over the
+        # foreign_currency_id fallback below, not be silently overwritten by
+        # it: the 'currency_id' key further down in this dict literal used to
+        # unconditionally clobber whatever kwargs already had. And when
+        # neither the record nor the company have foreign_currency_id
+        # configured (a company that simply doesn't use the bimonetary VES/USD
+        # setup), both fell through to an EMPTY res.currency recordset, which
+        # crashes downstream in _round_base_lines_tax_details's
+        # currency.round(...) with "Expected singleton: res.currency()" the
+        # moment a sale/purchase order computes its tax totals -- confirmed
+        # by reproducing it live against a fresh company on 2026-08-27.
         currency = (
-            load('foreign_currency_id', None)
-            or self.env.company.foreign_currency_id)
+            kwargs.get('currency_id')
+            or load('foreign_currency_id', None)
+            or self.env.company.foreign_currency_id
+            or self.env.company.currency_id)
         base_line = {
             **kwargs,
             'record': record,
