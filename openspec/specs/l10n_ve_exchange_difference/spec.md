@@ -307,6 +307,34 @@ para esos documentos ajenos al módulo.
 - **WHEN** se concilia contra un pago con diferencial cambiario
 - **THEN** se genera la ND/NC de este módulo (es una factura de cliente válida)
 
+### Requirement: El widget de Conciliación Bancaria de Enterprise queda fuera de alcance a propósito
+
+El sistema SHALL NOT generar ND/NC cuando la conciliación de una factura de
+cliente contra una línea de extracto bancario ocurre a través del widget de
+Conciliación Bancaria de Odoo Enterprise (`account_accountant`). Es una
+decisión de alcance CONFIRMADA por el responsable del ticket, no una
+limitación pendiente de resolver: ese widget calcula y aplica su propio
+ajuste de diferencial cambiario directo sobre la línea de conciliación del
+extracto (`account.bank.statement.line._reconcile_payments`, sin llamar
+`account.move.line.reconcile()` en ningún momento), así que nunca pasa por el
+mecanismo que este módulo intercepta. La contabilidad no se ve afectada
+(Odoo resuelve el diferencial por su cuenta, sin pérdida de dinero ni
+descuadre) -- lo único que no ocurre es la emisión de la ND/NC fiscal real,
+y eso es intencional para este flujo.
+
+Cualquier desarrollo propio de Binaural que necesite conciliar facturas de
+cliente SHALL hacerlo siempre a través de `account.move.line.reconcile()`
+(nunca `_reconcile_plan()` directo) para no perder, por una vía evitable,
+la emisión de la ND/NC que si aplica al flujo del ticket.
+
+#### Scenario: Conciliación vía el dashboard de extractos bancarios de Enterprise
+
+- **GIVEN** una factura de cliente en moneda extranjera
+- **WHEN** se concilia contra una línea de extracto bancario desde el widget de Conciliación Bancaria de Enterprise
+- **THEN** Odoo resuelve el diferencial cambiario con su propio mecanismo interno del widget
+- **AND** no se genera ninguna ND/NC de este módulo
+- **AND** esto es el comportamiento esperado, no un defecto
+
 ### Requirement: Compatibilidad con `l10n_ve_igtf`
 
 El sistema SHALL funcionar correctamente cuando `l10n_ve_igtf` está también

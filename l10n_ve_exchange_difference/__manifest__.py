@@ -32,7 +32,8 @@ How it works:
 Configuration -- reconciliation fails with a clear error instead of leaving
 an incomplete or misnumbered note, but WHEN that error can surface differs:
 
-Validated when the feature is enabled and saved (`Settings > Accounting`):
+Validated when the feature is enabled and saved (`Settings > Binaural
+Settings`, not the native Accounting settings page):
 
 - Dedicated product (with an exempt tax) for the Debit/Credit Note line.
 - Dedicated pricelist (in the company's own currency) for the Debit/Credit

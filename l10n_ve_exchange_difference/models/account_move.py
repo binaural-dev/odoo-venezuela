@@ -273,12 +273,31 @@ class AccountMove(models.Model):
         # distinta por cada pago parcial (ver `l10n_ve_exchange_payment_id`)
         # -- al romper la conciliación de UN pago puntual, solo debe
         # revertirse la nota de ESE pago.
-        return self.search([
+        #
+        # `.sudo()` en el `search()` -- mismo motivo que ya justifica el
+        # `.sudo()` en las búsquedas de `account.journal` (C3):
+        # `account.move` también tiene reglas multi-compañía que filtran
+        # por las compañías PERMITIDAS del usuario/proceso que rompe la
+        # conciliación, no por la compañía de la factura. Sin esto, un
+        # cron o un usuario de otra sucursal sin esa compañía en
+        # `allowed_company_ids` nunca ENCUENTRA la nota -- no falla
+        # ruidoso, simplemente la deja posteada, con folio fiscal
+        # consumido, sin revertir.
+        #
+        # `.with_env(self.env)` al final -- el `sudo()` es SOLO para
+        # que el `search()` pueda VER la nota más allá de las
+        # compañías permitidas del usuario; la reversión en sí
+        # (`_reverse_exchange_note`, disparada por el caller sobre el
+        # resultado de este método) debe seguir corriendo con los
+        # permisos NORMALES de quien la dispara, no heredar `sudo()`
+        # de arrastre sobre TODO lo que haga después con este recordset.
+        found = self.sudo().search([
             ('l10n_ve_exchange_invoice_id', '=', invoice.id),
             ('l10n_ve_exchange_payment_id', '=', payment.id),
             ('state', '!=', 'cancel'),
             ('reversal_move_ids', '=', False),
         ], order='id desc', limit=1)
+        return found.with_env(self.env)
 
     def _reverse_exchange_note(self):
         """Reverses this exchange difference Debit/Credit Note because the
@@ -322,10 +341,22 @@ class AccountMove(models.Model):
             default_values_list = [{} for _ in self]
 
         for move, default_values in zip(self, default_values_list):
+            # SIN gate por `move.company_id.l10n_ve_exchange_use_nd_nc`
+            # (el estado ACTUAL del toggle) -- ya se corrigió este mismo
+            # patrón en `account.partial.reconcile.unlink()`
+            # (`models/account_partial_reconcile.py`, B1/B2): una nota
+            # emitida mientras el toggle estaba activo debe poder
+            # revertirse correctamente aunque el toggle se desactive
+            # DESPUÉS. Gatear por el toggle actual aquí dejaba la
+            # reversión SIN el flag/numeración propios -- cayendo al
+            # numerador normal del diario -- exactamente el mismo bug,
+            # solo que por esta otra vía (`_reverse_moves`, no
+            # `unlink()`). `l10n_ve_exchange_diff_entry` (`copy=False`,
+            # nunca seteado fuera de este módulo) ya identifica de forma
+            # confiable "es una nota nuestra", sin necesitar el toggle.
             if (
                 move.l10n_ve_exchange_diff_entry
                 and move.move_type in ('out_invoice', 'out_refund')
-                and move.company_id.l10n_ve_exchange_use_nd_nc
             ):
                 # `l10n_ve_exchange_diff_entry` FORZADO acá, no asumido
                 # "copiado" -- el campo tiene `copy=False`, y core arma
@@ -410,35 +441,38 @@ class AccountMove(models.Model):
                     # dedicado (`is_debit=True`, ver
                     # `_create_exchange_difference_note`,
                     # `account_move_line.py`), así que la reversión lo
-                    # hereda por copia sin más. Lo que sí falta es que
-                    # ESE diario tenga su propia `refund_sequence_id`
-                    # configurada -- nada la auto-provisiona hoy (el
-                    # `UserError` de pre-vuelo al crear la ND solo exige
-                    # `l10n_ve_exchange_debit_note_sequence_id`, la
-                    # secuencia de ND, nunca la de NC de ese mismo
-                    # diario). Sin esto, `_compute_name_by_sequence`
-                    # (ternario: `out_refund` -> `journal_id.refund_sequence_id`)
-                    # encontraba `refund_sequence_id` vacío y caía al
-                    # numerador PRINCIPAL de ese diario -- la secuencia
-                    # que `l10n_ve_invoice`/`l10n_ve_iot_mf` usan para
-                    # identificar Notas de Débito REALES de cliente vía
-                    # `journal_id.is_debit` -- bug real, confirmado
-                    # leyendo el flujo completo. Mismo patrón de
-                    # autoprovisión con `.sudo()` que ya usa
-                    # `_create_exchange_difference_note` para el diario
-                    # de la factura en el caso de NC directa (misma
-                    # justificación: bloquear con `UserError` dejaría
-                    # inoperable de fábrica cualquier reversión de ND,
-                    # peor que el bug que se corrige).
+                    # hereda por copia sin más. Lo que sí falta puede ser
+                    # que ESE diario tenga su propia `refund_sequence_id`
+                    # configurada -- el `UserError` de pre-vuelo al crear
+                    # la ND solo exige `l10n_ve_exchange_debit_note_sequence_id`
+                    # (la secuencia de ND), nunca la de NC de ese mismo
+                    # diario.
+                    #
+                    # NO se autoprovisiona acá -- a propósito, a
+                    # diferencia de una versión anterior de este mismo
+                    # bloque: ese diario `is_debit=True` NO es exclusivo
+                    # de este módulo, es infraestructura fiscal REAL que
+                    # `l10n_ve_invoice`/`l10n_ve_iot_mf` usan para
+                    # identificar Notas de Débito de NEGOCIO genuinas
+                    # (`journal_id.is_debit`) -- exactamente el mismo
+                    # riesgo que ya se corrigió en la rama de NC directa
+                    # de `_create_exchange_difference_note`
+                    # (`account_move_line.py`): autoprovisionar con
+                    # `sudo()` sería un cambio PERMANENTE y silencioso en
+                    # la numeración fiscal de un diario de negocio real,
+                    # disparado por quien sea que rompa una conciliación.
+                    # Ser simétrico con esa decisión: `UserError`
+                    # explícito pidiendo configuración, en vez de
+                    # numerar en silencio o mutar el diario.
                     debit_journal = move.journal_id
                     if debit_journal.is_debit and not debit_journal.refund_sequence_id:
-                        debit_journal.sudo().write({
-                            'refund_sequence': True,
-                            'refund_sequence_id': debit_journal._create_sequence({
-                                'code': debit_journal.code,
-                                'name': debit_journal.name,
-                                'company_id': debit_journal.company_id.id,
-                            }, refund=True).id,
-                        })
+                        raise UserError(_(
+                            "Configure a dedicated 'Refund Sequence' (Credit "
+                            "Note sequence) on journal %(journal)s before "
+                            "reversing this exchange difference Debit Note "
+                            "-- the reversal must never be numbered with "
+                            "that journal's own main sequence.",
+                            journal=debit_journal.display_name,
+                        ))
 
         return super()._reverse_moves(default_values_list, cancel=cancel)

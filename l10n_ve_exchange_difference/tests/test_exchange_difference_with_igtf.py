@@ -322,6 +322,9 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
             "company_id": self.company.id,
             "is_debit": True,
             "l10n_ve_exchange_debit_note_sequence_id": self.debit_note_sequence.id,
+            # Ver `test_exchange_note_reversal.setUpClass` -- revertir una
+            # ND ya no autoprovisiona `refund_sequence_id` en silencio.
+            "refund_sequence": True,
         })
 
     def _create_invoice_usd(self, amount, date=None):

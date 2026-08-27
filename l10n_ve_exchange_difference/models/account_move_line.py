@@ -111,9 +111,27 @@ class AccountMoveLine(models.Model):
                 credit_keys=', '.join(credit_values.keys()),
             ))
         self.env.cr._l10n_ve_exchange_current_partial_amls = (debit_values['aml'], credit_values['aml'])
-        return super()._prepare_reconciliation_single_partial(
-            debit_values, credit_values, shadowed_aml_values=shadowed_aml_values,
-        )
+        try:
+            return super()._prepare_reconciliation_single_partial(
+                debit_values, credit_values, shadowed_aml_values=shadowed_aml_values,
+            )
+        finally:
+            # `try/finally`, no un simple `return` -- este stash vive en
+            # un atributo plano del CURSOR, no en una transacción ORM:
+            # un rollback a SAVEPOINT (`Savepoint.rollback()`, núcleo
+            # `sql_db.py`) no dispara `cr.postrollback` (ese hook SOLO
+            # corre en un rollback de cursor completo, nunca en uno a
+            # savepoint -- y los savepoints son exactamente lo que usa
+            # `TransactionCase` entre tests, y cualquier
+            # `@api.constrains`/guard interno de Odoo). Sin este
+            # `finally`, si `super()` (que llama SINCRÓNICAMENTE a
+            # `_prepare_exchange_difference_move_vals` desde adentro,
+            # ver docstring de ese método) lanzara una excepción ANTES
+            # de que ese método alcance a leer y limpiar este mismo
+            # atributo, el stash sobreviviría un rollback a savepoint y
+            # podría filtrarse a un partial NO relacionado en un intento
+            # posterior sobre el mismo cursor.
+            self.env.cr._l10n_ve_exchange_current_partial_amls = None
 
     def _prepare_exchange_difference_move_vals(
         self, amounts_list, company=None, exchange_date=None, **kwargs
@@ -405,9 +423,9 @@ class AccountMoveLine(models.Model):
         if not product:
             raise UserError(_(
                 "Configure the 'Exchange Difference Note Product' in "
-                "Settings > Accounting before reconciling foreign-currency "
-                "invoices with the exchange difference Debit/Credit Note "
-                "mode enabled."
+                "Settings > Binaural Settings before reconciling "
+                "foreign-currency invoices with the exchange difference "
+                "Debit/Credit Note mode enabled."
             ))
 
         # `account_invoice_pricelist` requires every invoice/note to have
@@ -418,9 +436,10 @@ class AccountMoveLine(models.Model):
         if not pricelist:
             raise UserError(_(
                 "Configure the 'Exchange Difference Note Pricelist' (in "
-                "the company's own currency) in Settings > Accounting "
-                "before reconciling foreign-currency invoices with the "
-                "exchange difference Debit/Credit Note mode enabled."
+                "the company's own currency) in Settings > Binaural "
+                "Settings before reconciling foreign-currency invoices "
+                "with the exchange difference Debit/Credit Note mode "
+                "enabled."
             ))
 
         is_credit_note = company.currency_id.compare_amounts(residual, 0.0) > 0
@@ -609,7 +628,17 @@ class AccountMoveLine(models.Model):
         # note's creation/posting.
         with self.env['account.move']._disable_recursion({}, 'skip_invoice_sync', target=False):
             if not is_credit_note:
-                note = self.env['account.move'].create({
+                # `with_company(company)` -- `company` es
+                # `invoice.company_id` (fijado explícito más arriba,
+                # C1), NUNCA `self.env.company`. Sin este `with_company`,
+                # cualquier lógica de creación que resuelva su
+                # comportamiento por la compañía ACTIVA del entorno (ej.
+                # la moneda alterna/tasa que `l10n_ve_accountant`
+                # deriva en `account.move.create()`) queda resuelta para
+                # `self.env.company` -- que en un entorno multi-compañía
+                # puede no ser la de la factura (un cron, o un usuario
+                # cuya compañía activa es otra).
+                note = self.env['account.move'].with_company(company).create({
                     'move_type': 'out_invoice',
                     'partner_id': invoice.partner_id.id,
                     'invoice_date': note_date,
@@ -634,7 +663,9 @@ class AccountMoveLine(models.Model):
                 # igual que `out_invoice` para elegir la cuenta de la
                 # línea, y una NC de PÉRDIDA terminaría acreditando la
                 # cuenta de GANANCIA cambiaria en vez de la de pérdida.
-                note = self.env['account.move'].with_context(
+                # `with_company(company)` -- mismo motivo que la rama de
+                # ND arriba.
+                note = self.env['account.move'].with_company(company).with_context(
                     l10n_ve_skip_refund_origin_validation=True,
                 ).create({
                     'move_type': 'out_refund',
@@ -645,7 +676,9 @@ class AccountMoveLine(models.Model):
                     'currency_id': company.currency_id.id,
                     'pricelist_id': pricelist.id,
                     'journal_id': invoice.journal_id.id,
-                    'reversed_entry_id': invoice.id,
+                    # `reversed_entry_id` NO se setea acá, a propósito --
+                    # ver el `note.write({'reversed_entry_id': ...})`
+                    # DESPUÉS de conciliar, más abajo, para el porqué.
                     'invoice_origin': invoice.name,
                     'invoice_line_ids': [Command.create(line_vals)],
                     'l10n_ve_exchange_diff_entry': True,
@@ -653,23 +686,14 @@ class AccountMoveLine(models.Model):
                     'l10n_ve_exchange_invoice_id': invoice.id,
                     'l10n_ve_exchange_payment_id': payment.id,
                 })
-                # `l10n_ve_accountant.account_move.create()` fuerza,
-                # SIEMPRE que `move_type in ('out_refund','in_refund')` y
-                # trae `reversed_entry_id`, `foreign_rate`/
-                # `foreign_inverse_rate` heredados de la factura
-                # revertida (`account_move.py:534-536`, pensado para una
-                # NC normal que corrige/anula una factura, donde tiene
-                # sentido conservar la MISMA valorización). Esta NC no es
-                # eso: es un documento nuevo que registra el diferencial
-                # AL MOMENTO DEL PAGO, así que heredar la tasa de la
-                # factura la deja con la tasa VIEJA (la de la factura, no
-                # la del pago) -- justo la asimetría con la ND (que sí
-                # calcula su propia tasa natural, porque nace de
-                # `debit_origin_id`, no de `reversed_entry_id`, y esa
-                # rama de herencia no la toca). Se sobreescribe acá con
-                # la tasa real a la fecha de la NC, con el mismo helper
-                # que usa el propio `l10n_ve_accountant`
-                # (`_compute_rate_for_documents`).
+                # Tasa propia de la NC, calculada a la fecha del PAGO
+                # (no la de la factura) -- este documento registra el
+                # diferencial AL MOMENTO DEL PAGO, así que necesita su
+                # propia tasa natural, con el mismo helper que usa
+                # `l10n_ve_accountant` (`_compute_rate_for_documents`) --
+                # asimetría con la ND, que ya calcula la suya propia
+                # porque nace de `debit_origin_id`, nunca de
+                # `reversed_entry_id`.
                 rate_values = self.env['res.currency.rate'].compute_rate(
                     note.foreign_currency_id.id, note_date,
                 )
@@ -710,4 +734,33 @@ class AccountMoveLine(models.Model):
         note_line.with_context(no_exchange_difference=True).write(
             {'reconciled_lines_ids': [Command.set(self.ids)]}
         )
+
+        if is_credit_note:
+            # `reversed_entry_id` se setea AQUÍ, DESPUÉS de que la NC ya
+            # está posteada y conciliada -- nunca en el `create()` de
+            # arriba. Confirmado contra el núcleo
+            # (`account/models/account_move.py::_post`): CUALQUIER move
+            # que se postea con `reversed_entry_id` ya seteado dispara,
+            # sin poder desactivarse por contexto,
+            # `reversed_entry_id._reconcile_reversed_moves(...)` --
+            # agrupa las líneas SIN conciliar de la NC y de la factura
+            # por `(account_id, currency_id)` y las concilia entre sí
+            # directo. Cuando la factura está en moneda de COMPAÑÍA (el
+            # caso "factura en VES pagada con USD", ver
+            # `test_ves_invoice_paid_in_usd_generates_rounding_exchange_difference_note`),
+            # la línea por cobrar de la factura y la de esta NC quedan en
+            # la MISMA cuenta y MISMA moneda -- ese auto-reconcile las
+            # concilia ANTES de que el `write` de `reconciled_lines_ids`
+            # de arriba corra, y como `account.move.line.reconcile()`
+            # está sobrescrito por este mismo módulo, ese auto-reconcile
+            # del núcleo re-entra `reconcile()` sobre el par
+            # factura/nota -- una conciliación espuria, no la que este
+            # método ya cerró explícito. Set explícito y tardío para
+            # conservar el vínculo nativo de Odoo (banner "Nota de
+            # Crédito de", helpers de `l10n_ve_invoice`) sin disparar
+            # ese camino: para cuando este `write` corre, la NC ya está
+            # `posted` (no vuelve a pasar por `_post()`) y ya está
+            # conciliada por el paso de arriba.
+            note.write({'reversed_entry_id': invoice.id})
+
         return note

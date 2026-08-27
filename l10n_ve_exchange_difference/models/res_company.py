@@ -136,6 +136,7 @@ class ResCompany(models.Model):
                 raise ValidationError(_(
                     "The Customer Invoice Exchange Difference Note Product "
                     "('%(product)s') must have the default sale Exempt tax "
-                    "assigned (Settings > Accounting > Exempt Tax).",
+                    "assigned (Settings > Binaural Settings > Exempt "
+                    "Aliquot).",
                     product=product.display_name,
                 ))

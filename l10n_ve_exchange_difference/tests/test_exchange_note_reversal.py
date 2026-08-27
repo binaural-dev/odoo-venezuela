@@ -250,6 +250,13 @@ class TestExchangeNoteReversal(TransactionCase):
             "company_id": cls.company.id,
             "is_debit": True,
             "l10n_ve_exchange_debit_note_sequence_id": cls.debit_note_sequence.id,
+            # `refund_sequence: True` -- revertir una ND ya NO
+            # autoprovisiona `refund_sequence_id` en silencio sobre este
+            # diario (ese diario `is_debit=True` no es exclusivo del
+            # módulo, es infraestructura fiscal real): ahora exige que
+            # esté configurado de antemano, igual que la NC directa
+            # exige `refund_sequence_id` en el diario de venta.
+            "refund_sequence": True,
         })
         cls.company.l10n_ve_exchange_use_nd_nc = True
 
