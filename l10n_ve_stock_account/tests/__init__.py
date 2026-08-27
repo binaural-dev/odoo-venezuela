@@ -5,3 +5,4 @@ from . import test_wizards
 from . import test_partner_account
 from . import test_stock_move
 from . import test_stock_picking
+from . import test_stock_picking_control_number
