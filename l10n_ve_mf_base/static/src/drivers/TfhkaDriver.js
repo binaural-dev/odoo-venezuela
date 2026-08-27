@@ -1596,8 +1596,8 @@ export class TfhkaDriver {
             const hasDivisa = this._hasDivisaPayment(paymentLines);
             if (hasDivisa) {
                 const s25Result = await this.readS25Data();
-                if (s25Result.success && s25Result.data?.igtfAmount > 0) {
-                    paymentLines = this._adjustPaymentsWithIGTF(paymentLines, s25Result.data);
+                if (!s25Result.success) {
+                    console.warn("TfhkaDriver::printCreditNote - No se pudo leer S25:", s25Result.error);
                 }
             }
 
@@ -1790,8 +1790,8 @@ export class TfhkaDriver {
             const hasDivisa = this._hasDivisaPayment(paymentLines);
             if (hasDivisa) {
                 const s25Result = await this.readS25Data();
-                if (s25Result.success && s25Result.data?.igtfAmount > 0) {
-                    paymentLines = this._adjustPaymentsWithIGTF(paymentLines, s25Result.data);
+                if (!s25Result.success) {
+                    console.warn("TfhkaDriver::printDebitNote - No se pudo leer S25:", s25Result.error);
                 }
             }
 
