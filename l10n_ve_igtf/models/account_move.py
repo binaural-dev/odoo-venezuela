@@ -760,10 +760,22 @@ class AccountMove(models.Model):
                 rec.igtf_top_aply = abs(rec.amount_total_signed) * (rec.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
+                # `.sudo()` -- reemplaza a `reconciled_lines_ids` (núcleo,
+                # `_compute_reconciled_lines_ids`), que filtra sus
+                # contrapartes con `_filtered_access('read')` antes de
+                # devolverlas. `matched_debit_ids`/`matched_credit_ids`
+                # (el reemplazo, hecho para evitar el `Field.write()` del
+                # M2M de `reconciled_lines_ids` y su `RecursionError`) NO
+                # aplica ese mismo filtro -- sin `sudo()` acá, este
+                # compute ALMACENADO (`store=True`) revienta con
+                # `AccessError` en cuanto el usuario no tiene permiso de
+                # lectura sobre la contraparte (ej. pago en OTRA
+                # compañía), donde antes la línea simplemente se omitía
+                # en silencio.
                 final_payment_moves = (
                     receivable_payable_lines.matched_debit_ids.debit_move_id
                     | receivable_payable_lines.matched_credit_ids.credit_move_id
-                ).mapped('move_id')
+                ).sudo().mapped('move_id')
 
                 account = [rec.company_id.customer_account_igtf_id.id,rec.company_id.supplier_account_igtf_id.id ]
                 

@@ -176,7 +176,9 @@ Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` e
 
 ### Requirement: Base imponible del IGTF acumulada en la factura
 
-`compute_bi_igtf` de `account.move` DEBE (MUST) mantener por factura: `igtf_top_aply` (tope = `amount_total_signed` por el porcentaje, menos el porcentaje de IGTF de los importes conciliados por pagos sin línea de IGTF), `bi_igtf` (base imponible acumulada de los pagos con IGTF conciliados, limitada a `amount_total_signed`), `alter_bi_igtf` (IGTF acumulado aplicado) y `foreign_bi_igtf` (base convertida a la moneda del documento, limitada a `amount_total`), recorriendo los asientos de pago conciliados y sus conciliaciones parciales. El cálculo solo se ejecuta cuando el residual del documento es distinto de cero o su `payment_state` es `paid`/`in_payment`; en cualquier otro caso los cuatro campos quedan en cero.
+`compute_bi_igtf` de `account.move` DEBE (MUST) mantener por factura: `igtf_top_aply` (tope = `amount_total_signed` por el porcentaje, menos el porcentaje de IGTF de los importes conciliados por pagos sin línea de IGTF), `bi_igtf` (base imponible acumulada de los pagos con IGTF conciliados, limitada a `amount_total_signed`), `alter_bi_igtf` (IGTF acumulado aplicado) y `foreign_bi_igtf` (base convertida a la moneda del documento, limitada a `amount_total`), recorriendo los asientos de pago conciliados y sus conciliaciones parciales -- derivados directamente de `matched_debit_ids`/`matched_credit_ids` sobre las líneas conciliables (no del Many2many computado `reconciled_lines_ids`, que dispara el `Field.write()` completo al escribirse y puede producir `RecursionError` en cadenas de `super()` profundas, ver ticket 14119, PR #1163). El cálculo solo se ejecuta cuando el residual del documento es distinto de cero o su `payment_state` es `paid`/`in_payment`; en cualquier otro caso los cuatro campos quedan en cero.
+
+Ese derivado DEBE (MUST) resolverse con `.sudo()` antes de leer las líneas del asiento de pago contraparte: a diferencia de `reconciled_lines_ids` (núcleo), que filtra sus contrapartes con `_filtered_access('read')` antes de devolverlas, `matched_debit_ids`/`matched_credit_ids` no aplica ese mismo filtro -- sin `.sudo()`, este compute ALMACENADO (`store=True`) lanzaría `AccessError` en cuanto el usuario actual no tenga permiso de lectura sobre la contraparte (ej. un pago en OTRA compañía), en vez de simplemente omitir esa línea como hacía el comportamiento anterior.
 
 #### Scenario: Factura pagada con IGTF
 
@@ -192,6 +194,12 @@ Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` e
 
 - **WHEN** el documento tiene residual cero y su `payment_state` no es `paid` ni `in_payment`
 - **THEN** `igtf_top_aply`, `bi_igtf`, `alter_bi_igtf` y `foreign_bi_igtf` quedan en cero
+
+#### Scenario: Pago conciliado en una compañía sin acceso de lectura para el usuario actual
+
+- **GIVEN** una factura conciliada contra un pago cuyo asiento vive en una compañía a la que el usuario actual no tiene acceso de lectura
+- **WHEN** se recomputa `compute_bi_igtf` para esa factura
+- **THEN** el cálculo se completa sin `AccessError`, incluyendo ese pago en la base imponible
 
 ### Requirement: Bloque IGTF en el resumen de impuestos
 

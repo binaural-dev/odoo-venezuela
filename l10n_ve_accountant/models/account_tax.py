@@ -20,18 +20,19 @@ class AccountTax(models.Model):
         )
 
         ves_currency = self.env.company.currency_id
-        
-        active_model = self.env.context.get('active_model')
-        active_id = self.env.context.get('active_id')
-        
-        record = False
-        if active_model and active_id:
-            if isinstance(active_id, api.NewId):
-                active_id = active_id.origin
-            if active_id:
-                record = self.env[active_model].browse(active_id)
 
-        if not record and base_lines:
+        # `base_lines` es el documento REAL para el que se está armando
+        # este summary -- se intenta derivar `record` de ahí PRIMERO.
+        # `active_model`/`active_id` del contexto son AMBIENTE de la UI
+        # (el registro que el usuario tenía abierto cuando se disparó
+        # este cómputo, no necesariamente el que se está calculando
+        # ahora): un wizard de pago en lote, o un recompute encadenado
+        # de otro documento distinto, pueden dejar un `active_id` ajeno
+        # en el contexto mientras `base_lines` sigue apuntando al
+        # documento correcto -- si el contexto ganara, TODAS las
+        # facturas de ese lote heredarían la tasa/moneda de una sola.
+        record = False
+        if base_lines:
             try:
                 first_line = base_lines[0].get('record')
                 if first_line and isinstance(first_line, models.Model):
@@ -43,6 +44,15 @@ class AccountTax(models.Model):
                         record = first_line
             except Exception as e:
                 _logger.warning("Error deduciendo el record al generar summary tax base %s", e)
+
+        if not record:
+            active_model = self.env.context.get('active_model')
+            active_id = self.env.context.get('active_id')
+            if active_model and active_id:
+                if isinstance(active_id, api.NewId):
+                    active_id = active_id.origin
+                if active_id:
+                    record = self.env[active_model].browse(active_id)
 
         if not record:
             return res

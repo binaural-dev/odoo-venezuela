@@ -1,3 +1,5 @@
+from datetime import date, datetime
+
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 
@@ -80,8 +82,28 @@ class AccountMove(models.Model):
         the journal's normal sequence -- hooked here, not in
         `_compute_name`, because `od_journal_sequence` already replaced
         that native compute."""
+        # OJO: filtro deliberadamente MÁS AMPLIO que
+        # `_is_exchange_debit_note()`/`_is_exchange_credit_note()` --
+        # esos dos excluyen a propósito cualquier documento con
+        # `l10n_ve_exchange_original_id` ya seteado (para no confundir
+        # la REVERSIÓN de una nota con una ND/NC genuina en la lógica de
+        # negocio, ver sus propios docstrings). Pero eso significa que la
+        # reversión de una NC directa (`out_invoice`,
+        # `l10n_ve_exchange_diff_entry=True`, con `original_id` seteado
+        # por `_reverse_moves` más abajo) no matchea NINGUNO de los dos
+        # helpers y caía al numerador normal del diario -- consumiendo un
+        # correlativo de FACTURA real (bug real, confirmado en runtime).
+        # Para efectos de NUMERACIÓN (a diferencia de clasificación de
+        # negocio), lo único que importa es el `move_type`: cualquier
+        # documento propio (nota directa O reversión) tipo `out_invoice`
+        # se numera con la secuencia de ND; tipo `out_refund`, con la de
+        # NC -- exactamente simétrico a como ya se trataba la reversión
+        # de una ND (sale `out_refund`, y sí matcheaba
+        # `_is_exchange_credit_note()` porque esa NO excluye
+        # `original_id`).
         exchange_moves = self.filtered(
-            lambda m: m._is_exchange_debit_note() or m._is_exchange_credit_note()
+            lambda m: m.l10n_ve_exchange_diff_entry
+            and m.move_type in ('out_invoice', 'out_refund')
         )
         other_moves = self - exchange_moves
         if other_moves:
@@ -96,40 +118,112 @@ class AccountMove(models.Model):
 
             sequence = (
                 move.journal_id.l10n_ve_exchange_debit_note_sequence_id
-                if move._is_exchange_debit_note()
+                if move.move_type == 'out_invoice'
                 else move.journal_id.refund_sequence_id
             )
 
             if sequence and move.date:
-                move.name = sequence.next_by_id()
+                # `sequence_date` explícito -- estas notas se emiten con
+                # `date`/`invoice_date` BACKDATEADO a la fecha del pago
+                # (nunca la de hoy, ver `account_move_line.py`), y
+                # `ir.sequence.next_by_id()` sin `sequence_date` usa la
+                # fecha de HOY para decidir el rango vigente cuando la
+                # secuencia tiene `use_date_range=True` (el caso normal,
+                # ver `od_journal_sequence._prepare_sequence`) -- sin
+                # esto, una nota backdateada a un mes/año anterior
+                # tomaría el correlativo del rango de HOY, no el del mes
+                # al que en realidad pertenece. Mismo patrón que
+                # `od_journal_sequence.account_move._compute_name_by_sequence`.
+                if isinstance(move.date, date) and not isinstance(move.date, datetime):
+                    sequence_date = datetime.combine(move.date, datetime.min.time())
+                else:
+                    sequence_date = fields.Datetime.to_datetime(move.date)
+                # El kwarg `sequence_date` de `next_by_id()` SOLO afecta
+                # la rama `use_date_range=True` de `ir.sequence._next()`
+                # (`odoo/addons/base/models/ir_sequence.py`): si la
+                # secuencia NO usa rangos por fecha (el caso normal
+                # cuando el usuario crea la secuencia dedicada de ND a
+                # mano por la UI, sin pasar por
+                # `od_journal_sequence._prepare_sequence`, que sí fuerza
+                # `use_date_range=True`), cae a `_next_do()`, que ignora
+                # el kwarg por completo y arma el prefijo (`%(year)s`)
+                # con `datetime.now()` salvo que la fecha venga por
+                # CONTEXTO (`ir_sequence_date`) -- sin esto, una ND
+                # backdateada seguía saliendo con el año de HOY en el
+                # prefijo aunque el kwarg estuviera bien pasado.
+                move.name = sequence.with_context(
+                    ir_sequence_date=fields.Datetime.to_string(sequence_date),
+                ).next_by_id(sequence_date=sequence_date)
+                # `od_journal_sequence` (`models/account_move.py`) ya
+                # reemplazó el compute NATIVO de `name` -- en core,
+                # `payment_reference` depende de `name` vía la cadena de
+                # `@api.depends` nativa, así que asignar `move.name`
+                # DIRECTO acá (sin pasar por ningún compute que lo
+                # dispare) nunca recalcula `payment_reference`. Mismo
+                # patrón que ya usa `od_journal_sequence` para sus
+                # propias asignaciones directas: sin esto, toda ND/NC de
+                # este módulo quedaba con `payment_reference` vacío
+                # (relevante para conciliación bancaria/matching).
+                move._compute_payment_reference()
             else:
-                super(AccountMove, move)._compute_name_by_sequence()
+                # NUNCA caer al numerador normal del diario para un
+                # documento que es NUESTRO (`exchange_moves`, filtrado
+                # arriba): ese numerador es el de facturas/NC del propio
+                # diario -- consumir un correlativo de ahí para una ND/NC
+                # de diferencial es exactamente el bug que este módulo
+                # existe para evitar (confirmado en runtime: una
+                # reversión de ND cayendo acá salía numerada con la
+                # secuencia PRINCIPAL del diario dedicado de ND, la misma
+                # que usa `l10n_ve_invoice`/`l10n_ve_iot_mf` para
+                # identificar Notas de Débito reales de cliente vía
+                # `journal_id.is_debit`). Si llegamos aquí es porque la
+                # secuencia dedicada esperada (`l10n_ve_exchange_debit_note_sequence_id`
+                # para ND, `refund_sequence_id` para NC) no está
+                # configurada en el diario de este `move` -- un fallo de
+                # configuración que debe abortar la conciliación, no
+                # numerar en silencio con un correlativo ajeno.
+                raise UserError(_(
+                    "Cannot number this exchange difference Debit/Credit "
+                    "Note: journal %(journal)s has no dedicated sequence "
+                    "configured for %(kind)s (date=%(date)s). Configure "
+                    "the journal before reconciling foreign-currency "
+                    "invoices with the exchange difference Debit/Credit "
+                    "Note mode enabled.",
+                    journal=move.journal_id.display_name,
+                    kind=_("Debit Notes") if move.move_type == 'out_invoice' else _("Credit Notes"),
+                    date=move.date,
+                ))
 
     def _sequence_matches_date(self):
         """Exchange difference Debit/Credit Notes (and their reversals)
         use their own dedicated sequence, unrelated to the journal's --
         validating them against the native sequence's date makes no
-        sense."""
-        if self.l10n_ve_exchange_diff_entry or self.l10n_ve_exchange_original_id:
+        sense.
+
+        Scoped to `move_type in ('out_invoice', 'out_refund')` -- without
+        it, this also matched Odoo's own GENERIC exchange-difference
+        entries that `_prepare_exchange_difference_move_vals`
+        (`account_move_line.py`) tags with `l10n_ve_exchange_diff_entry`
+        purely for traceability (vendor bills, misc entries, any line
+        that fell to `remaining_lines`), which are NOT ND/NC and DO still
+        use the journal's normal sequence -- skipping Odoo's native
+        sequence-date validation for those was never correct."""
+        if (
+            self.move_type in ('out_invoice', 'out_refund')
+            and (self.l10n_ve_exchange_diff_entry or self.l10n_ve_exchange_original_id)
+        ):
             return True
         return super()._sequence_matches_date()
 
     def js_remove_outstanding_partial(self, partial_id):
-        """If breaking this reconciliation actually unreconciles the
-        invoice-payment pair that generated an exchange difference
-        Debit/Credit Note, reverses that note -- an already posted fiscal
-        document cannot simply be cancelled. Also blocks breaking the
-        note<->invoice/payment reconciliation directly (that should only
-        be undone as a consequence of the above).
-
-        `super()` is called FIRST, and the note is only reversed if
-        `partial` no longer exists afterwards. A subclass earlier in the
-        MRO (`l10n_ve_igtf`, for an advance-payment reconciliation) can
-        return a wizard action instead of actually unreconciling -- if we
-        reversed the note before calling `super()`, the note would end up
-        reversed even though the user hasn't confirmed anything yet and
-        the original reconciliation is still intact.
-        """
+        """Blocks breaking the note<->invoice/payment reconciliation
+        DIRECTLY from the payments widget (that should only be undone as
+        a consequence of breaking the invoice<->payment one). The actual
+        reversal of the note when the invoice<->payment reconciliation
+        IS broken doesn't happen here anymore -- see
+        `account.partial.reconcile.unlink()`
+        (`models/account_partial_reconcile.py`), the lower level where
+        this delegates via `super()`."""
         self.ensure_one()
         partial = self.env['account.partial.reconcile'].browse(partial_id)
         related_moves = partial.debit_move_id.move_id | partial.credit_move_id.move_id
@@ -142,29 +236,49 @@ class AccountMove(models.Model):
                 "note will be reversed automatically."
             ))
 
+        # Solo se necesita ANTES de romper la conciliación (para el
+        # `UserError` de arriba): la búsqueda/reversión de la nota en sí
+        # ya no ocurre acá -- ver `account.partial.reconcile.unlink()`
+        # (`models/account_partial_reconcile.py`), que engancha la
+        # reversión al nivel donde de verdad convergen TODAS las formas
+        # de romper una conciliación (este botón, pero también
+        # `remove_move_reconcile()` usado directo por otros módulos, ej.
+        # `l10n_ve_igtf` para cancelar pagos anticipados -- antes de ese
+        # cambio, romper la conciliación por esa otra vía dejaba la nota
+        # huérfana: posteada, con folio fiscal consumido, sin revertir).
+        return super().js_remove_outstanding_partial(partial_id)
+
+    @api.model
+    def _l10n_ve_exchange_note_for_partial(self, partial):
+        """Returns the (single) exchange difference Debit/Credit Note tied
+        to the invoice/payment pair that `partial`
+        (`account.partial.reconcile`) reconciles -- an empty recordset if
+        `partial` doesn't tie an invoice to a payment, or no such note
+        exists (already reversed, or none was ever generated for that
+        pair). Used by `account.partial.reconcile.unlink()`
+        (`models/account_partial_reconcile.py`) -- kept as a separate
+        `account.move` method (instead of inlined there) so the query
+        that decides WHICH note a broken reconciliation reverses lives
+        next to `_reverse_exchange_note`, the method that actually
+        reverses it."""
+        related_moves = partial.debit_move_id.move_id | partial.credit_move_id.move_id
         invoice = related_moves.filtered(
             lambda m: m.move_type in ('out_invoice', 'out_refund')
         )[:1]
         payment = related_moves - invoice
-
-        result = super().js_remove_outstanding_partial(partial_id)
-
-        if invoice and not partial.exists():
-            # Buscada por (factura, pago) y no solo por factura: una misma
-            # factura pagada en varias cuotas puede acumular una ND/NC
-            # distinta por cada pago parcial (ver `l10n_ve_exchange_payment_id`)
-            # -- al romper la conciliación de UN pago puntual, solo debe
-            # revertirse la nota de ESE pago.
-            note = self.env['account.move'].search([
-                ('l10n_ve_exchange_invoice_id', '=', invoice.id),
-                ('l10n_ve_exchange_payment_id', '=', payment.id),
-                ('state', '!=', 'cancel'),
-                ('reversal_move_ids', '=', False),
-            ], order='id desc', limit=1)
-            if note:
-                note._reverse_exchange_note()
-
-        return result
+        if not invoice:
+            return self.browse()
+        # Buscada por (factura, pago) y no solo por factura: una misma
+        # factura pagada en varias cuotas puede acumular una ND/NC
+        # distinta por cada pago parcial (ver `l10n_ve_exchange_payment_id`)
+        # -- al romper la conciliación de UN pago puntual, solo debe
+        # revertirse la nota de ESE pago.
+        return self.search([
+            ('l10n_ve_exchange_invoice_id', '=', invoice.id),
+            ('l10n_ve_exchange_payment_id', '=', payment.id),
+            ('state', '!=', 'cancel'),
+            ('reversal_move_ids', '=', False),
+        ], order='id desc', limit=1)
 
     def _reverse_exchange_note(self):
         """Reverses this exchange difference Debit/Credit Note because the
@@ -200,11 +314,10 @@ class AccountMove(models.Model):
         own notes), not `_is_exchange_debit_note()` alone: reversing a
         NC produces an `out_invoice` reversal that, without
         `l10n_ve_exchange_original_id` set, would satisfy
-        `_is_exchange_debit_note()` on its own merits (right
-        `move_type`, `diff_entry` copied over, no `original_id`/
-        `is_credit_note` set) -- misclassifying a mere reversal as a
-        genuine new ND, consuming the (already scarce) dedicated ND
-        sequence for a document that isn't actually one."""
+        `_is_exchange_debit_note()` on its own merits (right `move_type`,
+        no `original_id`/`is_credit_note` set) -- misclassifying a mere
+        reversal as a genuine new ND, consuming the (already scarce)
+        dedicated ND sequence for a document that isn't actually one."""
         if default_values_list is None:
             default_values_list = [{} for _ in self]
 
@@ -214,9 +327,118 @@ class AccountMove(models.Model):
                 and move.move_type in ('out_invoice', 'out_refund')
                 and move.company_id.l10n_ve_exchange_use_nd_nc
             ):
+                # `l10n_ve_exchange_diff_entry` FORZADO acá, no asumido
+                # "copiado" -- el campo tiene `copy=False`, y core arma
+                # la reversión con `move.copy(default_values)`
+                # (`account/models/account_move.py`), así que sin
+                # pasarlo explícito la reversión nace con el flag en
+                # `False`. Nuestro propio `_reverse_exchange_note` YA lo
+                # pasa en su propio `default_values_list`, así que hasta
+                # acá nunca se notó -- pero cualquier otro camino que
+                # llame `_reverse_moves()` sobre una de nuestras notas
+                # (ej. el wizard estándar de Odoo, "Reverse Entry" desde
+                # la UI, disponible en cualquier factura posteada)
+                # producía una reversión con `diff_entry=False`, que el
+                # filtro de `_compute_name_by_sequence` (más abajo) ya no
+                # reconocía como propia -- bug real, confirmado en
+                # runtime: la reversión caía al numerador normal del
+                # diario, consumiendo un correlativo ajeno.
+                #
+                # OJO con `'name'`: a propósito NO se fuerza acá (a
+                # diferencia de antes). `name` (núcleo,
+                # `account/models/account_move.py`) tiene
+                # `inverse='_inverse_name'` además de `compute` -- pasar
+                # un valor explícito para él en `default_values` (como
+                # `'/'`) dispara el inverse, y Odoo entonces trata ese
+                # valor como una escritura MANUAL del usuario: lo saca
+                # para siempre de la cola de recómputo automático por
+                # dependencia (mismo mecanismo que respeta un número de
+                # factura tipeado a mano en el form, para no pisarlo
+                # solo porque cambió el diario). Confirmado en runtime:
+                # con `'name': '/'` explícito acá, `_compute_name_by_sequence`
+                # NUNCA se volvía a invocar para la reversión al
+                # postearla (ni una sola vez, ver log de depuración),
+                # así que se quedaba en '/' para siempre. Sin pasarlo,
+                # el propio compute de acá abajo (`move.name = move.name
+                # or '/'`) le da el mismo '/' de exhibición mientras está
+                # en borrador, pero por la vía de COMPUTE normal -- que
+                # SÍ se re-dispara cuando `state` cambia a `posted`.
                 default_values.update({
+                    'l10n_ve_exchange_diff_entry': True,
                     'l10n_ve_exchange_original_id': move.id,
-                    'name': '/',
                 })
+                if move.move_type == 'out_refund':
+                    # Revertir una NC DIRECTA produce un `out_invoice` --
+                    # ese documento se numera con la secuencia DEDICADA
+                    # de ND (ver el ternario en
+                    # `_compute_name_by_sequence`), que solo puede
+                    # resolverse si el documento vive en el diario que
+                    # tiene esa secuencia asignada
+                    # (`l10n_ve_exchange_debit_note_sequence_id` es un
+                    # campo de `account.journal`, no de la nota). Sin
+                    # esto, la reversión hereda por copia el diario de
+                    # venta NORMAL de la NC original (el mismo de la
+                    # factura de origen) y cae al numerador de FACTURAS
+                    # de ese diario -- bug real, confirmado en runtime
+                    # (reversión de NC saliendo `INV/.../0001`). Mismo
+                    # lookup que usa `_create_exchange_difference_note`
+                    # al emitir una ND nueva.
+                    #
+                    # `.sudo()` -- `journal_comp_rule` (núcleo) filtra
+                    # `account.journal` por las compañías PERMITIDAS del
+                    # usuario/proceso que dispara la reversión, no por
+                    # `move.company_id`. Sin esto, un cron o un usuario
+                    # de otra sucursal sin esa compañía en
+                    # `allowed_company_ids` encuentra el diario vacío en
+                    # SILENCIO (`if debit_journal and ...`, sin
+                    # `UserError`), y la reversión de la NC queda
+                    # numerada con el diario de venta normal en vez del
+                    # dedicado -- exactamente el bug que este bloque
+                    # existe para evitar, solo que por una vía distinta.
+                    debit_journal = self.env['account.journal'].sudo().search([
+                        ('company_id', '=', move.company_id.id),
+                        ('is_debit', '=', True),
+                        ('type', '=', 'sale'),
+                    ], order='id', limit=1)
+                    if debit_journal and debit_journal.l10n_ve_exchange_debit_note_sequence_id:
+                        default_values['journal_id'] = debit_journal.id
+                else:
+                    # Revertir una ND (`out_invoice`) produce un
+                    # `out_refund` que -- a diferencia del caso de arriba
+                    # -- NO necesita redirigirse de diario: por
+                    # construcción, una ND siempre vive YA en el diario
+                    # dedicado (`is_debit=True`, ver
+                    # `_create_exchange_difference_note`,
+                    # `account_move_line.py`), así que la reversión lo
+                    # hereda por copia sin más. Lo que sí falta es que
+                    # ESE diario tenga su propia `refund_sequence_id`
+                    # configurada -- nada la auto-provisiona hoy (el
+                    # `UserError` de pre-vuelo al crear la ND solo exige
+                    # `l10n_ve_exchange_debit_note_sequence_id`, la
+                    # secuencia de ND, nunca la de NC de ese mismo
+                    # diario). Sin esto, `_compute_name_by_sequence`
+                    # (ternario: `out_refund` -> `journal_id.refund_sequence_id`)
+                    # encontraba `refund_sequence_id` vacío y caía al
+                    # numerador PRINCIPAL de ese diario -- la secuencia
+                    # que `l10n_ve_invoice`/`l10n_ve_iot_mf` usan para
+                    # identificar Notas de Débito REALES de cliente vía
+                    # `journal_id.is_debit` -- bug real, confirmado
+                    # leyendo el flujo completo. Mismo patrón de
+                    # autoprovisión con `.sudo()` que ya usa
+                    # `_create_exchange_difference_note` para el diario
+                    # de la factura en el caso de NC directa (misma
+                    # justificación: bloquear con `UserError` dejaría
+                    # inoperable de fábrica cualquier reversión de ND,
+                    # peor que el bug que se corrige).
+                    debit_journal = move.journal_id
+                    if debit_journal.is_debit and not debit_journal.refund_sequence_id:
+                        debit_journal.sudo().write({
+                            'refund_sequence': True,
+                            'refund_sequence_id': debit_journal._create_sequence({
+                                'code': debit_journal.code,
+                                'name': debit_journal.name,
+                                'company_id': debit_journal.company_id.id,
+                            }, refund=True).id,
+                        })
 
         return super()._reverse_moves(default_values_list, cancel=cancel)

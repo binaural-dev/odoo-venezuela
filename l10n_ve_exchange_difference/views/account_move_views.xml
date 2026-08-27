@@ -26,7 +26,13 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_account_invoice_filter"/>
         <field name="arch" type="xml">
-            <filter name="posted" position="after">
+            <!-- Anclado DESPUÉS de "cancel", no de "posted": el grupo
+                 Borrador/Publicado/Cancelado del core (`account.view_account_invoice_filter`)
+                 es un grupo OR delimitado por separadores ANTES de "draft"
+                 y DESPUÉS de "cancel" insertar un `<separator/>` entre
+                 "posted" y "cancel" partía ese grupo en dos, rompiendo el
+                 OR nativo Borrador/Publicado/Cancelado. -->
+            <filter name="cancel" position="after">
                 <separator/>
                 <filter
                     name="l10n_ve_exchange_diff_entry"

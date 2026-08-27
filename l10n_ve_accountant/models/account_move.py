@@ -919,24 +919,29 @@ class AccountMove(models.Model):
         'foreign_rate',
     )
     def _compute_tax_totals(self):
-        # El `with_context(active_id=..., active_model=...)` por registro que
-        # había aquí antes se quitó porque `with_context()` crea un
-        # `Environment` nuevo por cada factura (iterando el registro de
-        # entornos vivos de la transacción), que en este proyecto (con
-        # cadenas de `super()` muy profundas) es uno de varios puntos que
-        # puede terminar en un `RecursionError` real al conciliar pagos.
-        # `account_tax._get_tax_totals_summary` (l10n_ve_accountant) deriva
-        # el `record` (la factura) directo de `base_lines[0]['record'].move_id`
-        # como fallback cuando no hay `active_id`/`active_model` en el
-        # contexto -- pero la rama de moneda/tasa/descuento de ese método
-        # bifurcaba comparando el STRING `active_model == "account.move"`
-        # (nunca seteado por este fallback) en vez de `record._name`, así
-        # que quitar el `with_context()` sin corregir esa condición dejaba
-        # esa rama muerta fuera de una acción de UI real (crons, recomputes
-        # por conciliación, reportes) -- ver el fix en `account_tax.py`.
-        # Se mantiene el `@api.depends` (necesario por `foreign_rate`,
-        # específico de este proyecto) pero se delega directo, sin el
-        # contexto por registro.
+        """Delegates straight to `super()`, without the per-record
+        `with_context(active_id=..., active_model=...)` this used to set
+        before iterating -- `with_context()` builds a new `Environment`
+        for every invoice (walking the transaction's live environment
+        registry), which in this project (with very deep `super()`
+        chains) is one of several spots that could end in a real
+        `RecursionError` while reconciling payments.
+
+        `account_tax._get_tax_totals_summary` (`l10n_ve_accountant`)
+        derives `record` (the invoice) FIRST from
+        `base_lines[0]['record'].move_id` -- only falling back to the
+        context's `active_id`/`active_model` if that fails -- but that
+        method's currency/rate/discount branch used to compare the
+        STRING `active_model == "account.move"` (never set by this
+        `base_lines`-derived path) instead of `record._name`, so removing
+        the per-record `with_context()` without also fixing that
+        condition left that branch permanently dead outside a real UI
+        action (crons, reconciliation-triggered recomputes, reports) --
+        see the fix in `account_tax.py`.
+
+        The `@api.depends` above is kept (needed for `foreign_rate`,
+        specific to this project) but the call itself is delegated
+        directly, with no per-record context."""
         super()._compute_tax_totals()
 
 

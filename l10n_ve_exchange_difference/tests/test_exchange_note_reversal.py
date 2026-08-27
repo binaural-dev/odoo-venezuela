@@ -2,7 +2,7 @@ from unittest.mock import patch
 import inspect
 
 from odoo import Command, fields
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests import Form, tagged
 from odoo.tests.common import TransactionCase
 
@@ -35,9 +35,15 @@ class TestExchangeNoteReversal(TransactionCase):
         # `res.currency.rate` se inyecten. Mismo patrón que usa
         # `l10n_ve_igtf` en sus tests (`IGTFTestCommon.setUp`,
         # `l10n_ve_igtf/tests/test_igtf_common_providers_formal_VEF.py`).
+        # `country_id` también explícito -- en al menos una base real
+        # `base.main_company` quedó sin país configurado, y los
+        # `account.tax` creados más abajo con `country_id` derivado de
+        # `cls.company.country_id` (vacío en ese caso) reventaban el
+        # `NOT NULL` de `account_tax.country_id` en Postgres.
         cls.company.write({
             "currency_id": cls.env.ref("base.VEF").id,
             "foreign_currency_id": cls.usd.id,
+            "country_id": cls.company.country_id.id or cls.env.ref("base.ve").id,
         })
 
         # Dos tasas distintas para forzar un diferencial cambiario real al
@@ -72,29 +78,127 @@ class TestExchangeNoteReversal(TransactionCase):
 
         cls.partner = cls.env["res.partner"].create({"name": "Cliente Prueba Reversal"})
         cls.partner.property_product_pricelist = False
-        receivable = cls.env["account.account"].search(
+
+        # Cuentas base con FALLBACK de creación -- no basta con
+        # `search()` solo: en al menos un entorno real la compañía no
+        # tenía chart of accounts instalado en absoluto, y una búsqueda
+        # sin fallback dejaba `property_account_receivable_id` vacío --
+        # Odoo rechaza cualquier factura para ese partner con
+        # `RedirectWarning` ("Cannot find a chart of accounts"). Mismo
+        # patrón robusto que usa `l10n_ve_igtf`
+        # (`get_or_create_account`, `IGTFTestCommon.setUp`), pero con
+        # códigos PROPIOS (sufijo "REV") -- no se reutiliza ese mismo
+        # helper ni sus mismos códigos: en una base compartida entre
+        # varios archivos de test, `get_or_create_account` busca por
+        # `code` SIN filtrar por compañía, así que copiar sus códigos
+        # tal cual arriesgaba encontrar/reescribir la cuenta de OTRO
+        # fixture en vez de crear una propia.
+        cls.acc_receivable = cls.env["account.account"].search(
             [*cls.env["account.account"]._check_company_domain(cls.company), ("account_type", "=", "asset_receivable")],
             limit=1,
         )
-        cls.partner.property_account_receivable_id = receivable.id
+        if not cls.acc_receivable:
+            cls.acc_receivable = cls.env["account.account"].create({
+                "name": "Cuentas por Cobrar Prueba Reversal",
+                "code": "1101REV",
+                "account_type": "asset_receivable",
+                "reconcile": True,
+                "company_ids": [Command.set([cls.company.id])],
+            })
+        cls.partner.property_account_receivable_id = cls.acc_receivable.id
 
-        # `company.exent_aliquot_sale` depende de datos de configuración que
-        # no existen en una base limpia sin datos de módulo -- se busca un
-        # impuesto de venta al 0% ya existente (ej. "0% Exports", viene con
-        # los datos fiscales base) en vez de depender de esa configuración.
-        cls.exent = cls.env["account.tax"].search([
-            ("type_tax_use", "=", "sale"), ("amount", "=", 0.0),
-            ("company_id", "=", cls.company.id),
-        ], limit=1)
+        cls.acc_payable = cls.env["account.account"].search(
+            [*cls.env["account.account"]._check_company_domain(cls.company), ("account_type", "=", "liability_payable")],
+            limit=1,
+        )
+        if not cls.acc_payable:
+            cls.acc_payable = cls.env["account.account"].create({
+                "name": "Cuentas por Pagar Prueba Reversal",
+                "code": "2101REV",
+                "account_type": "liability_payable",
+                "reconcile": True,
+                "company_ids": [Command.set([cls.company.id])],
+            })
+        cls.partner.property_account_payable_id = cls.acc_payable.id
+
+        # Cuentas de ganancia/pérdida cambiaria -- `company.income_currency_exchange_account_id`/
+        # `expense_currency_exchange_account_id` (campos nativos de
+        # Odoo) NO se asumen preconfiguradas por el chart of accounts
+        # de la base: en al menos un entorno real quedaron vacías,
+        # dejando la línea de la ND/NC sin `account_id` y reventando el
+        # `CHECK account_move_line_check_accountable_required_fields`
+        # de Postgres al crearla.
+        cls.acc_exchange_gain = cls.env["account.account"].create({
+            "name": "Ganancia Cambiaria Prueba Reversal",
+            "code": "76001REV",
+            "account_type": "income_other",
+            "company_ids": [Command.set([cls.company.id])],
+        })
+        cls.acc_exchange_loss = cls.env["account.account"].create({
+            "name": "Pérdida Cambiaria Prueba Reversal",
+            "code": "66001REV",
+            "account_type": "expense",
+            "company_ids": [Command.set([cls.company.id])],
+        })
+        # `company.currency_exchange_journal_id` -- campo NATIVO de Odoo
+        # (diario "Ganancia o Pérdida en Cambio", Ajustes > Contabilidad),
+        # exigido por el propio núcleo (`_create_exchange_difference_moves`,
+        # `account/models/account_move_line.py`) ANTES de que este módulo
+        # intercepte la creación de la ND/NC: sin él configurado, Odoo
+        # revienta con `UserError` incluso cuando `l10n_ve_exchange_use_nd_nc`
+        # ya está activo. Distinto de `income_currency_exchange_account_id`/
+        # `expense_currency_exchange_account_id` (las CUENTAS) -- este es el
+        # DIARIO donde Odoo registraría su asiento genérico si este módulo
+        # no lo redirigiera.
+        cls.exchange_journal = cls.env["account.journal"].create({
+            "name": "Diferencial Cambiario Prueba Reversal",
+            "type": "general",
+            "code": "EXCHREV",
+            "company_id": cls.company.id,
+        })
+        cls.company.write({
+            "income_currency_exchange_account_id": cls.acc_exchange_gain.id,
+            "currency_exchange_journal_id": cls.exchange_journal.id,
+            "expense_currency_exchange_account_id": cls.acc_exchange_loss.id,
+        })
+
+        # `company.exent_aliquot_sale` depende de configuración que no
+        # existe en una base limpia sin datos de módulo -- se CREAN los
+        # impuestos al 0% explícitamente en vez de buscar uno ya existente
+        # (ej. "0% Exports"): un `search()` depende de qué datos demo se
+        # cargaron, y eso varía según el módulo/orden de instalación --
+        # corriendo con `--without-demo=True` (subárbol aislado) no existe
+        # ningún impuesto demo y la búsqueda siempre da vacío, mientras que
+        # junto a otros módulos con demo puede o no encontrar uno. Mismo
+        # bug encontrado y corregido en `l10n_ve_igtf`
+        # (`test_igtf_common_partner_formal_VEF.py`, `purchase_exent`).
+        cls.exent_tax_group = cls.env['account.tax.group'].create({
+            'name': 'IVA Test Reversal',
+            'country_id': cls.company.country_id.id,
+        })
+        cls.exent = cls.env['account.tax'].create({
+            'name': 'IVA exento (Test Reversal)',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'company_id': cls.company.id,
+            'tax_group_id': cls.exent_tax_group.id,
+            'country_id': cls.company.country_id.id,
+        })
         # `supplier_taxes_id` explícito -- sin esto, el default que arma
         # Odoo para ese campo en `create()` puede traer más de un impuesto
         # en bases con varios impuestos de compra al 0% configurados, y
         # `l10n_ve_accountant` (`_enforce_single_tax_vals`) rechaza
         # cualquier producto con más de un impuesto de compra asignado.
-        cls.exent_purchase = cls.env["account.tax"].search([
-            ("type_tax_use", "=", "purchase"), ("amount", "=", 0.0),
-            ("company_id", "=", cls.company.id),
-        ], limit=1)
+        cls.exent_purchase = cls.env['account.tax'].create({
+            'name': 'Compra exenta (Test Reversal)',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'purchase',
+            'company_id': cls.company.id,
+            'tax_group_id': cls.exent_tax_group.id,
+            'country_id': cls.company.country_id.id,
+        })
         # `l10n_ve_exchange_note_product_id` exige (`_check_l10n_ve_exchange_note_product_id`,
         # `models/res_company.py`) que el producto sea un servicio, que su
         # cuenta de ingreso sea una de las cuentas nativas de
@@ -149,9 +253,48 @@ class TestExchangeNoteReversal(TransactionCase):
         })
         cls.company.l10n_ve_exchange_use_nd_nc = True
 
-        cls.sale_journal = cls.env["account.journal"].search(
-            [("type", "=", "sale"), ("company_id", "=", cls.company.id)], limit=1
+        # Diario de venta EXPLÍCITO -- NO se busca "cualquier diario
+        # `type='sale'`" (bug real confirmado: esa búsqueda, sin excluir
+        # `is_debit`, podía encontrar el propio `debit_note_journal`
+        # recién creado arriba -- también `type='sale'` -- y usarlo como
+        # diario de facturas NORMALES, numerándolas con la secuencia
+        # dedicada de ND y produciendo `UniqueViolation` en
+        # `account_move_unique_name` al chocar dos facturas distintas
+        # numeradas ambas "NDDIFT/2026/0001").
+        # `refund_sequence: True` -- desde el fix de B5 (revisión de
+        # código), `_create_exchange_difference_note` YA NO autoprovisiona
+        # `refund_sequence_id` en silencio sobre el diario de venta al
+        # emitir una NC (rama de pérdida cambiaria): ahora exige que esté
+        # configurado de antemano, igual que exige la secuencia dedicada
+        # de ND. `od_journal_sequence.account_journal.create()` la
+        # autogenera acá mismo cuando el diario nace con
+        # `refund_sequence=True` (`type='sale'`).
+        cls.sale_journal = cls.env["account.journal"].create({
+            "name": "Ventas Prueba Reversal",
+            "type": "sale",
+            "code": "VREV",
+            "company_id": cls.company.id,
+            "refund_sequence": True,
+        })
+
+        # Diario de compras, con fallback de creación -- necesario para
+        # el caso de factura de PROVEEDOR
+        # (`test_fallback_tags_generic_exchange_move_for_vendor_bill`):
+        # sin diario de compras, el `Form` de una factura `in_invoice`
+        # revienta con `UserError: No journal could be found ... for
+        # any of those types: purchase` antes de llegar siquiera a la
+        # lógica de este módulo.
+        cls.purchase_journal = cls.env["account.journal"].search(
+            [("type", "=", "purchase"), ("company_id", "=", cls.company.id)], limit=1
         )
+        if not cls.purchase_journal:
+            cls.purchase_journal = cls.env["account.journal"].create({
+                "name": "Compras Prueba Reversal",
+                "type": "purchase",
+                "code": "CREV",
+                "company_id": cls.company.id,
+            })
+
         # Se reusa un diario de banco en USD si ya existe uno bien
         # configurado (con métodos de pago/cuentas asignadas); si no (base
         # limpia sin datos de módulo), se crea uno mínimo -- Odoo arma la
@@ -195,11 +338,34 @@ class TestExchangeNoteReversal(TransactionCase):
                     "payment_account_id": bank_account.id,
                 })],
             })
+        # Cuentas de ingreso/gasto propias -- NO las de ganancia/pérdida
+        # cambiaria (`acc_exchange_gain`/`acc_exchange_loss`, ésas son
+        # EXCLUSIVAS del producto de la nota, `_check_l10n_ve_exchange_note_product_id`
+        # las exige distintas de cualquier otro uso). Sin cuenta propia
+        # aquí y sin fiscal position por defecto en la compañía, CADA
+        # factura creada con este producto (`_create_invoice`, usado por
+        # casi todos los tests de este archivo) revienta con
+        # `account_move_line_check_accountable_required_fields` al
+        # agregar la línea.
+        cls.acc_sale_income = cls.env["account.account"].create({
+            "name": "Ingresos Prueba Reversal",
+            "code": "4002REV2",
+            "account_type": "income",
+            "company_ids": [Command.set([cls.company.id])],
+        })
+        cls.acc_sale_expense = cls.env["account.account"].create({
+            "name": "Gastos Prueba Reversal",
+            "code": "5002REV2",
+            "account_type": "expense",
+            "company_ids": [Command.set([cls.company.id])],
+        })
         cls.sale_product = cls.env["product.product"].create({
             "name": "Servicio Test Reversal",
             "type": "service",
             "taxes_id": [(6, 0, cls.exent.ids)],
             "supplier_taxes_id": [(6, 0, cls.exent_purchase.ids)],
+            "property_account_income_id": cls.acc_sale_income.id,
+            "property_account_expense_id": cls.acc_sale_expense.id,
         })
 
         # Diario de banco en la moneda DE COMPAÑÍA (VEF) -- necesario para
@@ -231,6 +397,15 @@ class TestExchangeNoteReversal(TransactionCase):
                     "payment_method_id": cls.env.ref("account.account_payment_method_manual_in").id,
                     "payment_account_id": vef_bank_account.id,
                 })],
+                # Método saliente también -- sin cuenta asignada,
+                # `l10n_ve_accountant._check_payment_method_line_accounts`
+                # rechaza el diario al crearlo. Mismo patrón que
+                # `usd_bank_journal` arriba.
+                "outbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                    "name": "Manual",
+                    "payment_method_id": cls.env.ref("account.account_payment_method_manual_out").id,
+                    "payment_account_id": vef_bank_account.id,
+                })],
             })
 
     def test_odoo_core_api_compatibility(self):
@@ -247,16 +422,30 @@ class TestExchangeNoteReversal(TransactionCase):
         """
         aml_model = self.env['account.move.line']
 
-        # Verificar que el método exista y tenga la firma esperada
-        method = getattr(aml_model, '_prepare_reconciliation_single_partial', None)
-        self.assertIsNotNone(method,
+        # `getattr(aml_model, ...)` resolvería NUESTRO propio override
+        # (definido en este mismo módulo, ver `account_move_line.py`),
+        # no el método de CORE -- inspeccionar esa firma sería comparar
+        # nuestra propia copia contra sí misma, siempre verde, sin
+        # detectar jamás un cambio real de Odoo. Hay que recorrer el
+        # MRO y tomar la función definida específicamente en el módulo
+        # `account` de core, saltando la nuestra (y la de cualquier
+        # otro addon instalado que también la sobrescriba).
+        core_method = None
+        for klass in type(aml_model).__mro__:
+            if klass.__module__ == 'odoo.addons.account.models.account_move_line':
+                core_method = klass.__dict__.get('_prepare_reconciliation_single_partial')
+                if core_method is not None:
+                    break
+        self.assertIsNotNone(
+            core_method,
             "Odoo core method _prepare_reconciliation_single_partial not found or was removed"
         )
 
-        # Verificar parámetros exactos
-        # NOTA: inspect.signature() NO incluye 'self' en métodos de instancia
-        sig = inspect.signature(method)
-        expected_params = {'debit_values', 'credit_values', 'shadowed_aml_values'}
+        # Verificar parámetros exactos -- función SIN bind, `self` sí
+        # aparece en la firma (a diferencia de `getattr` sobre una
+        # instancia, que lo omite).
+        sig = inspect.signature(core_method)
+        expected_params = {'self', 'debit_values', 'credit_values', 'shadowed_aml_values'}
         actual_params = set(sig.parameters.keys())
         self.assertEqual(expected_params, actual_params,
             f"_prepare_reconciliation_single_partial signature changed. "
@@ -269,7 +458,33 @@ class TestExchangeNoteReversal(TransactionCase):
             "_prepare_reconciliation_single_partial shadowed_aml_values should have a default value"
         )
 
-    def _create_invoice(self, invoice_date):
+    def test_missing_aml_key_raises_user_error(self):
+        """El guard de claves de `_prepare_reconciliation_single_partial`
+        (`account_move_line.py`) -- el que el propio docstring del método
+        llama "el único con valor real" frente al guard de firma de
+        `test_odoo_core_api_compatibility`, que solo detecta un
+        `TypeError` de Odoo, no un cambio silencioso de claves -- nunca
+        tenía un test que lo ejercitara directamente. Se llama al método
+        real con dicts que faltan la clave `'aml'` (simulando el
+        escenario que el guard existe para atrapar: un futuro Odoo 19.x
+        que cambie esa clave sin cambiar la firma) y se confirma que
+        aborta con `UserError` (no `RuntimeError` -- ese sale como
+        "Internal Server Error" genérico en vez de mostrar el mensaje
+        explicativo en un diálogo), no que mal-atribuya la nota en
+        silencio."""
+        aml_model = self.env['account.move.line']
+        with self.assertRaises(UserError):
+            aml_model._prepare_reconciliation_single_partial(
+                debit_values={'not_aml': object()},
+                credit_values={'aml': object()},
+            )
+        with self.assertRaises(UserError):
+            aml_model._prepare_reconciliation_single_partial(
+                debit_values={'aml': object()},
+                credit_values={'not_aml': object()},
+            )
+
+    def _create_invoice(self, invoice_date, journal=None):
         """Mismo patrón que usa `l10n_ve_igtf` para sus facturas de prueba
         (`IGTFTestCommon._create_invoice_usd`, ver
         `l10n_ve_igtf/tests/test_igtf_common_providers_formal_VEF.py`):
@@ -277,14 +492,20 @@ class TestExchangeNoteReversal(TransactionCase):
         agregan en un SEGUNDO `Form` sobre el registro ya guardado -- así
         se disparan los onchange/recompute de impuestos y totales en cada
         paso, en vez de dejar todo en un solo `create()` con
-        `invoice_line_ids` embebido de una vez."""
+        `invoice_line_ids` embebido de una vez.
+
+        `journal` opcional -- por defecto `self.sale_journal` (el de la
+        mayoría de los tests, ya con `refund_sequence` configurada); un
+        test que necesite reproducir el escenario de un diario SIN esa
+        secuencia (ej. `test_regular_accountant_gets_user_error_...`) pasa
+        el suyo propio."""
         with Form(self.env["account.move"].with_context(default_move_type="out_invoice")) as inv_form:
             inv_form.partner_id = self.partner
             inv_form.invoice_date = invoice_date
             # `journal_id` ANTES que `currency_id`: el onchange del diario
             # reasigna la moneda a la del propio diario (VEF, la de la
             # compañía) si se hace en el orden contrario, pisando el USD.
-            inv_form.journal_id = self.sale_journal
+            inv_form.journal_id = journal or self.sale_journal
             inv_form.currency_id = self.usd
         invoice = inv_form.save()
 
@@ -361,7 +582,19 @@ class TestExchangeNoteReversal(TransactionCase):
         `reconcile()` exigía `invoice_line.currency_id == payment_line.currency_id`;
         al pagar en VEF una factura en USD esa igualdad nunca se cumplía,
         y el diferencial cambiario se perdía por completo (ni ND/NC propia
-        ni asiento genérico de Odoo, por el `no_exchange_difference=True`)."""
+        ni asiento genérico de Odoo, por el `no_exchange_difference=True`).
+
+        Este es también el Caso 4 del ticket ("Factura en $$ Pagada en Bs
+        indexado") -- vía el wizard REAL `account.payment.register`, no
+        `.reconcile()` crudo. "Indexado" no es un toggle que aplique acá:
+        `indexed_default` (`l10n_ve_accountant/wizard/account_payment_register.py`)
+        solo es EDITABLE en el wizard cuando `currency_id != company_currency_id`
+        (`readonly="... or company_currency_id == currency_id"`,
+        `l10n_ve_accountant/wizard/account_payment_register.xml:13`) -- para
+        un pago en VEF (la moneda de compañía) ese campo queda readonly y
+        `_get_conversion_date()` siempre usa `payment_date`, sea cual sea su
+        valor. Ver `test_indexed_default_is_readonly_for_company_currency_payments`
+        abajo, que deja esto explícito y a prueba de regresión."""
         invoice = self._create_invoice("2026-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
@@ -414,6 +647,108 @@ class TestExchangeNoteReversal(TransactionCase):
         self.assertEqual(note.amount_total, 400.0)
         self.assertEqual(note.invoice_line_ids.price_unit, 400.0)
         self.assertEqual(note.invoice_line_ids.account_id, self.company.expense_currency_exchange_account_id)
+
+    def test_indexed_default_is_readonly_for_company_currency_payments(self):
+        """`indexed_default` -- el toggle 'indexado'/'no indexado' de
+        `l10n_ve_accountant` -- solo es EDITABLE en el wizard cuando la
+        moneda del PAGO es distinta de la moneda de compañía
+        (`readonly="indexaxion_payment_mode != 'to_agreed' or
+        company_currency_id == currency_id"`,
+        `l10n_ve_accountant/wizard/account_payment_register.xml:13`). Al
+        pagar una factura en USD directo con VEF (Caso 4 del ticket:
+        "Factura en $$ Pagada en Bs"), ese campo queda readonly y
+        `_get_conversion_date()` (`l10n_ve_accountant/wizard/account_payment_register.py`)
+        siempre usa `payment_date`, sea cual sea su valor -- "indexado" no
+        es un escenario distinto a pagar en VEF sin más, es el ÚNICO
+        comportamiento posible. Documenta explícitamente por qué
+        `test_exchange_difference_settled_with_company_currency_payment`
+        (arriba) no necesita -- ni PUEDE -- variar `indexed_default` para
+        cubrir ese caso del ticket."""
+        self.company.indexaxion_payment_mode = "to_agreed"
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.vef_bank_journal
+            pay_form.currency_id = self.company.currency_id
+            pay_form.save()
+            with self.assertRaises(
+                AssertionError,
+                msg="`indexed_default` debió quedar readonly al pagar en la "
+                "moneda de la propia compañía (VEF).",
+            ):
+                pay_form.indexed_default = False
+
+    def test_indexed_default_false_on_foreign_payment_produces_no_exchange_note(self):
+        """Complemento de negocio de `test_indexed_default_is_readonly_for_company_currency_payments`:
+        acá SÍ se puede editar `indexed_default` (pago en USD, moneda
+        distinta de la de compañía) y se pone en `False` -- con eso,
+        `_get_conversion_date()` (`l10n_ve_accountant/wizard/account_payment_register.py`)
+        usa la fecha de la FACTURA (no la del pago) para valorar el pago
+        en moneda de compañía, así que aunque la tasa cambió entre
+        factura y pago, el pago queda contabilizado con la MISMA
+        valorización que la factura -- residual en VEF cero, sin
+        diferencial, sin ND/NC. Mismas fechas/tasas que
+        `test_exchange_difference_credit_note_branch` (que SÍ genera una
+        NC con `indexed_default` en su valor por defecto, `True`) para
+        que quede claro que la única variable es el toggle."""
+        self.company.indexaxion_payment_mode = "to_agreed"
+        self.usd.write({
+            "active": True,
+            "rate_ids": [
+                Command.create({
+                    "name": "2038-01-01",
+                    "company_rate": 1 / 40.0,
+                }),
+                Command.create({
+                    "name": "2038-08-01",
+                    "company_rate": 1 / 36.0,
+                }),
+            ],
+        })
+
+        invoice = self._create_invoice("2038-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2038-08-01"
+            pay_form.indexed_default = False
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        payment = self.env["account.payment"].browse(action.get("res_id"))
+        payment.action_post()
+
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        self.assertEqual(
+            invoice.payment_state, "paid",
+            "La factura debió quedar completamente pagada, sin residual "
+            "pendiente, al usar la tasa de la FACTURA para valorar el pago.",
+        )
+        self.assertTrue(inv_line.reconciled)
+        self.assertTrue(
+            self.company.currency_id.is_zero(inv_line.amount_residual),
+            "Con `indexed_default=False`, el pago debió valorarse con la "
+            "MISMA tasa que la factura -- no debió quedar ningún residual "
+            "en moneda de compañía pese a que la tasa de mercado cambió "
+            "entre la factura y el pago.",
+        )
+
+        notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertFalse(
+            notes,
+            "No debió crearse ninguna ND/NC de diferencial cambiario: con "
+            "`indexed_default=False` el pago se valora a la tasa de la "
+            "factura, así que no hay diferencial que registrar.",
+        )
 
     def _create_invoice_company_currency(self, invoice_date):
         """Mismo patrón que `_create_invoice`, pero la factura queda en la
@@ -560,9 +895,162 @@ class TestExchangeNoteReversal(TransactionCase):
         self.assertEqual(len(reversal), 1, "Debió crearse exactamente una reversión de la ND/NC.")
         self.assertEqual(reversal.state, "posted")
         self.assertTrue(reversal.l10n_ve_exchange_diff_entry)
+        self.assertEqual(reversal.l10n_ve_exchange_original_id, note)
+
+        # `note` es una NC DIRECTA en este escenario (tasas del
+        # `setUpClass`: factura > pago). Revertirla produce un
+        # `out_invoice` -- debe numerarse con la secuencia DEDICADA de
+        # ND (viviendo en `debit_note_journal`), NUNCA con la secuencia
+        # de FACTURAS del diario de venta normal (bug real: sin la
+        # redirección de diario en `_reverse_moves`, la reversión
+        # heredaba por copia el diario de la NC original -- el de venta
+        # normal -- y salía numerada como una factura más).
+        self.assertEqual(reversal.move_type, "out_invoice")
+        self.assertEqual(
+            reversal.journal_id, self.debit_note_journal,
+            "La reversión de una NC directa debió redirigirse al diario "
+            "dedicado de ND, no heredar el diario de venta de la NC original.",
+        )
+        self.assertTrue(
+            reversal.name and reversal.name.startswith("NDDIFT/"),
+            f"La reversión debió numerarse con la secuencia dedicada de ND, "
+            f"no con la de facturas. name={reversal.name!r}",
+        )
 
         note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         self.assertTrue(note_line.reconciled, "La nota original debió quedar cerrada por su propia reversión.")
+
+    def test_note_reversed_when_reconciliation_broken_via_remove_move_reconcile(self):
+        """Misma reversión automática que `test_exchange_note_reversed_on_unreconcile`,
+        pero rompiendo la conciliación factura<->pago por OTRA vía --
+        `account.move.line.remove_move_reconcile()` directo (núcleo),
+        NUNCA pasando por el botón del widget
+        (`js_remove_outstanding_partial`). Antes de enganchar la
+        reversión en `account.partial.reconcile.unlink()`
+        (`models/account_partial_reconcile.py`) en vez de solo en el
+        botón, romper la conciliación por esta vía dejaba la nota
+        huérfana: posteada, con folio fiscal ya consumido, pero nunca
+        revertida -- justo lo que hace `l10n_ve_igtf`
+        (`cancel_advance_payment_transaction`) para cancelar pagos
+        anticipados."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+
+        notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("partner_id", "=", self.partner.id),
+        ])
+        self.assertEqual(len(notes), 1)
+        note = notes[0]
+        self.assertEqual(note.state, "posted")
+
+        # `remove_move_reconcile()` -- NO el botón del widget -- opera
+        # sobre la línea directamente, igual que hace
+        # `l10n_ve_igtf.cancel_advance_payment_transaction` vía
+        # `partial_reconcile.line_ids.remove_move_reconcile()` (nombre
+        # de variable engañoso ahí: en realidad es un `account.move`, no
+        # un `account.partial.reconcile`).
+        inv_line.invalidate_recordset()
+        inv_line.remove_move_reconcile()
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        self.assertFalse(inv_line.reconciled, "La factura debió quedar desconciliada del pago.")
+
+        note.invalidate_recordset()
+        self.assertEqual(
+            note.state, "posted",
+            "La nota original no debió cancelarse ni borrarse (documento fiscal ya posteado).",
+        )
+        reversal = self.env["account.move"].search([
+            ("reversed_entry_id", "=", note.id),
+        ])
+        self.assertEqual(
+            len(reversal), 1,
+            "Debió crearse una reversión de la ND/NC aunque la conciliación se "
+            "rompió sin pasar por el botón del widget de pagos.",
+        )
+        self.assertEqual(reversal.state, "posted")
+
+        note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertTrue(note_line.reconciled, "La nota original debió quedar cerrada por su propia reversión.")
+
+    def test_note_reversed_via_standard_reversal_wizard_keeps_dedicated_sequence(self):
+        """`l10n_ve_exchange_diff_entry` tiene `copy=False`
+        (`account_move.py`), y core arma la reversión con
+        `move.copy(default_values)` (`account/models/account_move.py`)
+        -- SIN pasarlo explícito en `default_values`, la reversión nace
+        con el flag en `False`. `_reverse_exchange_note` (el único
+        camino que ejercitan los demás tests de este archivo) SÍ lo pasa
+        en su propio `default_values_list`, así que el bug quedaba
+        oculto: revertir una nota por el wizard ESTÁNDAR de Odoo
+        ("Reverse Entry", disponible en cualquier factura/NC posteada,
+        ver `l10n_ve_donation.account_move.action_post` para otro uso ya
+        existente de ese mismo wizard en este repo) NO pasa ese flag, y
+        sin él el filtro de `_compute_name_by_sequence` no reconocía la
+        reversión como propia -- caía al numerador normal del diario,
+        consumiendo un correlativo ajeno (bug real, confirmado en
+        runtime antes de este fix)."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("partner_id", "=", self.partner.id),
+        ])
+        self.assertEqual(len(note), 1)
+        self.assertEqual(note.move_type, "out_refund", "Precondición: tasas del setUpClass producen una NC directa.")
+
+        # Wizard ESTÁNDAR de Odoo, no `_reverse_exchange_note` -- mismo
+        # patrón que usa `l10n_ve_donation.account_move.action_post`.
+        wizard = self.env["account.move.reversal"].with_context(
+            active_ids=note.ids,
+            active_model="account.move",
+        ).create({"date": "2026-08-15", "journal_id": note.journal_id.id})
+        wizard.reverse_moves()
+        reversal = wizard.new_move_ids
+        self.assertEqual(len(reversal), 1)
+        reversal.with_context(move_action_post_alert=True).action_post()
+
+        self.assertTrue(
+            reversal.l10n_ve_exchange_diff_entry,
+            "La reversión por el wizard estándar debió quedar marcada como "
+            "propia de este módulo, igual que si se hubiera revertido por "
+            "`_reverse_exchange_note`.",
+        )
+        self.assertEqual(reversal.l10n_ve_exchange_original_id, note)
+        self.assertEqual(reversal.move_type, "out_invoice")
+        self.assertEqual(
+            reversal.journal_id, self.debit_note_journal,
+            "La reversión (out_invoice) debió redirigirse al diario dedicado de ND.",
+        )
+        self.assertTrue(
+            reversal.name and reversal.name.startswith("NDDIFT/"),
+            f"La reversión debió numerarse con la secuencia dedicada de ND, "
+            f"no con la de facturas. name={reversal.name!r}",
+        )
 
     def test_reconciling_again_after_reversal_generates_new_note(self):
         """Continuación directa de `test_exchange_note_reversed_on_unreconcile`:
@@ -949,6 +1437,34 @@ class TestExchangeNoteReversal(TransactionCase):
         self.assertEqual(note.date, fields.Date.from_string("2027-08-01"))
         self.assertEqual(note.l10n_ve_exchange_payment_id, payment.move_id)
 
+        # `invoice_date_display` (la fecha que se IMPRIME en el
+        # documento) también debe quedar en la fecha del pago -- sin
+        # setearla explícito, Odoo la deja en blanco y el reporte impreso
+        # cae al día en que se corre/imprime (HOY), no al de la nota.
+        self.assertEqual(note.invoice_date_display, fields.Date.from_string("2027-08-01"))
+
+        # `foreign_rate` de la NC debe reflejar la tasa a la fecha DEL
+        # PAGO (2027-08-01), NO la de la factura -- sin el override en
+        # `_create_exchange_difference_note`, `l10n_ve_accountant`
+        # (`account_move.create()`) hereda `foreign_rate` de
+        # `reversed_entry_id` incondicionalmente para cualquier
+        # `out_refund`/`in_refund`, dejando la NC con la tasa VIEJA de la
+        # factura en vez de la del pago -- asimétrico respecto a la ND
+        # (que sí calcula su propia tasa natural, porque nace de
+        # `debit_origin_id`, no de `reversed_entry_id`).
+        expected_rate_values = self.env["res.currency.rate"].compute_rate(
+            self.usd.id, fields.Date.from_string("2027-08-01"),
+        )
+        self.assertAlmostEqual(
+            note.foreign_rate, expected_rate_values.get("foreign_rate", 0), places=6,
+            msg="La NC debió tomar la tasa vigente a la fecha DEL PAGO, no la de la factura.",
+        )
+        self.assertNotAlmostEqual(
+            note.foreign_rate, invoice.foreign_rate, places=6,
+            msg="La NC no debió heredar la tasa de la factura (serían iguales solo por "
+            "coincidencia con estas tasas deliberadamente distintas).",
+        )
+
         # La NC de PÉRDIDA debe acreditar la cuenta de pérdida cambiaria de
         # la compañía, NUNCA la cuenta de ingreso del producto (que
         # `_check_l10n_ve_exchange_note_product_id` fuerza a ser la de
@@ -1018,6 +1534,21 @@ class TestExchangeNoteReversal(TransactionCase):
         )
         self.assertEqual(note.move_type, "out_invoice")
         self.assertEqual(note.debit_origin_id, invoice)
+
+        # Numerada con el AÑO DE SU PROPIA FECHA (2029, la del pago), no
+        # el de hoy: `cls.debit_note_sequence` (`setUpClass`) NO tiene
+        # `use_date_range=True` -- justo el caso donde
+        # `ir.sequence.next_by_id(sequence_date=...)` por sí solo NO
+        # alcanza (core solo respeta ese kwarg cuando la secuencia usa
+        # rangos por fecha; si no, interpola el prefijo con
+        # `datetime.now()` salvo que la fecha venga por contexto
+        # `ir_sequence_date`, ver `_compute_name_by_sequence`).
+        self.assertTrue(
+            note.name.startswith("NDDIFT/2029/"),
+            f"La ND debió numerarse con el año de su propia fecha (2029), "
+            f"no el de hoy. name={note.name!r}",
+        )
+
         note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         self.assertTrue(note_line.reconciled)
         self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))
@@ -1239,6 +1770,12 @@ class TestExchangeNoteReversal(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
+        # Fallback de creación -- sin esto, en una base sin ese tipo de
+        # cuenta ya configurado (ej. `lloro`), `search()` devuelve vacío y
+        # la línea del asiento contrapartida queda con `account_id=NULL`,
+        # reventando el `CHECK account_move_line_check_accountable_required_fields`
+        # de Postgres antes de siquiera llegar al `reconcile()` que este
+        # test existe para probar.
         liability_account = self.env["account.account"].search(
             [
                 *self.env["account.account"]._check_company_domain(self.company),
@@ -1246,10 +1783,24 @@ class TestExchangeNoteReversal(TransactionCase):
             ],
             limit=1,
         )
+        if not liability_account:
+            liability_account = self.env["account.account"].create({
+                "name": "Pasivo Corriente Prueba Reversal",
+                "code": "2401REV",
+                "account_type": "liability_current",
+                "company_ids": [Command.set([self.company.id])],
+            })
         income = self.env["account.account"].search(
             [*self.env["account.account"]._check_company_domain(self.company), ("account_type", "=", "income")],
             limit=1,
         )
+        if not income:
+            income = self.env["account.account"].create({
+                "name": "Ingresos Contrapartida Prueba Reversal",
+                "code": "4003REV",
+                "account_type": "income",
+                "company_ids": [Command.set([self.company.id])],
+            })
         counterpart_entry = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
@@ -1354,11 +1905,19 @@ class TestExchangeNoteReversal(TransactionCase):
         """`l10n_ve_exchange_note_product_id` rechaza un producto cuya
         cuenta de ingreso NO sea la cuenta de ganancia cambiaria de la
         compañía (`company.income_currency_exchange_account_id`)."""
-        other_income = self.env["account.account"].search([
-            *self.env["account.account"]._check_company_domain(self.company),
-            ("account_type", "=", "income"),
-            ("id", "!=", self.company.income_currency_exchange_account_id.id),
-        ], limit=1)
+        # Creada explícita, no buscada: un `search()` de "otra cuenta de
+        # ingreso" depende de que la base ya traiga alguna configurada
+        # -- en un entorno sin chart of accounts previo no hay ninguna,
+        # el `search()` da vacío, y `property_account_income_id=False`
+        # deja pasar el producto en falso positivo sin ejercitar el
+        # constraint (el test pasaba "sin querer" solo porque no había
+        # datos, no porque la validación funcionara).
+        other_income = self.env["account.account"].create({
+            "name": "Otro Ingreso Prueba Reversal",
+            "code": "4002REV",
+            "account_type": "income",
+            "company_ids": [Command.set([self.company.id])],
+        })
         bad_product = self._create_note_product(
             "Diferencial Test Cuenta Ingreso Incorrecta",
             property_account_income_id=other_income.id,
@@ -1370,11 +1929,16 @@ class TestExchangeNoteReversal(TransactionCase):
         """`l10n_ve_exchange_note_product_id` rechaza un producto cuya
         cuenta de gasto NO sea la cuenta de pérdida cambiaria de la
         compañía (`company.expense_currency_exchange_account_id`)."""
-        other_expense = self.env["account.account"].search([
-            *self.env["account.account"]._check_company_domain(self.company),
-            ("account_type", "=", "expense"),
-            ("id", "!=", self.company.expense_currency_exchange_account_id.id),
-        ], limit=1)
+        # Creada explícita -- mismo motivo que en el test de la cuenta
+        # de ingreso (arriba): un `search()` de "otra cuenta de gasto"
+        # depende de datos preexistentes que no hay en un entorno sin
+        # chart of accounts previo.
+        other_expense = self.env["account.account"].create({
+            "name": "Otro Gasto Prueba Reversal",
+            "code": "5002REV",
+            "account_type": "expense",
+            "company_ids": [Command.set([self.company.id])],
+        })
         bad_product = self._create_note_product(
             "Diferencial Test Cuenta Gasto Incorrecta",
             property_account_expense_id=other_expense.id,
@@ -1385,8 +1949,25 @@ class TestExchangeNoteReversal(TransactionCase):
     def test_note_product_must_use_default_sale_exempt_tax(self):
         """`l10n_ve_exchange_note_product_id` rechaza un producto cuyo
         impuesto de venta NO sea el exento por defecto de la compañía
-        (`company.exent_aliquot_sale`) -- ej. sin impuesto asignado."""
-        bad_product = self._create_note_product("Diferencial Test Sin Impuesto", taxes_id=[(5, 0, 0)])
+        (`company.exent_aliquot_sale`) -- ej. un impuesto distinto."""
+        # Un impuesto DISTINTO, no vacío -- `taxes_id=[(5,0,0)]` (sin
+        # impuesto alguno) revienta antes, en `_enforce_single_tax_vals`
+        # (`l10n_ve_accountant`), que exige exactamente un impuesto de
+        # venta cuando la compañía no tiene fiscal position por
+        # defecto -- eso probaba OTRO guard, nunca llegaba al que este
+        # test dice ejercitar.
+        other_sale_tax = self.env['account.tax'].create({
+            'name': 'IVA Distinto Prueba Reversal',
+            'amount': 16,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'company_id': self.company.id,
+            'tax_group_id': self.exent_tax_group.id,
+            'country_id': self.company.country_id.id,
+        })
+        bad_product = self._create_note_product(
+            "Diferencial Test Impuesto Incorrecto", taxes_id=[(6, 0, other_sale_tax.ids)],
+        )
         with self.assertRaises(ValidationError):
             self.company.write({"l10n_ve_exchange_note_product_id": bad_product.id})
 
@@ -1555,6 +2136,11 @@ class TestExchangeNoteReversal(TransactionCase):
             note_debit.journal_id, debit_journal,
             "La Nota de Débito de diferencial debió usar el diario dedicado.",
         )
+        self.assertTrue(
+            note_debit.name.startswith("NDDIFT/2031/"),
+            f"La ND debió numerarse con la secuencia dedicada y el año de su "
+            f"propia fecha (2031). name={note_debit.name!r}",
+        )
 
         # Rama de Nota de Crédito (tasa de la factura MAYOR que la del
         # pago -- mismas tasas que `test_exchange_difference_credit_note_branch`),
@@ -1574,6 +2160,15 @@ class TestExchangeNoteReversal(TransactionCase):
         })
         invoice_credit = self._create_invoice("2032-01-01")
         invoice_credit.with_context(move_action_post_alert=True).action_post()
+
+        # `number_next_actual` de la secuencia de FACTURAS del diario,
+        # capturado justo después de postear la factura (ya consumió su
+        # propio correlativo) y antes de que exista la NC -- si
+        # `_create_exchange_difference_note` numerara la NC con esta
+        # MISMA secuencia en vez de `refund_sequence_id` (el bug
+        # original), este valor avanzaría de nuevo al crear la NC.
+        invoice_sequence = invoice_credit.journal_id.sequence_id
+        invoice_sequence_next_before = invoice_sequence.number_next_actual
 
         with Form.from_action(self.env, invoice_credit.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
@@ -1600,6 +2195,127 @@ class TestExchangeNoteReversal(TransactionCase):
             note_credit.journal_id, debit_journal,
             "La Nota de Crédito de diferencial NO debió usar el diario dedicado de ND.",
         )
+        self.assertTrue(
+            note_credit.name.startswith("R"),
+            f"La NC debió numerarse con la secuencia dedicada de refund "
+            f"(prefijo 'R...', ver `od_journal_sequence._prepare_sequence`), "
+            f"nunca con la secuencia de facturas. name={note_credit.name!r}",
+        )
+        self.assertNotEqual(
+            note_credit.name, False,
+            "La NC quedó sin numerar.",
+        )
+        invoice_sequence.invalidate_recordset(["number_next_actual"])
+        self.assertEqual(
+            invoice_sequence.number_next_actual, invoice_sequence_next_before,
+            "Crear la NC de diferencial NO debió consumir un correlativo de "
+            "la secuencia de FACTURAS del diario -- debe numerarse "
+            "exclusivamente con `refund_sequence_id`.",
+        )
+
+    def test_regular_accountant_gets_user_error_not_access_error_on_missing_nc_sequence(self):
+        """Regresión que ya NO prueba autoprovisión -- desde el fix de la
+        revisión de código ("B5"), `_create_exchange_difference_note` NO
+        autoprovisiona `refund_sequence_id` en silencio con `sudo()`
+        sobre el diario de venta del cliente cuando falta: eso era un
+        cambio PERMANENTE y silencioso en la numeración fiscal de un
+        diario compartido con cualquier factura/NC de negocio normal,
+        disparado dentro de `reconcile()` por quien sea que registre el
+        pago. Ahora se exige configuración explícita de antemano, igual
+        que ya exigía la rama de ND -- `raise UserError`.
+
+        Lo que este test SIGUE necesitando probar (la razón original de
+        `access_account_journal_manager` en juego, ver el comentario
+        original de este test): que un contable SIN
+        `group_account_manager` (`account.group_account_user`, "puede
+        hacer todo salvo config avanzada") reciba ese `UserError` de
+        NEGOCIO explícito -- nunca un `AccessError` crudo de permisos de
+        `account.journal`, que revelaría detalle interno de seguridad en
+        vez de decirle qué configurar."""
+        accountant = self.env["res.users"].create({
+            "name": "Contable Sin Permisos de Manager",
+            "login": "contable.sin.manager@test.com",
+            "email": "contable.sin.manager@test.com",
+            "group_ids": [Command.set([
+                self.env.ref("base.group_user").id,
+                self.env.ref("account.group_account_user").id,
+            ])],
+            "company_id": self.company.id,
+            "company_ids": [Command.set([self.company.id])],
+        })
+
+        # Diario de venta PROPIO de este test, deliberadamente SIN
+        # `refund_sequence` -- el compartido `self.sale_journal` (usado
+        # por casi todos los demás tests) ya la trae configurada desde
+        # `setUpClass` (necesaria justo para NO tropezar con este mismo
+        # `UserError` en los demás escenarios), así que ya no sirve para
+        # reproducir la precondición "diario sin secuencia de NC" que
+        # este test necesita.
+        journal_without_nc_sequence = self.env["account.journal"].create({
+            "name": "Ventas Sin Secuencia NC",
+            "type": "sale",
+            "code": "VNONC",
+            "company_id": self.company.id,
+        })
+
+        # Tasas propias para estas fechas -- sin esto, `res.currency.rate`
+        # cae a la última tasa configurada (`setUpClass`, 2026-08-01) para
+        # AMBAS fechas (factura y pago), factura y pago quedan con la
+        # MISMA tasa, no hay residual, y no se crea ninguna nota (con lo
+        # que la aserción de más abajo nunca podría cumplirse, sin
+        # importar si el fix de permisos funciona o no).
+        self.usd.write({
+            "active": True,
+            "rate_ids": [
+                Command.create({
+                    "name": "2035-01-01",
+                    "company_rate": 1 / 40.0,
+                }),
+                Command.create({
+                    "name": "2035-08-01",
+                    "company_rate": 1 / 36.0,
+                }),
+            ],
+        })
+
+        invoice = self._create_invoice("2035-01-01", journal=journal_without_nc_sequence)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertFalse(
+            invoice.journal_id.refund_sequence_id,
+            "Precondición del escenario: el diario de venta NO debe tener "
+            "una secuencia de refund configurada.",
+        )
+
+        accountant_env = self.env(
+            user=accountant,
+            context=dict(self.env.context, move_action_post_alert=True),
+        )
+        with Form.from_action(
+            accountant_env,
+            invoice.with_user(accountant).action_register_payment(),
+        ) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2035-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        with self.assertRaises(UserError) as ctx:
+            payment_wizard.with_user(accountant).action_create_payments()
+        self.assertNotIsInstance(
+            ctx.exception, AccessError,
+            "Un contable sin `group_account_manager` debió recibir el "
+            "UserError de negocio explícito (falta configurar la "
+            "secuencia de NC del diario), nunca un AccessError crudo de "
+            "permisos sobre `account.journal`.",
+        )
+
+        # Nada quedó a medio crear: ni la secuencia, ni una nota huérfana.
+        invoice.invalidate_recordset()
+        self.assertFalse(invoice.journal_id.refund_sequence_id)
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertFalse(note, "No debió crearse ninguna nota a medias tras el UserError.")
 
     def test_fallback_tags_generic_exchange_move_for_vendor_bill(self):
         """Cuando la línea que queda con residual NO pertenece a una
@@ -1611,18 +2327,14 @@ class TestExchangeNoteReversal(TransactionCase):
         quedar igualmente etiquetado con `l10n_ve_exchange_diff_entry`."""
         supplier = self.env["res.partner"].create({"name": "Proveedor Prueba Reversal"})
         supplier.property_product_pricelist = False
-        payable = self.env["account.account"].search(
-            [
-                *self.env["account.account"]._check_company_domain(self.company),
-                ("account_type", "=", "liability_payable"),
-            ],
-            limit=1,
-        )
-        supplier.property_account_payable_id = payable.id
-
-        purchase_journal = self.env["account.journal"].search(
-            [("type", "=", "purchase"), ("company_id", "=", self.company.id)], limit=1
-        )
+        # `self.acc_payable`/`self.purchase_journal` -- creados con
+        # fallback a nivel de clase (`setUpClass`), no una búsqueda
+        # local sin respaldo: sin un diario de compras ya existente, el
+        # `Form` de abajo revienta al INICIALIZARSE (antes de llegar a
+        # asignar nada) con `UserError: No journal could be found ...
+        # for any of those types: purchase`, calculado automáticamente
+        # por Odoo (`_search_default_journal`) al abrir el Form.
+        supplier.property_account_payable_id = self.acc_payable.id
 
         # `company.quick_edit_mode` -- sin esto, el campo `name` viene
         # invisible en el Form (`account.view_move_form`, núcleo de Odoo:
@@ -1637,7 +2349,7 @@ class TestExchangeNoteReversal(TransactionCase):
         with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as bill_form:
             bill_form.partner_id = supplier
             bill_form.invoice_date = "2026-01-01"
-            bill_form.journal_id = purchase_journal
+            bill_form.journal_id = self.purchase_journal
             bill_form.currency_id = self.usd
             # Referencia del proveedor y correlativo fiscal -- ambos
             # requeridos para facturas de proveedor (a diferencia de las
@@ -2018,7 +2730,7 @@ class TestExchangeNoteReversal(TransactionCase):
             self.assertTrue(note_line.reconciled, "Cada nota del pago agrupado debió quedar cerrada.")
             self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))
 
-    def test_grouped_payment_gain_direction_invoice_attribution_limitation(self):
+    def test_grouped_payment_gain_direction_invoice_attribution_is_exact(self):
         """Un pago AGRUPADO que liquida DOS facturas de montos DISTINTOS
         (100 y 500 USD) a la vez, en dirección de GANANCIA (Odoo suele
         atribuir el residual al lado del PAGO, no de la factura, en esa
@@ -2124,6 +2836,79 @@ class TestExchangeNoteReversal(TransactionCase):
             self.assertTrue(note_line.reconciled, "Cada nota debió quedar cerrada, sin excepción.")
             self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))
             self.assertEqual(note.l10n_ve_exchange_payment_id, payment.move_id)
+
+    def test_invoice_settled_against_unrelated_credit_note_still_generates_note(self):
+        """DIAGNÓSTICO -- ver qué produce hoy `reconcile()` cuando una
+        factura se salda contra una NC de cliente SUELTA (no un pago
+        bancario): el filtro `invoice_lines` de `reconcile()` clasifica
+        AMBAS líneas (factura Y NC) como "línea de factura de cliente"
+        (ambas `asset_receivable`, `move_type in ('out_invoice',
+        'out_refund')`) -- dejando `payment_lines` VACÍO. Este test fija
+        el comportamiento observado, sea cual sea, para que quede
+        documentado y protegido contra regresión."""
+        with Form(self.env["account.move"].with_context(default_move_type="out_refund")) as cn_form:
+            cn_form.partner_id = self.partner
+            cn_form.invoice_date = "2026-08-01"
+            cn_form.journal_id = self.sale_journal
+            cn_form.currency_id = self.usd
+        credit_note = cn_form.save()
+        with Form(credit_note) as cn_form_edit:
+            with cn_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.sale_product
+                line.quantity = 1
+                line.price_unit = 100.0
+        credit_note = cn_form_edit.save()
+        self.assertFalse(credit_note.reversed_entry_id)
+        self.assertFalse(credit_note.debit_origin_id)
+        credit_note.with_context(move_action_post_alert=True).action_post()
+
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        cn_line = credit_note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        # Widget "outstanding credits" de la factura -- el mismo camino
+        # real que usa un usuario para saldar una factura contra una NC
+        # suelta del mismo cliente, sin pasar por ningún pago bancario.
+        invoice.js_assign_outstanding_line(cn_line.id)
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        credit_note.invalidate_recordset()
+        cn_line.invalidate_recordset()
+
+        self.assertTrue(inv_line.reconciled, "La factura y la NC debieron quedar conciliadas entre sí.")
+        self.assertTrue(cn_line.reconciled)
+
+        notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("id", "not in", (invoice + credit_note).ids),
+        ])
+        self.assertEqual(
+            len(notes), 1,
+            "La conciliación factura<->NC (tasas de 2026-01-01 y 2026-08-01, "
+            "distintas) debió producir un residual de diferencial cambiario "
+            "real -- y, tras el fix de atribución de pago (B6, "
+            "`_prepare_exchange_difference_move_vals`), ese residual ya no "
+            "se pierde por `payment_lines` vacío: se genera igual una "
+            "ND/NC de diferencial, atribuida a quien de las dos líneas "
+            "haya quedado con el residual real.",
+        )
+        note = notes
+        # Cualquiera de las dos líneas (factura o NC) pudo terminar con
+        # el residual según a cuál se lo atribuya el motor nativo de
+        # Odoo -- lo único que importa es que la nota quede vinculada a
+        # UNA de las dos, nunca huérfana ni sin `l10n_ve_exchange_invoice_id`.
+        self.assertIn(note.l10n_ve_exchange_invoice_id, invoice + credit_note)
+        self.assertTrue(note.l10n_ve_exchange_payment_id, "La nota no debió quedar sin contraparte de pago.")
+        self.assertIn(note.l10n_ve_exchange_payment_id, invoice + credit_note)
+        self.assertNotEqual(
+            note.l10n_ve_exchange_invoice_id, note.l10n_ve_exchange_payment_id,
+            "La nota nunca debió atribuirse a sí misma como su propio pago.",
+        )
+        note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertTrue(note_line.reconciled, "La ND/NC debió quedar cerrada por su propia conciliación.")
 
     def test_standalone_credit_note_settled_with_exchange_difference_generates_own_note(self):
         """Una Nota de Crédito de cliente GENUINA -- `out_refund` creada

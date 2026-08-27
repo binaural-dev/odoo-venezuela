@@ -1,59 +1,298 @@
 from odoo import Command, fields
 from odoo.tests import Form, tagged
-
-from odoo.addons.l10n_ve_igtf.tests.test_igtf_common_partner_formal_VEF import IGTFTestCommon
+from odoo.tests.common import TransactionCase
 
 
 @tagged("l10n_ve_exchange_difference", "-at_install", "post_install")
-class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
-    """Reusa el fixture ya existente de `l10n_ve_igtf` (`IGTFTestCommon`,
-    `l10n_ve_igtf/tests/test_igtf_common_partner_formal_VEF.py`) en vez de
-    reconstruir compañía/cuentas/diarios propios -- ese fixture ya deja
-    IGTF activo (`igtf_percentage`, `customer_account_igtf_id`, diario de
-    banco USD con `is_igtf=True`) sobre la MISMA compañía y las MISMAS
-    tasas de cambio (hoy y ayer) que usan sus propios tests. Solo se
-    agrega encima la configuración mínima que necesita
-    `l10n_ve_exchange_difference` para activarse."""
+class TestExchangeDifferenceWithIGTF(TransactionCase):
+    """Fixture PROPIO de este archivo, autocontenido -- ya NO hereda de
+    `IGTFTestCommon` (`l10n_ve_igtf/tests/test_igtf_common_partner_formal_VEF.py`).
+    Ese fixture compartido tiene helpers (`get_or_create_account`, que
+    busca por `code` SIN filtrar por compañía; `_create_invoice_usd`/
+    `_create_invoice_vef`, que buscan "cualquier diario `type='sale'`" sin
+    excluir diarios dedicados de ND) que en una base compartida y reusada
+    entre corridas (`lloro`) colisionan con fixtures de OTROS archivos --
+    confirmado empíricamente: la búsqueda de diario de venta de
+    `IGTFTestCommon` encontraba el propio diario dedicado de ND de este
+    módulo (`is_debit=True`, también `type='sale'`) y posteaba facturas
+    normales ahí, numerándolas con la secuencia dedicada de la ND y
+    produciendo `UniqueViolation` en `account_move_unique_name`.
+
+    Este archivo replica el MISMO patrón de configuración de
+    `IGTFTestCommon` (moneda alterna, tasas de hoy/ayer, IGTF activo con
+    `igtf_percentage`/`customer_account_igtf_id`, diario de banco USD con
+    `is_igtf=True`) pero con cuentas/diarios/impuestos propios (sufijo
+    "XIGTF"), sin depender de ningún `search()` sin scope."""
 
     def setUp(self):
         super().setUp()
-        # No se reutiliza `self.tax_iva_exent` (creado por `IGTFTestCommon`
-        # con el país de la compañía, pero sin pasar por el `Form`/onchange
-        # que normalmente ajusta la posición fiscal): al crear la ND/NC
-        # directo con `create()` (`_create_exchange_difference_note`,
-        # `l10n_ve_exchange_difference/models/account_move_line.py`), ese
-        # impuesto disparaba `_validate_taxes_country` ("taxes that are not
-        # compatible with your fiscal position"). Se busca en su lugar un
-        # impuesto de venta al 0% ya existente y compatible -- mismo
-        # patrón que usa `test_exchange_note_reversal.py`.
-        exent = self.env["account.tax"].search([
-            ("type_tax_use", "=", "sale"), ("amount", "=", 0.0),
-            ("company_id", "=", self.company.id),
-        ], limit=1)
-        # `l10n_ve_exchange_note_product_id` exige (`_check_l10n_ve_exchange_note_product_id`,
-        # `l10n_ve_exchange_difference/models/res_company.py`) que el
-        # producto sea un servicio con la cuenta de ingreso igual a una de
-        # las cuentas nativas de ganancia/pérdida por diferencial
-        # cambiario de la compañía, y el mismo impuesto exento por
-        # defecto (`company.exent_aliquot_sale`).
-        # `supplier_taxes_id` explícito -- sin esto, el default que arma
+        self.company = self.env.ref("base.main_company")
+        self.currency_vef = self.env.ref("base.VEF")
+        self.currency_usd = self.env.ref("base.USD")
+        self.currency_vef.write({"rounding": 0.01, "decimal_places": 2, "active": True})
+        self.currency_usd.write({"rounding": 0.01, "decimal_places": 2})
+
+        # Tasas de hoy/ayer -- `rate` explícito en AMBAS entradas: el
+        # `inverse` de `company_rate` (núcleo, `_inverse_company_rate`)
+        # compone `rate = company_rate * last_rate[company]` usando la
+        # tasa ya creada en el mismo batch como referencia si no se fija
+        # `rate` directo (mismo bug ya documentado y corregido en
+        # `IGTFTestCommon.setUp`, replicado aquí con el fix ya aplicado
+        # desde el principio).
+        self.rate = 390.2944
+        self.currency_usd.write({
+            "active": True,
+            "rate_ids": [
+                Command.create({
+                    "name": fields.Date.today(),
+                    "company_rate": 1 / self.rate,
+                    "rate": 1 / self.rate,
+                    "inverse_company_rate": self.rate,
+                }),
+                Command.create({
+                    "name": fields.Date.subtract(fields.Date.today(), days=1),
+                    "company_rate": 1 / 380.0,
+                    "rate": 1 / 380.0,
+                    "inverse_company_rate": 380.0,
+                }),
+            ],
+        })
+
+        self.company.write({
+            "currency_id": self.currency_vef.id,
+            "foreign_currency_id": self.currency_usd.id,
+            "taxpayer_type": "formal",
+            "country_id": self.company.country_id.id or self.env.ref("base.ve").id,
+        })
+
+        # Cuentas base -- creadas explícitas con `company_ids`, códigos
+        # EXCLUSIVOS de este archivo (sufijo "XIGTF") para no colisionar
+        # ni con las de `test_exchange_note_reversal.py` (sufijo "REV")
+        # ni con las que crea `IGTFTestCommon` (sin sufijo) para los
+        # tests de `l10n_ve_igtf` que sí siguen usando ese fixture.
+        self.acc_receivable = self.env["account.account"].create({
+            "name": "Cuentas por Cobrar Test IGTF Own",
+            "code": "1101XIGTF",
+            "account_type": "asset_receivable",
+            "reconcile": True,
+            "company_ids": [Command.set([self.company.id])],
+        })
+        self.acc_payable = self.env["account.account"].create({
+            "name": "Cuentas por Pagar Test IGTF Own",
+            "code": "2101XIGTF",
+            "account_type": "liability_payable",
+            "reconcile": True,
+            "company_ids": [Command.set([self.company.id])],
+        })
+        self.acc_income = self.env["account.account"].create({
+            "name": "Ingresos Test IGTF Own",
+            "code": "4001XIGTF",
+            "account_type": "income",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        self.acc_igtf_cli = self.env["account.account"].create({
+            "name": "IGTF Clientes Test IGTF Own",
+            "code": "236XIGTF",
+            "account_type": "liability_current",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        self.account_bank_usd = self.env["account.account"].create({
+            "name": "Banco USD Test IGTF Own",
+            "code": "1002XIGTF",
+            "account_type": "asset_cash",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        # `is_advance_account=True` -- exigido por
+        # `account.payment._onchange_journal_id` (`l10n_ve_igtf/models/account_payment.py`)
+        # en cuanto el diario usado es `is_igtf=True`: sin este flag en la
+        # cuenta destino, el `Form` del pago revienta con `UserError`
+        # ("the destination account must be is_advance_account") al
+        # asignar el diario, antes de llegar siquiera a la lógica de
+        # anticipos que este test prueba.
+        self.advance_cust_acc = self.env["account.account"].create({
+            "name": "Anticipo Clientes Test IGTF Own",
+            "code": "21600XIGTF",
+            "account_type": "liability_current",
+            "reconcile": True,
+            "is_advance_account": True,
+            "company_ids": [Command.set([self.company.id])],
+        })
+        self.advance_supp_acc = self.env["account.account"].create({
+            "name": "Anticipo Proveedores Test IGTF Own",
+            "code": "13600XIGTF",
+            "account_type": "asset_current",
+            "reconcile": True,
+            "is_advance_account": True,
+            "company_ids": [Command.set([self.company.id])],
+        })
+
+        self.journal_anticipo = self.env["account.journal"].create({
+            "name": "Anticipo Clientes Test IGTF Own",
+            "code": "ANTIXIGT",
+            "type": "general",
+            "company_id": self.company.id,
+        })
+
+        self.company.write({
+            "igtf_percentage": 3.0,
+            "customer_account_igtf_id": self.acc_igtf_cli.id,
+            "advance_customer_account_id": self.advance_cust_acc.id,
+            "advance_supplier_account_id": self.advance_supp_acc.id,
+            "advance_payment_igtf_journal_id": self.journal_anticipo.id,
+        })
+
+        manual_in = self.env.ref("account.account_payment_method_manual_in")
+        manual_out = self.env.ref("account.account_payment_method_manual_out")
+
+        self.bank_journal_usd = self.env["account.journal"].create({
+            "name": "Banco USD Test IGTF Own",
+            "code": "BUSDXIGT",
+            "type": "bank",
+            "currency_id": self.currency_usd.id,
+            "company_id": self.company.id,
+            "is_igtf": True,
+            "default_account_id": self.account_bank_usd.id,
+            "inbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                "name": "Manual Inbound USD Test IGTF Own",
+                "payment_method_id": manual_in.id,
+                "payment_account_id": self.account_bank_usd.id,
+            })],
+            "outbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                "name": "Manual Outbound USD Test IGTF Own",
+                "payment_method_id": manual_out.id,
+                "payment_account_id": self.account_bank_usd.id,
+            })],
+        })
+
+        self.partner = self.env["res.partner"].create({
+            "name": "Cliente IGTF Own",
+            "vat": "J123XIGTF",
+            "property_account_receivable_id": self.acc_receivable.id,
+            "property_account_payable_id": self.acc_payable.id,
+            "taxpayer_type": "formal",
+            "default_advance_customer_account_id": self.advance_cust_acc.id,
+            "default_advance_supplier_account_id": self.advance_supp_acc.id,
+        })
+
+        self.tax_group = self.env["account.tax.group"].create({
+            "name": "IVA Test IGTF Own",
+            "country_id": self.company.country_id.id,
+        })
+        exent = self.env["account.tax"].create({
+            "name": "IVA exento Test IGTF Own",
+            "amount": 0,
+            "amount_type": "percent",
+            "type_tax_use": "sale",
+            "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+            "country_id": self.company.country_id.id,
+        })
+        # `supplier_taxes_id` explícito: sin esto, el default que arma
         # Odoo para ese campo en `create()` puede traer más de un
         # impuesto de compra al 0% en bases con varios configurados, y
         # `l10n_ve_accountant` (`_enforce_single_tax_vals`) rechaza
-        # cualquier producto con más de un impuesto de compra asignado --
-        # mismo patrón que usa `test_exchange_note_reversal.py`.
-        exent_purchase = self.env["account.tax"].search([
-            ("type_tax_use", "=", "purchase"), ("amount", "=", 0.0),
-            ("company_id", "=", self.company.id),
-        ], limit=1)
+        # cualquier producto con más de un impuesto de compra asignado.
+        exent_purchase = self.env["account.tax"].create({
+            "name": "Compra exenta Test IGTF Own",
+            "amount": 0,
+            "amount_type": "percent",
+            "type_tax_use": "purchase",
+            "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+            "country_id": self.company.country_id.id,
+        })
         self.company.exent_aliquot_sale = exent.id
+
+        self.product = self.env["product.product"].create({
+            "name": "Servicio Test IGTF Own",
+            "type": "service",
+            "list_price": 100,
+            "property_account_income_id": self.acc_income.id,
+            "taxes_id": [(6, 0, [exent.id])],
+            "supplier_taxes_id": [(6, 0, exent_purchase.ids)],
+        })
+
+        # Diario de venta EXPLÍCITO -- NO se busca "cualquier diario
+        # `type='sale'`" (el bug real que colisionaba con el diario
+        # dedicado de ND creado más abajo, ambos `type='sale'`): se crea
+        # uno propio y se usa directo como `default_journal_id` en
+        # `_create_invoice_usd`/`_create_invoice_vef`.
+        # `refund_sequence: True` -- desde el fix de B5 (revisión de
+        # código), `_create_exchange_difference_note` YA NO autoprovisiona
+        # `refund_sequence_id` en silencio sobre el diario de venta al
+        # emitir una NC (rama de pérdida cambiaria): ahora exige que esté
+        # configurado de antemano, igual que exige la secuencia dedicada
+        # de ND. `od_journal_sequence.account_journal.create()` la
+        # autogenera acá mismo cuando el diario nace con
+        # `refund_sequence=True` (`type='sale'`).
+        self.sale_journal = self.env["account.journal"].create({
+            "name": "Ventas Test IGTF Own",
+            "code": "VXIGTF",
+            "type": "sale",
+            "company_id": self.company.id,
+            "refund_sequence": True,
+        })
+
+        # Cuentas de ganancia/pérdida cambiaria propias -- NO se asume
+        # que `company.income_currency_exchange_account_id`/
+        # `expense_currency_exchange_account_id` (campos nativos de
+        # Odoo, Ajustes > Contabilidad > Cuentas por Defecto) ya vengan
+        # configurados por el chart of accounts de la base: en al menos
+        # un entorno real quedaron vacíos, dejando el producto de la
+        # nota SIN cuenta y reventando el `CHECK`
+        # `account_move_line_check_accountable_required_fields` de
+        # Postgres al crear la ND/NC.
+        self.acc_exchange_gain = self.env["account.account"].create({
+            "name": "Ganancia Cambiaria Test IGTF",
+            "code": "76001TIGTF",
+            "account_type": "income_other",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        self.acc_exchange_loss = self.env["account.account"].create({
+            "name": "Pérdida Cambiaria Test IGTF",
+            "code": "66001TIGTF",
+            "account_type": "expense",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        # `company.currency_exchange_journal_id` -- campo NATIVO de Odoo
+        # (diario "Ganancia o Pérdida en Cambio"), exigido por el propio
+        # núcleo (`_create_exchange_difference_moves`,
+        # `account/models/account_move_line.py`) ANTES de que este
+        # módulo intercepte la creación de la ND/NC: sin él configurado,
+        # Odoo revienta con `UserError` aun con `l10n_ve_exchange_use_nd_nc`
+        # ya activo. Distinto de las CUENTAS de ganancia/pérdida -- este
+        # es el DIARIO donde Odoo registraría su asiento genérico si este
+        # módulo no lo redirigiera.
+        self.exchange_journal = self.env["account.journal"].create({
+            "name": "Diferencial Cambiario Test IGTF",
+            "type": "general",
+            "code": "EXCHXIGT",
+            "company_id": self.company.id,
+        })
+        self.company.write({
+            "income_currency_exchange_account_id": self.acc_exchange_gain.id,
+            "expense_currency_exchange_account_id": self.acc_exchange_loss.id,
+            "currency_exchange_journal_id": self.exchange_journal.id,
+        })
+
         self.note_product = self.env["product.product"].create({
             "name": "Diferencial Test IGTF",
             "type": "service",
             "taxes_id": [(6, 0, exent.ids)],
             "supplier_taxes_id": [(6, 0, exent_purchase.ids)],
-            "property_account_income_id": self.company.income_currency_exchange_account_id.id,
-            "property_account_expense_id": self.company.expense_currency_exchange_account_id.id,
+            "property_account_income_id": self.acc_exchange_gain.id,
+            "property_account_expense_id": self.acc_exchange_loss.id,
+        })
+        # `property_account_income_id`/`property_account_expense_id`
+        # son campos "Properties" (`ir.property`, no columnas planas de
+        # `product.template`): el valor pasado en `create()` queda
+        # registrado para `self.env.company`, NO necesariamente para
+        # `self.company` -- se re-escribe explícito con
+        # `with_company(self.company)` para forzar el scope correcto sin
+        # importar la compañía activa del entorno.
+        self.note_product.with_company(self.company).write({
+            "property_account_income_id": self.acc_exchange_gain.id,
+            "property_account_expense_id": self.acc_exchange_loss.id,
         })
         self.company.l10n_ve_exchange_note_product_id = self.note_product.id
 
@@ -85,28 +324,57 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
             "l10n_ve_exchange_debit_note_sequence_id": self.debit_note_sequence.id,
         })
 
+    def _create_invoice_usd(self, amount, date=None):
+        """Mismo patrón de dos pasos (`Form` para encabezado, segundo
+        `Form` sobre el registro guardado para las líneas) que usaba
+        `IGTFTestCommon._create_invoice_usd` -- pero con `self.sale_journal`
+        (creado explícito arriba) en vez de buscar "cualquier diario
+        `type='sale'`"."""
+        with Form(self.env["account.move"].with_context(
+            default_move_type="out_invoice", default_journal_id=self.sale_journal.id,
+        )) as inv_form:
+            inv_form.partner_id = self.partner
+            inv_form.invoice_date = date or fields.Date.today()
+            inv_form.currency_id = self.currency_usd
+        invoice = inv_form.save()
+
+        with Form(invoice) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product
+                line.quantity = 1
+                line.price_unit = amount
+        return inv_form_edit.save()
+
+    def _create_invoice_vef(self, amount, date=None):
+        with Form(self.env["account.move"].with_context(
+            default_move_type="out_invoice", default_journal_id=self.sale_journal.id,
+        )) as inv_form:
+            inv_form.partner_id = self.partner
+            inv_form.invoice_date = date or fields.Date.today()
+            inv_form.currency_id = self.currency_vef
+        invoice = inv_form.save()
+
+        with Form(invoice) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product
+                line.quantity = 1
+                line.price_unit = amount
+        return inv_form_edit.save()
+
     def test_fixture_usd_rates_are_not_compounded(self):
-        """Regresión para un bug real encontrado en el fixture COMPARTIDO
-        `IGTFTestCommon.setUp` (`l10n_ve_igtf/tests/test_igtf_common_partner_formal_VEF.py`):
-        al crear dos `res.currency.rate` para USD en el MISMO `write()`
-        (hoy con `rate`/`company_rate`/`inverse_company_rate` explícitos,
-        ayer solo con `company_rate`/`inverse_company_rate`), el `inverse`
-        del núcleo para `company_rate`
+        """Regresión para un bug real encontrado ORIGINALMENTE en el
+        fixture compartido `IGTFTestCommon.setUp`: al crear dos
+        `res.currency.rate` para USD en el MISMO `write()` (hoy con
+        `rate`/`company_rate`/`inverse_company_rate` explícitos, ayer
+        solo con `company_rate`/`inverse_company_rate`), el `inverse` del
+        núcleo para `company_rate`
         (`base/models/res_currency.py::ResCurrencyRate._inverse_company_rate`)
         calculaba `rate = company_rate * last_rate[company]` usando la
         tasa de HOY (ya creada en el mismo batch) como `last_rate` --
         componiendo `(1/380) * (1/390.2944)` para la tasa de AYER en vez
-        de `1/380`. Mismo patrón que usa el propio core en sus tests
-        (`base/tests/test_res_currency.py::test_currency_cache`, que
-        SIEMPRE fija `rate` explícito al crear múltiples tasas de una
-        misma moneda en batch) -- el fixture no lo seguía para la
-        segunda entrada, y quedó corregido para hacerlo.
-
-        Esta prueba verifica las tasas DIRECTAMENTE (sin pasar por una
-        factura), para que un futuro cambio al fixture no pueda
-        reintroducir la composición sin que este test lo detecte de
-        inmediato, incluso si algún test de negocio llegara a tolerar
-        el monto incorrecto por casualidad."""
+        de `1/380`. Este fixture propio ya fija `rate` explícito en AMBAS
+        entradas desde el principio -- este test verifica que ese fix se
+        mantenga."""
         rates = self.env["res.currency.rate"].search([
             ("currency_id", "=", self.currency_usd.id),
             ("company_id", "in", [self.company.id, False]),
@@ -121,18 +389,9 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         self.assertAlmostEqual(rate_today.rate, 1 / self.rate, places=10)
         self.assertAlmostEqual(rate_today.company_rate, 1 / self.rate, places=10)
 
-        # El valor que este test existe para blindar: si la composición
-        # reaparece, `rate_yesterday.rate` sale ~6.74e-06 (inverso de
-        # 380*390.2944) en vez de 1/380 -- una diferencia de ~380x que
-        # `assertAlmostEqual` con `places=10` detecta sin ambigüedad.
         self.assertAlmostEqual(rate_yesterday.rate, 1 / 380.0, places=10)
         self.assertAlmostEqual(rate_yesterday.company_rate, 1 / 380.0, places=10)
 
-        # Verificación end-to-end: una factura de 1000 USD fechada AYER
-        # debe valorarse en Bs usando la tasa de AYER (380), no una
-        # composición -- balance exacto, sin `assertAlmostEqual` de por
-        # medio porque el monto es un entero limpio si la tasa es
-        # correcta.
         yesterday = fields.Date.subtract(fields.Date.today(), days=1)
         invoice = self._create_invoice_usd(1000.00, date=yesterday)
         invoice.with_context(move_action_post_alert=True).action_post()
@@ -141,7 +400,7 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
 
     def test_grouped_payment_with_igtf_attributes_each_note_to_its_own_invoice(self):
         """Combina el fix de atribución en pagos agrupados (ver
-        `test_exchange_note_reversal.test_grouped_payment_gain_direction_invoice_attribution_limitation`)
+        `test_exchange_note_reversal.test_grouped_payment_gain_direction_invoice_attribution_is_exact`)
         con IGTF real de por medio: un pago AGRUPADO en el diario
         `bank_journal_usd` (`is_igtf=True`), liquidando DOS facturas de
         montos DISTINTOS (100 y 500 USD) a la vez, en dirección de
@@ -179,7 +438,6 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         invoice_1.invalidate_recordset()
         invoice_2.invalidate_recordset()
 
-        # IGTF se siguió cobrando con normalidad sobre el pago agrupado.
         igtf_moves = self.env["account.move.line"].search([
             ("account_id", "=", self.acc_igtf_cli.id),
             ("partner_id", "=", self.partner.id),
@@ -260,11 +518,6 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         invoice_1.with_context({}).js_assign_outstanding_line(outstanding_line.id)
         self.env.cr.flush()
 
-        # La línea de crédito ORIGINAL del anticipo (700 USD) no se
-        # reemplaza por una nueva al aplicarse parcialmente contra la
-        # primera factura (100 USD) -- Odoo la deja parcialmente
-        # conciliada, con el residual restante todavía disponible para
-        # aplicar contra la segunda factura, la misma línea de siempre.
         outstanding_line.invalidate_recordset()
         self.assertFalse(
             outstanding_line.reconciled,
@@ -294,11 +547,10 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
             self.assertTrue(note_line.reconciled, "Cada nota debió quedar cerrada, sin excepción.")
 
     def test_exchange_difference_note_alongside_igtf_payment_different_dates(self):
-        """Factura en USD (`_create_invoice_usd`, mismo helper que usan los
-        tests de IGTF) emitida AYER, pagada HOY -- mismo monto, mismo
-        diario `bank_journal_usd` (`is_igtf=True`) -- en dos tasas de
-        cambio distintas (380.0 ayer, `self.rate` = 390.2944 hoy, ya
-        configuradas en `IGTFTestCommon.setUp`).
+        """Factura en USD (`_create_invoice_usd`) emitida AYER, pagada
+        HOY -- mismo monto, mismo diario `bank_journal_usd`
+        (`is_igtf=True`) -- en dos tasas de cambio distintas (380.0 ayer,
+        `self.rate` = 390.2944 hoy, ya configuradas en `setUp`).
 
         Nota: una factura en VES (moneda de COMPAÑÍA) NUNCA genera
         diferencial cambiario sin importar en qué moneda ni fecha se
@@ -315,11 +567,6 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
-        # Sin forzar `pay_form.amount`: mismo criterio que la ND/NC base ya
-        # probada -- misma moneda (USD) en factura y pago, el monto por
-        # defecto del wizard ya es el residual completo en USD (1000.00),
-        # sin conversión de por medio en este paso (la conversión real
-        # ocurre al conciliar, con la tasa del día del pago).
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
@@ -333,24 +580,16 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         invoice.invalidate_recordset()
         inv_line.invalidate_recordset()
 
-        # IGTF se siguió cobrando con normalidad: hay un movimiento
-        # posteado contra la cuenta dedicada de IGTF de clientes.
         igtf_moves = self.env["account.move.line"].search([
             ("account_id", "=", self.acc_igtf_cli.id),
             ("partner_id", "=", self.partner.id),
         ])
         self.assertTrue(igtf_moves, "El cobro de IGTF debió seguir aplicándose con normalidad.")
 
-        # La factura quedó saldada (pagó el 100% en USD, con IGTF aparte
-        # sobre esa misma línea de pago).
         self.assertEqual(invoice.payment_state, "paid")
         self.assertTrue(inv_line.reconciled)
         self.assertTrue(self.company.currency_id.is_zero(inv_line.amount_residual))
 
-        # `l10n_ve_exchange_difference` generó su propia ND/NC por el
-        # residual de diferencial cambiario (factura de ayer a 380.0,
-        # pago de hoy a `self.rate` = 390.2944) -- exactamente una, ligada
-        # a esta factura, cerrada.
         notes = self.env["account.move"].search([
             ("l10n_ve_exchange_diff_entry", "=", True),
             ("l10n_ve_exchange_invoice_id", "=", invoice.id),
@@ -365,44 +604,12 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         self.assertTrue(note_line.reconciled)
         self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))
 
-        # La ND/NC de diferencial nunca debe tocar la cuenta de IGTF -- son
-        # dos ajustes independientes sobre la misma conciliación.
         self.assertNotIn(self.acc_igtf_cli, note.line_ids.account_id)
 
-        # Rama derivable directo de los fixtures, sin "número mágico": la
-        # tasa SUBIÓ de 380.0 (factura, ayer) a 390.2944 (pago, hoy) -- el
-        # equivalente en Bs de la factura en USD aumenta, así que la
+        # La tasa SUBIÓ de 380.0 (factura, ayer) a 390.2944 (pago, hoy) --
+        # el equivalente en Bs de la factura en USD aumenta, así que la
         # compañía GANA (ND, no NC). El monto es exactamente
-        # 1000 USD * (390.2944 - 380.0) = 10.294,40 Bs -- el IGTF (3%
-        # cobrado aparte sobre el pago) no entra en este cálculo porque
-        # es un ajuste independiente sobre una cuenta distinta, no afecta
-        # la exposición cambiaria propia de la factura.
-        #
-        # NOTA sobre una investigación previa descartada: se había
-        # pineado un valor muy distinto (147.921.577,6, dirección NC) que
-        # parecía "verificado contra el resultado real" -- pero ese valor
-        # resultó ser producto de un bug real en el fixture COMPARTIDO
-        # `IGTFTestCommon.setUp` (`l10n_ve_igtf/tests/test_igtf_common_partner_formal_VEF.py`):
-        # la tasa de "ayer" se creaba con `company_rate`/`inverse_company_rate`
-        # sin `rate` explícito, y el `_inverse_company_rate` del NÚCLEO
-        # (`base/models/res_currency.py`) calculaba
-        # `rate = company_rate * last_rate[company]` usando la tasa de
-        # HOY (ya creada en el mismo `write()`) como referencia,
-        # componiendo `(1/380) * (1/390.2944)` en vez de `1/380` --
-        # confirmado empíricamente aislando la creación de la factura SIN
-        # pago: su `balance` era 148.311.872,0 Bs para 1000 USD (tasa
-        # implícita de 148.311,872 Bs/USD = 380 * 390.2944, la
-        # composición exacta del bug). Corregido fijando `rate` explícito
-        # en ambas entradas del fixture (mismo patrón que ya usaba la de
-        # "hoy") -- con el fix, el balance de la factura aislada es
-        # exactamente 380.000,0 Bs (1000 * 380), y este test ahora refleja
-        # el escenario real que describen los fixtures, no un artefacto
-        # de un bug de tasas. El "no-determinismo por datos demo"
-        # documentado en una ronda anterior seguía siendo real como
-        # observación (el core atribuye el residual a una línea distinta
-        # según qué otros datos existen en la base), pero ya no aplica
-        # a este valor pineado en particular, que ahora es
-        # matemáticamente derivable sin ambigüedad.
+        # 1000 USD * (390.2944 - 380.0) = 10.294,40 Bs.
         self.assertEqual(note.move_type, "out_invoice")
         self.assertEqual(note.debit_origin_id, invoice)
         self.assertFalse(note._is_exchange_credit_note())
@@ -419,17 +626,10 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         IGTF cambió de `reconciled_lines_ids.mapped('move_id')` a
         `matched_debit_ids.debit_move_id | matched_credit_ids.credit_move_id`.
         Esta prueba no asume CUÁL es la diferencia exacta entre ambas
-        expresiones (ambas terminan involucrando tanto el pago real como
-        la propia ND/NC de diferencial cambiario, confirmado
-        empíricamente) -- en su lugar verifica el resultado observable
-        que le importa al usuario: que la base de IGTF calculada
-        (`foreign_bi_igtf`) siga siendo correcta (coincide con el IGTF
-        realmente cobrado sobre el pago, ya confirmado por
-        `igtf_moves` en `test_exchange_difference_note_alongside_igtf_payment_different_dates`)
-        aun con la ND/NC de diferencial conviviendo en la misma
-        conciliación -- este es exactamente el escenario nuevo que
-        introduce este módulo y que no existía cuando se escribieron los
-        tests originales de `l10n_ve_igtf`."""
+        expresiones -- en su lugar verifica el resultado observable que
+        le importa al usuario: que la base de IGTF calculada
+        (`foreign_bi_igtf`) siga siendo correcta aun con la ND/NC de
+        diferencial conviviendo en la misma conciliación."""
         yesterday = fields.Date.subtract(fields.Date.today(), days=1)
         invoice = self._create_invoice_usd(1000.00, date=yesterday)
         invoice.with_context(move_action_post_alert=True).action_post()
@@ -453,9 +653,6 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         ])
         self.assertEqual(len(note), 1, "Debió crearse la ND/NC de diferencial (mismo escenario del test base).")
 
-        # El IGTF que Odoo realmente cobró y posteó (cuenta dedicada de
-        # IGTF de clientes) es la fuente de verdad independiente contra
-        # la que se compara el campo COMPUTADO.
         igtf_moves = self.env["account.move.line"].search([
             ("account_id", "=", self.acc_igtf_cli.id),
             ("partner_id", "=", self.partner.id),
@@ -463,48 +660,43 @@ class TestExchangeDifferenceWithIGTF(IGTFTestCommon):
         self.assertTrue(igtf_moves, "El cobro de IGTF debió aplicarse con normalidad.")
         igtf_charged = sum(igtf_moves.mapped(lambda l: abs(l.amount_currency)))
 
-        invoice.invalidate_recordset()
-        self.assertGreater(
-            invoice.foreign_bi_igtf, 0.0,
-            "La base de IGTF en moneda extranjera debió calcularse con normalidad, sin "
-            "romperse por la presencia de la ND/NC de diferencial en la conciliación.",
+        self.assertAlmostEqual(
+            igtf_charged, 1000.00 * (self.company.igtf_percentage / 100.0), places=2,
+            msg="El IGTF realmente cobrado debió ser el 3% del monto pagado "
+            "(1000 USD), sin verse afectado por la ND/NC de diferencial.",
         )
 
-        # NO se asierta `foreign_bi_igtf * igtf_percentage == igtf_charged`
-        # (lo que uno esperaría ingenuamente): con las tasas del fixture
-        # ya corregidas (ver `test_fixture_usd_rates_are_not_compounded`),
-        # se descubrió que `compute_bi_igtf` (`l10n_ve_igtf/models/account_move.py`)
+        invoice.invalidate_recordset()
+
+        # NO se asierta `foreign_bi_igtf == 1000.0` (lo que uno esperaría
+        # ingenuamente): `compute_bi_igtf` (`l10n_ve_igtf/models/account_move.py`)
         # tiene una limitación PREEXISTENTE, ajena a este módulo, cuando
         # factura y pago caen en fechas con tasas de cambio DISTINTAS:
-        # `foreign_bi_igtf` da 973.62 en vez de 1000.0 (973.62 == 1000 *
-        # 380/390.2944 -- la razón entre la tasa de AYER y la de HOY,
-        # evidencia de una conversión cruzada de tasas en algún punto de
-        # ese cómputo). Antes del fix de tasas del fixture, ese error
-        # quedaba enmascarado porque el bug de composición de tasas
-        # producía otro número igual de incorrecto que por casualidad
-        # sí satisfacía esta aserción -- confirmado imprimiendo
-        # `foreign_bi_igtf`/`igtf_charged` antes de esta aserción. Se deja
-        # como observación documentada (no se investiga ni se corrige
-        # `compute_bi_igtf` acá -- es lógica preexistente de `l10n_ve_igtf`,
-        # fuera del alcance de TI-14119) y se reduce esta prueba a lo que
-        # SÍ le corresponde verificar a este módulo: que el campo se siga
-        # calculando (no rompe/excepciona) con la ND/NC presente, sin
-        # inventar una relación aritmética que ni `compute_bi_igtf` sin
-        # este módulo instalado garantiza cuando hay tasas distintas.
+        # `foreign_bi_igtf` termina en `1000 * (380/390.2944)` en vez de
+        # `1000.0`. Se PINEA ese valor exacto para que cualquier cambio
+        # futuro en ese cálculo quede detectado acá -- no se investiga ni
+        # se corrige `compute_bi_igtf` en sí (fuera del alcance de
+        # TI-14119).
+        expected_foreign_bi_igtf = 1000.00 * (380.0 / self.rate)
+        self.assertAlmostEqual(
+            invoice.foreign_bi_igtf, expected_foreign_bi_igtf, places=2,
+            msg="La base de IGTF en moneda extranjera debió mantener el mismo "
+            "valor (con la misma limitación preexistente y documentada de "
+            "`compute_bi_igtf`) con la ND/NC de diferencial presente en la "
+            "conciliación -- si este valor cambió, o bien `compute_bi_igtf` "
+            "cambió, o bien la presencia de la ND/NC ahora sí lo distorsiona "
+            "de otra forma.",
+        )
 
     def test_ves_invoice_paid_in_usd_generates_rounding_exchange_difference_note(self):
         """Complemento del test anterior: una factura en VES (moneda de
         COMPAÑÍA), pagada en USD con IGTF de por medio, en fechas y tasas
         distintas. El monto adeudado en VES no tiene exposición cambiaria
         propia, pero al conciliarla contra un pago en USD, Odoo igual
-        calcula un residual de redondeo de la conversión (ver
-        `_prepare_reconciliation_single_partial`/
-        `_prepare_exchange_difference_move_vals` en el núcleo: cuando la
-        moneda de conciliación termina siendo la del PAGO -- porque la
-        factura está en Bs -- ese residual SÍ se calcula sobre la línea
-        de la factura). El alcance de este módulo es replicar CUALQUIER
-        asiento de diferencial que Odoo genere para una factura de
-        cliente como ND/NC real -- también este caso, sin excepción."""
+        calcula un residual de redondeo de la conversión. El alcance de
+        este módulo es replicar CUALQUIER asiento de diferencial que Odoo
+        genere para una factura de cliente como ND/NC real -- también
+        este caso, sin excepción."""
         yesterday = fields.Date.subtract(fields.Date.today(), days=1)
         invoice_amount = 500000.00
 

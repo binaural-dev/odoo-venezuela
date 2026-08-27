@@ -46,7 +46,7 @@
       credit_values['aml']) en `_prepare_reconciliation_single_partial()`
 - [x] 4.2 Implementado consumo del stash en `_prepare_exchange_difference_move_vals()`
       para derivar factura EXACTA (no por orden)
-- [x] 4.3 Test `test_grouped_payment_gain_direction_invoice_attribution_limitation`
+- [x] 4.3 Test `test_grouped_payment_gain_direction_invoice_attribution_is_exact`
       con dos facturas de montos DISTINTOS (100 vs 500 USD) para detectar swaps
 
 ## 5. Gestión de recursión
@@ -75,7 +75,7 @@
 - [x] 7.3 Test básico de flujo: `test_exchange_difference_settled_by_real_note_via_register_payment`
 - [x] 7.4 Test de reversión: `test_exchange_note_reversed_on_unreconcile`
 - [x] 7.5 Test anti-duplicado: `test_reconciling_again_after_reversal_generates_new_note`
-- [x] 7.6 Test de pagos agrupados: `test_grouped_payment_gain_direction_invoice_attribution_limitation`
+- [x] 7.6 Test de pagos agrupados: `test_grouped_payment_gain_direction_invoice_attribution_is_exact`
 - [x] 7.7 Test de NC reversal: `test_exchange_note_debit_note_reversed_on_unreconcile`
 - [x] 7.8 Test de bloqueo directo: `test_exchange_note_own_reconciliation_cannot_be_broken_directly`
 - [x] 7.9 Tests de validaciones (producto, pricelist, diario)

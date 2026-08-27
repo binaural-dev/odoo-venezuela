@@ -20,24 +20,36 @@ How it works:
   reconciliation transaction where Odoo creates its own generic entry --
   linked to the source invoice and reconciled immediately against the
   residual.
-- If the invoice-payment reconciliation that originated the note is broken,
-  the note (already posted, with a real sequence number) is reversed
-  automatically -- never cancelled or deleted. Unreconciling the note
-  directly is blocked.
+- If the invoice-payment reconciliation that originated the note is broken --
+  no matter how (the payments widget, or any other path that breaks the
+  underlying reconciliation) -- the note (already posted, with a real
+  sequence number) is reversed automatically, regardless of whether the
+  feature toggle is still enabled at that point. It is never cancelled or
+  deleted. Unreconciling the note directly is blocked.
 - Only applies to CUSTOMER invoices/credit notes. Any other case (vendor
   bills, manual entries) follows Odoo's native behavior unmodified.
 
-Configuration (all required once enabled -- reconciliation fails with a
-clear error, checked both at company save time and at reconciliation
-time, instead of leaving an incomplete note):
+Configuration -- reconciliation fails with a clear error instead of leaving
+an incomplete or misnumbered note, but WHEN that error can surface differs:
 
-- Enabled per company (`Settings > Accounting`).
+Validated when the feature is enabled and saved (`Settings > Accounting`):
+
 - Dedicated product (with an exempt tax) for the Debit/Credit Note line.
 - Dedicated pricelist (in the company's own currency) for the Debit/Credit
   Note, required by `account_invoice_pricelist`.
+
+Validated per journal, only at reconciliation time (there is no single
+company-level setting that can guarantee every journal a customer invoice
+might use is ready in advance):
+
 - A sales journal with `Is Debit` enabled and its own dedicated sequence
   assigned, for Debit Notes -- a Debit Note is never numbered with the
   invoice journal's own sequence.
+- The invoice's own sales journal needs its own dedicated Credit Note
+  sequence (`Refund Sequence`) configured, for Credit Notes -- this is
+  never auto-provisioned on save or on the fly: reconciliation fails with a
+  clear error instead of silently renumbering a journal shared with normal
+  business documents.
 """,
     'author': 'Binaural',
     'depends': [

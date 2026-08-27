@@ -297,10 +297,21 @@ class IGTFTestCommon(TransactionCase):
         # impuesto de compra al 0% en bases con varios configurados, y
         # `l10n_ve_accountant` (`_enforce_single_tax_vals`) rechaza
         # cualquier producto con más de un impuesto de compra asignado.
-        purchase_exent = self.env["account.tax"].search([
-            ("type_tax_use", "=", "purchase"), ("amount", "=", 0.0),
-            ("company_id", "=", self.company.id),
-        ], limit=1)
+        # El impuesto se CREA aquí (no se busca uno existente): un
+        # `search()` depende de qué otros módulos están instalados en
+        # la base -- en el subárbol aislado de este módulo no hay
+        # ningún impuesto de compra al 0% ya creado, así que la
+        # búsqueda devolvía vacío y el producto quedaba sin impuesto de
+        # compra, lo cual `_enforce_single_tax_vals` rechaza.
+        purchase_exent = self.env['account.tax'].create({
+            'name': 'Compra exenta',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'purchase',
+            'company_id': self.company.id,
+            'tax_group_id': self.tax_group.id,
+            'country_id': self.company.country_id.id,
+        })
         self.product = self.env["product.product"].create(
             {
                 "name": "Servicio",
@@ -315,7 +326,10 @@ class IGTFTestCommon(TransactionCase):
 
 
     def _create_invoice_vef(self, amount, date=None): # 💡 ACEPTA FECHA
-        sale_journal = self.Journal.search([("type", "=", "sale")], limit=1)
+        sale_journal = self.Journal.search(
+            [("type", "=", "sale"), ("company_id", "=", self.company.id), ("is_debit", "=", False)],
+            limit=1,
+        )
         if not sale_journal:
              sale_journal = self.Journal.create({
                  'name': 'Diario Venta', 'type': 'sale', 'code': 'SALE',
@@ -419,7 +433,10 @@ class IGTFTestCommon(TransactionCase):
        
    
     def _create_invoice_usd(self, amount, date=None): # 💡 ACEPTA FECHA
-        sale_journal = self.Journal.search([("type", "=", "sale")], limit=1)
+        sale_journal = self.Journal.search(
+            [("type", "=", "sale"), ("company_id", "=", self.company.id), ("is_debit", "=", False)],
+            limit=1,
+        )
         if not sale_journal:
              sale_journal = self.Journal.create({
                  'name': 'Diario Venta', 'type': 'sale', 'code': 'SALE',
@@ -448,7 +465,10 @@ class IGTFTestCommon(TransactionCase):
         return inv
     
     def _create_invoice_eur(self, amount, date=None): # 💡 ACEPTA FECHA
-        sale_journal = self.Journal.search([("type", "=", "sale")], limit=1)
+        sale_journal = self.Journal.search(
+            [("type", "=", "sale"), ("company_id", "=", self.company.id), ("is_debit", "=", False)],
+            limit=1,
+        )
         if not sale_journal:
              sale_journal = self.Journal.create({
                  'name': 'Diario Venta', 'type': 'sale', 'code': 'SALE',

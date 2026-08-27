@@ -69,7 +69,7 @@ class AccountMoveLine(models.Model):
         round-robin guess used to be the only option here (no direct
         access to the counterpart otherwise) and could silently attribute
         a residual to the WRONG invoice when their amounts differ (see
-        `test_grouped_payment_gain_direction_invoice_attribution_limitation`,
+        `test_grouped_payment_gain_direction_invoice_attribution_is_exact`,
         which exposed exactly this by using two invoices of different
         amounts -- confirmed with a real swap before this fix).
 
@@ -91,7 +91,15 @@ class AccountMoveLine(models.Model):
         # (line 1: signature change is caught by TypeError above, but key
         # changes are silent -- catch them here as early as possible).
         if 'aml' not in debit_values or 'aml' not in credit_values:
-            raise RuntimeError(_(
+            # `UserError`, no `RuntimeError` -- ambos abortan la
+            # transacción igual de ruidoso, pero un `RuntimeError` sale
+            # al usuario como "Internal Server Error" genérico (Odoo solo
+            # muestra en un diálogo legible las excepciones que hereden
+            # de `odoo.exceptions.UserError`/`ValidationError`); el
+            # mensaje de abajo, cuidadosamente redactado y traducido con
+            # `_()` para explicar justo esto, nunca llegaría a
+            # mostrarse.
+            raise UserError(_(
                 "Odoo core API incompatibility detected in "
                 "`_prepare_reconciliation_single_partial`: expected keys "
                 "'aml' in debit_values and credit_values, but got "
@@ -154,17 +162,40 @@ class AccountMoveLine(models.Model):
         for line, amounts in zip(self, amounts_list):
             # El ajuste puede caer del lado de la FACTURA (caso común) o
             # del lado del PAGO (Odoo suele atribuírselo así en la
-            # dirección de ganancia). Cuando cae del lado del pago,
-            # `_prepare_reconciliation_single_partial` (sobrescrito
-            # arriba) ya dejó la pareja REAL de este partial puntual en
-            # `partial_amls` -- se usa esa contraparte real, nunca se
-            # adivina por orden (un pago agrupado con más de una factura
-            # candidata de montos distintos SÍ puede confundir cuál
-            # residual pertenece a cuál factura si solo se mira el orden
-            # de aparición, confirmado con
-            # `test_grouped_payment_gain_direction_invoice_attribution_limitation`).
+            # dirección de ganancia). En AMBOS casos se prefiere la
+            # pareja REAL de este partial puntual, ya dejada en
+            # `partial_amls` por `_prepare_reconciliation_single_partial`
+            # (sobrescrito arriba) -- nunca se adivina por orden (un pago
+            # agrupado con más de una factura candidata de montos
+            # distintos SÍ puede confundir cuál residual pertenece a cuál
+            # factura si solo se mira el orden de aparición, confirmado
+            # con `test_grouped_payment_gain_direction_invoice_attribution_is_exact`).
+            # `default_payment` (`payment_lines[:1]`, adivinado por
+            # orden) solo se usa como ÚLTIMO fallback si `counterpart_of`
+            # no trajo nada -- ej. algún camino de reconciliación que no
+            # pase por `_prepare_reconciliation_single_partial`. Antes,
+            # la rama del lado-factura (este `if`) usaba SIEMPRE
+            # `default_payment`, aun cuando `counterpart_of` ya tenía la
+            # pareja real -- si un solo `reconcile()` empareja una
+            # factura contra más de una línea de pago (ej.
+            # `binaural_advance_payment`/`binaural_mobile`, que llaman
+            # `.reconcile()` con conjuntos arbitrarios de líneas), TODAS
+            # las notas de esa factura quedaban atribuidas al primer
+            # pago -- dejando las demás huérfanas al desconciliar el pago
+            # real, con fecha/tasa del pago equivocado.
             if line in invoice_lines_ctx:
-                invoice_line, invoice, payment = line, line.move_id, default_payment
+                invoice_line, invoice = line, line.move_id
+                # Guard de singleton explícito -- si `line` no es
+                # realmente parte de la pareja estampada en
+                # `counterpart_of` (stash vacío o desactualizado; ver
+                # docstring de `_prepare_reconciliation_single_partial`),
+                # `counterpart_of - line` devuelve el par SIN restar
+                # nada (2 líneas), y leer `.move_id` sobre un recordset
+                # de más de un registro revienta con
+                # `ValueError: Expected singleton` en vez de caer al
+                # fallback.
+                real_counterpart = counterpart_of - line
+                payment = real_counterpart.move_id if len(real_counterpart) == 1 else default_payment
             elif line in payment_lines and (counterpart_of - line) & invoice_lines_ctx:
                 invoice_line = (counterpart_of - line) & invoice_lines_ctx
                 invoice, payment = invoice_line.move_id, line.move_id
@@ -283,9 +314,10 @@ class AccountMoveLine(models.Model):
         # esta conciliación -- y `account.partial.reconcile.unlink()`
         # (núcleo) revierte AUTOMÁTICAMENTE ese `exchange_move_id` al
         # desconciliar. Como este módulo ya revierte sus propias notas
-        # explícitamente (`_reverse_exchange_note`, en
-        # `account_move.js_remove_outstanding_partial`), dejar que el
-        # núcleo también las vincule produce una reversión DUPLICADA.
+        # explícitamente (`_reverse_exchange_note`, disparada desde
+        # `account.partial.reconcile.unlink()`,
+        # `models/account_partial_reconcile.py`), dejar que el núcleo
+        # también las vincule produce una reversión DUPLICADA.
         return exchange_moves
 
     def _create_exchange_difference_note(self, invoice, payment, residual):
@@ -335,7 +367,20 @@ class AccountMoveLine(models.Model):
             l10n_ve_exchange_invoice_line_ids=False,
             l10n_ve_exchange_payment_line_ids=False,
         )
-        company = self.company_id
+        # `invoice.company_id`, NO `self.company_id` -- `self` (`line`) es
+        # la línea que Odoo determinó que TODAVÍA tiene el residual, y en
+        # la rama de atribución del lado-PAGO (ver
+        # `_prepare_exchange_difference_move_vals`) esa línea es la del
+        # PAGO, no la de la factura. En un esquema de sucursales
+        # (compañía hija conciliando contra la matriz, soportado por el
+        # núcleo), la compañía del pago puede ser DISTINTA de la de la
+        # factura -- pero el gate que decide si esta nota se emite
+        # (`is_own_invoice_line`, más arriba) ya se evaluó sobre
+        # `invoice.company_id`, así que toda la configuración que se lee
+        # de `company` de acá en adelante (producto/tarifa/diario/cuentas
+        # de cambio dedicados) debe ser la MISMA compañía, la de la
+        # factura -- nunca la de la línea con el residual.
+        company = invoice.company_id
 
         # `state != 'cancel'` NO alcanza: revertir una nota
         # (`_reverse_exchange_note`) NO la cancela -- queda `posted`
@@ -392,7 +437,21 @@ class AccountMoveLine(models.Model):
             # además tiene `is_debit=True` -- así que exigir AMBOS aquí
             # (diario Y secuencia configurada) es justo lo que la UI deja
             # configurar, nunca más.
-            debit_journal = self.env['account.journal'].search([
+            #
+            # `.sudo()` -- `journal_comp_rule` (núcleo,
+            # `account/security/account_security.xml`) filtra
+            # `account.journal` por las compañías PERMITIDAS del usuario
+            # (`allowed_company_ids`), no por `company` (la de la
+            # factura). Si el usuario/proceso que dispara la
+            # conciliación no tiene esa compañía en sus compañías
+            # permitidas (ej. un cron, o un usuario de otra sucursal),
+            # este `search()` devolvía vacío en silencio -- disparando el
+            # `UserError` de abajo por una razón que no era la real
+            # (diario no configurado, cuando en realidad SÍ lo está, solo
+            # que el usuario no puede verlo). Es una búsqueda de solo
+            # lectura sobre infraestructura propia del módulo, no datos
+            # de negocio del usuario -- `sudo()` es seguro acá.
+            debit_journal = self.env['account.journal'].sudo().search([
                 ('company_id', '=', company.id),
                 ('is_debit', '=', True),
                 ('type', '=', 'sale'),
@@ -406,18 +465,132 @@ class AccountMoveLine(models.Model):
                     "enabled -- a Debit Note must never be numbered with "
                     "the invoice journal's own sequence."
                 ))
+        else:
+            # Mismo requisito que la ND arriba, pero para la NC: se
+            # postea en el MISMO diario que la factura de origen (Odoo
+            # numera NC con `refund_sequence_id`, no con un diario
+            # dedicado), así que si ese diario no tiene su propia
+            # `refund_sequence_id` configurada, `_compute_name_by_sequence`
+            # (`account_move.py`) ahora aborta con `UserError` en vez de
+            # caer al numerador NORMAL del diario -- consumir un
+            # correlativo de FACTURA sería exactamente el bug que este
+            # módulo existe para evitar.
+            #
+            # A propósito ya NO se autoprovisiona acá (a diferencia de
+            # una versión anterior): `invoice.journal_id` es el diario de
+            # VENTA del cliente, compartido con cualquier factura/NC de
+            # negocio normal -- autoprovisionar `refund_sequence=True`
+            # ahí es un cambio PERMANENTE y silencioso en la numeración
+            # fiscal de ese diario (correlativo controlado por el
+            # SENIAT), disparado dentro de `reconcile()` por un contador
+            # sin permisos de manager que simplemente registra un pago.
+            # La rama de ND (arriba) ya elige bloquear con `UserError` en
+            # vez de autoprovisionar sobre su diario dedicado -- ser
+            # simétrico acá: fallar ruidoso pidiendo configuración
+            # explícita es peor UX pero infinitamente más barato que
+            # reordenar correlativos de NC de negocio a mitad de
+            # ejercicio.
+            if not invoice.journal_id.refund_sequence_id:
+                raise UserError(_(
+                    "Configure a dedicated 'Refund Sequence' (Credit Note "
+                    "sequence) on journal %(journal)s before reconciling "
+                    "foreign-currency invoices with the exchange "
+                    "difference Debit/Credit Note mode enabled -- a "
+                    "Credit Note must never be numbered with the invoice "
+                    "journal's own sequence.",
+                    journal=invoice.journal_id.display_name,
+                ))
 
+        # `product.taxes_id` (core `account/models/product.py`) solo
+        # filtra por `type_tax_use='sale'` en su dominio -- SIN filtro de
+        # compañía. Si el producto de diferencial es compartido entre
+        # varias compañías y acumuló impuestos de OTRA compañía (ej. por
+        # import de datos o un `product_id` reutilizado a mano),
+        # pasarlos todos sin filtrar a `tax_ids` -- que sí exige
+        # `check_company=True` (core `account_move_line.py`) -- aborta
+        # la conciliación entera con un `UserError` de multi-compañía en
+        # medio de un `reconcile()` ya en curso.
+        # `t.company_id == company` (igualdad estricta) NO es el filtro
+        # correcto: `account.tax._check_company_domain` (core) es
+        # `check_company_domain_parent_of`, así que un impuesto de la
+        # COMPAÑÍA MATRIZ es válido en una línea de una sucursal -- con
+        # igualdad estricta esos impuestos se descartaban en silencio,
+        # dejando la nota fiscal armada SIN su impuesto exento en vez de
+        # abortar (peor: un error silencioso, no uno visible).
+        note_taxes = product.taxes_id.filtered_domain(
+            self.env['account.tax']._check_company_domain(company)
+        )
+        # `account_id` explícito para AMBAS ramas -- no se deja que Odoo
+        # lo derive de `product_id` en el `create()` crudo (sin pasar
+        # por `Form`/onchange): en la práctica funciona en la mayoría de
+        # bases, pero depende de que la derivación automática de cuenta
+        # por producto resuelva algo, y en al menos un entorno real (no
+        # una fixture de test) resolvió a NULL -- violando el `CHECK`
+        # `account_move_line_check_accountable_required_fields` de
+        # Postgres al insertar la línea.
+        #
+        # Con FALLBACK a la cuenta propia del producto
+        # (`property_account_income_id`/`property_account_expense_id`)
+        # si la compañía no tiene configuradas
+        # `income_currency_exchange_account_id`/`expense_currency_exchange_account_id`
+        # (campos nativos de Odoo, Ajustes > Contabilidad > Cuentas por
+        # Defecto -- no todas las bases los traen configurados, ej. una
+        # instalación vieja migrada, o un chart of accounts que nunca
+        # los completó): sin este fallback, una compañía así deja
+        # `company.income_currency_exchange_account_id` vacío, y fijar
+        # el `account_id` directo desde ahí (sin fallback) produce el
+        # MISMO `NULL` que se estaba corrigiendo, solo que explícito en
+        # vez de implícito. `_check_l10n_ve_exchange_note_product_id`
+        # (`res_company.py`) exige que AMBAS cuentas coincidan CUANDO la
+        # compañía sí las tiene configuradas, así que este fallback no
+        # cambia el resultado esperado en ese caso -- solo cubre el caso
+        # en que la compañía nunca las configuró pero el producto sí
+        # tiene sus propias cuentas.
+        # `product.with_company(company)` -- `property_account_income_id`/
+        # `property_account_expense_id` son `company_dependent=True`
+        # (`account/models/product.py`), así que leerlos DIRECTO sobre
+        # `product` (sin `with_company`) los resuelve para
+        # `self.env.company`, no para `company` (la de la factura, ver el
+        # fix de más arriba). En una compañía donde `self.env.company` no
+        # es `company` (multi-compañía, el usuario/cron que dispara la
+        # conciliación con otra compañía activa), este fallback podía
+        # volver vacío (el NULL que existe para evitar) o traer la cuenta
+        # de OTRA compañía -- `UserError` de `check_company` en
+        # `account_id` más abajo. Mismo patrón que ya usa
+        # `_check_l10n_ve_exchange_note_product_id` (`res_company.py`).
+        product_accounts = product.with_company(company)
+        income_account = company.income_currency_exchange_account_id or product_accounts.property_account_income_id
+        expense_account = company.expense_currency_exchange_account_id or product_accounts.property_account_expense_id
         line_vals = {
             'product_id': product.id,
             'quantity': 1.0,
             'price_unit': abs(residual),
-            'tax_ids': [Command.set(product.taxes_id.ids)],
+            'tax_ids': [Command.set(note_taxes.ids)],
+            'account_id': (expense_account if is_credit_note else income_account).id,
             'name': _(
                 'Exchange difference (%(concept)s) on %(invoice)s',
                 concept=_('loss') if is_credit_note else _('gain'),
                 invoice=invoice.name,
             ),
         }
+        if not line_vals['account_id']:
+            raise UserError(_(
+                "Cannot determine the accounting account for this exchange "
+                "difference Debit/Credit Note line: neither the company's "
+                "%(account_field)s nor the note product's own "
+                "%(product_field)s is configured. Set at least one of them "
+                "(Accounting Settings > Default Accounts, or the product's "
+                "Income/Expense account) before reconciling foreign-currency "
+                "invoices with the exchange difference Debit/Credit Note "
+                "mode enabled.",
+                account_field=(
+                    _("Loss Exchange Rate Account")
+                    if is_credit_note else _("Gain Exchange Rate Account")
+                ),
+                product_field=(
+                    _("Expense Account") if is_credit_note else _("Income Account")
+                ),
+            ))
         note_date = payment.date or fields.Date.context_today(self)
 
         # `_create_exchange_difference_moves` runs nested inside the
@@ -440,6 +613,7 @@ class AccountMoveLine(models.Model):
                     'move_type': 'out_invoice',
                     'partner_id': invoice.partner_id.id,
                     'invoice_date': note_date,
+                    'invoice_date_display': note_date,
                     'date': note_date,
                     'currency_id': company.currency_id.id,
                     'pricelist_id': pricelist.id,
@@ -454,20 +628,19 @@ class AccountMoveLine(models.Model):
                 })
                 note.with_context(move_action_post_alert=True).action_post()
             else:
-                # `account_id` explícito, en vez de dejar que Odoo lo derive del
-                # producto: `is_sale_document()` (núcleo) trata `out_refund`
-                # igual que `out_invoice` para elegir la cuenta de la línea --
-                # ambas ramas usarían la cuenta `income` del producto (la de
-                # GANANCIA, según exige `_check_l10n_ve_exchange_note_product_id`).
-                # Sin este override, una NC de PÉRDIDA terminaría acreditando la
-                # cuenta de ganancia cambiaria en vez de la de pérdida.
-                line_vals['account_id'] = company.expense_currency_exchange_account_id.id
+                # `account_id` ya viene fijado arriba en `line_vals`
+                # (rama `is_credit_note` -> cuenta de PÉRDIDA) -- sin
+                # eso, `is_sale_document()` (núcleo) trata `out_refund`
+                # igual que `out_invoice` para elegir la cuenta de la
+                # línea, y una NC de PÉRDIDA terminaría acreditando la
+                # cuenta de GANANCIA cambiaria en vez de la de pérdida.
                 note = self.env['account.move'].with_context(
                     l10n_ve_skip_refund_origin_validation=True,
                 ).create({
                     'move_type': 'out_refund',
                     'partner_id': invoice.partner_id.id,
                     'invoice_date': note_date,
+                    'invoice_date_display': note_date,
                     'date': note_date,
                     'currency_id': company.currency_id.id,
                     'pricelist_id': pricelist.id,
@@ -479,6 +652,30 @@ class AccountMoveLine(models.Model):
                     'l10n_ve_exchange_is_credit_note': True,
                     'l10n_ve_exchange_invoice_id': invoice.id,
                     'l10n_ve_exchange_payment_id': payment.id,
+                })
+                # `l10n_ve_accountant.account_move.create()` fuerza,
+                # SIEMPRE que `move_type in ('out_refund','in_refund')` y
+                # trae `reversed_entry_id`, `foreign_rate`/
+                # `foreign_inverse_rate` heredados de la factura
+                # revertida (`account_move.py:534-536`, pensado para una
+                # NC normal que corrige/anula una factura, donde tiene
+                # sentido conservar la MISMA valorización). Esta NC no es
+                # eso: es un documento nuevo que registra el diferencial
+                # AL MOMENTO DEL PAGO, así que heredar la tasa de la
+                # factura la deja con la tasa VIEJA (la de la factura, no
+                # la del pago) -- justo la asimetría con la ND (que sí
+                # calcula su propia tasa natural, porque nace de
+                # `debit_origin_id`, no de `reversed_entry_id`, y esa
+                # rama de herencia no la toca). Se sobreescribe acá con
+                # la tasa real a la fecha de la NC, con el mismo helper
+                # que usa el propio `l10n_ve_accountant`
+                # (`_compute_rate_for_documents`).
+                rate_values = self.env['res.currency.rate'].compute_rate(
+                    note.foreign_currency_id.id, note_date,
+                )
+                note.write({
+                    'foreign_rate': rate_values.get('foreign_rate', 0),
+                    'foreign_inverse_rate': rate_values.get('foreign_inverse_rate', 0),
                 })
                 note.with_context(
                     move_action_post_alert=True,
