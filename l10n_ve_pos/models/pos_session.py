@@ -159,6 +159,7 @@ class PosSession(models.Model):
                             partner=payment.partner_id,
                             date=payment.create_date,
                             ref=session._cross_move_ref(payment),
+                            real_to_suspense=True,
                         )
                     continue
 
@@ -179,6 +180,7 @@ class PosSession(models.Model):
                     partner=session.env["res.partner"],
                     date=session.stop_at or fields.Datetime.now(),
                     ref=session._cross_move_ref(),
+                    real_to_suspense=True,
                 )
 
     def _is_cross_move_eligible(self, payment_method, use_suspense=False):
@@ -260,7 +262,9 @@ class PosSession(models.Model):
             )
         return account or self.company_id.account_default_pos_receivable_account_id
 
-    def _get_cross_real_account(self, payment_method, outbound, use_suspense=False):
+    def _get_cross_real_account(
+        self, payment_method, outbound, use_suspense=False, real_to_suspense=False
+    ):
         """Return the ``cross_journal`` account that receives/gives the value.
 
         ``use_suspense=False`` (sales, opening/closing differences): the
@@ -274,9 +278,22 @@ class PosSession(models.Model):
         treatment already applied to the origin leg (see
         ``_get_cross_transitory_account``). A journal has a single suspense
         account regardless of direction, so ``outbound`` is unused here.
+
+        ``real_to_suspense=True`` (the sales path, ``_validate_cross_move``,
+        always): retargets *only this* real leg to
+        ``cross_journal.suspense_account_id`` — the same account cash in/out
+        lands in — so foreign-cash sales accumulate in that transit account
+        pending real bank reconciliation instead of being booked to confirmed
+        liquidity. The transitory (origin) leg and the debit/credit polarity
+        stay exactly as ``use_suspense=False``: unlike ``use_suspense``, it
+        does not touch ``_get_cross_transitory_account`` nor invert the entry,
+        since a sale already parks its money in ``default_account_id`` (native
+        counterpart), not in the suspense account. Only ``_validate_cross_move``
+        passes it, so opening/closing difference cross moves keep landing in
+        confirmed liquidity. Ignored when ``use_suspense`` is already ``True``.
         """
         account_method = payment_method.cross_journal
-        if use_suspense:
+        if use_suspense or real_to_suspense:
             return account_method.suspense_account_id
         line_ids = (
             account_method.outbound_payment_method_line_ids
@@ -286,7 +303,8 @@ class PosSession(models.Model):
         return line_ids.payment_account_id
 
     def _line_vals_move_cross_incoming(
-        self, payment_method, amount, foreign_amount, foreign_rate, partner, use_suspense=False
+        self, payment_method, amount, foreign_amount, foreign_rate, partner,
+        use_suspense=False, real_to_suspense=False,
     ):
         """Build the cross-move lines for an incoming (amount >= 0) movement.
 
@@ -314,7 +332,8 @@ class PosSession(models.Model):
         ).id
         account_method = payment_method.cross_journal
         real_account = self._get_cross_real_account(
-            payment_method, outbound=False, use_suspense=use_suspense
+            payment_method, outbound=False, use_suspense=use_suspense,
+            real_to_suspense=real_to_suspense,
         ).id
         line_currency = account_method.currency_id or self.env.company.currency_id
         is_foreign_line_currency = line_currency == self.foreign_currency_id
@@ -357,7 +376,8 @@ class PosSession(models.Model):
         ]
 
     def _line_vals_move_cross_outgoing(
-        self, payment_method, amount, foreign_amount, foreign_rate, partner, use_suspense=False
+        self, payment_method, amount, foreign_amount, foreign_rate, partner,
+        use_suspense=False, real_to_suspense=False,
     ):
         """Build the cross-move lines for an outgoing (amount < 0) movement.
 
@@ -371,7 +391,8 @@ class PosSession(models.Model):
         ).id
         account_method = payment_method.cross_journal
         real_account = self._get_cross_real_account(
-            payment_method, outbound=True, use_suspense=use_suspense
+            payment_method, outbound=True, use_suspense=use_suspense,
+            real_to_suspense=real_to_suspense,
         ).id
         line_currency = account_method.currency_id or self.env.company.currency_id
         is_foreign_line_currency = line_currency == self.foreign_currency_id
@@ -466,7 +487,7 @@ class PosSession(models.Model):
 
     def _create_cross_move_for(
         self, payment_method, amount, foreign_amount, foreign_rate, partner, date, ref,
-        use_suspense=False,
+        use_suspense=False, real_to_suspense=False,
     ):
         """Create one clearing move for ``payment_method``.
 
@@ -495,6 +516,12 @@ class PosSession(models.Model):
         opposite to the sales-like direction); for a salida, the mirrored
         call to the *incoming* builder credits suspense and debits
         ``cross_journal``.
+
+        ``real_to_suspense`` (the sales path) is orthogonal to the above: it is
+        forwarded untouched to the line builder and never flips the
+        incoming/outgoing branch, since the origin leg keeps its native
+        polarity. It only reroutes the ``cross_journal`` leg's account (see
+        ``_get_cross_real_account``).
         """
         is_outgoing = amount < 0
         call_amount, call_foreign_amount = amount, foreign_amount
@@ -508,7 +535,7 @@ class PosSession(models.Model):
         )
         line_vals = line_builder(
             payment_method, call_amount, call_foreign_amount, foreign_rate, partner,
-            use_suspense=use_suspense,
+            use_suspense=use_suspense, real_to_suspense=real_to_suspense,
         )
         return self._create_cross_move(
             payment_method, line_vals, foreign_rate, date, ref, partner

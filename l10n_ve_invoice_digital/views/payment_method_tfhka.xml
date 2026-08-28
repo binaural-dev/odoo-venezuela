@@ -1,0 +1,44 @@
+<odoo>
+
+    <record id="view_payment_method_tfhka_list" model="ir.ui.view">
+        <field name="name">payment.method.tfhka.list</field>
+        <field name="model">payment.method.tfhka</field>
+        <field name="arch" type="xml">
+            <list>
+                <field name="code"/>
+                <field name="description"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_payment_method_tfhka_form" model="ir.ui.view">
+        <field name="name">payment.method.tfhka.form</field>
+        <field name="model">payment.method.tfhka</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="code"/>
+                        <field name="description"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_payment_method_tfhka" model="ir.actions.act_window">
+        <field name="name">TFHKA Payment Methods</field>
+        <field name="res_model">payment.method.tfhka</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <menuitem
+        id="menu_payment_method_tfhka"
+        name="TFHKA Payment Methods"
+        parent="account.menu_finance_configuration"
+        action="action_payment_method_tfhka"
+        groups="l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin"
+        sequence="90"
+    />
+
+</odoo>
