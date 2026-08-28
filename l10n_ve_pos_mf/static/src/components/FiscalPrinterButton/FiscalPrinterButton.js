@@ -27,8 +27,13 @@ export class FiscalPrinterButton extends Component {
         this.state = useState({ status: "disconnected" });
         this._onSerialConnect = this._onSerialConnect.bind(this);
         this._onSerialDisconnect = this._onSerialDisconnect.bind(this);
+        this._onFiscalStatus = this._onFiscalStatus.bind(this);
         onMounted(() => {
             this._autoConnect();
+            // El hand-off (PosStore.withFiscalPrinterReleased) reconecta/suelta
+            // la MF sin pasar por este componente; escuchamos su estado para no
+            // quedar en verde tras un reclaim fallido.
+            window.addEventListener("mf-fiscal-status", this._onFiscalStatus);
             // Recuperación mid-sesión: la máquina fiscal puede re-enumerar en
             // el bus USB (glitch de energía del hub, sobre todo en PCs de
             // gama baja) sin que se recargue la pestaña. Sin esto, la MF
@@ -39,11 +44,23 @@ export class FiscalPrinterButton extends Component {
             }
         });
         onWillUnmount(() => {
+            window.removeEventListener("mf-fiscal-status", this._onFiscalStatus);
             if ("serial" in navigator) {
                 navigator.serial.removeEventListener("connect", this._onSerialConnect);
                 navigator.serial.removeEventListener("disconnect", this._onSerialDisconnect);
             }
         });
+    }
+
+    /**
+     * Estado de la MF notificado por el hand-off (PosStore._broadcastFiscalStatus).
+     * No pisa una reconexión en curso del propio botón.
+     */
+    _onFiscalStatus(ev) {
+        if (this._reconnecting) {
+            return;
+        }
+        this._setStatus(ev?.detail?.connected ? "connected" : "disconnected");
     }
 
     _fp() {

@@ -20,13 +20,25 @@
       guarda de reentrada y de estado "connecting" (evita dos connect()
       concurrentes y el puerto medio-abierto tras re-enumeración)
 
-## 3. Verificación
+## 3. Endurecimiento (code review TA 78328)
 
-- [x] 3.1 Sintaxis (`node --check`)
-- [x] 3.2 Sin `l10n_ve_pos_mf`/hook: `binaural_megasoft` cae al camino directo
+- [x] 3.1 `withFiscalPrinterReleased`: `shouldManagePort` también cede el
+      puerto cuando la conexión lo retiene aunque `driver.isConnected` sea
+      false (`fiscalPrinter.connection?.port`), para no dejar el COM tomado y
+      que Megasoft no pueda abrirlo.
+- [x] 3.2 Tras el reclaim, `PosStore._broadcastFiscalStatus()` emite un
+      evento `mf-fiscal-status`; `FiscalPrinterButton` lo escucha (limpieza en
+      `onWillUnmount`) para no quedar en verde tras un reclaim fallido.
+
+## 4. Verificación
+
+- [x] 4.1 Sintaxis (`node --check`)
+- [x] 4.2 Sin `l10n_ve_pos_mf`/hook: `binaural_megasoft` cae al camino directo
       (feature-detection) — revisado en el consumidor
-- [ ] 3.3 Navegador: con MF + Megasoft reales, confirmar que tras la
+- [ ] 4.3 Navegador: con MF + Megasoft reales, confirmar que tras la
       transacción la MF se reclama sola (sin re-vincular) y el overlay cubre
       todo el ciclo
-- [ ] 3.4 Navegador: desconectar/reconectar físicamente la MF a media sesión
+- [ ] 4.4 Navegador: desconectar/reconectar físicamente la MF a media sesión
       y confirmar que el botón vuelve a "connected" sin click manual
+- [ ] 4.5 Navegador: tras un reclaim fallido, el botón pasa a "desconectado"
+      (no queda verde con el aviso sticky)
