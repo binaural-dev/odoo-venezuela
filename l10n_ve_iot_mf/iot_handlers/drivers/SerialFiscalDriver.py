@@ -2144,10 +2144,23 @@ class SerialFiscalDriver(SerialDriver):
                 raise Exception(status["data"]["status"]["msg"])
             
             self.tfhka.PrintZReport()
+            estado_s1 = self.get_s1_printer_data()
+            response_data = {
+                "_registeredMachineNumber": estado_s1.RegisteredMachineNumber,
+                "_dailyClosureCounter": estado_s1.DailyClosureCounter,
+            } if estado_s1 else {}
             _logger.info("Reporte Z impreso correctamente.")
-            self.data["value"] = {"valid": True, "message": "Reporte Z impreso correctamente."}
+            self.data["value"] = {
+                "valid": True,
+                "message": "Reporte Z impreso correctamente.",
+                "data": response_data,
+            }
             event_manager.device_changed(self)
-            return {"valid": True, "message": "Reporte Z impreso correctamente."}
+            return {
+                "valid": True,
+                "message": "Reporte Z impreso correctamente.",
+                "data": response_data,
+            }
         except Exception as e:
             _logger.error("Error al imprimir el reporte Z: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
