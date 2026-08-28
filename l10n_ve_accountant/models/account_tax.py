@@ -19,7 +19,19 @@ class AccountTax(models.Model):
             base_lines, currency, company, cash_rounding
         )
 
-        ves_currency = self.env.company.currency_id
+        # `company` es un parámetro EXPLÍCITO de este método -- se usa
+        # acá y en el resto del método en vez de `self.env.company`
+        # (la compañía ACTIVA del entorno, que puede no coincidir: un
+        # cron, un usuario multi-compañía, o cualquier llamador que
+        # arme este summary explícitamente `with_company(otra_compañía)`,
+        # como hace `l10n_ve_exchange_difference._create_exchange_difference_note`
+        # al crear sus notas). El `or self.env.company` es solo un
+        # fallback defensivo por si algún llamador legado pasara
+        # `company=False`; en el camino normal `company` siempre viene
+        # seteado por el núcleo (`account.tax._get_tax_totals_summary`
+        # lo exige como posicional, no `Optional`).
+        company = company or self.env.company
+        ves_currency = company.currency_id
 
         # `base_lines` es el documento REAL para el que se está armando
         # este summary -- se intenta derivar `record` de ahí PRIMERO.
@@ -110,8 +122,8 @@ class AccountTax(models.Model):
                                                     tg['display_base_amount'] = tg['base_amount']
                                                     tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg['base_amount'])
 
-        currency_id = self.env.company.currency_id or False
-        foreign_currency_id = self.env.company.foreign_currency_id or False
+        currency_id = company.currency_id or False
+        foreign_currency_id = company.foreign_currency_id or False
         company_rate = 1.0
         has_discount= False
         if record._name == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
@@ -123,11 +135,11 @@ class AccountTax(models.Model):
                 for line in record.invoice_line_ids
             )
         else: 
-            if hasattr(record, 'company_id'): 
+            if hasattr(record, 'company_id'):
                 currency_id = record.company_id.currency_id
             else:
-                currency_id = self.env.company.currency_id
-            foreign_currency_id = self.env.company.foreign_currency_id
+                currency_id = company.currency_id
+            foreign_currency_id = company.foreign_currency_id
 
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
@@ -157,7 +169,7 @@ class AccountTax(models.Model):
         if record._name == 'account.move':
             foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
         elif record._name in ('sale.order','purchase.order'):
-            company_id = (record.company_id or self.env.company)
+            company_id = (record.company_id or company)
             foreign_lines = [
                 line._prepare_foreign_base_line_for_taxes_computation()
                 for line in record.order_line
@@ -174,7 +186,7 @@ class AccountTax(models.Model):
         )
         #amounts in foreign currency
         res['foreign_currency_id'] = foreign_res['currency_id']
-        res['ves_currency_id'] = self.env.company.currency_id.id
+        res['ves_currency_id'] = company.currency_id.id
         res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
         res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
         res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']

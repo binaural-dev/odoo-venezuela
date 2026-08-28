@@ -9,13 +9,11 @@
                     name="l10n_ve_exchange_invoice_id"
                     invisible="not l10n_ve_exchange_invoice_id"
                     readonly="1"
-                    force_save="1"
                 />
                 <field
                     name="l10n_ve_exchange_original_id"
                     invisible="not l10n_ve_exchange_original_id"
                     readonly="1"
-                    force_save="1"
                 />
             </xpath>
         </field>
@@ -38,6 +36,7 @@
                     name="l10n_ve_exchange_diff_entry"
                     string="Exchange Difference Notes"
                     domain="[('l10n_ve_exchange_diff_entry', '=', True)]"
+                    invisible="context.get('default_move_type') in ('in_invoice', 'in_refund', 'in_receipt')"
                 />
             </filter>
         </field>

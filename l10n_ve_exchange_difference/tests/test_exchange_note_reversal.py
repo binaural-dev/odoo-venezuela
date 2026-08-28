@@ -927,6 +927,88 @@ class TestExchangeNoteReversal(TransactionCase):
         note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         self.assertTrue(note_line.reconciled, "La nota original debió quedar cerrada por su propia reversión.")
 
+    def test_unlink_two_partials_resolving_to_same_note_reverses_it_once(self):
+        """`account.partial.reconcile.unlink()` SHALL tolerate a batch
+        containing MORE THAN ONE partial that resolves to the SAME note
+        (`_l10n_ve_exchange_note_for_partial` matches by the (invoice,
+        payment) pair, not by the specific partial row) -- the
+        `note.exists() and not note.reversal_move_ids` guard exists
+        specifically to avoid a double-reversal attempt when this
+        happens within a single `unlink()` call.
+
+        Checked empirically first whether this fixture's invoice<->payment
+        reconciliation naturally splits into 2+ `account.partial.reconcile`
+        rows between the same two lines (it doesn't here -- the OTHER
+        extra partial found on this invoice line ties to the note itself,
+        a DIFFERENT (invoice, payment) pair that legitimately resolves to
+        no note at all). So this constructs the exact shape directly: a
+        SYNTHETIC second `account.partial.reconcile` row, created via the
+        ORM with the same `debit_move_id`/`credit_move_id`/amounts as the
+        real invoice<->payment partial -- faithfully exercises the same
+        guard code (`_l10n_ve_exchange_note_for_partial` resolving twice
+        to the identical note within the same `unlink()` batch), without
+        depending on which internal Odoo mechanism would produce 2 real
+        rows for the same pair."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("partner_id", "=", self.partner.id),
+        ])
+        self.assertEqual(len(notes), 1, "Debió crearse exactamente una ND/NC de diferencial cambiario.")
+        note = notes[0]
+
+        inv_line.invalidate_recordset()
+        payment_partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+            and not any((p.debit_move_id.move_id | p.credit_move_id.move_id).mapped("l10n_ve_exchange_diff_entry"))
+        )
+        self.assertEqual(
+            len(payment_partial), 1,
+            "Debía existir una única conciliación factura<->pago real (distinta "
+            "de la conciliación factura<->nota, que es una relación aparte).",
+        )
+
+        # Segundo `account.partial.reconcile` SINTÉTICO, con el MISMO par
+        # deudor/acreedor que el real -- Odoo puede legítimamente partir
+        # una conciliación con diferencial cambiario en más de una fila
+        # de este tipo entre las mismas dos líneas (componentes de
+        # ajuste); este test no depende de reproducir ese mecanismo
+        # exacto, solo de la FORMA que produce: dos filas distintas,
+        # mismo par (factura, pago), desvinculadas juntas.
+        duplicate_partial = self.env["account.partial.reconcile"].create({
+            "debit_move_id": payment_partial.debit_move_id.id,
+            "credit_move_id": payment_partial.credit_move_id.id,
+            "amount": payment_partial.amount,
+            "debit_amount_currency": payment_partial.debit_amount_currency,
+            "credit_amount_currency": payment_partial.credit_amount_currency,
+        })
+
+        # Sin el guard de `account_partial_reconcile.unlink()`, la
+        # segunda vuelta del loop intentaría revertir una nota que la
+        # primera ya dejó revertida.
+        (payment_partial + duplicate_partial).unlink()
+        self.env.cr.flush()
+
+        note.invalidate_recordset()
+        self.assertEqual(note.state, "posted", "La nota original no debió cancelarse ni borrarse.")
+        self.assertEqual(
+            len(note.reversal_move_ids), 1,
+            "La nota debió revertirse EXACTAMENTE una vez, pese a que dos "
+            "partials distintos resolvieron a ella en el mismo unlink().",
+        )
+
     def test_note_reversed_when_reconciliation_broken_via_remove_move_reconcile(self):
         """Misma reversión automática que `test_exchange_note_reversed_on_unreconcile`,
         pero rompiendo la conciliación factura<->pago por OTRA vía --
@@ -1668,6 +1750,212 @@ class TestExchangeNoteReversal(TransactionCase):
         note_line = note.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         self.assertTrue(note_line.reconciled, "La ND original debió quedar cerrada por su propia reversión.")
 
+        # Bloqueante 4 (revisión sobre `9dabb347`): "la reversión de una
+        # ND consume número de factura, declarado corregido, no tiene
+        # ninguna aserción del número" -- se agrega acá mismo, sobre el
+        # mismo escenario ya construido, en vez de duplicar todo el
+        # flujo en un test aparte.
+        # `refund_sequence: True` (sin `refund_sequence_id` explícito) hace
+        # que Odoo AUTOPROVISIONE la secuencia de refund con su propio
+        # prefijo "R" + el de la secuencia de facturas del diario --
+        # "RNDDIFT/", no "NDDIFT/" (esa es la de la ND misma, no la de su
+        # reversión).
+        self.assertTrue(
+            reversal.name and reversal.name.startswith("RNDDIFT/"),
+            f"La reversión de la ND debió numerarse con la secuencia "
+            f"dedicada (autoprovisionada sobre el diario de ND), no con "
+            f"un correlativo de otro diario. name={reversal.name!r}",
+        )
+
+    def test_reversing_debit_note_raises_user_error_when_journal_missing_refund_sequence(self):
+        """B1 (revisión de seguimiento sobre `da5fb25f`): revertir una ND
+        autoprovisionaba `refund_sequence_id` con `.sudo()` sobre el
+        diario dedicado (`is_debit=True`) -- ese diario NO es exclusivo
+        de este módulo, es infraestructura fiscal REAL que
+        `l10n_ve_invoice`/`l10n_ve_iot_mf` usan para identificar Notas de
+        Débito de NEGOCIO genuinas. Ahora exige configuración explícita
+        (`UserError`), igual que ya exigía la rama de NC directa (B5, la
+        ronda anterior a esa). Sin este test, el fixture de la clase
+        (`cls.debit_note_journal` con `refund_sequence: True` desde el
+        arranque) hace que esta rama NUNCA se ejerza en la suite."""
+        self.usd.write({
+            "active": True,
+            "rate_ids": [
+                Command.create({"name": "2044-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2044-08-01", "company_rate": 1 / 40.0}),
+            ],
+        })
+        invoice = self._create_invoice("2044-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2044-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("partner_id", "=", self.partner.id),
+            ("l10n_ve_exchange_is_credit_note", "=", False),
+            ("l10n_ve_exchange_original_id", "=", False),
+        ])
+        self.assertEqual(len(note), 1, "Debió emitirse la ND (la secuencia de ND sigue configurada).")
+
+        # Se quita SOLO la secuencia de NC del diario dedicado, DESPUÉS
+        # de emitida la ND -- reproduce exactamente la ventana temporal
+        # que describe el hallazgo: la nota ya se emitió con normalidad,
+        # y el problema aparece recién al intentar REVERTIRLA.
+        self.debit_note_journal.refund_sequence_id = False
+
+        invoice.invalidate_recordset()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+        )
+        self.assertTrue(partial)
+        with self.assertRaises(UserError):
+            invoice.js_remove_outstanding_partial(partial[:1].id)
+
+        # Nada quedó a medias: la ND sigue posteada, sin reversión.
+        note.invalidate_recordset()
+        self.assertEqual(note.state, "posted")
+        self.assertFalse(note.reversal_move_ids)
+
+    def test_reversing_credit_note_raises_user_error_when_debit_journal_missing_sequence(self):
+        """Ruta gemela de la anterior, señalada en el mismo comentario de
+        revisión: revertir una NC DIRECTA (rama de pérdida) produce un
+        `out_invoice` que necesita el diario dedicado de ND
+        (`l10n_ve_exchange_debit_note_sequence_id`) para numerarse --
+        sin ese diario disponible, `_reverse_moves` debe fallar con
+        `UserError` explícito en vez de dejar que la reversión herede
+        por copia el diario de venta normal de la NC y caiga al
+        numerador de FACTURAS de ese diario en silencio."""
+        self.usd.write({
+            "active": True,
+            "rate_ids": [
+                Command.create({"name": "2045-01-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2045-08-01", "company_rate": 1 / 36.0}),
+            ],
+        })
+        invoice = self._create_invoice("2045-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2045-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("partner_id", "=", self.partner.id),
+            ("l10n_ve_exchange_is_credit_note", "=", True),
+        ])
+        self.assertEqual(len(note), 1, "Debió emitirse la NC directa (rama de pérdida).")
+
+        # El diario dedicado de ND deja de calificar DESPUÉS de emitida
+        # la NC -- mismo criterio que el test anterior: el problema
+        # aparece recién al revertir, no al emitir.
+        self.debit_note_journal.l10n_ve_exchange_debit_note_sequence_id = False
+
+        invoice.invalidate_recordset()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+        )
+        self.assertTrue(partial)
+        with self.assertRaises(UserError):
+            invoice.js_remove_outstanding_partial(partial[:1].id)
+
+        note.invalidate_recordset()
+        self.assertEqual(note.state, "posted")
+        self.assertFalse(note.reversal_move_ids)
+
+    def test_reversal_ignores_current_toggle_state(self):
+        """B3 (revisión de seguimiento sobre `da5fb25f`): `_reverse_moves`
+        gateaba el flag/numeración/redirección de diario de la reversión
+        por el estado ACTUAL de `l10n_ve_exchange_use_nd_nc` -- mismo
+        patrón que ya se había corregido en
+        `account.partial.reconcile.unlink()` (B1/B2 de esa ronda), por
+        una vía distinta que no quedó cubierta ahí. Una nota emitida con
+        el toggle activo debe revertirse correctamente aunque el toggle
+        se desactive DESPUÉS -- de lo contrario queda huérfana (posteada,
+        folio consumido, nunca revertida) o, peor, numerada con el
+        correlativo normal del diario."""
+        self.usd.write({
+            "active": True,
+            "rate_ids": [
+                Command.create({"name": "2046-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2046-08-01", "company_rate": 1 / 40.0}),
+            ],
+        })
+        invoice = self._create_invoice("2046-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2046-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+        action = payment_wizard.action_create_payments()
+        self.env["account.payment"].browse(action.get("res_id"))
+        self.env.cr.flush()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("partner_id", "=", self.partner.id),
+            ("l10n_ve_exchange_is_credit_note", "=", False),
+            ("l10n_ve_exchange_original_id", "=", False),
+        ])
+        self.assertEqual(len(note), 1, "Debió emitirse la ND con el toggle activo.")
+
+        # El toggle se apaga DESPUÉS de emitida la nota -- antes de
+        # romper la conciliación.
+        self.company.l10n_ve_exchange_use_nd_nc = False
+
+        invoice.invalidate_recordset()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        partial = (inv_line.matched_debit_ids | inv_line.matched_credit_ids).filtered(
+            lambda p: invoice in (p.debit_move_id.move_id, p.credit_move_id.move_id)
+        )
+        self.assertTrue(partial)
+        invoice.js_remove_outstanding_partial(partial[:1].id)
+        self.env.cr.flush()
+
+        note.invalidate_recordset()
+        self.assertEqual(
+            note.state, "posted",
+            "La ND original debió seguir posteada (revertida, no cancelada) pese al toggle apagado.",
+        )
+        reversal = self.env["account.move"].search([
+            ("l10n_ve_exchange_original_id", "=", note.id),
+        ])
+        self.assertEqual(
+            len(reversal), 1,
+            "La reversión debió crearse igual con el toggle apagado -- no debe quedar huérfana.",
+        )
+        self.assertTrue(
+            reversal.l10n_ve_exchange_diff_entry,
+            "La reversión debió quedar marcada como propia pese al toggle apagado.",
+        )
+        # Reversión de una ND (out_invoice) -> out_refund, numerada con
+        # `refund_sequence_id` autoprovisionado ("R" + prefijo de la
+        # secuencia de facturas del diario) -- "RNDDIFT/", no "NDDIFT/"
+        # (esa es la de la ND misma).
+        self.assertTrue(
+            reversal.name and reversal.name.startswith("RNDDIFT/"),
+            f"La reversión debió numerarse con la secuencia dedicada, no con el "
+            f"numerador normal del diario, sin importar el estado del toggle. "
+            f"name={reversal.name!r}",
+        )
+
     def test_exchange_use_nd_nc_disabled_uses_native_exchange_entry(self):
         """Con `l10n_ve_exchange_use_nd_nc` desactivado, `reconcile()` no
         debe aplicar ninguna lógica propia -- cae directo al
@@ -1747,6 +2035,87 @@ class TestExchangeNoteReversal(TransactionCase):
         # ver `account_move_line.py`) -- el error se dispara directo
         # desde `action_create_payments()`, no en un `flush()` posterior.
         with self.assertRaises(UserError):
+            payment_wizard.action_create_payments()
+
+    def test_debit_journal_sequences_constraint_raises_when_no_debit_journal_exists(self):
+        """`_check_l10n_ve_exchange_debit_journal_sequences` (`res_company.py`)
+        SHALL block re-enabling the toggle when there is no `is_debit=True`,
+        `type='sale'` journal at all for the company -- sin esto, la falta
+        de diario dedicado solo se descubriría al pagar la primera factura
+        (`_create_exchange_difference_note`, defensa en profundidad), con
+        el usuario a mitad de una conciliación."""
+        self.debit_note_journal.is_debit = False
+        self.company.l10n_ve_exchange_use_nd_nc = False
+        with self.assertRaisesRegex(
+            ValidationError, "configure a sale journal with 'Is Debit' enabled",
+        ):
+            self.company.l10n_ve_exchange_use_nd_nc = True
+
+    def test_debit_journal_sequences_constraint_raises_when_missing_debit_note_sequence(self):
+        """Mismo constraint: el diario dedicado existe (`is_debit=True`,
+        `type='sale'`) pero le falta su propia secuencia de ND
+        (`l10n_ve_exchange_debit_note_sequence_id`)."""
+        self.debit_note_journal.l10n_ve_exchange_debit_note_sequence_id = False
+        self.company.l10n_ve_exchange_use_nd_nc = False
+        with self.assertRaisesRegex(
+            ValidationError, "configure a sale journal with 'Is Debit' enabled",
+        ):
+            self.company.l10n_ve_exchange_use_nd_nc = True
+
+    def test_debit_journal_sequences_constraint_raises_when_missing_refund_sequence(self):
+        """Mismo constraint: el diario dedicado tiene su secuencia de ND
+        pero le falta `refund_sequence_id` -- necesaria recién al
+        REVERTIR una ND (`_reverse_moves`), pero exigida desde YA, al
+        guardar la compañía, para no descubrir la falta meses después con
+        una ND ya posteada y a mitad de una desconciliación."""
+        self.debit_note_journal.refund_sequence_id = False
+        self.company.l10n_ve_exchange_use_nd_nc = False
+        with self.assertRaisesRegex(
+            ValidationError, "also needs its own 'Refund Sequence'",
+        ):
+            self.company.l10n_ve_exchange_use_nd_nc = True
+
+    def test_debit_journal_sequences_constraint_passes_with_full_configuration(self):
+        """Contraparte feliz del constraint anterior: con el diario
+        dedicado y AMBAS secuencias configuradas (el fixture normal de
+        esta clase), reactivar el toggle NO debe lanzar nada."""
+        self.company.l10n_ve_exchange_use_nd_nc = False
+        self.company.l10n_ve_exchange_use_nd_nc = True
+        self.assertTrue(self.company.l10n_ve_exchange_use_nd_nc)
+
+    def test_missing_debit_note_sequence_raises_user_error_defense_in_depth(self):
+        """Drift explícitamente NO cubierto por
+        `_check_l10n_ve_exchange_debit_journal_sequences` (ver su propio
+        docstring: "si el diario cambia DESPUÉS de esta validación... no
+        se re-dispara"): la compañía se guardó con todo configurado
+        (fixture normal de esta clase), pero el diario dedicado de ND
+        pierde su secuencia DESPUÉS -- vía un `write()` normal sobre el
+        diario, que no toca `l10n_ve_exchange_use_nd_nc` y por lo tanto no
+        re-evalúa ese constraint. La defensa en tiempo de conciliación
+        (`_create_exchange_difference_note`, rama ND, `account_move_line.py`)
+        es la única línea que queda -- debe fallar con `UserError` en vez
+        de numerar con un correlativo ajeno o crear una ND a medias."""
+        self.debit_note_journal.l10n_ve_exchange_debit_note_sequence_id = False
+
+        self.usd.write({
+            "active": True,
+            "rate_ids": [
+                Command.create({"name": "2029-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2029-08-01", "company_rate": 1 / 40.0}),
+            ],
+        })
+        invoice = self._create_invoice("2029-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2029-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+
+        with self.assertRaisesRegex(
+            UserError, "a Debit Note must never be numbered with the invoice journal's own sequence",
+        ):
             payment_wizard.action_create_payments()
 
     def test_payment_side_counterpart_is_always_same_account_as_invoice_receivable(self):
@@ -1831,6 +2200,70 @@ class TestExchangeNoteReversal(TransactionCase):
 
         with self.assertRaises(UserError):
             (inv_line + counterpart_line).reconcile()
+
+    def test_compute_payment_state_raises_on_unexpectedly_flagged_move_type(self):
+        """`_compute_payment_state` (`account_move.py`) SHALL abort with
+        `UserError` instead of silently miscomputing when a document
+        tagged `l10n_ve_exchange_diff_entry=True` has a `move_type` that
+        is neither one this module issues (`out_invoice`/`out_refund`)
+        nor the native generic entry it tags for traceability (`entry`).
+        This flag has no legitimate use on a VENDOR document -- this
+        module only ever touches CUSTOMER invoices/notes
+        (`reconcile()`'s own `move_type in ('out_invoice','out_refund')`
+        filter, `account_move_line.py`).
+
+        Reproduces it with REAL move types (no mocking of `move_type`
+        itself -- that field feeds core's own raw-SQL classification too,
+        so patching it would corrupt the very scenario being tested): a
+        genuine vendor bill closed by a genuine vendor Credit Note (no
+        real payment involved, so core naturally classifies the bill as
+        `'reversed'` via its `in_refund` branch -- correct, expected
+        behavior on its own). The only unrealistic part, standing in for
+        "a bug or a future extension", is manually setting
+        `l10n_ve_exchange_diff_entry=True` on that vendor Credit Note --
+        a plain boolean field with no domain restricting who may set it."""
+        supplier = self.env["res.partner"].create({"name": "Proveedor Guard Interno"})
+        supplier.property_account_payable_id = self.acc_payable.id
+        supplier.property_product_pricelist = False
+
+        self.company.quick_edit_mode = "in_invoices"
+        with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as bill_form:
+            bill_form.partner_id = supplier
+            bill_form.invoice_date = "2026-01-01"
+            bill_form.journal_id = self.purchase_journal
+            bill_form.name = "BILL-GUARD-0001"
+            bill_form.correlative = "00-00000002"
+            with bill_form.invoice_line_ids.new() as line:
+                line.product_id = self.sale_product
+                line.quantity = 1
+                line.price_unit = 100.0
+        bill = bill_form.save()
+        bill.with_context(move_action_post_alert=True).action_post()
+
+        with Form(self.env["account.move"].with_context(default_move_type="in_refund")) as cn_form:
+            cn_form.partner_id = supplier
+            cn_form.invoice_date = "2026-01-15"
+            cn_form.journal_id = self.purchase_journal
+            cn_form.name = "BILLCN-GUARD-0001"
+            cn_form.correlative = "00-00000003"
+            with cn_form.invoice_line_ids.new() as line:
+                line.product_id = self.sale_product
+                line.quantity = 1
+                line.price_unit = 100.0
+        credit_note = cn_form.save()
+        credit_note.with_context(move_action_post_alert=True).action_post()
+
+        # La marca de este módulo, sobre un documento de PROVEEDOR --
+        # ANTES de conciliar, para que sea la propia conciliación (el
+        # disparador real de `amount_residual`, y por lo tanto de
+        # `_compute_payment_state`) la que ejecute el guard, en vez de
+        # invocar el método privado a mano.
+        credit_note.l10n_ve_exchange_diff_entry = True
+
+        bill_line = bill.line_ids.filtered(lambda l: l.account_id == self.acc_payable)
+        cn_line = credit_note.line_ids.filtered(lambda l: l.account_id == self.acc_payable)
+        with self.assertRaisesRegex(UserError, "Internal consistency error"):
+            (bill_line + cn_line).reconcile()
 
     def test_note_without_receivable_line_raises_instead_of_silently_orphaning(self):
         """Defensa en profundidad en `_create_exchange_difference_note`
@@ -1987,6 +2420,100 @@ class TestExchangeNoteReversal(TransactionCase):
         good_product = self._create_note_product("Diferencial Test Reversal (válido)")
         self.company.write({"l10n_ve_exchange_note_product_id": good_product.id})
         self.assertEqual(self.company.l10n_ve_exchange_note_product_id, good_product)
+
+    def test_note_product_constraint_refires_when_company_income_account_changes(self):
+        """`_check_l10n_ve_exchange_note_product_id` está declarado
+        `@api.constrains(..., 'income_currency_exchange_account_id', ...)`
+        -- no solo sobre el propio producto. Con un producto YA
+        válidamente configurado (`cls.note_product`), cambiar la cuenta de
+        GANANCIA cambiaria de la COMPAÑÍA (dejando el producto intacto)
+        debe re-disparar el mismo constraint -- el producto ya
+        configurado deja de calzar con la nueva cuenta."""
+        other_income = self.env["account.account"].create({
+            "name": "Otra Cuenta Ganancia Prueba Reversal",
+            "code": "76002REV",
+            "account_type": "income_other",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        with self.assertRaisesRegex(
+            ValidationError, "must have the company's exchange gain account as its income account",
+        ):
+            self.company.income_currency_exchange_account_id = other_income.id
+
+    def test_note_product_constraint_refires_when_company_expense_account_changes(self):
+        """Misma re-evaluación del constraint, sobre la cuenta de
+        PÉRDIDA cambiaria de la compañía."""
+        other_expense = self.env["account.account"].create({
+            "name": "Otra Cuenta Pérdida Prueba Reversal",
+            "code": "66002REV",
+            "account_type": "expense",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        with self.assertRaisesRegex(
+            ValidationError, "must have the company's exchange loss account as its expense account",
+        ):
+            self.company.expense_currency_exchange_account_id = other_expense.id
+
+    def test_note_line_account_id_raises_when_company_and_product_accounts_both_blank(self):
+        """`_create_exchange_difference_note` (`account_move_line.py`)
+        resolves the ND/NC line's `account_id` with a NARROW fallback --
+        `company.income_currency_exchange_account_id or product.property_account_income_id`
+        (direct field only, no product-category/company-generic-default
+        chain). `_check_l10n_ve_exchange_note_product_id` (`res_company.py`)
+        validates the product against the WIDE fallback instead
+        (`product._get_product_accounts()`, which also falls back through
+        the category and the company's GENERIC `income_account_id`/
+        `expense_account_id`). This test constructs the one state where
+        those two different resolutions disagree: the company's dedicated
+        exchange accounts AND its generic default accounts AND the
+        product's own accounts (direct and via category) are ALL blank at
+        once -- the constraint's wide fallback resolves to "nothing" on
+        both sides of its comparison (equal, so it doesn't block), but the
+        narrow runtime resolution has strictly nothing to fall back to.
+        Must fail loud with `UserError`, not silently post a note with no
+        account (or crash with an ORM constraint on a `False` `account_id`)."""
+        blank_categ = self.env["product.category"].create({
+            "name": "Categoría Sin Cuentas Prueba Reversal",
+        })
+        blank_product = self._create_note_product(
+            "Diferencial Test Cuentas En Blanco",
+            categ_id=blank_categ.id,
+            property_account_income_id=False,
+            property_account_expense_id=False,
+        )
+
+        # UN solo `write()`: la compañía debe llegar a un estado
+        # totalmente en blanco (dedicadas Y genéricas) de una vez -- si
+        # se blanquea el campo dedicado ANTES de cambiar el producto (o
+        # viceversa), `_check_l10n_ve_exchange_note_product_id` compara
+        # contra un lado ya en blanco y el otro todavía con la
+        # configuración válida anterior, y revienta a mitad de camino.
+        self.company.write({
+            "l10n_ve_exchange_note_product_id": blank_product.id,
+            "income_currency_exchange_account_id": False,
+            "expense_currency_exchange_account_id": False,
+            "income_account_id": False,
+            "expense_account_id": False,
+        })
+
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.usd_bank_journal
+            pay_form.payment_date = "2026-08-01"
+            pay_form.save()
+        payment_wizard = pay_form.record
+
+        # No basta con "algún UserError" -- blanquear las cuentas
+        # GENÉRICAS de la compañía (`income_account_id`/`expense_account_id`)
+        # es un cambio de alcance amplio, que en teoría podría disparar
+        # algún otro `UserError` no relacionado en el camino. Se ancla al
+        # mensaje exacto del guard que este test dice ejercitar.
+        with self.assertRaisesRegex(
+            UserError, "Cannot determine the accounting account",
+        ):
+            payment_wizard.action_create_payments()
 
     def test_note_pricelist_must_be_in_company_currency(self):
         """`l10n_ve_exchange_note_pricelist_id` rechaza una lista de
@@ -2413,6 +2940,102 @@ class TestExchangeNoteReversal(TransactionCase):
         generic_move = generic_exchange_moves[:1]
         self.assertFalse(generic_move._is_exchange_debit_note())
         self.assertFalse(generic_move._is_exchange_credit_note())
+
+    def test_reconciling_via_reconcile_plan_directly_never_emits_a_note(self):
+        """El hook de este módulo engancha `account.move.line.reconcile()`,
+        NUNCA `_reconcile_plan()` (el motor de conciliación de más bajo
+        nivel que `reconcile()` invoca por debajo, y que también puede
+        llamarse DIRECTO, saltándose `reconcile()` por completo). Esto no
+        es teórico: en Odoo Enterprise, el botón "Conciliar" de Apuntes
+        Contables (`account.move.line.action_reconcile`,
+        `account_accountant/models/account_move.py`) y el asistente de
+        auto-conciliación (`account.auto.reconcile.wizard`) llaman
+        `_reconcile_plan()` directo -- ninguno de los dos pasa por
+        `reconcile()`.
+
+        Decisión de alcance CONFIRMADA (no un olvido): este módulo NO
+        debe generar ninguna ND/NC cuando la conciliación ocurre por esa
+        vía -- igual que ya está confirmado y probado para el widget de
+        extractos bancarios (que resuelve su propio diferencial y ni
+        siquiera llama `_reconcile_plan()`). Este test fija ese
+        comportamiento con una prueba directa y mínima, sin depender de
+        montar el wizard real de Enterprise: llama `_reconcile_plan()`
+        directo sobre la línea de la factura y su contraparte, tal como
+        lo haría cualquiera de esas dos rutas -- si algún cambio futuro
+        (en este módulo o en el núcleo) hiciera que `_reconcile_plan()`
+        SÍ terminara generando la nota, esta prueba lo detecta."""
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        income = self.env["account.account"].search(
+            [*self.env["account.account"]._check_company_domain(self.company), ("account_type", "=", "income")],
+            limit=1,
+        )
+        if not income:
+            income = self.env["account.account"].create({
+                "name": "Ingresos Contrapartida Reconcile Plan",
+                "code": "4004REV",
+                "account_type": "income",
+                "company_ids": [Command.set([self.company.id])],
+            })
+        counterpart_entry = self.env["account.move"].create({
+            "move_type": "entry",
+            "journal_id": self.sale_journal.id,
+            "date": "2026-08-01",
+            "line_ids": [
+                (0, 0, {
+                    "account_id": self.acc_receivable.id, "partner_id": self.partner.id,
+                    "currency_id": self.usd.id, "amount_currency": -100.0,
+                    "debit": 0.0, "credit": self.rate_payment_date * 100.0,
+                }),
+                (0, 0, {
+                    "account_id": income.id, "partner_id": self.partner.id,
+                    "debit": self.rate_payment_date * 100.0, "credit": 0.0,
+                }),
+            ],
+        })
+        counterpart_entry.action_post()
+        counterpart_line = counterpart_entry.line_ids.filtered(
+            lambda l: l.account_id == self.acc_receivable
+        )
+
+        # `_reconcile_plan()` directo -- NO `.reconcile()`. Mismo motor
+        # de bajo nivel que usan el botón "Conciliar" de Apuntes
+        # Contables y el asistente de auto-conciliación de Enterprise.
+        (inv_line + counterpart_line)._reconcile_plan([inv_line + counterpart_line])
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        self.assertTrue(inv_line.reconciled, "La conciliación en sí debió completarse con normalidad.")
+
+        # Ninguna ND/NC "de negocio" nuestra debió crearse.
+        business_notes = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("move_type", "in", ("out_invoice", "out_refund")),
+            ("partner_id", "=", self.partner.id),
+        ])
+        self.assertFalse(
+            business_notes,
+            "Conciliar vía _reconcile_plan() directo no debe generar ninguna "
+            "ND/NC de este módulo -- decisión de alcance confirmada.",
+        )
+
+        # El asiento genérico nativo de Odoo sí se genera y queda
+        # etiquetado para trazabilidad, igual que para una factura de
+        # proveedor -- pero nunca clasifica como ND/NC propia.
+        generic_exchange_moves = self.env["account.move"].search([
+            ("move_type", "=", "entry"),
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("id", "!=", counterpart_entry.id),
+        ])
+        self.assertTrue(
+            generic_exchange_moves,
+            "El diferencial debió resolverse con el asiento genérico nativo de Odoo.",
+        )
+        self.assertFalse(generic_exchange_moves[:1]._is_exchange_debit_note())
+        self.assertFalse(generic_exchange_moves[:1]._is_exchange_credit_note())
 
     def test_fallback_tags_generic_exchange_move_for_misc_entries(self):
         """`reconcile()` filtra por `move_type in ('out_invoice', 'out_refund')`
@@ -3120,30 +3743,42 @@ class TestExchangeNoteReversal(TransactionCase):
 
     def test_igtf_note_debit_origin_invoice_excluded_from_own_logic(self):
         """Una factura marcada con `l10n_ve_igtf_note_debit_origin` (flag
-        del módulo `l10n_ve_igtf_note_debit` -- Nota de Débito automática
-        de percepción de IGTF; puede no estar instalado en este entorno de
-        pruebas, de ahí el `getattr` con default `False` en el guard de
-        `reconcile()`) debe excluirse de nuestra lógica igual que
-        `debit_origin_id`/`reversed_entry_id` -- se simula escribiendo el
-        campo directamente si existe en el modelo; si el módulo no está
-        instalado, el test se salta (nada que ejercitar)."""
-        if "l10n_ve_igtf_note_debit_origin" not in self.env["account.move"]._fields:
-            self.skipTest("l10n_ve_igtf_note_debit no está instalado en este entorno de pruebas.")
+        de un futuro módulo `l10n_ve_igtf_note_debit` -- Nota de Débito
+        automática de percepción de IGTF, NO instalado en ningún entorno
+        hoy: el campo no existe en ningún repo/mirror, de ahí el
+        `getattr` con default `False` en el guard de `reconcile()`) debe
+        excluirse de nuestra lógica igual que
+        `debit_origin_id`/`reversed_entry_id`.
 
+        Como el campo no existe todavía en NINGUNA parte, este test NO
+        puede escribirlo de verdad sobre la factura -- en vez de
+        saltarse siempre (`skipTest`, lo que dejaba el guard
+        permanentemente sin ejercitar), se parchea el ATRIBUTO
+        directamente sobre la clase `account.move` con
+        `unittest.mock.patch.object(..., create=True)`, simulando que el
+        campo SÍ existe y vale `True` -- ejercita el `getattr(...,
+        False)` real del guard con su rama verdadera, sin depender de
+        que ese módulo futuro llegue a instalarse en la base de test."""
         invoice = self._create_invoice("2026-01-01")
-        invoice.l10n_ve_igtf_note_debit_origin = True
-        invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
-        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
-            pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2026-08-01"
-            pay_form.save()
-        payment_wizard = pay_form.record
-        action = payment_wizard.action_create_payments()
-        self.env["account.payment"].browse(action.get("res_id"))
+        # El guard se evalúa dentro de `reconcile()` (disparado por
+        # `action_create_payments()`), no en `action_post()` -- todo el
+        # flujo relevante corre DENTRO del parche, no solo la creación
+        # de la factura.
+        with patch.object(type(invoice), "l10n_ve_igtf_note_debit_origin", True, create=True):
+            invoice.with_context(move_action_post_alert=True).action_post()
 
-        self.env.cr.flush()
+            with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+                pay_form.journal_id = self.usd_bank_journal
+                pay_form.payment_date = "2026-08-01"
+                pay_form.save()
+            payment_wizard = pay_form.record
+            action = payment_wizard.action_create_payments()
+            self.env["account.payment"].browse(action.get("res_id"))
+
+            self.env.cr.flush()
+
         invoice.invalidate_recordset()
         inv_line.invalidate_recordset()
 

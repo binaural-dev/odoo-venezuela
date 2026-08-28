@@ -317,26 +317,41 @@ class AccountMoveLine(models.Model):
         """
         pending_notes = getattr(self.env.cr, '_l10n_ve_exchange_pending_notes', None) or []
         self.env.cr._l10n_ve_exchange_pending_notes = []
+        try:
+            exchange_moves = super()._create_exchange_difference_moves(exchange_diff_values_list)
 
-        exchange_moves = super()._create_exchange_difference_moves(exchange_diff_values_list)
+            for descriptor in pending_notes:
+                descriptor['line']._create_exchange_difference_note(
+                    descriptor['invoice'], descriptor['payment'], descriptor['residual'],
+                )
 
-        for descriptor in pending_notes:
-            descriptor['line']._create_exchange_difference_note(
-                descriptor['invoice'], descriptor['payment'], descriptor['residual'],
-            )
-
-        # Nuestras notas NUNCA se incluyen en el recordset retornado: el
-        # llamador (`_reconcile_plan_with_sync`, núcleo) usa ese valor
-        # para auto-vincular `partial.exchange_move_id` a cualquier
-        # línea cuyo `reconciled_lines_ids` coincida con un partial de
-        # esta conciliación -- y `account.partial.reconcile.unlink()`
-        # (núcleo) revierte AUTOMÁTICAMENTE ese `exchange_move_id` al
-        # desconciliar. Como este módulo ya revierte sus propias notas
-        # explícitamente (`_reverse_exchange_note`, disparada desde
-        # `account.partial.reconcile.unlink()`,
-        # `models/account_partial_reconcile.py`), dejar que el núcleo
-        # también las vincule produce una reversión DUPLICADA.
-        return exchange_moves
+            # Nuestras notas NUNCA se incluyen en el recordset retornado: el
+            # llamador (`_reconcile_plan_with_sync`, núcleo) usa ese valor
+            # para auto-vincular `partial.exchange_move_id` a cualquier
+            # línea cuyo `reconciled_lines_ids` coincida con un partial de
+            # esta conciliación -- y `account.partial.reconcile.unlink()`
+            # (núcleo) revierte AUTOMÁTICAMENTE ese `exchange_move_id` al
+            # desconciliar. Como este módulo ya revierte sus propias notas
+            # explícitamente (`_reverse_exchange_note`, disparada desde
+            # `account.partial.reconcile.unlink()`,
+            # `models/account_partial_reconcile.py`), dejar que el núcleo
+            # también las vincule produce una reversión DUPLICADA.
+            return exchange_moves
+        finally:
+            # Mismo motivo que el `try/finally` de
+            # `_prepare_reconciliation_single_partial` -- ESTE stash es
+            # el más peligroso de los dos: si algo lanza entre el
+            # `getattr` de arriba y el final de la creación de las
+            # notas, la cola sobrevive un rollback a savepoint (los
+            # stashes en atributos planos del cursor no se limpian con
+            # `cr.postrollback`, que nunca corre en un rollback a
+            # savepoint -- ver el otro `try/finally`). Acá lo que se
+            # filtraría no es solo una pareja de líneas: es una ND/NC
+            # completa por emitir, con su monto, lista para postearse en
+            # el SIGUIENTE intento sobre el mismo cursor -- un documento
+            # fiscal con correlativo consumido por un monto que ya no
+            # corresponde a nada, sin ningún error visible.
+            self.env.cr._l10n_ve_exchange_pending_notes = []
 
     def _create_exchange_difference_note(self, invoice, payment, residual):
         """Settles the exchange difference (exact `residual` amount, in
@@ -665,6 +680,19 @@ class AccountMoveLine(models.Model):
                 # cuenta de GANANCIA cambiaria en vez de la de pérdida.
                 # `with_company(company)` -- mismo motivo que la rama de
                 # ND arriba.
+                #
+                # `l10n_ve_skip_refund_origin_validation` -- HOY es un
+                # no-op: ningún módulo en este repo lee esta clave de
+                # contexto todavía. Coordina por adelantado con
+                # `_validate_refund_lines_against_origin()`, una
+                # validación en desarrollo en OTRO módulo/PR (que valida
+                # que las líneas de una NC repitan el producto de su
+                # factura de origen) -- esta NC de diferencial nunca
+                # usa el producto de la factura original, siempre el
+                # producto dedicado de diferencial cambiario, así que
+                # NO debe pasar por esa validación cuando exista. Se
+                # coordina vía contexto (no un campo persistido) porque
+                # ese otro módulo no puede depender de este (`c571d9e1a`).
                 note = self.env['account.move'].with_company(company).with_context(
                     l10n_ve_skip_refund_origin_validation=True,
                 ).create({
@@ -686,21 +714,32 @@ class AccountMoveLine(models.Model):
                     'l10n_ve_exchange_invoice_id': invoice.id,
                     'l10n_ve_exchange_payment_id': payment.id,
                 })
-                # Tasa propia de la NC, calculada a la fecha del PAGO
-                # (no la de la factura) -- este documento registra el
-                # diferencial AL MOMENTO DEL PAGO, así que necesita su
-                # propia tasa natural, con el mismo helper que usa
-                # `l10n_ve_accountant` (`_compute_rate_for_documents`) --
-                # asimetría con la ND, que ya calcula la suya propia
-                # porque nace de `debit_origin_id`, nunca de
-                # `reversed_entry_id`.
-                rate_values = self.env['res.currency.rate'].compute_rate(
-                    note.foreign_currency_id.id, note_date,
-                )
-                note.write({
-                    'foreign_rate': rate_values.get('foreign_rate', 0),
-                    'foreign_inverse_rate': rate_values.get('foreign_inverse_rate', 0),
-                })
+                # NO se re-calcula/escribe `foreign_rate` acá -- a
+                # propósito, a diferencia de una versión anterior de
+                # este bloque. Esa escritura manual existía para pisar
+                # una herencia no deseada: `l10n_ve_accountant.create()`
+                # (`models/account_move.py:533-536`) solo hereda
+                # `foreign_rate`/`foreign_inverse_rate` del documento
+                # revertido cuando el `create()` trae `reversed_entry_id`
+                # en los `vals` -- y ya NO lo trae (ver más arriba). Sin
+                # esa rama de herencia, el `move._compute_rate()`
+                # incondicional de ese mismo `create()` (línea 532) es
+                # el único que corre, y ya calcula la tasa NATURAL
+                # correcta: usa `invoice_date` (= `note_date`, la fecha
+                # del pago) como fecha de la tasa, y hereda el
+                # `with_company(company)` de nuestro propio `create()`
+                # de arriba (mismo `self.env` en toda la cadena). Repetir
+                # el cálculo acá a mano era redundante Y más riesgoso --
+                # es justo donde se coló el bug real de `with_company`
+                # faltante (una tasa de `0` en la NC cuando
+                # `self.env.company != company`), porque esta escritura
+                # manual usaba `self.env['res.currency.rate']` sin
+                # `with_company`, mientras el `create()` de arriba
+                # SÍ lo tenía.
+                # `l10n_ve_skip_refund_origin_validation` -- repetido acá
+                # (no heredado del `create()` de arriba) porque
+                # `action_post()` es una llamada NUEVA, con su propio
+                # contexto; ver la nota completa junto al `create()`.
                 note.with_context(
                     move_action_post_alert=True,
                     l10n_ve_skip_refund_origin_validation=True,
@@ -761,6 +800,17 @@ class AccountMoveLine(models.Model):
             # ese camino: para cuando este `write` corre, la NC ya está
             # `posted` (no vuelve a pasar por `_post()`) y ya está
             # conciliada por el paso de arriba.
-            note.write({'reversed_entry_id': invoice.id})
+            #
+            # `skip_is_manually_modified=True` -- sin este contexto,
+            # `account.move.write()` (núcleo,
+            # `account/models/account_move.py`) marca CUALQUIER `write()`
+            # sobre un move posteado como `is_manually_modified=True`
+            # salvo que ese contexto esté presente o el propio `vals`
+            # incluya el campo explícito. Esta escritura la hace el
+            # SISTEMA para completar la creación de un documento propio,
+            # no un usuario editando la nota a mano -- sin este flag, la
+            # NC quedaría marcada en auditoría como "editada
+            # manualmente" cuando en realidad nadie la tocó.
+            note.with_context(skip_is_manually_modified=True).write({'reversed_entry_id': invoice.id})
 
         return note

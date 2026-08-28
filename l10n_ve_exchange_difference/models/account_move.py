@@ -70,6 +70,151 @@ class AccountMove(models.Model):
             bool(self.l10n_ve_exchange_original_id) or bool(self.l10n_ve_exchange_is_credit_note)
         )
 
+    def _compute_payment_state(self):
+        """Corrects core's own `payment_state` computation for the ONE
+        combination it doesn't anticipate: an invoice closed ENTIRELY by
+        non-payment documents where one of them is our own exchange
+        difference Debit/Credit Note.
+
+        Concretely: `l10n_ve_igtf`'s "cruce de anticipo" mechanism
+        (`_reconcile_move_with_payment_difference`, `l10n_ve_igtf/models/account_move.py`)
+        closes an invoice against a hand-built `account.move`
+        (`move_type='entry'`, created WITHOUT `origin_payment_id` -- it
+        isn't a real `account.payment`, just an accounting entry moving
+        an existing advance balance onto the receivable account). If
+        that reconciliation also leaves a currency residual, THIS module
+        intercepts it and documents it with a real `out_refund` Credit
+        Note (`_create_exchange_difference_note`,
+        `account_move_line.py`), reconciled against the SAME invoice
+        line to close it.
+
+        Core's `_compute_payment_state` (`account/models/account_move.py`)
+        decides `'reversed'` vs `'paid'` by looking at the `move_type` of
+        EVERY counterpart ever reconciled against the invoice's
+        receivable line, but ONLY when NONE of them carries a real
+        `account.payment` (`has_payment`) or bank statement line
+        (`has_st_line`) -- in that branch, if the counterpart types are
+        exactly `{'out_refund'}` or `{'out_refund', 'entry'}` (for an
+        `out_invoice`), it concludes the invoice was REVERSED, not paid.
+        Without this module, that branch was unreachable for this
+        scenario: Odoo's own generic exchange-difference entry is ALSO
+        `move_type='entry'`, so the counterpart set stayed `{'entry'}`
+        (never includes `'out_refund'`) and correctly resolved to
+        `'paid'`. This module's whole point is replacing that generic
+        entry with a REAL fiscal Credit Note -- which is exactly what
+        introduces `'out_refund'` into the set, and exactly what flips a
+        genuinely-paid invoice into `'reversed'`. `payment_state` itself
+        is the only thing this corrects -- checked empirically whether
+        it also rescued `l10n_ve_igtf.compute_bi_igtf`'s IGTF base in
+        this same scenario (a fully-closed invoice reads as `'reversed'`
+        instead of `'paid'`, and that field only computes when
+        `payment_state in ('paid', 'in_payment')` or there's still a
+        residual) and it does NOT: whenever this bug can trigger (the
+        invoice's ENTIRE reconciliation history has zero real payments),
+        `compute_bi_igtf`'s own formula also finds zero real
+        IGTF-carrying counterparts to build a base from, so it computes
+        to 0 regardless of whether `payment_state` is right or wrong.
+        There is no reachable scenario mixing a real IGTF payment with
+        this bug: any real payment in the invoice's history keeps core's
+        computation in its `has_payment` branch, which never evaluates
+        the `'reversed'` condition at all. So the value of this fix is
+        `payment_state` accuracy on its own merits (reporting, filters,
+        anything else that reads it) -- not IGTF base protection.
+
+        Verified this scenario is REAL and specific to this module: with
+        it uninstalled/disabled, the same anticipo-cross-with-currency-
+        residual case always resolves to `'paid'` (confirmed by tracing
+        core's set-comparison with `'entry'` on both sides instead of
+        `'entry'`/`'out_refund'`).
+
+        This override does NOT reimplement or bypass core's SQL-based
+        computation (`_compute_payment_state` builds `reconciliation_vals`
+        via a raw SQL query joining `account_payment`, which -- being raw
+        SQL -- never hits `ir.rule`/`AccessError` in the first place).
+        Instead, it lets `super()` compute normally, then -- ONLY for
+        moves core marked `'reversed'` -- re-derives the SAME
+        `move_type` set-comparison core just used, EXCLUDING our own
+        notes from that set. If removing our notes changes the verdict
+        (the note was the deciding factor), corrects to `'paid'` -- the
+        exact value core's own branch defaults to before evaluating the
+        reversal condition. If removing our notes does NOT change the
+        verdict (some OTHER, unrelated reversal-causing document is
+        still in the mix -- e.g. a genuine business Credit Note that
+        happens to also touch an invoice one of our notes touched on an
+        earlier, unrelated partial payment), leaves `'reversed'` alone:
+        that classification is real and not our module's doing.
+
+        No `.sudo()` here, unlike `compute_bi_igtf`'s -- deliberate.
+        Reading `matched_debit_ids`/`matched_credit_ids` via the ORM
+        (instead of raw SQL) DOES apply `ir.rule`, so a counterpart in a
+        company the current user/process can't see would raise
+        `AccessError` here. In the actual scenario this override exists
+        for, invoice/anticipo-cross/note are always the SAME company
+        (`_create_exchange_difference_note` forces `company =
+        invoice.company_id`), so this never triggers in practice. If it
+        ever does (a parent/subsidiary company structure, out of scope
+        for this fix), failing loud is the correct behavior: a
+        user/process that can't see a company's records shouldn't
+        silently complete a flow that depends on them."""
+        super()._compute_payment_state()
+        for move in self:
+            if move.payment_state != 'reversed':
+                continue
+            rp_lines = move.line_ids.filtered(
+                lambda l: l.account_type in ('asset_receivable', 'liability_payable')
+            )
+            counterparts = (
+                rp_lines.matched_debit_ids.debit_move_id
+                | rp_lines.matched_credit_ids.credit_move_id
+            ).move_id
+            flagged = counterparts.filtered('l10n_ve_exchange_diff_entry')
+            # `l10n_ve_exchange_diff_entry=True` SOLO tiene dos usos
+            # legítimos en todo el módulo: nuestras propias ND/NC
+            # (`out_invoice`/`out_refund`) y el etiquetado de
+            # trazabilidad sobre el asiento GENÉRICO nativo de Odoo
+            # (siempre `move_type='entry'`, ver
+            # `_prepare_exchange_difference_move_vals`,
+            # `account_move_line.py`). Cualquier otro `move_type` con
+            # ese flag es un estado que este módulo NUNCA debería poder
+            # producir -- si aparece, es porque algo (una extensión
+            # futura, propia o de terceros, o un bug) está marcando un
+            # documento con nuestro flag sin ser ninguna de esas dos
+            # cosas. Dejarlo pasar en silencio (tratándolo simplemente
+            # como "no es una nota nuestra") escondería ese problema y
+            # podría romper esta misma lógica más adelante, de una forma
+            # mucho más difícil de diagnosticar que un error acá mismo,
+            # en el momento exacto en que se detecta la inconsistencia.
+            unexpected = flagged.filtered(lambda c: c.move_type not in ('entry', 'out_invoice', 'out_refund'))
+            if unexpected:
+                raise UserError(_(
+                    "Internal consistency error: found %(count)s move(s) "
+                    "tagged with 'l10n_ve_exchange_diff_entry' whose "
+                    "move_type ('%(types)s') is neither one this module "
+                    "issues ('out_invoice'/'out_refund') nor the native "
+                    "generic entry it tags for traceability ('entry'). "
+                    "This flag must never be set on any other document "
+                    "type -- aborting instead of silently miscomputing "
+                    "payment_state.",
+                    count=len(unexpected),
+                    types=", ".join(sorted(set(unexpected.mapped('move_type')))),
+                ))
+            our_notes = flagged.filtered(lambda c: c.move_type in ('out_invoice', 'out_refund'))
+            if not our_notes:
+                continue
+            remaining_types = set((counterparts - our_notes).mapped('move_type'))
+            in_reverse = move.move_type in ('in_invoice', 'in_receipt') and remaining_types in (
+                {'in_refund'}, {'in_refund', 'entry'},
+            )
+            out_reverse = move.move_type in ('out_invoice', 'out_receipt') and remaining_types in (
+                {'out_refund'}, {'out_refund', 'entry'},
+            )
+            misc_reverse = (
+                move.move_type in ('entry', 'out_refund', 'in_refund')
+                and remaining_types == {'entry'}
+            )
+            if not (in_reverse or out_reverse or misc_reverse):
+                move.payment_state = 'paid'
+
     @api.depends(
         'posted_before', 'state', 'journal_id', 'date', 'move_type',
         'origin_payment_id', 'l10n_ve_exchange_diff_entry',
@@ -274,30 +419,40 @@ class AccountMove(models.Model):
         # -- al romper la conciliación de UN pago puntual, solo debe
         # revertirse la nota de ESE pago.
         #
-        # `.sudo()` en el `search()` -- mismo motivo que ya justifica el
-        # `.sudo()` en las búsquedas de `account.journal` (C3):
-        # `account.move` también tiene reglas multi-compañía que filtran
-        # por las compañías PERMITIDAS del usuario/proceso que rompe la
-        # conciliación, no por la compañía de la factura. Sin esto, un
-        # cron o un usuario de otra sucursal sin esa compañía en
-        # `allowed_company_ids` nunca ENCUENTRA la nota -- no falla
-        # ruidoso, simplemente la deja posteada, con folio fiscal
-        # consumido, sin revertir.
+        # `.sudo()` -- mismo motivo que ya justifica el `.sudo()` en las
+        # búsquedas de `account.journal` (C3): `account.move` también
+        # tiene reglas multi-compañía que filtran por las compañías
+        # PERMITIDAS del usuario/proceso que rompe la conciliación, no
+        # por la compañía de la factura.
         #
-        # `.with_env(self.env)` al final -- el `sudo()` es SOLO para
-        # que el `search()` pueda VER la nota más allá de las
-        # compañías permitidas del usuario; la reversión en sí
-        # (`_reverse_exchange_note`, disparada por el caller sobre el
-        # resultado de este método) debe seguir corriendo con los
-        # permisos NORMALES de quien la dispara, no heredar `sudo()`
-        # de arrastre sobre TODO lo que haga después con este recordset.
-        found = self.sudo().search([
+        # A propósito, el `sudo()` acá NO se acota solo al `search()`
+        # (a diferencia del de C3/las búsquedas de diario) -- se
+        # propaga al recordset devuelto, y de ahí a TODA la reversión
+        # que el caller dispara sobre él (`_reverse_exchange_note()`,
+        # `account_partial_reconcile.unlink()`). Probado primero acotado
+        # (`.with_env(self.env)` después del `search()`): el resultado
+        # era peor que el bug original -- el `search()` SÍ encontraba la
+        # nota, pero la reversión corría con los permisos normales de
+        # quien rompe la conciliación (que son justo los que no le
+        # alcanzan), y el `AccessError` resultante abortaba el
+        # `unlink()` COMPLETO -- cambiando "la nota queda huérfana en
+        # silencio" por "nadie puede desconciliar", peor para el usuario
+        # legítimo y sin resolver tampoco el caso del cron.
+        #
+        # Revertir una ND/NC de diferencial es una operación de
+        # INTEGRIDAD DEL SISTEMA, no una acción del usuario accediendo a
+        # datos de otra compañía a propósito: se dispara automáticamente
+        # como consecuencia de romper la conciliación factura-pago
+        # (`account.partial.reconcile.unlink()`), nunca porque alguien
+        # pidió ver o tocar esa nota directamente. Es coherente con que
+        # este módulo ya crea y postea la nota sin pedirle permisos
+        # extra al usuario en primer lugar.
+        return self.sudo().search([
             ('l10n_ve_exchange_invoice_id', '=', invoice.id),
             ('l10n_ve_exchange_payment_id', '=', payment.id),
             ('state', '!=', 'cancel'),
             ('reversal_move_ids', '=', False),
         ], order='id desc', limit=1)
-        return found.with_env(self.env)
 
     def _reverse_exchange_note(self):
         """Reverses this exchange difference Debit/Credit Note because the
@@ -310,6 +465,11 @@ class AccountMove(models.Model):
             return
         if self.state != 'posted':
             return
+        # `l10n_ve_skip_refund_origin_validation` -- todavía un no-op (ver
+        # nota completa en `_create_exchange_difference_note`,
+        # `account_move_line.py`): reversar una ND produce una NC
+        # (`out_refund`) que tampoco debe validarse contra el producto de
+        # su ND de origen cuando esa validación externa exista.
         self.with_context(
             move_reverse_cancel=True,
             l10n_ve_skip_refund_origin_validation=True,
@@ -431,8 +591,35 @@ class AccountMove(models.Model):
                         ('is_debit', '=', True),
                         ('type', '=', 'sale'),
                     ], order='id', limit=1)
-                    if debit_journal and debit_journal.l10n_ve_exchange_debit_note_sequence_id:
-                        default_values['journal_id'] = debit_journal.id
+                    # Explícito acá, no confiar en que
+                    # `_compute_name_by_sequence` lo atrape después: si
+                    # no se redirige `journal_id`, la reversión hereda
+                    # por copia el diario de venta NORMAL de la factura
+                    # -- y como ese diario típicamente SÍ tiene su propio
+                    # `refund_sequence_id` (numera sus propias NC de
+                    # negocio con normalidad), `_compute_name_by_sequence`
+                    # encontraría una secuencia "válida" ahí y numeraría
+                    # la reversión con el correlativo de NC de ese
+                    # diario -- consumiendo un folio de NC de NEGOCIO en
+                    # silencio, sin lanzar ningún error (a diferencia del
+                    # caso donde ese diario tampoco tiene refund_sequence,
+                    # que sí queda cubierto por el `UserError` de
+                    # `_compute_name_by_sequence`). Ese fallback silencioso
+                    # es exactamente el tipo de bug que este bloque existe
+                    # para evitar -- fallar acá mismo, en el punto exacto
+                    # donde se detecta, en vez de confiar en que otro
+                    # método más abajo en la cadena lo atrape (y solo lo
+                    # atrapa a medias).
+                    if not debit_journal or not debit_journal.l10n_ve_exchange_debit_note_sequence_id:
+                        raise UserError(_(
+                            "Configure a sale journal with 'Is Debit' "
+                            "enabled and its dedicated Exchange Difference "
+                            "Debit Note sequence assigned before reversing "
+                            "this exchange difference Credit Note -- the "
+                            "reversal must never be numbered with the "
+                            "invoice journal's own Credit Note sequence."
+                        ))
+                    default_values['journal_id'] = debit_journal.id
                 else:
                     # Revertir una ND (`out_invoice`) produce un
                     # `out_refund` que -- a diferencia del caso de arriba

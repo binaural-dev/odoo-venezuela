@@ -353,6 +353,93 @@ conciliación sin interferencia.
 - **AND** también se calcula/aplica IGTF
 - **AND** ambas se aplican correctamente sin duplicación ni error
 
+### Requirement: Corrección de `payment_state` cuando una ND/NC cierra una factura sin pago real de por medio
+
+El sistema SHALL corregir el `payment_state` nativo de Odoo a `'paid'` cuando
+una factura de cliente queda TOTALMENTE cerrada (residual cero) por una
+combinación de documentos donde NINGUNO es un `account.payment`/línea de
+extracto real, pero AL MENOS UNO es una ND/NC de este módulo -- el caso
+concreto es el "cruce de anticipo" de `l10n_ve_igtf`
+(`_reconcile_move_with_payment_difference`, un `account.move` armado a mano,
+`move_type='entry'`, sin `origin_payment_id`) cuando ese cruce deja además un
+residual de diferencial cambiario.
+
+Sin esta corrección, el cálculo nativo de Odoo
+(`account.move._compute_payment_state`) clasifica ese caso como
+`payment_state = 'reversed'` -- exclusivo a este módulo: SIN él, ese mismo
+escenario (anticipo + diferencial) siempre resolvía a `'paid'`, porque el
+asiento genérico nativo que Odoo genera por defecto también es
+`move_type='entry'` (nunca introduce `'out_refund'` en la combinación de
+tipos que el núcleo evalúa). Al reemplazar ese asiento genérico por una NC
+fiscal real (`out_refund`, el propósito de este módulo), esa NC pasa a ser la
+pieza que sí introduce `'out_refund'` en la combinación, y el núcleo concluye
+erróneamente que la factura fue "revertida" en vez de pagada.
+
+Verificado empíricamente que esta corrección NO protege, de forma
+adicional, la base imponible de IGTF de `l10n_ve_igtf.compute_bi_igtf`: en
+CUALQUIER escenario donde el bug de `payment_state` puede dispararse (el
+historial COMPLETO de conciliación de la factura no tiene ningún pago
+real), la propia fórmula de `compute_bi_igtf` tampoco encuentra ningún pago
+real del cual sacar base imponible, así que da 0 igual, esté o no corregido
+`payment_state`. Un pago real en el historial de la factura, en cambio,
+mantiene el cómputo nativo en su rama `has_payment`, que nunca evalúa la
+condición de reversión -- no existe un escenario alcanzable que combine un
+pago real de IGTF con este bug. El valor de esta corrección es
+`payment_state` en sí mismo (reportes, filtros, cualquier otra lógica que lo
+lea), no la protección de la base imponible de IGTF.
+
+La corrección SHALL re-evaluar la MISMA comparación de `move_type` que usa el
+núcleo, pero excluyendo del conjunto los documentos que sean, a la vez,
+`l10n_ve_exchange_diff_entry=True` Y de un `move_type` que este módulo
+realmente emite (`out_invoice`/`out_refund`) -- NUNCA solo por el flag: ese
+mismo flag también marca (para trazabilidad) el asiento genérico nativo de
+Odoo, que es legítimo dejar en el cómputo normal. Si al excluir las notas
+propias la combinación restante YA NO arma una reversión, corrige a
+`'paid'` -- el valor por defecto que el propio núcleo ya usa en esa rama
+antes de evaluar la condición de reversión. Si la combinación restante SIGUE
+armando una reversión (ej. una Nota de Crédito de NEGOCIO real, no
+relacionada, que también participó en cerrar la factura), NO SHALL corregir
+nada -- esa clasificación es genuina.
+
+Un documento marcado con `l10n_ve_exchange_diff_entry=True` cuyo `move_type`
+NO sea ni `'entry'` (asiento genérico) ni `out_invoice`/`out_refund` (nota
+propia) SHALL abortar con `UserError` explícito en vez de ignorarse en
+silencio -- ese flag no tiene ningún otro uso legítimo en el módulo, así que
+verlo en cualquier otro tipo de documento indica un estado inconsistente que
+podría corromper este mismo cómputo más adelante de forma mucho más difícil
+de diagnosticar.
+
+Esta corrección NO SHALL requerir `.sudo()`: a diferencia de
+`compute_bi_igtf` (que sí lo necesita, ver spec de `l10n_ve_igtf`), el
+escenario real que corrige (factura + cruce de anticipo + nota propia)
+siempre ocurre dentro de la MISMA compañía -- `_create_exchange_difference_note`
+ya fuerza que la nota sea de `invoice.company_id`. Si algún día una
+contraparte de otra compañía (sucursal/matriz, fuera de alcance) no es
+visible para el usuario/proceso actual, SHALL fallar con `AccessError` en vez
+de completar el flujo en silencio.
+
+#### Scenario: Factura cerrada por anticipo + NC de diferencial no queda "revertida"
+
+- **GIVEN** una factura de cliente en USD
+- **AND** se cierra vía el cruce de anticipo de `l10n_ve_igtf` (`entry`, sin `origin_payment_id`)
+- **AND** ese cruce deja un residual de pérdida cambiaria, documentado con la NC de este módulo
+- **WHEN** se recomputa `payment_state` de la factura
+- **THEN** queda `'paid'`, no `'reversed'`
+- **AND** `l10n_ve_igtf.bi_igtf` (y los otros 3 campos de base imponible) quedan en cero de todas formas -- correcto, no un efecto residual del bug: el cruce de anticipo no tiene línea de IGTF, así que no hay base real que proteger en este escenario
+
+#### Scenario: Una reversión genuina, no relacionada, no se corrige
+
+- **GIVEN** una factura cerrada por una combinación que incluye una Nota de Crédito de NEGOCIO real (no de este módulo) además de una nota propia de una conciliación anterior no relacionada
+- **WHEN** se recomputa `payment_state`
+- **AND** excluir la nota propia de la combinación NO cambia el resultado (la NC de negocio por sí sola ya arma la reversión)
+- **THEN** `payment_state` se queda en `'reversed'`
+
+#### Scenario: Documento con el flag en un `move_type` inesperado aborta
+
+- **GIVEN** un documento con `l10n_ve_exchange_diff_entry=True` cuyo `move_type` no es `'entry'`, `'out_invoice'` ni `'out_refund'`
+- **WHEN** participa en el cómputo de `payment_state` de una factura marcada `'reversed'`
+- **THEN** se lanza `UserError` explícito en vez de ignorarlo en silencio
+
 ### Requirement: Acoplamiento a API interna se detecta en test + runtime
 
 El módulo está acoplado al método INTERNO `_prepare_reconciliation_single_partial`

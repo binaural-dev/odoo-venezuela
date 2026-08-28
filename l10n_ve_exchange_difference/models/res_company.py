@@ -67,6 +67,58 @@ class ResCompany(models.Model):
                     missing=", ".join(missing),
                 ))
 
+    @api.constrains('l10n_ve_exchange_use_nd_nc')
+    def _check_l10n_ve_exchange_debit_journal_sequences(self):
+        """Con el toggle activado, valida en el momento de GUARDAR la
+        compañía que exista un diario dedicado de ND (`is_debit=True`,
+        `type='sale'`) con AMBAS secuencias configuradas -- la propia de
+        ND (`l10n_ve_exchange_debit_note_sequence_id`, exigida al emitir
+        una ND) y la de NC (`refund_sequence_id`, exigida recién al
+        REVERTIR una ND -- ver `_reverse_moves`, `models/account_move.py`).
+
+        Sin este constraint, la falta de `refund_sequence_id` solo se
+        descubre cuando alguien rompe una conciliación días o meses
+        después de emitida la ND -- con el documento fiscal ya posteado
+        y la desconciliación a medio camino, en vez de al configurar.
+        Quien rompe una conciliación rara vez es quien puede configurar
+        diarios; el momento en que se entera es el peor posible.
+
+        No es a prueba de balas -- si el diario cambia DESPUÉS de esta
+        validación (alguien le quita la secuencia, o el toggle ya estaba
+        activo cuando se creó el diario), este constraint no se re-dispara
+        (solo depende de `l10n_ve_exchange_use_nd_nc`, no de campos de
+        `account.journal`). La defensa en profundidad en tiempo real
+        (`_reverse_moves`) sigue siendo la última línea, no se retira."""
+        for company in self:
+            if not company.l10n_ve_exchange_use_nd_nc:
+                continue
+            debit_journal = self.env['account.journal'].search([
+                ('company_id', '=', company.id),
+                ('is_debit', '=', True),
+                ('type', '=', 'sale'),
+            ], order='id', limit=1)
+            if not debit_journal or not debit_journal.l10n_ve_exchange_debit_note_sequence_id:
+                # Ya cubierto, con el mismo mensaje, por la defensa en
+                # profundidad de `_create_exchange_difference_note`
+                # (`account_move_line.py`) -- se repite acá para que
+                # aparezca AL GUARDAR, no recién al conciliar la primera
+                # factura.
+                raise ValidationError(_(
+                    "With 'Use Debit/Credit Notes for Customer Invoice "
+                    "Exchange Difference' enabled, configure a sale "
+                    "journal with 'Is Debit' enabled and its dedicated "
+                    "Exchange Difference Debit Note sequence assigned."
+                ))
+            if not debit_journal.refund_sequence_id:
+                raise ValidationError(_(
+                    "The dedicated Exchange Difference Debit Note journal "
+                    "('%(journal)s') also needs its own 'Refund Sequence' "
+                    "(Credit Note sequence) configured -- required to "
+                    "reverse a Debit Note if its reconciliation is ever "
+                    "broken.",
+                    journal=debit_journal.display_name,
+                ))
+
     @api.constrains('l10n_ve_exchange_note_pricelist_id')
     def _check_l10n_ve_exchange_note_pricelist_id(self):
         """The exchange difference note pricelist must be denominated in

@@ -301,7 +301,6 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
             "currency_id": self.company.currency_id.id,
         })
         self.company.l10n_ve_exchange_note_pricelist_id = self.note_pricelist.id
-        self.company.l10n_ve_exchange_use_nd_nc = True
 
         # Diario dedicado de ND con secuencia propia -- requerido desde
         # el fix del bloqueante de numeración (ver
@@ -326,6 +325,11 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
             # ND ya no autoprovisiona `refund_sequence_id` en silencio.
             "refund_sequence": True,
         })
+        # El toggle se activa DESPUÉS de que el diario dedicado (con
+        # AMBAS secuencias) ya existe -- `_check_l10n_ve_exchange_debit_journal_sequences`
+        # (`res_company.py`) valida esto al GUARDAR el toggle, no solo en
+        # tiempo de conciliación.
+        self.company.l10n_ve_exchange_use_nd_nc = True
 
     def _create_invoice_usd(self, amount, date=None):
         """Mismo patrón de dos pasos (`Form` para encabezado, segundo
@@ -741,3 +745,112 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         )
         note_line = notes.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         self.assertTrue(note_line.reconciled, "La nota debió quedar cerrada por su propia conciliación.")
+
+    def test_invoice_closed_by_advance_cross_and_note_does_not_end_up_reversed(self):
+        """Regresión concreta para el bloqueante "la factura cerrada vía
+        un cruce de anticipo + NC de diferencial quedaba `reversed` en
+        vez de `paid`" (revisión de seguimiento sobre `9dabb347`).
+
+        El "cruce de anticipo" real de `l10n_ve_igtf`
+        (`_reconcile_move_with_payment_difference`,
+        `l10n_ve_igtf/models/account_move.py`) concilia la factura
+        contra un `account.move` armado a mano -- `move_type='entry'`,
+        SIN `origin_payment_id` (no es un `account.payment` real, es un
+        asiento que traslada un anticipo ya existente a la cuenta por
+        cobrar). Este test no monta el flujo completo del wizard de
+        anticipos -- reproduce directo la propiedad ESTRUCTURAL que
+        importa (un `entry` sin `origin_payment_id`, conciliado por
+        `.reconcile()` contra la factura), que es exactamente lo que
+        dispara el bug sin importar por qué mecanismo de UI se llegue.
+
+        Sin este módulo, este mismo escenario (anticipo + diferencial)
+        SIEMPRE resolvía a `payment_state='paid'`, porque el asiento
+        genérico nativo de Odoo también es `move_type='entry'` -- nunca
+        introduce `'out_refund'` en la combinación de tipos que el
+        núcleo evalúa para decidir si una factura fue "revertida". La NC
+        real que este módulo emite en su lugar SÍ lo introduce -- y sin
+        la corrección de `_compute_payment_state`
+        (`l10n_ve_exchange_difference/models/account_move.py`), el
+        núcleo concluye erróneamente que la factura se revirtió.
+
+        NOTA sobre `bi_igtf`/`igtf_top_aply`: se investigó si esta
+        misma corrección también rescataba la base imponible de IGTF de
+        `l10n_ve_igtf.compute_bi_igtf` en este escenario (hipótesis
+        documentada en una versión anterior de este test y del spec).
+        Verificado EMPÍRICAMENTE que NO aplica: siempre que el bug de
+        `payment_state` puede dispararse (factura cerrada SIN ningún
+        pago real en TODO su historial de conciliación), la fórmula de
+        `compute_bi_igtf` (que reduce el tope exactamente por la
+        porción cerrada con movimientos sin línea de IGTF, y no
+        contribuye nada a `bi_igtf` desde un movimiento que tampoco
+        tiene línea de IGTF) da 0 de todas formas -- CON o SIN la
+        corrección de `payment_state`, porque nunca hay un pago real
+        del cual sacar base imponible. El único efecto real y
+        verificado de este fix es `payment_state` en sí mismo."""
+        self.currency_usd.write({
+            "rate_ids": [
+                Command.create({"name": "2043-01-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2043-08-01", "company_rate": 1 / 36.0}),
+            ],
+        })
+
+        invoice = self._create_invoice_usd(1000.00, date="2043-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        # Cruce de anticipo simplificado -- mismo `move_type='entry'` sin
+        # `origin_payment_id` que produce `_reconcile_move_with_payment_difference`,
+        # en el mismo diario/cuenta de anticipo que usa ese mecanismo
+        # real, pero construido directo para no depender del wizard
+        # completo de Enterprise/anticipos.
+        advance_cross = self.env["account.move"].create({
+            "move_type": "entry",
+            "journal_id": self.journal_anticipo.id,
+            "partner_id": self.partner.id,
+            "date": "2043-08-01",
+            "currency_id": self.currency_usd.id,
+            "line_ids": [
+                Command.create({
+                    "account_id": self.acc_receivable.id, "partner_id": self.partner.id,
+                    "currency_id": self.currency_usd.id, "amount_currency": -1000.0,
+                    "debit": 0.0, "credit": 36000.0,
+                }),
+                Command.create({
+                    "account_id": self.advance_cust_acc.id, "partner_id": self.partner.id,
+                    "currency_id": self.currency_usd.id, "amount_currency": 1000.0,
+                    "debit": 36000.0, "credit": 0.0,
+                }),
+            ],
+        })
+        advance_cross.action_post()
+        self.assertFalse(
+            advance_cross.origin_payment_id,
+            "Precondición del escenario: el cruce NO debe tener un account.payment real detrás.",
+        )
+        cross_line = advance_cross.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+
+        (inv_line + cross_line).reconcile()
+        self.env.cr.flush()
+
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        self.assertTrue(inv_line.reconciled, "La factura debió quedar completamente conciliada.")
+        self.assertTrue(self.company.currency_id.is_zero(inv_line.amount_residual))
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertEqual(
+            len(note), 1,
+            "El residual de diferencial del cruce de anticipo debió documentarse con una NC.",
+        )
+        self.assertTrue(note._is_exchange_credit_note(), "Con estas tasas correspondía la rama de pérdida (NC).")
+
+        # El fix en sí: sin él, esto da 'reversed'.
+        self.assertEqual(
+            invoice.payment_state, "paid",
+            "La factura se cerró por completo (anticipo + NC de diferencial) -- "
+            "debió quedar 'paid', no 'reversed'.",
+        )
