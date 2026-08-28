@@ -508,7 +508,12 @@ class AccountMoveLine(models.Model):
                 and not line.move_id.is_invoice(True)
                 and not self.env.is_protected(self._fields['balance'], line)
             ):
-                rate = line.currency_rate
+                # Usar la tasa propia del movimiento (foreign_inverse_rate) en vez de la
+                # tasa oficial de la tabla (currency_rate): en pagos con tasa fijada
+                # manualmente (wizard de registrar pago), ambas pueden diferir, y usar
+                # currency_rate descuadra el asiento en moneda de la compañía al editar
+                # el importe en moneda de una línea ya creada.
+                rate = line.foreign_inverse_rate or line.currency_rate
                 if not rate:
                     continue
                 raw_balance = line.amount_currency / rate
