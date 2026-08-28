@@ -25,7 +25,7 @@ que tenian antes de esta version.
 """
 
 
-def migrate(cr, installed_version):
+def migrate(cr, version):
     cr.execute(
         """
         UPDATE sale_order so
