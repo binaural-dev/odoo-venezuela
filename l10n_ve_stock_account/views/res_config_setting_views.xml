@@ -108,26 +108,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_dispatch_guide_control_number_max_lines">
-                    <div class="o_setting_right_pane">
-                        <label for="dispatch_guide_control_number_max_lines"/>
-                        <span
-                            class="fa fa-lg fa-building-o"
-                            title="Values set here are company-specific."
-                            aria-label="Values set here are company-specific."
-                            role="img"
-                        />
-                        <div class="text-muted">
-                            Cantidad máxima de líneas de producto que entran en una
-                            hoja impresa de la guía de despacho. Las guías con más
-                            líneas que esta cantidad reservan un número de control
-                            adicional por cada hoja extra.
-                        </div>
-                        <div class="content-group">
-                            <field name="dispatch_guide_control_number_max_lines" class="oe_inline"/>
-                        </div>
-                    </div>
-                </div>
             </xpath>
         </field>
     </record>

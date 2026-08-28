@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260822\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-28 09:01+0000\n"
-"PO-Revision-Date: 2026-08-28 09:01+0000\n"
+"POT-Creation-Date: 2026-08-28 17:12+0000\n"
+"PO-Revision-Date: 2026-08-28 17:12+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -70,14 +70,6 @@ msgstr ""
 msgid ""
 "<br/>\n"
 "                            <span class=\"fw-bold\">RIF:</span>"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
-msgid ""
-"<span class=\"fa fa-lg fa-building-o\" title=\"Values set here are company-"
-"specific.\" aria-label=\"Values set here are company-specific.\" "
-"role=\"img\"/>"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -257,24 +249,6 @@ msgid "Cant."
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
-msgid ""
-"Cantidad máxima de líneas de producto que entran en una\n"
-"                            hoja impresa de la guía de despacho. Las guías con más\n"
-"                            líneas que esta cantidad reservan un número de control\n"
-"                            adicional por cada hoja extra."
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__dispatch_guide_control_number_max_lines
-#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__dispatch_guide_control_number_max_lines
-msgid ""
-"Cantidad máxima de líneas de producto que entran en una hoja impresa de la "
-"guía de despacho. Cuando una guía tiene más líneas que esta cantidad, se "
-"reserva un número de control adicional por cada hoja extra."
-msgstr ""
-
-#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Cod."
 msgstr "Cód."
@@ -288,11 +262,6 @@ msgstr "Código"
 #: model:ir.model,name:l10n_ve_stock_account.model_res_company
 msgid "Companies"
 msgstr "Empresas"
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__company_id
-msgid "Company"
-msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
@@ -366,7 +335,6 @@ msgstr "Crear crédito de proveedor"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__create_uid
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__create_uid
 msgid "Created by"
@@ -374,7 +342,6 @@ msgstr "Creado por"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__create_date
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__create_date
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__create_date
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__create_date
 msgid "Created on"
@@ -459,7 +426,6 @@ msgstr "Guías de Despacho"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__display_name
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_return_picking__display_name
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__display_name
@@ -562,11 +528,6 @@ msgid "Hide weight field in dispatch guide"
 msgstr "Ocultar campo de peso en la guía"
 
 #. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__sheet_number
-msgid "Hoja"
-msgstr ""
-
-#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move_line__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__id
@@ -579,7 +540,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_move_line__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__id
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_return_picking__id
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_warehouse__id
@@ -777,7 +737,6 @@ msgstr "Último día del mes"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__write_uid
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__write_uid
 msgid "Last Updated by"
@@ -785,7 +744,6 @@ msgstr "Última actualización por"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_picking_invoice_wizard__write_date
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__write_date
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__write_date
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__write_date
 msgid "Last Updated on"
@@ -803,35 +761,13 @@ msgid "Los datos del cliente no existen"
 msgstr ""
 
 #. module: l10n_ve_stock_account
-#: model:ir.model,name:l10n_ve_stock_account.model_stock_picking_control_number_line
-msgid "Línea de Número de Control de la Guía de Despacho"
-msgstr ""
-
-#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__match_guide_dispatch_domain
 msgid "Match Guide Dispatch Domain"
 msgstr "Dominio coincidente de guía de despacho"
 
 #. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__dispatch_guide_control_number_max_lines
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__dispatch_guide_control_number_max_lines
-msgid "Máximo de líneas por hoja (número de control)"
-msgstr ""
-
-#. module: l10n_ve_stock_account
 #: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__type_of_return__n/a
 msgid "N/A"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__number
-msgid "Número de Control"
-msgstr ""
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__control_number_ids
-#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_form_view_inherited
-msgid "Números de Control"
 msgstr ""
 
 #. module: l10n_ve_stock_account
@@ -1129,11 +1065,6 @@ msgstr ""
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_self_consumption_wizard__picking_id
 msgid "Transfer"
 msgstr "Transferir"
-
-#. module: l10n_ve_stock_account
-#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking_control_number_line__picking_id
-msgid "Transferencia"
-msgstr ""
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_bank_statement_line__transfer_ids

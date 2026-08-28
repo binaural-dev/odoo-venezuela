@@ -34,7 +34,3 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.hide_weight_field_dispatch_guide", readonly=False
     )
 
-    dispatch_guide_control_number_max_lines = fields.Integer(
-        related="company_id.dispatch_guide_control_number_max_lines", readonly=False
-    )
-
