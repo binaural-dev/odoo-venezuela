@@ -345,14 +345,33 @@ class SaleOrder(models.Model):
         "foreign_rate",
     )
     def _compute_tax_totals(self):
-        # Adaptar el contexto para que el método de impuestos pueda recuperar el registro de la orden
-        for order in self:
-            ctx = self.env.context.copy()
-            ctx.update({'active_id': order.id, 'active_model': order._name})
-            order.with_context(ctx)._compute_tax_totals_base()
+        """Delegates straight to `super()`, without the per-record
+        `with_context(active_id=..., active_model=...)` this used to set
+        before iterating -- `with_context()` builds a new `Environment`
+        for every order (walking the transaction's live environment
+        registry), which in this project (with very deep `super()`
+        chains) is one of several spots that could end in a real
+        `RecursionError` -- see `account.move._compute_tax_totals`
+        (`l10n_ve_accountant/models/account_move.py`), where the same
+        per-record context injection was found to cause exactly that
+        while reconciling payments.
 
-    def _compute_tax_totals_base(self):
-        return super()._compute_tax_totals()
+        `account_tax._get_tax_totals_summary` (`l10n_ve_accountant`)
+        derives `record` (the order) FIRST from
+        `base_lines[0]['record'].order_id` -- `base_lines` here comes
+        from the core's own `_compute_tax_totals`
+        (`sale/models/sale_order.py`), which builds each base line via
+        `line._prepare_base_line_for_taxes_computation()`; that method
+        (core, unmodified in this project) always sets `'record'` to the
+        `sale.order.line` itself, so `record.order_id` resolves to this
+        order without needing `active_id`/`active_model` at all. The
+        context is only a fallback for the (untested-here) case where
+        `base_lines` is empty.
+
+        The `@api.depends` above is kept (needed for `foreign_rate`,
+        specific to this project) but the call itself is delegated
+        directly, with no per-record context."""
+        super()._compute_tax_totals()
 
     @api.depends("partner_id", "partner_id.vat", "partner_id.prefix_vat")
     def _compute_vat(self):
