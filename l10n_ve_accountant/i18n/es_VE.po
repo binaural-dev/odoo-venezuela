@@ -824,7 +824,12 @@ msgstr "Producto de importación exento"
 msgid "International purchase"
 msgstr "Es Compra Internacional"
 
-
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
+msgid "Date of Invoice"
+msgstr "Fecha de factura"
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1796,23 +1801,6 @@ msgstr "Total sin impuestos BS"
 #: model_terms:ir.ui.view,arch_db:account.view_move_line_payment_tree
 msgid "Bill Date"
 msgstr "Fecha de tasa"
-
-#. module: account
-#: model:ir.model.fields,field_description:account.field_account_invoice_report__invoice_date
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
-#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
-#: model_terms:ir.ui.view,arch_db:account.portal_my_invoices
-#: model_terms:ir.ui.view,arch_db:account.view_account_invoice_filter
-#: model_terms:ir.ui.view,arch_db:account.view_account_move_filter
-#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_filter
-#: model_terms:ir.ui.view,arch_db:account.view_account_move_line_payment_filter
-#: model_terms:ir.ui.view,arch_db:account.view_invoice_tree
-#: model_terms:ir.ui.view,arch_db:account.view_move_form
-#: model_terms:ir.ui.view,arch_db:account.view_move_line_tree
-#: model_terms:ir.ui.view,arch_db:account.view_move_tree
-msgid "Invoice Date"
-msgstr "Fecha de Factura"
 
 #. module: l10n_ve_accountant
 #. odoo-python

@@ -488,19 +488,6 @@ class AccountMoveLine(models.Model):
                     }
                 )
 
-    @api.constrains("quantity", "price_unit", "product_id")
-    def _check_refund_line_against_origin(self):
-        # Writing directly on a line (line.write(...)) does not change the
-        # parent's `invoice_line_ids` field value itself, so it does not
-        # trigger account.move's `@api.constrains('invoice_line_ids')`. This
-        # closes that gap so a line-level write on a credit/debit note is
-        # still validated against its source invoice.
-        moves = self.mapped("move_id").filtered(
-            lambda m: m.move_type in ("out_refund", "in_refund") and m.reversed_entry_id
-        )
-        for move in moves:
-            move._validate_refund_lines_against_origin()
-
     def _check_constrains_account_id_journal_id(self):
         for line in self.filtered(
             lambda x: x.display_type not in ('line_section', 'line_subsection', 'line_note')
@@ -520,14 +507,3 @@ class AccountMoveLine(models.Model):
                     line_currency=line.currency_id.name,
                 ))
         return super()._check_constrains_account_id_journal_id()
-
-    @api.constrains('quantity', 'price_unit', 'discount', 'product_id')
-    def _check_refund_validation_on_line_write(self):
-        # `account.move`'s `_check_invoice_line_ids_refund_validation` is
-        # declared on `invoice_line_ids`, but the ORM does not reliably treat
-        # a direct write on a line's own fields (bypassing `move.write()`) as
-        # a change to the parent's one2many, so that constrain alone can be
-        # skipped via write()/RPC on the line itself. Re-run the same check
-        # here, scoped to the parent move, to close that gap.
-        for move in self.move_id:
-            move._validate_refund_lines_against_origin()

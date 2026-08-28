@@ -19,7 +19,7 @@ class AccountMove(models.Model):
     _inherit = "account.move"
     
     invoice_date = fields.Date(copy=True)
-    invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.context_today)
+    invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.context_today, copy=True)
     is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
 
     @api.depends('invoice_date_display')
@@ -919,18 +919,29 @@ class AccountMove(models.Model):
         'foreign_rate',
     )
     def _compute_tax_totals(self):
-        # El `with_context(active_id=..., active_model=...)` por registro que
-        # había aquí antes era redundante: `account_tax._get_tax_totals_summary`
-        # (l10n_ve_accountant) ya deriva el `record` (la factura) directo de
-        # `base_lines[0]['record'].move_id` como fallback cuando no hay
-        # `active_id`/`active_model` en el contexto -- da exactamente el mismo
-        # resultado. Además, `with_context()` crea un `Environment` nuevo por
-        # cada factura (iterando el registro de entornos vivos de la
-        # transacción), que en este proyecto (con cadenas de `super()` muy
-        # profundas) es uno de varios puntos que puede terminar en un
-        # `RecursionError` real al conciliar pagos. Se mantiene el
-        # `@api.depends` (necesario por `foreign_rate`, específico de este
-        # proyecto) pero se delega directo, sin el contexto por registro.
+        """Delegates straight to `super()`, without the per-record
+        `with_context(active_id=..., active_model=...)` this used to set
+        before iterating -- `with_context()` builds a new `Environment`
+        for every invoice (walking the transaction's live environment
+        registry), which in this project (with very deep `super()`
+        chains) is one of several spots that could end in a real
+        `RecursionError` while reconciling payments.
+
+        `account_tax._get_tax_totals_summary` (`l10n_ve_accountant`)
+        derives `record` (the invoice) FIRST from
+        `base_lines[0]['record'].move_id` -- only falling back to the
+        context's `active_id`/`active_model` if that fails -- but that
+        method's currency/rate/discount branch used to compare the
+        STRING `active_model == "account.move"` (never set by this
+        `base_lines`-derived path) instead of `record._name`, so removing
+        the per-record `with_context()` without also fixing that
+        condition left that branch permanently dead outside a real UI
+        action (crons, reconciliation-triggered recomputes, reports) --
+        see the fix in `account_tax.py`.
+
+        The `@api.depends` above is kept (needed for `foreign_rate`,
+        specific to this project) but the call itself is delegated
+        directly, with no per-record context."""
         super()._compute_tax_totals()
 
 
@@ -1796,150 +1807,3 @@ class AccountMove(models.Model):
             if move.posted_before and not self._context.get('force_delete'):
                 raise UserError(_("You cannot delete a journal item that is posted, cancelled, or has been previously posted."))
             
-
-    def _validate_refund_lines_against_origin(self):
-        """
-        Validate invoice lines in credit/debit notes against their
-        corresponding original invoice lines from the source document.
-        Credit notes (out_refund/in_refund) link to their origin via
-        `reversed_entry_id`; debit notes keep the original move_type
-        (out_invoice/in_invoice) and link via `debit_origin_id`.
-
-        Ensures that:
-        1. Only products present in the original invoice are allowed.
-        2. Quantity does not exceed the original quantity and is not zero.
-        3. Unit price is non-negative and does not exceed the original.
-        """
-        self.ensure_one()
-
-        origin = self.reversed_entry_id if self.move_type in ('out_refund', 'in_refund') \
-            else self.debit_origin_id if self.move_type in ('out_invoice', 'in_invoice') \
-            else None
-
-        if not origin:
-            return
-
-        # Some credit/debit notes don't correct what was sold -- they document
-        # a separate fiscal adjustment unrelated to the original invoice
-        # lines. Two known cases: exchange-difference notes
-        # (`l10n_ve_exchange_difference`, not a dependency of this module, in
-        # development on a separate PR), whose single line is a dedicated
-        # "exchange difference" product for a currency-rate gain/loss; and
-        # IGTF adjustment notes, whose line is the IGTF tax amount itself, not
-        # a product sold on the original invoice. Both are built directly
-        # with `create()`/`reversed_entry_id` (or `debit_origin_id`) pointing
-        # at the real commercial invoice, but their line(s) are legitimately
-        # never on that invoice. Since those modules can't add a
-        # field/dependency here, their own creation code is expected to set
-        # this context key (instead of a persisted field) around the
-        # `create()`/`action_post()` call that builds the note.
-        #
-        # Known tradeoff (flagged in review, intentionally not closed here):
-        # this key is forgeable via RPC/import, so anyone could skip the
-        # whole validation. The safer alternative -- matching the line's
-        # product against a "diferencial cambiario" product configured on
-        # the company, instead of trusting a context flag -- isn't built yet
-        # because it depends on `l10n_ve_exchange_difference`, which doesn't
-        # exist as a dependency of this module. The context key is the
-        # intentional integration point for that future module (and for any
-        # other legitimate non-commercial note) until that dependency lands;
-        # tightening it now would just mean redoing this once that module is
-        # ready to plug in its own product-based check.
-        if self.env.context.get('l10n_ve_skip_refund_origin_validation'):
-            return
-
-        # Lines are grouped by product (not matched by `sequence`: Odoo computes
-        # `sequence` from `display_type` only, so every regular product line gets
-        # the same value (100) regardless of position, and keying on it collapses
-        # repeated products in the source invoice to a single line). The check is
-        # kept stateless and aggregated per product (total available quantity,
-        # highest unit price) instead of pairing 1:1 with a specific origin line:
-        # this same validation re-runs against intermediate Form states while
-        # lines are being added/removed/reordered in the UI, and a stateful
-        # pairing (e.g. consuming a queue) would misattribute a refund line to
-        # the wrong origin line mid-edit.
-        origin_totals_by_product = defaultdict(lambda: {"quantity": 0.0, "max_net_unit_price": 0.0, "amount": 0.0})
-        for line in origin.invoice_line_ids:
-            if not line.product_id:
-                continue
-            totals = origin_totals_by_product[line.product_id.id]
-            totals["quantity"] += line.quantity
-            # Net of discount (price_subtotal / quantity), not the raw list
-            # price_unit: a line with a bigger discount can have a higher
-            # price_unit than one with none while still netting a lower (or
-            # equal) amount per unit, so comparing raw price_unit alone would
-            # reject legitimate refunds and, in the opposite direction, let
-            # a no-discount refund line slip in under a discounted origin's
-            # list price even though its real per-unit amount is higher.
-            if not float_is_zero(line.quantity, precision_digits=self.env['decimal.precision'].precision_get('Product Unit of Measure')):
-                totals["max_net_unit_price"] = max(totals["max_net_unit_price"], line.price_subtotal / line.quantity)
-            totals["amount"] += line.price_subtotal
-
-        precision = self.env['decimal.precision'].precision_get('Product Unit of Measure')
-        currency_precision = self.currency_id.decimal_places
-        refund_quantity_by_product = defaultdict(float)
-        refund_amount_by_product = defaultdict(float)
-
-        for line in self.invoice_line_ids:
-            if not line.product_id:
-                continue
-
-            totals = origin_totals_by_product.get(line.product_id.id)
-
-            if not totals:
-                raise ValidationError(_(
-                    "You are not allowed to add new products ('%s') "
-                    "that were not present in the original invoice."
-                ) % line.product_id.name)
-
-            if float_is_zero(line.quantity, precision_digits=precision):
-                raise ValidationError(_("The quantity cannot be zero."))
-
-            refund_quantity_by_product[line.product_id.id] += line.quantity
-
-            if float_compare(
-                refund_quantity_by_product[line.product_id.id],
-                totals["quantity"],
-                precision_digits=precision,
-            ) > 0:
-                raise ValidationError(_(
-                    "Product '%s':\n"
-                    "The quantity (%s) cannot be greater than the original "
-                    "quantity in the source invoice (%s)."
-                ) % (line.product_id.name, line.quantity, totals["quantity"]))
-
-            if float_compare(line.price_unit, 0.0, precision_digits=currency_precision) < 0:
-                raise ValidationError(_("The unit price cannot be negative."))
-
-            net_unit_price = line.price_subtotal / line.quantity
-            if float_compare(net_unit_price, totals["max_net_unit_price"], precision_digits=currency_precision) > 0:
-                raise ValidationError(_(
-                    "Product '%s':\n"
-                    "The unit price after discount (%s) cannot be greater than the "
-                    "original unit price after discount in the source invoice (%s)."
-                ) % (line.product_id.name, net_unit_price, totals["max_net_unit_price"]))
-
-            refund_amount_by_product[line.product_id.id] += line.price_subtotal
-
-            if float_compare(
-                refund_amount_by_product[line.product_id.id],
-                totals["amount"],
-                precision_digits=currency_precision,
-            ) > 0:
-                raise ValidationError(_(
-                    "Product '%s':\n"
-                    "The credited/debited amount (%s) cannot be greater than the "
-                    "original amount in the source invoice (%s)."
-                ) % (line.product_id.name, refund_amount_by_product[line.product_id.id], totals["amount"]))
-
-    @api.onchange('invoice_line_ids')
-    def _onchange_invoice_line_ids_refund_validation(self):
-        self._validate_refund_lines_against_origin()
-
-    @api.constrains('invoice_line_ids')
-    def _check_invoice_line_ids_refund_validation(self):
-        # Reinforces `_onchange_invoice_line_ids_refund_validation`: the onchange
-        # only fires from the UI (Form), so create/write/RPC/imports would
-        # otherwise bypass the restriction entirely.
-        for move in self:
-            move._validate_refund_lines_against_origin()
