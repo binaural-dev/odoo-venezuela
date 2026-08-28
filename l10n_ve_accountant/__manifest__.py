@@ -41,7 +41,7 @@ Cambios en UI / Modelos impactados
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "17.0.0.0.62",
+    "version": "17.0.0.0.63",
     "depends": [
         "base",
         "web",
