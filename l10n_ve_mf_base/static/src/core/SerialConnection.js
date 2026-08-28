@@ -49,11 +49,11 @@ export class SerialConnection {
             await this.port.open(this.config);
             this.isConnected = true;
 
-            // Guardar la configuración en localStorage para reconexión automática
+            // Guardar la configuración en localStorage para reconexión automática.
+            // La identidad USB (VID/PID) NO se persiste aquí: la guarda TfhkaDriver
+            // SOLO tras verificar con getStatus() que el puerto responde como
+            // máquina fiscal — así nunca se guarda la balanza (u otro serial) como MF.
             this._savePortConfig();
-            // Guardar la identidad USB (VID/PID) del puerto elegido para que
-            // autoConnect() reabra ESTE dispositivo y no el primero autorizado.
-            this._saveDeviceInfo();
 
             return true;
         } catch (error) {
@@ -85,30 +85,34 @@ export class SerialConnection {
             // reconexión silenciosa fallaba, obligando a re-vincular a mano
             // tras cada hand-off de Megasoft.
             const saved = this._loadDeviceInfo();
-            let port = null;
 
-            if (saved) {
-                port =
-                    ports.find((p) => {
-                        const info = (p.getInfo && p.getInfo()) || {};
-                        return (
-                            info.usbVendorId === saved.usbVendorId &&
-                            info.usbProductId === saved.usbProductId
-                        );
-                    }) || null;
-            } else if (ports.length === 1) {
-                // Compatibilidad hacia atrás: puertos autorizados antes de
-                // esta versión no tienen identidad guardada. Si solo hay uno,
-                // es inequívoco; con varios exigimos un reconecte manual (el
-                // botón guarda la identidad y a partir de ahí es automático).
-                port = ports[0];
+            // Sin identidad guardada NO adivinamos ningún puerto: adoptar uno
+            // a ciegas (aunque sea el único) podría tomar/sondear/cerrar la
+            // balanza u otro serial activo con nuestra config (8E1). El usuario
+            // fija la identidad de la MF conectando UNA vez desde el botón
+            // (requestPort → se verifica con getStatus y se persiste); a partir
+            // de ahí la reconexión silenciosa es automática por VID/PID.
+            if (!saved) {
+                console.warn(
+                    "SerialConnection:: sin identidad de máquina fiscal guardada. " +
+                        "Conéctela una vez desde el botón para fijarla."
+                );
+                return false;
             }
 
+            const port =
+                ports.find((p) => {
+                    const info = (p.getInfo && p.getInfo()) || {};
+                    return (
+                        info.usbVendorId === saved.usbVendorId &&
+                        info.usbProductId === saved.usbProductId
+                    );
+                }) || null;
+
             if (!port) {
-                console.warn(
-                    "SerialConnection:: No se encontró un puerto autorizado que coincida con la máquina fiscal. " +
-                        "Conéctela una vez desde el botón para fijar su identidad."
-                );
+                // La MF autorizada no está presente ahora (desenchufada, u otro
+                // origen). No es un error: el listener de re-enumeración o el
+                // próximo intento la reconectarán cuando reaparezca.
                 return false;
             }
 
@@ -127,9 +131,6 @@ export class SerialConnection {
                 return false;
             }
             this.isConnected = true;
-            // Refrescar la identidad guardada (cubre el caso de reconexión
-            // por puerto único sin identidad previa).
-            this._saveDeviceInfo();
             return true;
         } catch (error) {
             console.error("SerialConnection:: Error en reconexión automática", error);
@@ -156,8 +157,10 @@ export class SerialConnection {
             waitCount++;
         }
         if (waitCount >= 500) {
-            console.error("SerialConnection:: Timeout esperando writeLock");
-            this.writeLock = false;
+            // No pisar un lock que sigue en uso por otra escritura en vuelo:
+            // abortar es más seguro que forzar writeLock=false y colisionar.
+            console.error("SerialConnection:: Timeout esperando writeLock; se aborta la escritura");
+            return false;
         }
 
         try {

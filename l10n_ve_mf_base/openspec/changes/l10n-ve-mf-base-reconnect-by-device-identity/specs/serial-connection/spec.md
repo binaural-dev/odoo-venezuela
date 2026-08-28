@@ -2,14 +2,14 @@
 
 ### Requirement: Reconexión automática por identidad del dispositivo
 
-`SerialConnection.autoConnect()` SHALL seleccionar el puerto a reabrir por
-identidad USB (VID/PID) guardada, y no por posición en
-`navigator.serial.getPorts()`. `requestPort()` SHALL persistir la
-identidad (`getInfo()`) del puerto elegido para que la reconexión posterior
-pueda identificarlo. Cuando no exista identidad guardada, `autoConnect()`
-SHALL reconectar solo si hay exactamente un puerto autorizado; con varios
-puertos y sin identidad SHALL abstenerse (devolver `false`) en vez de abrir
-uno al azar.
+`SerialConnection.autoConnect()` SHALL seleccionar el puerto a reabrir SOLO
+por identidad USB (VID/PID) guardada, y no por posición en
+`navigator.serial.getPorts()`. Cuando NO exista identidad guardada,
+`autoConnect()` SHALL abstenerse (devolver `false`) sin abrir ningún puerto
+—ni siquiera si hay uno solo—, para no adoptar/sondear/cerrar a ciegas otro
+serial activo (p.ej. la balanza). La identidad SHALL persistirse únicamente
+tras verificar con `getStatus()` que el puerto responde como máquina fiscal
+(en `TfhkaDriver`), nunca en `requestPort()`/`autoConnect()` por sí solos.
 
 #### Scenario: Varios seriales autorizados, reconexión a la máquina fiscal
 
@@ -19,19 +19,21 @@ uno al azar.
 - **THEN** se reabre el puerto cuya identidad USB coincide con la máquina
   fiscal, sin importar su posición en `getPorts()`
 
-#### Scenario: Compatibilidad con un único puerto sin identidad guardada
+#### Scenario: Sin identidad guardada
 
-- **GIVEN** hay un solo puerto autorizado y no hay identidad guardada
-  (autorizado antes de esta versión)
-- **WHEN** se llama `autoConnect()`
-- **THEN** se reabre ese único puerto y se guarda su identidad
+- **GIVEN** no hay identidad de MF guardada (primer arranque tras el deploy)
+- **WHEN** se llama `autoConnect()` (haya uno o varios puertos autorizados)
+- **THEN** no se abre ningún puerto (devuelve `false`) y se registra un
+  aviso pidiendo conectar la MF una vez desde el botón; recién ese
+  `requestPort()`, verificado con `getStatus()`, fija la identidad
 
-#### Scenario: Varios puertos sin identidad guardada
+#### Scenario: La identidad no se guarda si el puerto no es una MF
 
-- **GIVEN** hay más de un puerto autorizado y no hay identidad guardada
-- **WHEN** se llama `autoConnect()`
-- **THEN** no se abre ningún puerto (se devuelve `false`) y se registra un
-  aviso pidiendo reconectar la máquina fiscal una vez desde el botón
+- **GIVEN** se abrió un puerto (por adopción o selección) que no responde al
+  comando de estado TFHKA (p.ej. la balanza)
+- **WHEN** `getStatus()` devuelve null
+- **THEN** NO se persiste identidad y el puerto se suelta
+  (`connection.disconnect()`), dejándolo libre para su dueño real
 
 ### Requirement: Apertura garantiza streams utilizables
 
