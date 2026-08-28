@@ -94,7 +94,13 @@ patch(PosStore.prototype, {
    */
   async withFiscalPrinterReleased(criticalSection) {
     const fiscalPrinter = this.getFiscalPrinter();
-    const shouldManagePort = Boolean(fiscalPrinter && fiscalPrinter.isConnected);
+    // Gestionar el puerto si el driver se dice conectado O si la conexión
+    // todavía retiene el puerto físico (caso: autoConnect abrió pero getStatus
+    // falló → driver.isConnected=false pero el COM sigue tomado con lock). Sin
+    // esto, el proceso externo (Megasoft) no podría abrir el COM ocupado.
+    const shouldManagePort = Boolean(
+      fiscalPrinter && (fiscalPrinter.isConnected || fiscalPrinter.connection?.port)
+    );
 
     if (shouldManagePort) {
       try {
@@ -118,7 +124,26 @@ patch(PosStore.prototype, {
         if (!reclaimed) {
           this._notifyFiscalPrinterReclaimFailed();
         }
+        // Reflejar el estado real en el botón de la MF (que no observa el
+        // driver directamente): tras un reclaim fallido no debe seguir verde.
+        this._broadcastFiscalStatus(Boolean(fiscalPrinter.isConnected));
       }
+    }
+  },
+
+  /**
+   * Notifica el estado de conexión de la máquina fiscal a componentes que no
+   * observan el driver directamente (p.ej. FiscalPrinterButton), vía evento
+   * de ventana.
+   * @param {boolean} connected
+   */
+  _broadcastFiscalStatus(connected) {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("mf-fiscal-status", { detail: { connected: Boolean(connected) } })
+      );
+    } catch (_e) {
+      // dispatch no debe tirar por sí mismo
     }
   },
 
