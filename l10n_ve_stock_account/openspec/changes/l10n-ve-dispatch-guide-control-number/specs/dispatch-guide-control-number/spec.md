@@ -1,6 +1,6 @@
 # Delta — `l10n_ve_stock_account`
 
-> **Ticket**: PENDIENTE (asignar antes de push/PR)
+> **Tarea**: 80614
 
 ## ADDED Requirements
 

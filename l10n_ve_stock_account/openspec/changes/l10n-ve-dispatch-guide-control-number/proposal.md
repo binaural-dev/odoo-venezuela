@@ -2,7 +2,7 @@
 
 > **Organization**: binaural-dev
 > **Author**: Binaural Claude
-> **Ticket**: PENDIENTE (asignar antes de push/PR)
+> **Tarea**: 80614
 > **Status**: implemented, pending task ID / merge
 
 ## Intent

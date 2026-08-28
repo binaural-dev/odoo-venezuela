@@ -1,6 +1,6 @@
 # Tasks — Dispatch Guide Control Number
 
-> **Ticket**: PENDIENTE (asignar antes de push/PR)
+> **Tarea**: 80614
 
 ## Implementation
 
@@ -13,6 +13,10 @@
 - [x] ACL for the new model (`security/ir.model.access.csv`).
 - [x] Multi-company `ir.rule` for the new model (`security/ir_rule.xml`, new file).
 - [x] Bump manifest (`19.0.2.0.4` → `19.0.2.0.5`).
+- [x] Moved `control_number_ids` from the inline group (cramped, 1-2 rows next
+      to `origin`/`is_dispatch_guide`) to its own notebook page ("Números de
+      Control", `invisible="not dispatch_guide_controls"`), so a guide with
+      several sheets has room to show them all.
 
 ## Verification
 
@@ -30,7 +34,7 @@
 
 ## Pending
 
-- [ ] Decide/confirm Tarea ID before push/PR (currently PENDIENTE).
+- [x] Tarea confirmada: 80614.
 - [ ] **Pre-existing, unrelated finding surfaced by this change's test run**:
       `integra-addons/binaural_subsidiary_stock`'s `stock.picking.get_customer_journal()`
       override calls `self.ensure_one()` unconditionally, which breaks on an
