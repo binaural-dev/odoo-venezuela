@@ -2460,18 +2460,30 @@ class TestExchangeNoteReversal(TransactionCase):
         `company.income_currency_exchange_account_id or product.property_account_income_id`
         (direct field only, no product-category/company-generic-default
         chain). `_check_l10n_ve_exchange_note_product_id` (`res_company.py`)
-        validates the product against the WIDE fallback instead
+        validates the product against a WIDER fallback instead
         (`product._get_product_accounts()`, which also falls back through
         the category and the company's GENERIC `income_account_id`/
-        `expense_account_id`). This test constructs the one state where
-        those two different resolutions disagree: the company's dedicated
-        exchange accounts AND its generic default accounts AND the
-        product's own accounts (direct and via category) are ALL blank at
-        once -- the constraint's wide fallback resolves to "nothing" on
-        both sides of its comparison (equal, so it doesn't block), but the
-        narrow runtime resolution has strictly nothing to fall back to.
-        Must fail loud with `UserError`, not silently post a note with no
-        account (or crash with an ORM constraint on a `False` `account_id`)."""
+        `expense_account_id`, and possibly other module-level defaults on
+        top of that). This test targets the state where the NARROW
+        resolution has nothing (company's dedicated exchange accounts AND
+        the product's own direct accounts are blank).
+
+        Deliberately does NOT try to also neutralize the WIDE fallback
+        (category, generic company defaults, whatever else
+        `_get_product_accounts()` might consult) and reach this state via
+        a normal `self.company.write()` -- confirmed empirically (CI
+        failure on a fresh database, not reproducible on a long-lived
+        local one with accumulated state) that this is NOT reliably
+        possible: `_check_l10n_ve_exchange_note_product_id` exists
+        SPECIFICALLY to reject exactly this kind of mismatch, so fighting
+        it via the ORM is fighting the guard's own job by design. Instead,
+        this uses raw SQL to write the target state directly -- the SAME
+        pattern already established by
+        `test_missing_note_product_raises_user_error_defense_in_depth` for
+        an analogous case: simulate that this inconsistent state already
+        exists in the database via some means OTHER than the ORM (legacy
+        data, a bug in a different module, a direct SQL fix), and confirm
+        the RUNTIME guard alone still protects the flow."""
         blank_categ = self.env["product.category"].create({
             "name": "Categoría Sin Cuentas Prueba Reversal",
         })
@@ -2482,19 +2494,20 @@ class TestExchangeNoteReversal(TransactionCase):
             property_account_expense_id=False,
         )
 
-        # UN solo `write()`: la compañía debe llegar a un estado
-        # totalmente en blanco (dedicadas Y genéricas) de una vez -- si
-        # se blanquea el campo dedicado ANTES de cambiar el producto (o
-        # viceversa), `_check_l10n_ve_exchange_note_product_id` compara
-        # contra un lado ya en blanco y el otro todavía con la
-        # configuración válida anterior, y revienta a mitad de camino.
-        self.company.write({
-            "l10n_ve_exchange_note_product_id": blank_product.id,
-            "income_currency_exchange_account_id": False,
-            "expense_currency_exchange_account_id": False,
-            "income_account_id": False,
-            "expense_account_id": False,
-        })
+        self.env.cr.execute(
+            """
+            UPDATE res_company
+            SET l10n_ve_exchange_note_product_id = %s,
+                income_currency_exchange_account_id = NULL,
+                expense_currency_exchange_account_id = NULL
+            WHERE id = %s
+            """,
+            (blank_product.id, self.company.id),
+        )
+        self.company.invalidate_recordset()
+        self.assertEqual(self.company.l10n_ve_exchange_note_product_id, blank_product)
+        self.assertFalse(self.company.income_currency_exchange_account_id)
+        self.assertFalse(self.company.expense_currency_exchange_account_id)
 
         invoice = self._create_invoice("2026-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
