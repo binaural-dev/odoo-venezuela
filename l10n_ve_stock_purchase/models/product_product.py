@@ -24,5 +24,5 @@ class ProductProduct(models.Model):
             alternate_domain, ["display_name"], limit=remaining_limit
         )
         return results + [
-            (product.id, product.display_name) for product in products.sudo()
+            (product.id, product.display_name) for product in products
         ]

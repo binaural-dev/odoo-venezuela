@@ -29,7 +29,7 @@ Note the Odoo 19 signature change from earlier versions: the second positional a
 
 - [Extra DB query per `name_search` call when the caller's typed text does not already match via `super()`] → Bounded by `remaining_limit` and short-circuited entirely (`return results` before querying) whenever `super()` already fills the requested `limit`, or when the search term is empty, or on negative operators.
 - [Duplicate products if `search_fetch` returns an id also present in `results`] → Explicitly excluded via `Domain("id", "not in", [...])` before calling `search_fetch`.
-- [`sudo()` on the alternate-code matches bypasses per-record read rules for products matched only by this new path] → Accepted: this mirrors how `product.product` is generally readable for purchasing purposes across the codebase, and `sudo()` here only affects the name/id pair used for display, not read access to the underlying product record elsewhere.
+- [None beyond the two above] → No `sudo()` is used on the alternate-code matches: `search_fetch` already runs as the calling user and enforces `ir.rule`, and `alternate_code` carries no `groups=` restriction, so reading `display_name` off the resulting recordset needs no elevated privileges. (An earlier draft of this change added `.sudo()` here, copied from the similar pattern in `integra-addons/binaural_alternate_product_name`; removed after confirming it was a no-op that would silently mask any future field-level restriction on the display_name compute chain.)
 
 ## Migration Plan
 
