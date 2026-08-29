@@ -22,7 +22,7 @@
             </div>
             <div class="row border border-dark rounded mt-2 p-2">
                 <div class="col-12 text-center" style="height:2.5rem !important">
-                    <p t-out="picking.partner_id.name[:80]" class="h5" />
+                    <p t-if="picking.picking_type_id and picking.picking_type_id.code in ['outgoing']" t-out="picking.partner_id.display_name[:80]" class="h5" />
                 </div>
             </div>
             <div class="row font-weight-bold border-right border-left">
