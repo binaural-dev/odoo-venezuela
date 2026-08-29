@@ -394,6 +394,19 @@ class TestForeignBalance(TransactionCase):
                 'outbound_payment_method_line_ids': [(6, 0, self.pm_line_out.ids)],
             })
 
+        # Ensure payment method lines have a payment_account_id (required by our validation)
+        pm_account_usd = self.env['account.account'].search([
+            ('code', '=', 'PMA001'), ('company_ids', 'in', self.company.id)
+        ], limit=1) or self.env['account.account'].create({
+            'name': 'Payment Method Account USD',
+            'code': 'PMA001',
+            'account_type': 'asset_current',
+            'company_ids': [(6, 0, [self.company.id])],
+        })
+        bank_journal.inbound_payment_method_line_ids.filtered(
+            lambda l: not l.payment_account_id
+        ).write({'payment_account_id': pm_account_usd.id})
+
         # Create invoice in USD
         invoice = self.env["account.move"].create(
             {
@@ -495,6 +508,19 @@ class TestForeignBalance(TransactionCase):
                 'inbound_payment_method_line_ids': [(6, 0, self.pm_line_in.ids)],
                 'outbound_payment_method_line_ids': [(6, 0, self.pm_line_out.ids)],
             })
+
+        # Ensure payment method lines have a payment_account_id (required by our validation)
+        pm_account_vef = self.env['account.account'].search([
+            ('code', '=', 'PMA002'), ('company_ids', 'in', self.company.id)
+        ], limit=1) or self.env['account.account'].create({
+            'name': 'Payment Method Account VEF',
+            'code': 'PMA002',
+            'account_type': 'asset_current',
+            'company_ids': [(6, 0, [self.company.id])],
+        })
+        bank_journal.inbound_payment_method_line_ids.filtered(
+            lambda l: not l.payment_account_id
+        ).write({'payment_account_id': pm_account_vef.id})
 
         # Create invoice in USD
         invoice = self.env["account.move"].create(
@@ -601,6 +627,19 @@ class TestForeignBalance(TransactionCase):
                 'inbound_payment_method_line_ids': [(6, 0, self.pm_line_in.ids)],
                 'outbound_payment_method_line_ids': [(6, 0, self.pm_line_out.ids)],
             })
+
+        # Ensure payment method lines have a payment_account_id (required by our validation)
+        pm_account_eur = self.env['account.account'].search([
+            ('code', '=', 'PMA003'), ('company_ids', 'in', self.company.id)
+        ], limit=1) or self.env['account.account'].create({
+            'name': 'Payment Method Account EUR',
+            'code': 'PMA003',
+            'account_type': 'asset_current',
+            'company_ids': [(6, 0, [self.company.id])],
+        })
+        bank_journal.inbound_payment_method_line_ids.filtered(
+            lambda l: not l.payment_account_id
+        ).write({'payment_account_id': pm_account_eur.id})
 
         # Create invoice in USD
         invoice = self.env["account.move"].create(
