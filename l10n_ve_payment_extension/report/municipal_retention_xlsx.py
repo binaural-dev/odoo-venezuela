@@ -15,8 +15,8 @@ class MunicipalRetentionXlsx(models.AbstractModel):
             company = self.env['res.company'].browse(company_id)
         else:
             company = self.env.company
-        currency_symbol = self.env.ref("base.VEF").symbol
         retention = self.env["account.retention"].browse(retention_id)
+        currency_symbol = self.env.ref("base.VEF").symbol
         data2 = BytesIO()
         workbook = xlsxwriter.Workbook(data2, {"in_memory": True})
         merge_format = workbook.add_format(
