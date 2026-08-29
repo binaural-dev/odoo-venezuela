@@ -15,9 +15,12 @@
 - **Fix the guard at the parent's `range()` call, not inside the child template.** The child already had a `package_qty == 0` fallback, but it's structurally unreachable there: the parent's `t-foreach` decides how many times (if any) to call the child, so a 0-or-negative value has to be normalized before that `range()` call, not after.
 - **Keep the existing `t-if`/`t-else` inside `packaging_picking_item`**, rather than deleting it as now-fully-dead code: it still drives the "Package X / Y" label's denominator, so removing it would make the label show `Y=0` again for this same case.
 
+- **Restrict the recipient name line to outgoing pickings with a set `partner_id`, and switch to `display_name`.** The name is only meaningful for outgoing deliveries (this is what the customer sees printed on the label), and the previous unconditional `picking.partner_id.name[:80]` crashed (`TypeError: 'bool' object is not subscriptable`) when `partner_id` was empty - confirmed via staging logs. `display_name` is used instead of `name` per explicit client request; the `(... or '')[:80]` wrapper is an extra defensive layer in case `display_name` itself is falsy.
+
 ## Risks / Trade-offs
 
 - [None identified beyond the fix itself] → This is a narrowly-scoped template change with no Python/model surface; the existing dead-code cleanup (unused comments) carries no behavioral risk.
+- The recipient name line now no longer prints for non-outgoing pickings (internal transfers, receipts) even if `partner_id` happens to be set on those. This is the intended behavior per the client's request, not a regression - previously it printed for any picking type when `partner_id.name` existed.
 
 ## Migration Plan
 
