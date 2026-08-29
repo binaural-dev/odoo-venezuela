@@ -2,9 +2,6 @@
     <template id="packaging_picking_item">
         <div class="container">
             <div class="row border border-dark rounded position-relative" name="header">
-                <!-- <t t-set="operation_employees" t-value="picking.get_operation_employees()"/> -->
-                <!-- <t t-set="pick_employee" t-value="operation_employees[0]"/> -->
-                <!-- <t t-set="out_employee" t-value="operation_employees[1]"/> -->
                 <div class="col-7" name="picking_info">
                     <div> Date: <span
                             t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')" />
@@ -22,7 +19,7 @@
             </div>
             <div class="row border border-dark rounded mt-2 p-2">
                 <div class="col-12 text-center" style="height:2.5rem !important">
-                    <p t-out="picking.partner_id.name[:80]" class="h5" />
+                    <p t-if="picking.picking_type_id and picking.picking_type_id.code in ['outgoing'] and picking.partner_id" t-out="(picking.partner_id.display_name or '')[:80]" class="h5"/>
                 </div>
             </div>
             <div class="row font-weight-bold border-right border-left">
@@ -59,7 +56,7 @@
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="picking">
                 <t t-call="web.basic_layout">
-                    <t t-foreach="range(1, picking.package_qty + 1)" t-as="item">
+                    <t t-foreach="range(1, (picking.package_qty if picking.package_qty and picking.package_qty > 0 else 1) + 1)" t-as="item">
                         <div class="page">
                             <t t-call="l10n_ve_stock.packaging_picking_item">
                                 <t t-raw="0" />
