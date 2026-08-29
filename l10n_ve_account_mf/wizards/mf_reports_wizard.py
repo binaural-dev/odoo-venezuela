@@ -7,23 +7,22 @@ class MfReportsWizard(models.TransientModel):
     _description = "Fiscal Machine Reports Wizard"
 
     # ------------------------------------------------------------------
-    # Rango de fechas compartido por el reporte de memoria fiscal (I2)
-    # y por la reimpresion de documentos "por fecha" (Rf/Rc/Rz/...).
-    # NO aplica al Reporte X/Z diario (I0X/I0Z), que siempre corresponden
-    # al dia fiscal en curso segun el protocolo TFHKA.
+    # Rango de fechas usado UNICAMENTE por el reporte de memoria fiscal
+    # (I2). No aplica a la reimpresion de documentos (que es por numero,
+    # ver number_from/number_to) ni al Reporte X/Z diario (I0X/I0Z), que
+    # siempre corresponden al dia fiscal en curso segun el protocolo TFHKA.
     # ------------------------------------------------------------------
     date_from = fields.Date(
         required=True,
         default=fields.Date.today,
-        help="Aplica al reporte de memoria fiscal por rango y a la "
-        "reimpresion de documentos por fecha. El Reporte X y el Reporte Z "
-        "corresponden siempre al dia fiscal en curso; no usan este rango.",
+        help="Aplica solo al reporte de memoria fiscal por rango. El Reporte "
+        "X y el Reporte Z corresponden siempre al dia fiscal en curso y no "
+        "usan este rango; la reimpresion de documentos es por numero.",
     )
     date_to = fields.Date(
         required=True,
         default=fields.Date.today,
-        help="Aplica al reporte de memoria fiscal por rango y a la "
-        "reimpresion de documentos por fecha.",
+        help="Aplica solo al reporte de memoria fiscal por rango.",
     )
 
     # ------------------------------------------------------------------

@@ -262,7 +262,7 @@ export class MfReportsWebSerialButtonComponent extends Component {
             this.dialog.add(ConfirmationDialog, {
                 title: _t("Confirmar Reporte Z"),
                 body: _t(
-                    "El Reporte Z cierra el DIA FISCAL EN CURSO (hoy). No utiliza el rango de fechas seleccionado. Para reimprimir el Reporte Z de fechas pasadas usa la seccion 'Reimpresion de documentos' con el documento 'Reporte Z'. Esta accion es irreversible. Deseas continuar?"
+                    "El Reporte Z cierra el DIA FISCAL EN CURSO (hoy). No utiliza el rango de fechas seleccionado. Para obtener el cierre Z de fechas pasadas usa la seccion 'Reporte de memoria fiscal por rango de fechas'. Esta accion es irreversible. Deseas continuar?"
                 ),
                 confirmLabel: _t("Imprimir Reporte Z"),
                 cancelLabel: _t("Cancelar"),
