@@ -47,6 +47,10 @@ class TestRefundOriginValidation(TransactionCase):
             "code": "VRTP",
             "type": "purchase",
         })
+        cls.income_account = cls.env["account.account"].create({
+            "name": "Revenue Refund Test", "code": "4444442",
+            "account_type": "income",
+        })
 
     def _create_invoice_line(self, product, quantity=1, price_unit=100.0, tax=None):
         return Command.create({
@@ -103,6 +107,7 @@ class TestRefundOriginValidation(TransactionCase):
             self._create_invoice(
                 [Command.create({
                     "name": "Ajuste manual",
+                    "account_id": self.income_account.id,
                     "quantity": 1,
                     "price_unit": 1000000.0,
                     "tax_ids": [Command.set(self.tax.ids)],
