@@ -42,7 +42,7 @@ msgstr "\"Guía de Despacho \" + object.name"
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "(SIN DERECHO A CRÉDITO FISCAL)"
-msgstr ""
+msgstr "(SIN DERECHO A CRÉDITO FISCAL)"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
@@ -130,7 +130,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
 msgid "<span class=\"fw-bold\">RIF:</span>"
-msgstr ""
+msgstr "<span class=\"fw-bold\">RIF:</span>"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_header
@@ -171,7 +171,7 @@ msgstr ""
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account
 msgid "<strong>Número de Guía: </strong>"
-msgstr ""
+msgstr "<strong>Número de Guía: </strong>"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
@@ -266,7 +266,7 @@ msgstr "No se puede vender más de lo disponible en el stock de consignación."
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
 msgid "Cant."
-msgstr ""
+msgstr "Cant."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -1126,12 +1126,6 @@ msgstr ""
 msgid "The name of the transfer reason (e.g., Sale, Donation, Return)."
 msgstr ""
 "El nombre del motivo de traslado (por ejemplo, Venta, Donación, Devolución)."
-
-#. module: l10n_ve_stock_account
-#. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-msgid "The partner must be the company itself for a donation"
-msgstr "El contacto debe ser la misma empresa para una donación"
 
 #. module: l10n_ve_stock_account
 #. odoo-python
