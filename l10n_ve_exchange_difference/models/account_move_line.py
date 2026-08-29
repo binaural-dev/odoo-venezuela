@@ -811,6 +811,18 @@ class AccountMoveLine(models.Model):
             # no un usuario editando la nota a mano -- sin este flag, la
             # NC quedaría marcada en auditoría como "editada
             # manualmente" cuando en realidad nadie la tocó.
-            note.with_context(skip_is_manually_modified=True).write({'reversed_entry_id': invoice.id})
+            # `l10n_ve_skip_refund_origin_validation` -- este `write` es el
+            # único punto que setea `reversed_entry_id` en esta nota (el
+            # `create()` de arriba deliberadamente no lo trae), así que es
+            # el único lugar donde el constrains de origen de
+            # `l10n_ve_invoice` podría llegar a evaluarla. Hoy ese
+            # constrains no se dispara por escribir `reversed_entry_id`
+            # (solo por `invoice_line_ids`/`product_id`/`price_unit`/
+            # `quantity`/`discount`), pero repetir el flag acá deja esto a
+            # prueba de que ese alcance cambie más adelante.
+            note.with_context(
+                skip_is_manually_modified=True,
+                l10n_ve_skip_refund_origin_validation=True,
+            ).write({'reversed_entry_id': invoice.id})
 
         return note
