@@ -76,7 +76,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
     
     @api.depends('can_edit_wizard', 'source_amount', 'source_amount_currency', 'source_currency_id',
                  'company_id', 'currency_id', 'payment_date', 'installments_mode', 'is_igtf',
-                 'custom_user_amount')
+                 'custom_user_amount', 'payment_difference_handling')
     def _compute_amount(self):
         igtf_wizards = self.filtered(lambda w: w.is_igtf)
         other_wizards = self - igtf_wizards
@@ -85,6 +85,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             return super(AccountPaymentRegisterIgtf, other_wizards)._compute_amount()
 
         for wizard in igtf_wizards:
+            total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
             if not wizard.journal_id or not wizard.currency_id or not wizard.payment_date or not wizard.is_igtf:
                 wizard.amount = wizard.amount or 0.0
                 wizard.igtf_to_show = 0.0
@@ -100,10 +101,19 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     )
                 wizard.igtf_to_show = abs(igtf)
                 wizard.igtf_amount = abs(igtf)
-                wizard.amount_without_difference = wizard.amount - abs(igtf)
+
+                total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+                is_different = wizard.currency_id.compare_amounts(
+                    wizard.amount, total_amount_values['amount_by_default'] + abs(igtf)
+                ) != 0
+                if is_different and wizard.payment_difference_handling != 'open':
+
+                    wizard.amount_without_difference = abs(total_amount_values['amount_by_default'])
+                else:
+                    wizard.amount_without_difference = wizard.amount - abs(igtf)
 
             else:
-                total_amount_values = wizard._get_total_amounts_to_pay(wizard.batches)
+                
                 move_ids = self.get_moves()
                 igtf = 0.0
                 for rec in move_ids:
@@ -135,7 +145,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     igtf += self.calculate_igtf_for_payment(
                         rec, wizard.amount, wizard.currency_id, wizard.payment_date,
                     )
-                efective_amount = abs(wizard.amount) - abs(wizard.igtf_amount)
+                efective_amount = abs(wizard.amount) - abs(igtf)
                 if wizard.installments_mode in ('overdue', 'next', 'before_date'):
                     wizard.payment_difference = total_amount_values['amount_for_difference'] - efective_amount
                 elif wizard.installments_mode == 'full':
@@ -181,16 +191,20 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             super(AccountPaymentRegisterIgtf, other_wizards)._onchange_amount()
 
         for payment in igtf_wizards:
-            diff = payment.amount - payment.last_computed_amount
-            if float_is_zero(diff, precision_rounding=payment.currency_id.rounding):
-                continue
-
+            total_amount_values = payment._get_total_amounts_to_pay(payment.batches)
             move_ids = self.get_moves()
             igtf = 0.0
             for rec in move_ids:
                 igtf += self.calculate_igtf_for_payment(
                     rec, payment.amount, payment.currency_id, payment.payment_date,
                 )
+            natural_amount = total_amount_values['amount_by_default'] + abs(igtf)
+
+            if payment.currency_id.is_zero(payment.amount - natural_amount):
+                payment.custom_user_amount = False
+                payment.last_computed_amount = payment.amount
+                continue
+
             payment.igtf_to_show = abs(igtf)
             payment.igtf_amount = abs(igtf)
             payment.amount_without_difference = payment.amount - abs(igtf)
@@ -373,7 +387,9 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         if currency != self.currency_id.id:
             currency = self.env['res.currency'].browse(currency)
             source_amount = invoice_ids.amount_residual
-            new_val = self.company_id.currency_id._convert(source_amount, self.currency_id, self.company_id, self.payment_date) + batch_values['igtf_amount']
+            new_val = currency._convert(
+                source_amount, self.currency_id, self.company_id, self._get_conversion_date(),
+            ) + batch_values['igtf_amount']
 
         payment_vals = {
             'date': self.payment_date,
@@ -406,16 +422,17 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         if total_amount_values['epd_applied']:
             payment_vals['amount'] = total_amount
             epd_aml_values_list = []
+            conversion_date = self._get_conversion_date()
             for aml in batch_result['lines']:
                 if aml.move_id._is_eligible_for_early_payment_discount(currency, self.payment_date):
                     epd_aml_values_list.append({
                         'aml': aml,
                         'amount_currency': -aml.amount_residual_currency,
-                        'balance': currency._convert(-aml.amount_residual_currency, aml.company_currency_id, self.company_id, self.payment_date),
+                        'balance': currency._convert(-aml.amount_residual_currency, aml.company_currency_id, self.company_id, conversion_date),
                     })
 
             open_amount_currency = (batch_values['source_amount_currency'] - total_amount) * (-1 if batch_values['payment_type'] == 'outbound' else 1)
-            open_balance = currency._convert(open_amount_currency, aml.company_currency_id, self.company_id, self.payment_date)
+            open_balance = currency._convert(open_amount_currency, aml.company_currency_id, self.company_id, conversion_date)
             early_payment_values = self.env['account.move']\
                 ._get_invoice_counterpart_amls_for_early_payment_discount(epd_aml_values_list, open_balance)
             for aml_values_list in early_payment_values.values():

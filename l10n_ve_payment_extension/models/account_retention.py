@@ -2,10 +2,10 @@ from odoo import api, models, fields, Command, _
 from datetime import datetime
 import re
 from odoo.exceptions import UserError, ValidationError
+from odoo.addons.account.models.account_move import BYPASS_LOCK_CHECK
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
 import json
-from odoo.tools.float_utils import float_round
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -703,7 +703,13 @@ class AccountRetention(models.Model):
         if not payments:
             raise UserError(_("No payments found for reconciliation."))
 
-        payments.action_post()
+        # These payments' moves are pinned to their invoice's own accounting date
+        # (see AccountPayment._generate_move_vals), which can already sit in a
+        # closed fiscal period by the time the retention itself is processed --
+        # bypass_lock_check is the core's own escape hatch for that check, only
+        # triggered here by the state -> 'posted' transition (not by writing
+        # 'date', which never happens after creation).
+        payments.with_context(bypass_lock_check=BYPASS_LOCK_CHECK).action_post()
 
         account_type_map = {
             "supplier": "liability_payable",
@@ -941,8 +947,15 @@ class AccountRetention(models.Model):
             "currency_id": self.env.company.currency_id.id,
             "date": self.date_accounting
         }
-        
+
         if not is_refund and has_subsidiary and self.env.company.subsidiary:
             res["account_analytic_id"] = move.account_analytic_id.id
+
+        # l10n_ve_igtf's js_assign_outstanding_line picks conversion_date over
+        # payment.date for the advance-crossing move's date/rate unless this is
+        # set, which would misprice the crossed amount against the retention's
+        # own date_accounting. Guarded since l10n_ve_igtf isn't a hard dependency.
+        if "keep_alter_value_vef" in self.env["account.payment"]._fields:
+            res["keep_alter_value_vef"] = True
 
         return res
