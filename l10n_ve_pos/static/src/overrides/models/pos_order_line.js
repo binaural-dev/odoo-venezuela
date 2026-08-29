@@ -104,6 +104,37 @@ patch(PosOrderline.prototype, {
 
     setUnitPrice(price) {
       super.setUnitPrice(...arguments);
+
+      // Redondeo del precio unitario a la moneda en la que se cobra (VE: Bs,
+      // 2 dec). Por defecto un precio unitario arrastra la precisión del
+      // catálogo (DP "Product Price" = 6), normalmente porque nace de
+      // `precio_$ × tasa`. La máquina fiscal (Flag 21=00, manual TFHKA
+      // Tabla 22) sólo acepta el precio de ítem con 2 decimales: redondea el
+      // unitario a 2 y luego multiplica por la cantidad, mientras Odoo
+      // multiplica el unitario de 6 decimales y redondea el producto. Ese
+      // orden de redondeo distinto hacía que la base de la impresora
+      // difiriera de `amount_total` (p.ej. 4 × 5068,865205 → Odoo 20.275,46
+      // vs MF 20.275,48); como el IGTF y el cierre "199" se calculan sobre esa
+      // base, la impresora rechazaba el cierre (199 NAK) y el documento
+      // quedaba sin cortar. Redondeando aquí el unitario a 2 decimales, Odoo
+      // y la MF parten del MISMO número y línea/IVA/IGTF/pagos/factura cuadran
+      // al céntimo.
+      //
+      // Es aguas ARRIBA de la moneda foránea y del IGTF (ambos se derivan del
+      // local con una sola conversión), así que no rompe la centralización
+      // foránea ni el cálculo de IGTF; sólo cambia el Bs cobrado en céntimos.
+      // Deliberadamente rompe la convención "los precios unitarios NO se
+      // redondean a moneda" (ver roundForeignMoney en pos_order.js), que existe
+      // para conservar la precisión del catálogo — aquí se prioriza la paridad
+      // con la máquina fiscal. Ver openspec change
+      // l10n-ve-pos-round-unit-price-to-currency.
+      const order = this.order_id;
+      if (order && typeof order.roundLocalMoney === "function") {
+        this.price_unit = this._is_order_in_foreign_currency()
+          ? order.roundForeignMoney(this.price_unit || 0)
+          : order.roundLocalMoney(this.price_unit || 0);
+      }
+
       const dp = this._foreignUnitPriceDp();
 
       if (this._is_order_in_foreign_currency()) {
