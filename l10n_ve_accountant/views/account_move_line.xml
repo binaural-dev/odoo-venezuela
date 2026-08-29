@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <xpath expr="//notebook/page/group/group[1]" position="after">
                 <group string="Foreign Amount">
-                    <field name="foreign_rate" readonly="1" force_save="1" options="{'precision': 'Tasa'}"/>
+                    <field name="foreign_rate" readonly="1" force_save="1"/>
                     <field name="foreign_inverse_rate" invisible="1"/>
                     <field name="foreign_inverse_rate" readonly="1" force_save="1" groups="base.group_no_one"/>
                     <field name="foreign_debit" readonly="1" force_save="1"/>
