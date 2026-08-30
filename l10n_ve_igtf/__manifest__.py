@@ -19,7 +19,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.2.14",
+    "version": "19.0.1.2.15",
 
     "depends": [
         "base",
