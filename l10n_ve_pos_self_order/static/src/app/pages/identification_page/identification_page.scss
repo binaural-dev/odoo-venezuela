@@ -1,0 +1,59 @@
+.o_self_identification_box {
+    // El form-select-lg del kiosko hereda un padding horizontal grande
+    // ($input-btn-padding-x-lg: 2rem); con un ancho estrecho la letra del
+    // prefijo (V/E/J/...) queda comprimida y apenas visible. Le damos ancho
+    // suficiente, texto centrado y tamaño explícito para que se lea claro.
+    .o_ve_prefix_select {
+        width: 7rem;
+        padding-left: 1rem;
+        padding-right: 2.25rem;
+        text-align: center;
+        text-align-last: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
+    // El borde por defecto de Bootstrap casi no se distingue sobre el fondo
+    // claro del kiosko; lo reforzamos para que los campos se lean como cajas.
+    .form-control-lg,
+    .form-select-lg {
+        border: 2px solid $o-gray-300;
+        border-radius: 0.75rem;
+        background-color: $white;
+
+        &:focus {
+            border-color: var(--primary, #{$o-action});
+            box-shadow: 0 0 0 0.2rem rgba(0, 0, 0, 0.08);
+        }
+    }
+
+    // Teclado numérico en pantalla para introducir la cédula/RIF sin depender
+    // del teclado físico del kiosko. Grid 3×4: 1-9, retroceso/0/limpiar.
+    .o_ve_numpad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+        max-width: 24rem;
+        margin-left: auto;
+        margin-right: auto;
+
+        .o_ve_numpad_key {
+            padding: 0.9rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 2px solid $o-gray-300;
+            border-radius: 0.75rem;
+            background-color: $white;
+
+            &:active {
+                background-color: $o-gray-200;
+            }
+        }
+
+        // Retroceso (⌫) y limpiar (C): mismas cajas, acento de color para
+        // distinguirlas de los dígitos.
+        .o_ve_numpad_action {
+            color: $o-action;
+        }
+    }
+}

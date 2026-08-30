@@ -41,6 +41,16 @@ class TestPosDataLoading(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        # l10n_ve_accountant enforces exactly one company-scoped sale AND
+        # purchase tax per product (product_template.py::_enforce_single_tax_vals);
+        # a company-level default satisfies that for every product created
+        # below without needing to set taxes_id/supplier_taxes_id by hand.
+        cls.company.write(
+            {
+                "account_sale_tax_id": cls.tax.id,
+                "account_purchase_tax_id": cls.tax.id,
+            }
+        )
         cls.payment_method = cls.env["pos.payment.method"].create(
             {
                 "name": "Cash USD",

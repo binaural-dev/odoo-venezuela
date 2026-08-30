@@ -64,6 +64,28 @@ export class SerialConnection {
     }
 
     /**
+     * Verifica si hay un puerto ya autorizado por el usuario en una sesión
+     * anterior, SIN abrirlo. A diferencia de `autoConnect()`, no reserva el
+     * puerto — Web Serial es exclusivo por puerto/pestaña, así que solo
+     * consultar `navigator.serial.getPorts()` (que no requiere gesto del
+     * usuario) permite saber si "hay algo pareado" sin bloquear a otros
+     * consumidores (otra pestaña/app) que quieran abrirlo de verdad.
+     * @returns {Promise<boolean>}
+     */
+    async isPaired() {
+        try {
+            if (!navigator.serial) {
+                return false;
+            }
+            const ports = await navigator.serial.getPorts();
+            return ports.length > 0;
+        } catch (error) {
+            console.error("SerialConnection:: Error al consultar puertos pareados", error);
+            return false;
+        }
+    }
+
+    /**
      * Intenta reconectar automáticamente al último puerto usado
      * @returns {Promise<boolean>}
      */

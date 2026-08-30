@@ -1,0 +1,178 @@
+# Tasks
+
+## 1. Diagnóstico (hecho — solo lectura)
+
+- [x] 1.1 Punto de entrada fiscal de la caja:
+      `OrderPaymentValidation.finalizeValidation` → `PosStore.pushToMF` →
+      `get_data_invoice`/`_convertOrderForDriver` → `window.fiscalPrinter`
+      (`TfhkaDriver`). Comunicación 100% client-side (Web Serial), sin RPC.
+- [x] 1.2 El driver (`l10n_ve_mf_base/static/src/{core,drivers}/*.js`) es
+      autocontenido (solo `navigator.serial`), reutilizable en cualquier bundle.
+- [x] 1.3 El Kiosko es online-first: `pos_self_order/.../data_service.js`
+      desactiva IndexedDB y la cola local en modo kiosko (no-op salvo `mobile`);
+      hay `NetworkConnectionLostPopup` que pide esperar conexión.
+- [x] 1.4 Flujo de confirmación del Kiosko: `CartPage.pay` →
+      `SelfOrder.confirmOrder` → `sendDraftOrderToServer` (RPC
+      `/pos-self-order/process-order/kiosk`) → `confirmationPage()` (pago en
+      caja) o `payment` (terminal); Megasoft confirma por bus `PAYMENT_STATUS`.
+- [x] 1.5 `account.tax`, `pos.payment.method`, `product.*` SÍ se cargan en el
+      dataset del Kiosko (`pos_config.py:305-307`); el producto ordena por
+      `default_code`. Exponer `fiscal_code`/`code_fiscal_printer` vía
+      `_load_pos_self_data_fields` llega al cliente.
+
+## 2. Backend — exponer datos fiscales al Kiosko (hecho)
+
+- [x] 2.1 Módulo puente `l10n_ve_pos_mf_self_order`: manifest
+      (`auto_install`, assets en `pos_self_order.assets` con el driver de
+      `l10n_ve_mf_base`), `__init__`, `models/__init__`.
+- [x] 2.2 `pos.config._load_pos_self_data_fields`: campos fiscales
+      (`flag_21`, `serial_machine`, `has_cashbox`, `traditional_line`,
+      `access_button_mf`, `mf_skip_invoice_pdf`, `enable_auto_sync`,
+      `auto_sync_interval`, `message_in_head`, `receipt_header/footer`).
+- [x] 2.3 `pos.payment.method._load_pos_self_data_fields`: `code_fiscal_printer`.
+- [x] 2.4 `account.tax._load_pos_self_data_fields`: `fiscal_code`.
+- [x] 2.5 `pos.order._load_pos_self_data_fields`: `mf_invoice_number`,
+      `fiscal_machine`, `mf_reportz` (para que el número fiscal viaje en
+      `serializeForORM` y se estampe en el `account.move` al sincronizar).
+- [x] 2.6 `pos.order._send_payment_result` (override): incluir `pos.payment` en
+      el `data` del bus `PAYMENT_STATUS`. El core solo emitía pos.order +
+      pos.order.line, así que en la confirmación `order.payment_ids` llegaba
+      VACÍO al cliente y la impresión fallaba con "método sin code_fiscal_printer".
+      Con los pagos en el bus, `connectNewData` los conecta y la derivación del
+      método (para el `code_fiscal_printer` y el monto) funciona.
+
+## 3. Builder del payload del Kiosko (Fase 1) — SIN tocar PosStore
+
+- [x] 3.1 Builder propio `static/src/app/fiscal_payload.js`
+      (`buildKioskFiscalPayload`): produce la MISMA forma que consume
+      `TfhkaDriver.printInvoice` (partner, lines, payment_lines explícitas,
+      header/footer/additional, flag_21, has_cashbox), para el caso simple del
+      Kiosko. Helpers propios (`normalizeProductName`, `extractReceiptLines`).
+      **No toca `PosStore`.** Precio de línea NETO de descuento (el driver no
+      recibe `discount`).
+- [x] 3.2 Precio foráneo por línea = `price_unit * order.foreign_currency_rate`
+      redondeado con la moneda foránea (espejo de `localToForeign`), con
+      cortocircuito `vef_base` si la moneda base ya es VES. Pago = monto VES
+      aprobado (código local → cierre `1XX` tolerante, no divisa).
+
+## 4. Frontend Kiosko — impresión fiscal (Fase 1)
+
+- [x] 4.1 Cargar el driver en el bundle (vía manifest — `l10n_ve_mf_base/{core,
+      drivers}/*.js` en `pos_self_order.assets`). Pendiente verificar en navegador
+      que `window.fiscalPrinter` no colisione si conviven POS de caja + Kiosko.
+- [x] 4.2 Conexión al puerto (Kiosko DESATENDIDO — sin botón de cara al cliente):
+      patch de `SelfOrder.setup` que auto-conecta silenciosamente al arrancar
+      (`ensureFiscalPrinterConnected`, gated por `kioskMode` + `access_button_mf`),
+      + helper `pairFiscalPrinter` (pareo manual con gesto, para modo debug), +
+      `getFiscalPrinter`/`useFiscalMachine`. Reutiliza `window.fiscalPrinter`
+      (`TfhkaDriver`) verbatim. Falta: panel debug que exponga `pairFiscalPrinter`
+      (tarea 6.2).
+- [x] 4.3 Builder invocado con `selfOrder.currentOrder` + config/currency +
+      `payment_lines` EXPLÍCITAS (método aprobado + monto), porque el pago se
+      registra server-side y la orden del cliente no tiene `payment_ids` al
+      imprimir. (Ver 3.1.)
+- [x] 4.4 `SelfOrder.printKioskFiscalInvoice(order)`: conecta driver →
+      `buildKioskFiscalPayload` (deriva el pago de `order.payment_ids`) →
+      `printInvoice(payload)` → guarda datos en cliente → **persiste en el
+      servidor** (`_persistKioskFiscalNumber` → endpoint write_mf_invoice_data).
+      Idempotente (`!order.mf_invoice_number`).
+- [x] 4.5 Endpoint público de persistencia (`controllers/main.py`):
+      `/l10n_ve_pos_mf_self_order/kiosk/write_mf_invoice_data` — valida
+      `access_token` (`_verify_pos_config`) + que la orden pertenezca a la caja,
+      y delega en `pos.order.write_mf_invoice_data` (persiste en orden +
+      `account.move`, sudo por readonly). Reuso del método de la caja.
+
+## 5. Resiliencia — imprimir-primero / sincronizar-después (Fase 2)
+
+- [x] 5.1 Enganche REGISTRAR-PRIMERO (genérico, en el módulo fiscal): la
+      impresión se dispara en `SelfOrder.confirmationPage()` (patch en
+      `self_order_fiscal.js`), cuando la orden YA está registrada y facturada en
+      Odoo (con id). Se imprime si está pagada y sin `mf_invoice_number`; el pago
+      se deriva de `order.payment_ids`. En el camino ONLINE Megasoft NO imprime
+      (lo hace `confirmationPage`). En el camino OFFLINE (servidor caído)
+      `_finalizeMegasoftPayment` ENCOLA la orden Y la IMPRIME igual (modelo PoS,
+      con el pago explícito porque aún no hay `payment_ids`), metiendo el
+      `mf_invoice_number` en el payload encolado para que viaje al registrarse.
+      Invariante: la orden siempre existe antes de imprimir (Odoo o cola local).
+- [~] 5.2 Enganche pago-en-caja: FUERA DE ALCANCE por ahora — en pago-en-caja
+      (sin terminal) el cobro y la factura fiscal los hace el CAJERO, no el
+      Kiosko. Reevaluar solo si aparece un caso de Kiosko que factura sin cobrar.
+- [x] 5.3 Cola durable de reintento del registro en **IndexedDB** (base propia
+      `l10n_ve_kiosk_queue_<config>`, reutilizando la MISMA clase `IndexedDB` del
+      POS — `@point_of_sale/app/models/utils/indexed_db` — SIN reactivar el
+      `PosData`, que también cachearía el dataset del servidor). Stores `pending`
+      y `failed` (keyPath `uuid`). `l10n_ve_pos_self_order/.../kiosk_sync_queue.js`:
+      patch `SelfOrder` con `enqueueKioskRegistration`/`flushKioskRegistrations`/
+      `retryFailedKioskRegistrations` + contadores reactivos `kioskPendingCount`/
+      `kioskFailedCount`. Reintenta al arrancar, en `online` y por timer
+      (`auto_sync_interval`). Dedup por uuid; RPC idempotente → sin duplicados.
+- [x] 5.4 Idempotencia: `printKioskFiscalInvoice` no reimprime si la orden ya
+      tiene `mf_invoice_number`; la cola dedup por uuid + RPC idempotente en el
+      server; no se recobra la tarjeta en reintentos (`_megasoftApproved`).
+- [x] 5.5 NO perder órdenes: un rechazo del servidor (error de negocio, NO de
+      red) ya no se descarta — la entrada se mueve al store `failed` de la
+      IndexedDB (no se pierde), reintentable a mano tras corregir la causa (botón
+      "Reintentar FALLIDAS" en el menú Debug MF, con contador).
+      Los cortes de red siguen en pendientes (auto-reintento).
+
+## 6. Menú de Debug MF + reimpresión de fallidas (Fase 3)
+
+- [x] 6.1 Menú de Debug MF (`app/debug/mf_debug_dialog.{js,xml}`): panel único
+      abierto desde un botón flotante "🛠 Debug MF" (raíz `selfOrderIndex`,
+      `t-if="env.debug"`). Opciones: estado de conexión, parear puerto, abrir el
+      panel de Órdenes fiscales, reintentar pendientes/fallidas. Si la impresión
+      falla, se muestra el MOTIVO exacto (no omisión silenciosa).
+- [x] 6.2 Panel de Órdenes fiscales (`app/debug/kiosk_fiscal_orders_dialog.{js,xml}`):
+      estilo TicketScreen — lista de órdenes de la sesión a la izquierda; al
+      seleccionar, resumen (cliente/líneas/total/estado fiscal) + botón que
+      IMPRIME (sin nº) o REIMPRIME COPIA (con nº). Servicio: `kioskFiscalOrders`,
+      `printOrReprintKioskOrder`, `reprintKioskFiscalCopy`
+      (`TfhkaDriver.reprintDocument`, como `ReprintInvoiceButton` de la caja).
+- [x] 6.4 PERSISTENCIA (el panel no dependía de memoria): endpoint
+      `/l10n_ve_pos_mf_self_order/kiosk/session_orders` devuelve las órdenes de la
+      sesión abierta (pos.order/line/payment/partner en formato `connectNewData`);
+      el panel las carga del servidor al abrir (y botón "Actualizar") y hace
+      `connectNewData` → quedan en el modelo y el builder client-side las usa
+      igual. Así las órdenes ya no se pierden al iniciar una orden nueva o recargar.
+- [ ] 6.3 Respaldo en caja: la orden queda marcada para reimprimir desde el POS
+      de caja (`write_mf_invoice_data` / `PrintPendingOrderButton`).
+- [x] 6.5 Overlay "Espere mientras se imprime su factura..." (raíz
+      `selfOrderIndex`, `self_order_index_fiscal.xml`): antes la impresión en
+      `confirmationPage` era puramente fire-and-forget, así que el cliente veía
+      la confirmación como si ya estuviera todo listo mientras la máquina
+      fiscal seguía imprimiendo detrás. Estado reactivo
+      `selfOrder.printingFiscalInvoice` (patch de `SelfOrder.setup`/
+      `confirmationPage` en `self_order_fiscal.js`), en true desde que arranca
+      `printKioskFiscalInvoice` hasta que resuelve (`finally`). No bloquea la
+      navegación a confirmación, solo cubre la pantalla con el overlay mientras
+      dura la impresión.
+
+## 7. Tests (Python; el usuario los corre — convención del repo)
+
+- [ ] 7.1 `_load_pos_self_data_fields` de config/payment_method/tax/order incluye
+      los campos fiscales esperados.
+- [ ] 7.2 (Si aplica server-side) el `account.move` de la orden del Kiosko
+      sincronizada lleva `mf_invoice_number`/`mf_serial`/`mf_reportz`.
+
+## 8. Verificación manual (navegador, por el usuario)
+
+- [ ] 8.1 Kiosko con máquina fiscal conectada: completar orden → se imprime la
+      factura fiscal al confirmar; el `mf_invoice_number` queda en la orden.
+- [ ] 8.2 Simular servidor caído tras aprobar el pago: la factura se imprime
+      igual y la orden se sincroniza sola al volver la conexión.
+- [ ] 8.3 Forzar fallo de impresión → reimprimir desde modo debug sin recobrar.
+- [ ] 8.4 Regresión (sanity): caja normal (cajero) imprime fiscal igual — no se
+      tocó `PosStore` ni el driver; solo se comparte `window.fiscalPrinter` si
+      conviven en el mismo navegador.
+- [ ] 8.5 Al confirmar una orden que dispara impresión fiscal, el overlay
+      "Espere mientras se imprime su factura..." aparece y desaparece solo al
+      terminar (éxito o fallo), sin quedarse pegado ni parpadear de más.
+
+## 9. OpenSpec
+
+- [x] 9.1 Proposal + spec delta + tasks escritos.
+- [x] 9.2 `openspec validate --type change l10n-ve-pos-mf-self-order-fiscal-print`
+      → válido.
+- [x] 9.3 Requirements añadidos: persistencia del nº fiscal (endpoint
+      write_mf_invoice_data), pagos en el bus PAYMENT_STATUS, panel de órdenes
+      persistente desde el servidor.

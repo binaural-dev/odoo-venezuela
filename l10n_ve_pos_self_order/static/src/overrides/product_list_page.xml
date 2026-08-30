@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+
+    <t t-name="l10n_ve_pos_self_order.ProductListPage" t-inherit="pos_self_order.ProductListPage" t-inherit-mode="extension" owl="1">
+
+        <!-- Greeting + search bar, only in scan/search-only kiosk mode. -->
+        <xpath expr="//div[hasclass('bg-view')][hasclass('border-bottom')]" position="before">
+            <div t-if="hideCatalog" class="o_ve_kiosk_scan_header user-select-none">
+                <div class="container o_self_container py-4 px-4 d-flex flex-column gap-3">
+                    <h1 class="o_ve_kiosk_greeting m-0 fw-bold text-truncate" t-esc="greeting"/>
+                    <div class="o_ve_kiosk_search position-relative">
+                        <i class="fa fa-search position-absolute top-50 translate-middle-y ms-3 text-muted pe-none"/>
+                        <input type="text"
+                               class="o_ve_kiosk_search_input form-control form-control-lg ps-5 py-3 rounded-pill"
+                               inputmode="search"
+                               autocomplete="off"
+                               t-att-placeholder="searchPlaceholder"
+                               t-att-value="searchState.query"
+                               t-on-input="(ev) => this.searchState.query = ev.target.value"/>
+                    </div>
+                </div>
+            </div>
+        </xpath>
+
+        <!-- Hide the category bar in scan/search-only mode. -->
+        <xpath expr="//div[hasclass('bg-view')][hasclass('border-bottom')]" position="attributes">
+            <attribute name="t-if">!hideCatalog</attribute>
+        </xpath>
+
+        <!-- Hide the sub-category bar in scan/search-only mode. -->
+        <xpath expr="//div[hasclass('sub_category_container')]" position="attributes">
+            <attribute name="t-if">!hideCatalog</attribute>
+        </xpath>
+
+        <!-- Live order summary + empty/no-results hints for scan/search mode. -->
+        <xpath expr="//div[hasclass('product_container')]" position="inside">
+
+            <!-- Order summary: products appear here as they are scanned/added. -->
+            <div t-if="showOrderSummary" class="o_ve_kiosk_summary py-3">
+                <h2 class="o_ve_kiosk_summary_title mb-3 fw-bold" t-esc="orderSummaryTitle"/>
+                <div class="order_box d-flex flex-column bg-white px-3 px-kiosk-p-4 rounded-4 border border-light shadow-sm">
+                    <t t-foreach="orderLines" t-as="line" t-key="line.uuid">
+                        <t t-set="product" t-value="line.product_id"/>
+                        <div t-attf-class="product-cart-item d-flex align-items-center py-3 {{ !line_last ? 'border-bottom border-medium' : '' }}">
+                            <div class="product_img flex-shrink-0 me-3 ratio ratio-1x1 align-self-start" style="width: 4rem;">
+                                <img class="object-fit-cover rounded-3 pe-none" t-attf-src="/web/image/product.product/#{product.id}/image_128?unique=#{product.write_date}" loading="lazy"/>
+                            </div>
+                            <div class="flex-grow-1">
+                                <div class="text-break fs-4 fw-bold" t-esc="formatProductName(product)"/>
+                                <div class="d-flex align-items-center justify-content-between mt-2">
+                                    <div class="btn-group">
+                                        <button type="button" class="btn btn-secondary py-1 px-2" t-on-click="() => this.changeLineQuantity(line, false)"><i class="oi oi-minus fa-fw"/></button>
+                                        <div class="o-so-tabular-nums fs-4 d-flex align-items-center m-0 px-4 py-2 text-bg-secondary fw-bolder" t-esc="line.qty"/>
+                                        <button type="button" class="btn btn-secondary py-1 px-2" t-on-click="() => this.changeLineQuantity(line, true)"><i class="oi oi-plus fa-fw"/></button>
+                                    </div>
+                                    <div class="fs-4 fw-bold o-so-tabular-nums text-primary" t-esc="selfOrder.formatMonetary(getLinePrice(line))"/>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-link text-muted ms-2 align-self-start" t-on-click="() => this.removeSummaryLine(line)"><i class="fa fa-trash-o fa-lg"/></button>
+                        </div>
+                    </t>
+                </div>
+            </div>
+
+            <!-- Empty state: nothing in the order and no search yet. -->
+            <div t-if="hideCatalog and !searchState.query.trim() and orderLines.length === 0"
+                 class="o_ve_kiosk_scan_hint text-center text-muted position-absolute top-50 start-50 translate-middle w-100 px-3">
+                <i class="fa fa-barcode fa-3x d-block mb-3"/>
+                <span class="fs-4" t-esc="scanHint"/>
+            </div>
+
+            <!-- Search with no matches. -->
+            <div t-if="hideCatalog and searchState.query.trim() and searchResults.length === 0"
+                 class="o_ve_kiosk_no_results text-center text-muted position-absolute top-50 start-50 translate-middle w-100 px-3">
+                <span class="fs-4" t-esc="noResultsHint"/>
+            </div>
+        </xpath>
+
+    </t>
+
+</templates>
