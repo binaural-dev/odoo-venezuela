@@ -231,8 +231,11 @@ class StockPicking(models.Model):
     location_id = fields.Many2one(compute="_compute_location_id")
 
     def _set_guide_number(self):
+        # Idempotent: if _action_done() ever runs a second time on the same
+        # picking, this must not burn a second correlativo and orphan the
+        # first one.
         for picking in self:
-            if picking.dispatch_guide_controls:
+            if picking.dispatch_guide_controls and not picking.guide_number:
                 picking.guide_number = picking.get_sequence_guide_num()
 
     @api.model
