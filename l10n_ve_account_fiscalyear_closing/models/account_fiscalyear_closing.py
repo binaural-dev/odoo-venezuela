@@ -3,7 +3,7 @@ import logging
 from dateutil.relativedelta import relativedelta
 
 from odoo import _, api, exceptions, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_is_zero
 
 _logger = logging.getLogger(__name__)
@@ -18,7 +18,6 @@ class AccountFiscalyearClosingConfig(models.Model):
     def onchange_l_map(self):
         accounts = (
             self.env["account.account"]
-            .sudo()
             .search(
                 [
                     (
@@ -39,7 +38,6 @@ class AccountFiscalyearClosingConfig(models.Model):
 
         config_a = (
             self.env["account.account"]
-            .sudo()
             .search(
                 [
                     ("account_type", "=", "equity_unaffected"),
@@ -88,7 +86,7 @@ class AccountFiscalyearClosingConfig(models.Model):
         dest_totals = {}
         # Add balance/unreconciled move lines
         # for account_map in self.mapping_ids:
-        rate = 1
+        rate = 1.0
 
         dest = account_map.dest_account_id
         dest_totals.setdefault(dest, 0)
@@ -104,7 +102,6 @@ class AccountFiscalyearClosingConfig(models.Model):
         else:
             src_accounts = (
                 self.env["account.account"]
-                .sudo()
                 .search(
                     [
                         ("company_ids", "in", [self.fyc_id.company_id.id]),
@@ -169,35 +166,82 @@ class AccountFiscalyearClosing(models.Model):
 
     def button_post(self):
         for closing in self:
-            closing.move_ids.action_post()
+            # move_ids keeps cancelled entries from earlier recalculations
+            # around for audit (see account_fiscal_year_closing.py's
+            # _moves_remove); action_post() on an already-cancelled move
+            # raises, so only post the ones still active.
+            closing.active_move_ids.action_post()
         return super().button_post()
 
     # Todo el registro de las cuentas esta en esta funcion
     def calculate(self):
-        dest_account = (
-            self.env["account.account"]
-            .sudo()
-            .search(
-                [
-                    ("account_type", "=", "equity_unaffected"),
-                    ("company_ids", "in", [self.company_id.id, False]),
-                ],
-                limit=1,
-            )
-        )
-        currencies = {
-            "bsd_id": self.env.ref("base.VEF"),
-            "foreign_currency": self.env.company.foreign_currency_id,
-        }
+        # _check_fiscal_lock_date se hereda tal cual del modulo base
+        # (account_fiscal_year_closing); solo se invoca aqui porque este
+        # metodo redefine calculate() por completo, sin llamar a super().
+        self._check_fiscal_lock_date()
 
         for closing in self:
+            # dest_account y currencies deben calcularse por cada closing
+            # usando closing.company_id: sobre un recordset multi-registro
+            # (y potencialmente multi-compania) self.company_id no tiene
+            # sentido, y self.env.company es la compania activa de sesion
+            # del usuario, no necesariamente la del cierre que se procesa.
+            dest_account = (
+                self.env["account.account"]
+                .search(
+                    [
+                        ("account_type", "=", "equity_unaffected"),
+                        ("company_ids", "in", [closing.company_id.id, False]),
+                    ],
+                    limit=1,
+                )
+            )
+            if not dest_account:
+                raise UserError(
+                    _(
+                        "No account of type 'Current Year Earnings' "
+                        "(equity_unaffected) found configured for company "
+                        "%(company)s. Configure the chart of accounts "
+                        "before performing the fiscal closing."
+                    )
+                    % {"company": closing.company_id.display_name}
+                )
+            currencies = {
+                "bsd_id": self.env.ref("base.VEF"),
+                "foreign_currency": closing.company_id.foreign_currency_id,
+            }
+
             # Perform checks, raise exception if check fails
             if closing.check_draft_moves:
                 closing.draft_moves_check()
 
             for config in closing.move_config_ids.filtered("enabled"):
-                balances = self._get_balances(config)
-                self._create_closing_moves(config, balances, dest_account, currencies)
+                balances = closing._get_balances(config)
+                closing._create_closing_moves(config, balances, dest_account, currencies)
+
+            # Sin esto, un cierre sin ninguna cuenta con saldo en el periodo
+            # (o sin ninguna configuracion habilitada) pasaba a "calculated"
+            # en silencio, con 0 asientos generados, indistinguible en la UI
+            # de un cierre que si genero asientos. Se usa active_move_ids
+            # (no move_ids) porque move_ids conserva para siempre los
+            # asientos cancelados de recalculos anteriores de un cierre ya
+            # posteado, asi que nunca queda vacio y esta validacion nunca
+            # dispararia en ese escenario si se usara move_ids.
+            if not closing.active_move_ids:
+                raise UserError(
+                    _(
+                        "No fiscal closing entries were generated for "
+                        "%(company)s between %(start)s and %(end)s: none of "
+                        "the mapped accounts had a balance to close in that "
+                        "period. Check the account mappings and the period "
+                        "dates before calculating again."
+                    )
+                    % {
+                        "company": closing.company_id.display_name,
+                        "start": closing.date_start,
+                        "end": closing.date_end,
+                    }
+                )
 
         return True
 
@@ -227,20 +271,22 @@ class AccountFiscalyearClosing(models.Model):
 
     def _create_closing_moves(self, config, balances, dest_account, currencies):
         vals = []
+        company_currency = self.company_id.currency_id
+        foreign_currency = currencies.get("foreign_currency")
+        # Empresas sin bimoneda configurada (foreign_currency_id vacio): el
+        # cierre debe comportarse como uno normal en una sola moneda, sin
+        # exigir foreign_balance para no descartar todos los saldos.
+        single_currency = not foreign_currency or currencies["bsd_id"] == foreign_currency
 
         for balance_dict in balances:
-            balance = balance_dict.get("balance", 0)
-            foreign_balance = balance_dict.get("foreign_balance", 0)
-            if (currencies["bsd_id"] == currencies["foreign_currency"] and balance == 0) or (
-                currencies["bsd_id"] != currencies["foreign_currency"] and foreign_balance == 0
+            balance = company_currency.round(balance_dict.get("balance", 0) or 0)
+            foreign_balance = balance_dict.get("foreign_balance", 0) or 0
+            if foreign_currency:
+                foreign_balance = foreign_currency.round(foreign_balance)
+            if (single_currency and balance == 0) or (
+                not single_currency and foreign_balance == 0
             ):
                 continue
-
-            rate = abs(
-                foreign_balance / balance
-                if currencies["bsd_id"] == currencies["foreign_currency"]
-                else balance / foreign_balance
-            )
 
             vals.append(
                 {
@@ -249,11 +295,10 @@ class AccountFiscalyearClosing(models.Model):
                     "fyc_id": self.id,
                     "closing_type": config.move_type,
                     "journal_id": config.journal_id.id,
-                    "manually_set_rate": True,
-                    "foreign_rate": rate,
-                    "foreign_inverse_rate": (
-                        rate if currencies["bsd_id"] == currencies["foreign_currency"] else 1 / rate
-                    ),
+                    # manually_set_rate/foreign_rate/foreign_inverse_rate no se
+                    # setean: el foreign_balance de cada linea ya viene
+                    # extraido de los datos reales de account_move_line, no se
+                    # deriva ninguna tasa sintetica a partir de los totales.
                     "line_ids": [
                         (
                             0,
@@ -261,6 +306,8 @@ class AccountFiscalyearClosing(models.Model):
                             {
                                 "account_id": balance_dict["account_id"][0],
                                 "balance": -balance,
+                                "foreign_balance": -foreign_balance,
+                                "not_foreign_recalculate": True,
                                 "name": config.name,
                                 "date": config.date,
                             },
@@ -271,6 +318,8 @@ class AccountFiscalyearClosing(models.Model):
                             {
                                 "account_id": dest_account.id,
                                 "balance": balance,
+                                "foreign_balance": foreign_balance,
+                                "not_foreign_recalculate": True,
                                 "name": _("Result"),
                                 "date": config.date,
                             },
@@ -291,7 +340,7 @@ class AccountFiscalyearClosingMapping(models.Model):
         precision = self.env["decimal.precision"].precision_get("Account")
         description = self.name or account.name
         date = self.fyc_config_id.fyc_id.date_end
-        rate = 1
+        rate = 1.0
         bsd_id = self.env.ref("base.VEF").id
         if self.fyc_config_id.move_type == "opening":
             date = self.fyc_config_id.fyc_id.date_opening
