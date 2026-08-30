@@ -112,7 +112,11 @@ class AccountPaymentRegisterIgtfNoteDebit(models.TransientModel):
         # aquí la lectura de `amount` obliga a que `_compute_amount` (y su
         # escritura de la bandera) corra ANTES de decidir el bypass.
         for wizard in self:
-            wizard.amount  # noqa: B018 -- fuerza el recompute perezoso
+            # Fuerza el recompute perezoso de `amount` antes de leer la
+            # bandera (ver nota arriba); la asignación a `_` evita el
+            # falso positivo de pylint "pointless-statement" que dispara
+            # una lectura de atributo sin usar su valor.
+            _ = wizard.amount
         bypass_recs = self.filtered("igtf_note_debit_internal_amount_write")
         other_recs = self - bypass_recs
         if other_recs:
