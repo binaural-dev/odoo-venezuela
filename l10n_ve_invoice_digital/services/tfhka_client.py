@@ -14,6 +14,7 @@ TFHKA_ENDPOINTS = {
     "ultimo_documento": "/UltimoDocumento",
     "consulta_numeraciones": "/ConsultaNumeraciones",
     "anular": "/Anular",
+    "autenticacion": "/Autenticacion",
 }
 
 # Timeout (segundos) para las llamadas HTTP a TFHKA.

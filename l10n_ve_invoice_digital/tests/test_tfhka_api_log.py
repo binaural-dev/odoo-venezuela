@@ -229,6 +229,79 @@ class TestTfhkaApiLog(TransactionCase):
         self.assertEqual(logs[1].status_code, 200)
 
     # ------------------------------------------------------------------
+    # Token generation (Autenticacion) is also logged
+    # ------------------------------------------------------------------
+
+    @patch("requests.post")
+    def test_generate_token_success_is_logged(self, mock_post):
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.json.return_value = {"codigo": 200, "mensaje": "OK", "token": "abc123"}
+        mock_post.return_value = resp
+
+        self.company.generate_token_tfhka()
+
+        log = self._last_log("/Autenticacion")
+        self.assertTrue(log, "no log found for /Autenticacion")
+        self.assertTrue(log.success)
+        self.assertEqual(log.status_code, 200)
+        self.assertNotIn("clave_prueba", log.request_payload)
+        self.assertIn("***", log.request_payload)
+
+    @patch("requests.post")
+    def test_generate_token_invalid_credentials_is_logged(self, mock_post):
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.json.return_value = {"codigo": 403, "mensaje": "Usuario/Clave incorrectos"}
+        mock_post.return_value = resp
+
+        raised = False
+        try:
+            self.company.generate_token_tfhka()
+        except UserError:
+            raised = True
+        self.assertTrue(raised, "Expected UserError was not raised")
+
+        log = self._last_log("/Autenticacion")
+        self.assertTrue(log, "no log found for /Autenticacion")
+        self.assertFalse(log.success)
+        self.assertEqual(log.status_code, 200)
+
+    @patch("requests.post")
+    def test_generate_token_connection_error_is_logged(self, mock_post):
+        mock_post.side_effect = requests.exceptions.ConnectionError("down")
+
+        raised = False
+        try:
+            self.company.generate_token_tfhka()
+        except UserError:
+            raised = True
+        self.assertTrue(raised, "Expected UserError was not raised")
+
+        log = self._last_log("/Autenticacion")
+        self.assertTrue(log, "no log found for /Autenticacion")
+        self.assertFalse(log.success)
+        self.assertFalse(log.status_code)
+
+    @patch("requests.post")
+    def test_generate_token_no_token_in_response_is_logged(self, mock_post):
+        resp = MagicMock()
+        resp.status_code = 200
+        resp.json.return_value = {"codigo": 200, "mensaje": "OK"}
+        mock_post.return_value = resp
+
+        raised = False
+        try:
+            self.company.generate_token_tfhka()
+        except UserError:
+            raised = True
+        self.assertTrue(raised, "Expected UserError was not raised")
+
+        log = self._last_log("/Autenticacion")
+        self.assertTrue(log, "no log found for /Autenticacion")
+        self.assertFalse(log.success)
+
+    # ------------------------------------------------------------------
     # action_open_origin
     # ------------------------------------------------------------------
 

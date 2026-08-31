@@ -1,5 +1,6 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError, UserError
+import json
 import requests
 import logging
 
@@ -50,9 +51,10 @@ class ResCompany(models.Model):
 
         try:
             response = requests.post(url, json=payload, timeout=10)
-            self._handle_tfhka_response(response)
+            self._handle_tfhka_response(response, payload)
         except requests.exceptions.RequestException as e:
             _logger.error("Error connecting to the TFHKA API: %s", e)
+            self._log_tfhka_auth_call(payload, None, str(e), False)
             raise ValidationError(_("Error connecting to the TFHKA API: %s", e))
 
     def _validate_tfhka_credentials(self):
@@ -64,15 +66,36 @@ class ResCompany(models.Model):
             raise UserError(_("You must register the URL for TFHKA."))
         _logger.info("TFHKA credentials validated successfully.")
 
-    def _handle_tfhka_response(self, response):
+    def _log_tfhka_auth_call(self, payload, status_code, response_data, success):
+        """Registra en tfhka.api.log el intento de autenticación (Autenticacion).
+
+        A diferencia del resto de los endpoints, la autenticación no pasa por
+        ``tfhka.api.client._request`` (usa usuario/clave en vez del token
+        Bearer), así que se registra explícitamente aquí para que también
+        quede en el historial de llamadas a la API.
+        """
+        response_text = (
+            json.dumps(response_data, default=str, indent=2)
+            if isinstance(response_data, dict)
+            else (str(response_data) if response_data is not None else False)
+        )
+        self.env["tfhka.api.client"]._log_call(
+            self, "autenticacion", payload, None, status_code, response_text, success
+        )
+
+    def _handle_tfhka_response(self, response, payload=None):
         data = response.json()
         if response.status_code == 200 and data.get("codigo") == 200:
             try:
                 self._process_tfhka_response_data(data)
             except ValueError:
                 _logger.error(f"Error decoding JSON: {response.text}")
+                self._log_tfhka_auth_call(payload, response.status_code, data, False)
                 raise ValidationError(_("Error processing TFHKA API response."))
+            else:
+                self._log_tfhka_auth_call(payload, response.status_code, data, True)
         else:
+            self._log_tfhka_auth_call(payload, response.status_code, data, False)
             self._handle_tfhka_http_error(response, data)
 
     def _process_tfhka_response_data(self, data):
