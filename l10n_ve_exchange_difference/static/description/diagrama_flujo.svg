@@ -1,0 +1,147 @@
+<svg viewBox="0 0 1000 1420" xmlns="http://www.w3.org/2000/svg" role="img">
+  <title>Flujo de l10n_ve_exchange_difference</title>
+  <desc>Diagrama del flujo de conciliación desde el pago de una factura hasta la creación de la Nota de Débito o Crédito de diferencial cambiario</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#64748b"/>
+    </marker>
+  </defs>
+  <style>
+    text { font-family: -apple-system, "Segoe UI", Arial, sans-serif; }
+    .box { fill: #eef2ff; stroke: #6366f1; stroke-width: 1.5; rx: 10; }
+    .alt { fill: #f0fdf4; stroke: #16a34a; }
+    .warn { fill: #fef2f2; stroke: #dc2626; }
+    .title { fill: #1e1b4b; font-size: 15px; font-weight: 600; }
+    .alttitle { fill: #052e16; }
+    .warntitle { fill: #450a0a; }
+    .sub { fill: #64748b; font-size: 12px; }
+    .arrow { stroke: #64748b; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+    .label { fill: #64748b; font-size: 11px; }
+  </style>
+
+  <rect class="box" x="300" y="10" width="400" height="55"/>
+  <text class="title" x="500" y="33" text-anchor="middle">Usuario paga una factura</text>
+  <text class="sub" x="500" y="52" text-anchor="middle">Registrar Pago (único, agrupado o anticipo) — tasa distinta a la de la factura</text>
+
+  <line class="arrow" x1="500" y1="65" x2="500" y2="95"/>
+
+  <rect class="box" x="270" y="95" width="460" height="55"/>
+  <text class="title" x="500" y="118" text-anchor="middle">account.move.line.reconcile()</text>
+  <text class="sub" x="500" y="137" text-anchor="middle">Odoo corre su conciliación NATIVA, sin modificar nada</text>
+
+  <line class="arrow" x1="500" y1="150" x2="500" y2="180"/>
+
+  <polygon class="box" points="500,180 660,235 500,290 340,235" />
+  <text class="title" x="500" y="230" text-anchor="middle">¿Línea de factura de</text>
+  <text class="title" x="500" y="248" text-anchor="middle">cliente elegible?</text>
+
+  <line class="arrow" x1="340" y1="235" x2="120" y2="235"/>
+  <text class="label" x="230" y="225" text-anchor="middle">no</text>
+  <rect class="box warn" x="10" y="207" width="220" height="55"/>
+  <text class="title warntitle" x="120" y="230" text-anchor="middle">Comportamiento nativo</text>
+  <text class="sub" x="120" y="248" text-anchor="middle">proveedor, misceláneo, toggle off, extracto bancario…</text>
+
+  <line class="arrow" x1="500" y1="290" x2="500" y2="320"/>
+  <text class="label" x="515" y="310">sí</text>
+
+  <rect class="box" x="230" y="320" width="540" height="65"/>
+  <text class="title" x="500" y="345" text-anchor="middle">_prepare_reconciliation_single_partial</text>
+  <text class="sub" x="500" y="363" text-anchor="middle">(por cada pareja factura↔pago) — captura la pareja REAL antes</text>
+  <text class="sub" x="500" y="378" text-anchor="middle">de que Odoo calcule el residual (fix del pago agrupado)</text>
+
+  <line class="arrow" x1="500" y1="385" x2="500" y2="415"/>
+
+  <rect class="box" x="230" y="415" width="540" height="70"/>
+  <text class="title" x="500" y="438" text-anchor="middle">_prepare_exchange_difference_move_vals</text>
+  <text class="sub" x="500" y="456" text-anchor="middle">hook nativo de Odoo — calcula el monto EXACTO del residual</text>
+  <text class="sub" x="500" y="471" text-anchor="middle">(nunca recalculado por este módulo)</text>
+
+  <line class="arrow" x1="500" y1="485" x2="500" y2="515"/>
+
+  <rect class="box" x="230" y="515" width="540" height="55"/>
+  <text class="title" x="500" y="538" text-anchor="middle">Se encola el residual en self.env.cr</text>
+  <text class="sub" x="500" y="556" text-anchor="middle">(factura, pago, monto) — Odoo NO crea su asiento genérico para esta línea</text>
+
+  <line class="arrow" x1="500" y1="570" x2="500" y2="600"/>
+
+  <rect class="box" x="230" y="600" width="540" height="55"/>
+  <text class="title" x="500" y="623" text-anchor="middle">Odoo crea los partials reales</text>
+  <text class="sub" x="500" y="641" text-anchor="middle">factura↔pago quedan conciliados en la base de datos</text>
+
+  <line class="arrow" x1="500" y1="655" x2="500" y2="685"/>
+
+  <rect class="box" x="200" y="685" width="600" height="65"/>
+  <text class="title" x="500" y="710" text-anchor="middle">_create_exchange_difference_moves</text>
+  <text class="sub" x="500" y="728" text-anchor="middle">MISMO punto exacto donde Odoo crearía su asiento genérico —</text>
+  <text class="sub" x="500" y="743" text-anchor="middle">después de los partials, antes del chequeo de full-reconcile</text>
+
+  <line class="arrow" x1="500" y1="750" x2="500" y2="780"/>
+
+  <polygon class="box" points="500,780 640,825 500,870 360,825" />
+  <text class="title" x="500" y="822" text-anchor="middle">¿Config completa?</text>
+  <text class="sub" x="500" y="838" text-anchor="middle">producto+lista+diario ND</text>
+
+  <line class="arrow" x1="360" y1="825" x2="140" y2="825"/>
+  <text class="label" x="250" y="815" text-anchor="middle">no</text>
+  <rect class="box warn" x="20" y="797" width="240" height="55"/>
+  <text class="title warntitle" x="140" y="820" text-anchor="middle">UserError</text>
+  <text class="sub" x="140" y="838" text-anchor="middle">nada se crea a medias</text>
+
+  <line class="arrow" x1="500" y1="870" x2="500" y2="900"/>
+  <text class="label" x="515" y="890">sí</text>
+
+  <polygon class="box" points="500,900 660,945 500,990 340,945" />
+  <text class="title" x="500" y="942" text-anchor="middle">¿Ya existe nota para</text>
+  <text class="title" x="500" y="960" text-anchor="middle">(factura, pago)?</text>
+
+  <line class="arrow" x1="660" y1="945" x2="880" y2="945"/>
+  <text class="label" x="780" y="935" text-anchor="middle">sí, activa</text>
+  <rect class="box" x="800" y="917" width="180" height="55"/>
+  <text class="title" x="890" y="940" text-anchor="middle">Se ignora</text>
+  <text class="sub" x="890" y="958" text-anchor="middle">(guard anti-duplicado)</text>
+
+  <line class="arrow" x1="500" y1="990" x2="500" y2="1020"/>
+  <text class="label" x="440" y="1010" text-anchor="middle">no / revertida</text>
+
+  <polygon class="box" points="500,1020 660,1065 500,1110 340,1065" />
+  <text class="title" x="500" y="1062" text-anchor="middle">¿Residual gana o</text>
+  <text class="title" x="500" y="1080" text-anchor="middle">pierde valor?</text>
+
+  <line class="arrow" x1="340" y1="1065" x2="150" y2="1065"/>
+  <text class="label" x="245" y="1055" text-anchor="middle">ganancia</text>
+  <rect class="box alt" x="10" y="1037" width="280" height="80"/>
+  <text class="title alttitle" x="150" y="1060" text-anchor="middle">Nota de Débito</text>
+  <text class="sub" x="150" y="1078" text-anchor="middle">out_invoice · debit_origin_id</text>
+  <text class="sub" x="150" y="1093" text-anchor="middle">diario ND dedicado · cta. GANANCIA</text>
+  <text class="sub" x="150" y="1108" text-anchor="middle">fechada el día del pago</text>
+
+  <line class="arrow" x1="660" y1="1065" x2="850" y2="1065"/>
+  <text class="label" x="755" y="1055" text-anchor="middle">pérdida</text>
+  <rect class="box alt" x="710" y="1037" width="280" height="80"/>
+  <text class="title alttitle" x="850" y="1060" text-anchor="middle">Nota de Crédito</text>
+  <text class="sub" x="850" y="1078" text-anchor="middle">out_refund · reversed_entry_id</text>
+  <text class="sub" x="850" y="1093" text-anchor="middle">diario de la factura · cta. PÉRDIDA</text>
+  <text class="sub" x="850" y="1108" text-anchor="middle">fechada el día del pago</text>
+
+  <line class="arrow" x1="150" y1="1117" x2="500" y2="1150"/>
+  <line class="arrow" x1="850" y1="1117" x2="500" y2="1150"/>
+
+  <rect class="box" x="230" y="1150" width="540" height="65"/>
+  <text class="title" x="500" y="1175" text-anchor="middle">Se cierra vía reconciled_lines_ids</text>
+  <text class="sub" x="500" y="1193" text-anchor="middle">mismo mecanismo que usa el asiento genérico nativo —</text>
+  <text class="sub" x="500" y="1208" text-anchor="middle">nunca una segunda llamada a .reconcile()</text>
+
+  <line class="arrow" x1="500" y1="1215" x2="500" y2="1245"/>
+
+  <rect class="box alt" x="270" y="1245" width="460" height="55"/>
+  <text class="title alttitle" x="500" y="1268" text-anchor="middle">Diferencial documentado y conciliado</text>
+  <text class="sub" x="500" y="1286" text-anchor="middle">ND/NC fiscal real, con correlativo, vinculada a la factura</text>
+
+  <line class="arrow" x1="500" y1="1300" x2="500" y2="1330"/>
+
+  <rect class="box warn" x="200" y="1330" width="600" height="70"/>
+  <text class="title warntitle" x="500" y="1355" text-anchor="middle">Si se rompe la conciliación (botón ✕)</text>
+  <text class="sub" x="500" y="1373" text-anchor="middle">super() corre primero; solo si el partial ya no existe se revierte</text>
+  <text class="sub" x="500" y="1388" text-anchor="middle">la nota (reversal_move_ids) — nunca se cancela ni se borra</text>
+
+</svg>
