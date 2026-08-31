@@ -156,7 +156,7 @@ class TestAccountPaymentRate(TransactionCase):
         expected_other_rate = 45.0
         expected_other_inverse_rate = 1.0 / 45.0
 
-        self.assertEqual(payment.foreign_rate, 0.0, "Foreign Rate should be 0.0 for Third Currency (EUR)")
+        self.assertAlmostEqual(payment.foreign_rate, 40.0, places=2, msg="Foreign Rate should be the USD (company foreign currency) rate for any payment")
 
         _logger.info(f"Payment EUR Rates: Other Rate={payment.other_rate}, Other Inverse Rate={payment.other_rate_inverse}")
         

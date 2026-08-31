@@ -35,11 +35,26 @@ class TestPaymentRetention(RetentionTestCommon):
         retention.action_post()
         return retention
 
-    def test_01_compute_rate_skips_retention(self):
+    def test_01_compute_rate_retention(self):
         retention = self._create_retention_with_payment()
         for payment in retention.payment_ids:
             payment._compute_rate()
-        _logger.info("========= test_01_compute_rate_skips_retention passed =========")
+        _logger.info("========= test_01_compute_rate_retention passed =========")
+
+    def test_rate_computed_on_payment(self):
+        retention = self._create_retention_with_payment()
+        payment = retention.payment_ids[0]
+        _logger.info(
+            "PAYMENT foreign_rate=%s foreign_inverse_rate=%s foreign_currency_id=%s date=%s rate_table=%s",
+            payment.foreign_rate,
+            payment.foreign_inverse_rate,
+            payment.foreign_currency_id.name,
+            payment.date,
+            self.rate,
+        )
+        self.assertTrue(payment.foreign_rate > 0)
+        self.assertAlmostEqual(payment.foreign_rate, self.rate, places=2)
+        _logger.info("========= test_rate_computed_on_payment passed =========")
 
     def test_02_synchronize_to_moves_municipal(self):
         invoice = self._create_invoice_reten_iva(

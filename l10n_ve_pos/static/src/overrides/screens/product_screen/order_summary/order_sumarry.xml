@@ -2,7 +2,7 @@
 <templates id="l10n_ve_pos_orderwidget_props" xml:space="preserve">
   <t t-inherit="point_of_sale.OrderSummary" t-inherit-mode="extension">
     <xpath expr="//OrderDisplay" position="attributes">
-            <attribute name="conversion_rate">currentOrder.get_conversion_rate()</attribute>
+            <attribute name="conversion_rate">getConversionRateForDisplay()</attribute>
             <attribute name="quantity_products">currentOrder.get_qty_products()</attribute>
             <attribute name="foreign_total">env.utils.formatForeignCurrency(currentOrder.get_foreign_total_with_tax())</attribute>
             <!-- 

@@ -75,7 +75,7 @@ class AccountMoveLine(models.Model):
     international_purchase_exent_product = fields.Boolean(string="International Purchase Exent Product")
     is_purchase_international = fields.Boolean(related="move_id.journal_id.is_purchase_international")
 
-    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
+    @api.depends("price_unit", "foreign_inverse_rate", "move_id.currency_id")
     def _compute_price_unit_ves(self):
         for line in self:
             if line.currency_id and line.currency_id == line.company_id.currency_id:
@@ -126,7 +126,7 @@ class AccountMoveLine(models.Model):
             line.name = line.move_id.name
         return res
 
-    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
+    @api.depends("price_unit", "foreign_inverse_rate", "move_id.currency_id")
     def _compute_foreign_price(self):
         for line in self:
             company_currency = line.company_id.currency_id
@@ -184,9 +184,9 @@ class AccountMoveLine(models.Model):
         if balance and len(currency_lines) == 1:
             return -balance
 
-        # Third currency (neither base nor alternate)
+        # others currency (neither base nor alternate)
         cur = self.currency_id
-        if cur and cur != self.company_id.foreign_currency_id and cur != self.company_id.currency_id:
+        if cur and cur != self.company_id.foreign_currency_id :
             return self.company_id.currency_id._convert(
                 self.debit - self.credit,
 
@@ -196,7 +196,8 @@ class AccountMoveLine(models.Model):
             )
 
         # Standard rate
-        return (self.debit - self.credit) * self.foreign_inverse_rate
+        
+        return (self.debit - self.credit) * self.foreign_inverse_rate 
 
     def _get_foreign_value(self):
         """Return the foreign value (signed) for this line, or None."""
@@ -497,3 +498,23 @@ class AccountMoveLine(models.Model):
                         "discount": discount_val,
                     }
                 )
+
+    def _check_constrains_account_id_journal_id(self):
+        for line in self.filtered(
+            lambda x: x.display_type not in ('line_section', 'line_subsection', 'line_note')
+        ):
+            journal = line.move_id.journal_id
+            journal_currency = journal.currency_id
+            # If the journal has no currency of its own, it accepts entries in
+            # any currency (core behavior). If it DOES force a currency, no
+            # line may use a different one -- block before running the core's
+            # own validations (archived account, account secondary currency).
+            if journal_currency and line.currency_id != journal_currency:
+                raise UserError(_(
+                    'The journal %(journal)s only accepts entries in %(journal_currency)s, '
+                    'but this line is in %(line_currency)s.',
+                    journal=journal.name,
+                    journal_currency=journal_currency.name,
+                    line_currency=line.currency_id.name,
+                ))
+        return super()._check_constrains_account_id_journal_id()

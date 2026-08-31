@@ -11,7 +11,7 @@
                         name="foreign_balance" />. </div> -->
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="attributes">
-                <attribute name="readonly">state != 'draft' or move_type in ('out_invoice', 'out_refund', 'out_receipt')</attribute>
+                <attribute name="readonly">state != 'draft' or move_type in ('out_invoice', 'out_refund', 'out_receipt', 'in_refund')</attribute>
                 <attribute name="force_save">1</attribute>
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="after">
@@ -73,7 +73,10 @@
                     invisible="move_type not in ['in_invoice', 'in_refund'] or not config_deductible_tax" />
             </xpath>
             <xpath expr="//button[@name='action_reverse']" position="attributes">
-                <attribute name="string">Add Credit Note</attribute>
+                <!-- Same condition as core (move_type in out/in_invoice, posted) plus debit_origin_id:
+                     hides the Credit Note button on debit notes. Keep in sync with account/views/account_move_views.xml. -->
+                <attribute name="string">Credit Note</attribute>
+                <attribute name="invisible">move_type not in ('out_invoice', 'in_invoice') or state != 'posted' or debit_origin_id</attribute>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="replace">
                 <field name="partner_id" nolabel="1"
@@ -258,6 +261,17 @@
             <xpath expr="//group/filter[@name='invoicedate']" position="after">
                 <filter string="Invoice Date" name="group_by_invoice_date_display" domain="[]" context="{'group_by': 'invoice_date_display'}"/>
             </xpath>
+        </field>
+    </record>
+
+    <record id="view_move_form_debit_inherit_l10n_ve" model="ir.ui.view">
+        <field name="name">account.move.form.debit.inherit.l10n.ve</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account_debit_note.view_move_form_debit"/>
+        <field name="arch" type="xml">
+            <button name="action_debit_note" position="attributes">
+                <attribute name="invisible">move_type not in ('out_invoice', 'in_invoice') or state != 'posted' or debit_origin_id</attribute>
+            </button>
         </field>
     </record>
 

@@ -4,6 +4,7 @@
         <field name="model">account.move</field>
         <field name="inherit_id" ref="account.view_move_form" />
         <field name="arch" type="xml">
+
             <field name="invoice_has_outstanding" position="after">
                 <field name="is_contingency" invisible="1" />
                 <field name="entry_in_period" invisible="1" />
@@ -39,6 +40,26 @@
                     required="move_type in ['in_invoice', 'in_refund'] and not is_purchase_international"
                     force_save="1"/>
             </xpath>
+
+            <xpath expr="//form//header" position="inside">
+                <field name="correlative" invisible="1"/>
+                <button
+                    name="print_invoice_free_form" string="Free Form"
+                    type="object" class="o_btn_validate"
+                    invisible="(move_type not in ('out_invoice', 'out_refund')) or state != 'posted' or correlative == False"
+                    confirm="Una vez generada e impresa esta factura, la información del documento legal no sufrirá ningún tipo de modificación ni reajuste posterior. Por favor, asegúrese de que todos los valores, montos e información fiscal sean correctos antes de proceder."
+                />
+            </xpath>
+
+            <xpath expr="//button[@name='action_invoice_sent' and contains(@class, 'oe_highlight')]" position="attributes">
+                <attribute name="confirm">El documento adjunto que se enviará será la versión definitiva de la factura legal y no sufrirá ningún tipo de modificación o reajuste posterior. Por favor, asegúrese de que todos los valores e información fiscal sean correctos antes de proceder.</attribute>
+            </xpath>
+
+            <!-- 2. Segundo botón: Send (Estándar / sin oe_highlight) -->
+            <xpath expr="//button[@name='action_invoice_sent' and not(contains(@class, 'oe_highlight'))]" position="attributes">
+                <attribute name="confirm">El documento adjunto que se enviará será la versión definitiva de la factura legal y no sufrirá ningún tipo de modificación o reajuste posterior. Por favor, asegúrese de que todos los valores e información fiscal sean correctos antes de proceder.</attribute>
+            </xpath>
+
             <xpath expr="//div[@class='d-flex'][1]" position="after">
                 <field name="is_purchase_international" invisible="1"/>
                 <field name="declaration_unique_of_customs" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
@@ -82,6 +103,23 @@
                 <attribute name="invisible">move_type in ['out_invoice', 'out_refund'] or state == 'draft'</attribute>
             </button>
 
+            <!-- Preview: visible only to the group (native already sales-only) -->
+            <xpath expr="//header/button[@name='preview_invoice']" position="attributes">
+                <attribute name="groups">l10n_ve_invoice.group_show_preview_button</attribute>
+            </xpath>
+
+            <!-- Native invoice cancel button: visible only to the group -->
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="attributes">
+                <attribute name="groups">l10n_ve_invoice.group_show_cancel_button</attribute>
+            </xpath>
+
+            <!-- Alternative cancel: visible on purchases for users not in the group -->
+            <xpath expr="//header/button[@name='button_cancel'][2]" position="after">
+                <button name="button_cancel" string="Cancel" type="object"
+                    invisible="not entry_in_period and (not id or state != 'draft') or move_type in ('out_invoice', 'out_refund', 'out_receipt', 'entry')"
+                    groups="!l10n_ve_invoice.group_show_cancel_button"
+                    data-hotkey="x"/>
+            </xpath>
 
         </field>
     </record>
@@ -127,6 +165,7 @@
         </field>
     </record>
     <!-- ACTION OUT_REFUND -->
+
     <record id="account.action_move_out_refund_type" model="ir.actions.act_window">
         <field name="name">Credit Notes</field>
         <field name="res_model">account.move</field>
@@ -134,7 +173,7 @@
         <field name="view_id" ref="account.view_out_credit_note_tree" />
         <field name="search_view_id" ref="account.view_account_invoice_filter" />
         <field name="domain">[('move_type', '=', 'out_refund')]</field>
-        <field name="context">{'default_move_type': 'out_refund', 'default_filter_partner': 'customer', 'create':0}</field>
+        <field name="context">{'default_move_type': 'out_refund', 'default_filter_partner': 'customer', 'create': False, 'l10n_ve_no_upload': True}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a credit note
@@ -165,14 +204,15 @@
         </field>
     </record>
     <!-- ACTION IN_REFUND -->
+
     <record id="account.action_move_in_refund_type" model="ir.actions.act_window">
         <field name="name">Credit Notes</field>
         <field name="res_model">account.move</field>
         <field name="view_mode">list,kanban,form</field>
-        <field name="view_id" ref="account.view_in_invoice_tree" />
-        <field name="search_view_id" ref="account.view_account_invoice_filter" />
+        <field name="view_id" ref="account.view_in_invoice_refund_tree" />
+        <field name="search_view_id" ref="account.view_account_bill_filter" />
         <field name="domain">[('move_type', '=', 'in_refund')]</field>
-        <field name="context">{'default_move_type': 'in_refund', 'default_filter_partner': 'supplier'}</field>
+        <field name="context">{'default_move_type': 'in_refund', 'default_filter_partner': 'supplier', 'create': False, 'l10n_ve_no_upload': True}</field>
         <field name="help" type="html">
             <p class="o_view_nocontent_smiling_face">
                 Create a vendor credit note
@@ -205,20 +245,6 @@
             </search>
         </field>
     </record>
-    <record id="view_invoice_line_tree_editable_tax_ids" model="ir.ui.view">
-        <field name="name">Editable Tax IDs for Group</field>
-        <field name="model">account.move</field>
-        <field name="inherit_id" ref="account.view_move_form"/>
-        <field name="arch" type="xml">
-            <xpath expr="//field[@name='invoice_line_ids']/list/field[@name='tax_ids']" position="attributes">
-                <attribute name="readonly">0</attribute>
-                <attribute name="groups">l10n_ve_invoice.group_edit_invoice_tax_ids</attribute>
-            </xpath>
-            <xpath expr="//field[@name='invoice_line_ids']/list//field[@name='tax_ids']" position="before">
-                <field name="tax_ids" readonly="1" widget="many2many_tags" groups="!l10n_ve_invoice.group_edit_invoice_tax_ids"/>
-            </xpath>        
-        </field>
-    </record>
 
     <record id="l10n_ve_invoice_view_invoice_tree_datetime" model="ir.ui.view">
         <field name="name">account.move.list.l10n.ve.invoice.datetime</field>
@@ -237,5 +263,11 @@
             </xpath>
         </field>
     </record>
+    <record id="account.action_move_out_refund_type_non_legacy" model="ir.actions.act_window">
+        <field name="context">{'search_default_out_refund': 1, 'default_move_type': 'out_refund', 'create': False, 'display_account_trust': True, 'l10n_ve_no_upload': True}</field>
+    </record>
 
+    <record id="account.action_move_switch_move_type" model="ir.actions.server">
+        <field name="binding_model_id" eval="False"/>
+    </record>
 </odoo>
