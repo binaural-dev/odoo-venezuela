@@ -127,11 +127,6 @@ msgid "Active?"
 msgstr "Activo"
 
 #. module: l10n_ve_accountant
-#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
-msgid "Add Credit Note"
-msgstr "Añadir Nota de Crédito"
-
-#. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "Alert"
@@ -303,6 +298,11 @@ msgstr "Contacto"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Core Settings"
 msgstr "Configuración Principal"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
+msgid "Credit Note"
+msgstr "Nota de Crédito"
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__country_id
