@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.tools import float_round
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -77,13 +78,22 @@ class SaleOrderLine(models.Model):
     @api.depends(
         "price_unit",
         "order_id.date_order",
+        "order_id.foreign_rate_date",
         "currency_id",
         "company_id",
     )
     def _compute_foreign_price(self):
         for line in self:
 
-            order_date = line.order_id.date_order or fields.Date.today()
+            # foreign_rate_date es la fecha de la que salio la tasa de la orden
+            # y sobrevive a que el core reescriba date_order al confirmar. Sin
+            # esto la linea se recalculaba con la fecha de confirmacion aunque
+            # la tasa de la orden estuviera congelada.
+            order_date = (
+                line.order_id.foreign_rate_date
+                or line.order_id.date_order
+                or fields.Date.today()
+            )
 
             company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
@@ -93,33 +103,57 @@ class SaleOrderLine(models.Model):
                 line.foreign_price = 0.0
                 continue
 
-            if line_currency.id == company_currency.id:
-                line.foreign_price = line_currency._convert(
-                    line.price_unit,
-                    foreign_currency,
-                    line.company_id,
-                    order_date,
-                )
-                continue
-
             if line_currency.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
                 continue
 
-            line.foreign_price = line.currency_id._convert(
-                line.price_unit,
-                foreign_currency,
-                line.company_id,
-                order_date,
+            # round=False + redondeo a la precision del campo: _convert()
+            # redondea por defecto a los decimales de la moneda destino
+            # (USD = 2), pero foreign_price usa "Foreign Product Price",
+            # cuya precision es configurable.
+            # Sin esto un precio unitario pequeño se pierde al convertir, y
+            # el valor de la orden no coincide con el de la factura que sale
+            # de ella (account.move.line usa el mismo criterio).
+            precision = self.env["decimal.precision"].precision_get(
+                "Foreign Product Price"
+            )
+            line.foreign_price = float_round(
+                line_currency._convert(
+                    line.price_unit,
+                    foreign_currency,
+                    line.company_id,
+                    order_date,
+                    round=False,
+                ),
+                precision_digits=precision,
             )
 
-    @api.depends("product_uom_qty", "foreign_price", "discount")
+    @api.depends("product_uom_qty", "foreign_price", "discount", "tax_ids")
     def _compute_foreign_subtotal(self):
+        """Subtotal en moneda alterna.
+
+        Mismo criterio que account.move.line: cuando hay impuestos se pasa por
+        compute_all para que el subtotal sea la base real (descuenta el
+        impuesto si va incluido en el precio) y quede redondeado a la moneda
+        alterna. Sin impuestos es la multiplicacion directa.
+        """
         for line in self:
             line_discount_price_unit = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
-            line.foreign_subtotal = line_discount_price_unit * line.product_uom_qty
+            foreign_subtotal = line_discount_price_unit * line.product_uom_qty
+
+            if line.tax_ids:
+                taxes_res = line.tax_ids.compute_all(
+                    line_discount_price_unit,
+                    quantity=line.product_uom_qty,
+                    currency=line.foreign_currency_id,
+                    product=line.product_id,
+                    partner=line.order_id.partner_id,
+                )
+                line.foreign_subtotal = taxes_res["total_excluded"]
+            else:
+                line.foreign_subtotal = foreign_subtotal
 
     
     def _prepare_foreign_base_line_for_taxes_computation(self):
