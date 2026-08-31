@@ -1,4 +1,5 @@
 import datetime
+from contextlib import contextmanager
 from unittest.mock import patch
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
@@ -69,6 +70,24 @@ class TestCancelVisibility(TransactionCase):
             'property_account_expense_id': self.account_expense.id,
         })
         
+    @contextmanager
+    def _mock_today(self, mocked_date):
+        # `_compute_entry_in_period()` obtiene "hoy" con
+        # `fields.Date.context_today(self)`, NO con el `date` importado en
+        # `account_move.py` -- parchear solo ese `date` (como hacia este
+        # archivo antes) deja `today` en la fecha REAL del sistema, asi que
+        # la comparacion de año/mes contra la factura (fijada a 2025) nunca
+        # coincidia salvo que la corrida cayera justo en esa fecha real.
+        # Se parchean ambos: `context_today` para el "hoy" que usa el
+        # compute, y `date` para las cuentas de `_get_period_limit()`
+        # (`today.replace(...)`, `date(...)`), que si operan sobre el valor
+        # ya mockeado de `today`.
+        with patch('odoo.addons.l10n_ve_invoice.models.account_move.date') as mock_date, \
+             patch.object(fields.Date, 'context_today', return_value=mocked_date):
+            mock_date.today.return_value = mocked_date
+            mock_date.side_effect = lambda *args, **kw: datetime.date(*args, **kw)
+            yield
+
     def _create_invoice(self, move_type, date_str):
         invoice = self.env['account.move'].create({
             'move_type': move_type,
@@ -104,7 +123,6 @@ class TestCancelVisibility(TransactionCase):
             inv = self._create_invoice('out_invoice', '2025-10-29')
             # Trigger compute
             inv._compute_entry_in_period()
-            # Currently fails because code excludes 'out_invoice' unless debit_origin_id
             self.assertTrue(inv.entry_in_period, "Ordinary: Standard Invoice in period should be True")
             
     def test_ordinary_out_period(self):
@@ -167,5 +185,5 @@ class TestCancelVisibility(TransactionCase):
 
             inv = self._create_invoice('in_invoice', '2025-01-01')
             inv._compute_entry_in_period()
-            
+
             self.assertTrue(inv.entry_in_period, "Vendor Bill should always be True")
