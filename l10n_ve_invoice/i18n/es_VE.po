@@ -776,3 +776,45 @@ msgid ""
 msgstr ""
 "Ninguno de los documentos seleccionados está publicado.\n"
 "Solo los documentos publicados se pueden imprimir."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/ir_actions_report.py:0
+msgid ""
+"None of the selected sale orders are confirmed.\n"
+"Only non-draft orders can be printed."
+msgstr ""
+"Ninguna de las órdenes de venta seleccionadas está confirmada.\n"
+"Solo las órdenes no borrador se pueden imprimir."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"Every product line on this credit note must have a product, so it can "
+"be matched against the original invoice '%(origin)s'."
+msgstr ""
+"Toda línea de producto de esta nota de crédito debe tener un producto, "
+"para poder contrastarla contra la factura original '%(origin)s'."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"You cannot add the product '%(product)s' to this credit note: it is not "
+"part of the original invoice '%(origin)s'."
+msgstr ""
+"No puede agregar el producto '%(product)s' a esta nota de crédito: no "
+"forma parte de la factura original '%(origin)s'."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"The amount credited for product '%(product)s' (%(amount)s, including "
+"%(already)s already credited by other credit notes) exceeds the amount "
+"invoiced on the original document '%(origin)s' (%(max)s)."
+msgstr ""
+"El monto acreditado para el producto '%(product)s' (%(amount)s, "
+"incluyendo %(already)s ya acreditado por otras notas de crédito) supera "
+"el monto facturado en el documento original '%(origin)s' (%(max)s)."
