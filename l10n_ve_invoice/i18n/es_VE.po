@@ -776,13 +776,3 @@ msgid ""
 msgstr ""
 "Ninguno de los documentos seleccionados está publicado.\n"
 "Solo los documentos publicados se pueden imprimir."
-
-#. module: l10n_ve_invoice
-#. odoo-python
-#: code:addons/l10n_ve_invoice/models/ir_actions_report.py:0
-msgid ""
-"None of the selected sale orders are confirmed.\n"
-"Only non-draft orders can be printed."
-msgstr ""
-"Ninguna de las órdenes de venta seleccionadas está confirmada.\n"
-"Solo las órdenes no borrador se pueden imprimir."
