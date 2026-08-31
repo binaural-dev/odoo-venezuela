@@ -160,18 +160,35 @@ El widget `mf-webserial-button` DEBE (MUST) ejecutar el flujo en tres pasos: (1)
 
 ### Requirement: Wizard de reportes de máquina fiscal
 
-El wizard `l10n_ve.mf.reports.wizard` (menú "Reportes Maquina Fiscal" bajo Detalle de Ventas de `l10n_ve_accountant`) DEBE (MUST) ofrecer cuatro operaciones vía Web Serial: Reporte X (`I0X`, sin confirmación); Reporte Z con diálogo de confirmación explícito y posterior sincronización (`_readS1Data` + llamada a `account.move.report_z`); impresión de resumen por rango de fechas (comando `I2S<desde><hasta>` en formato DDMMYY, timeout 30s); y reimpresión de facturas por rango de fechas (comando `Rf<desde><hasta>`, timeout 60s, donde cada extremo es la misma fecha DDMMYY rellenada a 7 posiciones, es decir un cero a la izquierda).
+El wizard `l10n_ve.mf.reports.wizard` (menú "Reportes Maquina Fiscal" bajo Detalle de Ventas de `l10n_ve_accountant`) DEBE (MUST) presentarse en tres secciones claramente separadas, para no inducir a creer que el rango de fechas aplica a todas las operaciones:
 
-El rango y su formato los calcula el widget en el navegador leyendo `date_from`/`date_to` del registro (acepta YYYY-MM-DD, DD/MM/YYYY, `Date` y objetos Luxon) y ahí DEBE (MUST) rechazarse el rango invertido comparando en formato YYYYMMDD antes de enviar cualquier comando. Los métodos Python `_validate_date_range` y `get_date_range_payload` implementan la misma validación y el mismo formato DDMMYY, pero el widget no los invoca.
+1. **Reportes del día fiscal en curso** — Reporte X (`I0X`, sin confirmación) y Reporte Z / Cierre diario (`I0Z`, con diálogo de confirmación explícito y posterior sincronización: `_readS1Data` + llamada a `account.move.report_z`). Ambos corresponden SIEMPRE al día fiscal en curso por protocolo TFHKA (Manual V8.5.0, Tabla 59) y DEBEN (MUST) ignorar el rango de fechas.
+2. **Reporte de memoria fiscal por rango de fechas** — lee la memoria fiscal permanente con el comando `I2<tipo><desde><hasta>` (DDMMYY, timeout 30s), donde `<tipo>` proviene de `memory_report_type`: Resumen (`I2S`), Detallado (`I2A`) o Mensual (`I2M`) (Manual V8.5.0, Tabla 61). Es la vía soportada para obtener los cierres Z de fechas pasadas.
+3. **Reimpresión de documentos por número (memoria de auditoría)** — reimprime por rango de **número** (no de fecha) con un selector de documento (`reprint_doc_type`) que mapea a un comando en mayúscula de la Tabla 39: Facturas `RF`, Notas de Crédito `RC`, No fiscales `RT`, Reporte X `RX`, Reporte Z `RZ`, Todos `R@`. El rango `number_from`/`number_to` se rellena a 7 dígitos con ceros a la izquierda (timeout 60s). Restaura la paridad con la herramienta de reimpresión del v17 (`l10n_ve_iot_mf`), perdida en la migración a WebSerial.
+
+El rango `date_from`/`date_to` aplica ÚNICAMENTE a la sección 2 (reporte de memoria fiscal); las secciones 1 y 3 no lo usan. El widget calcula el formato en el navegador leyendo `date_from`/`date_to` del registro (acepta YYYY-MM-DD, DD/MM/YYYY, `Date` y objetos Luxon) y ahí DEBE (MUST) rechazar el rango invertido comparando en formato YYYYMMDD antes de enviar cualquier comando; la reimpresión por número valida análogamente `number_to >= number_from`. Ante un fallo, la notificación DEBE (MUST) mostrar la respuesta que devuelva la propia máquina fiscal.
+
+La reimpresión **por fecha** (comandos en minúscula `Rf/Rc/Rt/Rx/Rz/Ra`, Tabla 40) NO se ofrece a propósito: en los equipos probados (HKA80) el firmware acepta el comando pero no devuelve el documento por fecha (imprime en blanco o responde NAK) aunque el rango contenga un Z conocido, mientras que el mismo documento sí se reimprime por número. La vía por fecha soportada es el reporte de memoria fiscal (`I2`).
 
 #### Scenario: Reporte Z desde el wizard
 
-- **WHEN** el usuario confirma "Imprimir Reporte Z" con la impresora conectada
-- **THEN** se envía `I0Z`, se lee el S1 y se llama a `account.move.report_z` con el serial y el contador
+- **WHEN** el usuario confirma "Reporte Z / Cierre diario" con la impresora conectada
+- **THEN** el diálogo de confirmación advierte que el Z cierra el día en curso (hoy), que no usa el rango de fechas y que para fechas pasadas se use "Reporte de memoria fiscal por rango de fechas"
+- **AND** al confirmar se envía `I0Z`, se lee el S1 y se llama a `account.move.report_z` con el serial y el contador
+
+#### Scenario: Reporte de memoria fiscal por rango
+
+- **WHEN** el usuario selecciona `date_from`/`date_to`, elige `memory_report_type` (Resumen/Detallado/Mensual) y pulsa "Imprimir reporte de memoria fiscal"
+- **THEN** se envía `I2<S|A|M><desde><hasta>` en formato DDMMYY con timeout 30s
+
+#### Scenario: Reimpresión por número con selector de documento
+
+- **WHEN** el usuario elige `reprint_doc_type` (p. ej. Reporte Z), completa `number_from`/`number_to` y pulsa "Reimprimir documentos"
+- **THEN** se envía el comando en mayúscula correspondiente (`RZ` para Reporte Z) con el rango numérico de 7 dígitos rellenado con ceros y timeout 60s
 
 #### Scenario: Rango de fechas invertido
 
-- **WHEN** `date_to` es anterior a `date_from` y se pulsa una de las dos operaciones por rango
+- **WHEN** `date_to` es anterior a `date_from` y se pulsa el reporte de memoria fiscal
 - **THEN** el widget lanza el error "Date To must be greater than or equal to Date From." y no se envía ningún comando a la impresora
 
 #### Scenario: Z sin sincronización posible
