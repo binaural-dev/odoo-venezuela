@@ -89,6 +89,27 @@ class SaleOrder(models.Model):
     last_foreign_rate = fields.Float(copy=False)
     manually_set_rate = fields.Boolean(default=False)
 
+    foreign_rate_date = fields.Date(
+        string="Foreign rate date",
+        compute="_compute_rate",
+        store=True,
+        readonly=False,
+        copy=False,
+        # Mismo criterio que el default de foreign_rate (default_rate, que
+        # resuelve con fields.Date.today()): al crear la orden el ORM aplica
+        # los defaults y no ejecuta _compute_rate, asi que sin este default el
+        # campo nacería vacío y la fecha no coincidiría con la tasa.
+        default=lambda self: fields.Date.context_today(self),
+        help=(
+            "Date whose exchange rate is used for this order's alternate "
+            "currency amounts. It is not date_order: the core rewrites "
+            "date_order with the confirmation date, and when the rate is "
+            "frozen ('Update sale order rate using date order' disabled) this "
+            "field keeps the date the rate was actually taken from. It is the "
+            "date passed to the invoice so both convert with the same rate."
+        ),
+    )
+
     total_taxed = fields.Many2one(
         "account.tax",
         help="Total Taxed of the invoice",
@@ -190,9 +211,10 @@ class SaleOrder(models.Model):
         for move in self:
             move.foreign_taxable_income = False
             if move.order_line:
-                move.foreign_taxable_income = move.tax_totals["base_amount_foreign_currency"]
+                move.foreign_taxable_income = move.tax_totals.get(
+                    "base_amount_foreign_currency", 0
+                )
 
-    @api.depends("tax_totals")
     @api.depends("tax_totals", "currency_id", "date_order", "amount_total")
     def _compute_foreign_total_billed(self):
         """
@@ -202,20 +224,12 @@ class SaleOrder(models.Model):
             order.foreign_total_billed = False
             if not order.order_line or not order.tax_totals:
                 continue
-            fc = order.company_id.foreign_currency_id
-            if (
-                order.currency_id
-                and order.currency_id != order.company_id.currency_id
-                and order.currency_id != fc
-            ):
-                order.foreign_total_billed = order.currency_id._convert(
-                    order.amount_total,
-                    fc,
-                    order.company_id,
-                    order.date_order or fields.Date.today(),
-                )
-            else:
-                order.foreign_total_billed = order.tax_totals.get("total_amount_foreign_currency", 0)
+            # Una sola via: tax_totals ya trae el total convertido a la moneda
+            # alterna, incluso si la orden esta en una tercera moneda, porque
+            # se arma desde el foreign_price de cada linea.
+            order.foreign_total_billed = order.tax_totals.get(
+                "total_amount_foreign_currency", 0
+            )
 
     @api.depends("tax_totals", "currency_id", "date_order", "amount_untaxed")
     def _compute_foreign_untaxed_total(self):
@@ -226,20 +240,12 @@ class SaleOrder(models.Model):
             order.foreign_untaxed_total = False
             if not order.order_line or not order.tax_totals:
                 continue
-            fc = order.company_id.foreign_currency_id
-            if (
-                order.currency_id
-                and order.currency_id != order.company_id.currency_id
-                and order.currency_id != fc
-            ):
-                order.foreign_untaxed_total = order.currency_id._convert(
-                    order.amount_untaxed,
-                    fc,
-                    order.company_id,
-                    order.date_order or fields.Date.today(),
-                )
-            else:
-                order.foreign_untaxed_total = order.tax_totals.get("base_amount_foreign_currency", 0)
+            # Una sola via: base_amount_foreign_currency se arma desde el
+            # foreign_price de cada linea, que ya viene convertido a la moneda
+            # alterna sea cual sea la moneda del documento.
+            order.foreign_untaxed_total = order.tax_totals.get(
+                "base_amount_foreign_currency", 0
+            )
 
     @api.model
     def get_view(self, view_id=None, view_type="form", **options):
@@ -384,26 +390,40 @@ class SaleOrder(models.Model):
         # If the user doesn't want to update the foreign rate using the date order, then don't
         # compute the rate when it is not zero.
         for sale in self:
+            # date_order es Datetime: si viene vacio, .date() reventaria antes
+            # de llegar al or, asi que se comprueba primero.
+            rate_date = sale.date_order.date() if sale.date_order else fields.Date.today()
+
             if (
                 sale.manually_set_rate
                 or "website_id" in sale._fields
                 and sale.website_id
             ):
+                # La tasa viene fijada de fuera; se deja constancia de la fecha
+                # solo si aun no hay ninguna, para no pisar la original.
+                if not sale.foreign_rate_date:
+                    sale.foreign_rate_date = rate_date
                 continue
+            company = sale.company_id or self.env.company
             if (
-                not self.env.company.update_sale_order_rate_using_date_order
+                not company.update_sale_order_rate_using_date_order
                 and not float_is_zero(
                     sale.foreign_rate,
-                    precision_rounding=self.env.company.currency_id.rounding,
+                    precision_rounding=company.currency_id.rounding,
                 )
             ):
+                # Tasa congelada: no se recalcula. La fecha se sella la primera
+                # vez (la orden nace con el default de foreign_rate, tomado en
+                # ese momento) y a partir de ahi no se toca, aunque el core
+                # mueva date_order al confirmar.
+                if not sale.foreign_rate_date:
+                    sale.foreign_rate_date = rate_date
                 continue
-            rate_values = Rate.compute_rate(
-                sale.foreign_currency_id.id,
-                sale.date_order.date() or fields.Date.today(),
-            )
+            rate_values = Rate.compute_rate(sale.foreign_currency_id.id, rate_date)
             sale.foreign_rate = rate_values.get("foreign_rate", 0)
             sale.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
+            # La tasa se recalculo: la fecha acompana al valor nuevo.
+            sale.foreign_rate_date = rate_date
 
     @api.onchange("foreign_rate")
     def _onchange_foreign_rate(self):
@@ -452,26 +472,31 @@ class SaleOrder(models.Model):
 
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
+        company = self.company_id or self.env.company
         invoice_vals["manually_set_rate"] = (
-            self.manually_set_rate or self.env.company.use_invoice_rate_from_sale_order
+            self.manually_set_rate or company.use_invoice_rate_from_sale_order
         )
         invoice_vals["foreign_rate"] = self.foreign_rate
         invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
-        return invoice_vals
 
-    def _update_invoices_rate(self):
-        """
-        Syncs the rates of the invoices with the rates of the order.
-        """
-        if not self.env.company.use_invoice_rate_from_sale_order:
-            return
-        for sale in self:
-            sale.invoice_ids.write(
-                {
-                    "foreign_rate": sale.foreign_rate,
-                    "foreign_inverse_rate": sale.foreign_inverse_rate,
-                }
+        if company.use_invoice_rate_from_sale_order:
+            # En esta localizacion invoice_date es la fecha de la TASA; la
+            # fecha visible del documento (y la que determina la fecha
+            # contable) es invoice_date_display -- ver
+            # account.move._get_accounting_date_source.
+            #
+            # Se pasa foreign_rate_date, no date_order: el core reescribe
+            # date_order con la fecha de confirmacion, mientras que
+            # foreign_rate_date conserva la fecha de la que realmente salio la
+            # tasa (incluso si quedo congelada). Asi la factura convierte con
+            # la misma tasa que la orden, via _convert(), sin heredar el rate.
+            rate_date = self.foreign_rate_date or (
+                self.date_order.date() if self.date_order else False
             )
+            if rate_date:
+                invoice_vals["invoice_date"] = rate_date
+
+        return invoice_vals
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -690,25 +715,25 @@ class SaleOrder(models.Model):
 
    
 
-    @api.depends("amount_untaxed", "amount_total", "currency_id", "date_order", "company_id")
+    @api.depends("tax_totals", "amount_untaxed", "amount_total")
     def _compute_amount_signed(self):
+        """Totales en moneda de la compania.
+
+        Se leen de tax_totals en vez de volver a convertir con _convert(): el
+        motor de impuestos ya hizo esa conversion al calcular los totales del
+        documento, y las claves sin sufijo "_currency" vienen justamente en
+        moneda de compania (las que lo llevan estan en la moneda del
+        documento). Convertir por segunda vez abre una via paralela que puede
+        diferir por redondeo.
+        """
         for order in self:
-            if order.currency_id and order.company_id and order.currency_id != order.company_id.currency_id:
-                order.amount_untaxed_total_signed = order.currency_id._convert(
-                    order.amount_untaxed,
-                    order.company_id.currency_id,
-                    order.company_id,
-                    order.date_order or fields.Date.today(),
-                )
-                order.amount_total_signed = order.currency_id._convert(
-                    order.amount_total,
-                    order.company_id.currency_id,
-                    order.company_id,
-                    order.date_order or fields.Date.today(),
-                )
-            else:
-                order.amount_untaxed_total_signed = order.amount_untaxed
-                order.amount_total_signed = order.amount_total
+            tax_totals = order.tax_totals if isinstance(order.tax_totals, dict) else {}
+            order.amount_untaxed_total_signed = tax_totals.get(
+                "base_amount", order.amount_untaxed
+            )
+            order.amount_total_signed = tax_totals.get(
+                "total_amount", order.amount_total
+            )
 
     invoice_status = fields.Selection(
         selection_add=[('partially_billed', 'Partially billed')],
