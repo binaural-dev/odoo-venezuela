@@ -103,19 +103,64 @@ IGTF, el módulo:
 5. Base imponible de IGTF en la factura (reportes/UI)
 --------------------------------------------------------
 
-``compute_bi_igtf`` se sobrescribe para que la "Base imponible del IGTF" y
-el monto de IGTF mostrados en la factura reconozcan tanto la línea embebida
-(modo ``inline``) como la ND independiente (modo ``debit_note``) -- sin
-esto, una factura pagada con ND de IGTF mostraría base/IGTF en cero.
+``compute_bi_igtf`` se sobrescribe para que los campos que ve el usuario en
+la factura reconozcan tanto la línea embebida (modo ``inline``) como la ND
+independiente (modo ``debit_note``) -- sin esto, una factura pagada con ND
+de IGTF los mostraría en cero:
+
+* ``bi_igtf``: base imponible del IGTF, en moneda de compañía. No se
+  re-convierte a la tasa del pago -- toma el monto ya asentado por la
+  conciliación, que refleja la tasa con la que la factura quedó
+  contabilizada.
+* ``foreign_bi_igtf``: la misma base, expresada en la moneda de la factura.
+* ``alter_bi_igtf`` ("IGTF Apply"): el monto de IGTF efectivamente cobrado
+  -- coincide con el total de la ND.
+* ``igtf_top_aply``: el tope de IGTF (base × alícuota configurada en la
+  compañía).
+
+El diferencial cambiario entre la tasa de la factura y la tasa del pago es
+responsabilidad exclusiva de ``l10n_ve_exchange_difference`` (módulo
+hermano, si está instalado) -- este módulo nunca lo calcula ni lo corrige
+en ``bi_igtf``.
 
 6. Reversión (desconciliar/cancelar un pago con ND)
 -------------------------------------------------------
 
 Si el pago que originó una ND se desconcilia o cancela
-(``js_remove_outstanding_partial`` → ``remove_igtf_from_account_move``), se
-genera automáticamente una **Nota de Crédito en Forma Libre** que reversa
-la ND (``create_note_credit_igtf``), en vez de intentar "desarmar" una
-línea embebida que en este flujo no existe.
+(``js_remove_outstanding_partial`` → ``remove_igtf_from_account_move``,
+incluye el caso de cancelar el pago directamente con "Fijar a Borrador" y
+luego "Cancelar", sin pasar por el widget), se genera automáticamente una
+**Nota de Crédito en Forma Libre** que reversa la ND
+(``create_note_credit_igtf``), en vez de intentar "desarmar" una línea
+embebida que en este flujo no existe. Soporta tanto ventas (``out_invoice``)
+como compras (``in_invoice``).
+
+7. Tasa de cambio usada para el cálculo (``indexed_default``)
+------------------------------------------------------------------
+
+El campo ``indexed_default`` (de ``l10n_ve_accountant``, ligado a
+``company.indexaxion_payment_mode``) determina qué tasa de cambio se usa
+para calcular el IGTF:
+
+* **Activado** (comportamiento por defecto): se usa la tasa de cambio del
+  día del **pago**.
+* **Desactivado**: se usa la tasa de cambio del día de la **factura**.
+
+Esto afecta tanto el monto de IGTF que calcula la base (``l10n_ve_igtf``)
+como la conversión a moneda de compañía que hace este módulo para armar la
+ND (``wizard/account_payment_register.py::_create_payments``) -- ambos
+pasos deben usar la MISMA fecha de conversión, o se reintroduce la tasa
+"equivocada" en un paso aunque el otro ya sea correcto.
+
+8. Bloqueo de pagos agrupados multi-factura
+------------------------------------------------
+
+Con el modo ``debit_note`` activo, "Agrupar Pagos" (``group_payment``) no se
+puede usar cuando el pago cubre más de una factura por un diario IGTF: cada
+factura pagada con IGTF debe generar su propia ND -- un solo pago agrupado
+no puede repartirse limpiamente entre varias ND. El wizard bloquea la
+acción con un error explícito (``_check_igtf_note_debit_group_payment``),
+pidiendo desmarcar "Agrupar Pagos" y registrar cada factura por separado.
 
 Indicadores
 ===========

@@ -19,6 +19,9 @@ class TestIgtfNoteDebitService(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
+        # La moneda de la compañía (VEF en esta localización) nace inactiva
+        # en Odoo; sin activarla no se pueden validar asientos/facturas.
+        cls.company.currency_id.active = True
         cls.partner = cls.env["res.partner"].create({"name": "Cliente IGTF ND Test"})
 
         # l10n_ve_accountant exige exactamente un impuesto de venta y uno de

@@ -88,19 +88,41 @@ IGTF, el módulo:
 5. Base imponible de IGTF en la factura (reportes/UI)
 --------------------------------------------------------
 
-``compute_bi_igtf`` se sobrescribe para que la "Base imponible del IGTF" y
-el monto de IGTF mostrados en la factura reconozcan tanto la línea embebida
-(modo ``inline``) como la ND independiente (modo ``debit_note``) -- sin
-esto, una factura pagada con ND de IGTF mostraría base/IGTF en cero.
+``compute_bi_igtf`` se sobrescribe para que ``bi_igtf`` (base en moneda de
+compañía), ``foreign_bi_igtf`` (base en moneda de la factura),
+``alter_bi_igtf`` (monto de IGTF cobrado) e ``igtf_top_aply`` (tope de IGTF)
+reconozcan tanto la línea embebida (modo ``inline``) como la ND independiente
+(modo ``debit_note``) -- sin esto, una factura pagada con ND de IGTF los
+mostraría en cero. El diferencial cambiario entre la tasa de la factura y la
+del pago sigue siendo responsabilidad exclusiva de
+``l10n_ve_exchange_difference``, no de este módulo.
 
 6. Reversión (desconciliar/cancelar un pago con ND)
 -------------------------------------------------------
 
 Si el pago que originó una ND se desconcilia o cancela
-(``js_remove_outstanding_partial`` → ``remove_igtf_from_account_move``), se
-genera automáticamente una **Nota de Crédito en Forma Libre** que reversa
-la ND (``create_note_credit_igtf``), en vez de intentar "desarmar" una
-línea embebida que en este flujo no existe.
+(``js_remove_outstanding_partial`` → ``remove_igtf_from_account_move``,
+incluye cancelar el pago directamente sin pasar por el widget), se genera
+automáticamente una **Nota de Crédito en Forma Libre** que reversa la ND
+(``create_note_credit_igtf``), en vez de intentar "desarmar" una línea
+embebida que en este flujo no existe. Soporta tanto ventas (``out_invoice``)
+como compras (``in_invoice``).
+
+7. Tasa de cambio usada para el cálculo (``indexed_default``)
+------------------------------------------------------------------
+
+``indexed_default`` (de ``l10n_ve_accountant``) determina si el IGTF se
+calcula con la tasa de cambio del PAGO (activado, por defecto) o de la
+FACTURA (desactivado). Afecta tanto el cálculo del monto de IGTF como su
+conversión a moneda de compañía para la ND -- ambos pasos usan la misma
+fecha de conversión.
+
+8. Bloqueo de pagos agrupados multi-factura
+------------------------------------------------
+
+Con el modo ``debit_note`` activo, "Agrupar Pagos" no se puede usar si el
+pago cubre más de una factura por un diario IGTF -- cada factura debe
+generar su propia ND. El wizard bloquea la acción con un error explícito.
 
 Indicadores
 ===========

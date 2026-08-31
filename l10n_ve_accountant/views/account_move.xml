@@ -272,6 +272,10 @@
             </button>
         </field>
     </record>
+<<<<<<< HEAD
+=======
+
+>>>>>>> ae25afb84fcf2a6376159fe6ed6d90a91fd4bb03
     <record id="view_move_form_porcion_real" model="ir.ui.view">
         <field name="name">account.move.form.porcion.real</field>
         <field name="model">account.move</field>

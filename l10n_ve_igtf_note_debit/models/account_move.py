@@ -137,20 +137,22 @@ class AccountMove(models.Model):
     def _settle_igtf_debit_note_with_vef_payment(self, debit_note, source_payment):
         """Crea y postea un `account.payment` aparte, siempre en VEF, por el
         monto exacto de la ND, y lo concilia contra ella. Se usa cuando
-        `company.igtf_note_debit_collection_mode == 'separate_vef_payment'`
-        -- el pago de origen (`source_payment`) solo cubrió la factura."""
+        `include_in_payment` es False (checkbox "Incluir IGTF en el pago"
+        desmarcado) -- el pago de origen (`source_payment`) solo cubrió la
+        factura."""
         company = debit_note.company_id
         journal = company.igtf_note_debit_vef_journal_id
         if not journal:
+            vef = self.env.ref("base.VEF", raise_if_not_found=False)
             journal = self.env["account.journal"].search([
                 ("company_id", "=", company.id),
                 ("type", "in", ("bank", "cash")),
                 ("is_igtf", "!=", True),
                 "|",
-                ("currency_id", "=", self.env.ref("base.VEF").id),
+                ("currency_id", "=", vef.id if vef else False),
                 "&",
                 ("currency_id", "=", False),
-                ("company_id.currency_id", "=", self.env.ref("base.VEF").id),
+                ("company_id.currency_id", "=", vef.id if vef else False),
             ], limit=1)
         if not journal:
             raise UserError(_(
@@ -437,17 +439,34 @@ class AccountMove(models.Model):
         'debit_note_ids.amount_total_signed',
     )
     def compute_bi_igtf(self):
-        for rec in self:
+        # 100% opt-in: las compañías en modo 'inline' (o cualquier modo
+        # distinto de 'debit_note') delegan enteramente en la implementación
+        # base de `l10n_ve_igtf`, sin ninguna diferencia de comportamiento.
+        note_debit_recs = self.filtered(lambda r: r.company_id.igtf_note_debit_mode == "debit_note")
+        other_recs = self - note_debit_recs
+        if other_recs:
+            super(AccountMove, other_recs).compute_bi_igtf()
+
+        for rec in note_debit_recs:
             rec.igtf_top_aply = 0.0
             rec.alter_bi_igtf = 0.0
             rec.foreign_bi_igtf = 0.0
             rec.bi_igtf = 0.0
-            
-            if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']: 
-                rec.igtf_top_aply = abs(rec.amount_total_signed) * (self.company_id.igtf_percentage / 100)
+
+            if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']:
+                rec.igtf_top_aply = abs(rec.amount_total_signed) * (rec.company_id.igtf_percentage / 100)
                 receivable_payable_lines = rec.line_ids.filtered(lambda line: line.account_id.reconcile)
 
-                final_payment_moves = receivable_payable_lines.reconciled_lines_ids.mapped('move_id')
+                # `.sudo()` -- ver el comentario equivalente en
+                # `l10n_ve_igtf/models/account_move.py::compute_bi_igtf`:
+                # `matched_debit_ids`/`matched_credit_ids` no filtran por
+                # acceso de lectura como sí lo hacía `reconciled_lines_ids`,
+                # así que hace falta `sudo()` para no reventar con
+                # `AccessError` cuando la contraparte está en otra compañía.
+                final_payment_moves = (
+                    receivable_payable_lines.matched_debit_ids.debit_move_id
+                    | receivable_payable_lines.matched_credit_ids.credit_move_id
+                ).sudo().mapped('move_id')
 
                 account = [rec.company_id.customer_account_igtf_id.id,rec.company_id.supplier_account_igtf_id.id ]
                 
@@ -579,105 +598,46 @@ class AccountMove(models.Model):
 
   
     def remove_igtf_from_account_move(self, partial_id):
-
-        partial_reconcile = self.env['account.partial.reconcile'].with_company(self.company_id).sudo().browse(partial_id).exists()
-        
-        related_moves = partial_reconcile.debit_move_id.move_id | partial_reconcile.credit_move_id.move_id
-        
-        igtf_account_ids = [
-            self.company_id.customer_account_igtf_id.id,
-            self.company_id.supplier_account_igtf_id.id
-        ]
-
-        not_search = [
-            'out_invoice',
-            'out_refund',
-            'in_invoice',
-            'in_refund',
-            'out_receipt',
-            'in_receipt',
-        ]
-        
-        liquidity_account_types = ['asset_cash','bank','asset_current','liability_current']
-        payment_move = related_moves.filtered(
-            lambda move: move.line_ids.filtered(
-                lambda line: line.account_id.account_type in liquidity_account_types and line.move_id.move_type not in not_search
-            )
-        )[:1]
-
-        if not payment_move:
-            return False
-        if payment_move.currency_id == self.env.ref("base.VEF") and not payment_move.origin_payment_advanced_payment_id:
-            return 
-        
+        # 100% opt-in: para compañías en modo 'inline' delegamos enteramente
+        # en la implementación base (`l10n_ve_igtf`), sin duplicar su
+        # lógica. Solo agregamos la reversa por Nota de Crédito cuando la
+        # compañía está en modo 'debit_note' -- se dispara ANTES de que la
+        # base desarme la línea de IGTF embebida del pago, replicando (sin
+        # duplicar el resto del método) el mismo cálculo de `payment_move`
+        # que hace la base para decidir si corresponde reversar algo.
         if self.company_id.igtf_note_debit_mode == "debit_note":
-            self.create_note_credit_igtf(partial_id)
+            partial_reconcile = self.env['account.partial.reconcile'].with_company(
+                self.company_id
+            ).sudo().browse(partial_id).exists()
 
-        try:
-            payment_move.button_draft()
-        except Exception:
-            _logger.exception(
-                "IGTF: failed to reset to draft payment move %s (id=%s) while removing IGTF",
-                payment_move.name, payment_move.id,
+            related_moves = partial_reconcile.debit_move_id.move_id | partial_reconcile.credit_move_id.move_id
+
+            not_search = [
+                'out_invoice',
+                'out_refund',
+                'in_invoice',
+                'in_refund',
+                'out_receipt',
+                'in_receipt',
+            ]
+
+            liquidity_account_types = ['asset_cash', 'bank', 'asset_current', 'liability_current']
+            payment_move = related_moves.filtered(
+                lambda move: move.line_ids.filtered(
+                    lambda line: line.account_id.account_type in liquidity_account_types
+                    and line.move_id.move_type not in not_search
+                )
+            )[:1]
+
+            vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
+            is_vef_direct_payment = (
+                payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id
             )
-            return False
-        
-        igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
-        receivable_payable_line = payment_move.line_ids.filtered(
-            lambda line: line.account_id.id in [payment_move.partner_id.property_account_payable_id.id,payment_move.partner_id.property_account_receivable_id.id ]
-        )[:1]
-        if igtf_line and receivable_payable_line:
-            igtf_line_balance = igtf_line.balance
 
-            if igtf_line_balance > 0:
-                new_debit = receivable_payable_line.debit + igtf_line_balance
-                new_credit = 0.0
-            else:
-                new_credit = receivable_payable_line.credit + abs(igtf_line_balance)
-                new_debit = 0.0
+            if payment_move and not is_vef_direct_payment:
+                self.create_note_credit_igtf(partial_id)
 
-            advance_account = payment_move.partner_id.default_advance_customer_account_id.id if receivable_payable_line.credit > 0 else payment_move.partner_id.default_advance_supplier_account_id.id
-            
-            line_vals = {
-                'debit': new_debit,
-                'credit': new_credit,
-                'balance': receivable_payable_line.balance + igtf_line.balance,
-                'amount_currency': receivable_payable_line.amount_currency + igtf_line.amount_currency,
-                'foreign_balance': receivable_payable_line.foreign_balance + igtf_line.foreign_balance,
-                'foreign_debit': receivable_payable_line.foreign_debit + igtf_line.foreign_debit,
-                'foreign_credit': receivable_payable_line.foreign_credit + igtf_line.foreign_credit,
-                'account_id': advance_account if not payment_move.origin_payment_id.destination_account_id.is_advance_account else payment_move.origin_payment_id.destination_account_id.id,
-                'name': receivable_payable_line.name,
-            }
-
-            payment_move.write({
-                'line_ids': [
-                    (2, igtf_line.id, False),
-                    (1, receivable_payable_line.id, line_vals),
-                ]
-            })
-
-            if 'is_advance_payment' in payment_move.origin_payment_id._fields:
-                if payment_move.origin_payment_id and not payment_move.origin_payment_id.is_advance_payment:
-                    payment_move.origin_payment_id.write({
-                        'is_advance_payment':True,
-                        'igtf_amount': 0.0
-                    })
-
-        try:
-            if payment_move.origin_payment_advanced_payment_id:
-                payment_move.origin_payment_advanced_payment_id.write({'advanced_move_ids': [(3, payment_move.id)]})
-                payment_move.button_cancel()
-            else:
-                payment_move.action_post()
-        except Exception:
-            _logger.exception(
-                "IGTF: failed to re-post/cancel payment move %s (id=%s) after removing IGTF",
-                payment_move.name, payment_move.id,
-            )
-            return False
-            
-        return True
+        return super().remove_igtf_from_account_move(partial_id)
 
     def create_note_credit_igtf(self, partial_id):
         """
@@ -691,10 +651,17 @@ class AccountMove(models.Model):
         invoice_move = None
         payment_move = None
 
-        if credit_move.move_type == 'out_invoice':
+        # El flujo de ND de IGTF aplica tanto a ventas (`out_invoice`) como a
+        # compras (`in_invoice`) -- `prepare_igtf_payment_debit_note` ya
+        # soporta ambos casos (`is_customer = move_type in ("out_invoice",
+        # "in_refund")`). Restringir esto solo a `out_invoice` dejaba la ND
+        # de compras posteada y huérfana sin reversa cuando el pago de
+        # origen se desconciliaba.
+        invoice_types = ('out_invoice', 'in_invoice')
+        if credit_move.move_type in invoice_types:
             invoice_move = credit_move
             payment_move = debit_move
-        elif debit_move.move_type == 'out_invoice':
+        elif debit_move.move_type in invoice_types:
             invoice_move = debit_move
             payment_move = credit_move
 

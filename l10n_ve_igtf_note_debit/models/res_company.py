@@ -51,8 +51,10 @@ class ResCompany(models.Model):
         string="VEF Journal for IGTF Collection",
         copy=False,
         help="Journal in Bolivares (VEF) used to register the separate "
-             "IGTF payment when the 'IGTF Collection Mode' is 'Register "
-             "IGTF as a separate payment in VEF'. If not configured, the "
+             "IGTF payment when the 'Include IGTF in Payment' checkbox is "
+             "UNCHECKED in the payment register wizard (the source payment "
+             "only covers the invoice, and the IGTF Debit Note is collected "
+             "with a second, independent payment). If not configured, the "
              "first bank/cash journal in VEF not marked as IGTF is "
              "searched automatically.",
     )

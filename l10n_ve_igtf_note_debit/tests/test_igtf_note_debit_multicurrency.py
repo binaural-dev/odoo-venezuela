@@ -23,6 +23,12 @@ class TestIgtfNoteDebitMulticurrency(IGTFTestCommon):
             "name": "Percepción de IGTF (ND automática)",
             "type": "service",
             "taxes_id": [(6, 0, [self.tax_iva_exent.id])],
+            # `supplier_taxes_id` explícito: sin esto, el default de compra
+            # de la compañía trae más de un impuesto al 0% y
+            # `l10n_ve_accountant` (`_enforce_single_tax_vals`) rechaza el
+            # producto. Reutilizamos el mismo impuesto de compra exento
+            # que `IGTFTestCommon` ya asignó a `self.product`.
+            "supplier_taxes_id": [(6, 0, self.product.supplier_taxes_id.ids)],
         })
         self.debit_sale_journal = self.Journal.create({
             "name": "ND Forma Libre (test)",
@@ -39,11 +45,10 @@ class TestIgtfNoteDebitMulticurrency(IGTFTestCommon):
     def _register_payment(self, invoice, journal, amount, include_igtf_in_payment=None):
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = journal
-            pay_form.save()
             pay_form.amount = amount
+            pay_form.save()
             if include_igtf_in_payment is not None:
                 pay_form.igtf_note_debit_include_in_payment = include_igtf_in_payment
-            pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
         return self.env["account.payment"].browse(action.get("res_id"))
@@ -93,6 +98,13 @@ class TestIgtfNoteDebitMulticurrency(IGTFTestCommon):
             f"(equivalente a {expected_igtf_amount_foreign_curr} {payment.currency_id.name}), "
             f"encontrado {igtf_lines.price_unit}",
         )
+
+        # Forzar el cómputo de `compute_bi_igtf` (base imponible de IGTF) --
+        # debe seguir resolviendo un valor coherente aun cuando el IGTF de
+        # la factura ya no viene de una línea embebida sino de esta ND.
+        self.assertGreaterEqual(invoice.bi_igtf, 0.0)
+        self.assertGreaterEqual(invoice.foreign_bi_igtf, 0.0)
+
         return debit_note
 
     def test_usd_invoice_partial_payment_generates_debit_note(self):

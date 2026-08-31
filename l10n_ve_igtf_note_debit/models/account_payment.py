@@ -4,7 +4,7 @@ from odoo import models
 class AccountPayment(models.Model):
     _inherit = "account.payment"
 
-    def _create_igtf_moves_in_payments(self, vals, write_off_line_vals=None):
+    def _create_igtf_moves_in_payments(self, vals, write_off_line_vals=False):
         # Con el modo 'debit_note', el IGTF no se embebe como línea en este
         # mismo asiento de pago -- se genera como Nota de Débito fiscal
         # independiente. Eso lo dispara el wizard `account.payment.register`

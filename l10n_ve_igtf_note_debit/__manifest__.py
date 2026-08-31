@@ -46,7 +46,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.0.1",
+    "version": "19.0.1.0.2",
 
     "depends": [
         "l10n_ve_igtf",
@@ -59,4 +59,5 @@
     ],
     "application": False,
     "auto_install": False,
+    "installable": True,
 }

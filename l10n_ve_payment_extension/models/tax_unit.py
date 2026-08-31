@@ -80,15 +80,7 @@ class TaxUnit(models.Model):
                 if not record.status:
                     continue
 
-                # Sin filtro de apply_subtracting a propósito: las tarifas sin
-                # sustraendo también deben recibir la actualización/notificación
-                # (bug 13821 pt.3). Unificado con _trigger_retention_update.
-                # Filtrado por compañía: fees.retention ya no es global, cada
-                # compañía tiene su propio catálogo de tarifas.
-                retentions = self.env['fees.retention'].search([
-                    ('status', '=', True),
-                    ('company_id', '=', record.company_id.id),
-                ])
+                retentions = self.env['fees.retention'].search([])
 
                 for ret in retentions:
                     ret.tax_unit_ids = record.id
@@ -149,21 +141,7 @@ class TaxUnit(models.Model):
 
 
     def _trigger_retention_update(self, tax_unit_record):
-        # La UT es nacional (mismo value para todas las compañías en una
-        # misma fecha, garantizado por _check_national_value_consistency),
-        # pero fees.retention es por compañía: cada compañía puede tener su
-        # propio catálogo de tarifas (o ninguno). Por eso se filtra por la
-        # compañía de la UT que disparó la actualización.
-        retentions = self.env['fees.retention'].search([
-            ('status', '=', True),
-            ('company_id', '=', tax_unit_record.company_id.id),
-        ])
-
-        if not retentions:
-            return
-
-        # fees.retention.tax_unit_ids es un Many2one pese al sufijo _ids
-        # (ver fees_retention.py); esta asignación es correcta, no un error.
+        retentions = self.env['fees.retention'].search([])
         retentions.write({'tax_unit_ids': tax_unit_record.id})
         
         for ret in retentions:
