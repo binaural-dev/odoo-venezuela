@@ -28,8 +28,8 @@ class TfhkaRetentionService(models.AbstractModel):
         document_type = retention.env.context.get('document_type')
         company = retention.company_id
         client = self.env["tfhka.api.client"]
-        client.query_numbering(company)
-        document_number = client.get_last_document_number(company, document_type)
+        client.query_numbering(company, origin=retention)
+        document_number = client.get_last_document_number(company, document_type, origin=retention)
 
         document_number_str = str(document_number)
         if len(document_number_str) > 6:
@@ -84,7 +84,7 @@ class TfhkaRetentionService(models.AbstractModel):
             "horaAnulacion": now_local.strftime("%I:%M:%S %p").lower(),
         }
 
-        self.env["tfhka.api.client"].annul(company, payload)
+        self.env["tfhka.api.client"].annul(company, payload, origin=retention)
         retention.write({"annulled_tfhka": True})
         retention.message_post(
             body=_("Retention annulled in The Factory HKA. Reason: %s", reason),
@@ -110,7 +110,7 @@ class TfhkaRetentionService(models.AbstractModel):
         }
         payload["documentoElectronico"].update(self._prepare_extra_retention_values(retention))
 
-        response = self.env["tfhka.api.client"].emit(retention.company_id, payload)
+        response = self.env["tfhka.api.client"].emit(retention.company_id, payload, origin=retention)
 
         if response:
             retention.is_digitalized = True

@@ -65,7 +65,7 @@ class TfhkaDocumentService(models.AbstractModel):
         company = invoice.company_id
         client = self.env["tfhka.api.client"]
 
-        client.query_numbering(company, series)
+        client.query_numbering(company, series, origin=invoice)
 
         # Secuencia: en modo "pago primero" (o con la sincronización desactivada)
         # se usa el correlativo local de Odoo; en el modo normal se ADOPTA el
@@ -73,7 +73,7 @@ class TfhkaDocumentService(models.AbstractModel):
         if company.digitalization_with_payment_tfhka or not company.sequence_validation_tfhka:
             document_number = invoice.sequence_number
         else:
-            last = client.get_last_document_number(company, document_type, series)
+            last = client.get_last_document_number(company, document_type, series, origin=invoice)
             try:
                 document_number = int(last) + 1
             except (ValueError, TypeError):
@@ -113,7 +113,7 @@ class TfhkaDocumentService(models.AbstractModel):
             payload["documentoElectronico"]["FacturaGuia"] = dispatch_guide_reference
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(invoice))
-        response = self.env["tfhka.api.client"].emit(invoice.company_id, payload)
+        response = self.env["tfhka.api.client"].emit(invoice.company_id, payload, origin=invoice)
 
         if response:
             self._register_success(invoice, response, document_number)

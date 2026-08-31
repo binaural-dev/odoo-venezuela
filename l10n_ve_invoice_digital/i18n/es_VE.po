@@ -108,6 +108,12 @@ msgid "Companies"
 msgstr "Empresas"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__company_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_search
+msgid "Company"
+msgstr "Compañía"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_config_settings
 msgid "Config Settings"
 msgstr "Ajustes de configuración"
@@ -131,6 +137,7 @@ msgstr "Número de control"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__create_uid
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__create_uid
 msgid "Created by"
 msgstr "Creado por"
 
@@ -138,6 +145,7 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__create_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__create_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__create_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__create_date
 msgid "Created on"
 msgstr "Creado el"
 
@@ -145,6 +153,11 @@ msgstr "Creado el"
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_currency
 msgid "Currency"
 msgstr "Moneda"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__request_date
+msgid "Date"
+msgstr "Fecha"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__description
@@ -201,6 +214,7 @@ msgstr "Guía de despacho digital Tfhka"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__display_name
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__display_name
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__display_name
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__display_name
 msgid "Display Name"
 msgstr "Nombre para mostrar"
 
@@ -218,6 +232,12 @@ msgstr "Número de Documento TFHKA"
 #, python-format
 msgid "Document successfully digitized on %(date)s"
 msgstr "Documento digitalizado exitosamente el %(date)s"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__endpoint
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_search
+msgid "Endpoint"
+msgstr "Endpoint"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -272,6 +292,20 @@ msgid "Error processing TFHKA API response."
 msgstr "Error al procesar la respuesta de la API de TFHKA."
 
 #. module: l10n_ve_invoice_digital
+#: model_terms:ir.actions.act_window,help:l10n_ve_invoice_digital.action_tfhka_api_log
+msgid ""
+"Every request and response to the The Factory HKA API is logged here.\n"
+"                Records older than 3 months are automatically deleted."
+msgstr ""
+"Cada consulta y respuesta a la API de The Factory HKA queda registrada aquí.\n"
+"                Los registros con más de 3 meses se eliminan automáticamente."
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_search
+msgid "Failed"
+msgstr "Fallidas"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__mix_invoicing_type_tfhka__fiscal_machine
 msgid "Fiscal Machine"
 msgstr "Máquina Fiscal"
@@ -313,6 +347,16 @@ msgid "Generate Token for TFHKA."
 msgstr "Generar Token para TFHKA."
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__http_method
+msgid "HTTP Method"
+msgstr "Método HTTP"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__status_code
+msgid "HTTP Status"
+msgstr "Estado HTTP"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/services/tfhka_client.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/services/tfhka_client.py:0
@@ -324,6 +368,7 @@ msgstr "Error HTTP %(status_code)s: %(text)s"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__id
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__id
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__id
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__id
 msgid "ID"
 msgstr ""
 
@@ -376,6 +421,7 @@ msgstr "Diario es digital"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__write_uid
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__write_uid
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__write_uid
 msgid "Last Updated by"
 msgstr "Última actualización por"
 
@@ -383,6 +429,7 @@ msgstr "Última actualización por"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__write_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__write_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__write_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__write_date
 msgid "Last Updated on"
 msgstr "Última actualización el"
 
@@ -447,6 +494,11 @@ msgid "Multi-currency enabled"
 msgstr "Multi-moneda habilitado"
 
 #. module: l10n_ve_invoice_digital
+#: model_terms:ir.actions.act_window,help:l10n_ve_invoice_digital.action_tfhka_api_log
+msgid "No records in the TFHKA API log yet"
+msgstr "No hay registros en el historial de la API de TFHKA"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/ir_module_module.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/ir_module_module.py:0
@@ -459,6 +511,21 @@ msgstr ""
 "Solo un Administrador TFHKA puede desinstalar el módulo de facturación "
 "digital. Desinstalarlo eliminaría permanentemente las facturas digitalizadas"
 " y su trazabilidad fiscal."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__res_name
+msgid "Origin Document"
+msgstr "Documento de origen"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__res_model
+msgid "Origin Model"
+msgstr "Modelo de origen"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__res_id
+msgid "Origin Record ID"
+msgstr "ID del registro de origen"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__password_tfhka
@@ -480,6 +547,18 @@ msgstr "Código de forma de pago"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__reason
 msgid "Reason for annulment"
 msgstr "Motivo de anulación"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__request_payload
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__request_payload_html
+msgid "Request"
+msgstr "Solicitud"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__response_payload
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__response_payload_html
+msgid "Response"
+msgstr "Respuesta"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_account_retention
@@ -506,6 +585,11 @@ msgstr ""
 #, python-format
 msgid "Retention annulled in The Factory HKA. Reason: %s"
 msgstr "Retención anulada en The Factory HKA. Motivo: %s"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_search
+msgid "Search TFHKA API Log"
+msgstr "Buscar en el Historial de API de TFHKA"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__sequence_validation_tfhka
@@ -552,9 +636,32 @@ msgid "Show Payment Box"
 msgstr "Mostrar cuadro de pago"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__success
+msgid "Success"
+msgstr "Exitoso"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_search
+msgid "Successful"
+msgstr "Exitosas"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_api_log
+msgid "TFHKA API Call Log"
+msgstr "Historial de Llamadas a la API de TFHKA"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_api_client
 msgid "TFHKA API Client"
 msgstr "Cliente API TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.actions.act_window,name:l10n_ve_invoice_digital.action_tfhka_api_log
+#: model:ir.ui.menu,name:l10n_ve_invoice_digital.menu_tfhka_api_log
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_tree
+msgid "TFHKA API Log"
+msgstr "Historial de API de TFHKA"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -608,6 +715,11 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_invoice_digital.model_payment_method_tfhka
 msgid "TFHKA payment methods"
 msgstr "Formas de pago de TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.actions.server,name:l10n_ve_invoice_digital.ir_cron_purge_tfhka_api_log_ir_actions_server
+msgid "TFHKA: Purge API Log History"
+msgstr "TFHKA: Purgar historial de log de API"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -941,6 +1053,11 @@ msgstr "Validación"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Validation of sequences between Odoo and The Factory"
 msgstr "Validación de secuencias entre Odoo y The Factory"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_form
+msgid "View Origin Document"
+msgstr "Ver documento de origen"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
