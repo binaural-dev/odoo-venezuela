@@ -3,7 +3,7 @@ import logging
 
 import requests
 
-from odoo import _, models
+from odoo import SUPERUSER_ID, _, api, models
 from odoo.exceptions import UserError, ValidationError
 
 _logger = logging.getLogger(__name__)
@@ -70,7 +70,17 @@ class TfhkaApiClient(models.AbstractModel):
                     "res_name": origin.display_name,
                 }
             )
-        self.env["tfhka.api.log"].sudo().create(log_vals)
+        # Se persiste en un cursor propio con commit inmediato: cuando la
+        # llamada falla, el error se relanza como UserError y escala hasta el
+        # usuario, y Odoo revierte toda la transacción en curso -- sin un
+        # cursor independiente, el registro del intento fallido se perdería
+        # junto con el resto del rollback. Fallos al loguear no deben romper
+        # el flujo de facturación, por eso quedan contenidos.
+        try:
+            with self.env.registry.cursor() as log_cr:
+                api.Environment(log_cr, SUPERUSER_ID, {})["tfhka.api.log"].create(log_vals)
+        except Exception:
+            _logger.exception("TFHKA: failed to persist API call log entry")
 
     def _request(self, company, endpoint_key, payload, _retried=False, origin=None):
         """Ejecuta un POST a TFHKA y devuelve la respuesta decodificada.

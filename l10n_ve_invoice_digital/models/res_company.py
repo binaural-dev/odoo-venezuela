@@ -92,6 +92,9 @@ class ResCompany(models.Model):
                 _logger.error(f"Error decoding JSON: {response.text}")
                 self._log_tfhka_auth_call(payload, response.status_code, data, False)
                 raise ValidationError(_("Error processing TFHKA API response."))
+            except ValidationError:
+                self._log_tfhka_auth_call(payload, response.status_code, data, False)
+                raise
             else:
                 self._log_tfhka_auth_call(payload, response.status_code, data, True)
         else:
