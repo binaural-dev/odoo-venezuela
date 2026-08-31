@@ -199,8 +199,15 @@ class L10nVeProjectTestCommon(TransactionCase):
         so.action_confirm()
         # action_confirm() stamps date_order with the current timestamp,
         # which would override the requested order date; force it back so
-        # the rate stays anchored on the requested date.
+        # the rate stays anchored on the requested date. l10n_ve_sale also
+        # freezes foreign_rate_date the first time the rate is computed (to
+        # survive that same date_order rewrite), so once foreign_rate is
+        # already set (as it is right after action_confirm()) writing
+        # date_order again no longer updates it automatically - it must be
+        # forced too, or SOL's own foreign_price computation (which prefers
+        # foreign_rate_date over date_order) keeps using today's rate.
         so.date_order = date_order
+        so.foreign_rate_date = date_order
         return so, sol
 
     def _create_purchase_order(self, quantity=2.0, price_unit=100.0, analytic=True, date_order=None):
