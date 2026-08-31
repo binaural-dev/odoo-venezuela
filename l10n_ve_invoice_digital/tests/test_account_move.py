@@ -1580,6 +1580,27 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         totals, foreign = self.env['tfhka.document.service']._prepare_totals(inv)
         self.assertIn("montoGravadoTotal", totals)
+        # Sin bimoneda, no hay una segunda moneda real que reportar. Antes
+        # salía un dict solo porque foreign_rate viene poblado por defecto
+        # (bug corregido: ver criterio en _prepare_totals).
+        self.assertFalse(foreign)
+
+    def test_69b_get_totals_vef_multi_currency_triggers_foreign_totals(self):
+        # Con bimoneda activa (multi_currency_invoice) sí debe adjuntarse
+        # 'totalesOtraMoneda', incluso con foreign_rate en 0: la señal es el
+        # flag, no la tasa.
+        vef = self.env.ref("base.VEF")
+        self._force_company_currency(self.company, vef)
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=vef.id,
+            foreign_currency_id=self.currency_usd.id,
+            foreign_rate=0,
+            foreign_inverse_rate=0,
+        )
+        inv.multi_currency_invoice = True
+        totals, foreign = self.env['tfhka.document.service']._prepare_totals(inv)
+        self.assertIn("montoGravadoTotal", totals)
         self.assertTrue(isinstance(foreign, dict))
 
     def test_70_get_tax_subtotals_vef(self):
