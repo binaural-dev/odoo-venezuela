@@ -17,10 +17,14 @@ class TestBcvSyncResCompany(TransactionCase):
             .search([("name", "=", "VEF")], limit=1)
         )
         cls.eur = cls.env.ref("base.EUR")
+        cls.cop = cls.env.ref("base.COP")
         cls.vef.sudo().active = True
         cls.usd.sudo().active = True
+        cls.eur.sudo().active = True
+        cls.cop.sudo().active = True
         cls.company.sudo().currency_id = cls.vef
         cls.Rate = cls.env["res.currency.rate"].sudo()
+        cls.Currency = cls.env["res.currency"].sudo()
 
     def setUp(self):
         super().setUp()
@@ -118,8 +122,11 @@ class TestBcvSyncResCompany(TransactionCase):
         self.assertEqual(summary["applied"], [])
         self.assertEqual(summary["skipped"], ["USD"])
 
-    def test_non_vef_company_currency_skips_everything(self):
-        self.company.currency_id = self.usd
+    def test_unsupported_company_currency_skips_everything(self):
+        # COP is neither VEF nor a currency BCV Sync publishes a VEF
+        # cross-rate for -- unlike USD/EUR, there is nothing to convert
+        # against, so the whole payload is skipped.
+        self.company.currency_id = self.cop
         today = fields.Date.context_today(self.company)
         tasas = [
             {"moneda": "USD", "valor": "791.6667", "fecha_valor": str(today)},
@@ -130,6 +137,70 @@ class TestBcvSyncResCompany(TransactionCase):
 
         self.assertEqual(summary["applied"], [])
         self.assertEqual(sorted(summary["skipped"]), ["EUR", "USD"])
+
+    def test_accepts_rate_for_usd_functional_company(self):
+        # "Legacy" scheme (l10n_ve_rate/l10n_ve_currency_rate_live): the
+        # company's own accounting currency is USD, not VEF -- VEF is now
+        # the "foreign" currency from this company's point of view, so
+        # the rate BCV publishes (VEF per 1 USD) has to be inverted and
+        # stored against a VEF res.currency.rate row instead of a USD one.
+        self.company.currency_id = self.usd
+        today = fields.Date.context_today(self.company)
+        tasas = [{"moneda": "USD", "valor": "791.66670000", "fecha_valor": str(today)}]
+
+        summary = self.company._bcv_sync_process_tasas(tasas)
+
+        self.assertEqual(summary["applied"], ["USD"])
+        self.assertEqual(summary["skipped"], [])
+        rate = self.Rate.search(
+            [
+                ("currency_id", "=", self.vef.id),
+                ("company_id", "=", self.company.id),
+                ("name", "=", today),
+            ]
+        )
+        self.assertEqual(len(rate), 1)
+
+        # The empirical check that actually matters: not the raw stored
+        # field (an implementation detail of Odoo's compute/inverse
+        # chain), but what res.currency._convert actually computes --
+        # this is what invoices/payments use. 100 USD must convert to
+        # 100 * 791.6667 VEF, and back again.
+        vef_amount = self.usd._convert(
+            100.0, self.vef, company=self.company, date=today, round=False
+        )
+        self.assertAlmostEqual(vef_amount, 79166.667, places=2)
+        usd_amount = self.vef._convert(
+            vef_amount, self.usd, company=self.company, date=today, round=False
+        )
+        self.assertAlmostEqual(usd_amount, 100.0, places=6)
+
+    def test_usd_functional_company_ignores_other_currencies_in_payload(self):
+        # BCV Sync always publishes 5 currencies (USD/EUR/CNY/TRY/RUB) in
+        # every payload -- for a USD-functional company, only the entry
+        # matching the company's own currency (USD) carries a usable
+        # cross-rate; the rest can't be triangulated from this payload
+        # alone and must be skipped, not guessed at.
+        self.company.currency_id = self.usd
+        today = fields.Date.context_today(self.company)
+        tasas = [
+            {"moneda": "EUR", "valor": "921.88", "fecha_valor": str(today)},
+            {"moneda": "USD", "valor": "791.6667", "fecha_valor": str(today)},
+        ]
+
+        summary = self.company._bcv_sync_process_tasas(tasas)
+
+        self.assertEqual(summary["applied"], ["USD"])
+        self.assertEqual(summary["skipped"], ["EUR"])
+        self.assertFalse(
+            self.Rate.search(
+                [
+                    ("currency_id", "=", self.eur.id),
+                    ("company_id", "=", self.company.id),
+                    ("name", "=", today),
+                ]
+            )
+        )
 
     def test_idempotent_upsert_does_not_duplicate_the_rate(self):
         today = fields.Date.context_today(self.company)
