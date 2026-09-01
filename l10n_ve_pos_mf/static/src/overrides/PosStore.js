@@ -792,8 +792,19 @@ patch(PosStore.prototype, {
     // Remover primero las líneas de descuento global para que
     // globalDiscountPc sea 0 antes de modificar líneas y evitar
     // re-disparos del debounce de pos_discount.
+    //
+    // Se usa `line.delete()` (borrado síncrono, igual que hace el propio
+    // `pos_discount` con sus líneas de descuento) y NO `order.removeOrderline()`:
+    // este último lo sobreescribe `binaural_pos_hr` como método ASYNC que, con
+    // `pos_remove_orderline_require_supervisor_key`, abre un popup de supervisor
+    // y sólo elimina la línea tras el PIN. Como aquí no se espera esa promesa,
+    // la línea de descuento nunca se eliminaba: `globalDiscountPc` seguía ≠ 0 y
+    // el `setDiscount()` de más abajo re-disparaba el debounce de `pos_discount`
+    // → re-entrada infinita en applyDiscount → popups de supervisor apilados que
+    // congelaban la caja (pantalla negra). Estas líneas son gestionadas por el
+    // sistema, no por el cajero, así que su borrado no debe pasar por el gate.
     for (const line of inference.discountLines) {
-      order.removeOrderline(line);
+      line.delete();
     }
 
     // Resetear todas las líneas a 0% para aplicar la tasa sobre precios crudos
