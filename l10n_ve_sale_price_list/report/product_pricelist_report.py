@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
 
 
 class ProductPricelistReport(models.AbstractModel):
@@ -16,6 +17,10 @@ class ProductPricelistReport(models.AbstractModel):
         selection doesn't have to be computed all at once just to show one
         page of it.
         """
+        if not self.env.user.has_group("l10n_ve_sale_price_list.group_pricelist_report_multi"):
+            raise AccessError(
+                _("No tienes permiso para generar el reporte de varias listas de precios.")
+            )
         pricelist_ids = data.get("pricelist_ids") or []
         pricelists = self.env["product.pricelist"].browse(pricelist_ids).exists()
 
