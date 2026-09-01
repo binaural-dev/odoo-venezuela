@@ -1755,3 +1755,41 @@ class TestCoverageGaps(TransactionCase):
         self.assertNotAlmostEqual(
             tt['foreign_amount_total'], naive_total, places=2,
             msg="abs() per line must not be used (discount inflated the total)")
+
+    # ═══════════════════════════════════════════════════════════════
+    # account_move_line.py - _inverse_amount_currency
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_inverse_amount_currency_non_invoice_uses_foreign_rate(self):
+        """Editing amount_currency on a non-invoice line (e.g. a payment's
+        journal entry) must rebuild balance from the move's own
+        foreign_inverse_rate, not from the day's currency_rate table lookup.
+
+        Reproduces a Country Club report: a payment registered with a
+        manually-typed rate (payment register wizard) gets its accounts
+        payable line silently
+        recomputed with a different rate the moment the user edits
+        amount_currency (e.g. to match the bank line after removing a
+        rounding-difference line), unbalancing the entry in company currency
+        even though both lines show the same amount in the foreign currency.
+        """
+        move = self.env["account.move"].new({
+            "move_type": "entry",
+            "journal_id": self.general_journal.id,
+        })
+        line = self.env["account.move.line"].new({
+            "move_id": move.id,
+            "account_id": self.acc_rec.id,
+            "currency_id": self.currency_usd.id,
+            "amount_currency": 400.0,
+        })
+        line.currency_rate = 2.0  # tasa oficial de la tabla para esa fecha
+        line.foreign_inverse_rate = 4.0  # tasa propia del movimiento (pago)
+
+        line._inverse_amount_currency()
+
+        self.assertAlmostEqual(line.balance, 100.0, places=2)
+        self.assertNotAlmostEqual(
+            line.balance, 200.0, places=2,
+            msg="must not fall back to the table currency_rate when the "
+                "move has its own foreign_inverse_rate")
