@@ -1,19 +1,95 @@
 <odoo>
 
+    <record id="view_account_fiscalyear_closing_form_inherit_grouping" model="ir.ui.view">
+        <field name="name">account.fiscalyear.closing.form.inherit.grouping</field>
+        <field name="model">account.fiscalyear.closing</field>
+        <field name="inherit_id" ref="account_fiscal_year_closing.view_account_fiscalyear_closing_form"/>
+        <field name="arch" type="xml">
+            <field name="check_draft_moves" position="after">
+                <field name="closing_grouping" readonly="state not in ['draft']"/>
+                <field name="single_date"
+                       invisible="closing_grouping != 'single'"
+                       readonly="state not in ['draft']"/>
+                <field name="single_journal_id"
+                       invisible="closing_grouping != 'single'"
+                       readonly="state not in ['draft']"/>
+            </field>
+            <field name="date_start" position="attributes">
+                <attribute name="readonly">state not in ['draft']</attribute>
+                <attribute name="force_save">1</attribute>
+            </field>
+            <field name="date_end" position="attributes">
+                <attribute name="readonly">1</attribute>
+                <attribute name="force_save">1</attribute>
+            </field>
+            <field name="date_opening" position="attributes">
+                <attribute name="readonly">1</attribute>
+                <attribute name="force_save">1</attribute>
+            </field>
+        </field>
+    </record>
+
+    <record id="view_account_fiscalyear_closing_config_tree_inherit" model="ir.ui.view">
+        <field name="name">account.fiscalyear.closing.config.tree.inherit</field>
+        <field name="model">account.fiscalyear.closing</field>
+        <field name="inherit_id" ref="account_fiscal_year_closing.view_account_fiscalyear_closing_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='move_config_ids']/list/field[@name='inverse']" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </xpath>
+            <xpath expr="//field[@name='move_config_ids']/list/field[@name='date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+          
+            <xpath expr="//field[@name='move_config_ids']/list" position="inside">
+                <field name="inverse_config_id"
+                       invisible="parent.closing_grouping != 'config'"
+                       optional="hide"/>
+            </xpath>
+
+        </field>
+    </record>
+
+    <record id="view_account_fiscalyear_closing_config_form_inherit" model="ir.ui.view">
+        <field name="name">account.fiscalyear.closing.config.form.inherit</field>
+        <field name="model">account.fiscalyear.closing</field>
+        <field name="inherit_id" ref="account_fiscal_year_closing.view_account_fiscalyear_closing_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//field[@name='move_config_ids']//sheet//field[@name='inverse']" position="replace">
+                <field name="inverse_config_id" invisible="parent.closing_grouping != 'config'"/>
+            </xpath>
+            <xpath expr="//field[@name='move_config_ids']//sheet//field[@name='date']" position="attributes">
+                <attribute name="invisible">1</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+      
+            <xpath expr="//field[@name='move_config_ids']//sheet//field[@name='mapping_ids']" position="attributes">
+                <attribute name="invisible">move_type != 'closing'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='move_config_ids']//sheet//field[@name='closing_type_default']" position="attributes">
+                <attribute name="invisible">move_type != 'closing'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='move_config_ids']//sheet//field[@name='closing_type_ids']" position="attributes">
+                <attribute name="invisible">move_type != 'closing'</attribute>
+            </xpath>
+
+        </field>
+    </record>
+
     <record id="account_fiscal_year_closing_inherit_binaural" model="ir.ui.view">
-        <field name="name">account.fiscal.year.closing.view.form.inherit</field>
+        <field name="name">account.fiscal.year.closing.view.form.inherit.lmap</field>
         <field name="model">account.fiscalyear.closing</field>
         <field name="inherit_id" ref="account_fiscal_year_closing.view_account_fiscalyear_closing_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='move_config_ids']//sheet//field[@name='sequence']" position="after">
-                <label for="l_map"/>
-                <div>
-                    <field  name="l_map" string="Load Accounts"/>
+                <label for="l_map" invisible="move_type != 'closing'"/>
+                <div invisible="move_type != 'closing'">
+                    <field name="l_map" string="Load Accounts"/>
                 </div>
             </xpath>
-            <!-- <xpath expr="//sheet[1]//sheet[1]//field[@name='inverse']" position="attributes">
-                <attribute name="required">1</attribute>
-            </xpath> -->
         </field>
     </record>
 
