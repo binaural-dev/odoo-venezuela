@@ -732,7 +732,9 @@ class AccountRetention(models.Model):
                     _("No registered lines found in the move to reconcile.")
                 )
             
-            payment.retention_line_ids.move_id.js_assign_outstanding_line(lines[0].id)
+            payment.retention_line_ids.move_id.with_context(
+                no_exchange_difference=True,group_in_single_partial=True
+            ).js_assign_outstanding_line(lines[0].id)
 
     @api.model
     def compute_retention_lines_data(self, invoice_id, payment=None):
