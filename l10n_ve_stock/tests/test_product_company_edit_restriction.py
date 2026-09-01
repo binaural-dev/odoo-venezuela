@@ -30,12 +30,11 @@ class TestProductCompanyEditRestriction(TransactionCase):
         })
         # Odoo's mail.thread.create() discards pending write-tracking for the
         # new record right after logging its creation message, but only
-        # finalizes that discard on a real DB flush/commit. Flush here so
-        # creation-time bookkeeping doesn't leak into a later write() within
-        # this same test transaction (this has no effect outside tests,
-        # where each request is its own transaction).
-        self.env.flush_all()
-        self.cr.flush()
+        # finalizes that discard on a real DB commit's precommit hooks.
+        # Run those here so creation-time bookkeeping doesn't leak into a
+        # later write() within this same test transaction (this has no
+        # effect outside tests, where each request is its own transaction).
+        self.env.cr.precommit.run()
 
     def test_can_edit_company_id_false_without_group(self):
         template = self.template.with_user(self.user)
@@ -53,13 +52,12 @@ class TestProductCompanyEditRestriction(TransactionCase):
         # Odoo defers tracking-message creation to a cr.precommit hook, which
         # only runs on a real DB commit. Force it here so the assertions
         # below see the tracking message within this test's transaction.
-        self.env.flush_all()
-        self.cr.flush()
-        tracking_values = self.template.message_ids[0].tracking_value_ids
+        self.env.cr.precommit.run()
         self.assertGreater(
             len(self.template.message_ids), message_count_before,
             "Changing company_id should post a tracking message to the chatter.",
         )
+        tracking_values = self.template.message_ids[0].tracking_value_ids
         self.assertTrue(
             any(tv.field_id.name == "company_id" for tv in tracking_values),
             "The tracking message should include a tracking value for company_id.",
