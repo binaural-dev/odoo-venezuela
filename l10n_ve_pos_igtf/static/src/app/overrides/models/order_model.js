@@ -201,6 +201,27 @@ patch(PosOrder.prototype, {
     return this._igtfRoundLocal(total + this.compute_igtf_amount(total));
   },
 
+  // Lado foráneo de get_total_with_igtf(): valor de referencia FIJO para el
+  // renglón "TOTAL a Pagar con IGTF" del panel, expresado en la moneda
+  // foránea. Espejo exacto de get_total_with_igtf() (factura completa + 3% de
+  // esa factura completa), derivado con conversiones SIMPLES: el total foráneo
+  // sale de get_foreign_total_with_tax() (que ya respeta la tasa histórica en
+  // reembolsos) y el IGTF foráneo de _igtfToForeign(3% del total local). Se
+  // suman las dos partes foráneas ya convertidas en vez de convertir la suma
+  // local, para no introducir drift de redondeo (misma regla que
+  // get_foreign_total_paid_with_igtf).
+  get_foreign_total_with_igtf() {
+    const foreignTotal =
+      typeof this.get_foreign_total_with_tax === "function"
+        ? Number(this.get_foreign_total_with_tax()) || 0
+        : 0;
+    const localIgtf = this.compute_igtf_amount(this.get_total_without_igtf());
+    const total = foreignTotal + this._igtfToForeign(localIgtf);
+    return typeof this.roundForeignMoney === "function"
+      ? this.roundForeignMoney(total)
+      : total;
+  },
+
   get_foreign_igtf_amount() {
     return this.foreign_igtf_amount;
   },
