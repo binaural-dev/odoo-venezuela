@@ -1,7 +1,7 @@
 import logging
 import re
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from collections import defaultdict
 
 _logger = logging.getLogger(__name__)
@@ -84,6 +84,14 @@ class ProductTemplate(models.Model):
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def write(self, vals):
+        if (
+            "company_id" in vals
+            and not self.env.su
+            and not self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
+        ):
+            raise AccessError(
+                _("No tienes permiso para cambiar la compañía de este producto.")
+            )
 
         old_physical_locations_ids = {
             tmpl.id: tmpl.physical_locations_ids for tmpl in self

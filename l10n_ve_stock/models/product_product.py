@@ -204,14 +204,17 @@ class ProductProduct(models.Model):
 
         MoveLine = self.env['stock.move.line'].with_context(active_test=False)
 
-        # domain_move_in_loc/domain_move_out_loc reference location_final_id, a field
-        # of stock.move that no longer exists on stock.move.line since Odoo 19. Since
-        # these lines are always filtered to state == 'done', the "final destination
-        # of an in-progress chained move" logic does not apply here: it is enough to
-        # filter by the plain location_id/location_dest_id already used for quants.
-        descendant_location_ids = domain_quant_loc.value
-        domain_move_line_in_loc = [('location_dest_id', 'in', descendant_location_ids)]
-        domain_move_line_out_loc = [('location_id', 'in', descendant_location_ids)]
+        # These lines are always filtered to state == 'done', so the "final destination
+        # of an in-progress chained move" branch of _get_domain_locations() does not
+        # apply here. `skip_in_progress=True` makes the core return the plain
+        # done-only in/out domains (each already excluding the other side via `~`,
+        # e.g. `dest_loc_domain_done & ~loc_domain`), instead of the union with the
+        # in-progress branch used for stock.move. Without that exclusion, an internal
+        # transfer (both origin and destination inside the selected locations) would
+        # count as incoming AND outgoing at once, inflating both quantities.
+        _, domain_move_line_in_loc, domain_move_line_out_loc = self.with_context(
+            skip_in_progress=True
+        )._get_domain_locations()
 
         domain_move_line_in = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_line_in_loc
         domain_move_line_out = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_line_out_loc
