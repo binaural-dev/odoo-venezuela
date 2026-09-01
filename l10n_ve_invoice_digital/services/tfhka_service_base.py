@@ -169,7 +169,7 @@ class TfhkaServiceBase(models.AbstractModel):
 
     def _get_party_address(self, partner):
         """Dirección a reportar para el sujeto. Punto de extensión."""
-        return partner.street or "no definida"
+        return partner.contact_address_complete or "no definida"
 
     def _get_fiscal_party(self, record):
         """Construye el nodo de identificación (comprador / sujeto retenido).

@@ -65,7 +65,7 @@ class TfhkaDocumentService(models.AbstractModel):
         company = invoice.company_id
         client = self.env["tfhka.api.client"]
 
-        client.query_numbering(company, series)
+        client.query_numbering(company, series, origin=invoice)
 
         # Secuencia: en modo "pago primero" (o con la sincronización desactivada)
         # se usa el correlativo local de Odoo; en el modo normal se ADOPTA el
@@ -73,7 +73,7 @@ class TfhkaDocumentService(models.AbstractModel):
         if company.digitalization_with_payment_tfhka or not company.sequence_validation_tfhka:
             document_number = invoice.sequence_number
         else:
-            last = client.get_last_document_number(company, document_type, series)
+            last = client.get_last_document_number(company, document_type, series, origin=invoice)
             try:
                 document_number = int(last) + 1
             except (ValueError, TypeError):
@@ -113,7 +113,7 @@ class TfhkaDocumentService(models.AbstractModel):
             payload["documentoElectronico"]["FacturaGuia"] = dispatch_guide_reference
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(invoice))
-        response = self.env["tfhka.api.client"].emit(invoice.company_id, payload)
+        response = self.env["tfhka.api.client"].emit(invoice.company_id, payload, origin=invoice)
 
         if response:
             self._register_success(invoice, response, document_number)
@@ -299,12 +299,18 @@ class TfhkaDocumentService(models.AbstractModel):
                 taxes_subtotal, _dummy = self._prepare_tax_subtotals(record, currency)
                 currency_tfhka_code = record.company_id.currency_id.code_tfhka
 
-                # Multimoneda (patrón binaural_unidigital): si la factura es
-                # multimoneda o trae tasa foránea, se reportan también los
-                # TotalesOtraMoneda. Los montos se LEEN de Odoo (columnas
-                # foreign_* de tax_totals), no se calculan dividiendo por la tasa.
-                has_foreign_rate = bool(record.foreign_rate)
-                if multi_currency or has_foreign_rate:
+                # Otra moneda: es el flag de bimoneda (multi_currency_invoice)
+                # y solo el flag. 'foreign_rate' NO es señal válida por sí
+                # sola: viene poblado en toda factura venezolana (tasa de
+                # referencia), así que usarlo como criterio hacía salir
+                # bimoneda a cualquier factura (mismo bug corregido en Odoo
+                # 19, commit 949ccf7, tarea 79430). No se compara contra
+                # currency_id: _check_currency_id en l10n_ve_accountant ya
+                # impide que una factura tenga una moneda distinta de la de
+                # la compañía, así que esa comparación nunca sería cierta.
+                # Los montos se LEEN de Odoo (columnas foreign_* de
+                # tax_totals), no se calculan dividiendo por la tasa.
+                if multi_currency:
                     amounts_foreign["montoGravadoTotal"] = str(
                         round(tax_totals.get('foreign_subtotal', 0) - exempt_foreign, 2)
                     )
