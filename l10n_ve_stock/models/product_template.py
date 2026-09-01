@@ -64,6 +64,7 @@ class ProductTemplate(models.Model):
     company_id = fields.Many2one(tracking=True)
 
     can_edit_company_id = fields.Boolean(
+        string="Puede editar la compañía",
         compute="_compute_can_edit_company_id",
         help="Indica si el usuario actual puede modificar la compañía del producto.",
     )
@@ -190,6 +191,7 @@ class ProductTemplate(models.Model):
         product_variant_query = self.env['product.product'].sudo()._search(domain)
         return [('product_variant_ids', 'in', product_variant_query)]
 
+    @api.depends_context("uid")
     def _compute_can_edit_company_id(self):
         can_edit = self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
         for product in self:
