@@ -59,10 +59,10 @@
                     <field name="physical_location_id" options="{'no_create': True}"/>
                 </group>
             </xpath>
-            <xpath expr="//field[@name='company_id'][@options]" position="before">
+            <xpath expr="//field[@name='categ_id']/following-sibling::field[@name='company_id']" position="before">
                 <field name="can_edit_company_id" invisible="1"/>
             </xpath>
-            <xpath expr="//field[@name='company_id'][@options]" position="attributes">
+            <xpath expr="//field[@name='categ_id']/following-sibling::field[@name='company_id']" position="attributes">
                 <attribute name="readonly">not can_edit_company_id</attribute>
             </xpath>
         </field>
