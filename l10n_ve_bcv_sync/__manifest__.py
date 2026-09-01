@@ -9,9 +9,11 @@
     "website": "https://binauraldev.com/",
     "category": "Technical",
     "version": "17.0.0.0.0",
-    # Depends on l10n_ve_currency_rate_live to reuse `can_update_habil_days`
-    # and `_is_valid_rate_date` (the decision of whether an advance rate for
-    # the next business day applies already lives there, not reimplemented).
+    # Depends on l10n_ve_currency_rate_live only to reuse the
+    # `can_update_habil_days` field on res.company. The date-validity
+    # decision itself is fully self-contained in this module (see
+    # `res.company._bcv_sync_is_valid_rate_date`), it does not call
+    # l10n_ve_currency_rate_live's own `_is_valid_rate_date`.
     "depends": ["l10n_ve_currency_rate_live"],
     "data": [
         "security/ir.model.access.csv",
