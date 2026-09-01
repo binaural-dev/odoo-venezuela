@@ -1317,3 +1317,59 @@ msgstr "Último día del mes"
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid "transfer_ids"
 msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__seniat_email
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__seniat_email
+msgid "SENIAT Email"
+msgstr "Correo SENIAT"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__seniat_email
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__seniat_email
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid ""
+"Email address where the SENIAT summary of unbilled dispatch guides will be "
+"sent."
+msgstr ""
+"Dirección de correo a la que se enviará el resumen SENIAT de guías de "
+"despacho sin facturar."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/res_config_settings.py:0
+msgid "SENIAT Summary"
+msgstr "Resumen SENIAT"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/res_config_settings.py:0
+msgid "The SENIAT summary email has been sent."
+msgstr "El correo con el resumen SENIAT ha sido enviado."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/res_config_settings.py:0
+msgid "There are no unbilled dispatch guides to report."
+msgstr "No hay guías de despacho sin facturar para reportar."
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+msgid ""
+"Please configure the SENIAT email for company %(company)s before sending "
+"the summary."
+msgstr ""
+"Por favor configure el correo SENIAT de la compañía %(company)s antes de "
+"enviar el resumen."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "Send SENIAT Summary Now"
+msgstr "Enviar Resumen SENIAT Ahora"
+
+#. module: l10n_ve_stock_account
+#: model:ir.cron,cron_name:l10n_ve_stock_account.ir_cron_send_seniat_alert
+msgid "Send SENIAT Summary of Unbilled Dispatch Guides"
+msgstr "Enviar Resumen SENIAT de Guías de Despacho sin Facturar"
+

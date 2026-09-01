@@ -108,6 +108,21 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_seniat_email">
+                    <div class="o_setting_right_pane">
+                        <label for="seniat_email"/>
+                        <div class="text-muted">
+                            Email address where the SENIAT summary of unbilled dispatch guides will be sent.
+                        </div>
+                        <group>
+                            <field name="seniat_email" class="oe_inline"/>
+                        </group>
+                        <button type="object"
+                                name="action_send_seniat_summary_now"
+                                string="Send SENIAT Summary Now"
+                                class="btn btn-primary mt8"/>
+                    </div>
+                </div>
             </xpath>
         </field>
     </record>

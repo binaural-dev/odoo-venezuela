@@ -9,4 +9,15 @@
         <field name="priority">5</field>
         <field name="active">False</field>
     </record>
+
+    <record id="ir_cron_send_seniat_alert" model="ir.cron">
+        <field name="name">Send SENIAT Summary of Unbilled Dispatch Guides</field>
+        <field name="model_id" ref="model_stock_picking"/>
+        <field name="state">code</field>
+        <field name="code">model._cron_send_seniat_alert()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="priority">6</field>
+        <field name="active">False</field>
+    </record>
 </odoo>
