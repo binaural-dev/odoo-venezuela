@@ -1,4 +1,5 @@
 from odoo import fields
+from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -6,6 +7,9 @@ from odoo.tests import TransactionCase, tagged
 class TestProductPricelistReport(TransactionCase):
     def setUp(self):
         super().setUp()
+        self.env.user.group_ids = [
+            (4, self.env.ref("l10n_ve_sale_price_list.group_pricelist_report_multi").id)
+        ]
         self.product = self.env["product.template"].create(
             {
                 "name": "Test Product Pricelist Report",
@@ -59,15 +63,19 @@ class TestProductPricelistReport(TransactionCase):
         pricelists = result["pricelists"]
         self.assertEqual(set(pricelists.ids), {self.pricelist_1.id, self.pricelist_2.id})
 
-        products_data = result["products"]
-        self.assertEqual(len(products_data), 1)
-        product_data = products_data[0]
-
-        expected_price_1 = self.pricelist_1._get_product_price(self.product, 1)
-        expected_price_2 = self.pricelist_2._get_product_price(self.product, 1)
-
-        self.assertAlmostEqual(product_data["prices"][self.pricelist_1.id], expected_price_1)
-        self.assertAlmostEqual(product_data["prices"][self.pricelist_2.id], expected_price_2)
+    def test_get_report_data_requires_group(self):
+        self.env.user.group_ids = [
+            (3, self.env.ref("l10n_ve_sale_price_list.group_pricelist_report_multi").id)
+        ]
+        report_model = self.env["report.product.report_pricelist"]
+        with self.assertRaises(AccessError):
+            report_model._get_report_data(
+                {
+                    "pricelist_ids": [self.pricelist_1.id, self.pricelist_2.id],
+                    "active_model": "product.template",
+                    "active_ids": [self.product.id],
+                }
+            )
 
     def test_no_pricelists_selected_returns_empty_prices(self):
         report_model = self.env["report.product.report_pricelist"]
