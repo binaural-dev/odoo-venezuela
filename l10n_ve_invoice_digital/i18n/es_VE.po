@@ -71,6 +71,22 @@ msgstr "Anular en The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/ir_sequence.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/ir_sequence.py:0
+#, python-format
+msgid ""
+"Cannot change the prefix of the sequence used by journal '%(journal)s': it "
+"already has invoices created. The Factory HKA uses this prefix as the "
+"invoice series, and changing it would break the fiscal correlative already "
+"reported."
+msgstr ""
+"No se puede cambiar el prefijo de la secuencia usada por el diario "
+"'%(journal)s': ya tiene facturas creadas. The Factory HKA usa este prefijo "
+"como serie del documento, y cambiarlo rompería el correlativo fiscal ya "
+"reportado."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_journal.py:0
 #, python-format
@@ -542,6 +558,11 @@ msgstr "Contraseña Tfhka"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_journal__payment_method_code
 msgid "Payment Method Code"
 msgstr "Código de forma de pago"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_ir_sequence__prefix_locked
+msgid "Prefix Locked"
+msgstr "Prefijo bloqueado"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__reason

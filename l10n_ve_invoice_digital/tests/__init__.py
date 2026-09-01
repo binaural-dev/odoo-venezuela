@@ -8,3 +8,4 @@ from . import test_wizard_move_action_post_alert
 from . import test_res_config_settings
 from . import test_res_partner
 from . import test_tfhka_api_log
+from . import test_ir_sequence
