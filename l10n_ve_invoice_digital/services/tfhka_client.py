@@ -1,5 +1,6 @@
 import json
 import logging
+import threading
 
 import requests
 
@@ -70,6 +71,21 @@ class TfhkaApiClient(models.AbstractModel):
                     "res_name": origin.display_name,
                 }
             )
+        if getattr(threading.current_thread(), "testing", False):
+            # En tests, cada test corre en su propio savepoint que se
+            # revierte al terminar; usar un cursor aparte haría que estos
+            # registros persistieran de verdad en la base y se filtraran
+            # entre tests (incluidos los de otros archivos que también
+            # ejercitan la API TFHKA). ``registry.in_test_mode()`` no sirve
+            # acá: ese flag depende de ``registry.enter_test_mode()``, que no
+            # todos los runners de test invocan; ``current_thread().testing``
+            # es el flag que Odoo activa siempre al correr tests (mismo
+            # patrón que usa el core, ver account_move.py/res_partner.py) y
+            # es lo que hay que chequear para saber si el cursor normal va a
+            # ser revertido por un savepoint de test. Se crea entonces con el
+            # cursor normal, como cualquier otro dato de test.
+            self.env["tfhka.api.log"].sudo().create(log_vals)
+            return
         # Se persiste en un cursor propio con commit inmediato: cuando la
         # llamada falla, el error se relanza como UserError y escala hasta el
         # usuario, y Odoo revierte toda la transacción en curso -- sin un

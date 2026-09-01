@@ -1,4 +1,5 @@
 import logging
+import threading
 from datetime import timedelta
 from unittest.mock import MagicMock, patch
 
@@ -227,6 +228,41 @@ class TestTfhkaApiLog(TransactionCase):
         self.assertEqual(logs[0].status_code, 401)
         self.assertTrue(logs[1].success)
         self.assertEqual(logs[1].status_code, 200)
+
+    def test_log_call_uses_independent_cursor_outside_tests(self):
+        """Fuera de un test (``current_thread().testing`` == False), _log_call
+        debe crear el registro con un cursor/entorno propios (no el de la
+        transacción en curso), para que sobreviva a un rollback del caller.
+        Se simula el entorno "producción" sin abrir una segunda conexión
+        real: se mockean el flag de test del hilo, ``registry.cursor`` y
+        ``api.Environment``."""
+        fake_log_model = MagicMock()
+        fake_env = {"tfhka.api.log": fake_log_model}
+
+        class FakeCursor:
+            def __enter__(self):
+                return self
+
+            def __exit__(self, *args):
+                return False
+
+        Registry = type(self.env.registry)
+        with patch.object(
+            threading.current_thread(), "testing", False, create=True
+        ), \
+             patch.object(Registry, "cursor", return_value=FakeCursor()), \
+             patch(
+                 "odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.api.Environment",
+                 return_value=fake_env,
+             ):
+            self.client._log_call(
+                self.company, "emision", {"a": 1}, None, 200, "{}", True
+            )
+
+        fake_log_model.create.assert_called_once()
+        created_vals = fake_log_model.create.call_args[0][0]
+        self.assertEqual(created_vals["endpoint"], "/Emision")
+        self.assertTrue(created_vals["success"])
 
     # ------------------------------------------------------------------
     # Token generation (Autenticacion) is also logged
