@@ -1,7 +1,7 @@
 import logging
 import re
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from collections import defaultdict
 
 _logger = logging.getLogger(__name__)
@@ -98,6 +98,15 @@ class ProductTemplate(models.Model):
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def write(self, vals):
+        if (
+            "company_id" in vals
+            and not self.env.su
+            and not self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
+        ):
+            raise AccessError(
+                _("No tienes permiso para cambiar la compañía de este producto.")
+            )
+
         # default_code and lock_internal_reference_on_moves are both stored
         # fields with their own inverse (_set_default_code on the core side,
         # _set_lock_internal_reference_on_moves here), so Odoo runs them as
