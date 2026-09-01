@@ -63,13 +63,19 @@ class ResCompany(models.Model):
         ``ODOO_INTEGRATION.md`` in the BCV Sync repo). An entry is skipped
         -without aborting the rest of the payload- when:
 
-        - the currency doesn't exist/isn't recognized in Odoo;
+        - the currency isn't active/used in this Odoo (only currencies the
+          company actually has enabled are considered, see
+          ``currency_model`` below);
         - the value can't be parsed as a positive number;
         - fecha_valor doesn't have a valid format;
-        - ``_is_valid_rate_date`` (inherited from
-          ``l10n_ve_currency_rate_live``) determines that fecha_valor
-          doesn't apply "today" (e.g. an advance rate for the next
-          business day with ``can_update_habil_days`` disabled).
+        - ``_bcv_sync_is_valid_rate_date`` (this module's own date logic,
+          see below) rejects fecha_valor for today;
+        - fecha_valor is today and this company already has a stored rate
+          for today -- once today's rate is set, later runs the same day
+          never change it (accounting stability: a rate in effect during
+          the day must not silently change under transactions already
+          posted). This does not apply to advance (future) dates, which
+          keep getting refreshed on every run until they become "today".
 
         Returns a summary ``{"applied": [...], "skipped": [...]}``
         (currency codes) only for the caller's logging/observability.
@@ -97,9 +103,11 @@ class ResCompany(models.Model):
             }
 
         today = fields.Date.context_today(self)
-        currency_model = self.env["res.currency"].sudo().with_context(
-            active_test=False
-        )
+        # No `active_test=False` here on purpose: only currencies the
+        # company actually has active/enabled are considered. A currency
+        # BCV Sync sends that this Odoo never turned on is skipped, not
+        # silently tracked.
+        currency_model = self.env["res.currency"].sudo()
         rate_model = self.env["res.currency.rate"].sudo()
 
         for entry in tasas:
@@ -137,7 +145,7 @@ class ResCompany(models.Model):
                 skipped.append(moneda)
                 continue
 
-            if not self._is_valid_rate_date(today, published_date):
+            if not self._bcv_sync_is_valid_rate_date(today, published_date):
                 _logger.info(
                     "BCV Sync: fecha_valor %s for %s does not apply today "
                     "(%s) per can_update_habil_days=%s, skipping.",
@@ -149,10 +157,56 @@ class ResCompany(models.Model):
                 skipped.append(moneda)
                 continue
 
+            if published_date == today and rate_model.search_count(
+                [
+                    ("currency_id", "=", currency.id),
+                    ("company_id", "=", self.id),
+                    ("name", "=", today),
+                ]
+            ):
+                _logger.info(
+                    "BCV Sync: %s already has a stored rate for today "
+                    "(%s), keeping the existing value.",
+                    moneda,
+                    today,
+                )
+                skipped.append(moneda)
+                continue
+
             rate_model._bcv_sync_upsert(currency, self, published_date, value)
             applied.append(moneda)
 
         return {"applied": applied, "skipped": skipped}
+
+    def _bcv_sync_is_valid_rate_date(self, current_date, published_date):
+        """Decides whether ``published_date`` should be applied as
+        today's rate for this company. Fully self-contained to this
+        module -- it does not call ``l10n_ve_currency_rate_live``'s own
+        ``_is_valid_rate_date`` (that method's past-date branch exists
+        for a different caller, that module's own scraping/fallback
+        flow). The only thing reused from that module is the
+        ``can_update_habil_days`` field itself.
+
+        - ``published_date`` is today: always valid -- BCV's own rate for
+          today always applies, regardless of the flag.
+        - ``published_date`` is in the future: valid only if
+          ``can_update_habil_days`` is enabled. BCV publishes the next
+          business day's rate in advance (e.g. Friday afternoon for
+          Monday, or for Tuesday directly if Monday is a bank holiday).
+          When the flag is disabled, an advance rate is rejected --
+          nothing gets written, so the last stored rate simply stays in
+          effect.
+        - ``published_date`` is in the past: always invalid, regardless
+          of the flag. BCV Sync's feed never legitimately carries a past
+          date (BCV's own site always shows today's rate or an advance
+          one, never a stale one), so this endpoint never backdates an
+          existing rate record.
+        """
+        if published_date == current_date:
+            return True
+        if published_date > current_date:
+            return bool(self.can_update_habil_days)
+        return False
 
     @api.model
     def _bcv_sync_parse_valor(self, raw_value):
