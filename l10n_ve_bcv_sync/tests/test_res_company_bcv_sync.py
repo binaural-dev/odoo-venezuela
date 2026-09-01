@@ -16,6 +16,7 @@ class TestBcvSyncResCompany(TransactionCase):
             .with_context(active_test=False)
             .search([("name", "=", "VEF")], limit=1)
         )
+        cls.eur = cls.env.ref("base.EUR")
         cls.vef.sudo().active = True
         cls.usd.sudo().active = True
         cls.company.sudo().currency_id = cls.vef
@@ -146,15 +147,20 @@ class TestBcvSyncResCompany(TransactionCase):
         )
         self.assertEqual(len(rates), 1)
 
-    def test_idempotent_upsert_updates_value_on_replay(self):
+    def test_todays_rate_is_not_overwritten_once_set(self):
+        # Accounting stability: once today's rate is set, a later run the
+        # same day must not silently change it under transactions already
+        # posted -- unlike advance (future) dates, which do keep refreshing.
         today = fields.Date.context_today(self.company)
         self.company._bcv_sync_process_tasas(
             [{"moneda": "USD", "valor": "700.0", "fecha_valor": str(today)}]
         )
-        self.company._bcv_sync_process_tasas(
+        summary = self.company._bcv_sync_process_tasas(
             [{"moneda": "USD", "valor": "791.6667", "fecha_valor": str(today)}]
         )
 
+        self.assertEqual(summary["applied"], [])
+        self.assertEqual(summary["skipped"], ["USD"])
         rate = self.Rate.search(
             [
                 ("currency_id", "=", self.usd.id),
@@ -163,7 +169,101 @@ class TestBcvSyncResCompany(TransactionCase):
             ]
         )
         self.assertEqual(len(rate), 1)
-        self.assertAlmostEqual(rate.inverse_company_rate, 791.6667, places=3)
+        self.assertAlmostEqual(rate.inverse_company_rate, 700.0, places=3)
+
+    def test_future_rate_keeps_refreshing_on_replay(self):
+        # The "don't overwrite" rule is scoped to today only -- an advance
+        # rate for a future date keeps getting refreshed on every run
+        # until it actually becomes today, in case BCV revises it.
+        self.company.can_update_habil_days = True
+        today = fields.Date.context_today(self.company)
+        future_date = today + timedelta(days=2)
+        self.company._bcv_sync_process_tasas(
+            [{"moneda": "USD", "valor": "800.0", "fecha_valor": str(future_date)}]
+        )
+        summary = self.company._bcv_sync_process_tasas(
+            [{"moneda": "USD", "valor": "810.0", "fecha_valor": str(future_date)}]
+        )
+
+        self.assertEqual(summary["applied"], ["USD"])
+        rate = self.Rate.search(
+            [
+                ("currency_id", "=", self.usd.id),
+                ("company_id", "=", self.company.id),
+                ("name", "=", future_date),
+            ]
+        )
+        self.assertEqual(len(rate), 1)
+        self.assertAlmostEqual(rate.inverse_company_rate, 810.0, places=3)
+
+    def test_inactive_currency_is_skipped_even_if_known_to_odoo(self):
+        # Unlike an unrecognized code (e.g. "XYZ"), EUR is a real Odoo
+        # currency -- but if this company never activated it, BCV Sync
+        # must not start tracking it just because it showed up in a
+        # payload.
+        self.eur.sudo().active = False
+        today = fields.Date.context_today(self.company)
+        tasas = [
+            {"moneda": "EUR", "valor": "921.88", "fecha_valor": str(today)},
+            {"moneda": "USD", "valor": "791.6667", "fecha_valor": str(today)},
+        ]
+
+        summary = self.company._bcv_sync_process_tasas(tasas)
+
+        self.assertEqual(summary["skipped"], ["EUR"])
+        self.assertEqual(summary["applied"], ["USD"])
+        self.assertFalse(
+            self.Rate.search(
+                [
+                    ("currency_id", "=", self.eur.id),
+                    ("company_id", "=", self.company.id),
+                    ("name", "=", today),
+                ]
+            )
+        )
+
+    def test_past_fecha_valor_is_rejected_when_habil_days_enabled(self):
+        self.company.can_update_habil_days = True
+        today = fields.Date.context_today(self.company)
+        past_date = today - timedelta(days=1)
+        tasas = [{"moneda": "USD", "valor": "791.6667", "fecha_valor": str(past_date)}]
+
+        summary = self.company._bcv_sync_process_tasas(tasas)
+
+        self.assertEqual(summary["applied"], [])
+        self.assertEqual(summary["skipped"], ["USD"])
+        self.assertFalse(
+            self.Rate.search(
+                [
+                    ("currency_id", "=", self.usd.id),
+                    ("company_id", "=", self.company.id),
+                    ("name", "=", past_date),
+                ]
+            )
+        )
+
+    def test_past_fecha_valor_is_rejected_when_habil_days_disabled(self):
+        # This module never backdates a rate, regardless of the flag --
+        # unlike l10n_ve_currency_rate_live's own _is_valid_rate_date,
+        # which this module deliberately does not reuse for this branch.
+        self.company.can_update_habil_days = False
+        today = fields.Date.context_today(self.company)
+        past_date = today - timedelta(days=1)
+        tasas = [{"moneda": "USD", "valor": "791.6667", "fecha_valor": str(past_date)}]
+
+        summary = self.company._bcv_sync_process_tasas(tasas)
+
+        self.assertEqual(summary["applied"], [])
+        self.assertEqual(summary["skipped"], ["USD"])
+        self.assertFalse(
+            self.Rate.search(
+                [
+                    ("currency_id", "=", self.usd.id),
+                    ("company_id", "=", self.company.id),
+                    ("name", "=", past_date),
+                ]
+            )
+        )
 
     def test_get_company_by_token_matches_configured_key(self):
         self.company.bcv_sync_api_key = "s3cr3t-token"
