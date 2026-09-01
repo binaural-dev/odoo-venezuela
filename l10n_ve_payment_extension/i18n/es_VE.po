@@ -1423,12 +1423,6 @@ msgid "Invoice Lines"
 msgstr "Lineas de Factura"
 
 #. module: l10n_ve_payment_extension
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__display_invoice_number
-#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_retention_line_report__invoice_number
-msgid "Invoice Number"
-msgstr "Número de Factura"
-
-#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension
 msgid "Invoice Total"
 msgstr "Total de Factura"
