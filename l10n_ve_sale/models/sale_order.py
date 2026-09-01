@@ -482,10 +482,25 @@ class SaleOrder(models.Model):
         """
         invoices = self.env["account.move"]
         for order in self:
-            invoiceable_lines = order._get_invoiceable_lines(final)
-            while len(invoiceable_lines) != 0:
+            # Las líneas de sección/nota cuentan SIEMPRE como "invoiceable" para
+            # el core (sale/models/sale_order.py, _get_invoiceable_lines incluye
+            # display_type sin condición de cantidad), así que no sirven para
+            # decidir si queda algo por facturar: con una nota en la orden el
+            # while re-entraba después del último lote y el core reventaba con
+            # "No items are available to invoice".
+            invoiceable_lines = order._get_invoiceable_lines(final).filtered(
+                lambda line: not line.display_type
+            )
+            while invoiceable_lines:
                 invoices |= super()._create_invoices(grouped, final, date)
-                invoiceable_lines = order._get_invoiceable_lines(final)
+                remaining = order._get_invoiceable_lines(final).filtered(
+                    lambda line: not line.display_type
+                )
+                if remaining == invoiceable_lines:
+                    # Si el lote no consumió ninguna línea, cortar en vez de
+                    # iterar infinito (misma protección que el caso de notas).
+                    break
+                invoiceable_lines = remaining
 
         return invoices
 

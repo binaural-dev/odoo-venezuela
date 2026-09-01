@@ -2,3 +2,8 @@ id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
 stock.access_stock_picking_manager,stock.access_stock_picking_manager,stock.model_stock_picking,stock.group_stock_manager,1,1,1,0
 stock.access_stock_picking_user,stock.access_stock_picking_user,stock.model_stock_picking,stock.group_stock_user,1,1,1,0
 access_stock_location_manager,stock_location_manager,model_stock_location,,1,1,1,1
+access_stock_picking_alter_location_user,access.stock.picking.alter.location.user,model_stock_picking_alter_location,base.group_user,1,0,0,0
+access_stock_picking_alter_location_edit,access.stock.picking.alter.location.edit,model_stock_picking_alter_location,l10n_ve_stock.group_physical_location_edit,1,1,1,1
+access_stock_picking_alter_location_line_user,access.stock.picking.alter.location.line.user,model_stock_picking_alter_location_line,base.group_user,1,0,0,0
+access_stock_picking_alter_location_line_edit,access.stock.picking.alter.location.line.edit,model_stock_picking_alter_location_line,l10n_ve_stock.group_physical_location_edit,1,1,1,1
+access_move_alter_location_qtities_wizard,access.move.alter.location.qtities.wizard,model_move_alter_location_qtities_wizard,base.group_user,1,1,1,1
