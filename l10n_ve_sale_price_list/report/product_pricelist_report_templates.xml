@@ -44,12 +44,8 @@
                     <td groups="uom.group_uom" t-out="product['uom']"/>
                     <t t-foreach="pricelists" t-as="pl">
                         <td class="text-end">
-                            <label t-out="pl.currency_id.symbol"
-                                t-if="pl.currency_id.position == 'before'" />
-                            <span
-                                t-out="'{0:,.4f}'.format(product['prices'][pl.id]).replace(',', ' ').replace('.', ',').replace(' ', '.')" />
-                            <label t-out="pl.currency_id.symbol"
-                                t-if="pl.currency_id.position == 'after'" />
+                            <span t-esc="product['prices'][pl.id]"
+                                t-options="{'widget': 'monetary', 'display_currency': pl.currency_id}" />
                         </td>
                     </t>
                 </tr>
@@ -67,12 +63,8 @@
                         <td groups="uom.group_uom" t-out="variant['uom']" />
                         <t t-foreach="pricelists" t-as="pl">
                             <td class="text-end">
-                                <label t-out="pl.currency_id.symbol"
-                                    t-if="pl.currency_id.position == 'before'" />
-                                <span
-                                    t-out="'{0:,.4f}'.format(variant['prices'][pl.id]).replace(',', ' ').replace('.', ',').replace(' ', '.')" />
-                                <label t-out="pl.currency_id.symbol"
-                                    t-if="pl.currency_id.position == 'after'" />
+                                <span t-esc="variant['prices'][pl.id]"
+                                    t-options="{'widget': 'monetary', 'display_currency': pl.currency_id}" />
                             </td>
                         </t>
                     </tr>
