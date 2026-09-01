@@ -151,31 +151,16 @@ class CrmLead(models.Model):
                 (lead.recurring_revenue_foreign or 0.0) * (lead.probability or 0) / 100.0
             )
 
-    def _is_foreign_amount_check_exempt(self):
-        """Exime del requisito de monto > 0 a:
-        - Leads (type == 'lead'): el requisito de negocio es sobre
-          oportunidades, no sobre leads sin calificar.
-        - Registros creados por la pasarela de correo o el formulario web
-          (mail_create_nosubscribe/mail_create_nolog en el contexto): esos
-          flujos crean el registro sin que haya un usuario llenando un
-          monto, y crm.lead.type puede resolver a 'opportunity' igual si el
-          grupo de Leads está apagado (ver message_new() del core)."""
-        self.ensure_one()
-        if self.type != "opportunity":
-            return True
-        if self.env.context.get("mail_create_nosubscribe") or self.env.context.get("mail_create_nolog"):
-            return True
-        return False
-
     @api.constrains("expected_revenue_foreign", "type")
     def _check_expected_revenue_foreign_positive(self):
         # Tarea 80213: se elimina el rechazo de expected_revenue_foreign == 0.
         # El formulario de Lead no tiene este campo, así que convertir un
         # Lead a Oportunidad enviaba 0 y esta validación bloqueaba el flujo
-        # de conversión. Se sigue rechazando un monto negativo.
+        # de conversión. Se sigue rechazando un monto negativo, sin
+        # excepción de tipo ni de contexto (tarea 80707): un monto negativo
+        # es basura de datos en cualquier escenario, no solo en oportunidades
+        # editadas manualmente.
         for lead in self:
-            if lead._is_foreign_amount_check_exempt():
-                continue
             currency = lead.foreign_currency_id
             if not currency:
                 continue
@@ -191,10 +176,9 @@ class CrmLead(models.Model):
         # tarea 80213). El formulario de Lead tampoco tiene el campo Ingreso
         # Recurrente, así que "Fusionar con oportunidades existentes" trae
         # recurring_plan de la oportunidad destino pero recurring_revenue_foreign
-        # llega en 0, bloqueando la conversión. Se sigue rechazando negativo.
+        # llega en 0, bloqueando la conversión. Se sigue rechazando negativo,
+        # sin excepción de tipo ni de contexto (tarea 80707).
         for lead in self:
-            if lead._is_foreign_amount_check_exempt():
-                continue
             currency = lead.foreign_currency_id
             if not currency:
                 continue
