@@ -6,14 +6,14 @@ from odoo import api, fields, models
 _logger = logging.getLogger(__name__)
 
 # BCV publishes each rate as "VEF units per 1 unit of the foreign currency"
-# (e.g. 791.6667 VEF per 1 USD). This module assumes the company's
-# accounting currency (`currency_id`) is VEF -- that's the only case where
-# this number can be written directly as `inverse_company_rate` without an
-# extra cross-conversion. If a given company uses the "legacy"
-# `l10n_ve_rate`/`l10n_ve_currency_rate_live` scheme (USD accounting
-# currency, VEF as the "foreign" currency), this integration does not apply
-# and is explicitly skipped (see `_bcv_sync_process_tasas`).
+# (e.g. 791.6667 VEF per 1 USD).
 VEF_CURRENCY_CODE = "VEF"
+
+# The currencies BCV Sync's scraper actually sends in every payload (see
+# apps/worker/src/scrapers/bcv.scraper.ts's MAPEO_MONEDA in the BCV Sync
+# repo). Kept here as a plain constant, not discovered dynamically, so it
+# must be kept in sync by hand if that list ever changes.
+BCV_PUBLISHED_CURRENCIES = {"USD", "EUR", "CNY", "TRY", "RUB"}
 
 
 class ResCompany(models.Model):
@@ -60,12 +60,24 @@ class ResCompany(models.Model):
 
         Each ``tasas`` entry is a dict with ``moneda``/``valor``/
         ``fecha_valor`` exactly as they arrive in the payload (see
-        ``ODOO_INTEGRATION.md`` in the BCV Sync repo). An entry is skipped
-        -without aborting the rest of the payload- when:
+        ``ODOO_INTEGRATION.md`` in the BCV Sync repo). This company's own
+        accounting currency decides which res.currency.rate gets written
+        (see ``_bcv_sync_resolve_target_currency_code``): when it's VEF,
+        ``moneda`` itself is the target and the raw value applies as-is;
+        when it's one of BCV's own published currencies (ex. USD), VEF
+        becomes the target and only the entry whose ``moneda`` matches
+        this company's currency carries a usable cross-rate (the raw
+        value has to be inverted -- see below). Any other accounting
+        currency skips the whole payload, there's nothing to convert
+        against.
 
-        - the currency isn't active/used in this Odoo (only currencies the
-          company actually has enabled are considered, see
-          ``currency_model`` below);
+        An entry is skipped -without aborting the rest of the payload-
+        when:
+
+        - it doesn't resolve to a target currency for this company (see
+          above);
+        - the target currency isn't active/used in this Odoo (only
+          currencies the company actually has enabled are considered);
         - the value can't be parsed as a positive number;
         - fecha_valor doesn't have a valid format;
         - ``_bcv_sync_is_valid_rate_date`` (this module's own date logic,
@@ -89,13 +101,17 @@ class ResCompany(models.Model):
         applied = []
         skipped = []
 
-        if self.currency_id.name != VEF_CURRENCY_CODE:
+        company_currency = self.currency_id.name
+        if company_currency != VEF_CURRENCY_CODE and (
+            company_currency not in BCV_PUBLISHED_CURRENCIES
+        ):
             _logger.warning(
-                "BCV Sync: company '%s' does not have VEF as its accounting "
-                "currency (has '%s'); skipping the whole payload to avoid "
-                "storing incorrect rates.",
+                "BCV Sync: company '%s' has '%s' as its accounting "
+                "currency, which is neither VEF nor a currency BCV Sync "
+                "publishes a VEF cross-rate for; skipping the whole "
+                "payload, there is nothing to convert against.",
                 self.display_name,
-                self.currency_id.name,
+                company_currency,
             )
             return {
                 "applied": applied,
@@ -113,11 +129,19 @@ class ResCompany(models.Model):
         for entry in tasas:
             moneda = (entry.get("moneda") or "").strip().upper()
 
-            currency = currency_model.search([("name", "=", moneda)], limit=1)
+            target_code = self._bcv_sync_resolve_target_currency_code(
+                company_currency, moneda
+            )
+            if not target_code:
+                skipped.append(moneda)
+                continue
+
+            currency = currency_model.search([("name", "=", target_code)], limit=1)
             if not currency:
                 _logger.info(
-                    "BCV Sync: currency '%s' not recognized, skipping that entry.",
-                    moneda,
+                    "BCV Sync: target currency '%s' not recognized/active, "
+                    "skipping that entry.",
+                    target_code,
                 )
                 skipped.append(moneda)
                 continue
@@ -173,10 +197,60 @@ class ResCompany(models.Model):
                 skipped.append(moneda)
                 continue
 
-            rate_model._bcv_sync_upsert(currency, self, published_date, value)
+            # BCV always publishes "VEF units per 1 unit of moneda". When
+            # this company's own currency is VEF, that's exactly the
+            # res.currency.rate value we want for the `moneda` currency.
+            # When this company's own currency is `moneda` itself (the
+            # other supported case, see _bcv_sync_resolve_target_currency_code),
+            # the rate is now being stored against VEF instead, from
+            # `moneda`'s point of view -- which requires the reciprocal.
+            # Verified against Odoo's own res.currency._convert (not just
+            # the raw field): with company currency VEF, `value` stored
+            # directly on the foreign currency's row makes
+            # currency._convert(100, target=VEF, company=self) return
+            # 100*value, correct. With company currency `moneda`,
+            # 1/value stored on the VEF row makes
+            # currency._convert(100, target=VEF, company=self) return
+            # the same 100*value -- also correct, and the reverse
+            # direction (VEF -> moneda) checks out too.
+            rate_to_store = (
+                value if company_currency == VEF_CURRENCY_CODE else 1.0 / value
+            )
+            rate_model._bcv_sync_upsert(currency, self, published_date, rate_to_store)
             applied.append(moneda)
 
         return {"applied": applied, "skipped": skipped}
+
+    @api.model
+    def _bcv_sync_resolve_target_currency_code(self, company_currency, moneda):
+        """Given this company's own accounting currency and the
+        ``moneda`` code of one ``tasas`` entry, returns the
+        ``res.currency`` code we should write a rate against for this
+        company, or ``None`` if this entry doesn't apply to it.
+
+        - Company currency is VEF: ``moneda`` itself is the target (BCV's
+          own currency codes, e.g. USD, are the "foreign" ones from a VEF
+          company's point of view).
+        - Company currency is one of BCV's published currencies (see
+          ``BCV_PUBLISHED_CURRENCIES``) and matches ``moneda``: VEF
+          becomes the target instead -- from this company's point of
+          view, VEF is now the "foreign" currency, and this is the only
+          entry in the payload that carries a usable cross-rate for it
+          (BCV Sync never publishes one currency directly against
+          another, only against VEF, so nothing else in the same payload
+          can be placed for this company).
+        - Anything else (a currency BCV Sync doesn't publish, or an entry
+          that isn't this company's own currency in the second case):
+          not applicable, returns ``None``.
+        """
+        if company_currency == VEF_CURRENCY_CODE:
+            return moneda
+        if (
+            company_currency in BCV_PUBLISHED_CURRENCIES
+            and moneda == company_currency
+        ):
+            return VEF_CURRENCY_CODE
+        return None
 
     def _bcv_sync_is_valid_rate_date(self, current_date, published_date):
         """Decides whether ``published_date`` should be applied as
