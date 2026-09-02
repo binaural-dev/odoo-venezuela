@@ -19,7 +19,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.2.17",
+    "version": "19.0.1.2.18",
 
     "depends": [
         "base",
@@ -47,4 +47,5 @@
         "web.assets_backend": ["l10n_ve_igtf/static/src/components/**"],
     },
     "application": True,
+    "pre_init_hook": "pre_init_hook",
 }
