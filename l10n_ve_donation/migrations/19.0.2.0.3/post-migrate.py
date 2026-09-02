@@ -1,7 +1,29 @@
 """Post-migration for l10n_ve_donation 19.0.2.0.3.
 
-Drops the two v17 columns already backed up (and, for donation_reason,
-already best-effort migrated to tags) by pre-migrate.py.
+Drops stock_scrap.donation_reason (v17 column, ya migrado a tags por
+pre-migrate.py de esta misma carpeta).
+
+res_company.account_stock_journal_id NO SE ELIMINA (a propósito,
+distinto del resto de columnas huérfanas de este proyecto): verificado
+que NO es un rename hacia donation_account_id -- son conceptos
+distintos (account_stock_journal_id apunta a account.journal,
+donation_account_id a account.account, para un propósito diferente).
+Es un campo genuinamente ausente en cualquier modelo v19 (ningún
+módulo lo declara), pero el CÓDIGO de v19 sigue leyéndolo por atributo
+en DOS lugares:
+  - l10n_ve_donation/models/stock_move.py
+    (_create_account_move: "journal_id": ...company_id.account_stock_journal_id.id)
+  - integra-addons/binaural_subsidiary_stock/models/stock_move.py:132
+    (mismo patrón exacto)
+Ambos son bugs de código v19 (AttributeError garantizado al primer
+scrap de donación/subsidiaria que dispare esa línea), no algo que una
+migración de datos deba resolver -- pero justamente por eso NO se
+elimina la columna: hacerlo perdería el dato de configuración del
+cliente (qué diario usar) antes de que el equipo de desarrollo decida
+cómo re-exponer el campo (o reescribir esas dos líneas para derivar el
+diario de otra forma). Se deja la columna intacta -- ya se respaldó
+igual en pre-migrate.py, por si acaso, pero el dato real sigue vivo en
+res_company.account_stock_journal_id.
 """
 
 import logging
@@ -12,7 +34,6 @@ _logger = logging.getLogger(__name__)
 
 ORPHAN_COLUMNS = {
     "stock_scrap": ["donation_reason"],
-    "res_company": ["account_stock_journal_id"],
 }
 
 
@@ -74,8 +95,10 @@ def migrate(cr, version):
             _logger.info("  Dropped column %s.%s", table, col)
 
     _logger.warning(
-        "l10n_ve_donation post-migrate: reminder -- res_company.account_stock_journal_id "
-        "is gone, but v19's stock_move.py still reads it for donation scraps. Fix the "
-        "v19 module code (not a migration script) before donation flows go live. See "
-        "MIGRATION_NOTES_donation.md."
+        "l10n_ve_donation post-migrate: res_company.account_stock_journal_id "
+        "se DEJA intacta a propósito -- l10n_ve_donation/models/stock_move.py Y "
+        "binaural_subsidiary_stock/models/stock_move.py todavía la leen por "
+        "atributo (bug de código v19 en ambos módulos, no de esta migración). "
+        "No borrar hasta que el equipo de desarrollo corrija esas dos líneas o "
+        "reexponga el campo. Ver MIGRATION_NOTES_donation.md."
     )
