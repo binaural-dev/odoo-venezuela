@@ -1,3 +1,4 @@
+from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -10,6 +11,18 @@ class TestProductCompanyEditRestriction(TransactionCase):
             "name": "Test User Company Edit",
             "login": "test_user_company_edit",
             "email": "test_user_company_edit@example.com",
+            # Passing group_ids explicitly skips res.users' own default
+            # (base.group_user + implied groups), so it has to be listed here
+            # too - otherwise the user lacks even base internal-user access
+            # (e.g. to res.company) and every write() fails before it ever
+            # reaches the company_id guard being tested.
+            "group_ids": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                # Base write access to product.template (Products/Create), so
+                # the write()-level tests below exercise the company_id guard
+                # itself instead of failing earlier on the base ACL.
+                self.env.ref("product.group_product_manager").id,
+            ])],
         })
         self.template = self.env["product.template"].create({
             "name": "Product Company Edit Restriction",
@@ -51,3 +64,21 @@ class TestProductCompanyEditRestriction(TransactionCase):
             any(tv.field_id.name == "company_id" for tv in tracking_values),
             "The tracking message should include a tracking value for company_id.",
         )
+
+    def test_write_company_id_without_group_raises_access_error(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        template = self.template.with_user(self.user)
+        with self.assertRaises(AccessError):
+            template.write({"company_id": other_company.id})
+
+    def test_write_company_id_with_group_is_allowed(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        self.user.group_ids = [(4, self.group.id)]
+        template = self.template.with_user(self.user)
+        template.write({"company_id": other_company.id})
+        self.assertEqual(self.template.company_id, other_company)
+
+    def test_write_without_company_id_is_allowed_without_group(self):
+        template = self.template.with_user(self.user)
+        template.write({"name": "Renamed by unprivileged user"})
+        self.assertEqual(self.template.name, "Renamed by unprivileged user")
