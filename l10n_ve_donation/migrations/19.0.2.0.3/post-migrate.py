@@ -3,27 +3,24 @@
 Drops stock_scrap.donation_reason (v17 column, ya migrado a tags por
 pre-migrate.py de esta misma carpeta).
 
-res_company.account_stock_journal_id NO SE ELIMINA (a propósito,
-distinto del resto de columnas huérfanas de este proyecto): verificado
-que NO es un rename hacia donation_account_id -- son conceptos
-distintos (account_stock_journal_id apunta a account.journal,
-donation_account_id a account.account, para un propósito diferente).
-Es un campo genuinamente ausente en cualquier modelo v19 (ningún
-módulo lo declara), pero el CÓDIGO de v19 sigue leyéndolo por atributo
-en DOS lugares:
-  - l10n_ve_donation/models/stock_move.py
-    (_create_account_move: "journal_id": ...company_id.account_stock_journal_id.id)
-  - integra-addons/binaural_subsidiary_stock/models/stock_move.py:132
-    (mismo patrón exacto)
-Ambos son bugs de código v19 (AttributeError garantizado al primer
-scrap de donación/subsidiaria que dispare esa línea), no algo que una
-migración de datos deba resolver -- pero justamente por eso NO se
-elimina la columna: hacerlo perdería el dato de configuración del
-cliente (qué diario usar) antes de que el equipo de desarrollo decida
-cómo re-exponer el campo (o reescribir esas dos líneas para derivar el
-diario de otra forma). Se deja la columna intacta -- ya se respaldó
-igual en pre-migrate.py, por si acaso, pero el dato real sigue vivo en
-res_company.account_stock_journal_id.
+res_company.account_stock_journal_id NO SE ELIMINA -- y no es una
+columna huérfana en absoluto: es un campo CORE de Odoo
+(stock_account/models/res_company.py, mismo nombre, mismo propósito).
+El motivo por el que l10n_ve_donation/models/stock_move.py no lo
+encontraba no era que el campo faltara en v19, sino que
+l10n_ve_donation no declaraba "stock_account" como dependencia en su
+manifest -- corregido en este mismo commit (__manifest__.py). Con esa
+dependencia agregada, el campo core está disponible sin necesidad de
+declarar nada nuevo (no se crea ningún campo, solo se corrige la
+dependencia que faltaba), y la columna física ya existente en
+res_company se reutiliza tal cual -- no hay nada que migrar ni que
+eliminar.
+
+Nota sobre una corrección de esta misma sesión: se había señalado
+también integra-addons/binaural_subsidiary_stock/models/stock_move.py
+como afectado por el mismo problema -- FALSO POSITIVO, descartado:
+ese módulo SÍ depende de "stock_account" en su __manifest__.py, así
+que nunca tuvo el problema.
 """
 
 import logging

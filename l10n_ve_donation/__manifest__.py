@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "19.0.2.0.3",
+    "version": "19.0.2.0.4",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "",
@@ -10,6 +10,7 @@
         "l10n_ve_stock",
         "l10n_ve_invoice",
         "l10n_ve_sale",
+        "stock_account",
     ],
     "data": [
         "data/donation_certificate_paperformat.xml",
