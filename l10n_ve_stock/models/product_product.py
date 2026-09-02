@@ -27,7 +27,7 @@ class ProductProduct(models.Model):
         """Return True if self (variant) has done stock moves."""
         self.ensure_one()
         return bool(
-            self.env["stock.move"].search_count(
+            self.env["stock.move"].sudo().search_count(
                 [("product_id", "=", self.id), ("state", "=", "done")], limit=1
             )
         )
@@ -40,7 +40,11 @@ class ProductProduct(models.Model):
     def write(self, vals):
         if "default_code" in vals:
             for product in self:
-                if not product.is_storable or not product.lock_internal_reference_on_moves:
+                lock_enabled = vals.get(
+                    "lock_internal_reference_on_moves",
+                    product.lock_internal_reference_on_moves,
+                )
+                if not product.is_storable or not lock_enabled:
                     continue
                 if vals["default_code"] == product.default_code:
                     continue
