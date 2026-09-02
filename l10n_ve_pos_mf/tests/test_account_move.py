@@ -5,11 +5,25 @@ from unittest.mock import MagicMock, patch
 from odoo.tests import TransactionCase, tagged
 
 
+class _FakeRecordset(list):
+    """Simula lo minimo que report_z (pos_mf) necesita de un recordset real:
+    iterable, .filtered() para el acotamiento por mf_invoice_number, y
+    .ids (para el log)."""
+
+    @property
+    def ids(self):
+        return list(range(1, len(self) + 1))
+
+    def filtered(self, func):
+        return _FakeRecordset([item for item in self if func(item)])
+
+
 @tagged("post_install", "-at_install", "l10n_ve_pos_mf")
 class TestAccountMove(TransactionCase):
     """TI-14871: la version pos_mf de account_move.report_z debe reusar el valor
     ya resuelto por l10n_ve_iot_mf (res) sin volver a sumarle 1, tanto si vino
-    directo de la maquina como si vino del fallback."""
+    directo de la maquina como si vino del fallback, y acotar las pos.order
+    pendientes por mf_invoice_number (no create_date ni invoice_date)."""
 
     def setUp(self):
         super().setUp()
@@ -57,8 +71,13 @@ class TestAccountMove(TransactionCase):
         self._create_move(mf_reportz=False)
         pending_order = MagicMock()
         pending_order.mf_reportz = False
+        pending_order.mf_invoice_number = "1"
 
-        with patch.object(type(self.env["pos.order"]), "search", return_value=[pending_order]):
+        with patch.object(
+            type(self.env["pos.order"]),
+            "search",
+            side_effect=[False, _FakeRecordset([pending_order])],
+        ):
             result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
         self.assertEqual(result, 108)
@@ -71,9 +90,59 @@ class TestAccountMove(TransactionCase):
         self._create_move(mf_reportz=False)
         pending_order = MagicMock()
         pending_order.mf_reportz = False
+        pending_order.mf_invoice_number = "1"
 
-        with patch.object(type(self.env["pos.order"]), "search", return_value=[pending_order]):
+        with patch.object(
+            type(self.env["pos.order"]),
+            "search",
+            side_effect=[False, _FakeRecordset([pending_order])],
+        ):
             result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=None))
 
         self.assertEqual(result, 21)
         pending_order.write.assert_called_once_with({"mf_reportz": 21})
+
+    def test_pos_order_filtered_by_mf_invoice_number_after_last_z(self):
+        """Las pos.order pendientes se filtran (en Python, via .filtered()) por
+        mf_invoice_number > el del ultimo pos.order con mf_reportz de ese
+        serial — no por create_date ni invoice_date."""
+        self._create_move(mf_reportz=False)
+        last_z_order = MagicMock()
+        last_z_order.mf_invoice_number = "100"
+
+        old_order = MagicMock()
+        old_order.mf_invoice_number = "50"
+        new_order = MagicMock()
+        new_order.mf_invoice_number = "101"
+
+        with patch.object(
+            type(self.env["pos.order"]),
+            "search",
+            side_effect=[last_z_order, _FakeRecordset([old_order, new_order])],
+        ):
+            self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
+
+        old_order.write.assert_not_called()
+        new_order.write.assert_called_once_with({"mf_reportz": 108})
+
+    def test_non_numeric_mf_invoice_number_on_last_z_includes_all_pending(self):
+        """Si el ultimo pos.order Z quedo con mf_invoice_number no numerico
+        (dato historico corrupto), no debe reventar report_z: se incluyen
+        todas las pendientes, igual que si no hubiera Z previo."""
+        self._create_move(mf_reportz=False)
+        last_z_order = MagicMock()
+        last_z_order.mf_invoice_number = "ERROR"
+
+        pending_order = MagicMock()
+        pending_order.mf_reportz = False
+        pending_order.mf_invoice_number = "1"
+
+        with patch.object(
+            type(self.env["pos.order"]),
+            "search",
+            side_effect=[last_z_order, _FakeRecordset([pending_order])],
+        ):
+            result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
+
+        self.assertEqual(result, 108)
+        pending_order.write.assert_called_once_with({"mf_reportz": 108})

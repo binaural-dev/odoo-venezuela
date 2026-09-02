@@ -79,9 +79,23 @@ class AccountMoveInh(models.Model):
 
         serial = data.get("_registeredMachineNumber")
 
+        last_z_move = self._get_last_z_move(serial)
         account_moves = self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
+            [("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
+        if last_z_move:
+            # Se acota por mf_invoice_number (numero de secuencia real que
+            # asigna la maquina fiscal al imprimir) y no por create_date ni por
+            # invoice_date: create_date puede repetirse entre registros de una
+            # misma transaccion (now() de Postgres es por transaccion, no por
+            # INSERT), e invoice_date puede ser una fecha pasada (facturas
+            # cargadas con fecha de ayer) que no refleja cuando se imprimio
+            # realmente en esta maquina.
+            last_number = self._parse_mf_invoice_number(last_z_move)
+            if last_number is not None:
+                account_moves = account_moves.filtered(
+                    lambda m: self._mf_invoice_number_after(m, last_number)
+                )
 
         _dailyClosureCounter = data.get("_dailyClosureCounter", False)
         if False in [data, _dailyClosureCounter]:
@@ -95,12 +109,27 @@ class AccountMoveInh(models.Model):
             invoice.write({"mf_reportz": _numberOfLastZReport})
         return _numberOfLastZReport
 
-    def _get_z_and_add_one(self, serial):
-        account_move = self.env["account.move"].search(
+    def _parse_mf_invoice_number(self, move):
+        try:
+            return int(move.mf_invoice_number)
+        except (TypeError, ValueError):
+            return None
+
+    def _mf_invoice_number_after(self, move, last_number):
+        number = self._parse_mf_invoice_number(move)
+        if number is None:
+            return True
+        return number > last_number
+
+    def _get_last_z_move(self, serial):
+        return self.env["account.move"].search(
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)],
             order="mf_reportz desc",
             limit=1,
         )
+
+    def _get_z_and_add_one(self, serial):
+        account_move = self._get_last_z_move(serial)
         if not account_move:
             return 0
         return account_move.mf_reportz

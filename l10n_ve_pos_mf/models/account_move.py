@@ -28,11 +28,36 @@ class AccountMoveInh(models.Model):
         res = super().report_z(serial, response)
         data = response.get("data", False)
         serial = data.get("_registeredMachineNumber")
-        pos_order_ids = self.env["pos.order"].search(
-            ["&", ("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]
+        last_z_order = self.env["pos.order"].search(
+            [("fiscal_machine", "=", serial), ("mf_reportz", "!=", False)],
+            order="mf_reportz desc",
+            limit=1,
         )
+        pos_order_ids = self.env["pos.order"].search(
+            [("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]
+        )
+        if last_z_order:
+            # Ver comentario en account_move.py (l10n_ve_iot_mf) report_z():
+            # se acota por mf_invoice_number, no por create_date ni invoice_date.
+            last_number = self._parse_mf_invoice_number(last_z_order)
+            if last_number is not None:
+                pos_order_ids = pos_order_ids.filtered(
+                    lambda o: self._mf_invoice_number_after(o, last_number)
+                )
 
         for order in pos_order_ids:
             order.write({"mf_reportz": int(res)})
 
         return res
+
+    def _parse_mf_invoice_number(self, order):
+        try:
+            return int(order.mf_invoice_number)
+        except (TypeError, ValueError):
+            return None
+
+    def _mf_invoice_number_after(self, order, last_number):
+        number = self._parse_mf_invoice_number(order)
+        if number is None:
+            return True
+        return number > last_number
