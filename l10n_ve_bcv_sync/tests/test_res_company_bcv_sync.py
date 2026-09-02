@@ -346,3 +346,45 @@ class TestBcvSyncResCompany(TransactionCase):
         self.assertEqual(found, self.company)
         self.assertFalse(not_found)
         self.assertFalse(empty)
+
+    def test_resolve_target_companies_defaults_to_self_only(self):
+        other_company = self.env["res.company"].create({"name": "Other Co"})
+
+        targets = self.company._bcv_sync_resolve_target_companies()
+
+        self.assertEqual(targets, self.company)
+        self.assertNotIn(other_company, targets)
+
+    def test_resolve_target_companies_fans_out_when_enabled(self):
+        # Independent companies (no parent/child relation) -- the real
+        # case this flag exists for: one client of BCV Sync administers
+        # several unrelated companies in the same database.
+        other_company = self.env["res.company"].create({"name": "Other Co"})
+        self.company.bcv_sync_apply_to_all_companies = True
+
+        targets = self.company._bcv_sync_resolve_target_companies()
+
+        self.assertIn(self.company, targets)
+        self.assertIn(other_company, targets)
+
+    def test_fan_out_applies_the_payload_to_every_root_company(self):
+        other_company = self.env["res.company"].create(
+            {"name": "Other Co", "currency_id": self.vef.id}
+        )
+        self.company.bcv_sync_apply_to_all_companies = True
+        today = fields.Date.context_today(self.company)
+        tasas = [{"moneda": "USD", "valor": "791.6667", "fecha_valor": str(today)}]
+
+        for target in self.company._bcv_sync_resolve_target_companies():
+            summary = target._bcv_sync_process_tasas(tasas)
+            self.assertEqual(summary["applied"], ["USD"])
+
+        for company in (self.company, other_company):
+            rate = self.Rate.search(
+                [
+                    ("currency_id", "=", self.usd.id),
+                    ("company_id", "=", company.id),
+                    ("name", "=", today),
+                ]
+            )
+            self.assertEqual(len(rate), 1)

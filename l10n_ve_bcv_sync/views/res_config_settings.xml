@@ -26,6 +26,17 @@
                                 string="Generar Token"
                             />
                         </div>
+                        <div class="mt-2">
+                            <field name="bcv_sync_apply_to_all_companies" class="oe_inline" />
+                            <label for="bcv_sync_apply_to_all_companies" string="Aplicar este token a todas las compañías" />
+                            <div class="alert alert-warning mt-1" role="alert">
+                                Amplía el alcance de este token a TODAS las compañías raíz
+                                activas de esta base de datos, no solo esta. Úsalo solo si
+                                administrás varias compañías independientes con un mismo
+                                cliente de BCV Sync y tratás este token con el mismo cuidado
+                                que una credencial de administrador global.
+                            </div>
+                        </div>
                     </div>
                 </div>
             </xpath>
