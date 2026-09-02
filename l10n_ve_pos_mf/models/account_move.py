@@ -32,12 +32,14 @@ class AccountMoveInh(models.Model):
         pos_order_ids = self.env["pos.order"].search(
             [("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]
         )
-        if last_z_number is not None:
-            last_number = self._max_mf_invoice_number_for_order_z(serial, last_z_number)
-            if last_number is not None:
-                pos_order_ids = pos_order_ids.filtered(
-                    lambda o: self._mf_invoice_number_after(o, last_number)
-                )
+        last_number = (
+            self._max_mf_invoice_number_for_order_z(serial, last_z_number)
+            if last_z_number is not None
+            else None
+        )
+        pos_order_ids = pos_order_ids.filtered(
+            lambda o: self._mf_invoice_number_after(o, last_number)
+        )
 
         for order in pos_order_ids:
             order.write({"mf_reportz": int(res)})
@@ -54,6 +56,8 @@ class AccountMoveInh(models.Model):
         number = self._parse_mf_invoice_number(order)
         if number is None:
             return False
+        if last_number is None:
+            return True
         return number > last_number
 
     def _get_last_z_order_number(self, serial):
@@ -66,9 +70,9 @@ class AccountMoveInh(models.Model):
                 END
             )
             FROM pos_order
-            WHERE fiscal_machine = %s
+            WHERE fiscal_machine = %s AND company_id = %s
             """,
-            (serial,),
+            (serial, self.env.company.id),
         )
         return self.env.cr.fetchone()[0]
 

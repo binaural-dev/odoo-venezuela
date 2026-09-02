@@ -168,6 +168,28 @@ class TestAccountMove(TransactionCase):
         broken_order.write.assert_not_called()
         new_order.write.assert_called_once_with({"mf_reportz": 108})
 
+    def test_pending_with_non_numeric_invoice_number_excluded_without_previous_z(self):
+        """Sin ningun Z previo para el serial, una pos.order pendiente con
+        mf_invoice_number corrupto tampoco debe marcarse: mismo criterio que
+        cuando el historico esta corrupto."""
+        self._create_move(mf_reportz=False)
+
+        broken_order = MagicMock()
+        broken_order.mf_invoice_number = "ERROR"
+        new_order = MagicMock()
+        new_order.mf_invoice_number = "1"
+
+        with patch.object(
+            type(self.move_model), "_get_last_z_order_number", return_value=None
+        ), patch.object(
+            type(self.env["pos.order"]), "search", return_value=_FakeRecordset([broken_order, new_order])
+        ):
+            result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
+
+        self.assertEqual(result, 108)
+        broken_order.write.assert_not_called()
+        new_order.write.assert_called_once_with({"mf_reportz": 108})
+
     def test_get_last_z_order_number_parses_sql_result_as_integer(self):
         """La logica de "mayor mf_reportz numerico" vive en SQL (CASE + regex,
         igual criterio que _get_last_z_number en l10n_ve_iot_mf, cubierto ahi
@@ -182,5 +204,13 @@ class TestAccountMove(TransactionCase):
         query, params = execute_mock.call_args[0]
         self.assertIn("pos_order", query)
         self.assertIn("fiscal_machine", query)
-        self.assertEqual(params, (self.serial,))
+        self.assertIn("company_id", query)
+        self.assertEqual(params, (self.serial, self.company.id))
         self.assertEqual(result, 19)
+
+    def test_get_last_z_order_number_query_runs_against_real_table(self):
+        """Sin mockear el cursor: si la tabla o alguna columna del SQL
+        estuviera mal escrita, esto revienta en vez de pasar en silencio."""
+        result = self.move_model._get_last_z_order_number(self.serial)
+
+        self.assertIsNone(result)

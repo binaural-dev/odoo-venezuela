@@ -772,7 +772,7 @@ class SerialFiscalDriver(SerialDriver):
         :return: Resultado de la operación.
         """
         msg = "Factura impresa correctamente"
-        estado_s1 = self._get_s1_printer_data_after_print()
+        estado_s1 = self._get_s1_printer_data_after_print(required_field="LastInvoiceNumber")
         
         if estado_s1:
             number = estado_s1.LastInvoiceNumber
@@ -1225,7 +1225,7 @@ class SerialFiscalDriver(SerialDriver):
                 if not result:
                     _logger.error("Fallo al enviar comando: %s", command)
 
-            estado_s1 = self._get_s1_printer_data_after_print()
+            estado_s1 = self._get_s1_printer_data_after_print(required_field="LastCreditNoteNumber")
 
             if estado_s1:
                 number = estado_s1.LastCreditNoteNumber
@@ -1971,7 +1971,7 @@ class SerialFiscalDriver(SerialDriver):
             _logger.error("Error al obtener los datos S1: %s", e)
             raise
 
-    def _get_s1_printer_data_after_print(self, timeout=30, poll_interval=2):
+    def _get_s1_printer_data_after_print(self, required_field="RegisteredMachineNumber", timeout=30, poll_interval=2):
         """
         Lee el estado S1 justo despues de imprimir un documento (factura,
         nota de credito, Reporte Z). Segun el manual de protocolos (Tabla
@@ -1986,7 +1986,7 @@ class SerialFiscalDriver(SerialDriver):
         while time.time() < deadline:
             try:
                 data = self.get_s1_printer_data()
-                if data and getattr(data, "RegisteredMachineNumber", None):
+                if data and getattr(data, required_field, None) is not None:
                     return data
                 last_error = Exception("S1 respondio vacio o incompleto tras imprimir")
             except Exception as e:
@@ -2167,11 +2167,17 @@ class SerialFiscalDriver(SerialDriver):
                 raise Exception(status["data"]["status"]["msg"])
 
             self.tfhka.PrintZReport()
-            estado_s1 = self._get_s1_printer_data_after_print()
-            response_data = {
-                "_registeredMachineNumber": estado_s1.RegisteredMachineNumber,
-                "_dailyClosureCounter": estado_s1.DailyClosureCounter,
-            } if estado_s1 else {}
+
+            try:
+                estado_s1 = self._get_s1_printer_data_after_print(required_field="DailyClosureCounter")
+                response_data = {
+                    "_registeredMachineNumber": estado_s1.RegisteredMachineNumber,
+                    "_dailyClosureCounter": estado_s1.DailyClosureCounter,
+                } if estado_s1 else {}
+            except Exception as e:
+                _logger.warning("Reporte Z impreso pero no se pudo leer S1: %s", e)
+                response_data = {}
+
             _logger.info("Reporte Z impreso correctamente.")
             self.data["value"] = {
                 "valid": True,
