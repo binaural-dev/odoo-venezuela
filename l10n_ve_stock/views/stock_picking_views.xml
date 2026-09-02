@@ -67,6 +67,9 @@
             <xpath expr="//field[@name='partner_id']" position="attributes">
                 <attribute name="options">{'no_quick_create': True}</attribute>
             </xpath>
+            <xpath expr="//field[@name='move_ids']//field[@name='product_id']" position="attributes">
+                <attribute name="options">{'no_quick_create': True, 'no_create_edit': True, 'no_create': True}</attribute>
+            </xpath>
             <xpath expr="//field[@name='location_id'][@groups='stock.group_stock_multi_locations']" position="after">
                 <field name="source_physical_address" readonly="1" invisible="picking_type_code == 'incoming'" groups="stock.group_stock_multi_locations"/>
             </xpath>
