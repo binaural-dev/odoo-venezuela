@@ -63,6 +63,21 @@ class TestLockInternalReferenceOnMoves(TransactionCase):
         product.write({"default_code": "REF004-B"})
         self.assertEqual(product.default_code, "REF004-B")
 
+    def test_write_default_code_allowed_when_lock_disabled_in_same_write(self):
+        """Disabling the toggle and changing default_code in a single write
+        (the natural flow to unlock and fix a product) must not raise -
+        the guard has to read the incoming value from vals, not the
+        still-True value stored on the record before the write applies.
+        """
+        product = self._create_product("REF006")
+        self._create_done_move(product)
+        product.write({
+            "lock_internal_reference_on_moves": False,
+            "default_code": "REF006-B",
+        })
+        self.assertEqual(product.default_code, "REF006-B")
+        self.assertFalse(product.lock_internal_reference_on_moves)
+
     def test_write_default_code_allowed_when_not_storable(self):
         product = self.env["product.product"].create(
             {
