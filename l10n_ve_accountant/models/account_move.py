@@ -1687,7 +1687,9 @@ class AccountMove(models.Model):
                 tax_line.balance = correct_balance
 
         non_pt = move.line_ids.filtered(
-            lambda l: l.display_type not in ('payment_term', 'cogs')
+            lambda l: l.display_type not in (
+                'payment_term', 'cogs', 'line_section', 'line_subsection', 'line_note',
+            )
         )
         if not non_pt:
             return
@@ -1739,6 +1741,7 @@ class AccountMove(models.Model):
                 return
             target_lines = move.line_ids.filtered(
                 lambda l: not l.tax_repartition_line_id
+                and l.display_type not in ('line_section', 'line_subsection', 'line_note')
             )
             self._distribute_to_lines(target_lines, remaining, cc)
             move.real_portion_amount = cc.round(
