@@ -79,12 +79,12 @@ class AccountMoveInh(models.Model):
 
         serial = data.get("_registeredMachineNumber")
 
-        last_z_move = self._get_last_z_move(serial)
+        last_z_number = self._get_last_z_number(serial)
         account_moves = self.env["account.move"].search(
             [("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
-        if last_z_move:
-            last_number = self._parse_mf_invoice_number(last_z_move)
+        if last_z_number is not None:
+            last_number = self._max_mf_invoice_number_for_z(serial, last_z_number)
             if last_number is not None:
                 account_moves = account_moves.filtered(
                     lambda m: self._mf_invoice_number_after(m, last_number)
@@ -111,35 +111,43 @@ class AccountMoveInh(models.Model):
     def _mf_invoice_number_after(self, move, last_number):
         number = self._parse_mf_invoice_number(move)
         if number is None:
-            return True
+            return False
         return number > last_number
 
-    def _parse_mf_reportz(self, move):
-        try:
-            return int(move.mf_reportz)
-        except (TypeError, ValueError):
-            return None
-
-    def _get_last_z_move(self, serial):
-        candidates = self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)]
+    def _get_last_z_number(self, serial):
+        """
+        Mayor mf_reportz (interpretado como entero) ya cerrado para este
+        serial, o None si no hay ninguno valido. Se calcula en SQL para no
+        traer a Python el historico completo de movimientos cerrados;
+        ignora valores no numericos (dato historico corrupto).
+        """
+        self.env.cr.execute(
+            """
+            SELECT MAX(
+                CASE WHEN mf_reportz ~ '^[0-9]+$'
+                     THEN mf_reportz::integer
+                     ELSE NULL
+                END
+            )
+            FROM account_move
+            WHERE mf_serial = %s
+            """,
+            (serial,),
         )
-        last_move = self.env["account.move"]
-        last_number = None
-        for move in candidates:
-            number = self._parse_mf_reportz(move)
-            if number is None:
-                continue
-            if last_number is None or number > last_number:
-                last_move = move
-                last_number = number
-        return last_move
+        return self.env.cr.fetchone()[0]
+
+    def _max_mf_invoice_number_for_z(self, serial, z_number):
+        moves = self.env["account.move"].search(
+            [("mf_serial", "=", serial), ("mf_reportz", "=", str(z_number))]
+        )
+        numbers = [n for n in (self._parse_mf_invoice_number(m) for m in moves) if n is not None]
+        return max(numbers) if numbers else None
 
     def _get_z_and_add_one(self, serial):
-        account_move = self._get_last_z_move(serial)
-        if not account_move:
+        last_number = self._get_last_z_number(serial)
+        if last_number is None:
             return 0
-        return account_move.mf_reportz
+        return last_number
 
     @api.onchange("is_credit")
     def _onchange_is_credit(self):

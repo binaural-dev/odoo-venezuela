@@ -150,14 +150,38 @@ class TestReportZ(TransactionCase):
 
     def test_get_z_and_add_one_with_previous_moves(self):
         self._create_move(mf_reportz="7")
-        self.assertEqual(self.move_model._get_z_and_add_one(self.serial), "7")
+        self.assertEqual(self.move_model._get_z_and_add_one(self.serial), 7)
 
-    def test_get_last_z_move_orders_numerically_not_lexicographically(self):
+    def test_get_last_z_number_orders_numerically_not_lexicographically(self):
         """mf_reportz es Char: "19" debe considerarse mas reciente que "9",
         no al reves como ordenaria un sort de texto ("9" > "19" alfabeticamente)."""
         self._create_move(mf_reportz="9")
-        newest = self._create_move(mf_reportz="19")
+        self._create_move(mf_reportz="19")
 
-        last_move = self.move_model._get_last_z_move(self.serial)
+        self.assertEqual(self.move_model._get_last_z_number(self.serial), 19)
 
-        self.assertEqual(last_move, newest)
+    def test_max_mf_invoice_number_for_z_picks_highest_among_tied_moves(self):
+        """Varias facturas del mismo cierre comparten mf_reportz: el limite para
+        el siguiente Z debe tomar la de mayor mf_invoice_number entre todas
+        ellas, no una cualquiera del grupo."""
+        self._create_move(mf_reportz="50", mf_invoice_number="98")
+        self._create_move(mf_reportz="50", mf_invoice_number="100")
+        self._create_move(mf_reportz="50", mf_invoice_number="99")
+        pending = self._create_move(mf_reportz=False, mf_invoice_number="101")
+
+        result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
+
+        self.assertEqual(result, 108)
+        self.assertEqual(pending.mf_reportz, "108")
+
+    def test_pending_with_non_numeric_invoice_number_is_excluded(self):
+        """Una factura pendiente con mf_invoice_number corrupto no debe
+        asignarsele mf_reportz automaticamente: no hay forma de saber si va
+        antes o despues del ultimo Z, asi que se deja huerfana para revision
+        manual en vez de arriesgar duplicar un cierre."""
+        self._create_move(mf_reportz="50", mf_invoice_number="100")
+        broken = self._create_move(mf_reportz=False, mf_invoice_number="ERROR")
+
+        self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
+
+        self.assertEqual(broken.mf_reportz, False)
