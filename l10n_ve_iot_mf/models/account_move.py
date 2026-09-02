@@ -84,13 +84,6 @@ class AccountMoveInh(models.Model):
             [("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
         if last_z_move:
-            # Se acota por mf_invoice_number (numero de secuencia real que
-            # asigna la maquina fiscal al imprimir) y no por create_date ni por
-            # invoice_date: create_date puede repetirse entre registros de una
-            # misma transaccion (now() de Postgres es por transaccion, no por
-            # INSERT), e invoice_date puede ser una fecha pasada (facturas
-            # cargadas con fecha de ayer) que no refleja cuando se imprimio
-            # realmente en esta maquina.
             last_number = self._parse_mf_invoice_number(last_z_move)
             if last_number is not None:
                 account_moves = account_moves.filtered(
@@ -128,9 +121,6 @@ class AccountMoveInh(models.Model):
             return None
 
     def _get_last_z_move(self, serial):
-        # No se usa order="mf_reportz desc" (Char): a nivel SQL eso compara
-        # texto, no numero, asi que "9" ordenaria despues de "10". Se trae
-        # todo lo cerrado para este serial y se elige el mayor numericamente.
         candidates = self.env["account.move"].search(
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)]
         )

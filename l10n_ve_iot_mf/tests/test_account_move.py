@@ -27,9 +27,6 @@ class TestReportZ(TransactionCase):
                 "company_id": self.company.id,
             }
         )
-        # Serial unico por test: evita que facturas de otros metodos de esta
-        # misma clase (comparten transaccion/serial) contaminen la busqueda
-        # de "ultimo Z" o el domain de pendientes.
         self.serial = f"SERIAL-TEST-{self._testMethodName}"
 
     def _create_move(self, mf_reportz=False, mf_serial=None, mf_invoice_number=False):

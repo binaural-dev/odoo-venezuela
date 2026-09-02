@@ -33,8 +33,6 @@ class AccountMoveInh(models.Model):
             [("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]
         )
         if last_z_order:
-            # Ver comentario en account_move.py (l10n_ve_iot_mf) report_z():
-            # se acota por mf_invoice_number, no por create_date ni invoice_date.
             last_number = self._parse_mf_invoice_number(last_z_order)
             if last_number is not None:
                 pos_order_ids = pos_order_ids.filtered(
@@ -53,9 +51,6 @@ class AccountMoveInh(models.Model):
             return None
 
     def _get_last_z_order(self, serial):
-        # No se usa order="mf_reportz desc" (Char): a nivel SQL eso compara
-        # texto, no numero, asi que "9" ordenaria despues de "10". Se trae
-        # todo lo cerrado para este serial y se elige el mayor numericamente.
         candidates = self.env["pos.order"].search(
             [("fiscal_machine", "=", serial), ("mf_reportz", "!=", False)]
         )

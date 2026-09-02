@@ -38,8 +38,6 @@ class TestAccountMove(TransactionCase):
                 "company_id": self.company.id,
             }
         )
-        # Serial unico por test para no depender de datos de otros metodos
-        # que compartan la misma transaccion.
         self.serial = f"SERIAL-TEST-POS-{self._testMethodName}"
 
     def _create_move(self, mf_reportz=False, mf_serial=None):
