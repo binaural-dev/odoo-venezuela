@@ -8,7 +8,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "17.0.0.0.0",
+    "version": "17.0.0.0.1",
     # Depends on l10n_ve_currency_rate_live only to reuse the
     # `can_update_habil_days` field on res.company. The date-validity
     # decision itself is fully self-contained in this module (see

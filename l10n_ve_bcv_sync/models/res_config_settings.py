@@ -9,6 +9,9 @@ class ResConfigSettings(models.TransientModel):
     bcv_sync_api_key = fields.Char(
         related="company_id.bcv_sync_api_key", readonly=False
     )
+    bcv_sync_apply_to_all_companies = fields.Boolean(
+        related="company_id.bcv_sync_apply_to_all_companies", readonly=False
+    )
 
     def action_generate_bcv_sync_api_key(self):
         """Generates a random token, assigns it directly to

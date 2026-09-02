@@ -64,8 +64,16 @@ class BcvSyncController(http.Controller):
                 400,
             )
 
+        # Normally just this token's own company; if it has
+        # bcv_sync_apply_to_all_companies enabled, every root company in
+        # the database (see res.company._bcv_sync_resolve_target_companies).
+        target_companies = company._bcv_sync_resolve_target_companies()
+
         try:
-            summary = company._bcv_sync_process_tasas(payload["tasas"])
+            results = [
+                (target, target._bcv_sync_process_tasas(payload["tasas"]))
+                for target in target_companies
+            ]
         except Exception:
             _logger.exception(
                 "BCV Sync: unexpected error processing the payload for %s",
@@ -75,14 +83,38 @@ class BcvSyncController(http.Controller):
                 {"ok": False, "error": "internal error processing the payload"}, 500
             )
 
-        _logger.info(
-            "BCV Sync: payload processed for %s -- applied=%s skipped=%s",
-            company.display_name,
-            summary["applied"],
-            summary["skipped"],
-        )
+        for target, summary in results:
+            _logger.info(
+                "BCV Sync: payload processed for %s -- applied=%s skipped=%s",
+                target.display_name,
+                summary["applied"],
+                summary["skipped"],
+            )
+
+        # Single-company response shape unchanged on purpose (matches
+        # ODOO_INTEGRATION.md and keeps the vast majority of tokens, which
+        # don't fan out, on the exact same contract as before). The
+        # per-company breakdown only appears when this token actually
+        # applies to more than one company.
+        if len(results) == 1:
+            _, summary = results[0]
+            return self._json_response(
+                {"ok": True, "applied": summary["applied"], "skipped": summary["skipped"]},
+                200,
+            )
+
         return self._json_response(
-            {"ok": True, "applied": summary["applied"], "skipped": summary["skipped"]},
+            {
+                "ok": True,
+                "companies": [
+                    {
+                        "company": target.display_name,
+                        "applied": summary["applied"],
+                        "skipped": summary["skipped"],
+                    }
+                    for target, summary in results
+                ],
+            },
             200,
         )
 
