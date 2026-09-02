@@ -1,7 +1,7 @@
 import logging
 import re
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from collections import defaultdict
 
 _logger = logging.getLogger(__name__)
@@ -46,6 +46,14 @@ class ProductTemplate(models.Model):
 
     liters_per_unit = fields.Float(digits="Stock Weight")
 
+    company_id = fields.Many2one(tracking=True)
+
+    can_edit_company_id = fields.Boolean(
+        string="Puede editar la compañía",
+        compute="_compute_can_edit_company_id",
+        help="Indica si el usuario actual puede modificar la compañía del producto.",
+    )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e
@@ -62,6 +70,15 @@ class ProductTemplate(models.Model):
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def write(self, vals):
+        if (
+            "company_id" in vals
+            and not self.env.su
+            and not self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
+        ):
+            raise AccessError(
+                _("No tienes permiso para cambiar la compañía de este producto.")
+            )
+
         res = super().write(vals)
         if "taxes_id" in vals:
             self._validate_single_sale_tax()
@@ -130,3 +147,9 @@ class ProductTemplate(models.Model):
         domain = [('free_qty', operator, value)]
         product_variant_query = self.env['product.product'].sudo()._search(domain)
         return [('product_variant_ids', 'in', product_variant_query)]
+
+    @api.depends_context("uid")
+    def _compute_can_edit_company_id(self):
+        can_edit = self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
+        for product in self:
+            product.can_edit_company_id = can_edit

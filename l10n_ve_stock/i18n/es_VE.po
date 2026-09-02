@@ -526,6 +526,13 @@ msgid "No more than what is manufactured can be discarded in this operation."
 msgstr "En esta operación no se puede desechar más de lo fabricado."
 
 #. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
+#, python-format
+msgid "No tienes permiso para cambiar la compañía de este producto."
+msgstr "No tienes permiso para cambiar la compañía de este producto."
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__not_allow_negative_inventory_adjustments
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__not_allow_negative_inventory_adjustments
 msgid "Not Allow Negative Inventory Adjustments"
@@ -670,6 +677,17 @@ msgstr "Evita movimientos internos con stock negativo"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_kanban_view
 msgid "Price + IVA:"
 msgstr "Precio + IVA"
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__can_edit_company_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__can_edit_company_id
+msgid "Puede editar la compañía"
+msgstr "Puede editar la compañía"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_edit_product_company
+msgid "Puede editar la compañía del producto"
+msgstr "Puede editar la compañía del producto"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__price_with_tax
