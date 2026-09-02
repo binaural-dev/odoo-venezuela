@@ -32,6 +32,22 @@ class ResCompany(models.Model):
             "alli para el cliente/URL de esta compania."
         ),
     )
+    bcv_sync_apply_to_all_companies = fields.Boolean(
+        string="Aplicar a todas las companias",
+        default=False,
+        groups="base.group_system",
+        help=(
+            "Si esta activo, este token deja de aplicar la tasa solo a esta "
+            "compania -- se aplica a TODAS las companias raiz activas de "
+            "esta base de datos (util cuando un mismo cliente de BCV Sync "
+            "administra varias companias independientes y no quiere un "
+            "token/entrada de panel por cada una). Activarlo amplia el "
+            "radio de exposicion de este token: si se filtra, quien lo "
+            "tenga puede escribir la tasa de todas las companias, no solo "
+            "de esta. Tratalo con el mismo cuidado que una credencial de "
+            "administrador global, no como una credencial por cliente."
+        ),
+    )
 
     @api.model
     def _bcv_sync_get_company_by_token(self, token):
@@ -52,6 +68,16 @@ class ResCompany(models.Model):
             if hmac.compare_digest(token, company.bcv_sync_api_key or ""):
                 match = company
         return match
+
+    def _bcv_sync_resolve_target_companies(self):
+        """Returns the companies this token's payload should be applied
+        to: just this company's root by default, or every active root
+        company in the database if ``bcv_sync_apply_to_all_companies`` is
+        enabled (opt-in fan-out, see that field's help text)."""
+        self.ensure_one()
+        if self.bcv_sync_apply_to_all_companies:
+            return self.env["res.company"].sudo().search([("parent_id", "=", False)])
+        return self.root_id
 
     def _bcv_sync_process_tasas(self, tasas):
         """Idempotently applies the ``tasas`` entries received from BCV
