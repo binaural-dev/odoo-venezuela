@@ -1984,3 +1984,84 @@ class TestRealPortion(TransactionCase):
             msg=f"price_unit_ves = {line.price_unit_ves}. Debe usar la tasa de "
                 f"la fecha del documento (2500), no la de hoy (5000)"
         )
+
+    def test_34_line_section_never_receives_real_portion_residual(self):
+        """Ticket #14978: una factura USD con un 'line_section' (encabezado
+        de un producto combo, o una sección tipeada a mano) no confirmaba --
+        Postgres rechazaba el posteo con
+        "Forbidden balance or account on non-accountable line".
+
+        Causa: _distribute_invoice_real_portion arma `non_pt`/`target_lines`
+        filtrando solo ('payment_term', 'cogs'), sin excluir
+        ('line_section', 'line_subsection', 'line_note'). Como esas líneas
+        tienen balance=0, _distribute_to_lines las ordena al final (ordena
+        por -abs(balance)) y les asigna lo que sobra del redondeo del
+        "real portion" -- así una línea no contable termina con
+        balance/debit != 0, lo que viola el CHECK de account.move.line.
+
+        Reproducido contra un registro real de un cliente vía shell de
+        Odoo.sh (traceback con CheckViolation en
+        account_move_line_check_non_accountable_fields_null).
+
+        Un `create()` normal no garantiza el residuo de redondeo en este
+        fixture aislado (depende de la conversión exacta de cada línea), así
+        que más abajo se desbalancea la factura ya posteada a propósito y se
+        llama _distribute_invoice_real_portion() directamente -- el mismo
+        método que _sync_dynamic_lines dispara en la vida real.
+        """
+        self._set_usd_rate(772.5441)
+
+        lines = [Command.create({
+            "display_type": "line_section",
+            "name": "laboratorios",
+        })]
+        for i in range(20):
+            price = round(13.3333 + i * 0.7777, 4)
+            lines.append(Command.create({
+                "product_id": self.product.id,
+                "quantity": 3.0,
+                "price_unit": price,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(5, 0, 0)],
+            }))
+        lines.insert(11, Command.create({
+            "display_type": "line_section",
+            "name": "Estudios",
+        }))
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, 'posted')
+        section_lines = invoice.line_ids.filtered(
+            lambda l: l.display_type in ('line_section', 'line_subsection', 'line_note')
+        )
+        self.assertTrue(section_lines, "La factura debe conservar sus líneas de sección")
+
+        cc = invoice.company_currency_id
+        product_line = invoice.line_ids.filtered(
+            lambda l: l.display_type == 'product'
+        )[:1]
+        product_line.sudo().with_context(check_move_validity=False).write({
+            'credit': product_line.credit + 0.01,
+            'balance': product_line.balance - 0.01,
+        })
+        invoice._distribute_invoice_real_portion(invoice, cc)
+
+        # Antes del fix, esta línea terminaba con balance/debit != 0 y
+        # Postgres rechazaba el UPDATE con
+        # "account_move_line_check_non_accountable_fields_null".
+        for line in section_lines:
+            self.assertEqual(line.balance, 0.0, f"'{line.name}' quedó con balance={line.balance}")
+            self.assertEqual(line.debit, 0.0, f"'{line.name}' quedó con debit={line.debit}")
+            self.assertEqual(line.credit, 0.0, f"'{line.name}' quedó con credit={line.credit}")
+            self.assertFalse(line.account_id, f"'{line.name}' quedó con account_id={line.account_id}")
