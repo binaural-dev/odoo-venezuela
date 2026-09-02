@@ -129,3 +129,28 @@ class TestBcvSyncController(HttpCase):
         data = response.json()
         self.assertEqual(data["applied"], ["USD"])
         self.assertEqual(data["skipped"], ["XYZ"])
+
+    def test_fan_out_token_returns_a_per_company_breakdown(self):
+        other_company = self.env["res.company"].create(
+            {"name": "Other Co", "currency_id": self.vef.id}
+        )
+        self.company.sudo().bcv_sync_apply_to_all_companies = True
+        today = fields.Date.context_today(self.company)
+
+        response = self._post(
+            {
+                "tasas": [
+                    {"moneda": "USD", "valor": "791.6667", "fecha_valor": str(today)}
+                ]
+            }
+        )
+
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertTrue(data["ok"])
+        self.assertNotIn("applied", data)
+        companies_in_response = {entry["company"] for entry in data["companies"]}
+        self.assertIn(self.company.display_name, companies_in_response)
+        self.assertIn(other_company.display_name, companies_in_response)
+        for entry in data["companies"]:
+            self.assertEqual(entry["applied"], ["USD"])
