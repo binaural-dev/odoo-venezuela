@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="group_pricelist_report_multi" model="res.groups">
+        <field name="name">Ver reporte multi-lista de precios</field>
+        <field name="privilege_id" ref="product.res_groups_privilege_product"/>
+        <field name="comment">Permite generar y exportar el reporte de varias listas de
+            precios en columnas (PDF/CSV/XLSX). Es independiente del grupo nativo
+            "Usar múltiples listas de precios" (product.group_product_pricelist), que solo
+            controla si el usuario puede asignar/ver más de una lista de precios en el
+            producto, no si puede imprimir este reporte comparativo.</field>
+    </record>
+</odoo>
