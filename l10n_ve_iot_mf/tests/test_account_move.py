@@ -131,8 +131,9 @@ class TestReportZ(TransactionCase):
 
     def test_non_numeric_mf_invoice_number_on_last_z_includes_all_pending(self):
         """Si el ultimo Z cerrado quedo con mf_invoice_number no numerico (dato
-        historico corrupto), no debe reventar report_z: se cae a incluir todas
-        las pendientes, igual que si no hubiera Z previo."""
+        historico corrupto), no debe reventar report_z: sin limite conocido, las
+        pendientes con numero valido se incluyen igual (mismo criterio que si no
+        hubiera Z previo)."""
         self._create_move(mf_reportz="50", mf_invoice_number="ERROR")
         pending = self._create_move(mf_reportz=False, mf_invoice_number="101")
 
@@ -144,13 +145,6 @@ class TestReportZ(TransactionCase):
     def test_invalid_response_raises_validation_error(self):
         with self.assertRaises(ValidationError):
             self.move_model.report_z(self.serial, self._response(valid=False))
-
-    def test_get_z_and_add_one_without_previous_moves(self):
-        self.assertEqual(self.move_model._get_z_and_add_one(self.serial), 0)
-
-    def test_get_z_and_add_one_with_previous_moves(self):
-        self._create_move(mf_reportz="7")
-        self.assertEqual(self.move_model._get_z_and_add_one(self.serial), 7)
 
     def test_get_last_z_number_orders_numerically_not_lexicographically(self):
         """mf_reportz es Char: "19" debe considerarse mas reciente que "9",
@@ -184,4 +178,18 @@ class TestReportZ(TransactionCase):
 
         self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
+        self.assertEqual(broken.mf_reportz, False)
+
+    def test_pending_with_non_numeric_invoice_number_excluded_without_previous_z(self):
+        """Sin ningun Z previo para el serial, una pendiente con mf_invoice_number
+        corrupto tampoco debe marcarse: la falta de limite no distingue si es el
+        primer cierre o si el historico esta corrupto, asi que el criterio es el
+        mismo en ambos casos."""
+        broken = self._create_move(mf_reportz=False, mf_invoice_number="ERROR")
+        pending = self._create_move(mf_reportz=False, mf_invoice_number="1")
+
+        result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
+
+        self.assertEqual(result, 108)
+        self.assertEqual(pending.mf_reportz, "108")
         self.assertEqual(broken.mf_reportz, False)

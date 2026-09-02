@@ -65,7 +65,7 @@ class AccountMoveInh(models.Model):
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
 
-        return True
+        return bool(account_moves)
 
     def report_z(self, serial, response):
         # El driver del IoT puede resolver el listener con un evento valido
@@ -87,17 +87,19 @@ class AccountMoveInh(models.Model):
         account_moves = self.env["account.move"].search(
             [("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
-        if last_z_number is not None:
-            last_number = self._max_mf_invoice_number_for_z(serial, last_z_number)
-            if last_number is not None:
-                account_moves = account_moves.filtered(
-                    lambda m: self._mf_invoice_number_after(m, last_number)
-                )
+        last_number = (
+            self._max_mf_invoice_number_for_z(serial, last_z_number)
+            if last_z_number is not None
+            else None
+        )
+        account_moves = account_moves.filtered(
+            lambda m: self._mf_invoice_number_after(m, last_number)
+        )
 
-        _dailyClosureCounter = data.get("_dailyClosureCounter", False)
-        if False in [data, _dailyClosureCounter]:
+        _dailyClosureCounter = data.get("_dailyClosureCounter")
+        if _dailyClosureCounter in (False, None):
             _logger.info("NO SE RECUPERO EL Z DE LA MAQUINA: %s", serial)
-            _numberOfLastZReport = int(self._get_z_and_add_one(serial)) + 1
+            _numberOfLastZReport = (last_z_number or 0) + 1
             _logger.info("ULTIMO Z: %s", _numberOfLastZReport)
         else:
             _numberOfLastZReport = int(_dailyClosureCounter)
@@ -116,6 +118,8 @@ class AccountMoveInh(models.Model):
         number = self._parse_mf_invoice_number(move)
         if number is None:
             return False
+        if last_number is None:
+            return True
         return number > last_number
 
     def _get_last_z_number(self, serial):
@@ -128,9 +132,9 @@ class AccountMoveInh(models.Model):
                 END
             )
             FROM account_move
-            WHERE mf_serial = %s
+            WHERE mf_serial = %s AND company_id = %s
             """,
-            (serial,),
+            (serial, self.env.company.id),
         )
         return self.env.cr.fetchone()[0]
 
@@ -140,12 +144,6 @@ class AccountMoveInh(models.Model):
         )
         numbers = [n for n in (self._parse_mf_invoice_number(m) for m in moves) if n is not None]
         return max(numbers) if numbers else None
-
-    def _get_z_and_add_one(self, serial):
-        last_number = self._get_last_z_number(serial)
-        if last_number is None:
-            return 0
-        return last_number
 
     @api.onchange("is_credit")
     def _onchange_is_credit(self):
