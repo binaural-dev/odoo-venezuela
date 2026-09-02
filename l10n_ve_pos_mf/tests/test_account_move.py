@@ -76,7 +76,7 @@ class TestAccountMove(TransactionCase):
         with patch.object(
             type(self.env["pos.order"]),
             "search",
-            side_effect=[False, _FakeRecordset([pending_order])],
+            side_effect=[_FakeRecordset([]), _FakeRecordset([pending_order])],
         ):
             result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
@@ -95,7 +95,7 @@ class TestAccountMove(TransactionCase):
         with patch.object(
             type(self.env["pos.order"]),
             "search",
-            side_effect=[False, _FakeRecordset([pending_order])],
+            side_effect=[_FakeRecordset([]), _FakeRecordset([pending_order])],
         ):
             result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=None))
 
@@ -108,6 +108,7 @@ class TestAccountMove(TransactionCase):
         serial — no por create_date ni invoice_date."""
         self._create_move(mf_reportz=False)
         last_z_order = MagicMock()
+        last_z_order.mf_reportz = "50"
         last_z_order.mf_invoice_number = "100"
 
         old_order = MagicMock()
@@ -118,7 +119,7 @@ class TestAccountMove(TransactionCase):
         with patch.object(
             type(self.env["pos.order"]),
             "search",
-            side_effect=[last_z_order, _FakeRecordset([old_order, new_order])],
+            side_effect=[_FakeRecordset([last_z_order]), _FakeRecordset([old_order, new_order])],
         ):
             self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
@@ -131,6 +132,7 @@ class TestAccountMove(TransactionCase):
         todas las pendientes, igual que si no hubiera Z previo."""
         self._create_move(mf_reportz=False)
         last_z_order = MagicMock()
+        last_z_order.mf_reportz = "50"
         last_z_order.mf_invoice_number = "ERROR"
 
         pending_order = MagicMock()
@@ -140,9 +142,24 @@ class TestAccountMove(TransactionCase):
         with patch.object(
             type(self.env["pos.order"]),
             "search",
-            side_effect=[last_z_order, _FakeRecordset([pending_order])],
+            side_effect=[_FakeRecordset([last_z_order]), _FakeRecordset([pending_order])],
         ):
             result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
         self.assertEqual(result, 108)
         pending_order.write.assert_called_once_with({"mf_reportz": 108})
+
+    def test_get_last_z_order_orders_numerically_not_lexicographically(self):
+        """mf_reportz es Char: "19" debe considerarse mas reciente que "9",
+        no al reves como ordenaria un sort de texto ("9" > "19" alfabeticamente)."""
+        order_9 = MagicMock()
+        order_9.mf_reportz = "9"
+        order_19 = MagicMock()
+        order_19.mf_reportz = "19"
+
+        with patch.object(
+            type(self.env["pos.order"]), "search", return_value=_FakeRecordset([order_9, order_19])
+        ):
+            last_order = self.move_model._get_last_z_order(self.serial)
+
+        self.assertEqual(last_order, order_19)

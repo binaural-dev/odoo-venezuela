@@ -30,11 +30,7 @@ class AccountMoveInh(models.Model):
         data = response.get("data") or {}
         machine_serial = data.get("_registeredMachineNumber") or serial
 
-        last_z_order = self.env["pos.order"].search(
-            [("fiscal_machine", "=", machine_serial), ("mf_reportz", "!=", False)],
-            order="mf_reportz desc",
-            limit=1,
-        )
+        last_z_order = self._get_last_z_order(machine_serial)
         pos_order_ids = self.env["pos.order"].search(
             [("fiscal_machine", "=", machine_serial), ("mf_reportz", "=", False)]
         )
@@ -51,6 +47,30 @@ class AccountMoveInh(models.Model):
             order.write({"mf_reportz": int(z_number)})
 
         return z_number
+
+    def _parse_mf_reportz(self, order):
+        try:
+            return int(order.mf_reportz)
+        except (TypeError, ValueError):
+            return None
+
+    def _get_last_z_order(self, serial):
+        # No se usa order="mf_reportz desc" (Char): a nivel SQL eso compara
+        # texto, no numero, asi que "9" ordenaria despues de "10". Se trae
+        # todo lo cerrado para este serial y se elige el mayor numericamente.
+        candidates = self.env["pos.order"].search(
+            [("fiscal_machine", "=", serial), ("mf_reportz", "!=", False)]
+        )
+        last_order = self.env["pos.order"]
+        last_number = None
+        for order in candidates:
+            number = self._parse_mf_reportz(order)
+            if number is None:
+                continue
+            if last_number is None or number > last_number:
+                last_order = order
+                last_number = number
+        return last_order
 
     def _parse_mf_invoice_number(self, order):
         try:

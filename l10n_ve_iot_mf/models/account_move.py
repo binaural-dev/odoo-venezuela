@@ -125,12 +125,29 @@ class AccountMoveInh(models.Model):
             return True
         return number > last_number
 
+    def _parse_mf_reportz(self, move):
+        try:
+            return int(move.mf_reportz)
+        except (TypeError, ValueError):
+            return None
+
     def _get_last_z_move(self, serial):
-        return self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)],
-            order="mf_reportz desc",
-            limit=1,
+        # No se usa order="mf_reportz desc" (Char): a nivel SQL eso compara
+        # texto, no numero, asi que "9" ordenaria despues de "10". Se trae
+        # todo lo cerrado para este serial y se elige el mayor numericamente.
+        candidates = self.env["account.move"].search(
+            ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)]
         )
+        last_move = self.env["account.move"]
+        last_number = None
+        for move in candidates:
+            number = self._parse_mf_reportz(move)
+            if number is None:
+                continue
+            if last_number is None or number > last_number:
+                last_move = move
+                last_number = number
+        return last_move
 
     def _get_z_and_add_one(self, serial):
         account_move = self._get_last_z_move(serial)
