@@ -72,12 +72,12 @@ class AccountMoveInh(models.Model):
         return True
 
     def report_z(self, serial, response):
-        data = response.get("data", False)
+        data = response.get("data") or {}
 
         if not response.get("valid", False):
             raise ValidationError(response.get("message", "No se pudo imprimir el reporte Z"))
 
-        serial = data.get("_registeredMachineNumber")
+        serial = data.get("_registeredMachineNumber") or serial
 
         last_z_number = self._get_last_z_number(serial)
         account_moves = self.env["account.move"].search(
