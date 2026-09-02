@@ -1,9 +1,5 @@
 from odoo import fields, models, api
 
-import logging
-
-_logger = logging.getLogger(__name__)
-
 
 class AccountMoveInh(models.Model):
     _inherit = "account.move"
@@ -35,9 +31,8 @@ class AccountMoveInh(models.Model):
         pos_order_ids = self.env["pos.order"].search(
             ["&", ("fiscal_machine", "=", serial), ("mf_reportz", "=", False)]
         )
-        _logger.info(pos_order_ids)
 
         for order in pos_order_ids:
-            order.write({"mf_reportz": int(res) + 1})
+            order.write({"mf_reportz": int(res)})
 
         return res

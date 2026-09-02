@@ -83,14 +83,16 @@ class AccountMoveInh(models.Model):
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
 
-        _numberOfLastZReport = data.get("_dailyClosureCounter", False)
-        if False in [data, _numberOfLastZReport]:
+        _dailyClosureCounter = data.get("_dailyClosureCounter", False)
+        if False in [data, _dailyClosureCounter]:
             _logger.info("NO SE RECUPERO EL Z DE LA MAQUINA: %s", serial)
-            _numberOfLastZReport = self._get_z_and_add_one(serial)
+            _numberOfLastZReport = int(self._get_z_and_add_one(serial)) + 1
             _logger.info("ULTIMO Z: %s", _numberOfLastZReport)
+        else:
+            _numberOfLastZReport = int(_dailyClosureCounter)
 
         for invoice in account_moves:
-            invoice.write({"mf_reportz": int(_numberOfLastZReport) + 1})
+            invoice.write({"mf_reportz": _numberOfLastZReport})
         return _numberOfLastZReport
 
     def _get_z_and_add_one(self, serial):
