@@ -201,9 +201,55 @@ class TestProductProductComputeQuantitiesForReport(TransactionCase):
             "is_storable": True,
         })
 
-    @unittest.skip("_compute_quantities_dict_for_report depends on location_final_id removed in Odoo 19")
     def test_compute_quantities_dict_for_report_basic(self):
-        pass
+        self.env["stock.quant"].create({
+            "product_id": self.product.id,
+            "location_id": self.location.id,
+            "quantity": 10,
+        })
+        res = self.product._compute_quantities_dict_for_report(
+            lot_id=False, owner_id=False, package_id=False, location=self.location,
+        )
+        self.assertEqual(res[self.product.id]["qty_available"], 10.0)
+
+    def test_compute_quantities_dict_for_report_internal_transfer_does_not_inflate(self):
+        """A move.line whose origin and destination are both inside the
+        selected locations (e.g. WH/Stock -> WH/Output) must not be counted
+        as incoming AND outgoing at once, or the report's totals get
+        inflated for every internal transfer.
+        """
+        other_internal_location = self.env["stock.location"].create({
+            "name": "Internal Transfer Target",
+            "location_id": self.location.location_id.id,
+            "usage": "internal",
+        })
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": self.warehouse.int_type_id.id,
+            "location_id": self.location.id,
+            "location_dest_id": other_internal_location.id,
+            "move_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "product_uom_qty": 5,
+                "product_uom": self.product.uom_id.id,
+                "location_id": self.location.id,
+                "location_dest_id": other_internal_location.id,
+            })],
+        })
+        picking.action_confirm()
+        picking.move_ids.quantity = 5
+        picking.button_validate()
+
+        res = self.product._compute_quantities_dict_for_report(
+            lot_id=False, owner_id=False, package_id=False,
+        )
+        self.assertEqual(
+            res[self.product.id]["incoming_qty"], 0.0,
+            "An internal transfer between two selected locations must not count as incoming.",
+        )
+        self.assertEqual(
+            res[self.product.id]["outgoing_qty"], 0.0,
+            "An internal transfer between two selected locations must not count as outgoing.",
+        )
 
     @unittest.skip("_compute_quantities_dict_for_report depends on location_final_id removed in Odoo 19")
     def test_compute_quantities_dict_for_report_with_lot(self):
