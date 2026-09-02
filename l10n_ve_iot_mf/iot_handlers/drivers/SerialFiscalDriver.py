@@ -1959,17 +1959,30 @@ class SerialFiscalDriver(SerialDriver):
             m = None
         return m
     
-    def get_s1_printer_data(self):
+    def get_s1_printer_data(self, timeout=30, poll_interval=2):
         """
         Obtiene los datos del estado S1.
+
+        Segun el manual de protocolos (Tabla 59), tras imprimir un documento
+        (factura, nota de credito, Reporte Z, etc.) la impresora puede quedar
+        ocupada unos segundos emitiendo el reporte de estado de transmision y
+        rechaza cualquier comando mientras tanto, incluida la lectura de S1.
+        Se reintenta hasta que la impresora vuelva a estar disponible o se
+        agote el timeout.
         """
-        try:
-            data = self.tfhka.GetS1PrinterData()
-            _logger.info("Datos del estado S1 obtenidos correctamente. : %s", data)
-            return data
-        except Exception as e:
-            _logger.error("Error al obtener los datos S1: %s", e)
-            raise
+        deadline = time.time() + timeout
+        last_error = None
+        while time.time() < deadline:
+            try:
+                data = self.tfhka.GetS1PrinterData()
+                _logger.info("Datos del estado S1 obtenidos correctamente. : %s", data)
+                return data
+            except Exception as e:
+                last_error = e
+                _logger.warning("Error al obtener los datos S1, reintentando: %s", e)
+                time.sleep(poll_interval)
+        _logger.error("Error al obtener los datos S1: %s", last_error)
+        raise last_error
 
     def GetS2PrinterData(self):
         try:
@@ -2135,24 +2148,6 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
         
-    def _wait_for_s1_after_print(self, timeout=30, poll_interval=2):
-        """
-        Segun el manual de protocolos (Tabla 59), tras imprimir un Reporte Z
-        la impresora queda ocupada ~20s emitiendo el "reporte de estado de
-        transmision" mas ~3s emitiendo tickets del DNF, y rechaza cualquier
-        comando mientras tanto. Se reintenta la lectura de S1 hasta que la
-        impresora vuelva a estar disponible o se agote el timeout.
-        """
-        deadline = time.time() + timeout
-        last_error = None
-        while time.time() < deadline:
-            try:
-                return self.get_s1_printer_data()
-            except Exception as e:
-                last_error = e
-                time.sleep(poll_interval)
-        raise last_error
-
     def PrintZReport(self, data, *items):
         try:
             status = self.ReadFpStatus(True)
@@ -2162,7 +2157,7 @@ class SerialFiscalDriver(SerialDriver):
                 raise Exception(status["data"]["status"]["msg"])
 
             self.tfhka.PrintZReport()
-            estado_s1 = self._wait_for_s1_after_print()
+            estado_s1 = self.get_s1_printer_data()
             response_data = {
                 "_registeredMachineNumber": estado_s1.RegisteredMachineNumber,
                 "_dailyClosureCounter": estado_s1.DailyClosureCounter,
