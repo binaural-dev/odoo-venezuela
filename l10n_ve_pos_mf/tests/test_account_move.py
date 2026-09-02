@@ -38,8 +38,6 @@ class TestAccountMove(TransactionCase):
                 "company_id": self.company.id,
             }
         )
-        # Serial unico por test para no depender de datos de otros metodos
-        # que compartan la misma transaccion.
         self.serial = f"SERIAL-TEST-POS-{self._testMethodName}"
 
     def _create_move(self, mf_reportz=False, mf_serial=None):
@@ -74,9 +72,9 @@ class TestAccountMove(TransactionCase):
         pending_order.mf_invoice_number = "1"
 
         with patch.object(
-            type(self.env["pos.order"]),
-            "search",
-            side_effect=[_FakeRecordset([]), _FakeRecordset([pending_order])],
+            type(self.move_model), "_get_last_z_order_number", return_value=None
+        ), patch.object(
+            type(self.env["pos.order"]), "search", return_value=_FakeRecordset([pending_order])
         ):
             result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
@@ -93,9 +91,9 @@ class TestAccountMove(TransactionCase):
         pending_order.mf_invoice_number = "1"
 
         with patch.object(
-            type(self.env["pos.order"]),
-            "search",
-            side_effect=[_FakeRecordset([]), _FakeRecordset([pending_order])],
+            type(self.move_model), "_get_last_z_order_number", return_value=None
+        ), patch.object(
+            type(self.env["pos.order"]), "search", return_value=_FakeRecordset([pending_order])
         ):
             result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=None))
 
@@ -104,12 +102,9 @@ class TestAccountMove(TransactionCase):
 
     def test_pos_order_filtered_by_mf_invoice_number_after_last_z(self):
         """Las pos.order pendientes se filtran (en Python, via .filtered()) por
-        mf_invoice_number > el del ultimo pos.order con mf_reportz de ese
-        serial — no por create_date ni invoice_date."""
+        mf_invoice_number > el del ultimo cierre de ese serial — no por
+        create_date ni invoice_date."""
         self._create_move(mf_reportz=False)
-        last_z_order = MagicMock()
-        last_z_order.mf_reportz = "50"
-        last_z_order.mf_invoice_number = "100"
 
         old_order = MagicMock()
         old_order.mf_invoice_number = "50"
@@ -117,9 +112,11 @@ class TestAccountMove(TransactionCase):
         new_order.mf_invoice_number = "101"
 
         with patch.object(
-            type(self.env["pos.order"]),
-            "search",
-            side_effect=[_FakeRecordset([last_z_order]), _FakeRecordset([old_order, new_order])],
+            type(self.move_model), "_get_last_z_order_number", return_value=50
+        ), patch.object(
+            type(self.move_model), "_max_mf_invoice_number_for_order_z", return_value=100
+        ), patch.object(
+            type(self.env["pos.order"]), "search", return_value=_FakeRecordset([old_order, new_order])
         ):
             self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
@@ -127,39 +124,63 @@ class TestAccountMove(TransactionCase):
         new_order.write.assert_called_once_with({"mf_reportz": 108})
 
     def test_non_numeric_mf_invoice_number_on_last_z_includes_all_pending(self):
-        """Si el ultimo pos.order Z quedo con mf_invoice_number no numerico
-        (dato historico corrupto), no debe reventar report_z: se incluyen
-        todas las pendientes, igual que si no hubiera Z previo."""
+        """Si el ultimo cierre quedo con mf_invoice_number no numerico (dato
+        historico corrupto) en TODAS sus ordenes, no debe reventar report_z:
+        se incluyen todas las pendientes, igual que si no hubiera Z previo."""
         self._create_move(mf_reportz=False)
-        last_z_order = MagicMock()
-        last_z_order.mf_reportz = "50"
-        last_z_order.mf_invoice_number = "ERROR"
 
         pending_order = MagicMock()
         pending_order.mf_reportz = False
         pending_order.mf_invoice_number = "1"
 
         with patch.object(
-            type(self.env["pos.order"]),
-            "search",
-            side_effect=[_FakeRecordset([last_z_order]), _FakeRecordset([pending_order])],
+            type(self.move_model), "_get_last_z_order_number", return_value=50
+        ), patch.object(
+            type(self.move_model), "_max_mf_invoice_number_for_order_z", return_value=None
+        ), patch.object(
+            type(self.env["pos.order"]), "search", return_value=_FakeRecordset([pending_order])
         ):
             result = self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
         self.assertEqual(result, 108)
         pending_order.write.assert_called_once_with({"mf_reportz": 108})
 
-    def test_get_last_z_order_orders_numerically_not_lexicographically(self):
-        """mf_reportz es Char: "19" debe considerarse mas reciente que "9",
-        no al reves como ordenaria un sort de texto ("9" > "19" alfabeticamente)."""
-        order_9 = MagicMock()
-        order_9.mf_reportz = "9"
-        order_19 = MagicMock()
-        order_19.mf_reportz = "19"
+    def test_pending_with_non_numeric_invoice_number_is_excluded(self):
+        """Una pos.order pendiente con mf_invoice_number corrupto no debe
+        recibir mf_reportz automaticamente, aunque el resto de las pendientes
+        si se procesen con normalidad."""
+        self._create_move(mf_reportz=False)
+
+        broken_order = MagicMock()
+        broken_order.mf_invoice_number = "ERROR"
+        new_order = MagicMock()
+        new_order.mf_invoice_number = "101"
 
         with patch.object(
-            type(self.env["pos.order"]), "search", return_value=_FakeRecordset([order_9, order_19])
+            type(self.move_model), "_get_last_z_order_number", return_value=50
+        ), patch.object(
+            type(self.move_model), "_max_mf_invoice_number_for_order_z", return_value=100
+        ), patch.object(
+            type(self.env["pos.order"]), "search", return_value=_FakeRecordset([broken_order, new_order])
         ):
-            last_order = self.move_model._get_last_z_order(self.serial)
+            self.move_model.report_z(self.serial, self._response(daily_closure_counter=108))
 
-        self.assertEqual(last_order, order_19)
+        broken_order.write.assert_not_called()
+        new_order.write.assert_called_once_with({"mf_reportz": 108})
+
+    def test_get_last_z_order_number_parses_sql_result_as_integer(self):
+        """La logica de "mayor mf_reportz numerico" vive en SQL (CASE + regex,
+        igual criterio que _get_last_z_number en l10n_ve_iot_mf, cubierto ahi
+        con datos reales); aca solo confirmamos que el metodo devuelve tal
+        cual el entero que la base calculo, sin transformarlo."""
+        with patch.object(type(self.env.cr), "execute") as execute_mock, patch.object(
+            self.env.cr, "fetchone", return_value=(19,)
+        ):
+            result = self.move_model._get_last_z_order_number(self.serial)
+
+        execute_mock.assert_called_once()
+        query, params = execute_mock.call_args[0]
+        self.assertIn("pos_order", query)
+        self.assertIn("fiscal_machine", query)
+        self.assertEqual(params, (self.serial,))
+        self.assertEqual(result, 19)

@@ -30,14 +30,12 @@ class AccountMoveInh(models.Model):
         data = response.get("data") or {}
         machine_serial = data.get("_registeredMachineNumber") or serial
 
-        last_z_order = self._get_last_z_order(machine_serial)
+        last_z_number = self._get_last_z_order_number(machine_serial)
         pos_order_ids = self.env["pos.order"].search(
             [("fiscal_machine", "=", machine_serial), ("mf_reportz", "=", False)]
         )
-        if last_z_order:
-            # Ver comentario en account_move.py (l10n_ve_iot_mf) report_z():
-            # se acota por mf_invoice_number, no por create_date ni invoice_date.
-            last_number = self._parse_mf_invoice_number(last_z_order)
+        if last_z_number is not None:
+            last_number = self._max_mf_invoice_number_for_order_z(machine_serial, last_z_number)
             if last_number is not None:
                 pos_order_ids = pos_order_ids.filtered(
                     lambda o: self._mf_invoice_number_after(o, last_number)
@@ -48,30 +46,6 @@ class AccountMoveInh(models.Model):
 
         return z_number
 
-    def _parse_mf_reportz(self, order):
-        try:
-            return int(order.mf_reportz)
-        except (TypeError, ValueError):
-            return None
-
-    def _get_last_z_order(self, serial):
-        # No se usa order="mf_reportz desc" (Char): a nivel SQL eso compara
-        # texto, no numero, asi que "9" ordenaria despues de "10". Se trae
-        # todo lo cerrado para este serial y se elige el mayor numericamente.
-        candidates = self.env["pos.order"].search(
-            [("fiscal_machine", "=", serial), ("mf_reportz", "!=", False)]
-        )
-        last_order = self.env["pos.order"]
-        last_number = None
-        for order in candidates:
-            number = self._parse_mf_reportz(order)
-            if number is None:
-                continue
-            if last_number is None or number > last_number:
-                last_order = order
-                last_number = number
-        return last_order
-
     def _parse_mf_invoice_number(self, order):
         try:
             return int(order.mf_invoice_number)
@@ -81,5 +55,28 @@ class AccountMoveInh(models.Model):
     def _mf_invoice_number_after(self, order, last_number):
         number = self._parse_mf_invoice_number(order)
         if number is None:
-            return True
+            return False
         return number > last_number
+
+    def _get_last_z_order_number(self, serial):
+        self.env.cr.execute(
+            """
+            SELECT MAX(
+                CASE WHEN mf_reportz ~ '^[0-9]+$'
+                     THEN mf_reportz::integer
+                     ELSE NULL
+                END
+            )
+            FROM pos_order
+            WHERE fiscal_machine = %s
+            """,
+            (serial,),
+        )
+        return self.env.cr.fetchone()[0]
+
+    def _max_mf_invoice_number_for_order_z(self, serial, z_number):
+        orders = self.env["pos.order"].search(
+            [("fiscal_machine", "=", serial), ("mf_reportz", "=", str(z_number))]
+        )
+        numbers = [n for n in (self._parse_mf_invoice_number(o) for o in orders) if n is not None]
+        return max(numbers) if numbers else None
