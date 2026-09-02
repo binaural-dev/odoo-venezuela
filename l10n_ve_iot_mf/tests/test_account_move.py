@@ -154,3 +154,13 @@ class TestReportZ(TransactionCase):
     def test_get_z_and_add_one_with_previous_moves(self):
         self._create_move(mf_reportz="7")
         self.assertEqual(self.move_model._get_z_and_add_one(self.serial), "7")
+
+    def test_get_last_z_move_orders_numerically_not_lexicographically(self):
+        """mf_reportz es Char: "19" debe considerarse mas reciente que "9",
+        no al reves como ordenaria un sort de texto ("9" > "19" alfabeticamente)."""
+        self._create_move(mf_reportz="9")
+        newest = self._create_move(mf_reportz="19")
+
+        last_move = self.move_model._get_last_z_move(self.serial)
+
+        self.assertEqual(last_move, newest)
