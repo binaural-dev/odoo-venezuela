@@ -17,9 +17,10 @@ class ProductProduct(models.Model):
         default=True,
         help=(
             "Si está activo, la referencia interna (código) no podrá "
-            "modificarse una vez que el producto tenga movimientos de "
-            "inventario confirmados (incluye los generados por órdenes de "
-            "compra o venta confirmadas)."
+            "modificarse una vez que el producto (siendo almacenable) tenga "
+            "movimientos de inventario ya validados (estado 'Hecho'). Un "
+            "pedido de compra o venta confirmado, sin la transferencia "
+            "asociada validada todavía, no cuenta como movimiento."
         ),
     )
 

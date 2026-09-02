@@ -68,9 +68,10 @@ class ProductTemplate(models.Model):
         store=True,
         help=(
             "Si está activo, la referencia interna (código) no podrá "
-            "modificarse una vez que el producto tenga movimientos de "
-            "inventario confirmados (incluye los generados por órdenes de "
-            "compra o venta confirmadas)."
+            "modificarse una vez que el producto (siendo almacenable) tenga "
+            "movimientos de inventario ya validados (estado 'Hecho'). Un "
+            "pedido de compra o venta confirmado, sin la transferencia "
+            "asociada validada todavía, no cuenta como movimiento."
         ),
     )
 
@@ -90,6 +91,22 @@ class ProductTemplate(models.Model):
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def write(self, vals):
+        # default_code and lock_internal_reference_on_moves are both stored
+        # fields with their own inverse (_set_default_code on the core side,
+        # _set_lock_internal_reference_on_moves here), so Odoo runs them as
+        # separate write() calls on the variant, in vals key order. In the
+        # resolved form arch, default_code renders before the toggle, so it
+        # always arrives first in vals - meaning product.product.write()'s
+        # own same-write guard (which reads
+        # vals.get("lock_internal_reference_on_moves", ...)) never sees the
+        # new toggle value, only the variant's still-locked stored one.
+        # Propagate the toggle to the variants directly, before super()
+        # triggers any inverse, so unlocking and fixing default_code in the
+        # same save always sees the intended state regardless of key order.
+        if "lock_internal_reference_on_moves" in vals and "default_code" in vals:
+            self.product_variant_ids.write(
+                {"lock_internal_reference_on_moves": vals["lock_internal_reference_on_moves"]}
+            )
 
         old_physical_locations_ids = {
             tmpl.id: tmpl.physical_locations_ids for tmpl in self

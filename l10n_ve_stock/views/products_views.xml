@@ -82,7 +82,7 @@
                     name="lock_internal_reference_on_moves"
                     widget="boolean_toggle"
                     invisible="not is_storable"
-                    help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos asociados."
+                    help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos de inventario validados (estado 'Hecho')."
                 />
             </xpath>
         </field>
@@ -100,7 +100,7 @@
                     name="lock_internal_reference_on_moves"
                     widget="boolean_toggle"
                     invisible="not is_storable"
-                    help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos asociados."
+                    help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos de inventario validados (estado 'Hecho')."
                 />
             </xpath>
         </field>
