@@ -57,17 +57,6 @@ class AccountMoveInh(models.Model):
         return number > last_number
 
     def _get_last_z_order_number(self, serial):
-        """
-        Mayor mf_reportz (interpretado como entero) ya cerrado para este
-        serial en pos.order, o None si no hay ninguno valido. Se calcula en
-        SQL para no traer a Python el historico completo de ordenes
-        cerradas; ignora valores no numericos (dato historico corrupto).
-
-        Nombrado distinto a _get_last_z_number (l10n_ve_iot_mf) a proposito:
-        ambos extienden account.move sin llamar a super(), asi que un mismo
-        nombre haria que esta version (que consulta pos_order) reemplace por
-        completo a la de account_move para cualquier instalacion con POS.
-        """
         self.env.cr.execute(
             """
             SELECT MAX(
