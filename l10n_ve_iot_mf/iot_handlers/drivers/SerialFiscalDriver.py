@@ -282,7 +282,7 @@ class SerialFiscalDriver(SerialDriver):
         self._actions.update(
             {
                 "status": self.get_status_machine,
-                "status1": self.get_s1_printer_data,
+                "status1": lambda data: self.get_s1_printer_data(),
                 "logger": self.logger,
                 "logger_multi": self.logger_multi,
                 "programacion": self.programacion,
@@ -772,7 +772,7 @@ class SerialFiscalDriver(SerialDriver):
         :return: Resultado de la operación.
         """
         msg = "Factura impresa correctamente"
-        estado_s1 = self.get_s1_printer_data()
+        estado_s1 = self._get_s1_printer_data_after_print()
         
         if estado_s1:
             number = estado_s1.LastInvoiceNumber
@@ -1225,8 +1225,8 @@ class SerialFiscalDriver(SerialDriver):
                 if not result:
                     _logger.error("Fallo al enviar comando: %s", command)
 
-            estado_s1 = self.get_s1_printer_data()
-            
+            estado_s1 = self._get_s1_printer_data_after_print()
+
             if estado_s1:
                 number = estado_s1.LastCreditNoteNumber
                 machine_number = estado_s1.RegisteredMachineNumber
@@ -2135,22 +2135,27 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
         
-    def _wait_for_s1_after_print(self, timeout=30, poll_interval=2):
+    def _get_s1_printer_data_after_print(self, timeout=30, poll_interval=2):
         """
-        Segun el manual de protocolos (Tabla 59), tras imprimir un Reporte Z
-        la impresora queda ocupada ~20s emitiendo el "reporte de estado de
-        transmision" mas ~3s emitiendo tickets del DNF, y rechaza cualquier
-        comando mientras tanto. Se reintenta la lectura de S1 hasta que la
-        impresora vuelva a estar disponible o se agote el timeout.
+        Lee el estado S1 justo despues de imprimir un documento (factura,
+        nota de credito, Reporte Z). Segun el manual de protocolos (Tabla
+        59), la impresora puede quedar ocupada unos segundos emitiendo el
+        reporte de estado de transmision y rechazar cualquier comando
+        mientras tanto, incluida la lectura de S1 (con excepcion o con una
+        respuesta vacia/incompleta). Se reintenta hasta que la impresora
+        responda con datos validos o se agote el timeout.
         """
         deadline = time.time() + timeout
-        last_error = None
+        last_error = Exception("Timeout esperando datos S1 tras imprimir")
         while time.time() < deadline:
             try:
-                return self.get_s1_printer_data()
+                data = self.get_s1_printer_data()
+                if data and getattr(data, "RegisteredMachineNumber", None):
+                    return data
+                last_error = Exception("S1 respondio vacio o incompleto tras imprimir")
             except Exception as e:
                 last_error = e
-                time.sleep(poll_interval)
+            time.sleep(poll_interval)
         raise last_error
 
     def PrintZReport(self, data, *items):
@@ -2162,7 +2167,7 @@ class SerialFiscalDriver(SerialDriver):
                 raise Exception(status["data"]["status"]["msg"])
 
             self.tfhka.PrintZReport()
-            estado_s1 = self._wait_for_s1_after_print()
+            estado_s1 = self._get_s1_printer_data_after_print()
             response_data = {
                 "_registeredMachineNumber": estado_s1.RegisteredMachineNumber,
                 "_dailyClosureCounter": estado_s1.DailyClosureCounter,
