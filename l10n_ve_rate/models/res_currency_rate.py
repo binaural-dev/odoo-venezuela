@@ -32,6 +32,12 @@ class ResCurrencyRate(models.Model):
             The date of the rate that is gonna be searched for the given currency
             (foreign_currency_id).
 
+        If no rate is found at or before rate_date (e.g. rate_date is older than any
+        recorded rate for this currency/company), falls back to the oldest rate on
+        record instead of returning nothing - callers default a missing rate to 0
+        (see l10n_ve_sale's `_compute_rate`), and a stale-but-real historical rate is
+        always a better result than silently zeroing out the order's foreign amounts.
+
         Returns
         -------
         dict
@@ -45,6 +51,14 @@ class ResCurrencyRate(models.Model):
             ],
             order="name DESC", limit=1,
         )
+        if not rate:
+            rate = self.env["res.currency.rate"].search(
+                [
+                    ("currency_id", "=", foreign_currency_id),
+                    ("company_id", "=", self.env.company.id),
+                ],
+                order="name ASC", limit=1,
+            )
         if not rate:
             return {}
 
