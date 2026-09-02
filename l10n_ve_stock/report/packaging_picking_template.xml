@@ -2,7 +2,7 @@
     <template id="packaging_picking_item">
         <div class="container">
             <div class="row border border-dark rounded position-relative" name="header">
-                <div class="col-7" name="picking_info">
+                <div class="col-7" name="picking_info" style="font-size: 0.7rem;">
                     <div> Date: <span
                             t-esc="context_timestamp(datetime.datetime.now()).strftime('%d-%m-%Y %H:%M')" />
                     </div>
