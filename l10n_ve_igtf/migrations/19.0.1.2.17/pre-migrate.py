@@ -1,46 +1,30 @@
-"""Pre-migration for l10n_ve_igtf 19.0.1.2.17: extiende el retiro de
-19.0.1.2.16 para cubrir también la línea NO homologada (binaural_igtf /
-binaural_base_igtf), y corrige un rename detectado en esa línea.
+"""Pre-migration for l10n_ve_igtf 19.0.1.2.17.
 
-Esta carpeta está deliberadamente SECCIONADA por rama de origen -- cada
-bloque de MODULES_TO_RETIRE / EXCLUSIVE_COLUMNS indica de qué línea de
-clientes viene, porque las dos líneas son mutuamente excluyentes por base
-de datos (un cliente solo tiene una instalada), pero el script debe
-funcionar correctamente sin importar cuál de las dos esté presente.
+CORRECCIÓN (auditoría posterior): esta carpeta originalmente incluía
+también un MODULES_TO_RETIRE_NO_HOMOLOGADA (binaural_igtf,
+binaural_base_igtf) pensado para la línea NO homologada. Se retiró de
+aquí porque es código muerto: para esos clientes l10n_ve_igtf es
+SIEMPRE instalación nueva (nunca tuvieron el módulo), y
+odoo/modules/migration.py:151-152 confirma que
+migrations/<version>/pre-migrate.py NUNCA se ejecuta en instalación
+nueva (state='to install'), solo en actualización de un módulo ya
+instalado (state='to upgrade'). Esa lógica quedó dejada correctamente
+en l10n_ve_igtf/__init__.py (pre_init_hook), que sí corre en
+instalación nueva -- ver ese archivo para la cobertura real de la línea
+no homologada. Mantener ambas copias aquí y allá inducía a pensar
+erróneamente que este archivo también cubre esa línea.
 
-============================================================================
-LÍNEA HOMOLOGADA (checkout maintenance-l10nve_17.0 / maintenance-17.0)
-============================================================================
-Sin cambios respecto a 19.0.1.2.16 -- ver esa carpeta para el análisis
-campo por campo completo de binaural_advance_payment/_igtf/_report y
-binaural_subsidiary_payment_advance.
-
-============================================================================
-LÍNEA NO HOMOLOGADA (rama 17.0 de integra-addons, sin odoo-venezuela)
-============================================================================
-Hallazgo del inventario campo por campo (ver
-INVENTARIO_MODULOS_NO_HOMOLOGADOS.md, sección binaural_igtf +
-binaural_base_igtf): el script 19.0.1.2.16 ya trataba correctamente las
-columnas account_move.amount_paid/alter_igtf_top_aply/foreign_alter_bi_igtf
-y res_company.igtf_two_percentage_account (backup + drop, EXCLUSIVE_COLUMNS
-sin cambios aquí -- son las mismas columnas físicas, la clasificación no
-cambia). Lo que SÍ estaba mal era que los módulos que REALMENTE declaran
-esas columnas en la línea no homologada (binaural_igtf, binaural_base_igtf)
-no estaban en MODULES_TO_RETIRE. Sin eso, post-migrate.py dropea la
-columna mientras el módulo Python que la declara sigue instalado --
-Odoo la recrea vacía en el próximo _auto_init, y el respaldo ya hecho
-en la tabla de backup queda huérfano (el dato no vuelve). Se agregan
-ambos módulos a MODULES_TO_RETIRE_NO_HOMOLOGADA en este archivo.
-
-También se corrige un rename detectado en la línea no homologada, que
-afecta potencialmente a ambas líneas por igual (aplica a cualquier
-cliente que haya tenido binaural_advance_payment_igtf instalado):
+Esta carpeta (línea HOMOLOGADA, checkout maintenance-l10nve_17.0)
+extiende 19.0.1.2.16 con un solo cambio real: RENAMED_COLUMNS corrige
+un rename detectado en binaural_advance_payment_igtf --
 res_company.not_show_bi_igtf_sale_order / not_show_bi_igtf_purchase_order
-(con infijo "_bi_", declarados en binaural_advance_payment_igtf) no
-tienen columna homónima en v19 -- v19 los tiene SIN el infijo:
-not_show_igtf_sale_order / not_show_igtf_purchase_order
+(con infijo "_bi_") no tienen columna homónima en v19 -- v19 los tiene
+SIN el infijo: not_show_igtf_sale_order / not_show_igtf_purchase_order
 (l10n_ve_igtf/models/res_company.py). Es un rename, no una columna
-huérfana -- se migra con UPDATE, no se respalda y descarta.
+huérfana -- se migra con UPDATE, no se respalda y descarta. Para el
+resto (MODULES_TO_RETIRE, EXCLUSIVE_COLUMNS de binaural_advance_payment/
+_igtf/_report y binaural_subsidiary_payment_advance), ver 19.0.1.2.16 --
+sin cambios.
 """
 
 import logging
@@ -69,21 +53,6 @@ MODULES_TO_RETIRE = [
     "binaural_advance_payment",
     "binaural_advance_payment_report",
     "binaural_subsidiary_payment_advance",
-]
-
-# ============================================================================
-# LÍNEA NO HOMOLOGADA -- nuevo en 19.0.1.2.17
-# ============================================================================
-# binaural_igtf y binaural_base_igtf son los dueños reales, en esta línea,
-# de las mismas columnas que EXCLUSIVE_COLUMNS ya trata arriba
-# (igtf_two_percentage_account, amount_paid, alter_igtf_top_aply,
-# foreign_alter_bi_igtf -- ver INVENTARIO_MODULOS_NO_HOMOLOGADOS.md).
-# amount_residual_from_payment también es declarado por binaural_igtf,
-# no solo por binaural_advance_payment -- incluido igual en
-# EXCLUSIVE_COLUMNS de arriba (misma columna física).
-MODULES_TO_RETIRE_NO_HOMOLOGADA = [
-    "binaural_igtf",
-    "binaural_base_igtf",
 ]
 
 # Rename detectado en binaural_advance_payment_igtf (afecta a cualquier
@@ -226,21 +195,14 @@ def _mark_modules_to_remove(cr, module_names):
 
 def migrate(cr, version):
     _logger.info(
-        "l10n_ve_igtf pre-migrate (19.0.1.2.17): retiro consolidado -- "
-        "línea homologada (binaural_advance_payment*) ya cubierta por "
-        "19.0.1.2.16, ahora extendido a la línea no homologada "
-        "(binaural_igtf / binaural_base_igtf) y al rename not_show_bi_igtf_*"
+        "l10n_ve_igtf pre-migrate (19.0.1.2.17): línea homologada "
+        "(binaural_advance_payment*) ya cubierta por 19.0.1.2.16, "
+        "agrega aquí el rename not_show_bi_igtf_*"
     )
     _ensure_backup_table(cr)
     _backup_exclusive_columns(cr)
     _migrate_renamed_columns(cr)
-
-    # Línea homologada -- comportamiento sin cambios respecto a 19.0.1.2.16
     _delete_module_views(cr, MODULES_TO_RETIRE)
     _mark_modules_to_remove(cr, MODULES_TO_RETIRE)
-
-    # Línea no homologada -- nuevo en esta versión
-    _delete_module_views(cr, MODULES_TO_RETIRE_NO_HOMOLOGADA)
-    _mark_modules_to_remove(cr, MODULES_TO_RETIRE_NO_HOMOLOGADA)
 
     _logger.info("l10n_ve_igtf pre-migrate (19.0.1.2.17) complete")
