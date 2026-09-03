@@ -9,7 +9,7 @@ class ResCurrencyRate(models.Model):
     _inherit = "res.currency.rate"
 
     @api.model
-    def compute_rate(self, foreign_currency_id, rate_date):
+    def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=True):
         """
         Compute the rate and inverse rate for the given currency and date.
 
@@ -32,6 +32,17 @@ class ResCurrencyRate(models.Model):
         rate_date : date
             The date of the rate that is gonna be searched for the given currency
             (foreign_currency_id).
+        raise_if_not_found : bool
+            Whether the absence of a usable rate should raise UserError (default) or
+            return {} instead. Callers that only recompute a rate as a side effect of
+            an unrelated operation - e.g. a record's default value on create(), or a
+            create()-time chatter comparison against the current rate - must pass
+            False here: raising there would block that unrelated operation (creating
+            a sale/purchase order) entirely, for every user, whenever nobody has
+            loaded today's rate yet. Reserve the True default for paths where the
+            user is explicitly asking for the rate to be (re)computed and can act on
+            the error (e.g. sale.order._compute_rate(), triggered by a manual change
+            of date_order or foreign_currency_id).
 
         The search only ever looks backwards in time: it filters rates with
         name <= rate_date and takes the closest one (name DESC, limit 1). If there
@@ -42,17 +53,18 @@ class ResCurrencyRate(models.Model):
         Raises
         ------
         UserError
-            If there is no rate at or before rate_date for this currency/company -
-            i.e. rate_date is older than every recorded rate (or none exist at all).
-            This does not happen just because there is no rate for that exact date;
-            it only happens when there is no earlier rate to fall back to either. The
-            caller must configure one instead of silently operating with a missing/
-            zeroed rate.
+            If raise_if_not_found is True and there is no rate at or before rate_date
+            for this currency/company - i.e. rate_date is older than every recorded
+            rate (or none exist at all). This does not happen just because there is
+            no rate for that exact date; it only happens when there is no earlier
+            rate to fall back to either. The caller must configure one instead of
+            silently operating with a missing/zeroed rate.
 
         Returns
         -------
         dict
-            A dictionary with the rate and inverse rate for the given currency and date.
+            A dictionary with the rate and inverse rate for the given currency and
+            date, or {} if no rate was found and raise_if_not_found is False.
         """
         rate = self.env["res.currency.rate"].search(
             [
@@ -63,7 +75,9 @@ class ResCurrencyRate(models.Model):
             order="name DESC", limit=1,
         )
         if not rate:
-            raise UserError(_("There is no rate for that date, please configure one."))
+            if raise_if_not_found:
+                raise UserError(_("There is no rate for that date, please configure one."))
+            return {}
 
         vef_id = self.env.company.currency_id.id
         if vef_id == foreign_currency_id:
