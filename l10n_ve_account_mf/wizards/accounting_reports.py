@@ -86,8 +86,17 @@ class WizardAccountingReports(models.TransientModel):
     # Columnas extra de máquina fiscal en el libro de ventas
     # ------------------------------------------------------------------
     def _get_sale_book_field_groups(self):
+        # "Con máquina fiscal": columnas iguales a las de V17 (una sola columna
+        # "N° de documento" con el nº de máquina fiscal, columnas Reporte Z y
+        # Serial, sin columnas de Alícuota %, y grupos VENTAS NACIONALES /
+        # INTERNACIONALES). Se reconstruye la lista en vez de partir de la base
+        # V19, porque el layout base de V19 es distinto.
+        if self.with_fiscal_machine and not self.all_documents:
+            return self._fiscal_machine_sale_book_groups()
+
+        # "Incluir todos los documentos": layout base V19 + columnas de MF.
         groups = super()._get_sale_book_field_groups()
-        if not (self.with_fiscal_machine or self.all_documents):
+        if not self.all_documents:
             return groups
 
         extra_fields = [
@@ -113,15 +122,80 @@ class WizardAccountingReports(models.TransientModel):
                 break
         return groups
 
+    def _fiscal_machine_sale_book_groups(self):
+        """Columnas del libro de ventas "Con máquina fiscal", replicando el
+        layout de V17."""
+        company = self.company_id
+        sale_groups = []
+
+        basic_fields = [
+            {"name": "N° operacion", "field": "index"},
+            {"name": "Fecha del documento", "field": "document_date", "size": 16},
+            {"name": "RIF", "field": "vat", "size": 16},
+            {"name": "Nombre/Razón social", "field": "partner_name", "size": None},
+            {"name": "Tipo", "field": "move_type", "size": 16},
+            {"name": "Reporte Z", "field": "mf_reportz", "size": 16},
+            {"name": "Serial de Maquina", "field": "mf_serial", "size": 16},
+            {"name": "N° de documento", "field": "document_number", "size": 16},
+            {"name": "N° de control", "field": "correlative", "size": 16},
+            {"name": "Tipo de transacción", "field": "transaction_type"},
+            {"name": "N° Factura afectada", "field": "number_invoice_affected", "size": 16},
+        ]
+        sale_groups.append({"header": "DETALLE DEL DOCUMENTO", "fields": basic_fields})
+
+        total_fields = [
+            {"name": "Total ventas", "field": "total_sales", "format": "number", "size": 16},
+            {"name": "Total ventas con IVA", "field": "total_sales_iva", "format": "number", "size": 16},
+            {"name": "Total ventas exentas", "field": "total_sales_not_iva", "format": "number", "size": 16},
+        ]
+        sale_groups.append({"header": "TOTALES", "fields": total_fields})
+
+        national_fields = [
+            {"name": "Base imponible (16%)", "field": "tax_base_general_aliquot", "format": "number", "size": 16},
+            {"name": "IVA 16%", "field": "amount_general_aliquot", "format": "number", "size": 16},
+        ]
+        if not company.not_show_reduced_aliquot_sale:
+            national_fields.extend([
+                {"name": "Base imponible (8%)", "field": "tax_base_reduced_aliquot", "format": "number"},
+                {"name": "IVA 8%", "field": "amount_reduced_aliquot", "format": "number"},
+            ])
+        if not company.not_show_extend_aliquot_sale:
+            national_fields.extend([
+                {"name": "Base imponible (31%)", "field": "tax_base_extend_aliquot", "format": "number"},
+                {"name": "IVA 31%", "field": "amount_extend_aliquot", "format": "number"},
+            ])
+        sale_groups.append({"header": "VENTAS NACIONALES", "fields": national_fields})
+
+        international_fields = [
+            {"name": "Base imponible", "field": "tax_base_zero_aliquot_international", "format": "number"},
+            {"name": "Alicuota 0%", "field": "zero_aliquot_international", "format": "percent"},
+            {"name": "IVA 0%", "field": "amount_zero_aliquot_international", "format": "number"},
+        ]
+        sale_groups.append({"header": "VENTAS INTERNACIONALES", "fields": international_fields})
+
+        return sale_groups
+
     def _fields_sale_book_line(self, move, taxes):
         res = super()._fields_sale_book_line(move, taxes)
         if not (self.with_fiscal_machine or self.all_documents):
             return res
-        res["mf_invoice_number"] = move.mf_invoice_number or "-"
+
         res["mf_reportz"] = move.mf_reportz or "-"
         res["mf_serial"] = move.mf_serial or "-"
         if move.reversed_entry_id and move.reversed_entry_id.mf_invoice_number:
             res["number_invoice_affected"] = move.reversed_entry_id.mf_invoice_number
+
+        if self.with_fiscal_machine and not self.all_documents:
+            # Layout V17: nº MF en "N° de documento", sin nº de control, con
+            # columnas de venta internacional (0%) en cero.
+            res["document_number"] = move.mf_invoice_number or ""
+            res["correlative"] = ""
+            res["tax_base_zero_aliquot_international"] = 0
+            res["zero_aliquot_international"] = 0
+            res["amount_zero_aliquot_international"] = 0
+        else:
+            # Layout "todos los documentos": columna propia con el nº MF.
+            res["mf_invoice_number"] = move.mf_invoice_number or "-"
         return res
 
     # ------------------------------------------------------------------
@@ -148,6 +222,7 @@ class WizardAccountingReports(models.TransientModel):
         }
 
     def _fields_sale_book_group_line(self, data, amounts):
+        # Línea de Resumen Diario, con el layout de columnas de V17.
         amount_taxed = amounts.get("amount_taxed", 0)
         exempt = amounts.get("tax_base_exempt_aliquot", 0)
         return {
@@ -156,11 +231,8 @@ class WizardAccountingReports(models.TransientModel):
             "vat": "RESUMEN",
             "partner_name": "Resumen Diario de Ventas",
             "move_type": self._determinate_type(data.get("move_type")),
-            "invoice_number": f"Desde {data.get('range_start')} Hasta {data.get('range_end')}",
-            "credit_note_number": "--",
-            "debit_note_number": "--",
-            "correlative": "--",
-            "mf_invoice_number": f"{data.get('range_start')} - {data.get('range_end')}",
+            "document_number": f"Desde {data.get('range_start')} Hasta {data.get('range_end')}",
+            "correlative": "",
             "mf_reportz": data.get("mf_reportz"),
             "mf_serial": data.get("mf_serial"),
             "transaction_type": "01-REG",
@@ -177,6 +249,9 @@ class WizardAccountingReports(models.TransientModel):
             "tax_base_reduced_aliquot": amounts.get("tax_base_reduced_aliquot", 0),
             "tax_base_general_aliquot": amounts.get("tax_base_general_aliquot", 0),
             "tax_base_extend_aliquot": amounts.get("tax_base_extend_aliquot", 0),
+            "tax_base_zero_aliquot_international": 0,
+            "zero_aliquot_international": 0,
+            "amount_zero_aliquot_international": 0,
         }
 
     def parse_sale_book_data(self):

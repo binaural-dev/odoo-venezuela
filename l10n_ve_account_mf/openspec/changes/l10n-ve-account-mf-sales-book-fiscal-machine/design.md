@@ -39,6 +39,20 @@ autónomo) y no podría heredar el wizard general sin una dependencia artificial
 - Se añade columna "N° Máquina Fiscal" (mf_invoice_number), que en V19-iot no
   llegaba a mostrarse.
 
+## Columnas por modo
+
+Las columnas dependen del modo, por pedido del usuario:
+
+- **"Con máquina fiscal"** (`with_fiscal_machine`): replica el layout de columnas
+  de V17 (`_fiscal_machine_sale_book_groups`): una sola columna "N° de documento"
+  con el nº de máquina fiscal, columnas "Reporte Z" + "Serial de Maquina" tras
+  "Tipo", "N° de control" en blanco, grupos VENTAS NACIONALES (Base/IVA 16/8/31,
+  sin columnas de Alícuota %) y VENTAS INTERNACIONALES (0%). No se parte del
+  layout base V19 porque difiere.
+- **"Incluir todos los documentos"** (`all_documents`): se mantiene el layout base
+  de V19 + tres columnas de MF (N° Máquina Fiscal / Reporte Z / Serial). El
+  usuario confirmó que ese modo está bien como está.
+
 ## Alternativas descartadas
 
 - Reinstalar `l10n_ve_iot_mf`: se quitó a propósito en la migración a Web
