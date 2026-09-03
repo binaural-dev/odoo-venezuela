@@ -13,6 +13,9 @@
 - [x] 1.6 `wizards/accounting_reports_views.xml`: dos checkboxes en el wizard
 - [x] 1.7 Registrar en `wizards/__init__.py` y `__manifest__.py` (data + bump
       versión 19.0.1.1.0)
+- [x] 1.8 Columnas del modo "Con máquina fiscal" replican el layout de V17
+      (`_fiscal_machine_sale_book_groups`); "Incluir todos los documentos"
+      mantiene el layout V19
 
 ## 2. Verificación funcional (manual, en navegador)
 
