@@ -1,4 +1,5 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
+from odoo.exceptions import UserError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -32,11 +33,21 @@ class ResCurrencyRate(models.Model):
             The date of the rate that is gonna be searched for the given currency
             (foreign_currency_id).
 
-        If no rate is found at or before rate_date (e.g. rate_date is older than any
-        recorded rate for this currency/company), falls back to the oldest rate on
-        record instead of returning nothing - callers default a missing rate to 0
-        (see l10n_ve_sale's `_compute_rate`), and a stale-but-real historical rate is
-        always a better result than silently zeroing out the order's foreign amounts.
+        The search only ever looks backwards in time: it filters rates with
+        name <= rate_date and takes the closest one (name DESC, limit 1). If there
+        is no rate for rate_date itself but there are rates both before and after it,
+        the closest one *before* it is used - rates dated after rate_date are excluded
+        by the domain itself and never considered, regardless of how close they are.
+
+        Raises
+        ------
+        UserError
+            If there is no rate at or before rate_date for this currency/company -
+            i.e. rate_date is older than every recorded rate (or none exist at all).
+            This does not happen just because there is no rate for that exact date;
+            it only happens when there is no earlier rate to fall back to either. The
+            caller must configure one instead of silently operating with a missing/
+            zeroed rate.
 
         Returns
         -------
@@ -52,15 +63,7 @@ class ResCurrencyRate(models.Model):
             order="name DESC", limit=1,
         )
         if not rate:
-            rate = self.env["res.currency.rate"].search(
-                [
-                    ("currency_id", "=", foreign_currency_id),
-                    ("company_id", "=", self.env.company.id),
-                ],
-                order="name ASC", limit=1,
-            )
-        if not rate:
-            return {}
+            raise UserError(_("There is no rate for that date, please configure one."))
 
         vef_id = self.env.company.currency_id.id
         if vef_id == foreign_currency_id:
