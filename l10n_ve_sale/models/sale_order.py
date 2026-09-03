@@ -413,6 +413,11 @@ class SaleOrder(models.Model):
             # de llegar al or, asi que se comprueba primero.
             rate_date = sale.date_order.date() if sale.date_order else fields.Date.today()
 
+            # TODO(website): confirmar con el responsable de la vertical de
+            # website/e-commerce si esta condicion sigue siendo necesaria y si
+            # el comportamiento (congelar la tasa de ordenes con website_id)
+            # es el correcto. No se toca en la tarea 80063; queda como
+            # oportunidad de analisis para otro momento.
             if (
                 sale.manually_set_rate
                 or "website_id" in sale._fields
@@ -523,7 +528,8 @@ class SaleOrder(models.Model):
         for sale in res:
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
-                sale.foreign_currency_id.id, sale.date_order or fields.Date.today()
+                sale.foreign_currency_id.id,
+                sale.date_order or fields.Date.today(),
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:
