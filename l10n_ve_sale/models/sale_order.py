@@ -50,7 +50,6 @@ class SaleOrder(models.Model):
         rate_values = self.env["res.currency.rate"].compute_rate(
             self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
             self.date_order or fields.Date.today(),
-            raise_if_not_found=False,
         )
         return rate_values.get("foreign_rate", 0)
 
@@ -66,7 +65,6 @@ class SaleOrder(models.Model):
         rate_values = self.env["res.currency.rate"].compute_rate(
             self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
             self.date_order or fields.Date.today(),
-            raise_if_not_found=False,
         )
         return rate_values.get("foreign_inverse_rate", 0)
 
@@ -532,7 +530,6 @@ class SaleOrder(models.Model):
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id,
                 sale.date_order or fields.Date.today(),
-                raise_if_not_found=False,
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:

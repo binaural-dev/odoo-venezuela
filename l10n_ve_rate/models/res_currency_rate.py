@@ -9,7 +9,7 @@ class ResCurrencyRate(models.Model):
     _inherit = "res.currency.rate"
 
     @api.model
-    def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=True):
+    def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=False):
         """
         Compute the rate and inverse rate for the given currency and date.
 
@@ -33,16 +33,23 @@ class ResCurrencyRate(models.Model):
             The date of the rate that is gonna be searched for the given currency
             (foreign_currency_id).
         raise_if_not_found : bool
-            Whether the absence of a usable rate should raise UserError (default) or
-            return {} instead. Callers that only recompute a rate as a side effect of
-            an unrelated operation - e.g. a record's default value on create(), or a
-            create()-time chatter comparison against the current rate - must pass
-            False here: raising there would block that unrelated operation (creating
-            a sale/purchase order) entirely, for every user, whenever nobody has
-            loaded today's rate yet. Reserve the True default for paths where the
-            user is explicitly asking for the rate to be (re)computed and can act on
-            the error (e.g. sale.order._compute_rate(), triggered by a manual change
-            of date_order or foreign_currency_id).
+            Whether the absence of a usable rate should raise UserError, instead of
+            returning {}. Defaults to False: this method is reached from many
+            "automatic" paths that are not a deliberate user request for a rate -
+            record defaults on create(), a create()-time chatter comparison against
+            the current rate, and even the plain @api.depends compute for
+            foreign_rate/foreign_inverse_rate, which the ORM can re-trigger from
+            unrelated code simply reading that field (e.g. sale.order._prepare_invoice()
+            reading self.foreign_rate). None of those call sites can meaningfully
+            react to a hard error, so raising there would block unrelated operations
+            (creating an order, preparing an invoice) entirely, for every user,
+            whenever nobody has loaded today's rate yet.
+
+            raise_if_not_found=True only makes sense from a call site built
+            specifically to let the user act on the error in place (e.g. a
+            dedicated "recalculate rate" button or onchange) - no such call site
+            exists yet in this codebase; the parameter is kept available for one to
+            opt into deliberately, rather than baked into the shared compute chain.
 
         The search only ever looks backwards in time: it filters rates with
         name <= rate_date and takes the closest one (name DESC, limit 1). If there
@@ -57,8 +64,7 @@ class ResCurrencyRate(models.Model):
             for this currency/company - i.e. rate_date is older than every recorded
             rate (or none exist at all). This does not happen just because there is
             no rate for that exact date; it only happens when there is no earlier
-            rate to fall back to either. The caller must configure one instead of
-            silently operating with a missing/zeroed rate.
+            rate to fall back to either.
 
         Returns
         -------
