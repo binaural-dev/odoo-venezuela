@@ -1,5 +1,6 @@
 from datetime import date
 
+from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -20,40 +21,35 @@ class TestComputeRateFallback(TransactionCase):
             "rate": rate_value,
         })
 
-    def test_compute_rate_returns_oldest_rate_when_date_predates_all_rates(self):
-        """If rate_date is older than any recorded rate for this currency/company,
-        compute_rate must fall back to the oldest rate on record instead of
-        returning {} - a stale rate is safer than the 0 that callers default to
-        when the dict comes back empty.
-        """
-        oldest = self._create_rate(date(2023, 1, 1), 40.0)
-        self._create_rate(date(2023, 6, 1), 45.0)
-
-        result = self.Rate.compute_rate(self.foreign_currency.id, date(2020, 1, 1))
-
-        self.assertTrue(result, "compute_rate should not return an empty dict.")
-        self.assertEqual(
-            result["foreign_rate"], oldest.inverse_company_rate,
-            "Should fall back to the oldest rate on record (USD uses inverse_company_rate).",
-        )
-
-    def test_compute_rate_still_prefers_closest_rate_at_or_before_date(self):
-        """The fallback must not interfere with the normal path: a date that
-        does have a matching rate at-or-before it should still resolve to the
-        closest one, not the oldest.
+    def test_compute_rate_raises_when_date_predates_all_rates(self):
+        """If rate_date is older than every recorded rate for this currency/
+        company, there is no earlier rate to fall back to, so compute_rate
+        must raise UserError instead of silently returning {} (which callers
+        default to a rate of 0).
         """
         self._create_rate(date(2023, 1, 1), 40.0)
-        closest = self._create_rate(date(2023, 6, 1), 45.0)
+        self._create_rate(date(2023, 6, 1), 45.0)
+
+        with self.assertRaises(UserError):
+            self.Rate.compute_rate(self.foreign_currency.id, date(2020, 1, 1))
+
+    def test_compute_rate_uses_closest_earlier_rate_ignoring_later_ones(self):
+        """With no rate for rate_date itself but rates both before and after
+        it, compute_rate must use the closest one *before* it - rates dated
+        after rate_date are excluded by the domain and must never be picked,
+        no matter how close they are.
+        """
+        self._create_rate(date(2023, 1, 1), 40.0)
+        closest_before = self._create_rate(date(2023, 6, 1), 45.0)
         self._create_rate(date(2023, 12, 1), 50.0)
 
         result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 8, 1))
 
-        self.assertEqual(result["foreign_rate"], closest.inverse_company_rate)
+        self.assertEqual(result["foreign_rate"], closest_before.inverse_company_rate)
 
-    def test_compute_rate_returns_empty_when_no_rate_exists_at_all(self):
-        """With no rate at all for this currency/company, both the primary
-        search and the fallback search find nothing, so compute_rate still
-        returns {} - this is not a case the fallback is meant to cover.
+    def test_compute_rate_raises_when_no_rate_exists_at_all(self):
+        """With no rate at all for this currency/company, there is nothing
+        at or before rate_date to use, so compute_rate must raise UserError.
         """
-        result = self.Rate.compute_rate(self.foreign_currency.id, date(2023, 1, 1))
-        self.assertEqual(result, {})
+        with self.assertRaises(UserError):
+            self.Rate.compute_rate(self.foreign_currency.id, date(2023, 1, 1))
