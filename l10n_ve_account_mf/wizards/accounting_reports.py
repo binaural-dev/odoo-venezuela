@@ -173,6 +173,21 @@ class WizardAccountingReports(models.TransientModel):
         ]
         sale_groups.append({"header": "VENTAS INTERNACIONALES", "fields": international_fields})
 
+        # Anexar los grupos que aportan OTROS módulos (IGTF, RETENCIONES, etc.),
+        # que en V19 vienen del layout base ALÍCUOTA y se perderían al reconstruir
+        # las columnas desde cero. Se toman de super() y se añaden al final, en el
+        # mismo orden que V17 (IGTF, RETENCIONES).
+        replaced_headers = {
+            "DETALLE DEL DOCUMENTO",
+            "TOTALES",
+            "ALÍCUOTA GENERAL (16%)",
+            "ALÍCUOTA REDUCIDA (8%)",
+            "ALÍCUOTA ADICIONAL (31%)",
+        }
+        for group in super()._get_sale_book_field_groups():
+            if group.get("header") not in replaced_headers:
+                sale_groups.append(group)
+
         return sale_groups
 
     def _fields_sale_book_line(self, move, taxes):
@@ -252,6 +267,7 @@ class WizardAccountingReports(models.TransientModel):
             "tax_base_zero_aliquot_international": 0,
             "zero_aliquot_international": 0,
             "amount_zero_aliquot_international": 0,
+            "igtf": 0,
         }
 
     def parse_sale_book_data(self):
