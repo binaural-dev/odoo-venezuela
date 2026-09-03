@@ -48,7 +48,11 @@ Las columnas dependen del modo, por pedido del usuario:
   con el nº de máquina fiscal, columnas "Reporte Z" + "Serial de Maquina" tras
   "Tipo", "N° de control" en blanco, grupos VENTAS NACIONALES (Base/IVA 16/8/31,
   sin columnas de Alícuota %) y VENTAS INTERNACIONALES (0%). No se parte del
-  layout base V19 porque difiere.
+  layout base V19 porque difiere. Los grupos que aportan OTROS módulos (IGTF de
+  `l10n_ve_igtf`, RETENCIONES) SÍ se preservan: se toman de `super()` y se
+  anexan al final, para que el resultado quede idéntico al archivo de V17
+  (27 columnas: ... VENTAS INTERNACIONALES, IGTF, RETENCIONES). Referencia
+  verificada contra el xlsx real de V17 (INVERSIONES ESSENZA MILANO).
 - **"Incluir todos los documentos"** (`all_documents`): se mantiene el layout base
   de V19 + tres columnas de MF (N° Máquina Fiscal / Reporte Z / Serial). El
   usuario confirmó que ese modo está bien como está.
