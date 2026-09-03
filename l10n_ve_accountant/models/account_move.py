@@ -2,6 +2,8 @@ import logging
 from collections import defaultdict
 from contextlib import contextmanager
 
+from psycopg2 import IntegrityError
+
 from lxml import etree
 from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError, ValidationError
@@ -32,58 +34,39 @@ class AccountMove(models.Model):
         res = super()._auto_init()
         if not index_exists(self.env.cr, "account_move_unique_name_ve"):
             drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
-            # we can add the following UNIQUE INDEX
-            self.env.cr.execute(
-                """
-                WITH duplicated_sequence AS (
-                    SELECT name, partner_id, state, journal_id
+            try:
+                with self.env.cr.savepoint():
+                    self.env.cr.execute(
+                        """
+                        CREATE UNIQUE INDEX account_move_unique_name_ve
+                            ON account_move(
+                                name, partner_id, company_id, journal_id
+                            )
+                        WHERE state = 'posted' AND name != '/';
+                        """
+                    )
+            except IntegrityError:
+                self.env.cr.execute(
+                    """
+                    SELECT partner_id, journal_id, name, COUNT(*)
                     FROM account_move
                     WHERE state = 'posted'
                     AND name != '/'
                     AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
-                GROUP BY partner_id, journal_id, name, state
+                    GROUP BY partner_id, journal_id, company_id, name
                     HAVING COUNT(*) > 1
-                ),
-                to_update AS (
-                    SELECT move.id,
-                        move.name,
-                        move.state,
-                        move.date,
-                        row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
-                        FROM duplicated_sequence
-                        JOIN account_move move ON move.name = duplicated_sequence.name
-                                            AND move.partner_id = duplicated_sequence.partner_id
-                                            AND move.state = duplicated_sequence.state
-                                            AND move.journal_id = duplicated_sequence.journal_id
-                ),
-                new_vals AS (
-                    SELECT id,
-                            name || ' (' || (row_seq-1)::text || ')' AS name
-                        FROM to_update
-                        WHERE row_seq > 1
+                    """
                 )
-                UPDATE account_move
-                SET name = new_vals.name
-                FROM new_vals
-                WHERE account_move.id = new_vals.id;
-            """
-            )
-
-            self.env.cr.execute(
-                """
-                CREATE UNIQUE INDEX account_move_unique_name
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-                CREATE UNIQUE INDEX account_move_unique_name_ve
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-            """
-            )
+                collisions = self.env.cr.fetchall()
+                _logger.warning(
+                    "l10n_ve_accountant: no se pudo crear el índice único "
+                    "account_move_unique_name_ve porque existen %d grupo(s) de "
+                    "account.move (facturas de proveedor) con el mismo nombre "
+                    "para el mismo proveedor/diario/compañía. No se modificó "
+                    "ningún dato -- revisar manualmente si son duplicados "
+                    "reales antes de forzar la unicidad. Grupos: %s",
+                    len(collisions), collisions,
+                )
         return res
 
     def _get_fields_to_compute_lines(self):
