@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields, api, _
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
 
@@ -10,9 +10,29 @@ class ResConfigSettings(models.TransientModel):
     dispatch_guide_digital_tfhka = fields.Boolean(related="company_id.dispatch_guide_digital_tfhka", string="Dispatch Guide Digital", readonly=False)
     sequence_validation_tfhka = fields.Boolean(related="company_id.sequence_validation_tfhka", string="Sequence Validation", readonly=False)
     digitalization_with_payment_tfhka = fields.Boolean(related="company_id.digitalization_with_payment_tfhka", string="Digital invoicing with payment registration", readonly=False)
+    # Expone el campo multi-moneda de la compañía en la vista de ajustes.
+    multi_currency_invoice_tfhka = fields.Boolean(related="company_id.multi_currency_invoice_tfhka", string="Multi-currency digital invoicing", readonly=False)
+    mix_invoicing_tfhka = fields.Boolean(related="company_id.mix_invoicing_tfhka", string="Allow Mixed Invoicing", readonly=False)
+    mix_invoicing_type_tfhka = fields.Selection(
+        related="company_id.mix_invoicing_type_tfhka",
+        readonly=False
+    )
+
 
     def action_generate_token_tfhka(self):
         self.company_id.generate_token_tfhka()
+        # generate_token_tfhka() lanza UserError/ValidationError ante
+        # cualquier falla; si llega aca fue exitoso (patron de unidigital).
+        return {
+            "type": "ir.actions.client",
+            "tag": "display_notification",
+            "params": {
+                "title": _("TFHKA Token"),
+                "message": _("Token generated successfully."),
+                "type": "success",
+                "sticky": False,
+            },
+        }
 
     @api.onchange('invoice_digital_tfhka')
     def _onchange_invoice_digital_tfhka(self):

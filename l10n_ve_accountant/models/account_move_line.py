@@ -30,11 +30,11 @@ class AccountMoveLine(models.Model):
         default=False,
         help="Indicates that foreign_price was manually set and should be preserved.",
     )
-    foreign_price = fields.Monetary(
+    foreign_price = fields.Float(
         help="Foreign Price of the line",
         compute="_compute_foreign_price",
         inverse="_inverse_foreign_price",
-        currency_field="foreign_currency_id",
+        digits="Foreign Product Price",
         store=True,
         copy=True
     )
@@ -114,13 +114,41 @@ class AccountMoveLine(models.Model):
     @api.depends("price_unit", "foreign_inverse_rate", "currency_id",
                   "move_id.foreign_inverse_rate")
     def _compute_foreign_price(self):
+        """`foreign_price` is a `Float` with its own "Foreign Product Price"
+        precision, not a `Monetary` -- in this Odoo version `Monetary`
+        ignores the `digits` kwarg entirely (`convert_to_column`/
+        `convert_to_cache` only ever use `currency.decimal_places`, 2 for
+        VEF), which would silently force the alterno unit price down to 2
+        decimals like any other Bs amount regardless of the precision
+        configured for it.
+
+        `round=False` here for the same reason: without it, `_convert`
+        rounds to the CURRENCY's precision (`foreign_currency_id`,
+        typically 2 decimals) before the value reaches the field, wiping
+        out "Foreign Product Price"'s own higher precision even though the
+        `Float` field already rounds itself on save, with ITS precision.
+
+        Lines flagged `foreign_price_manual` are skipped entirely: without
+        this, ANY trigger of this compute (e.g. saving/posting the move,
+        which touches `move_id.foreign_inverse_rate` and other
+        dependencies even when the user didn't change anything relevant)
+        silently overwrote a manually-edited alterno price back to the
+        auto-computed value, making the manual override effectively
+        disappear the moment the invoice was confirmed. `write()` below
+        clears the flag (letting this recompute again) specifically when
+        `price_unit` itself changes, since a manual override tied to the
+        OLD native price should not silently survive a new one.
+        """
         for line in self:
+            if line.foreign_price_manual:
+                continue
             line.foreign_price = line.currency_id._convert(
                 line.price_unit,
                 line.foreign_currency_id,
                 line.company_id,
                 line.move_id.invoice_date or fields.Date.today(),
-                custom_rate=line.foreign_inverse_rate
+                custom_rate=line.foreign_inverse_rate,
+                round=False,
             )
 
     def _inverse_foreign_price(self):
@@ -138,27 +166,92 @@ class AccountMoveLine(models.Model):
             if line.foreign_currency_id.compare_amounts(line.foreign_price, expected) != 0:
                 line.foreign_price_manual = True
 
-    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
+    @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_total", "price_subtotal",
+                  "price_unit", "currency_id", "foreign_inverse_rate",
+                  "move_id.foreign_inverse_rate")
     def _compute_foreign_subtotal(self):
+        """Compute `foreign_subtotal` and `foreign_price_total`.
+
+        `foreign_price_total`'s tax portion is the direct conversion of
+        this line's own native tax amount (`price_total - price_subtotal`)
+        at the invoice's rate -- the same `_convert`/`custom_rate`
+        mechanism used for `foreign_price`/`foreign_subtotal`, and for what
+        actually ends up posted (`foreign_debit`/`foreign_credit` are
+        themselves conversions of native amounts, not an independent
+        re-tax in the alterno currency). Previously this re-taxed
+        `foreign_price` via `tax_ids.compute_all()`, a second independent
+        computation that can diverge from the native tax amount (different
+        tax bases/rounding) and, when several lines shared one tax line,
+        required reconciling against the posted total -- rippling one
+        line's price change into every sibling's `foreign_price_total`.
+        Converting the native tax amount directly needs no sibling data at
+        all, so only the line actually being edited ever changes, and it
+        matches the asiento for sales, purchases, and the invoice alike.
+
+        EXCEPT when the company's base currency is USD: there, the native
+        amounts (`price_total`/`price_subtotal`) are already rounded to
+        USD's 2 decimals BEFORE any conversion happens, and multiplying
+        that already-rounded delta by the (large, VEF-per-USD) rate
+        amplifies a fraction-of-a-cent USD rounding difference into
+        several bolivares of drift. Taxing the alterno base directly
+        (`foreign_price`, which keeps its own higher "Foreign Product
+        Price" precision instead of being rounded to 2 decimals) avoids
+        that double-rounding-then-amplify path entirely -- the same
+        reasoning `price_subtotal` itself follows natively (tax the base
+        directly, never convert a foreign delta into it).
+
+        `foreign_subtotal` itself must always be the TAX-EXCLUDED alterno
+        base, mirroring `price_subtotal` (ticket 14217). With a
+        `price_include` tax, `price_unit`/`foreign_price` already carry
+        the tax inside them, so multiplying `foreign_price` by the
+        quantity alone (the old formula) yielded the GROSS amount, not
+        the base: `foreign_subtotal` showed the same figure as
+        `foreign_price_total` instead of the net amount, and in the
+        non-USD branch that gross figure then had the native tax delta
+        added ON TOP of it, duplicating/inflating the tax in Bs.
+        `tax_ids.compute_all()`'s `total_excluded` is the correct base
+        regardless of `price_include` (it degrades to `base x quantity`
+        when there is no tax or the tax is not price-included), so it is
+        used here unconditionally whenever the line has taxes.
+        """
+        usd = self.env.ref("base.USD", raise_if_not_found=False)
         for line in self:
-            line_discount_price_unit = line.foreign_price * (
+            foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
-            foreign_subtotal = line_discount_price_unit * line.quantity
-
             if line.tax_ids:
-                taxes_res = line.tax_ids.compute_all(
-                    line_discount_price_unit,
+                foreign_taxes_res = line.tax_ids.compute_all(
+                    foreign_price_unit_full_precision,
                     quantity=line.quantity,
                     currency=line.foreign_currency_id,
                     product=line.product_id,
                     partner=line.partner_id,
                     is_refund=line.is_refund,
                 )
-                line.foreign_subtotal = taxes_res["total_excluded"]
-                line.foreign_price_total = taxes_res["total_included"]
+                foreign_subtotal = line.foreign_currency_id.round(
+                    foreign_taxes_res["total_excluded"]
+                )
+                foreign_total_included = line.foreign_currency_id.round(
+                    foreign_taxes_res["total_included"]
+                )
             else:
-                line.foreign_price_total = line.foreign_subtotal = foreign_subtotal
+                foreign_subtotal = line.foreign_currency_id.round(
+                    foreign_price_unit_full_precision * line.quantity
+                )
+                foreign_total_included = foreign_subtotal
+            line.foreign_subtotal = foreign_subtotal
+
+            if usd and line.company_id.currency_id == usd:
+                foreign_tax_amount = foreign_total_included - foreign_subtotal
+            else:
+                foreign_tax_amount = line.currency_id._convert(
+                    line.price_total - line.price_subtotal,
+                    line.foreign_currency_id,
+                    line.company_id,
+                    line.move_id.invoice_date or fields.Date.today(),
+                    custom_rate=line.foreign_inverse_rate,
+                )
+            line.foreign_price_total = foreign_subtotal + foreign_tax_amount
 
     def _set_foreign(self, value):
         self.foreign_debit = abs(value) if value > 0 else 0.0
@@ -175,16 +268,14 @@ class AccountMoveLine(models.Model):
         if balance and len(currency_lines) == 1:
             return -balance
 
-        cur = self.currency_id
-        if cur and cur != self.company_id.currency_foreign_id and cur != self.company_id.currency_id:
-            return self.company_id.currency_id._convert(
-                self.debit - self.credit,
-                self.company_id.currency_foreign_id,
-                self.company_id,
-                self.date or fields.Date.context_today(self),
-            )
+        return self.company_id.currency_id._convert(
+            self.debit - self.credit,
+            self.company_id.currency_foreign_id,
+            self.company_id,
+            self.date or fields.Date.context_today(self),
+            custom_rate=self.foreign_inverse_rate or 0.0,
+        )
 
-        return (self.debit - self.credit) * self.foreign_inverse_rate
 
     def _get_foreign_value(self):
         self.ensure_one()
@@ -213,8 +304,8 @@ class AccountMoveLine(models.Model):
                 and self.move_id.payment_id.is_retention:
             retention_amount = self.move_id.payment_id.retention_foreign_amount
             if self.credit:
-                return retention_amount
-            return -retention_amount
+                return -retention_amount
+            return retention_amount
 
         if not self.move_id.is_invoice(include_receipts=True):
             return self._get_non_invoice_foreign_value()
@@ -223,7 +314,13 @@ class AccountMoveLine(models.Model):
             sign = self.move_id.direction_sign * -1
             return -(self.foreign_subtotal * sign)
 
-        return (self.debit - self.credit) * self.foreign_inverse_rate
+        return self.company_id.currency_id._convert(
+            self.debit - self.credit,
+            self.foreign_currency_id,
+            self.company_id,
+            self.date or fields.Date.context_today(self),
+            custom_rate=self.foreign_inverse_rate or 0.0,
+        )
 
     def _skip_foreign_compute(self):
         return (
@@ -424,11 +521,38 @@ class AccountMoveLine(models.Model):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
         self.foreign_price_manual = False
+
+    def write(self, vals):
+        """Clear `foreign_price_manual` whenever `price_unit` itself is
+        being written, not just from the UI's `_onchange_price_unit` (which
+        never fires for writes coming from code/API, only from a Form). A
+        manual alterno override was tied to the OLD native price; silently
+        keeping it after the native price changes would leave a
+        mismatched, misleading ratio. `_compute_foreign_price` skips
+        recompute entirely while the flag is set, so it must be cleared
+        here for the new price to actually take effect.
+        """
+        if 'price_unit' in vals:
+            manual_lines = self.filtered('foreign_price_manual')
+            if manual_lines:
+                manual_lines.write({'foreign_price_manual': False})
+        return super().write(vals)
     
     
     @api.model
     def _prepare_reconciliation_single_partial(self, debit_values, credit_values, shadowed_aml_values=None):
-        # 1. Llamada al método original
+        """Add the alterno (foreign currency) amount reconciled by this
+        partial to the values the base method already computes.
+
+        The alterno amount shown as "reconciled" must reflect the rate of
+        whichever side is NOT the invoice (the payment or bank statement
+        line), not the invoice's historical rate: always taking the minimum
+        of both sides used to almost always pick the invoice's side instead,
+        because with rates rising over time its Bs value is smaller (being
+        dated earlier, at a lower rate). When neither side is clearly "the
+        payment" (e.g. an invoice reconciled against a credit note), the
+        previous minimum-of-both behavior is kept.
+        """
         res = super()._prepare_reconciliation_single_partial(
             debit_values, credit_values, shadowed_aml_values=shadowed_aml_values
         )
@@ -437,41 +561,41 @@ class AccountMoveLine(models.Model):
             return res
 
         partial_vals = res['partial_values']
-        amount_company = partial_vals['amount']  # Monto conciliado en moneda base (Bs)
+        amount_company = partial_vals['amount']
 
         def get_foreign_partial_amount(aml, amount_to_reconcile_bs):
-            f_currency = aml.company_id.currency_foreign_id # Usar la de la compañía
+            """The alterno share of `aml` proportional to the Bs amount
+            being reconciled (rule of three: reconciling 50 Bs of a 100 Bs
+            invoice means reconciling 50% of its alterno balance too)."""
+            f_currency = aml.company_id.currency_foreign_id
             if not f_currency or aml.currency_id == f_currency:
-                # Si la línea ya está en la moneda foránea, Odoo ya tiene amount_currency
                 return abs(aml.amount_currency)
-            
-            # Si el balance en Bs es 0 (evitar división por cero)
             if not aml.balance:
                 return 0.0
 
-            # CALCULAMOS LA PROPORCIÓN
-            # Si estoy conciliando 50 Bs de una factura de 100 Bs, 
-            # debo conciliar el 50% del balance foráneo.
             total_bs = abs(aml.balance)
             total_foreign = abs(aml.foreign_balance)
-            
-            # Regla de 3: (Monto Conciliado Bs * Total Foráneo) / Total Bs
             ratio = amount_to_reconcile_bs / total_bs
             partial_foreign = total_foreign * ratio
-            
             return f_currency.round(partial_foreign)
 
         debit_aml = debit_values['aml']
         credit_aml = credit_values['aml']
 
-        # Calculamos cuánto aporta cada lado a la conciliación en moneda foránea
         foreign_debit_amount = get_foreign_partial_amount(debit_aml, amount_company)
         foreign_credit_amount = get_foreign_partial_amount(credit_aml, amount_company)
 
-        # El monto de la conciliación parcial foránea es el mínimo de ambos lados proporcionalmente
-        # pero usualmente en una conciliación parcial, el 'amount' de la partial es único.
+        debit_is_invoice = debit_aml.move_id.is_invoice(include_receipts=True)
+        credit_is_invoice = credit_aml.move_id.is_invoice(include_receipts=True)
+        if debit_is_invoice and not credit_is_invoice:
+            foreign_amount = foreign_credit_amount
+        elif credit_is_invoice and not debit_is_invoice:
+            foreign_amount = foreign_debit_amount
+        else:
+            foreign_amount = min(foreign_debit_amount, foreign_credit_amount)
+
         res['partial_values'].update({
-            'foreign_amount': min(foreign_debit_amount, foreign_credit_amount),
+            'foreign_amount': foreign_amount,
             'debit_foreign_amount_currency': foreign_debit_amount,
             'credit_foreign_amount_currency': foreign_credit_amount,
         })
