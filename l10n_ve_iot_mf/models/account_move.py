@@ -173,6 +173,19 @@ class AccountMoveInh(models.Model):
         }
         return _data
 
+    def _get_mf_document_date(self):
+        """Fecha real del documento fiscal: usada para validar que la
+        impresion ocurra el mismo dia, y como fecha impresa de la factura
+        referenciada en notas de credito/debito. Clientes donde invoice_date
+        cumple doble funcion (fecha de tasa + fecha de factura) deben
+        sobreescribir este metodo con su propio campo de fecha de factura."""
+        _logger.info(
+            "DEBUG invoice_date [_get_mf_document_date base] move=%s invoice_date=%r invoice_date_display=%r today_utc=%r user_tz=%r",
+            self.id, self.invoice_date, getattr(self, "invoice_date_display", None),
+            fields.Date.today(), self.env.user.tz,
+        )
+        return self.invoice_date
+
     def check_print_out_invoice(self):
         # if not self.journal_id.fiscal:
         #     raise ValidationError(_("You cannot print an invoice with a non-fiscal journal"))
@@ -183,7 +196,7 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has no fiscal machine assigned"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
-            if self.invoice_date != fields.Date.today():
+            if self._get_mf_document_date() != fields.Date.today():
                 raise ValidationError(_("Cannot print an invoice with a future date"))
             if self.is_credit and self.amount_residual != self.amount_total:
                 raise ValidationError(_("You cannot print a credit invoice with associated payments"))
@@ -294,7 +307,7 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has no fiscal machine assigned"))
             # if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
             #     raise ValidationError(_("The credit note must be made in the same fiscal machine"))
-            if self.invoice_date != fields.Date.today():
+            if self._get_mf_document_date() != fields.Date.today():
                 raise ValidationError(_("The credit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
@@ -386,7 +399,7 @@ class AccountMoveInh(models.Model):
                 "invoice_affected": {
                     "number": data.reversed_entry_id.mf_invoice_number,
                     "serial_machine": data.reversed_entry_id.mf_serial,
-                    "date": data.reversed_entry_id.invoice_date.strftime("%d/%m/%Y"),
+                    "date": data.reversed_entry_id._get_mf_document_date().strftime("%d/%m/%Y"),
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,
@@ -432,7 +445,7 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has no fiscal machine assigned"))
             # if self.iot_mf.serial_machine != self.debit_origin_id.mf_serial:
             #     raise ValidationError(_("The debit note must be made in the same fiscal machine"))
-            if self.invoice_date != fields.Date.today():
+            if self._get_mf_document_date() != fields.Date.today():
                 raise ValidationError(_("The debit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
@@ -496,7 +509,7 @@ class AccountMoveInh(models.Model):
                 "invoice_affected": {
                     "number": data.debit_origin_id.mf_invoice_number,
                     "serial_machine": data.debit_origin_id.mf_serial,
-                    "date": data.debit_origin_id.invoice_date.strftime("%d/%m/%Y"),
+                    "date": data.debit_origin_id._get_mf_document_date().strftime("%d/%m/%Y"),
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,
