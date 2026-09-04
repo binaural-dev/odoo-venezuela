@@ -45,13 +45,16 @@ export class SerialConnection {
             }
 
             this.port = await navigator.serial.requestPort();
-            
+
             await this.port.open(this.config);
             this.isConnected = true;
-            
-            // Guardar la configuración en localStorage para reconexión automática
+
+            // Guardar la configuración en localStorage para reconexión automática.
+            // La identidad USB (VID/PID) NO se persiste aquí: la guarda TfhkaDriver
+            // SOLO tras verificar con getStatus() que el puerto responde como
+            // máquina fiscal — así nunca se guarda la balanza (u otro serial) como MF.
             this._savePortConfig();
-            
+
             return true;
         } catch (error) {
             console.error("SerialConnection:: Error al conectar puerto serial", error);
@@ -71,15 +74,67 @@ export class SerialConnection {
             }
 
             const ports = await navigator.serial.getPorts();
-            if (ports.length > 0) {
-                this.port = ports[0];
-                await this.port.open(this.config);
-                this.isConnected = true;
-                return true;
+            if (!ports.length) {
+                return false;
             }
-            return false;
+
+            // Selección por identidad USB (VID/PID). Reabrir a ciegas
+            // ports[0] agarraba el PRIMER puerto autorizado de la pestaña,
+            // que con varios dispositivos Web Serial (p.ej. balanza + MF)
+            // podía no ser la máquina fiscal: getStatus() no respondía y la
+            // reconexión silenciosa fallaba, obligando a re-vincular a mano
+            // tras cada hand-off de Megasoft.
+            const saved = this._loadDeviceInfo();
+
+            // Sin identidad guardada NO adivinamos ningún puerto: adoptar uno
+            // a ciegas (aunque sea el único) podría tomar/sondear/cerrar la
+            // balanza u otro serial activo con nuestra config (8E1). El usuario
+            // fija la identidad de la MF conectando UNA vez desde el botón
+            // (requestPort → se verifica con getStatus y se persiste); a partir
+            // de ahí la reconexión silenciosa es automática por VID/PID.
+            if (!saved) {
+                console.warn(
+                    "SerialConnection:: sin identidad de máquina fiscal guardada. " +
+                        "Conéctela una vez desde el botón para fijarla."
+                );
+                return false;
+            }
+
+            const port =
+                ports.find((p) => {
+                    const info = (p.getInfo && p.getInfo()) || {};
+                    return (
+                        info.usbVendorId === saved.usbVendorId &&
+                        info.usbProductId === saved.usbProductId
+                    );
+                }) || null;
+
+            if (!port) {
+                // La MF autorizada no está presente ahora (desenchufada, u otro
+                // origen). No es un error: el listener de re-enumeración o el
+                // próximo intento la reconectarán cuando reaparezca.
+                return false;
+            }
+
+            this.port = port;
+            await this._openPort();
+            // Tras una re-enumeración USB, port.open() puede resolver (o
+            // lanzar InvalidStateError) dejando el puerto "abierto" pero con
+            // los streams en null. Si no hay readable+writable, la conexión
+            // no sirve: no la marcamos como buena (evita el crash de
+            // getStatus()/write() y el falso "conectado").
+            if (!this.port.readable || !this.port.writable) {
+                console.error(
+                    "SerialConnection:: el puerto se abrió pero no expone streams utilizables"
+                );
+                this.isConnected = false;
+                return false;
+            }
+            this.isConnected = true;
+            return true;
         } catch (error) {
             console.error("SerialConnection:: Error en reconexión automática", error);
+            this.isConnected = false;
             return false;
         }
     }
@@ -90,8 +145,9 @@ export class SerialConnection {
      * @returns {Promise<boolean>}
      */
     async write(data) {
-        if (!this.isConnected || !this.port) {
-            console.error("SerialConnection:: Puerto no conectado");
+        if (!this.isConnected || !this.port || !this.port.writable) {
+            console.error("SerialConnection:: Puerto no conectado o sin stream de escritura");
+            this.isConnected = false;
             return false;
         }
 
@@ -101,8 +157,10 @@ export class SerialConnection {
             waitCount++;
         }
         if (waitCount >= 500) {
-            console.error("SerialConnection:: Timeout esperando writeLock");
-            this.writeLock = false;
+            // No pisar un lock que sigue en uso por otra escritura en vuelo:
+            // abortar es más seguro que forzar writeLock=false y colisionar.
+            console.error("SerialConnection:: Timeout esperando writeLock; se aborta la escritura");
+            return false;
         }
 
         try {
@@ -131,8 +189,9 @@ export class SerialConnection {
      * @returns {Promise<Uint8Array|null>}
      */
     async read(timeout = 5000, delimiter = "\x03") {
-        if (!this.isConnected || !this.port) {
-            console.error("SerialConnection:: Puerto no conectado");
+        if (!this.isConnected || !this.port || !this.port.readable) {
+            console.error("SerialConnection:: Puerto no conectado o sin stream de lectura");
+            this.isConnected = false;
             return null;
         }
 
@@ -237,7 +296,7 @@ export class SerialConnection {
      * @returns {Promise<void>}
      */
     async flushBuffer() {
-        if (!this.isConnected || !this.port) {
+        if (!this.isConnected || !this.port || !this.port.readable) {
             return;
         }
 
@@ -342,16 +401,23 @@ export class SerialConnection {
             }
 
             if (this.port) {
-                await this.port.close();
+                try {
+                    await this.port.close();
+                } catch (e) {
+                    // El puerto pudo perderse físicamente (re-enumeración):
+                    // close() lanza, pero igual debemos soltar la referencia
+                    // y el estado para no quedar "conectados" a un puerto
+                    // difunto.
+                }
                 this.port = null;
             }
 
+        } catch (error) {
+            console.error("SerialConnection:: Error al desconectar puerto serial", error);
+        } finally {
             this.isConnected = false;
             this.readLock = false;
             this.writeLock = false;
-
-        } catch (error) {
-            console.error("SerialConnection:: Error al desconectar puerto serial", error);
         }
     }
 
@@ -379,6 +445,80 @@ export class SerialConnection {
             }
         } catch (error) {
             console.error("SerialConnection:: Error al cargar configuración", error);
+        }
+    }
+
+    /**
+     * Abre this.port con la configuración actual de forma robusta.
+     *
+     * Casos que cubre:
+     * - Puerto ya abierto y utilizable (readable+writable): no hace nada.
+     * - `InvalidStateError` ("already open") pero SIN streams utilizables:
+     *   ocurre tras una re-enumeración USB o un cierre previo incompleto.
+     *   El puerto queda en un estado "abierto zombie" con readable/writable
+     *   en null; hay que cerrarlo y reabrirlo para obtener streams frescos.
+     *   (Antes se tragaba el error como éxito y getStatus()/write() reventaba
+     *   con "Cannot read properties of null (reading 'getWriter')".)
+     * @private
+     * @returns {Promise<void>}
+     */
+    async _openPort() {
+        // Ya abierto y usable: nada que hacer.
+        if (this.port.readable && this.port.writable) {
+            return;
+        }
+        try {
+            await this.port.open(this.config);
+        } catch (error) {
+            if (error && error.name === "InvalidStateError") {
+                // "Ya abierto" pero sin streams usables → cerrar y reabrir.
+                try {
+                    await this.port.close();
+                } catch (e) {
+                    // El puerto pudo perderse físicamente; seguimos e
+                    // intentamos abrir de nuevo igual.
+                }
+                await this.port.open(this.config);
+                return;
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Persiste la identidad USB (VID/PID) del puerto actualmente
+     * seleccionado, para que autoConnect() reabra ese mismo dispositivo.
+     * @private
+     */
+    _saveDeviceInfo() {
+        try {
+            const info = this.port && this.port.getInfo ? this.port.getInfo() : null;
+            if (info && (info.usbVendorId != null || info.usbProductId != null)) {
+                localStorage.setItem(
+                    "fiscal_printer_device",
+                    JSON.stringify({
+                        usbVendorId: info.usbVendorId ?? null,
+                        usbProductId: info.usbProductId ?? null,
+                    })
+                );
+            }
+        } catch (error) {
+            console.error("SerialConnection:: Error al guardar identidad del dispositivo", error);
+        }
+    }
+
+    /**
+     * Carga la identidad USB (VID/PID) previamente guardada.
+     * @private
+     * @returns {{usbVendorId: (number|null), usbProductId: (number|null)}|null}
+     */
+    _loadDeviceInfo() {
+        try {
+            const saved = localStorage.getItem("fiscal_printer_device");
+            return saved ? JSON.parse(saved) : null;
+        } catch (error) {
+            console.error("SerialConnection:: Error al cargar identidad del dispositivo", error);
+            return null;
         }
     }
 }

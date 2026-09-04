@@ -8,6 +8,20 @@ import { floatIsZero, roundPrecision as round_pr } from "@web/core/utils/numbers
 import { LocalOrderHistory } from "../utils/LocalOrderHistory";
 
 /**
+ * Hand-off del puerto COM entre la máquina fiscal (Web Serial) y procesos
+ * externos que necesitan el mismo puerto (p.ej. el VPOS de Megasoft, un
+ * proceso Windows separado). Web Serial abre el puerto UNA vez y lo mantiene
+ * con lock exclusivo toda la sesión, así que mientras el navegador lo tenga
+ * abierto ningún otro proceso puede usarlo. Este módulo (dueño de la MF)
+ * expone `withFiscalPrinterReleased()`: cede el puerto (disconnect), corre la
+ * sección crítica externa y luego lo reclama con reintentos silenciosos.
+ * Antes esta lógica vivía duplicada en binaural_megasoft/PosState.js.
+ */
+const MF_PORT_HANDOFF_GRACE_MS = 1000;
+const MF_PORT_RECLAIM_MAX_ATTEMPTS = 3;
+const MF_PORT_RECLAIM_RETRY_DELAY_MS = 750;
+
+/**
  * Override del PosStore para integrar la máquina fiscal vía Web Serial API.
  *
  * Migración Odoo 17 → 19:
@@ -59,6 +73,123 @@ patch(PosStore.prototype, {
   useFiscalMachine() {
     const fiscalPrinter = this.getFiscalPrinter();
     return Boolean(fiscalPrinter && fiscalPrinter.isConnected);
+  },
+
+  _sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  },
+
+  /**
+   * Ejecuta `criticalSection` cediendo temporalmente el puerto de la máquina
+   * fiscal a un proceso externo (p.ej. el VPOS de Megasoft) que necesita el
+   * mismo COM. Si la MF está conectada: la desconecta antes, corre la
+   * sección, y la reclama después (reconexión silenciosa con reintentos). Si
+   * la MF no está instalada/conectada, simplemente corre la sección.
+   *
+   * El resultado devuelto y las excepciones lanzadas por `criticalSection`
+   * se propagan intactos; el reclamo del puerto ocurre siempre (finally).
+   *
+   * @param {() => Promise<any>} criticalSection
+   * @returns {Promise<any>}
+   */
+  async withFiscalPrinterReleased(criticalSection) {
+    const fiscalPrinter = this.getFiscalPrinter();
+    // Gestionar el puerto si el driver se dice conectado O si la conexión
+    // todavía retiene el puerto físico (caso: autoConnect abrió pero getStatus
+    // falló → driver.isConnected=false pero el COM sigue tomado con lock). Sin
+    // esto, el proceso externo (Megasoft) no podría abrir el COM ocupado.
+    const shouldManagePort = Boolean(
+      fiscalPrinter && (fiscalPrinter.isConnected || fiscalPrinter.connection?.port)
+    );
+
+    if (shouldManagePort) {
+      try {
+        await fiscalPrinter.disconnect();
+      } catch (e) {
+        // No abortar la sección crítica solo porque nuestra propia
+        // desconexión falló; el proceso externo puede necesitar el puerto
+        // igual y seguiremos intentando reclamarlo después.
+        console.warn(
+          "[l10n_ve_pos_mf] falló la desconexión de la máquina fiscal antes de ceder el puerto, se continúa igual",
+          e
+        );
+      }
+    }
+
+    try {
+      return await criticalSection();
+    } finally {
+      if (shouldManagePort) {
+        const reclaimed = await this._reclaimFiscalPrinterPort(fiscalPrinter);
+        if (!reclaimed) {
+          this._notifyFiscalPrinterReclaimFailed();
+        }
+        // Reflejar el estado real en el botón de la MF (que no observa el
+        // driver directamente): tras un reclaim fallido no debe seguir verde.
+        this._broadcastFiscalStatus(Boolean(fiscalPrinter.isConnected));
+      }
+    }
+  },
+
+  /**
+   * Notifica el estado de conexión de la máquina fiscal a componentes que no
+   * observan el driver directamente (p.ej. FiscalPrinterButton), vía evento
+   * de ventana.
+   * @param {boolean} connected
+   */
+  _broadcastFiscalStatus(connected) {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("mf-fiscal-status", { detail: { connected: Boolean(connected) } })
+      );
+    } catch (_e) {
+      // dispatch no debe tirar por sí mismo
+    }
+  },
+
+  /**
+   * Espera el margen de gracia y reintenta reconectar la máquina fiscal
+   * (autoConnect silencioso, sin gesto de usuario) hasta
+   * MF_PORT_RECLAIM_MAX_ATTEMPTS veces.
+   * @param {Object} fiscalPrinter
+   * @returns {Promise<boolean>}
+   */
+  async _reclaimFiscalPrinterPort(fiscalPrinter) {
+    await this._sleep(MF_PORT_HANDOFF_GRACE_MS);
+    for (let attempt = 1; attempt <= MF_PORT_RECLAIM_MAX_ATTEMPTS; attempt++) {
+      try {
+        await fiscalPrinter.connect();
+        if (fiscalPrinter.isConnected) {
+          return true;
+        }
+      } catch (e) {
+        console.warn(
+          `[l10n_ve_pos_mf] intento ${attempt}/${MF_PORT_RECLAIM_MAX_ATTEMPTS} de reclamar la máquina fiscal falló`,
+          e
+        );
+      }
+      if (attempt < MF_PORT_RECLAIM_MAX_ATTEMPTS) {
+        await this._sleep(MF_PORT_RECLAIM_RETRY_DELAY_MS);
+      }
+    }
+    return false;
+  },
+
+  _notifyFiscalPrinterReclaimFailed() {
+    try {
+      this.env.services.notification.add(
+        _t(
+          "No se pudo reconectar automáticamente la máquina fiscal tras la operación externa. " +
+            "Verifique la conexión desde el botón de máquina fiscal antes de validar la próxima orden."
+        ),
+        { type: "warning", sticky: true }
+      );
+    } catch (_e) {
+      console.warn(
+        "[l10n_ve_pos_mf] no se pudo mostrar el aviso de reconexión de la máquina fiscal",
+        _e
+      );
+    }
   },
 
   async applyDiscount(percent, order = this.getOrder(), options = {}) {
@@ -661,8 +792,19 @@ patch(PosStore.prototype, {
     // Remover primero las líneas de descuento global para que
     // globalDiscountPc sea 0 antes de modificar líneas y evitar
     // re-disparos del debounce de pos_discount.
+    //
+    // Se usa `line.delete()` (borrado síncrono, igual que hace el propio
+    // `pos_discount` con sus líneas de descuento) y NO `order.removeOrderline()`:
+    // este último lo sobreescribe `binaural_pos_hr` como método ASYNC que, con
+    // `pos_remove_orderline_require_supervisor_key`, abre un popup de supervisor
+    // y sólo elimina la línea tras el PIN. Como aquí no se espera esa promesa,
+    // la línea de descuento nunca se eliminaba: `globalDiscountPc` seguía ≠ 0 y
+    // el `setDiscount()` de más abajo re-disparaba el debounce de `pos_discount`
+    // → re-entrada infinita en applyDiscount → popups de supervisor apilados que
+    // congelaban la caja (pantalla negra). Estas líneas son gestionadas por el
+    // sistema, no por el cajero, así que su borrado no debe pasar por el gate.
     for (const line of inference.discountLines) {
-      order.removeOrderline(line);
+      line.delete();
     }
 
     // Resetear todas las líneas a 0% para aplicar la tasa sobre precios crudos
