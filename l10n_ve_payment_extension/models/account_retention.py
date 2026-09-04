@@ -208,6 +208,19 @@ class AccountRetention(models.Model):
                     record.iva_type_eligible_partner_ids = Partner
                     continue
 
+                # retention_iva_line_ids carries its own domain (type_retention
+                # = 'iva') that only applies when the field is *read*, not when
+                # it's traversed inside a search() domain -- there, the ORM
+                # walks every account.retention.line linked to the move
+                # regardless of type. That let a pending ISLR retention line
+                # (draft/emitted) wrongly block an invoice from the IVA
+                # dropdown. Resolve the blocking move ids explicitly, scoped
+                # to IVA retentions only.
+                blocking_move_ids = self.env['account.retention.line'].search([
+                    ('retention_id.type_retention', '=', 'iva'),
+                    ('state', 'in', ('draft', 'emitted')),
+                ]).move_id.ids
+
                 invoices = search_invoices_with_taxes(
                     self.env['account.move'],
                     [
@@ -218,8 +231,7 @@ class AccountRetention(models.Model):
                         # Match the criterion in #1005: a credit note's residual is negative,
                         # so '>' 0 excluded it, making its lines unreachable from this dropdown.
                         ('amount_residual', '!=', 0),
-                        '!',
-                        ('retention_iva_line_ids.state', 'in', ('draft', 'emitted')),
+                        ('id', 'not in', blocking_move_ids),
                     ]
                 )
                 record.iva_type_eligible_partner_ids = invoices.mapped('partner_id')
