@@ -1321,7 +1321,7 @@ class AccountMove(models.Model):
             return move.line_ids.filtered('tax_repartition_line_id')
 
         def get_value(record, field):
-            return self.env['account.move.line']._fields[field].convert_to_write(record[field], record)
+            return record._fields[field].convert_to_write(record[field], record)
 
         def get_tax_line_tracked_fields(line):
             return ('amount_currency', 'balance', 'analytic_distribution')
@@ -1385,6 +1385,16 @@ class AccountMove(models.Model):
                 return any_field_has_changed(tax_before, tax_lines)
             if any(line not in base_lines for line, values in base_before.items() if values['tax_ids']):
                 return any_field_has_changed(tax_before, tax_lines)
+            # Nada del calculo en moneda de la compañía cambió -- pero si la
+            # tasa efectiva move->compañía sí cambió (ej. al editar
+            # invoice_date), igual hay que resincronizar para refrescar
+            # `foreign_balance` de las líneas de impuesto con la tasa
+            # nueva. round_from_tax_lines=True: los montos en moneda de la
+            # compañía no se tocan, solo se refresca la porción foránea
+            # (_write_line ya sabe escribir nada más que foreign_balance
+            # cuando no hace falta más).
+            if field_has_changed(vals_before, move, 'move_currency_to_company_currency_rate'):
+                return True
             return None
 
         def _find_foreign_update(record_id, foreign_section):
@@ -1418,7 +1428,7 @@ class AccountMove(models.Model):
         moves_values_before = {
             move: {
                 field: get_value(move, field)
-                for field in ('currency_id', 'partner_id', 'move_type')
+                for field in ('currency_id', 'partner_id', 'move_type', 'move_currency_to_company_currency_rate')
             }
             for move in container['records']
             if move.state == 'draft'
