@@ -240,6 +240,17 @@ class TestIvaEligiblePartners(TransactionCase):
         eligible = self._get_iva_eligible_partners("iva", "in_invoice")
         self.assertNotIn(self.partner, eligible)
 
+    def test_supplier_no_retention_lines_is_eligible(self):
+        # Regression for #15015: an invoice with an empty retention_iva_line_ids
+        # o2m produces a LEFT JOIN with NULL state, so "NOT (NULL IN (...))" was
+        # falsy in SQL and the invoice was wrongly excluded even though it has
+        # never had any IVA retention line at all.
+        invoice = self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
+        self.assertFalse(invoice.retention_iva_line_ids)
+        self.assertNotEqual(invoice.amount_residual, 0)
+        eligible = self._get_iva_eligible_partners("iva", "in_invoice")
+        self.assertIn(self.partner, eligible)
+
     def test_supplier_negative_residual_is_eligible(self):
         # Aligned with #1005: a credit note's residual is negative, so it must stay
         # eligible here or its lines become unreachable from this dropdown.
