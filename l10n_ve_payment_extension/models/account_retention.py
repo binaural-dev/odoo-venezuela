@@ -604,22 +604,24 @@ class AccountRetention(models.Model):
         Fully driven by the `type_retention` selection: the sequence code
         and name are derived from it, so a new retention type only needs an
         entry in that selection to get its own sequence automatically.
-        Padding is left to the ir.sequence record itself (its own field
-        default), not decided here.
         """
         code = f"retention.{type_retention}.control.number"
         sequence = self.env["ir.sequence"].search(
             [
                 ("code", "=", code),
                 ("company_id", "=", self.env.company.id),
-            ]
+            ],
+            limit=1,
         )
         if not sequence:
+            padding_by_type = {"iva": 8, "islr": 5, "municipal": 5}
             sequence = self.env["ir.sequence"].create(
                 {
                     "name": _("Numero de control retenciones %s")
                     % type_retention.upper(),
                     "code": code,
+                    "padding": padding_by_type.get(type_retention, 5),
+                    "company_id": self.env.company.id,
                     "implementation": "no_gap",
                 }
             )
