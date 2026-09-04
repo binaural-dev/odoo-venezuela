@@ -1,5 +1,6 @@
 
 import logging
+from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 
@@ -987,5 +988,114 @@ class TestForeignBalance(TransactionCase):
 
         fd, fc = self._assert_foreign_balance_squares(
             invoice.line_ids, "invoice_multipart_term"
+        )
+
+    def test_invoice_tax_line_foreign_recompute_on_date_change(self):
+        """Regresion: cambiar `invoice_date` (y por tanto la tasa alterna)
+        debe recalcular el debito/credito alterno de la linea de impuesto.
+
+        Causa raiz del bug: `_get_foreign_value` devolvia `self.foreign_balance`
+        para lineas 'tax', pero `foreign_balance` se calcula como
+        `foreign_debit - foreign_credit` -- los mismos campos que se estan
+        recalculando --, asi que la linea de impuesto quedaba congelada en
+        el valor con el que se creo la factura, sin importar que
+        `invoice_date`/la tasa cambiaran despues.
+        """
+        day1 = fields.Date.today()
+        day2 = day1 - timedelta(days=1)
+        rate_day2 = 120.0  # distinto al rate_day1 (40.0) seteado en setUp
+
+        self.env["res.currency.rate"].create(
+            {
+                "name": day2,
+                "currency_id": self.currency_usd.id,
+                "inverse_company_rate": rate_day2,
+                "company_id": self.company.id,
+            }
+        )
+
+        purchase_journal = self.env["account.journal"].search(
+            [("type", "=", "purchase"), ("company_id", "=", self.company.id)], limit=1
+        ) or self.env["account.journal"].sudo().create(
+            {
+                "name": "Purchase Test Recompute",
+                "code": "PRTRC",
+                "type": "purchase",
+                "company_id": self.company.id,
+            }
+        )
+
+        purchase_tax = self.env["account.tax"].create({
+            "name": "IVA 16% Compras Recompute",
+            "amount": 16,
+            "amount_type": "percent",
+            "type_tax_use": "purchase",
+            "company_id": self.company.id,
+            "tax_group_id": self.test_tax_group.id,
+        })
+
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": purchase_journal.id,
+                "currency_id": self.currency_vef.id,  # Factura en VEF (moneda de la compañía)
+                "date": day1,
+                "invoice_date": day1,
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1.0,
+                            "price_unit": 1000.0,
+                            "account_id": self.account_income.id,
+                            "tax_ids": [(6, 0, [purchase_tax.id])],
+                        }
+                    )
+                ],
+            }
+        )
+        self.assertEqual(invoice.state, "draft")
+
+        tax_line = invoice.line_ids.filtered(lambda l: l.display_type == "tax")
+        self.assertTrue(tax_line, "La factura debe tener una linea de impuesto")
+
+        expected_day1 = self.currency_vef._convert(
+            tax_line.debit - tax_line.credit,
+            self.currency_usd,
+            self.company,
+            day1,
+        )
+        self.assertAlmostEqual(
+            tax_line.foreign_debit - tax_line.foreign_credit,
+            expected_day1,
+            delta=0.02,
+            msg="Foreign debit/credit de la linea de impuesto no coincide con la tasa inicial",
+        )
+
+        invoice.write({"invoice_date": day2, "date": day2})
+
+        tax_line = invoice.line_ids.filtered(lambda l: l.display_type == "tax")
+        expected_day2 = self.currency_vef._convert(
+            tax_line.debit - tax_line.credit,
+            self.currency_usd,
+            self.company,
+            day2,
+        )
+
+        self.assertNotAlmostEqual(
+            expected_day1,
+            expected_day2,
+            delta=0.02,
+            msg="El escenario de prueba no cambio realmente la tasa entre day1 y day2",
+        )
+        self.assertAlmostEqual(
+            tax_line.foreign_debit - tax_line.foreign_credit,
+            expected_day2,
+            delta=0.02,
+            msg=(
+                "Bug: la linea de impuesto no se recalculo con la nueva tasa "
+                "al cambiar invoice_date (se quedo con el valor de creacion)"
+            ),
         )
 
