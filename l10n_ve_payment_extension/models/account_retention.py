@@ -181,6 +181,51 @@ class AccountRetention(models.Model):
 
     date_emision = fields.Date('Emision Date', default=False)
 
+
+    iva_type_eligible_partner_ids = fields.Many2many(
+        "res.partner",
+        string="Eligible Partners for IVA",
+        compute="_compute_iva_type_eligible_partner_ids",
+    )
+
+    @api.depends("type_retention", "type", "company_id")
+    def _compute_iva_type_eligible_partner_ids(self):
+        Partner = self.env["res.partner"]
+        if len(self) > 1:
+            # UI-only field used to filter partner_id's domain on the retention form,
+            # which only ever computes it for a single record. Skip the invoice search
+            # entirely for bulk reads (exports, RPC calls, reads from other modules)
+            # instead of firing one search_invoices_with_taxes per record.
+            self.iva_type_eligible_partner_ids = Partner
+            return
+        for record in self:
+            if record.type_retention == 'iva' and record.type:
+                if record.type in ('in_invoice', 'in_refund'):
+                    move_types = ('in_invoice', 'in_refund')
+                elif record.type in ('out_invoice', 'out_refund'):
+                    move_types = ('out_invoice', 'out_refund')
+                else:
+                    record.iva_type_eligible_partner_ids = Partner
+                    continue
+
+                invoices = search_invoices_with_taxes(
+                    self.env['account.move'],
+                    [
+                        ('iva_voucher_number', '=', False),
+                        ('company_id', '=', record.company_id.id),
+                        ('state', '=', 'posted'),
+                        ('move_type', 'in', move_types),
+                        # Match the criterion in #1005: a credit note's residual is negative,
+                        # so '>' 0 excluded it, making its lines unreachable from this dropdown.
+                        ('amount_residual', '!=', 0),
+                        '!',
+                        ('retention_iva_line_ids.state', 'in', ('draft', 'emitted')),
+                    ]
+                )
+                record.iva_type_eligible_partner_ids = invoices.mapped('partner_id')
+            else:
+                record.iva_type_eligible_partner_ids = Partner
+
     @api.depends("retention_line_ids", "retention_line_ids.move_id")
     def _compute_actual_invoice_ids(self):
         for retention in self:
