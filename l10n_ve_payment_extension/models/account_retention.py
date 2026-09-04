@@ -218,6 +218,12 @@ class AccountRetention(models.Model):
                         # Match the criterion in #1005: a credit note's residual is negative,
                         # so '>' 0 excluded it, making its lines unreachable from this dropdown.
                         ('amount_residual', '!=', 0),
+                        # NOTE: negated field-traversal domains on empty o2m's produce a
+                        # LEFT JOIN with NULL, so "NOT (NULL IN (...))" is falsy in SQL and
+                        # invoices with no retention_iva_line_ids at all were wrongly
+                        # excluded. Explicitly include invoices without any lines.
+                        '|',
+                        ('retention_iva_line_ids', '=', False),
                         '!',
                         ('retention_iva_line_ids.state', 'in', ('draft', 'emitted')),
                     ]
