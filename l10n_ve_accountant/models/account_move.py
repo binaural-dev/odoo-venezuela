@@ -3,8 +3,6 @@ import math
 from collections import defaultdict
 from contextlib import contextmanager
 
-from psycopg2 import IntegrityError
-
 from lxml import etree
 from odoo import _, api, fields, models, Command
 from odoo.exceptions import UserError, ValidationError
@@ -32,43 +30,56 @@ class AccountMove(models.Model):
     ]
 
     def _auto_init(self):
-        res = super()._auto_init()
+        # Se ejecuta ANTES de super()._auto_init(): el _auto_init de core
+        # (account/models/account_move.py) intenta crear su propio índice
+        # account_move_unique_name (name, journal_id) de forma incondicional,
+        # sin protección alguna. Si ya existe un índice con ese nombre --el
+        # nuestro, más amplio-- core detecta que ya existe y se salta su
+        # propio intento, evitando que la instalación truene por facturas de
+        # distintos proveedores que comparten número en el mismo diario.
         if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            drop_index(self.env.cr, "account_move_unique_name", self._table)
-            try:
-                with self.env.cr.savepoint():
-                    self.env.cr.execute(
-                        """
-                        CREATE UNIQUE INDEX account_move_unique_name_ve
-                            ON account_move(
-                                name, partner_id, company_id, journal_id
-                            )
-                        WHERE state = 'posted' AND name != '/';
-                        """
-                    )
-            except IntegrityError:
-                self.env.cr.execute(
-                    """
-                    SELECT partner_id, journal_id, name, COUNT(*)
-                    FROM account_move
-                    WHERE state = 'posted'
-                    AND name != '/'
-                    AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
-                    GROUP BY partner_id, journal_id, company_id, name
-                    HAVING COUNT(*) > 1
-                    """
-                )
-                collisions = self.env.cr.fetchall()
+            groups = self.env["account.move"]._read_group(
+                domain=[
+                    ("state", "=", "posted"),
+                    ("name", "!=", "/"),
+                    ("partner_id", "!=", False),
+                ],
+                groupby=["partner_id", "journal_id", "company_id", "name"],
+                aggregates=["__count"],
+            )
+            collisions = [group for group in groups if group[-1] > 1]
+            if collisions:
                 _logger.warning(
-                    "l10n_ve_accountant: no se pudo crear el índice único "
-                    "account_move_unique_name_ve porque existen %d grupo(s) de "
-                    "account.move (facturas de proveedor) con el mismo nombre "
-                    "para el mismo proveedor/diario/compañía. No se modificó "
-                    "ningún dato -- revisar manualmente si son duplicados "
-                    "reales antes de forzar la unicidad. Grupos: %s",
+                    "l10n_ve_accountant: no se reemplazó el índice único "
+                    "account_move_unique_name por account_move_unique_name_ve "
+                    "porque existen %d grupo(s) de account.move con el mismo "
+                    "nombre para el mismo proveedor/diario/compañía. No se "
+                    "modificó ningún dato -- revisar manualmente si son "
+                    "duplicados reales antes de forzar la unicidad. Grupos: %s",
                     len(collisions), collisions,
                 )
-        return res
+            else:
+                # Solo se descarta el índice de core (name, journal_id) una vez
+                # confirmado que es seguro reemplazarlo por uno más permisivo
+                # (incluye partner_id/company_id): en Venezuela distintos
+                # proveedores pueden repetir el mismo número de factura en el
+                # mismo diario.
+                drop_index(self.env.cr, "account_move_unique_name", self._table)
+                self.env.cr.execute(
+                    """
+                    CREATE UNIQUE INDEX account_move_unique_name
+                        ON account_move(
+                            name, partner_id, company_id, journal_id
+                        )
+                    WHERE state = 'posted' AND name != '/';
+                    CREATE UNIQUE INDEX account_move_unique_name_ve
+                        ON account_move(
+                            name, partner_id, company_id, journal_id
+                        )
+                    WHERE state = 'posted' AND name != '/';
+                    """
+                )
+        return super()._auto_init()
 
     def _get_fields_to_compute_lines(self):
         return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
