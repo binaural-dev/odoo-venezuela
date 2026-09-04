@@ -1,11 +1,15 @@
 from dateutil.relativedelta import relativedelta
-from datetime import datetime
+from datetime import datetime, time, timedelta
 from io import BytesIO
 from odoo import models, fields
 from odoo.exceptions import UserError
+import pytz
 import xlsxwriter
 import logging
 _logger = logging.getLogger(__name__)
+
+VE_TIMEZONE = pytz.timezone("America/Caracas")
+
 class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     _inherit = "wizard.accounting.reports"
 
@@ -169,6 +173,98 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             "igtf": amounts.get("igtf", 0),
         }
 
+    def _get_pos_zero_report_z_lines(self, moves):
+        """Reportes Z cerrados por POS sin ninguna factura asociada."""
+        if not self.env["ir.module.module"].search(
+            [("name", "=", "l10n_ve_pos_mf"), ("state", "=", "installed")], limit=1
+        ):
+            return []
+
+        utc_from = VE_TIMEZONE.localize(
+            datetime.combine(self.date_from, time.min)
+        ).astimezone(pytz.UTC).replace(tzinfo=None)
+        utc_to = VE_TIMEZONE.localize(
+            datetime.combine(self.date_to + timedelta(days=1), time.min)
+        ).astimezone(pytz.UTC).replace(tzinfo=None)
+
+        sessions = self.env["pos.session"].search(
+            [
+                ("state", "=", "closed"),
+                ("report_z", "!=", False),
+                ("config_id.company_id", "=", self.company_id.id),
+                ("stop_at", ">=", utc_from),
+                ("stop_at", "<", utc_to),
+            ]
+        )
+        if not sessions:
+            return []
+
+        # Clave compuesta (serial, Z): el mismo número de Z puede repetirse
+        # entre dos máquinas fiscales distintas.
+        known_z = {}
+        known_z_ints = set()
+        for move in moves:
+            z_int = int(move.mf_reportz)
+            invoice_int = int(move.mf_invoice_number)
+            known_z_ints.add(z_int)
+            key = (move.mf_serial, z_int)
+            current = known_z.get(key)
+            if not current or invoice_int > current[0]:
+                known_z[key] = (invoice_int, move.mf_invoice_number)
+
+        sessions = sessions.sorted(lambda s: int(s.report_z))
+
+        init_cumulative = {
+            "tax_base_exempt_aliquot": 0,
+            "amount_taxed": 0,
+            "tax_base_reduced_aliquot": 0,
+            "amount_reduced_aliquot": 0,
+            "tax_base_general_aliquot": 0,
+            "amount_general_aliquot": 0,
+            "tax_base_extend_aliquot": 0,
+            "amount_extend_aliquot": 0,
+            "tax_base_zero_aliquot_international": 0,
+            "amount_zero_aliquot_international": 0,
+            "igtf": 0,
+        }
+
+        zero_lines = []
+        for session in sessions:
+            z_int = int(session.report_z)
+            if z_int in known_z_ints:
+                continue
+
+            if session.serial_machine:
+                candidates = [
+                    key for key in known_z
+                    if key[0] == session.serial_machine and key[1] < z_int
+                ]
+                if not candidates:
+                    candidates = [key for key in known_z if key[1] < z_int]
+            else:
+                candidates = [key for key in known_z if key[1] < z_int]
+
+            if not candidates:
+                continue
+
+            prev_key = max(candidates, key=lambda key: key[1])
+            _, last_invoice = known_z[prev_key]
+            fallback_serial = prev_key[0]
+
+            data = {
+                "move_type": "out_invoice",
+                "range_start": last_invoice,
+                "range_end": last_invoice,
+                "date": pytz.UTC.localize(session.stop_at).astimezone(VE_TIMEZONE).date(),
+                "mf_reportz": str(z_int),
+                "mf_serial": session.serial_machine or fallback_serial,
+            }
+            zero_lines.append(
+                self._fields_sale_book_group_line(data, init_cumulative.copy())
+            )
+
+        return zero_lines
+
     def parse_sale_book_data(self):
         if not self.with_fiscal_machine or self.all_documents:
             return super().parse_sale_book_data()
@@ -193,7 +289,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         agrouped_by_date = {}
         for move in moves:
-            key = str(move.create_date.strftime("%d-%m-%Y"))
+            key = str(move.invoice_date.strftime("%d-%m-%Y"))
             if not agrouped_by_date.get(key):
                 agrouped_by_date[key] = move
             else:
@@ -222,7 +318,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         is_last_move = True
 
                     amounts = self._determinate_amount_taxeds(move)
-                    is_igtf = bool(move.alter_bi_igtf > 0 or move.foreign_alter_bi_igtf > 0)
+                    # alter_bi_igtf/foreign_alter_bi_igtf los agrega l10n_ve_igtf,
+                    # que l10n_ve_iot_mf no declara como dependencia.
+                    is_igtf = bool(
+                        getattr(move, "alter_bi_igtf", 0) > 0
+                        or getattr(move, "foreign_alter_bi_igtf", 0) > 0
+                    )
                     if is_igtf:
                         multiplier = -1 if move.move_type == "out_refund" else 1
                         igtf_val = (
@@ -311,9 +412,15 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                             range_last = move.mf_invoice_number
                             continue
                         range_last = move.mf_invoice_number
-        
+
+        sale_book_lines.extend(self._get_pos_zero_report_z_lines(moves))
+
+        # Desempata por Reporte Z cuando dos líneas caen en la misma fecha.
         sale_book_lines = sorted(
                     sale_book_lines,
-                    key=lambda row: datetime.strptime(row['document_date'], "%d/%m/%Y")
-                )                       
+                    key=lambda row: (
+                        datetime.strptime(row['document_date'], "%d/%m/%Y"),
+                        int(row['mf_reportz']),
+                    )
+                )
         return sale_book_lines
