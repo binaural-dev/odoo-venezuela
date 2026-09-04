@@ -269,11 +269,6 @@ class AccountMoveInh(models.Model):
         referenciada en notas de credito/debito. Clientes donde invoice_date
         cumple doble funcion (fecha de tasa + fecha de factura) deben
         sobreescribir este metodo con su propio campo de fecha de factura."""
-        _logger.info(
-            "DEBUG invoice_date [_get_mf_document_date base] move=%s invoice_date=%r invoice_date_display=%r today_utc=%r user_tz=%r",
-            self.id, self.invoice_date, getattr(self, "invoice_date_display", None),
-            fields.Date.today(), self.env.user.tz,
-        )
         return self.invoice_date
 
     def check_print_out_invoice(self):
