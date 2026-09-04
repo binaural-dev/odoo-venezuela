@@ -83,15 +83,15 @@ class TestRetentionLifecycle(RetentionTestCommon):
         })
 
     def test_01_get_sequences(self):
-        seq_iva = self.env["account.retention"].get_sequence_iva_retention()
+        seq_iva = self.env["account.retention"].get_sequence_retention("iva")
         self.assertTrue(seq_iva)
         self.assertEqual(seq_iva.code, "retention.iva.control.number")
 
-        seq_islr = self.env["account.retention"].get_sequence_islr_retention()
+        seq_islr = self.env["account.retention"].get_sequence_retention("islr")
         self.assertTrue(seq_islr)
         self.assertEqual(seq_islr.code, "retention.islr.control.number")
 
-        seq_municipal = self.env["account.retention"].get_sequence_municipal_retention()
+        seq_municipal = self.env["account.retention"].get_sequence_retention("municipal")
         self.assertTrue(seq_municipal)
         self.assertEqual(seq_municipal.code, "retention.municipal.control.number")
 
@@ -101,14 +101,14 @@ class TestRetentionLifecycle(RetentionTestCommon):
         self.env["ir.sequence"].search([
             ("code", "=", "retention.iva.control.number"),
         ]).unlink()
-        seq_iva = self.env["account.retention"].get_sequence_iva_retention()
+        seq_iva = self.env["account.retention"].get_sequence_retention("iva")
         self.assertTrue(seq_iva)
         self.assertEqual(seq_iva.padding, 8)
 
         self.env["ir.sequence"].search([
             ("code", "=", "retention.islr.control.number"),
         ]).unlink()
-        seq_islr = self.env["account.retention"].get_sequence_islr_retention()
+        seq_islr = self.env["account.retention"].get_sequence_retention("islr")
         self.assertTrue(seq_islr)
         self.assertEqual(seq_islr.padding, 5)
 
