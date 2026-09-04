@@ -65,7 +65,7 @@ class AccountMoveInh(models.Model):
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
 
-        return True
+        return bool(account_moves)
 
     def report_z(self, serial, response):
         # El driver del IoT puede resolver el listener con un evento valido
@@ -83,32 +83,67 @@ class AccountMoveInh(models.Model):
         # unica referencia de maquina disponible.
         serial = data.get("_registeredMachineNumber") or serial
 
+        last_z_number = self._get_last_z_number(serial)
         account_moves = self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
+            [("mf_serial", "=", serial), ("mf_reportz", "=", False)]
+        )
+        last_number = (
+            self._max_mf_invoice_number_for_z(serial, last_z_number)
+            if last_z_number is not None
+            else None
+        )
+        account_moves = account_moves.filtered(
+            lambda m: self._mf_invoice_number_after(m, last_number)
         )
 
-        _numberOfLastZReport = data.get("_dailyClosureCounter", False)
-        if False in [data, _numberOfLastZReport]:
+        _dailyClosureCounter = data.get("_dailyClosureCounter")
+        if _dailyClosureCounter in (False, None):
             _logger.info("NO SE RECUPERO EL Z DE LA MAQUINA: %s", serial)
-            _numberOfLastZReport = self._get_z_and_add_one(serial)
+            _numberOfLastZReport = (last_z_number or 0) + 1
             _logger.info("ULTIMO Z: %s", _numberOfLastZReport)
+        else:
+            _numberOfLastZReport = int(_dailyClosureCounter)
 
         for invoice in account_moves:
-            invoice.write({"mf_reportz": int(_numberOfLastZReport) + 1})
-        # Contrato numerico: l10n_ve_pos_mf hace int(super().report_z(...)) + 1
-        # sobre este retorno; devolver el dict `response` reventaba con
-        # TypeError al haber ordenes POS pendientes de reportar.
+            invoice.write({"mf_reportz": _numberOfLastZReport})
         return _numberOfLastZReport
 
-    def _get_z_and_add_one(self, serial):
-        account_move = self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)],
-            order="mf_reportz desc",
-            limit=1,
+    def _parse_mf_invoice_number(self, move):
+        try:
+            return int(move.mf_invoice_number)
+        except (TypeError, ValueError):
+            return None
+
+    def _mf_invoice_number_after(self, move, last_number):
+        number = self._parse_mf_invoice_number(move)
+        if number is None:
+            return False
+        if last_number is None:
+            return True
+        return number > last_number
+
+    def _get_last_z_number(self, serial):
+        self.env.cr.execute(
+            """
+            SELECT MAX(
+                CASE WHEN mf_reportz ~ '^[0-9]+$'
+                     THEN mf_reportz::integer
+                     ELSE NULL
+                END
+            )
+            FROM account_move
+            WHERE mf_serial = %s AND company_id = %s
+            """,
+            (serial, self.env.company.id),
         )
-        if not account_move:
-            return 0
-        return account_move.mf_reportz
+        return self.env.cr.fetchone()[0]
+
+    def _max_mf_invoice_number_for_z(self, serial, z_number):
+        moves = self.env["account.move"].search(
+            [("mf_serial", "=", serial), ("mf_reportz", "=", str(z_number))]
+        )
+        numbers = [n for n in (self._parse_mf_invoice_number(m) for m in moves) if n is not None]
+        return max(numbers) if numbers else None
 
     @api.onchange("is_credit")
     def _onchange_is_credit(self):

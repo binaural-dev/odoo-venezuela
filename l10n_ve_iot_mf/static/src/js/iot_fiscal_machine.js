@@ -333,14 +333,14 @@ export class IoTFiscalMachineComponent extends Component {
       this.showFailedConnection()
       return
     }
-    
+
     try {
       this.notification.add("Comunicando con la impresora, por favor espere...", {
         type: 'warning'
       });
-      
+
       const request = await this.orm.call('account.move', 'check_report_z', [[], this.device.serial_machine])
-  
+
       if (!request) {
         this.notification.add(_t("Not are invoices to Report Z"), {
           title: _t("Verify invoices with Serial Machine"),
@@ -348,15 +348,13 @@ export class IoTFiscalMachineComponent extends Component {
         });
         return
       }
-  
-      this.iotDevice.addListener(({ value }) => {
-        this.iotDevice.removeListener();
-        this.orm.call('account.move', 'report_z', [[], this.device.serial_machine, value])
-      });
+
       const deviceResponse = await this.device_response("report_z", { "me": "you" });
       if (!deviceResponse.valid) {
         throw new Error(deviceResponse.message || "Error desconocido");
       }
+      await this.orm.call('account.move', 'report_z', [[], this.device.serial_machine, deviceResponse]);
+      window.location.reload();
     } catch (error) {
       console.log("Error", error);
       const message = error?.data?.message || error?.message || "Error de comunicación con el dispositivo IoT.";
@@ -494,9 +492,9 @@ export class IoTFiscalMachineComponent extends Component {
         this.iotDevice.removeListener(listener);
         resolve(value);
       };
-  
+
       this.iotDevice.addListener(listener);
-  
+
       this.iotDevice.action({
         action: action,
         data: data,
