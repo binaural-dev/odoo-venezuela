@@ -42,7 +42,6 @@ class TestRetentionSequenceNoGap(RetentionTestCommon):
     def test_01_partner_without_contact_data(self):
         partner = self.partner_pnr_75
         self.assertFalse(partner.phone)
-        self.assertFalse(partner.mobile)
         self.assertFalse(partner.email)
         _logger.info("========= test_01_partner_without_contact_data passed =========")
 

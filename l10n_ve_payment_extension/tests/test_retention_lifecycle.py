@@ -11,32 +11,6 @@ _logger = logging.getLogger(__name__)
 @tagged("post_install", "-at_install", "retention_lifecycle")
 class TestRetentionLifecycle(RetentionTestCommon):
 
-    def _prepare_invoice_for_retention(self, invoice):
-        invoice.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
-
-    def _create_iva_retention(self, invoice):
-        today = fields.Date.today()
-        return self.env["account.retention"].create({
-            "type_retention": "iva",
-            "type": "in_invoice",
-            "company_id": self.company.id,
-            "partner_id": self.partner_pnr_75.id,
-            "date": today,
-            "date_accounting": today,
-            "retention_line_ids": [
-                Command.create({
-                    "move_id": invoice.id,
-                    "name": "IVA Retention Line",
-                    "invoice_total": invoice.amount_total,
-                    "invoice_amount": invoice.amount_untaxed,
-                    "retention_amount": float_round(invoice.amount_untaxed * 0.16, precision_rounding=0.01),
-                    "foreign_currency_rate": 1.0,
-                    "foreign_invoice_amount": invoice.amount_untaxed,
-                    "foreign_retention_amount": float_round(invoice.amount_untaxed * 0.16, precision_rounding=0.01),
-                })
-            ],
-        })
-
     def _create_islr_retention(self, invoice):
         today = fields.Date.today()
         return self.env["account.retention"].create({
