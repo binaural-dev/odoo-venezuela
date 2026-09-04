@@ -248,21 +248,13 @@ class AccountMoveLine(models.Model):
         """Return the foreign value (signed) for this line, or None."""
         self.ensure_one()
 
-        # 1 — Tax: convert debit/credit with the current rate. `foreign_balance`
-        # can't be used here -- it's derived from foreign_debit/foreign_credit
-        # themselves (see `_compute_foreign_balance`), so returning it back is
-        # circular and never picks up a rate change (e.g. after editing
-        # invoice_date).
-        if self.display_type == "tax":
-            return self.company_id.currency_id._convert(
-                self.debit - self.credit,
-                self.company_id.foreign_currency_id,
-                self.company_id,
-                self._get_foreign_rate_date(),
-            )
-
-        # 1b — PT: use foreign_balance directly
-        if self.display_type == "payment_term":
+        # 1 — PT / Tax: use foreign_balance directly. `_sync_tax_lines`
+        # (account_move.py, `_round_mode`) ahora resincroniza y escribe
+        # `foreign_balance` de la linea de impuesto directamente cuando
+        # cambia `move_currency_to_company_currency_rate` -- esa escritura
+        # dispara `_inverse_foreign_balance`, que fija foreign_debit/credit.
+        # Ya no hace falta re-derivar el valor aca con `_convert()`.
+        if self.display_type in ("payment_term", "tax"):
             return self.foreign_balance
 
         # 2 — Section / Note: zero
