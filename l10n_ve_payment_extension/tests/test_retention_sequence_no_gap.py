@@ -68,7 +68,11 @@ class TestRetentionSequenceNoGap(RetentionTestCommon):
                 retention = self._create_iva_retention(invoice)
                 retention_id = retention.id
                 # The number was consumed as part of create() -> _set_sequence().
+                # no_gap advances the counter via a direct SQL UPDATE (not the
+                # ORM), so the cached number_next_actual must be invalidated
+                # to see the new value.
                 self.assertTrue(retention.number)
+                sequence.invalidate_recordset(["number_next_actual"])
                 self.assertNotEqual(sequence.number_next_actual, next_before)
 
                 # Simulates the validation that, per the reported bug,
