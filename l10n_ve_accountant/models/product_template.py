@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -60,6 +62,40 @@ class ProductTemplate(models.Model):
           dedicated ``records.write()`` to avoid leaking into excluded
           records (FIX-060).
         """
+        # Skip entirely during chart-of-accounts loading (module install or
+        # a company's fiscal localization being set up): Odoo's own
+        # account.product._force_default_tax/_force_default_sale_tax
+        # legitimately assigns one tax per company on shared products at
+        # that point, and this is a per-record business validation aimed at
+        # real user edits, not at second-guessing that system-level loading.
+        # Same guard pattern already used in account_journal.py's
+        # _check_payment_method_line_accounts.
+        #
+        # Also skip when explicitly asked to via
+        # skip_single_tax_validation in context - NOT a blanket
+        # config['test_enable'] check (that broke this module's own test
+        # suite: 11 pre-existing TestProductTemplate tests rely on this
+        # validation actually raising, and it would have silently disabled
+        # the newly-added per-company logic during every test run, leaving
+        # it completely unexercised). The one real, narrow use case is
+        # generic accounting test fixtures shared across the whole test
+        # suite (e.g. AccountTestInvoicingCommon's product_b) that
+        # deliberately assign more than one tax to a single product/company
+        # as generic test data, unrelated to any real Venezuelan fiscal
+        # scenario - callers that need that (see
+        # binaural_account_reports/tests/common.py's
+        # default_env_context() override) set this key explicitly on their
+        # own env instead of relying on "are we running under pytest at
+        # all". The real, single-tax-per-company policy stays fully
+        # enforced for actual user/business data and for this module's own
+        # tests.
+        if (
+            self.env.context.get('chart_template_load')
+            or self.env.context.get('install_mode')
+            or self.env.context.get('skip_single_tax_validation')
+        ):
+            return {}
+
         errors = []
         company = (
             self.env['res.company'].browse(vals.get('company_id'))
@@ -123,34 +159,89 @@ class ProductTemplate(models.Model):
             tax_ids = list(current_ids)
 
             # --- Fiscal Policy Rules Validation ---
-            if not tax_ids:
+            # The "exactly one tax" policy is scoped PER COMPANY, not a flat
+            # count across the whole field: a product shared between several
+            # companies (no company_id of its own) legitimately carries one
+            # tax per company, injected by Odoo's own native multi-company
+            # mechanism (account.product._force_default_tax links each
+            # company's default sale/purchase tax onto shared products).
+            # Counting the union across companies as a single total would
+            # reject that native, intentional setup.
+            #
+            # browse+read company_id under sudo(): account.tax's
+            # multi-company record rule (`company_id parent_of company_ids`)
+            # would otherwise raise AccessError as soon as a shared product
+            # carries a tax belonging to a company outside the current
+            # user's allowed companies - company_id is only ever read here
+            # to group ids for this validation, nothing is mutated.
+            taxes_by_company = defaultdict(lambda: self.env['account.tax'])
+            for tax in self.env['account.tax'].sudo().browse(tax_ids):
+                taxes_by_company[tax.company_id.id] |= tax
+
+            # Was scoped to `if not tax_ids` before: that only caught the
+            # field being entirely empty, missing the case of a shared
+            # product that already carries another company's tax but none
+            # for `company` - which would pass validation silently without
+            # ever receiving its own default. Check per-company instead.
+            company_taxes = taxes_by_company.get(company.id, self.env['account.tax'])
+            if not company_taxes:
                 default_tax = company[comp_field] or company.root_id.sudo()[comp_field]
                 if default_tax and default_tax.id:
+                    # Command.set would wipe out any other companies' taxes
+                    # already present on a shared product; only safe when
+                    # the field is genuinely empty. Otherwise, link (add).
+                    command = (
+                        fields.Command.set([default_tax.id])
+                        if not tax_ids
+                        else fields.Command.link(default_tax.id)
+                    )
                     if is_write:
                         # FIX-060: Collect injection — do NOT mutate vals.
-                        default_injections[field_name] = [
-                            fields.Command.set([default_tax.id])
-                        ]
+                        default_injections[field_name] = [command]
                     else:
                         # create() context: safe to mutate vals directly
                         # (each vals dict is private to one record).
-                        vals[field_name] = [
-                            fields.Command.set([default_tax.id])
-                        ]
+                        vals[field_name] = [command]
                 else:
                     errors.append(
                         _("- %s: No tax is assigned and the company has no "
                           "default fiscal configuration.") % label
                     )
-            elif len(tax_ids) > 1:
-                errors.append(
-                    _("- %s: Has %s taxes assigned (exactly one tax is "
-                      "required due to local fiscal policies).")
-                    % (label, len(tax_ids))
-                )
+
+            for tax_company_id, company_taxes_for_id in taxes_by_company.items():
+                if len(company_taxes_for_id) > 1:
+                    # .sudo(): a shared product can carry a tax that belongs
+                    # to a company the current user doesn't have access to
+                    # (multi-company record rule on res.company) - same risk
+                    # already handled above for account.tax.company_id. Only
+                    # the name is read here, purely to build the error
+                    # message.
+                    tax_company_name = (
+                        self.env['res.company'].sudo().browse(tax_company_id).name
+                        if tax_company_id
+                        else _("no company")
+                    )
+                    errors.append(
+                        _("- %(label)s: Has %(count)s taxes assigned for "
+                          "company '%(company)s' (exactly one tax per "
+                          "company is required due to local fiscal "
+                          "policies).")
+                        % {
+                            "label": label,
+                            "count": len(company_taxes_for_id),
+                            "company": tax_company_name,
+                        }
+                    )
 
         if errors:
-            name = vals.get('name') or (records.name if records else '')
+            # records may hold more than one product.template when called
+            # from a batched write() (e.g. account.product's
+            # _force_default_sale_tax chunked update) - records.name would
+            # raise ensure_one() in that case, same class of bug already
+            # handled above via mapped() for current_ids.
+            name = vals.get('name') or (
+                ", ".join(records.mapped('name')) if records else ''
+            )
             error_msg = (
                 _("Fiscal inconsistencies were found in product: '%s':\n\n") % name
                 + "\n".join(errors)
