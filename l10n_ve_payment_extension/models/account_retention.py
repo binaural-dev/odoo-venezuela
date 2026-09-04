@@ -22,7 +22,7 @@ class AccountRetention(models.Model):
         for record in self:
             name = record.number or record.name or "/"
             record.display_name = name
-    
+
     company_currency_id = fields.Many2one(
         "res.currency",
         default=lambda self: self.env.company.currency_id.id,
@@ -184,7 +184,7 @@ class AccountRetention(models.Model):
             " that the one that just has been deleted."
         )
     )
-    actual_invoice_ids = fields.Many2many("account.move", string="Actual Invoices", compute="_compute_actual_invoice_ids")  
+    actual_invoice_ids = fields.Many2many("account.move", string="Actual Invoices", compute="_compute_actual_invoice_ids")
     available_invoice_ids = fields.Many2many("account.move", string="Available Invoices")
 
     date_emision = fields.Date('Emision Date', default=False)
@@ -233,19 +233,19 @@ class AccountRetention(models.Model):
             retention.foreign_total_retention_amount = 0
 
             for line in retention.retention_line_ids:
-                
+
                 retention.total_invoice_amount += line.invoice_amount
-                   
+
                 retention.total_iva_amount += line.iva_amount
-                    
+
                 retention.total_retention_amount += line.retention_amount
-                    
+
                 retention.foreign_total_invoice_amount += line.foreign_invoice_amount
-                   
+
                 retention.foreign_total_iva_amount += line.foreign_iva_amount
-                    
+
                 retention.foreign_total_retention_amount += line.foreign_retention_amount
-                    
+
 
     @api.onchange("partner_id")
     def onchange_partner_id(self):
@@ -435,7 +435,7 @@ class AccountRetention(models.Model):
                 ),
             }
         )
-    
+
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
@@ -454,7 +454,7 @@ class AccountRetention(models.Model):
                 moves = retention.retention_line_ids.mapped("move_id")
                 if any(m.state != "posted" for m in moves):
                     raise UserError(_("You cannot modify retentions for a draft or cancelled invoice."))
-      
+
         return res
 
     def unlink(self):
@@ -466,7 +466,7 @@ class AccountRetention(models.Model):
                     )
                 )
         return super().unlink()
-    
+
 
     def action_draft(self):
         self.ensure_one()
@@ -476,7 +476,7 @@ class AccountRetention(models.Model):
 
     def action_post(self):
         """
-        Post the retention, validate amounts per invoice, generate the 
+        Post the retention, validate amounts per invoice, generate the
         corresponding payments in batch, and reconcile them.
         """
         today = datetime.now()
@@ -493,27 +493,27 @@ class AccountRetention(models.Model):
                     error_msg = _(
                         "The retention amount (%s) cannot be greater than the invoice total signed amount (%s) for invoice %s."
                     ) % (retention_amount, invoice_total, move.name)
-                    
+
                     if is_automated:
                         retention.message_post(body=error_msg, category='exception')
-                        return False 
-                    
+                        return False
+
                     return {
                         'type': 'ir.actions.client',
                         'tag': 'display_notification',
                         'params': {
                             'title': _('Error'),
                             'message': error_msg,
-                            'sticky': False,         
-                            'type': 'danger',       
+                            'sticky': False,
+                            'type': 'danger',
                         }
                     }
             if retention.type in ["out_invoice", "out_refund", "out_debit"] and not retention.number:
                 raise UserError(_("Insert a number for the retention"))
-                
+
             if retention.type_retention == "iva" and (not retention.number or not re.fullmatch(r"\d{14}", retention.number)):
                 raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
-                
+
             if retention.type_retention == "islr" and retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._validate_islr_retention()
 
@@ -567,7 +567,7 @@ class AccountRetention(models.Model):
         self.ensure_one()
         if not self.date_emision:
             self.write({'date_emision': fields.Date.today()})
-        
+
             # 2. Forzamos el guardado para que la interfaz se actualice
             self.flush_recordset(['date_emision'])
 
@@ -579,68 +579,50 @@ class AccountRetention(models.Model):
 
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
-            sequence_number = ""
-            if retention.type_retention == "iva":
-                sequence_number = retention.get_sequence_iva_retention().next_by_id()
-            elif retention.type_retention == "islr":
-                sequence_number = retention.get_sequence_islr_retention().next_by_id()
-            else:
-                sequence_number = (
-                    retention.get_sequence_municipal_retention().next_by_id()
-                )
+            sequence = retention.get_sequence_retention(retention.type_retention)
+            retention._check_sequence_no_gap(sequence, retention.type_retention)
+            sequence_number = sequence.next_by_id()
             correlative = f"{retention.date_accounting.year}{retention.date_accounting.month:02d}{sequence_number}"
             retention.name = correlative
             retention.number = correlative
 
-    @api.model
-    def get_sequence_iva_retention(self):
-        sequence = self.env["ir.sequence"].search(
-            [
-                ("code", "=", "retention.iva.control.number"),
-                ("company_id", "=", self.env.company.id),
-            ]
-        )
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {
-                    "name": "Numero de control retenciones IVA",
-                    "code": "retention.iva.control.number",
-                    "padding": 8,
-                }
+    def _check_sequence_no_gap(self, sequence, type_retention):
+        if sequence.implementation != "no_gap":
+            raise UserError(
+                _(
+                    "The sequence for %s retentions must not allow gaps. "
+                    "Please set its Implementation to 'No gap' in the sequence "
+                    "configuration before generating retentions."
+                )
+                % type_retention.upper()
             )
-        return sequence
 
     @api.model
-    def get_sequence_islr_retention(self):
-        sequence = self.env["ir.sequence"].search(
-            [
-                ("code", "=", "retention.islr.control.number"),
-                ("company_id", "=", self.env.company.id),
-            ]
-        )
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {
-                    "name": "Numero de control retenciones ISLR",
-                    "code": "retention.islr.control.number",
-                    "padding": 5,
-                }
-            )
-        return sequence
+    def get_sequence_retention(self, type_retention):
+        """Get (or create) the ir.sequence for a given retention type.
 
-    def get_sequence_municipal_retention(self):
+        Fully driven by the `type_retention` selection: the sequence code
+        and name are derived from it, so a new retention type only needs an
+        entry in that selection to get its own sequence automatically.
+        """
+        code = f"retention.{type_retention}.control.number"
         sequence = self.env["ir.sequence"].search(
             [
-                ("code", "=", "retention.municipal.control.number"),
+                ("code", "=", code),
                 ("company_id", "=", self.env.company.id),
-            ]
+            ],
+            limit=1,
         )
         if not sequence:
+            padding_by_type = {"iva": 8, "islr": 5, "municipal": 5}
             sequence = self.env["ir.sequence"].create(
                 {
-                    "name": "Numero de control retenciones Municipal",
-                    "code": "retention.iva.control.number",
-                    "padding": 5,
+                    "name": _("Numero de control retenciones %s")
+                    % type_retention.upper(),
+                    "code": code,
+                    "padding": padding_by_type.get(type_retention, 5),
+                    "company_id": self.env.company.id,
+                    "implementation": "no_gap",
                 }
             )
         return sequence
@@ -665,22 +647,22 @@ class AccountRetention(models.Model):
 
             if rec.payment_ids:
                 ctx = dict(self.env.context, bypass_retention_lock=True,force_delete=True)
-                
+
                 reconciled_lines = rec.payment_ids.mapped("move_id.line_ids").filtered(lambda l: l.reconciled)
                 if reconciled_lines:
                     reconciled_lines.with_context(ctx).remove_move_reconcile()
-                
+
                 rec.payment_ids.with_context(ctx).action_draft()
                 rec.payment_ids.with_context(ctx).action_cancel()
                 rec.payment_ids.with_context(ctx).write({'retention_id': False, 'is_retention': False, 'payment_type_retention': False, 'retention_ref': False})
-            
+
             rec.clear_retention_number()
-            
+
             if rec.retention_line_ids:
                 rec.retention_line_ids.with_context(bypass_retention_lock=True).write({'payment_id': False})
-            
+
             rec.write({"state": "cancel", "payment_ids": [Command.clear()]})
-            
+
         return True
 
     def _validate_islr_retention_fields(self):
@@ -695,7 +677,7 @@ class AccountRetention(models.Model):
 
     def _reconcile_all_payments(self):
         """
-        Reconcile all payments of the retention with the invoice lines 
+        Reconcile all payments of the retention with the invoice lines
         corresponding to each payment.
         """
 
@@ -703,13 +685,23 @@ class AccountRetention(models.Model):
         if not payments:
             raise UserError(_("No payments found for reconciliation."))
 
-        # These payments' moves are pinned to their invoice's own accounting date
-        # (see AccountPayment._generate_move_vals), which can already sit in a
-        # closed fiscal period by the time the retention itself is processed --
-        # bypass_lock_check is the core's own escape hatch for that check, only
-        # triggered here by the state -> 'posted' transition (not by writing
-        # 'date', which never happens after creation).
-        payments.with_context(bypass_lock_check=BYPASS_LOCK_CHECK).action_post()
+        # These payments' moves must be pinned to their invoice's own accounting
+        # date (see AccountPayment._prepare_move_lines_per_type in
+        # l10n_ve_accountant, which only honors this when the
+        # 'l10n_ve_conversion_date' context key is set -- same key the payment
+        # register wizard already sets for the regular payment flow). That date
+        # can already sit in a closed fiscal period by the time the retention
+        # itself is processed -- bypass_lock_check is the core's own escape
+        # hatch for that check, only triggered here by the state -> 'posted'
+        # transition (not by writing 'date', which never happens after
+        # creation). Posted one by one since each payment can be pinned to a
+        # different invoice date.
+        for payment in payments:
+            move = payment.retention_line_ids.move_id
+            payment.with_context(
+                bypass_lock_check=BYPASS_LOCK_CHECK,
+                l10n_ve_conversion_date=move.date,
+            ).action_post()
 
         account_type_map = {
             "supplier": "liability_payable",
@@ -731,7 +723,7 @@ class AccountRetention(models.Model):
                 raise ValidationError(
                     _("No registered lines found in the move to reconcile.")
                 )
-            
+
             payment.retention_line_ids.move_id.with_context(
                 no_exchange_difference=True,group_in_single_partial=True
             ).js_assign_outstanding_line(lines[0].id)
@@ -789,7 +781,7 @@ class AccountRetention(models.Model):
                 if self.env.company.auto_fill_retention_amount_iva:
                     line_data["retention_amount"] = retention_amount
                     line_data["foreign_retention_amount"] = line_data["foreign_iva_amount"] * (withholding_amount / 100)
-                        
+
                 else:
                     line_data["retention_amount"] = 0.0
                     line_data["foreign_retention_amount"] = 0.0
@@ -821,7 +813,7 @@ class AccountRetention(models.Model):
                     raise ValidationError(
                         _("The number must be exactly 14 numeric digits.")
                     )
-                
+
     @api.model
     def default_get(self, fields_list):
         res = super(AccountRetention, self).default_get(fields_list)
@@ -837,13 +829,13 @@ class AccountRetention(models.Model):
                 concept_id, base_amount, invoice_line_id = line_data
                 line_vals = {
                     'move_id': move_id,
-                    'payment_concept_id': concept_id, 
+                    'payment_concept_id': concept_id,
                     'invoice_type': str(ret_type),
-                    'invoice_amount': base_amount, 
+                    'invoice_amount': base_amount,
                 }
                 line_commands.append(Command.create(line_vals))
             res['retention_line_ids'] = line_commands
-        
+
         elif multi:
             line_commands = []
             for line_data in islr_lines_data:
@@ -857,7 +849,7 @@ class AccountRetention(models.Model):
                  }
                 line_commands.append(Command.create(line_vals))
             res['retention_line_ids'] = line_commands
-        
+
         return res
 
     def _create_payments_from_retention_lines(self):
@@ -870,7 +862,7 @@ class AccountRetention(models.Model):
         for retention in self:
             if any(retention.payment_ids):
                 continue
-            
+
             if retention.type_retention == "islr":
                 retention._validate_islr_retention_fields()
 
@@ -882,7 +874,7 @@ class AccountRetention(models.Model):
             lines_to_link_by_vals = {}
 
             for move, lines in lines_by_move.items():
-                
+
                 vals = retention._prepare_retention_payment_vals(move, lines)
 
                 payment_vals_list.append(vals)
@@ -894,13 +886,13 @@ class AccountRetention(models.Model):
                 retention.write({
                     "payment_ids": [Command.link(pay.id) for pay in created_payments]
                 })
-                
+
                 for vals, payment in zip(payment_vals_list, created_payments):
                     associated_lines = lines_to_link_by_vals.get(id(vals))
                     if associated_lines:
-                        
+
                         payment.write({"retention_line_ids": [Command.link(l.id) for l in associated_lines]})
-                
+
                 created_payments.compute_retention_amount_from_retention_lines()
 
     def _prepare_retention_payment_vals(self, move, lines):

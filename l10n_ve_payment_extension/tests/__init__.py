@@ -30,3 +30,4 @@ from . import test_data_files
 from . import test_allowed_lines_move_ids
 from . import test_retention_line_compute_amounts
 from . import test_retention_payment_move_date
+from . import test_retention_sequence_no_gap
