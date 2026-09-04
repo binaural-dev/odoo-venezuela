@@ -1,0 +1,520 @@
+import logging
+
+from odoo import Command, fields, models
+from odoo.tests import Form, TransactionCase, tagged
+from odoo.tools import float_compare
+
+_logger = logging.getLogger(__name__)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_retention_credit_note")
+class TestRetentionCreditNote(TransactionCase):
+    """
+    Regression tests for ticket #11353: retentions computed over credit notes
+    (notas de credito) must use the opposite payment direction, must be picked
+    up despite their negative amount_residual, must carry positive (abs)
+    amounts on the retention line and must be netted (not summed) in the
+    retention totals.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.company = cls.env.company
+
+        bank_account = cls.env["account.account"].search(
+            [("account_type", "=", "liquidity")], limit=1
+        )
+        transitory_account = cls.env["account.account"].search(
+            [("account_type", "=", "other")], limit=1
+        )
+        profit_account = cls.env["account.account"].search(
+            [("account_type", "=", "income")], limit=1
+        )
+        loss_account = cls.env["account.account"].search(
+            [("account_type", "=", "expense")], limit=1
+        )
+
+        payment_method_inbound = cls.env["account.payment.method"].create(
+            {"name": "Manual In", "code": 90, "payment_type": "inbound"}
+        )
+        payment_method_outbound = cls.env["account.payment.method"].create(
+            {"name": "Manual Out", "code": 91, "payment_type": "outbound"}
+        )
+
+        def _make_retention_journal(name, code):
+            return cls.env["account.journal"].create(
+                {
+                    "name": name,
+                    "code": code,
+                    "type": "bank",
+                    "company_id": cls.company.id,
+                    "bank_account_id": bank_account.id,
+                    "default_account_id": transitory_account.id,
+                    "profit_account_id": profit_account.id,
+                    "loss_account_id": loss_account.id,
+                    "inbound_payment_method_line_ids": [
+                        Command.create(
+                            {"payment_method_id": payment_method_inbound.id, "name": "Manual"}
+                        )
+                    ],
+                    "outbound_payment_method_line_ids": [
+                        Command.create(
+                            {"payment_method_id": payment_method_outbound.id, "name": "Manual"}
+                        )
+                    ],
+                }
+            )
+
+        cls.iva_supplier_journal = _make_retention_journal("Retenciones IVA Prov NC", "RVPNC")
+        cls.iva_customer_journal = _make_retention_journal("Retenciones IVA Cli NC", "RVCNC")
+        cls.islr_supplier_journal = _make_retention_journal("Retenciones ISLR Prov NC", "RSPNC")
+        cls.islr_customer_journal = _make_retention_journal("Retenciones ISLR Cli NC", "RSCNC")
+
+        cls.currency_usd = cls.env.ref("base.USD")
+        cls.currency_vef = cls.env.ref("base.VEF")
+
+        cls.company.write(
+            {
+                "currency_id": cls.currency_usd.id,
+                "currency_foreign_id": cls.currency_vef.id,
+                "iva_supplier_retention_journal_id": cls.iva_supplier_journal.id,
+                "iva_customer_retention_journal_id": cls.iva_customer_journal.id,
+                "islr_supplier_retention_journal_id": cls.islr_supplier_journal.id,
+                "islr_customer_retention_journal_id": cls.islr_customer_journal.id,
+            }
+        )
+
+        # Tasa de cambio real, igual que en l10n_ve_igtf: sin esto,
+        # _compute_rate_for_documents (l10n_ve_accountant) no encuentra
+        # ningun res.currency.rate y sobreescribe foreign_rate/foreign_inverse_rate
+        # a 0 en cada factura, dejando el impuesto en moneda alterna en 0.
+        cls.currency_vef.write(
+            {
+                "rate_ids": [
+                    Command.create(
+                        {
+                            "company_rate": 2.0,
+                            "name": fields.Date.today(),
+                        }
+                    )
+                ],
+            }
+        )
+
+        cls.tax_group_iva16 = cls.env["account.tax.group"].create({"name": "IVA 16% CN"})
+        cls.tax_iva16 = cls.env["account.tax"].create(
+            {
+                "name": "IVA 16% CN",
+                "amount": 16,
+                "amount_type": "percent",
+                "type_tax_use": "purchase",
+                "tax_group_id": cls.tax_group_iva16.id,
+            }
+        )
+        cls.tax_iva16_sale = cls.env["account.tax"].create(
+            {
+                "name": "IVA 16% CN Venta",
+                "amount": 16,
+                "amount_type": "percent",
+                "type_tax_use": "sale",
+                "tax_group_id": cls.tax_group_iva16.id,
+            }
+        )
+
+        cls.product = cls.env["product.product"].create(
+            {
+                "name": "Producto Prueba NC",
+                "type": "service",
+                "list_price": 100,
+                "purchase_ok": True,
+                "sale_ok": True,
+                "supplier_taxes_id": [(6, 0, [cls.tax_iva16.id])],
+                "taxes_id": [(6, 0, [cls.tax_iva16_sale.id])],
+            }
+        )
+
+        cls.person_type = cls.env["type.person"].search([], limit=1) or cls.env[
+            "type.person"
+        ].create({"name": "Test Person Type NC"})
+
+        cls.withholding_type = cls.env["account.withholding.type"].search(
+            [("name", "=", "75%")], limit=1
+        ) or cls.env["account.withholding.type"].search([], limit=1)
+
+        cls.partner_supplier = cls.env["res.partner"].create(
+            {
+                "name": "Proveedor Prueba NC",
+                "supplier_rank": 1,
+                "type_person_id": cls.person_type.id,
+                "withholding_type_id": cls.withholding_type.id if cls.withholding_type else False,
+            }
+        )
+        cls.partner_customer = cls.env["res.partner"].create(
+            {
+                "name": "Cliente Prueba NC",
+                "customer_rank": 1,
+                "type_person_id": cls.person_type.id,
+                "withholding_type_id": cls.withholding_type.id if cls.withholding_type else False,
+            }
+        )
+
+        cls.purchase_journal = cls.env["account.journal"].search(
+            [("company_id", "=", cls.company.id), ("type", "=", "purchase")], limit=1
+        )
+        cls.sale_journal = cls.env["account.journal"].search(
+            [("company_id", "=", cls.company.id), ("type", "=", "sale")], limit=1
+        )
+
+        cls.payment_concept = cls.env["payment.concept"].create(
+            {"name": "Concepto Prueba NC", "status": True}
+        )
+        cls.env["payment.concept.line"].create(
+            {
+                "type_person_id": cls.person_type.id,
+                "payment_concept_id": cls.payment_concept.id,
+                "code": 99,
+                "percentage_tax_base": 100,
+                "tariff_id": cls.env.ref(
+                    "l10n_ve_payment_extension.fees_retention_data_percentage_one_l10n_ve_payment_extension"
+                ).id,
+                "pay_from": 0.0,
+            }
+        )
+        cls.payment_concept.write(
+            {"line_payment_concept_ids": [(6, 0, cls.payment_concept.line_payment_concept_ids.ids)]}
+        )
+
+    def _create_move(self, move_type, partner, base, journal, tax):
+        # `correlative` is only editable in the form for in_invoice/in_refund
+        # (required there); for out_invoice/out_refund it's readonly unless
+        # is_contingency, so it must not be touched for those.
+        correlative = None
+        if move_type in ("in_invoice", "in_refund"):
+            self.__class__._correlative_counter = (
+                getattr(self.__class__, "_correlative_counter", 500000) + 1
+            )
+            correlative = str(self.__class__._correlative_counter).zfill(14)
+
+        with Form(
+            self.env["account.move"].with_context(default_move_type=move_type)
+        ) as move_form:
+            move_form.partner_id = partner
+            move_form.journal_id = journal
+            move_form.invoice_date = fields.Date.today()
+            if correlative:
+                move_form.correlative = correlative
+        move = move_form.save()
+
+        with Form(move) as move_form_edit:
+            with move_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product
+                line.quantity = 1
+                line.price_unit = base
+        move = move_form_edit.save()
+
+        # The product carries its own default taxes (tax_iva16 for purchases,
+        # tax_iva16_sale for sales), matching what every caller passes here.
+        assert tax in move.invoice_line_ids.tax_ids
+
+        move.with_context(move_action_post_alert=True).action_post()
+        return move
+
+    def _build_islr_retention(self, retention_type, moves):
+        with Form(
+            self.env["account.retention"].with_context(
+                default_type=retention_type, default_type_retention="islr"
+            )
+        ) as retention_form:
+            retention_form.partner_id = moves[0].partner_id
+            retention_form.date_accounting = fields.Date.today()
+            if retention_type == "out_invoice":
+                retention_form.number = "00000000000001"
+        retention = retention_form.save()
+
+        with Form(retention) as retention_form_edit:
+            for move in moves:
+                with retention_form_edit.retention_line_ids.new() as line:
+                    line.move_id = move
+                    line.payment_concept_id = self.payment_concept
+        return retention_form_edit.save()
+
+    def _assert_foreign_debit_credit_matches_debit_credit(self, payment):
+        """
+        Regression for the retention branch of `AccountMoveLine._get_foreign_value`
+        (l10n_ve_accountant): a debit line must land its foreign amount on
+        `foreign_debit` and a credit line on `foreign_credit`, mirroring plain
+        debit/credit -- not the other way around.
+        """
+        self.assertGreater(
+            payment.retention_foreign_amount,
+            0.0,
+            "retention_foreign_amount must be computed for a retention payment.",
+        )
+        for line in payment.move_id.line_ids.filtered(lambda l: l.debit or l.credit):
+            if line.debit:
+                self.assertAlmostEqual(
+                    line.foreign_debit,
+                    payment.retention_foreign_amount,
+                    places=2,
+                    msg="A debit line must carry the foreign amount on foreign_debit.",
+                )
+                self.assertEqual(
+                    line.foreign_credit,
+                    0.0,
+                    "A debit line must not carry any amount on foreign_credit.",
+                )
+            else:
+                self.assertAlmostEqual(
+                    line.foreign_credit,
+                    payment.retention_foreign_amount,
+                    places=2,
+                    msg="A credit line must carry the foreign amount on foreign_credit.",
+                )
+                self.assertEqual(
+                    line.foreign_debit,
+                    0.0,
+                    "A credit line must not carry any amount on foreign_debit.",
+                )
+
+    def test_islr_payment_type_direction_supplier_invoice_and_credit_note(self):
+        """
+        Regla original rota: `payment_type` se inicializaba una sola vez antes
+        del loop y solo se reasignaba dentro de un `if` cuando `move_type` era
+        "in_refund"/"out_refund". Al mezclar factura + nota de credito en la
+        misma retencion, la linea de la NC dejaba `payment_type` en el valor
+        contrario y ningun `if` lo corregia para la siguiente linea de
+        factura, que terminaba heredando la direccion equivocada. La
+        correccion asigna `payment_type` siempre, en cada iteracion.
+        """
+        invoice = self._create_move(
+            "in_invoice", self.partner_supplier, 1000.0, self.purchase_journal, self.tax_iva16
+        )
+        credit_note = self._create_move(
+            "in_refund", self.partner_supplier, 200.0, self.purchase_journal, self.tax_iva16
+        )
+
+        retention = self._build_islr_retention("in_invoice", [invoice, credit_note])
+        retention.action_post()
+
+        invoice_line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
+        refund_line = retention.retention_line_ids.filtered(lambda l: l.move_id == credit_note)
+
+        self.assertEqual(
+            invoice_line.payment_id.payment_type,
+            "outbound",
+            "Supplier retention over an invoice must create an outbound payment.",
+        )
+        self.assertEqual(
+            refund_line.payment_id.payment_type,
+            "inbound",
+            "Supplier retention over a credit note must create an inbound payment "
+            "(opposite direction to the invoice).",
+        )
+
+        self._assert_foreign_debit_credit_matches_debit_credit(invoice_line.payment_id)
+        self._assert_foreign_debit_credit_matches_debit_credit(refund_line.payment_id)
+
+    def test_islr_payment_type_direction_customer_invoice_and_credit_note(self):
+        invoice = self._create_move(
+            "out_invoice", self.partner_customer, 1000.0, self.sale_journal, self.tax_iva16_sale
+        )
+        credit_note = self._create_move(
+            "out_refund", self.partner_customer, 200.0, self.sale_journal, self.tax_iva16_sale
+        )
+
+        # NOTE: unlike its supplier twin above, customer (out_invoice) ISLR
+        # retention lines are NOT auto-computed by
+        # account_retention_line._compute_retention_amount (it only applies
+        # when retention_id.type == "in_invoice" -- customer amounts are
+        # meant to be filled in manually by the user), so this can't be
+        # built via Form the same way; the amounts must be hand-crafted here.
+        retention = self.env["account.retention"].create(
+            {
+                "type": "out_invoice",
+                "type_retention": "islr",
+                "partner_id": self.partner_customer.id,
+                "number": "00000000000001",
+                "date_accounting": fields.Date.today(),
+                "retention_line_ids": [
+                    Command.create(
+                        {
+                            "name": "Test ISLR Line Invoice",
+                            "move_id": invoice.id,
+                            "payment_concept_id": self.payment_concept.id,
+                            "invoice_amount": 1000.0,
+                            "invoice_total": 1160.0,
+                            "retention_amount": 30.0,
+                            "foreign_invoice_amount": 1000.0,
+                            "foreign_retention_amount": 30.0,
+                        }
+                    ),
+                    Command.create(
+                        {
+                            "name": "Test ISLR Line Credit Note",
+                            "move_id": credit_note.id,
+                            "payment_concept_id": self.payment_concept.id,
+                            "invoice_amount": 200.0,
+                            "invoice_total": 232.0,
+                            "retention_amount": 6.0,
+                            "foreign_invoice_amount": 200.0,
+                            "foreign_retention_amount": 6.0,
+                        }
+                    ),
+                ],
+            }
+        )
+        retention.action_post()
+
+        invoice_line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
+        refund_line = retention.retention_line_ids.filtered(lambda l: l.move_id == credit_note)
+
+        self.assertEqual(
+            invoice_line.payment_id.payment_type,
+            "inbound",
+            "Customer retention over an invoice must create an inbound payment.",
+        )
+        self.assertEqual(
+            refund_line.payment_id.payment_type,
+            "outbound",
+            "Customer retention over a credit note must create an outbound payment "
+            "(opposite direction to the invoice).",
+        )
+
+        self._assert_foreign_debit_credit_matches_debit_credit(invoice_line.payment_id)
+        self._assert_foreign_debit_credit_matches_debit_credit(refund_line.payment_id)
+
+    def test_iva_customer_retention_loads_credit_note_despite_negative_residual(self):
+        """
+        `amount_residual > 0` could exclude a credit note whenever its residual
+        is reported as zero or negative (`direction_sign` can flip the
+        reported sign depending on move type and reconciliation state, even
+        though in this test's data the residual happens to come out positive).
+        The fix uses `amount_residual != 0`, so any open (non-reconciled)
+        credit note must still be loaded as an available invoice for the
+        retention regardless of the sign its residual takes.
+        """
+        invoice = self._create_move(
+            "out_invoice", self.partner_customer, 1000.0, self.sale_journal, self.tax_iva16_sale
+        )
+        credit_note = self._create_move(
+            "out_refund", self.partner_customer, 200.0, self.sale_journal, self.tax_iva16_sale
+        )
+
+        self.assertNotEqual(credit_note.amount_residual, 0.0)
+
+        retention = self.env["account.retention"].with_context(
+            default_type="out_invoice", default_type_retention="iva"
+        ).new({"partner_id": self.partner_customer.id})
+        retention._load_retention_lines_for_iva_customer_retention()
+
+        available_ids = {
+            (m.id.origin if isinstance(m.id, models.NewId) else m.id)
+            for m in retention.available_invoice_ids
+        }
+        self.assertIn(invoice.id, available_ids)
+        self.assertIn(
+            credit_note.id,
+            available_ids,
+            "The credit note must be loaded as an available invoice for the IVA "
+            "retention even though its amount_residual is negative.",
+        )
+
+    def test_retention_line_amounts_are_always_positive(self):
+        """
+        The retention voucher template applies the credit note sign itself
+        (columns 13/14), so the retention line amounts must always come in
+        as a positive magnitude, never signed.
+        """
+        credit_note = self._create_move(
+            "in_refund", self.partner_supplier, 200.0, self.purchase_journal, self.tax_iva16
+        )
+        lines_data = self.env["account.retention"].compute_retention_lines_data(credit_note)
+
+        self.assertTrue(lines_data)
+        for line in lines_data:
+            self.assertGreaterEqual(line["invoice_amount"], 0.0)
+            self.assertGreaterEqual(line["iva_amount"], 0.0)
+            self.assertGreaterEqual(line["invoice_total"], 0.0)
+            self.assertGreaterEqual(line["retention_amount"], 0.0)
+
+    def test_compute_totals_nets_credit_note_against_invoice(self):
+        """
+        `_compute_totals` must subtract credit note lines instead of summing
+        everything, so the form totals match the printed voucher (which nets
+        the credit note in columns 13/14).
+        """
+        invoice = self._create_move(
+            "in_invoice", self.partner_supplier, 1000.0, self.purchase_journal, self.tax_iva16
+        )
+        credit_note = self._create_move(
+            "in_refund", self.partner_supplier, 200.0, self.purchase_journal, self.tax_iva16
+        )
+
+        with Form(
+            self.env["account.retention"].with_context(
+                default_type="in_invoice", default_type_retention="iva"
+            )
+        ) as retention_form:
+            retention_form.partner_id = self.partner_supplier
+        retention = retention_form.save()
+
+        invoice_line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
+        refund_line = retention.retention_line_ids.filtered(lambda l: l.move_id == credit_note)
+
+        self.assertTrue(invoice_line, "The invoice line must have been loaded by the onchange.")
+        self.assertTrue(refund_line, "The credit note line must have been loaded by the onchange.")
+
+        self.assertAlmostEqual(retention.total_invoice_amount, 1000.0 - 200.0, places=2)
+        self.assertAlmostEqual(
+            retention.total_retention_amount,
+            invoice_line.retention_amount - refund_line.retention_amount,
+            places=2,
+        )
+
+    def test_retention_over_credit_note_reduces_its_residual_end_to_end(self):
+        """
+        End-to-end regression for ticket #11353: factura -> retencion ->
+        nota de credito -> retencion sobre la NC -> conciliacion. Posting a
+        retention over a credit note must create and reconcile a payment
+        against it, so the credit note's outstanding amount_residual moves
+        towards zero instead of staying untouched.
+        """
+        invoice = self._create_move(
+            "in_invoice", self.partner_supplier, 1000.0, self.purchase_journal, self.tax_iva16
+        )
+        invoice_retention = self._build_islr_retention("in_invoice", [invoice])
+        invoice_retention.action_post()
+
+        self.assertLess(
+            float_compare(invoice.amount_residual, 1160.0, precision_digits=2),
+            0,
+            "Posting the retention over the invoice must reduce its residual.",
+        )
+
+        credit_note = self._create_move(
+            "in_refund", self.partner_supplier, 200.0, self.purchase_journal, self.tax_iva16
+        )
+        residual_before = credit_note.amount_residual
+        self.assertNotEqual(residual_before, 0.0)
+
+        credit_note_retention = self._build_islr_retention("in_invoice", [credit_note])
+        credit_note_retention.action_post()
+
+        self.assertTrue(
+            credit_note_retention.payment_ids,
+            "Posting the retention over the credit note must create a payment.",
+        )
+        # 5% ISLR tariff over the credit note's 200.0 taxable base (see
+        # cls.payment_concept in setUpClass): the residual must decrease by
+        # exactly that retained amount, not just "some" amount.
+        retained_amount = 200.0 * 0.05
+        self.assertAlmostEqual(
+            abs(credit_note.amount_residual),
+            abs(residual_before) - retained_amount,
+            places=2,
+            msg=(
+                "The credit note's residual must decrease by exactly the "
+                "retained amount once its retention is posted and reconciled."
+            ),
+        )
