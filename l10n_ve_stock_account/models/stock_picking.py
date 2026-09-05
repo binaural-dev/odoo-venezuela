@@ -947,7 +947,6 @@ class StockPicking(models.Model):
                         and record.sale_id.document != "invoice"
                         and record.type_of_return != "total"
                     )
-
                     record.show_create_customer_credit = record.is_return
 
                 if record.operation_code == "internal" and record.is_consignment:
@@ -1286,6 +1285,7 @@ class StockPicking(models.Model):
                 picking.message_post(body=f"Error en facturación automática: {str(e)}")
 
     def alert_views(self, company_ids_str):
+
         company_ids = [
             int(cid) for cid in str(company_ids_str).split(",") if cid.strip().isdigit()
         ]
