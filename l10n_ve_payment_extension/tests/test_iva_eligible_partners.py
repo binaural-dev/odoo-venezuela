@@ -252,11 +252,10 @@ class TestIvaEligiblePartners(TransactionCase):
     def test_supplier_pending_islr_retention_does_not_block_iva_eligibility(self):
         # Regression for #15015 (real case: partner AVPHARMA, C.A.): the
         # invoice already has a pending ISLR retention line (draft/emitted),
-        # unrelated to IVA. retention_iva_line_ids' own domain (type_retention
-        # = 'iva') only applies when the field is *read*, not when it's
-        # traversed inside a search() domain -- there, the ORM matches every
-        # account.retention.line linked to the move regardless of type, so the
-        # pending ISLR line wrongly blocked the invoice from the IVA dropdown.
+        # unrelated to IVA. _compute_iva_type_eligible_partner_ids no longer
+        # checks retention_iva_line_ids at all in its search domain (Saul's
+        # change), so no retention of any type -- IVA or otherwise -- blocks
+        # eligibility here.
         invoice = self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
         islr_retention = self.env["account.retention"].create({
             "type_retention": "islr",
