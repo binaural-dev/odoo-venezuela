@@ -241,13 +241,36 @@ class TestIvaEligiblePartners(TransactionCase):
         self.assertNotIn(self.partner, eligible)
 
     def test_supplier_no_retention_lines_is_eligible(self):
-        # Regression for #15015: an invoice with an empty retention_iva_line_ids
-        # o2m produces a LEFT JOIN with NULL state, so "NOT (NULL IN (...))" was
-        # falsy in SQL and the invoice was wrongly excluded even though it has
-        # never had any IVA retention line at all.
+        # Regression for #15015: an invoice with no retention lines at all
+        # must still be eligible for its first IVA retention.
         invoice = self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
         self.assertFalse(invoice.retention_iva_line_ids)
         self.assertNotEqual(invoice.amount_residual, 0)
+        eligible = self._get_iva_eligible_partners("iva", "in_invoice")
+        self.assertIn(self.partner, eligible)
+
+    def test_supplier_pending_islr_retention_does_not_block_iva_eligibility(self):
+        # Regression for #15015 (real case: partner AVPHARMA, C.A.): the
+        # invoice already has a pending ISLR retention line (draft/emitted),
+        # unrelated to IVA. retention_iva_line_ids' own domain (type_retention
+        # = 'iva') only applies when the field is *read*, not when it's
+        # traversed inside a search() domain -- there, the ORM matches every
+        # account.retention.line linked to the move regardless of type, so the
+        # pending ISLR line wrongly blocked the invoice from the IVA dropdown.
+        invoice = self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
+        islr_retention = self.env["account.retention"].create({
+            "type_retention": "islr",
+            "type": "in_invoice",
+            "company_id": self.company.id,
+            "partner_id": self.partner.id,
+            "date_accounting": fields.Date.today(),
+            "retention_line_ids": [Command.create({
+                "move_id": invoice.id,
+                "name": "ISLR Retention",
+            })],
+        })
+        self.assertIn(islr_retention.state, ("draft", "emitted"))
+        self.assertFalse(invoice.retention_iva_line_ids)
         eligible = self._get_iva_eligible_partners("iva", "in_invoice")
         self.assertIn(self.partner, eligible)
 
