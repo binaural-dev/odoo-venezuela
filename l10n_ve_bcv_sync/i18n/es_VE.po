@@ -1,0 +1,56 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_bcv_sync
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 17.0+e-20260824\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-31 14:20+0000\n"
+"PO-Revision-Date: 2026-08-31 14:20+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_bcv_sync
+#: model:ir.model.fields,field_description:l10n_ve_bcv_sync.field_res_company__bcv_sync_api_key
+#: model:ir.model.fields,field_description:l10n_ve_bcv_sync.field_res_config_settings__bcv_sync_api_key
+#: model_terms:ir.ui.view,arch_db:l10n_ve_bcv_sync.res_config_settings_view_form_inherit_bcv_sync
+msgid "BCV Sync API Key"
+msgstr ""
+
+#. module: l10n_ve_bcv_sync
+#: model:ir.model,name:l10n_ve_bcv_sync.model_res_company
+msgid "Companies"
+msgstr "Empresas"
+
+#. module: l10n_ve_bcv_sync
+#: model:ir.model,name:l10n_ve_bcv_sync.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_bcv_sync
+#: model:ir.model,name:l10n_ve_bcv_sync.model_res_currency_rate
+msgid "Currency Rate"
+msgstr "Tasa de Cambio"
+
+#. module: l10n_ve_bcv_sync
+#: model_terms:ir.ui.view,arch_db:l10n_ve_bcv_sync.res_config_settings_view_form_inherit_bcv_sync
+msgid ""
+"Token compartido con el panel de BCV Sync. Debe coincidir\n"
+"                            exactamente con la API Key configurada alli para el\n"
+"                            cliente/URL de esta compania (Authorization: Bearer)."
+msgstr ""
+
+#. module: l10n_ve_bcv_sync
+#: model:ir.model.fields,help:l10n_ve_bcv_sync.field_res_company__bcv_sync_api_key
+#: model:ir.model.fields,help:l10n_ve_bcv_sync.field_res_config_settings__bcv_sync_api_key
+msgid ""
+"Token compartido que BCV Sync envia en el header 'Authorization: Bearer "
+"<token>' al llamar a POST /api/tasas-bcv. Se genera y se copia desde el "
+"panel de BCV Sync -- Odoo no lo genera, solo lo valida. Debe coincidir "
+"exactamente con el configurado alli para el cliente/URL de esta compania."
+msgstr ""
