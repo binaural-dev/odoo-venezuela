@@ -1234,7 +1234,19 @@ class AccountMove(models.Model):
         is_invoice = self.is_invoice(include_receipts=True)
         sign = self.direction_sign if is_invoice else 1
         if is_invoice:
-            rate = self.foreign_rate
+            # `foreign_rate` es solo informativa (TA-74966): esta redondeada a
+            # la precision "Tasa" (6 decimales), mientras que `foreign_price`
+            # sale de `_convert()` con la precision completa de la tabla de
+            # tasas. Usarla aca desalinea el `rate` que ve el motor de
+            # impuestos del monto que realmente se esta reportando. Se
+            # deriva del propio par ya convertido de la linea -- igual que
+            # la rama no-factura -- para que ambos sean consistentes por
+            # construccion.
+            rate = (
+                abs(product_line.foreign_price) / abs(product_line.price_unit)
+                if product_line.price_unit
+                else self.foreign_rate
+            )
         else:
             rate = (abs(product_line.amount_currency) / abs(product_line.balance)) if product_line.balance else 0.0
 
@@ -1386,14 +1398,18 @@ class AccountMove(models.Model):
             if any(line not in base_lines for line, values in base_before.items() if values['tax_ids']):
                 return any_field_has_changed(tax_before, tax_lines)
             # Nada del calculo en moneda de la compañía cambió -- pero si la
-            # tasa efectiva move->compañía sí cambió (ej. al editar
-            # invoice_date), igual hay que resincronizar para refrescar
-            # `foreign_balance` de las líneas de impuesto con la tasa
-            # nueva. round_from_tax_lines=True: los montos en moneda de la
-            # compañía no se tocan, solo se refresca la porción foránea
-            # (_write_line ya sabe escribir nada más que foreign_balance
-            # cuando no hace falta más).
-            if field_has_changed(vals_before, move, 'move_currency_to_company_currency_rate'):
+            # fecha que representa la tasa sí cambió (invoice_date en
+            # facturas/notas, date en asientos -- ver
+            # `account_move_line._get_foreign_rate_date()`), igual hay que
+            # resincronizar para refrescar `foreign_balance` de las líneas de
+            # impuesto con la tasa nueva. round_from_tax_lines=True: los
+            # montos en moneda de la compañía no se tocan, solo se refresca
+            # la porción foránea (_write_line ya sabe escribir nada más que
+            # foreign_balance cuando no hace falta más).
+            if (
+                field_has_changed(vals_before, move, 'invoice_date')
+                or field_has_changed(vals_before, move, 'date')
+            ):
                 return True
             return None
 
@@ -1428,7 +1444,7 @@ class AccountMove(models.Model):
         moves_values_before = {
             move: {
                 field: get_value(move, field)
-                for field in ('currency_id', 'partner_id', 'move_type', 'move_currency_to_company_currency_rate')
+                for field in ('currency_id', 'partner_id', 'move_type', 'invoice_date', 'date')
             }
             for move in container['records']
             if move.state == 'draft'

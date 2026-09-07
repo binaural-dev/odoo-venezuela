@@ -35,6 +35,25 @@
       que reconvertía en tercera moneda
 - [x] 2.8 `_compute_foreign_subtotal` ya usaba `compute_all` desde v16: sin
       cambios
+- [x] 2.9 (TI-15055, posterior) `_prepare_product_foreign_base_line_for_taxes_computation`
+      quedó fuera del inventario original: usaba `move.foreign_rate` (campo
+      informativo, redondeado a "Tasa" = 6 decimales) como `rate` del motor
+      de impuestos, en vez del valor exacto que produjo `_convert()` para esa
+      línea. Corregido derivándolo de `foreign_price / price_unit` de la
+      propia línea -- mismo patrón que la rama no-factura
+      (`amount_currency / balance`)
+- [x] 2.10 (TI-15055) `_sync_tax_lines`/`_round_mode` no resincronizaba la
+      línea de impuesto cuando cambiaba `invoice_date`/`date` sin que
+      cambiara nada más del cálculo en moneda de la compañía (precio,
+      cantidad, `tax_ids`). Se agregó `invoice_date`/`date` al snapshot de
+      `moves_values_before` y un disparador en `_round_mode` que fuerza la
+      resincronización (`round_from_tax_lines=True`) cuando cualquiera de
+      los dos cambia -- son las mismas fechas que
+      `_get_foreign_rate_date()` usa como fuente de la tasa, consistente
+      con 2.1. Se corrigió además `get_value()`, que pedía el campo
+      siempre a `account.move.line` en vez de al modelo real del record
+      (reventaba con `KeyError` al trackear un campo que solo existe en
+      `account.move`)
 
 ## 3. `l10n_ve_sale`
 
