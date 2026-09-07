@@ -16,3 +16,7 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.l10n_ve_exchange_note_pricelist_id',
         readonly=False,
     )
+    l10n_ve_exchange_validate_partner_note = fields.Boolean(
+        related='company_id.l10n_ve_exchange_validate_partner_note',
+        readonly=False,
+    )
