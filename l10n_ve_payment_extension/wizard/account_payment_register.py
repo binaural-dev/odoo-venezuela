@@ -66,24 +66,21 @@ class AccountPaymentRegister(models.TransientModel):
 
     def _get_context_invoices(self):
         """
-        Resolve the invoices to load the retention lines from the wizard's context.
+        Resolve the invoices to load the retention lines from.
 
-        The register payment wizard can be opened with active_model set to account.move (e.g.
-        from a list view of invoices) or to account.move.line (the standard "Register Payment"
-        button on an invoice form, which delegates to account.move.line.action_register_payment
-        and sets active_ids to the ids of the journal items, not the invoices). active_ids can't
-        be browsed as account.move without checking active_model first, or the ids of the
-        journal items would be mistaken for invoice ids.
+        Reuses the wizard's own line_ids (already filtered by the base wizard's
+        _get_batches to posted invoices/receipts with an open receivable/payable line),
+        so the retention lines are only loaded for the invoices that are actually being
+        paid, regardless of what else was selected alongside them.
 
         Returns
         -------
         recordset of account.move
-            The invoices linked to the active_ids of the context.
+            The invoices linked to the wizard's line_ids.
         """
-        active_ids = self._context.get("active_ids", [])
-        if self._context.get("active_model") == "account.move.line":
-            return self.env["account.move.line"].browse(active_ids).move_id
-        return self.env["account.move"].browse(active_ids)
+        return self.line_ids._origin.move_id.filtered(
+            lambda m: m.is_invoice(include_receipts=True)
+        )
 
     def _load_iva_retention_lines(self, invoices):
         """
