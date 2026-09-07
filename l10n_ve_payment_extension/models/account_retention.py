@@ -208,12 +208,6 @@ class AccountRetention(models.Model):
                     record.iva_type_eligible_partner_ids = Partner
                     continue
 
-                # Saul's change: the blocking_move_ids block and the
-                # ('id', 'not in', blocking_move_ids) condition are removed --
-                # both sections were equivalent to not filtering by pending
-                # IVA retention at all. This check is dropped to address
-                # points 1 (unbounded search performance) and 2 (missing test
-                # anchoring that logic) raised in review, before merging.
                 invoices = search_invoices_with_taxes(
                     self.env['account.move'],
                     [
@@ -224,6 +218,8 @@ class AccountRetention(models.Model):
                         # Match the criterion in #1005: a credit note's residual is negative,
                         # so '>' 0 excluded it, making its lines unreachable from this dropdown.
                         ('amount_residual', '!=', 0),
+                        '!',
+                        ('retention_iva_line_ids.state', 'in', ('draft', 'emitted')),
                     ]
                 )
                 record.iva_type_eligible_partner_ids = invoices.mapped('partner_id')
