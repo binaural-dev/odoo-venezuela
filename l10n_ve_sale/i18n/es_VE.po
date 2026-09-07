@@ -365,11 +365,16 @@ msgstr "Teléfono"
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid ""
 "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta "
-"por cobrar del cliente es de %s más %s en presupuesto da un total de %s "
-"superando el límite de ventas de %s. Por favor cancele el presupuesto o "
-"comuníquese con el administrador para aumentar el límite de crédito del "
-"cliente."
+"por cobrar del cliente es de %(debt)s más %(amount)s en presupuesto da un "
+"total de %(total)s superando el límite de ventas de %(limit)s. Por favor "
+"cancele el presupuesto o comuníquese con el administrador para aumentar el "
+"límite de crédito del cliente."
 msgstr ""
+"No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta "
+"por cobrar del cliente es de %(debt)s más %(amount)s en presupuesto da un "
+"total de %(total)s superando el límite de ventas de %(limit)s. Por favor "
+"cancele el presupuesto o comuníquese con el administrador para aumentar el "
+"límite de crédito del cliente."
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -489,17 +494,17 @@ msgstr "Subtotal"
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid ""
-"The budget cannot be confirmed. Has an overdue amount of (%.2f) that cannot "
-"be greater than %.2f %s."
+"The budget cannot be confirmed. Has an overdue amount of (%(amount).2f) "
+"that cannot be greater than %(limit).2f %(currency)s."
 msgstr ""
-"No se puede confirmar el presupuesto. Tiene un monto vencido de (%.2f) que "
-"no puede ser mayor a %.2f %s."
+"No se puede confirmar el presupuesto. Tiene un monto vencido de "
+"(%(amount).2f) que no puede ser mayor a %(limit).2f %(currency)s."
 
 #. module: l10n_ve_sale
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
-msgid "The budget cannot be confirmed. You have %s Invoices (%s)."
-msgstr "No se puede confirmar el presupuesto. Tiene %s Facturas (%s)."
+msgid "The budget cannot be confirmed. You have %(count)s Invoices (%(state)s)."
+msgstr "No se puede confirmar el presupuesto. Tiene %(count)s Facturas (%(state)s)."
 
 #. module: l10n_ve_sale
 #. odoo-python

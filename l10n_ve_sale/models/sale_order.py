@@ -636,10 +636,11 @@ class SaleOrder(models.Model):
             }
 
             raise UserError(
-                _("The budget cannot be confirmed. You have %s Invoices (%s).")
-                % (
-                    invoice_count_payment_state,
-                    payment_state_labels[block_order_invoice_payment_state],
+                _(
+                    "The budget cannot be confirmed. You have %(count)s "
+                    "Invoices (%(state)s).",
+                    count=invoice_count_payment_state,
+                    state=payment_state_labels[block_order_invoice_payment_state],
                 )
             )
 
@@ -647,12 +648,12 @@ class SaleOrder(models.Model):
             if amount_total_not_pay > block_order_invoice_total_amount_overdue:
                 raise UserError(
                     _(
-                        "The budget cannot be confirmed. Has an overdue amount of (%.2f) that cannot be greater than %.2f %s."
-                    )
-                    % (
-                        amount_total_not_pay,
-                        block_order_invoice_total_amount_overdue,
-                        invoice_id.currency_id.name,
+                        "The budget cannot be confirmed. Has an overdue amount "
+                        "of (%(amount).2f) that cannot be greater than "
+                        "%(limit).2f %(currency)s.",
+                        amount=amount_total_not_pay,
+                        limit=block_order_invoice_total_amount_overdue,
+                        currency=invoice_id.currency_id.name,
                     )
                 )
 
@@ -697,11 +698,17 @@ class SaleOrder(models.Model):
                     decimal_places = order.currency_id.decimal_places
                     raise ValidationError(
                         _(
-                            "No se ha confirmado el presupuesto. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en presupuesto da un total de %s superando el límite de ventas de %s. Por favor cancele el presupuesto o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
-                            round(order.partner_id.credit, decimal_places),
-                            round(order.amount_total, decimal_places),
-                            round(total_pay, decimal_places),
-                            round(order.partner_id.credit_limit, decimal_places),
+                            "No se ha confirmado el presupuesto. Límite de crédito "
+                            "excedido. La cuenta por cobrar del cliente es de "
+                            "%(debt)s más %(amount)s en presupuesto da un total de "
+                            "%(total)s superando el límite de ventas de %(limit)s. "
+                            "Por favor cancele el presupuesto o comuníquese con el "
+                            "administrador para aumentar el límite de crédito del "
+                            "cliente.",
+                            debt=round(order.partner_id.credit, decimal_places),
+                            amount=round(order.amount_total, decimal_places),
+                            total=round(total_pay, decimal_places),
+                            limit=round(order.partner_id.credit_limit, decimal_places),
                         )
                     )
 
