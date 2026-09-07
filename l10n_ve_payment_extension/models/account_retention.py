@@ -208,6 +208,19 @@ class AccountRetention(models.Model):
                     record.iva_type_eligible_partner_ids = Partner
                     continue
 
+                # retention_iva_line_ids carries its own domain (type_retention
+                # = 'iva') that only applies when the field is *read*, not when
+                # it's traversed inside a search() domain -- there, the ORM
+                # walks every account.retention.line linked to the move
+                # regardless of type. That let a pending ISLR retention line
+                # (draft/emitted) wrongly block an invoice from the IVA
+                # dropdown. Resolve the blocking move ids explicitly, scoped
+                # to IVA retentions only.
+                blocking_move_ids = self.env['account.retention.line'].search([
+                    ('retention_id.type_retention', '=', 'iva'),
+                    ('state', 'in', ('draft', 'emitted')),
+                ]).move_id.ids
+
                 invoices = search_invoices_with_taxes(
                     self.env['account.move'],
                     [
@@ -218,14 +231,7 @@ class AccountRetention(models.Model):
                         # Match the criterion in #1005: a credit note's residual is negative,
                         # so '>' 0 excluded it, making its lines unreachable from this dropdown.
                         ('amount_residual', '!=', 0),
-                        # NOTE: negated field-traversal domains on empty o2m's produce a
-                        # LEFT JOIN with NULL, so "NOT (NULL IN (...))" is falsy in SQL and
-                        # invoices with no retention_iva_line_ids at all were wrongly
-                        # excluded. Explicitly include invoices without any lines.
-                        '|',
-                        ('retention_iva_line_ids', '=', False),
-                        '!',
-                        ('retention_iva_line_ids.state', 'in', ('draft', 'emitted')),
+                        ('id', 'not in', blocking_move_ids),
                     ]
                 )
                 record.iva_type_eligible_partner_ids = invoices.mapped('partner_id')
@@ -768,7 +774,7 @@ class AccountRetention(models.Model):
         self.ensure_one()
         if not self.date_emision:
             self.write({'date_emision': fields.Date.today()})
-        
+
             # 2. Forzamos el guardado para que la interfaz se actualice
             self.flush_recordset(['date_emision'])
 
