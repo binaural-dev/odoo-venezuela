@@ -1152,11 +1152,17 @@ class AccountMove(models.Model):
                     decimal_places = invoice.currency_id.decimal_places
                     raise ValidationError(
                         _(
-                            "No se ha confirmado la factura. Límite de crédito excedido. La cuenta por cobrar del cliente es de %s más %s en factura da un total de %s superando el límite de ventas de %s. Por favor cancele la factura o comuníquese con el administrador para aumentar el límite de crédito del cliente.",
-                            round(invoice.partner_id.credit, decimal_places),
-                            round(invoice.amount_residual, decimal_places),
-                            round(total_pay, decimal_places),
-                            round(invoice.partner_id.credit_limit, decimal_places),
+                            "No se ha confirmado la factura. Límite de crédito "
+                            "excedido. La cuenta por cobrar del cliente es de "
+                            "%(debt)s más %(amount)s en factura da un total de "
+                            "%(total)s superando el límite de ventas de "
+                            "%(limit)s. Por favor cancele la factura o "
+                            "comuníquese con el administrador para aumentar el "
+                            "límite de crédito del cliente.",
+                            debt=round(invoice.partner_id.credit, decimal_places),
+                            amount=round(invoice.amount_residual, decimal_places),
+                            total=round(total_pay, decimal_places),
+                            limit=round(invoice.partner_id.credit_limit, decimal_places),
                         )
                     )
         return super().action_post()

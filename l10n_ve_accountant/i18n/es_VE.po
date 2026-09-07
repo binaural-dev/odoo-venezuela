@@ -971,10 +971,16 @@ msgstr "No Deducible Aliquota Reducida (Compra)"
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid ""
 "No se ha confirmado la factura. Límite de crédito excedido. La cuenta por "
-"cobrar del cliente es de %s más %s en factura da un total de %s superando el"
-" límite de ventas de %s. Por favor cancele la factura o comuníquese con el "
-"administrador para aumentar el límite de crédito del cliente."
+"cobrar del cliente es de %(debt)s más %(amount)s en factura da un total de "
+"%(total)s superando el límite de ventas de %(limit)s. Por favor cancele la "
+"factura o comuníquese con el administrador para aumentar el límite de "
+"crédito del cliente."
 msgstr ""
+"No se ha confirmado la factura. Límite de crédito excedido. La cuenta por "
+"cobrar del cliente es de %(debt)s más %(amount)s en factura da un total de "
+"%(total)s superando el límite de ventas de %(limit)s. Por favor cancele la "
+"factura o comuníquese con el administrador para aumentar el límite de "
+"crédito del cliente."
 
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
