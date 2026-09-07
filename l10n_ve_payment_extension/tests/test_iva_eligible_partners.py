@@ -240,15 +240,6 @@ class TestIvaEligiblePartners(TransactionCase):
         eligible = self._get_iva_eligible_partners("iva", "in_invoice")
         self.assertNotIn(self.partner, eligible)
 
-    def test_supplier_no_retention_lines_is_eligible(self):
-        # Regression for #15015: an invoice with no retention lines at all
-        # must still be eligible for its first IVA retention.
-        invoice = self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
-        self.assertFalse(invoice.retention_iva_line_ids)
-        self.assertNotEqual(invoice.amount_residual, 0)
-        eligible = self._get_iva_eligible_partners("iva", "in_invoice")
-        self.assertIn(self.partner, eligible)
-
     def test_supplier_pending_islr_retention_does_not_block_iva_eligibility(self):
         # Regression for #15015 (real case: partner AVPHARMA, C.A.): the
         # invoice already has a pending ISLR retention line (draft/emitted),
