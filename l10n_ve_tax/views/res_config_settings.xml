@@ -38,10 +38,10 @@
                             <div class="o_setting_right_pane">
                                 <separator string="Sales Tax Rates"/>
                                 <group>
-                                    <field name="exent_aliquot_sale"/>
-                                    <field name="general_aliquot_sale"/>
-                                    <field name="reduced_aliquot_sale"/>
-                                    <field name="extend_aliquot_sale"/>
+                                    <field name="exent_aliquot_sale" string="Exempt Aliquot"/>
+                                    <field name="general_aliquot_sale" string="General Aliquot"/>
+                                    <field name="reduced_aliquot_sale" string="Reduced Aliquot"/>
+                                    <field name="extend_aliquot_sale" string="Extended Aliquot"/>
                                 </group>
                             </div>
                         </div>
@@ -49,10 +49,10 @@
                             <div class="o_setting_right_pane">
                                 <separator string="Purchase Tax Rates"/>
                                 <group>
-                                    <field name="exent_aliquot_purchase"/>
-                                    <field name="general_aliquot_purchase"/>
-                                    <field name="reduced_aliquot_purchase"/>
-                                    <field name="extend_aliquot_purchase"/>
+                                    <field name="exent_aliquot_purchase" string="Exempt Aliquot"/>
+                                    <field name="general_aliquot_purchase" string="General Aliquot"/>
+                                    <field name="reduced_aliquot_purchase" string="Reduced Aliquot"/>
+                                    <field name="extend_aliquot_purchase" string="Extended Aliquot"/>
                                 </group>
                             </div>
                         </div>
@@ -71,7 +71,7 @@
                             <div class="o_setting_right_pane">
                                 <separator string="Deductibility"/>
                                 <group>
-                                    <field name="config_deductible_tax"/>
+                                    <field name="config_deductible_tax" string="Enable Non-Deductible Taxes"/>
                                 </group>
                             </div>
                         </div>
@@ -79,9 +79,9 @@
                             <div class="o_setting_right_pane">
                                 <separator string="Non-Deductible Rates"/>
                                 <group>
-                                    <field name="no_deductible_general_aliquot_purchase"/>
-                                    <field name="no_deductible_reduced_aliquot_purchase"/>
-                                    <field name="no_deductible_extend_aliquot_purchase"/>
+                                    <field name="no_deductible_general_aliquot_purchase" string="General Aliquot"/>
+                                    <field name="no_deductible_reduced_aliquot_purchase" string="Reduced Aliquot"/>
+                                    <field name="no_deductible_extend_aliquot_purchase" string="Extended Aliquot"/>
                                 </group>
                             </div>
                         </div>
@@ -92,8 +92,8 @@
                             <div class="o_setting_right_pane">
                                 <separator string="Sales Book"/>
                                 <group>
-                                    <field name="not_show_reduced_aliquot_sale"/>
-                                    <field name="not_show_extend_aliquot_sale"/>
+                                    <field name="not_show_reduced_aliquot_sale" string="Hide Reduced Aliquot"/>
+                                    <field name="not_show_extend_aliquot_sale" string="Hide Extended Aliquot"/>
                                 </group>
                             </div>
                         </div>
@@ -101,8 +101,8 @@
                             <div class="o_setting_right_pane">
                                 <separator string="Purchase Book"/>
                                 <group>
-                                    <field name="not_show_reduced_aliquot_purchase"/>
-                                    <field name="not_show_extend_aliquot_purchase"/>
+                                    <field name="not_show_reduced_aliquot_purchase" string="Hide Reduced Aliquot"/>
+                                    <field name="not_show_extend_aliquot_purchase" string="Hide Extended Aliquot"/>
                                     <field name="not_show_total_purchases_with_iva"/>
                                     <field name="not_show_national_exempt_total_purchases"/>
                                     <field name="not_show_total_purchases_national"/>
