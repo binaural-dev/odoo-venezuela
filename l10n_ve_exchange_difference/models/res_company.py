@@ -41,6 +41,42 @@ class ResCompany(models.Model):
              "currency, never in the partner's foreign pricelist.",
     )
 
+    l10n_ve_exchange_validate_partner_note = fields.Boolean(
+        string='Validate Customer Allows Exchange Difference Note',
+        default=False,
+        help="With 'Use Debit/Credit Notes for Customer Invoice Exchange "
+             "Difference' enabled, also require the CUSTOMER of the "
+             "invoice being settled to have 'Allow Exchange Difference "
+             "Note' enabled on its own contact record before issuing a "
+             "Debit/Credit Note for it. A customer without that option "
+             "still gets the exchange difference reconciled -- just with "
+             "Odoo's native generic entry instead of a fiscal "
+             "Debit/Credit Note. Disabled (default): every customer gets "
+             "a Debit/Credit Note, same as before this option existed.",
+    )
+
+    def _l10n_ve_exchange_note_allowed_for_partner(self, partner):
+        """True if `partner` (the CUSTOMER of the invoice being settled)
+        may receive an exchange difference Debit/Credit Note issued by
+        this company -- used by `_prepare_exchange_difference_move_vals`
+        (`account_move_line.py`) to decide, per invoice, whether to queue
+        the note or let the line fall through to Odoo's native generic
+        entry instead.
+
+        With `l10n_ve_exchange_validate_partner_note` disabled (the
+        default), always `True`: the per-customer check does not apply,
+        every customer gets the note, exactly as before this option
+        existed. Enabled, defers entirely to the customer's own
+        `l10n_ve_exchange_allow_note` (`res.partner`) -- this company-level
+        toggle only decides WHETHER the customer's flag is consulted at
+        all, never overrides it."""
+        self.ensure_one()
+        if not self.l10n_ve_exchange_validate_partner_note:
+            return True
+        return bool(partner.l10n_ve_exchange_allow_note)
+
+
+
     @api.constrains('l10n_ve_exchange_use_nd_nc', 'l10n_ve_exchange_note_product_id', 'l10n_ve_exchange_note_pricelist_id')
     def _check_l10n_ve_exchange_use_nd_nc_requires_config(self):
         """With the ND/NC toggle enabled, both the note product and the
