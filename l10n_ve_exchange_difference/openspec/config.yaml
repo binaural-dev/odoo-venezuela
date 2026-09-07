@@ -1,0 +1,12 @@
+schema: spec-driven
+
+context: |
+  Módulo de localización venezolana para Odoo 19.
+
+  Documentación de diferencial cambiario en facturas de cliente,
+  usando Notas de Débito/Crédito fiscales reales en lugar del
+  asiento genérico interno que Odoo genera por defecto.
+
+  Acoplado a Odoo 19.0-20260710 (método interno
+  _prepare_reconciliation_single_partial). Incluye guardias de
+  detección de incompatibilidad en tiempo de test y runtime.

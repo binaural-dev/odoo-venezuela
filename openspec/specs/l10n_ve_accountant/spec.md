@@ -181,10 +181,22 @@ Las facturas DEBEN (MUST) exponer `foreign_total_billed`, `foreign_untaxed_total
 
 `_get_tax_totals_summary` de `account.tax` DEBE (MUST) extender el resumen estándar con: los montos base/impuesto/total en la moneda alterna (`base_amount_foreign_currency`, `tax_amount_foreign_currency`, `total_amount_foreign_currency`, calculados con una segunda corrida del resumen sobre las líneas base foráneas), sus equivalentes por subtotal y por grupo de impuestos, las versiones formateadas en moneda del documento, en VES y en moneda alterna, y el total de descuento formateado cuando alguna línea tiene descuento. Además DEBE (MUST) corregir `base_amount` de facturas multi-moneda para que coincida con la suma de balances de las líneas de producto corregidos por la porción real.
 
+El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivarse PRIMERO de `base_lines[0]['record']` (el documento real para el que se está armando el summary) y solo caer al `active_model`/`active_id` del contexto de la UI como último recurso -- ese contexto es AMBIENTE (el registro que el usuario tenía abierto cuando se disparó el cómputo, no necesariamente el que se está calculando ahora) y puede pertenecer a un documento distinto en flujos de pago en lote o recomputes encadenados. Ver `l10n_ve_accountant/models/account_tax.py:_get_tax_totals_summary` (ticket 14119, PR #1163).
+
 #### Scenario: Factura con moneda alterna configurada
 
 - **WHEN** se calcula `tax_totals` de una factura
 - **THEN** el resultado incluye `base_amount_foreign_currency`, `tax_amount_foreign_currency` y `total_amount_foreign_currency` junto a sus valores formateados
+
+#### Scenario: `active_id` obsoleto en el contexto no contamina el resumen de otra factura
+
+- **GIVEN** dos facturas A (sin descuento) y B (con descuento en su línea)
+- **AND** el contexto trae `active_model='account.move'`/`active_id=<id de B>` colgando (ej. un wizard de pago en lote, o un recompute encadenado disparado por B)
+- **WHEN** se recalcula `tax_totals` de A bajo ese contexto
+- **THEN** el resumen de A sigue derivándose de sus propias `invoice_line_ids` (vía `base_lines[0]['record']`), no de B
+- **AND** `formatted_total_discount` de A permanece el float `0.0` (sin descuento), no el string formateado que tendría si hubiera heredado el descuento de B
+
+(`_compute_tax_totals` de `account.move`, `l10n_ve_accountant/models/account_move.py`, delega directo a `super()` sin fijar `active_id`/`active_model` por registro -- ese `with_context()` por registro causaba un `RecursionError` real en cadenas de `super()` profundas al conciliar pagos; la prioridad de `base_lines` sobre el contexto de arriba es lo que hace seguro quitarlo. Cubierto por `l10n_ve_accountant/tests/test_coverage_gaps.py::test_39b_tax_totals_record_derived_from_base_lines_ignores_stale_active_id`.)
 
 ### Requirement: Unicidad del nombre del asiento por partner, compañía y diario
 

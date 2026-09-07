@@ -3,7 +3,7 @@
     "summary": """
         Módulo de Facturación Venezuela
     """,
-    "version": "19.0.1.0.10",
+    "version": "19.0.1.0.12",
     "license": "LGPL-3",
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
@@ -31,6 +31,14 @@
         "wizard/accounting_reports_views.xml",
         "views/account_debit_note_view.xml",
     ],
+    "assets": {
+        "web.assets_backend": [
+            "l10n_ve_invoice/static/src/js/**/*.js",
+        ],
+        "web.assets_unit_tests": [
+            "l10n_ve_invoice/static/tests/unit/**/*.js",
+        ],
+    },
     "images": ["static/description/icon.png"],
     "application": True,
     "pre_init_hook": "pre_init_hook",

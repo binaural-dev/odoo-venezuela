@@ -787,6 +787,90 @@ class TestCoverageGaps(TransactionCase):
         tt = invoice.tax_totals
         self.assertIn('formatted_total_discount', tt)
 
+    def test_39b_tax_totals_record_derived_from_base_lines_ignores_stale_active_id(self):
+        """`_get_tax_totals_summary` (`account_tax.py`) deriva `record` --
+        la factura para la que arma el summary -- PRIMERO de
+        `base_lines[0]['record']` (el documento REAL que se está
+        calculando), y solo si eso falla cae al `active_model`/`active_id`
+        del contexto. Antes tomaba el `active_id` del contexto como
+        prioritario; se invirtió porque `_compute_tax_totals`
+        (`account_move.py`) dejó de fijar `active_id=move.id` POR
+        REGISTRO al iterar un batch (ese `with_context()` por registro
+        causaba un `RecursionError` real en cadenas de `super()` largas de
+        este proyecto) -- sin la inversión de prioridad, un `active_id`
+        AJENO ya colgando del contexto (ej. un wizard de pago en lote, o
+        un recompute encadenado disparado por OTRO documento) haría que
+        `record` se resolviera al documento equivocado, y esa factura
+        heredaría silenciosamente la tasa/moneda/descuento de otra.
+
+        Este test reproduce exactamente ese escenario: dos facturas, A
+        (sin descuento) y B (con descuento) -- se fuerza el recómputo del
+        `tax_totals` de A con `active_id` apuntando a B en el contexto, y
+        se confirma que A sigue viéndose a SÍ MISMA (sin descuento), no a
+        B. `has_discount` (`account_tax.py`) es una señal limpia y
+        determinista para esto: cuando es `False`,
+        `formatted_total_discount` queda como el float `0.0` literal (sin
+        pasar por `formatLang`); cuando es `True`, se convierte en un
+        string formateado -- un cambio de tipo, no solo de valor, así que
+        una contaminación cruzada es imposible de confundir con
+        coincidencia numérica."""
+        invoice_a = self._create_invoice(self.currency_usd, 100.0)
+        invoice_a.with_context(move_action_post_alert=True).action_post()
+
+        invoice_b = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 2.0, "price_unit": 500.0,
+                    "discount": 10.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice_b.with_context(move_action_post_alert=True).action_post()
+
+        # Sanity check bajo contexto NORMAL (sin `active_id` ajeno): A sin
+        # descuento, B con descuento -- confirma que el fixture en sí
+        # produce la señal esperada antes de introducir el contexto
+        # adversarial.
+        self.assertEqual(invoice_a.tax_totals.get('formatted_total_discount'), 0.0)
+        self.assertIsInstance(invoice_b.tax_totals.get('formatted_total_discount'), str)
+
+        # Fuerza el recómputo de `tax_totals` de A con `active_id`
+        # apuntando a B (la factura CON descuento) colgando del contexto
+        # -- simula el wizard/recompute encadenado que deja un
+        # `active_id` ajeno sin limpiar.
+        stale_context = dict(self.env.context, active_model='account.move', active_id=invoice_b.id)
+        invoice_a.with_context(stale_context).invalidate_recordset(['tax_totals'])
+        tt_a_under_stale_context = invoice_a.with_context(stale_context).tax_totals
+
+        self.assertEqual(
+            tt_a_under_stale_context.get('formatted_total_discount'), 0.0,
+            "La factura A (sin descuento) no debió heredar el descuento de "
+            "B solo porque `active_id` del contexto apuntaba a B -- "
+            "`base_lines[0]['record']` (A, el documento real) debió ganar "
+            "sobre el `active_id` ajeno del contexto.",
+        )
+
+        # Verificación inversa -- B (con descuento) tampoco debió PERDER
+        # su propio descuento por un `active_id` ajeno apuntando a A.
+        stale_context_b = dict(self.env.context, active_model='account.move', active_id=invoice_a.id)
+        invoice_b.with_context(stale_context_b).invalidate_recordset(['tax_totals'])
+        tt_b_under_stale_context = invoice_b.with_context(stale_context_b).tax_totals
+        self.assertIsInstance(
+            tt_b_under_stale_context.get('formatted_total_discount'), str,
+            "La factura B (con descuento) no debió perder su propio "
+            "descuento por un `active_id` ajeno apuntando a A.",
+        )
+
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _compute_total_debit_credit EUR
     # ═══════════════════════════════════════════════════════════════

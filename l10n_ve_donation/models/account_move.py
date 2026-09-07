@@ -96,9 +96,16 @@ class AccountMove(models.Model):
                     "is_donation": True,
                     "invoice_line_ids": invoice_line_vals,
                 }
+                # `l10n_ve_skip_refund_origin_validation` -- este NC nunca
+                # repite el producto de la factura original (usa el
+                # producto de donación dedicado, ver
+                # `product_line_donation()`), así que no debe pasar por
+                # la validación de `l10n_ve_invoice` que exige que los
+                # productos de la NC ya estén en la factura de origen.
                 reverse_move = self.env['account.move'].with_context(
                     check_move_validity=False,
                     skip_invoice_sync=True,
+                    l10n_ve_skip_refund_origin_validation=True,
                 ).create(move_vals)
                 reverse_moves += reverse_move
             return reverse_moves

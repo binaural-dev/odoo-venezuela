@@ -3,3 +3,6 @@ from . import test_sale_order_rate
 from . import test_sale_order_vat
 from . import test_action_confirm
 #from . import test_sale_order_invoice_status
+from . import test_ta74966_currency
+from . import test_ta80647_invoice_currency
+from . import test_documented_behaviour

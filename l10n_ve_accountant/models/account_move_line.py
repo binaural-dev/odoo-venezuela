@@ -75,13 +75,46 @@ class AccountMoveLine(models.Model):
     international_purchase_exent_product = fields.Boolean(string="International Purchase Exent Product")
     is_purchase_international = fields.Boolean(related="move_id.journal_id.is_purchase_international")
 
-    @api.depends("price_unit", "foreign_inverse_rate", "move_id.currency_id")
+    def _get_foreign_rate_date(self):
+        """Fecha con la que se busca la tasa para convertir montos de esta linea.
+
+        Unica fuente de fecha para todo calculo de moneda alterna de la linea:
+        _compute_foreign_price, _compute_price_unit_ves y
+        _get_non_invoice_foreign_value.
+
+        Facturas y notas de credito/debito: invoice_date, que en esta
+        localizacion es la fecha de la tasa (la fecha visible del documento es
+        invoice_date_display). Asientos manuales y de pago: la fecha contable
+        (date), que es la unica que tienen.
+        """
+        self.ensure_one()
+        move = self.move_id
+        if move.is_invoice(include_receipts=True):
+            return move.invoice_date or move.date or fields.Date.context_today(self)
+        return move.date or fields.Date.context_today(self)
+
+    @api.depends(
+        "price_unit",
+        "currency_id",
+        "move_id.currency_id",
+        "move_id.invoice_date",
+        "move_id.date",
+    )
     def _compute_price_unit_ves(self):
         for line in self:
-            if line.currency_id and line.currency_id == line.company_id.currency_id:
+            company_currency = line.company_id.currency_id
+            if not line.currency_id or line.currency_id == company_currency:
                 line.price_unit_ves = line.price_unit
-            else:
-                line.price_unit_ves = line.price_unit / line.currency_id.rate
+                continue
+            # Convertir con _convert() y no dividiendo entre currency_id.rate:
+            # aplica el redondeo de la moneda destino y no revienta si la tasa
+            # del dia no esta cargada (rate = 0).
+            line.price_unit_ves = line.currency_id._convert(
+                line.price_unit,
+                company_currency,
+                line.company_id,
+                line._get_foreign_rate_date(),
+            )
 
     def _compute_ves_currency_id(self):
         ves_currency = self.env.ref("base.VES", raise_if_not_found=False) or self.env["res.currency"].search([("name", "=", "VES")], limit=1)
@@ -126,21 +159,40 @@ class AccountMoveLine(models.Model):
             line.name = line.move_id.name
         return res
 
-    @api.depends("price_unit", "foreign_inverse_rate", "move_id.currency_id")
+    @api.depends(
+        "price_unit",
+        "currency_id",
+        "move_id.currency_id",
+        "move_id.invoice_date",
+        "move_id.date",
+    )
     def _compute_foreign_price(self):
         for line in self:
-            company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
-            if line.currency_id.id == company_currency.id:
-                line.foreign_price = line.price_unit * line.foreign_inverse_rate
+            if not foreign_currency:
+                line.foreign_price = 0.0
             elif line.currency_id.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
             else:
-                line.foreign_price = line.currency_id._convert(
-                    line.price_unit,
-                    foreign_currency,
-                    line.company_id,
-                    line.move_id.invoice_date or fields.Date.today(),
+                # round=False + redondeo a la precision del campo: _convert()
+                # redondea por defecto a los decimales de la moneda destino
+                # (USD = 2), pero foreign_price usa "Foreign Product Price"
+                # cuya precision es configurable. Sin esto, un precio
+                # unitario pequeño se pierde al
+                # convertir y foreign_subtotal (= foreign_price x cantidad)
+                # arrastra el error multiplicado por la cantidad.
+                precision = self.env["decimal.precision"].precision_get(
+                    "Foreign Product Price"
+                )
+                line.foreign_price = float_round(
+                    line.currency_id._convert(
+                        line.price_unit,
+                        foreign_currency,
+                        line.company_id,
+                        line._get_foreign_rate_date(),
+                        round=False,
+                    ),
+                    precision_digits=precision,
                 )
 
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
@@ -184,20 +236,12 @@ class AccountMoveLine(models.Model):
         if balance and len(currency_lines) == 1:
             return -balance
 
-        # others currency (neither base nor alternate)
-        cur = self.currency_id
-        if cur and cur != self.company_id.foreign_currency_id :
-            return self.company_id.currency_id._convert(
-                self.debit - self.credit,
-
-                self.company_id.foreign_currency_id,
-                self.company_id,
-                self.date or fields.Date.context_today(self),
-            )
-
-        # Standard rate
-        
-        return (self.debit - self.credit) * self.foreign_inverse_rate 
+        return self.company_id.currency_id._convert(
+            self.debit - self.credit,
+            self.company_id.foreign_currency_id,
+            self.company_id,
+            self._get_foreign_rate_date(),
+        )
 
     def _get_foreign_value(self):
         """Return the foreign value (signed) for this line, or None."""
@@ -254,7 +298,8 @@ class AccountMoveLine(models.Model):
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
-        "foreign_inverse_rate",
+        "move_id.invoice_date",
+        "move_id.date",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
