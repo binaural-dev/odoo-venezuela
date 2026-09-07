@@ -158,6 +158,22 @@ multiplicación manual visible en un campo, sino el `rate` que alimenta al
 motor de impuestos del core -- pero viola el mismo requirement: usaba
 `move.foreign_rate` directo para calcular, no para informar.
 
+#### Scenario: `rate` de las líneas de pronto pago y redondeo en moneda alterna
+
+- **GIVEN** una factura con descuento por pronto pago (`display_type='epd'`) o
+  con una línea de redondeo de caja (`display_type='rounding'`)
+- **WHEN** se arma la base line foránea de esa línea
+  (`_prepare_epd_foreign_base_line_for_taxes_computation` /
+  `_prepare_cash_rounding_foreign_base_line_for_taxes_computation`)
+- **THEN** el `rate` SHALL derivarse de la conversión ya hecha para el
+  `price_unit` de esa misma línea (`amount_currency` convertido /
+  `amount_currency` original), no de `move.foreign_rate`
+
+Motivo: mismo requirement y mismo argumento que la línea de producto -- estos
+dos sitios seguían con `rate = self.foreign_rate` sin corregir cuando se
+cerró el hallazgo de code review sobre el sitio anterior, dejando el
+inventario incompleto.
+
 ### Requirement: `_sync_tax_lines` resincroniza la línea de impuesto cuando cambia la fecha que representa la tasa
 
 Cuando `invoice_date` (facturas y notas) o `date` (asientos manuales y de

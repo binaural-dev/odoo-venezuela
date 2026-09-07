@@ -165,7 +165,6 @@ class AccountMoveLine(models.Model):
         "move_id.currency_id",
         "move_id.invoice_date",
         "move_id.date",
-        "move_id.foreign_rate",
     )
     def _compute_foreign_price(self):
         for line in self:

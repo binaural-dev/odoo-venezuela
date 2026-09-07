@@ -1099,3 +1099,90 @@ class TestForeignBalance(TransactionCase):
             ),
         )
 
+    def test_invoice_tax_line_foreign_recompute_on_invoice_date_only(self):
+        """Escenario real del ticket: factura de VENTA, escribiendo solo
+        `invoice_date` (sin tocar `date`) -- lo que hace el usuario en la UI.
+
+        `_round_mode` debe disparar la resincronizacion con el cambio de
+        `invoice_date` solamente; no depende de que `date` cambie tambien
+        (a diferencia del test de compra de arriba, que escribe ambas).
+        """
+        day1 = fields.Date.today()
+        day2 = day1 - timedelta(days=1)
+        rate_day2 = 120.0  # distinto al rate_day1 (40.0) seteado en setUp
+
+        self.env["res.currency.rate"].create(
+            {
+                "name": day2,
+                "currency_id": self.currency_usd.id,
+                "inverse_company_rate": rate_day2,
+                "company_id": self.company.id,
+            }
+        )
+
+        sale_journal = self.env["account.journal"].search(
+            [("type", "=", "sale"), ("company_id", "=", self.company.id)], limit=1
+        ) or self.env["account.journal"].sudo().create(
+            {
+                "name": "Sale Test Recompute",
+                "code": "SLTRC",
+                "type": "sale",
+                "company_id": self.company.id,
+            }
+        )
+
+        sale_tax = self.env["account.tax"].create({
+            "name": "IVA 16% Ventas Recompute",
+            "amount": 16,
+            "amount_type": "percent",
+            "type_tax_use": "sale",
+            "company_id": self.company.id,
+            "tax_group_id": self.test_tax_group.id,
+        })
+
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": sale_journal.id,
+                "currency_id": self.currency_vef.id,
+                "date": day1,
+                "invoice_date": day1,
+                "invoice_line_ids": [
+                    Command.create(
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1.0,
+                            "price_unit": 1000.0,
+                            "account_id": self.account_income.id,
+                            "tax_ids": [(6, 0, [sale_tax.id])],
+                        }
+                    )
+                ],
+            }
+        )
+        self.assertEqual(invoice.state, "draft")
+
+        tax_line = invoice.line_ids.filtered(lambda l: l.display_type == "tax")
+        self.assertTrue(tax_line, "La factura debe tener una linea de impuesto")
+
+        # Solo invoice_date -- date se queda en day1 a proposito.
+        invoice.write({"invoice_date": day2})
+
+        tax_line = invoice.line_ids.filtered(lambda l: l.display_type == "tax")
+        expected_day2 = self.currency_vef._convert(
+            tax_line.debit - tax_line.credit,
+            self.currency_usd,
+            self.company,
+            day2,
+        )
+        self.assertAlmostEqual(
+            tax_line.foreign_debit - tax_line.foreign_credit,
+            expected_day2,
+            delta=0.02,
+            msg=(
+                "La linea de impuesto no se recalculo al cambiar solo "
+                "invoice_date (sin tocar date) en una factura de venta"
+            ),
+        )
+

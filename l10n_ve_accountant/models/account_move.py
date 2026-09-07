@@ -1270,14 +1270,17 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
         sign = self.direction_sign
-        rate = self.foreign_rate
         rate_date = self.invoice_date if self.is_invoice(include_receipts=True) else self.date
-        price_unit = sign * epd_line.currency_id._convert(
+        converted = epd_line.currency_id._convert(
             epd_line.amount_currency,
             self.company_id.foreign_currency_id,
             self.company_id,
             rate_date or fields.Date.context_today(self),
         )
+        # Igual que en _prepare_product_foreign_base_line_for_taxes_computation:
+        # derivado de la propia conversion, no de self.foreign_rate (informativo).
+        rate = (abs(converted) / abs(epd_line.amount_currency)) if epd_line.amount_currency else self.foreign_rate
+        price_unit = sign * converted
 
         return self.env['account.tax']._prepare_base_line_for_taxes_computation(
             epd_line,
@@ -1300,14 +1303,21 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
         sign = self.direction_sign
-        rate = self.foreign_rate
         rate_date = self.invoice_date if self.is_invoice(include_receipts=True) else self.date
-        price_unit = sign * cash_rounding_line.currency_id._convert(
+        converted = cash_rounding_line.currency_id._convert(
             cash_rounding_line.amount_currency,
             self.company_id.foreign_currency_id,
             self.company_id,
             rate_date or fields.Date.context_today(self),
         )
+        # Igual que en _prepare_product_foreign_base_line_for_taxes_computation:
+        # derivado de la propia conversion, no de self.foreign_rate (informativo).
+        rate = (
+            (abs(converted) / abs(cash_rounding_line.amount_currency))
+            if cash_rounding_line.amount_currency
+            else self.foreign_rate
+        )
+        price_unit = sign * converted
 
         return self.env['account.tax']._prepare_base_line_for_taxes_computation(
             cash_rounding_line,
