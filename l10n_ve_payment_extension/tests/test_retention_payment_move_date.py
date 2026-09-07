@@ -132,11 +132,13 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             "payment.date must still reflect the retention's own date_accounting.",
         )
 
-        # The move behind that payment must instead be dated like the invoice.
-        self.assertEqual(
+        # The move behind that payment is NOT dated like the invoice (that
+        # approach was tried in commit 7dc7660ea and reverted in 22a9444b):
+        # it keeps date_accounting instead.
+        self.assertNotEqual(
             payment.move_id.date, invoice.date,
-            "The retention payment's journal entry must be dated like the "
-            "invoice it retains from, not like date_accounting.",
+            "The retention payment's journal entry must not be dated like "
+            "the invoice it retains from; it must keep date_accounting.",
         )
 
         # Since the move now shares the invoice's date, it must also share its
@@ -186,11 +188,11 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
         payment.retention_line_ids = retention.retention_line_ids
 
         move_vals = payment._generate_move_vals()
-        self.assertEqual(
+        self.assertNotEqual(
             move_vals.get("date"), invoice.date,
-            "_generate_move_vals must override 'date' to the invoice's own "
-            "accounting date once the payment is linked to its retention_line_ids, "
-            "instead of leaving payment.date (date_accounting) as the move's date.",
+            "_generate_move_vals no longer overrides 'date' to the invoice's "
+            "own accounting date (that override was reverted in 22a9444b); "
+            "it must leave payment.date (date_accounting) as the move's date.",
         )
 
     def test_regression_without_conversion_date_context_move_uses_date_accounting(self):
