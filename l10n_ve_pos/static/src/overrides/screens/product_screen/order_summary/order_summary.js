@@ -7,6 +7,10 @@ import { _t } from "@web/core/l10n/translation";
 import { formatMonetary } from "@web/views/fields/formatters";
 
 patch(OrderSummary.prototype, {
+  // Ticket 14352: la restricción de descuento positivo se maneja en el modelo
+  // (PosOrderline.setUnitPrice fuerza el descuento a negativo), para que el
+  // cajero pueda cambiar el monto sin recibir una alerta en cada tecla.
+
   getConversionRateForDisplay() {
     const order = this.currentOrder;
     if (!order) {
