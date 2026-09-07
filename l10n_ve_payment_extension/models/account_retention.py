@@ -732,8 +732,21 @@ class AccountRetention(models.Model):
                     _("No registered lines found in the move to reconcile.")
                 )
             
+            # `l10n_ve_exchange_is_retention_reconcile` -- explicit,
+            # module-owned context key (as opposed to reusing the native
+            # `no_exchange_difference` alone) so that any OTHER module
+            # hooking into reconciliation can tell a retention payoff
+            # apart from any other legitimate reason a caller might set
+            # `no_exchange_difference` (e.g. `l10n_ve_exchange_difference`
+            # itself sets it when closing its own Debit/Credit Note,
+            # `account_move_line.py::_create_exchange_difference_note`).
+            # Coordinated purely via context, not a shared dependency:
+            # `l10n_ve_exchange_difference` reads this key without
+            # depending on this module.
             payment.retention_line_ids.move_id.with_context(
-                no_exchange_difference=True,group_in_single_partial=True
+                no_exchange_difference=True,
+                group_in_single_partial=True,
+                l10n_ve_exchange_is_retention_reconcile=True,
             ).js_assign_outstanding_line(lines[0].id)
 
     @api.model

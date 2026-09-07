@@ -26,7 +26,28 @@ class AccountMoveLine(models.Model):
         `_prepare_exchange_difference_move_vals` only receives the
         line(s) needing a fix, not the counterpart they were reconciled
         against.
+
+        Retention payments are excluded WITHOUT any hard dependency on
+        the module that implements them (`l10n_ve_payment_extension`):
+        that module reconciles a retention against the invoice's
+        receivable line with `l10n_ve_exchange_is_retention_reconcile=True`
+        in context (`account_retention.py::_reconcile_all_payments`) -- an
+        EXPLICIT, module-owned key set for exactly this purpose, not the
+        generic native `no_exchange_difference` key. That native key is
+        also set on the SAME call (to suppress Odoo's own generic entry)
+        but is deliberately NOT read here: it is a widely reused Odoo
+        core convention, and this module itself sets it elsewhere for an
+        unrelated reason (closing its own note's receivable line, see
+        `_create_exchange_difference_note` below) -- relying on it here
+        would misidentify ANY future caller that legitimately sets
+        `no_exchange_difference` for a different reason as a retention.
+        Coordinated purely via this context key (no shared dependency in
+        either direction): `l10n_ve_payment_extension` sets it without
+        depending on this module, and this module reads it without
+        depending on that one.
         """
+        if self.env.context.get('l10n_ve_exchange_is_retention_reconcile'):
+            return super().reconcile()
         invoice_lines = self.filtered(
             lambda l: (
                 l.account_type == 'asset_receivable'
@@ -227,6 +248,7 @@ class AccountMoveLine(models.Model):
                 and not invoice.debit_origin_id
                 and not invoice.reversed_entry_id
                 and not getattr(invoice, 'l10n_ve_igtf_note_debit_origin', False)
+                and company_of_line._l10n_ve_exchange_note_allowed_for_partner(invoice.partner_id)
             )
             residual = amounts.get('amount_residual')
             if (
