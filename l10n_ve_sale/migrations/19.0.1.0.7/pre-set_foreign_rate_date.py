@@ -22,10 +22,50 @@ Solo se tocan las ordenes que todavia no se han facturado por completo: son
 las unicas donde el valor va a usarse. En las ya facturadas se deja NULL, con
 lo que siguen cayendo a date_order y conservan exactamente el comportamiento
 que tenian antes de esta version.
+
+POR QUE ES UNA MIGRACION `pre-` Y NO `post-`
+============================================
+
+foreign_rate_date es un campo calculado almacenado que comparte
+compute="_compute_rate" con foreign_rate (que lleva tracking=True) y con
+foreign_inverse_rate.
+
+Cuando el ORM crea la columna de un calculado almacenado marca TODOS los
+registros existentes para computar -- odoo/orm/models.py, _auto_init:
+
+    new = field.update_db(self, columns)
+    if new and field.compute:
+        fields_to_compute.append(field)
+    ...
+    for field in fields_to_compute:
+        self.env.add_to_compute(field, records)   # records = toda la tabla
+
+y al ejecutarse _compute_rate se asignan los tres campos que comparten el
+metodo. En las companias con "Update sale order rate using date order" activo
+no hay guard que lo pare, asi que las ordenes historicas quedarian con la tasa
+reescrita a partir de date_order -- que el core ya movio a la fecha de
+confirmacion -- y con un mensaje en el chatter por cada una, al ser
+foreign_rate un campo con tracking.
+
+Creando la columna aqui, antes de que el ORM cargue el modelo, update_db la
+encuentra existente, no la trata como nueva y no dispara ese recompute. La
+version anterior de este script era `post-`: corria despues del recompute, de
+modo que reparaba foreign_rate_date pero no el reescrito colateral de la tasa.
 """
 
 
 def migrate(cr, version):
+    cr.execute(
+        """
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_name = 'sale_order'
+          AND column_name = 'foreign_rate_date'
+        """
+    )
+    if not cr.fetchone():
+        cr.execute("ALTER TABLE sale_order ADD COLUMN foreign_rate_date date")
+
     cr.execute(
         """
         UPDATE sale_order so
