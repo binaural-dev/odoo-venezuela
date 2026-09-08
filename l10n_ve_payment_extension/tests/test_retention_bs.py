@@ -1,6 +1,6 @@
 import logging
 from odoo.tests import tagged, TransactionCase, Form
-from odoo import Command, fields
+from odoo import Command, fields, _
 from odoo.tools.float_utils import float_round
 from odoo.exceptions import ValidationError,UserError
 
@@ -231,7 +231,7 @@ class TestAccountRetentionSequence(TransactionCase):
 
         _logger.warning("Creating action_post retention for invoice %s", invoice.amount_total)
         _logger.warning("Creating retention for invoice %s", invoice.amount_untaxed)
-        with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":type_retention})) as retention_form:
+        with Form(self.env["account.retention"].with_context(default_type='in_invoice', default_type_retention=type_retention)) as retention_form:
             retention_form.partner_id = self.partner_a
             retention_form.date_accounting = today
 
@@ -506,4 +506,68 @@ class TestAccountRetentionSequence(TransactionCase):
             0.0,
             "retention_amount must survive a recompute triggered by a shared "
             "dependency, not silently reset to 0 for a municipal line.",
+        )
+
+    def test_12_iva_sequence_number_not_consumed_on_rollback(self):
+        """Regression for TI-15000: retention.iva.control.number must not
+        advance when the account.retention that consumed it is rolled back
+        (e.g. a validation failing right after create()). Before the fix,
+        the sequence used implementation='standard' (PostgreSQL nextval(),
+        not transactional), so the number stayed consumed even on rollback,
+        leaving a permanent gap in the legal numbering. 'no_gap' reads/
+        updates the counter with a row-level lock, so the increment
+        participates in the transaction and is reverted with everything
+        else on rollback -- reproduced here with an explicit cr.savepoint(),
+        the same primitive Odoo uses to unwind a request on an unhandled
+        exception."""
+        self.assertFalse(self.partner_a.phone)
+        self.assertFalse(self.partner_a.email)
+
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        sequence = self.env["account.retention"].get_sequence_retention("iva")
+        self.assertEqual(
+            sequence.implementation, "no_gap",
+            "The retention.iva.control.number sequence must use the "
+            "no_gap implementation for the numbering to be transactional.",
+        )
+        next_before = sequence.number_next_actual
+
+        retention_id = None
+        with self.assertRaises(UserError):
+            with self.env.cr.savepoint():
+                retention = self._create_retention(invoice, "iva")
+                retention_id = retention.id
+                # The number was consumed as part of create() -> _set_sequence().
+                self.assertTrue(retention.number)
+                sequence.invalidate_recordset(["number_next_actual"])
+                self.assertNotEqual(sequence.number_next_actual, next_before)
+
+                # Simulates the validation that, per the reported bug,
+                # prevented confirming the retention (e.g. missing
+                # phone/email) and made the whole request/transaction roll
+                # back after the number had already been consumed.
+                raise UserError(
+                    _(
+                        "The partner '%s' has no phone/email configured; "
+                        "the retention cannot be confirmed.",
+                        self.partner_a.name,
+                    )
+                )
+
+        # The savepoint rollback must have discarded the retention record...
+        self.assertTrue(retention_id)
+        self.assertFalse(
+            self.env["account.retention"].browse(retention_id).exists()
+        )
+
+        # ...and, thanks to no_gap, the sequence counter as well.
+        sequence.invalidate_recordset(["number_next_actual"])
+        next_after = sequence.number_next_actual
+        self.assertEqual(
+            next_after, next_before,
+            "The IVA retention sequence must not advance when the "
+            "transaction that consumed it is rolled back (no_gap "
+            "implementation).",
         )
