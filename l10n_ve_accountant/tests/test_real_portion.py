@@ -1,6 +1,9 @@
 import logging
+from datetime import timedelta
+
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from odoo.tools import float_round
 
 _logger = logging.getLogger(__name__)
 
@@ -1434,4 +1437,550 @@ class TestRealPortion(TransactionCase):
         self.assertAlmostEqual(
             total_gastos, total_vef_correcto, places=2,
             msg=f"RIGHT: gastos deben sumar {total_vef_correcto} VEF"
+        )
+
+    # ═══════════════════════════════════════════════════════════════
+    # TESTS: COGS Y REDONDEO ACUMULADO (openspec l10n-ve-foreign-pt-cogs-imbalance)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_23_invoice_with_cogs_pair_stays_balanced(self):
+        """Factura VEF con un par COGS autobalanceado, igual al que
+           stock_account._post() inyecta en line_ids ANTES de postear
+           (ver openspec/changes/l10n-ve-foreign-pt-cogs-imbalance).
+
+           El par tiene el mismo costo con price_unit de signo opuesto
+           (igual que _stock_account_prepare_realtime_out_lines_vals).
+           Con _compute_foreign_price basado en _convert (lineal), negar
+           el costo debe negar exactamente el monto alterno, así que el
+           par se autobalancea sin depender de que _distribute_foreign_pt_residual
+           lo excluya de 'other'.
+        """
+        acc_stock = self._get_or_create('110100', 'Stock Account', 'asset_current')
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 23200.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        # Par COGS, mismo patrón que _stock_account_prepare_realtime_out_lines_vals:
+        # price_unit de signo opuesto, mismo costo.
+        cogs_cost = 9000.00
+        invoice.write({
+            "line_ids": [
+                Command.create({
+                    "name": "COGS interim",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": cogs_cost,
+                    "account_id": acc_stock.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+                Command.create({
+                    "name": "COGS expense",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": -cogs_cost,
+                    "account_id": self.acc_expense.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, 'posted')
+        self._log_lines(invoice, "test_23_cogs")
+
+        cogs_lines = invoice.line_ids.filtered(lambda l: l.display_type == 'cogs')
+        self.assertEqual(len(cogs_lines), 2, "Debe haber 2 lineas COGS")
+
+        # El par COGS debe autobalancearse en moneda alterna por construccion
+        cogs_fd = sum(cogs_lines.mapped('foreign_debit'))
+        cogs_fc = sum(cogs_lines.mapped('foreign_credit'))
+        self.assertAlmostEqual(
+            cogs_fd, cogs_fc, places=2,
+            msg=f"COGS: foreign_debit ({cogs_fd}) != foreign_credit ({cogs_fc})"
+        )
+
+        # Y el asiento completo (COGS incluidas) sigue cuadrando
+        self._assert_balances(invoice, "test_23")
+        self._assert_foreign_squares(invoice, "test_23")
+
+    def test_24_invoice_many_lines_decimal_rounding(self):
+        """Factura VEF con 50 lineas de precios con muchos decimales y
+           una tasa con muchos decimales - hallazgo #2 del proposal
+           (redondeo acumulado en facturas grandes).
+
+           No es una regresion de hoy: foreign_subtotal sigue siendo
+           foreign_price (ya redondeado) x cantidad, sin tocar. Lo que
+           se verifica es que, aun con esa desviacion por linea,
+           _distribute_foreign_pt_residual sigue cuadrando el total.
+        """
+        self._set_usd_rate(37.6543)
+
+        lines = []
+        n = 50
+        for i in range(n):
+            price = round(13.3333 + i * 0.7777, 4)
+            lines.append(Command.create({
+                "product_id": self.product.id,
+                "quantity": 3.0,
+                "price_unit": price,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            }))
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, 'posted')
+
+        self.assertEqual(
+            len(invoice.invoice_line_ids), n,
+            "Deben crearse las 50 lineas de producto"
+        )
+
+        # El cuadre total debe mantenerse pese al redondeo por linea
+        self._assert_balances(invoice, "test_24")
+        fd, fc = self._assert_foreign_squares(invoice, "test_24")
+
+        # Medicion informativa (no regresion): cuanto se desvia la suma
+        # "ingenua" de foreign_subtotal por linea (cada una ya redondeada)
+        # respecto de convertir el total una sola vez.
+        product_lines = invoice.line_ids.filtered(lambda l: l.display_type == 'product')
+        naive_foreign_total = sum(product_lines.mapped('foreign_subtotal'))
+        direct_convert_total = self.currency_vef._convert(
+            sum(product_lines.mapped('price_subtotal')),
+            self.currency_usd, self.company, fields.Date.today(),
+        )
+        deviation = abs(naive_foreign_total - direct_convert_total)
+        _logger.info(
+            f"test_24: desviacion redondeo acumulado (50 lineas) = "
+            f"{deviation:.4f} USD (hallazgo #2 del proposal, no regresion)"
+        )
+        # El total del asiento SIEMPRE debe cuadrar, sin importar la
+        # desviacion por linea - eso es lo que garantiza la distribucion.
+        self.assertAlmostEqual(fd, fc, places=2)
+
+        # Techo para la desviacion acumulada: con 50 lineas no deberia pasar
+        # de 1 USD. Si algun cambio futuro la dispara, este assert lo detecta
+        # en vez de dejarlo solo en el log.
+        self.assertLess(
+            deviation, 1.0,
+            msg=f"Desviacion por redondeo acumulado demasiado alta: {deviation:.4f} USD"
+        )
+
+    # ═══════════════════════════════════════════════════════════════
+    # TESTS: UNIFICACION DEL CALCULO ALTERNO VIA _convert() (TA-74966)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_25_manual_rate_does_not_override_convert(self):
+        """Con la unificacion via _convert(), la tasa fijada en el documento
+           (manually_set_rate) NO se usa para calcular el monto alterno de las
+           lineas: manda siempre la tasa de res.currency.rate a la fecha.
+
+           Este test deja constancia de la decision tomada en TA-74966. La
+           tasa del documento queda como dato informativo -- los flujos que la
+           heredan (l10n_ve_sale con use_invoice_rate_from_sale_order,
+           l10n_ve_pos, cierre de ejercicio) muestran su tasa pero los montos
+           alternos salen de la tabla.
+        """
+        self._set_usd_rate(50.0)
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            # Tasa "heredada" distinta de la tabla: 1 USD = 25 VEF
+            "manually_set_rate": True,
+            "foreign_rate": 25.0,
+            "foreign_inverse_rate": 0.04,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 1000.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # Tabla: 1000 / 50 = 20 USD. Tasa manual habria dado 1000 / 25 = 40.
+        self.assertAlmostEqual(
+            line.foreign_price, 20.0, places=2,
+            msg=f"foreign_price debe salir de la tabla (20), no de la tasa "
+                f"del documento (40). Obtenido: {line.foreign_price}"
+        )
+        # La tasa del documento se conserva como dato informativo
+        self.assertAlmostEqual(invoice.foreign_rate, 25.0, places=2)
+
+        invoice.action_post()
+        self._assert_balances(invoice, "test_25")
+        self._assert_foreign_squares(invoice, "test_25")
+
+    def test_26_foreign_price_recomputes_when_date_changes(self):
+        """La fecha entra en _convert(), asi que debe estar declarada en el
+           @api.depends de _compute_foreign_price: mover la fecha de un
+           borrador tiene que recalcular el monto alterno.
+
+           Antes de TA-74966 esta dependencia llegaba de rebote a traves de
+           foreign_inverse_rate (related de move_id.foreign_inverse_rate, que
+           si se recalcula con la fecha). Al pasar todo a _convert() ese
+           rebote desaparece y la dependencia tiene que ser explicita.
+        """
+        self._set_usd_rate(50.0)
+
+        past_date = fields.Date.today() - timedelta(days=30)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 25.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 1000.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        self.assertAlmostEqual(line.foreign_price, 20.0, places=2)
+
+        # Se mueve la fecha a una con tasa 25 -> 1000 / 25 = 40 USD
+        invoice.write({
+            "invoice_date": past_date,
+            "date": past_date,
+        })
+
+        self.assertAlmostEqual(
+            line.foreign_price, 40.0, places=2,
+            msg=f"foreign_price no se recalculo al cambiar la fecha "
+                f"(esperado 40, obtenido {line.foreign_price})"
+        )
+
+    def test_27_manual_entry_third_currency(self):
+        """Asiento manual (no factura) con una linea en una tercera moneda.
+
+           Es el caso que atravesaba el fallback eliminado en
+           _get_non_invoice_foreign_value: ni el atajo de balance directo
+           (no hay lineas en moneda alterna) ni la multiplicacion por
+           foreign_inverse_rate. Ahora convierte con _convert() desde la
+           moneda de la compania.
+        """
+        self._set_usd_rate(50.0)
+
+        misc_journal = self.env["account.journal"].search([
+            ("type", "=", "general"),
+            ("company_id", "=", self.company.id),
+        ], limit=1)
+        self.assertTrue(misc_journal, "Debe existir un diario misceláneo")
+
+        entry = self.env["account.move"].create({
+            "move_type": "entry",
+            "journal_id": misc_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "name": "Debito EUR",
+                    "account_id": self.acc_expense.id,
+                    "currency_id": self.currency_eur.id,
+                    "debit": 5500.0,
+                    "credit": 0.0,
+                    "amount_currency": 100.0,
+                }),
+                Command.create({
+                    "name": "Credito VEF",
+                    "account_id": self.acc_bank.id,
+                    "debit": 0.0,
+                    "credit": 5500.0,
+                }),
+            ],
+        })
+        entry.action_post()
+        self._log_lines(entry, "test_27_third_currency")
+
+        # 5500 VEF / 50 = 110 USD en cada pata
+        eur_line = entry.line_ids.filtered(lambda l: l.currency_id == self.currency_eur)
+        self.assertAlmostEqual(
+            eur_line.foreign_debit, 110.0, places=2,
+            msg=f"La linea EUR debe convertirse via _convert desde VEF "
+                f"(esperado 110 USD, obtenido {eur_line.foreign_debit})"
+        )
+        self._assert_balances(entry, "test_27")
+        self._assert_foreign_squares(entry, "test_27")
+
+    # ═══════════════════════════════════════════════════════════════
+    # TESTS: PRECISION, IMPUESTOS Y FECHA DE LA TASA (TA-74966)
+    # Cada uno esta construido para FALLAR si se revierte el cambio
+    # que verifica.
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_29_foreign_price_keeps_field_precision(self):
+        """foreign_price debe redondearse a la precision del campo
+           ("Foreign Product Price", configurable) y no a los decimales de la
+           moneda destino.
+
+           REVERSION: si se quita el round=False + float_round y se deja que
+           _convert() redondee por defecto, un precio unitario pequeno se
+           pierde: 0,0567 VEF / 50 = 0,001134 USD se guardaria como 0,00, y
+           foreign_subtotal (= foreign_price x cantidad) arrastraria ese cero
+           multiplicado por la cantidad.
+        """
+        self._set_usd_rate(50.0)
+        precision = self.env["decimal.precision"].precision_get(
+            "Foreign Product Price"
+        )
+        self.assertGreater(
+            precision, 2,
+            "El test asume que Foreign Product Price tiene mas de 2 decimales"
+        )
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 10000.0,
+                    "price_unit": 0.0567,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # El esperado se calcula con la precision configurada, no con un
+        # numero fijo de decimales: "Foreign Product Price" es editable.
+        expected = float_round(0.0567 / 50.0, precision_digits=precision)
+        self.assertAlmostEqual(
+            line.foreign_price, expected, places=precision,
+            msg=f"foreign_price perdio precision: {line.foreign_price} "
+                f"(esperado {expected}). Con el redondeo de la moneda seria 0.00"
+        )
+        self.assertNotEqual(
+            line.foreign_price, 0.0,
+            "Un precio unitario pequeno no debe colapsar a cero"
+        )
+        # Y el subtotal no se va a cero por culpa del redondeo del unitario
+        self.assertAlmostEqual(
+            line.foreign_subtotal, 11.34, places=2,
+            msg=f"foreign_subtotal = {line.foreign_subtotal}, esperado 11.34"
+        )
+
+    def test_30_foreign_subtotal_with_price_included_tax(self):
+        """Con impuesto incluido en el precio, foreign_subtotal debe ser la
+           BASE (sin impuesto), que es lo que devuelve compute_all.
+
+           REVERSION: si se vuelve a la multiplicacion directa
+           (foreign_price x cantidad), el subtotal se reporta con el impuesto
+           dentro: 2,32 en vez de 2,00 USD.
+        """
+        self._set_usd_rate(50.0)
+
+        tax_incl = self._create_tax('IVA 16% incluido', 16.0)
+        tax_incl.price_include_override = 'tax_included'
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 116.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [tax_incl.id])],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # 116 VEF / 50 = 2,32 USD con el impuesto dentro
+        self.assertAlmostEqual(line.foreign_price, 2.32, places=2)
+        # y la base sin impuesto es 2,32 / 1,16 = 2,00 USD
+        self.assertAlmostEqual(
+            line.foreign_subtotal, 2.00, places=2,
+            msg=f"foreign_subtotal = {line.foreign_subtotal}. Debe ser la base "
+                f"sin impuesto (2.00); 2.32 significa que no paso por compute_all"
+        )
+
+    def test_31_foreign_total_billed_matches_lines(self):
+        """foreign_total_billed debe salir de tax_totals, que se arma sumando
+           las lineas, y no de convertir el total del documento de una vez.
+
+           REVERSION: si se reintroduce la rama que hace
+           _convert(amount_total), el pie del documento deja de cuadrar con la
+           suma de los foreign_subtotal que se ven en las lineas, porque una
+           via redondea una sola vez y la otra acumula el redondeo por linea.
+        """
+        self._set_usd_rate(37.6543)
+
+        lines = []
+        for i in range(12):
+            lines.append(Command.create({
+                "product_id": self.product.id,
+                "quantity": 3.0,
+                "price_unit": round(13.3333 + i * 0.7777, 4),
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(5, 0, 0)],
+            }))
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+
+        tax_totals = invoice.tax_totals if isinstance(invoice.tax_totals, dict) else {}
+        self.assertAlmostEqual(
+            invoice.foreign_total_billed,
+            tax_totals.get("total_amount_foreign_currency", 0),
+            places=2,
+            msg="foreign_total_billed no coincide con tax_totals: hay una "
+                "segunda via de conversion"
+        )
+
+    def test_32_rate_date_is_invoice_date_for_invoices(self):
+        """La fecha de la tasa es invoice_date en facturas y notas, y date en
+           asientos manuales.
+
+           En esta localizacion invoice_date es la fecha de la TASA (la fecha
+           visible del documento es invoice_date_display, ver
+           account.move._get_accounting_date_source).
+
+           REVERSION: si el helper vuelve a mezclar criterios de fecha, este
+           test falla porque la factura usaria la tasa del dia contable en vez
+           de la de su invoice_date.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=30)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 25.0,
+            "company_id": self.company.id,
+        })
+
+        # invoice_date (tasa) en el pasado, date (contable) hoy
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": past_date,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 1000.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        self.assertAlmostEqual(
+            line.foreign_price, 40.0, places=2,
+            msg=f"La factura debe usar la tasa de invoice_date (1000/25 = 40), "
+                f"no la de date (1000/50 = 20). Obtenido: {line.foreign_price}"
+        )
+
+    def test_33_price_unit_ves_uses_document_date(self):
+        """price_unit_ves debe convertir con _convert() a la fecha del
+           documento.
+
+           REVERSION: el codigo anterior dividia entre line.currency_id.rate,
+           que es la tasa del contexto (hoy), no la de la fecha de la factura.
+           Con una factura fechada en el pasado y otra tasa vigente ese dia,
+           ambos caminos dan resultados distintos.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=30)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 25.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": past_date,
+            "invoice_date": past_date,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 100.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # 100 USD a la tasa de past_date (25) = 2500 VEF, no 5000
+        self.assertAlmostEqual(
+            line.price_unit_ves, 2500.0, places=2,
+            msg=f"price_unit_ves = {line.price_unit_ves}. Debe usar la tasa de "
+                f"la fecha del documento (2500), no la de hoy (5000)"
         )

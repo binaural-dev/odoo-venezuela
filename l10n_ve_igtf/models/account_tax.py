@@ -134,7 +134,7 @@ class AccountTax(models.Model):
             self.env, res["amount_total_igtf"], currency_obj=currency
         )
 
-        res["foreign_amount_total_igtf"] = invoice.amount_total_signed + foreign_igtf_base_amount
+        res["foreign_amount_total_igtf"] = abs(invoice.amount_total_signed) + foreign_igtf_base_amount
         res["formatted_foreign_amount_total_igtf"] = formatLang(
             self.env, res["foreign_amount_total_igtf"], currency_obj=foreign_currency
         )
