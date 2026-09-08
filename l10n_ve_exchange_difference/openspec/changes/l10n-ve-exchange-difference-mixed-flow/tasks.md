@@ -33,6 +33,14 @@
 - [x] 3.2 Resuelto bloqueo circular: visibilidad de
       `l10n_ve_exchange_debit_note_sequence_id` en el diario ya NO depende
       de `l10n_ve_exchange_use_nd_nc` (solo de `type`/`is_debit`)
+- [x] 3.3 `_check_l10n_ve_exchange_use_nd_nc_requires_config` daba falso
+      positivo al guardar desde Ajustes con producto y pricelist
+      correctamente seleccionados: el `create()` de `res.config.settings`
+      invierte cada `related` field en su propio `write()` a `res.company`
+      (uno por campo, no atómico), y el del toggle boolean llega antes que
+      los otros dos. Fix: el constraint encola la verificación real en
+      `cr.precommit` (una vez por compañía) en vez de evaluar en el
+      momento
 
 ## 4. Traducciones
 

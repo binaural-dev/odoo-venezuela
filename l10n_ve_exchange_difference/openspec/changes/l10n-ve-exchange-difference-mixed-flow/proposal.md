@@ -57,11 +57,24 @@ antes de esta feature.
   toggle exige (constraint) que el campo ya esté configurado para poder
   activarse -- imposible de configurar desde cero. Se quitó esa condición de
   la visibilidad del campo (ahora depende solo de `type`/`is_debit`).
+- `_check_l10n_ve_exchange_use_nd_nc_requires_config` explotaba con un falso
+  positivo ("falta configurar Producto/Lista de Precios") aunque ambos
+  campos estuvieran correctamente seleccionados en Ajustes. Causa real: los
+  tres campos son `related=..., readonly=False` en `res.config.settings`, y
+  el `create()` de ese modelo invierte cada related field en su PROPIO
+  `write()` a `res.company` (uno por campo, nunca atómico), aunque el
+  cliente los envíe juntos en un solo `web_save`. Como
+  `l10n_ve_exchange_use_nd_nc` se declara antes que el producto/pricelist,
+  su `write()` llega primero a la compañía y el constraint dispara sobre ese
+  estado intermedio (toggle ya activo, producto/pricelist todavía vacíos).
+  Fix: el constraint ya no valida en el momento -- encola la verificación
+  real en `cr.precommit` (una sola vez por compañía), que corre después de
+  que todos los `write()` pendientes de la transacción ya se aplicaron.
 
 ## Impact
 
 - **Capability**: `exchange-difference-note` (extendida, no nueva).
-- **Módulos**: `l10n_ve_exchange_difference` (campos/lógica nuevos, 2 fixes),
+- **Módulos**: `l10n_ve_exchange_difference` (campos/lógica nuevos, 3 fixes),
   `l10n_ve_payment_extension` (contexto explícito agregado en
   `_reconcile_all_payments`).
 - **Fuera de alcance de este change**: advertencia de período fiscal en Notas
