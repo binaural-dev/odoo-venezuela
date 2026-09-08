@@ -8,7 +8,7 @@ RETENTION_SEQUENCE_CODES = [
 ]
 
 
-def migrate(cr, installed_version):
+def migrate(cr, version):
     env = api.Environment(cr, SUPERUSER_ID, {})
     sequences = env["ir.sequence"].search([("code", "in", RETENTION_SEQUENCE_CODES)])
     for sequence in sequences:
