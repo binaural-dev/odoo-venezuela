@@ -778,68 +778,50 @@ class AccountRetention(models.Model):
 
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
-            sequence_number = ""
-            if retention.type_retention == "iva":
-                sequence_number = retention.get_sequence_iva_retention().next_by_id()
-            elif retention.type_retention == "islr":
-                sequence_number = retention.get_sequence_islr_retention().next_by_id()
-            else:
-                sequence_number = (
-                    retention.get_sequence_municipal_retention().next_by_id()
-                )
+            sequence = retention.get_sequence_retention(retention.type_retention)
+            retention._check_sequence_no_gap(sequence, retention.type_retention)
+            sequence_number = sequence.next_by_id()
             correlative = f"{retention.date_accounting.year}{retention.date_accounting.month:02d}{sequence_number}"
             retention.name = correlative
             retention.number = correlative
 
-    @api.model
-    def get_sequence_iva_retention(self):
-        sequence = self.env["ir.sequence"].search(
-            [
-                ("code", "=", "retention.iva.control.number"),
-                ("company_id", "=", self.env.company.id),
-            ]
-        )
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {
-                    "name": "Numero de control retenciones IVA",
-                    "code": "retention.iva.control.number",
-                    "padding": 8,
-                }
+    def _check_sequence_no_gap(self, sequence, type_retention):
+        if sequence.implementation != "no_gap":
+            raise UserError(
+                _(
+                    "The sequence for %s retentions must not allow gaps. "
+                    "Please set its Implementation to 'No gap' in the sequence "
+                    "configuration before generating retentions."
+                )
+                % type_retention.upper()
             )
-        return sequence
 
     @api.model
-    def get_sequence_islr_retention(self):
-        sequence = self.env["ir.sequence"].search(
-            [
-                ("code", "=", "retention.islr.control.number"),
-                ("company_id", "=", self.env.company.id),
-            ]
-        )
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {
-                    "name": "Numero de control retenciones ISLR",
-                    "code": "retention.islr.control.number",
-                    "padding": 5,
-                }
-            )
-        return sequence
+    def get_sequence_retention(self, type_retention):
+        """Get (or create) the ir.sequence for a given retention type.
 
-    def get_sequence_municipal_retention(self):
+        Fully driven by the `type_retention` selection: the sequence code
+        and name are derived from it, so a new retention type only needs an
+        entry in that selection to get its own sequence automatically.
+        """
+        code = f"retention.{type_retention}.control.number"
         sequence = self.env["ir.sequence"].search(
             [
-                ("code", "=", "retention.municipal.control.number"),
+                ("code", "=", code),
                 ("company_id", "=", self.env.company.id),
-            ]
+            ],
+            limit=1,
         )
         if not sequence:
+            padding_by_type = {"iva": 8, "islr": 5, "municipal": 5}
             sequence = self.env["ir.sequence"].create(
                 {
-                    "name": "Numero de control retenciones Municipal",
-                    "code": "retention.iva.control.number",
-                    "padding": 5,
+                    "name": _("Numero de control retenciones %s")
+                    % type_retention.upper(),
+                    "code": code,
+                    "padding": padding_by_type.get(type_retention, 5),
+                    "company_id": self.env.company.id,
+                    "implementation": "no_gap",
                 }
             )
         return sequence
