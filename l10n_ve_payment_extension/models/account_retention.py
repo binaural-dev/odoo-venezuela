@@ -703,8 +703,8 @@ class AccountRetention(models.Model):
         if not payments:
             raise UserError(_("No payments found for reconciliation."))
 
-        # These payments' moves are pinned to their invoice's own accounting date
-        # (see AccountPayment._generate_move_vals), which can already sit in a
+        # These payments are dated with the retention's own date_accounting
+        # (see _prepare_retention_payment_vals), which can already sit in a
         # closed fiscal period by the time the retention itself is processed --
         # bypass_lock_check is the core's own escape hatch for that check, only
         # triggered here by the state -> 'posted' transition (not by writing
