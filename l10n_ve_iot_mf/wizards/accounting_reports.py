@@ -59,10 +59,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             account_moves_fiscal_machine = self.env["account.move"].search(domain_fiscal_machine, order="invoice_date asc")
             moves = account_moves_free_form | account_moves_fiscal_machine
             return moves.sorted(key=lambda r: r.invoice_date or r.date)
-        move_model = self.env["account.move"]
-        domain = self._get_domain()
-        moves = move_model.search(domain, order="invoice_date asc")
-        return moves
+        return super().search_moves()
 
     def _get_sale_book_field_groups(self):
         sale_groups = super()._get_sale_book_field_groups()
@@ -314,6 +311,24 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         
         sale_book_lines = sorted(
                     sale_book_lines,
-                    key=lambda row: datetime.strptime(row['document_date'], "%d/%m/%Y")
-                )                       
+                    key=lambda row: (
+                        datetime.strptime(row['document_date'], "%d/%m/%Y"),
+                        self._sale_book_mf_secondary_sort_key(row),
+                    )
+                )
         return sale_book_lines
+
+    def _sale_book_mf_secondary_sort_key(self, row):
+        """Secondary sort key within the same document_date: the MF sequence
+        number. Individual invoice rows carry it directly in
+        document_number; "Resumen Diario" rows use the range's start
+        (`Desde <mf_invoice_number> Hasta ...`). Falls back to 0."""
+        document_number = row.get("document_number") or ""
+        if document_number.isdigit():
+            return int(document_number)
+        if document_number.startswith("Desde "):
+            try:
+                return int(document_number.split(" ")[1])
+            except (IndexError, ValueError):
+                return 0
+        return 0
