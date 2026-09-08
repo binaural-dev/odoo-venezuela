@@ -1,6 +1,6 @@
 import logging
 from odoo.tests import tagged, TransactionCase, Form
-from odoo import Command, fields
+from odoo import Command, fields, _
 from odoo.tools.float_utils import float_round
 from odoo.exceptions import ValidationError,UserError
 
@@ -231,7 +231,7 @@ class TestAccountRetentionSequence(TransactionCase):
 
         _logger.warning("Creating action_post retention for invoice %s", invoice.amount_total)
         _logger.warning("Creating retention for invoice %s", invoice.amount_untaxed)
-        with Form(self.env["account.retention"].with_context({"default_type":'in_invoice', "default_type_retention":type_retention})) as retention_form:
+        with Form(self.env["account.retention"].with_context(default_type='in_invoice', default_type_retention=type_retention)) as retention_form:
             retention_form.partner_id = self.partner_a
             retention_form.date_accounting = today
 
@@ -549,8 +549,11 @@ class TestAccountRetentionSequence(TransactionCase):
                 # phone/email) and made the whole request/transaction roll
                 # back after the number had already been consumed.
                 raise UserError(
-                    "The partner '%s' has no phone/email configured; "
-                    "the retention cannot be confirmed." % self.partner_a.name
+                    _(
+                        "The partner '%s' has no phone/email configured; "
+                        "the retention cannot be confirmed.",
+                        self.partner_a.name,
+                    )
                 )
 
         # The savepoint rollback must have discarded the retention record...
