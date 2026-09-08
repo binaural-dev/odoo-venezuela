@@ -179,7 +179,6 @@
                                 <th class="text-center">Unidad</th>
                                 <th class="text-center" t-if='o.operation_code != "internal" and not o.company_id.hide_weight_field_dispatch_guide'>Peso</th>
                                 <!-- <th class="text-center" t-if="o.operation_code != 'internal'">Precio</th> -->
-                                <!-- <th class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">Dscto.</th> -->
                                 <!-- <th class="text-center" t-if="o.operation_code != 'internal'">IVA</th> -->
                                 <!-- <th class="text-center" t-if="o.operation_code != 'internal'">Total</th> -->
                             </tr>
@@ -216,10 +215,6 @@
                                     <!-- price -->
                                     <!-- <td class="text-center" t-if="o.operation_code != 'internal'">
                                         <t t-out="line_values['price_unit']"/>
-                                    </td> -->
-                                    <!-- discount percentage -->
-                                    <!-- <td class="text-center" t-if="o.operation_code != 'internal' and not o.company_id.hide_disc_field_dispatch_guide">
-                                        <t t-out="line_values['discount_percentage'] or 0" />%
                                     </td> -->
                                     <!-- tax percentage  -->
                                     <!-- <td class="text-center" t-if="o.operation_code != 'internal'">
