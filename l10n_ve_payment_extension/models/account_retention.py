@@ -27,6 +27,19 @@ class AccountRetention(models.Model):
         "res.currency",
         default=lambda self: self.env.company.currency_id.id,
     )
+
+    grain_exchange_move_ids = fields.Many2many(
+        "account.move",
+        "account_retention_grain_exchange_move_rel",
+        "retention_id",
+        "move_id",
+        string="Grain Exchange Difference Entries",
+        copy=False,
+        readonly=True,
+        help="Asientos de diferencial cambiario creados para absorber el "
+             "sobrante de tolerancia de esta retencion. Se revierten al "
+             "cancelarla.",
+    )
     foreign_currency_id = fields.Many2one(
         "res.currency",
         default=lambda self: self.env.company.foreign_currency_id.id,
@@ -487,9 +500,21 @@ class AccountRetention(models.Model):
             for line in retention.retention_line_ids:
                 retention_amounts_by_move[line.move_id] += line.retention_amount
 
+            company_currency = retention.company_currency_id
             for move, retention_amount in retention_amounts_by_move.items():
                 invoice_total = abs(move.amount_residual_signed)
-                if invoice_total < retention_amount:
+                # Se tolera el grano -lo que vale un centimo de la moneda de
+                # la factura en moneda de compania-, porque las dos medidas
+                # no pueden expresar lo mismo y el comprobante lo emite el
+                # agente de retencion con su propia precision. Con una sola
+                # moneda el grano es cero y esto es la comparacion estricta
+                # de siempre. La definicion vive en un unico sitio
+                # (`account.move.retention_currency_grain`) para que las tres
+                # barreras que validan este importe no puedan divergir.
+                grain = move.retention_currency_grain()
+                if company_currency.compare_amounts(
+                    retention_amount - grain, invoice_total
+                ) > 0:
                     error_msg = _(
                         "The retention amount (%s) cannot be greater than the invoice total signed amount (%s) for invoice %s."
                     ) % (retention_amount, invoice_total, move.name)
@@ -669,6 +694,14 @@ class AccountRetention(models.Model):
                 reconciled_lines = rec.payment_ids.mapped("move_id.line_ids").filtered(lambda l: l.reconciled)
                 if reconciled_lines:
                     reconciled_lines.with_context(ctx).remove_move_reconcile()
+
+                # Los asientos de diferencial que absorbieron el grano se
+                # crean FUERA del plan de conciliacion del core, asi que su
+                # parcial nace sin `exchange_move_id` y el `unlink()` del core
+                # no los revierte: sin esto quedarian posteados y sin
+                # conciliar en la cuenta por cobrar, sobreviviendo a la
+                # cancelacion de la retencion que los origino.
+                rec._reverse_grain_exchange_moves()
                 
                 rec.payment_ids.with_context(ctx).action_draft()
                 rec.payment_ids.with_context(ctx).action_cancel()
@@ -682,6 +715,20 @@ class AccountRetention(models.Model):
             rec.write({"state": "cancel", "payment_ids": [Command.clear()]})
             
         return True
+
+    def _reverse_grain_exchange_moves(self):
+        """Revierte los asientos de diferencial que absorbieron el grano."""
+        for rec in self:
+            moves = rec.grain_exchange_move_ids
+            if not moves:
+                continue
+            posted = moves.filtered(lambda m: m.state == "posted")
+            if posted:
+                posted._reverse_moves(cancel=True)
+            drafts = moves - posted
+            if drafts:
+                drafts.unlink()
+            rec.grain_exchange_move_ids = [Command.clear()]
 
     def _validate_islr_retention_fields(self):
         """
@@ -732,9 +779,105 @@ class AccountRetention(models.Model):
                     _("No registered lines found in the move to reconcile.")
                 )
             
-            payment.retention_line_ids.move_id.with_context(
+            invoice = payment.retention_line_ids.move_id
+            # Lo adeudado ANTES de conciliar y lo que pide el comprobante:
+            # las dos cifras que decidieron la tolerancia. Se capturan aqui
+            # porque despues de conciliar ya no se pueden distinguir un
+            # sobrante de tolerancia y un pago parcial legitimo.
+            due_before = abs(invoice.amount_residual_signed) if invoice else 0.0
+            claimed = sum(abs(a) for a in payment.retention_line_ids.mapped("retention_amount"))
+            # El grano tambien se mide ANTES: sale de la tasa efectiva de la
+            # factura, y despues de conciliar su residual es cero y esa tasa
+            # ya no se puede deducir.
+            grain_before = invoice.retention_currency_grain() if invoice else 0.0
+
+            invoice.with_context(
                 no_exchange_difference=True,group_in_single_partial=True
             ).js_assign_outstanding_line(lines[0].id)
+
+            self._absorb_retention_grain(
+                payment, lines[0], invoice, due_before, claimed, grain_before
+            )
+
+    def _absorb_retention_grain(
+        self, payment, payment_line, invoice, due_before, claimed, grain
+    ):
+        """Manda al diferencial cambiario el sobrante que deja la tolerancia.
+
+        `action_post` acepta que un comprobante supere lo adeudado hasta un
+        grano, porque las dos medidas no pueden expresar lo mismo. Pero la
+        conciliacion parcial toma el MINIMO de las dos valoraciones, asi que
+        ese sobrante no llega a la factura: se quedaba abierto en la cuenta
+        por cobrar como un saldo a favor que nadie reclamaba y que alguien
+        tenia que barrer despues. En un lote de N facturas, N residuos.
+
+        Un sobrante de ese tamano es lo que Odoo llama diferencia de cambio
+        -nace de medir la misma obligacion en dos monedas con precisiones
+        distintas-, asi que va donde van esas.
+
+        Tres condiciones, y las tres importan:
+
+        - que el comprobante haya EXCEDIDO lo adeudado. Sin esto se absorbia
+          tambien el saldo de una sobre-retencion real sobre una factura casi
+          saldada: con 4 Bs pendientes y un comprobante de 10, la tolerancia
+          lo admite y el remanente de 6 -una sobre-retencion del 150%- se iba
+          al resultado sin dejar rastro. Ahora solo se absorbe lo que la
+          propia tolerancia hizo entrar.
+        - que el sobrante quepa en el grano de ESA factura.
+        - que quede algo que absorber.
+
+        NO se toca el `no_exchange_difference` de la conciliacion. Ese
+        contexto esta puesto a proposito para que una retencion en bolivares
+        sobre una factura en divisas no indexe el monto declarado a la tasa
+        del pago. Aqui no se trata la diferencia de tasa entre dos fechas,
+        sino el grano de precision entre dos monedas.
+
+        El asiento creado se guarda en `grain_exchange_move_ids` para poder
+        revertirlo al cancelar: al crearse fuera del plan de conciliacion del
+        core, el parcial nace sin `exchange_move_id` y el `unlink()` del core
+        no lo revertiria, dejando un saldo posteado y sin conciliar que
+        sobrevive a la cancelacion.
+        """
+        if not invoice:
+            return
+        invoice.ensure_one()
+        company_currency = payment_line.company_currency_id
+        residual = payment_line.amount_residual
+        if company_currency.is_zero(residual):
+            return
+        if company_currency.compare_amounts(claimed, due_before) <= 0:
+            return
+        if not grain or company_currency.compare_amounts(abs(residual), grain) > 0:
+            return
+
+        retention = payment.retention_id or self[:1]
+        _logger.info(
+            "[retencion] absorbiendo %s %s de grano como diferencial cambiario "
+            "(apunte %s, factura %s)",
+            residual, company_currency.name, payment_line.id, invoice.name,
+        )
+        exchange_vals = payment_line._prepare_exchange_difference_move_vals(
+            [{"amount_residual": residual}],
+            company=payment_line.company_id,
+            exchange_date=payment_line.date,
+        )
+        if not exchange_vals or not exchange_vals["move_values"].get("journal_id"):
+            # Sin diario de diferencial configurado el core levanta un
+            # UserError sobre tasas de cambio que no dice nada en este flujo.
+            # Antes de esto la compania emitia sus retenciones sin problema:
+            # que le falte esa configuracion no puede impedirle emitirlas.
+            # El sobrante se queda abierto, como estaba antes.
+            _logger.warning(
+                "[retencion] %s no tiene diario de diferencial cambiario: el "
+                "sobrante de %s queda abierto en la cuenta por cobrar",
+                payment_line.company_id.display_name, residual,
+            )
+            return
+        exchange_moves = payment_line._create_exchange_difference_moves(
+            [{**exchange_vals, "to_post": True}]
+        )
+        if exchange_moves and retention:
+            retention.grain_exchange_move_ids = [Command.link(m.id) for m in exchange_moves]
 
     @api.model
     def compute_retention_lines_data(self, invoice_id, payment=None):

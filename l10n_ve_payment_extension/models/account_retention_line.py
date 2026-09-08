@@ -665,7 +665,15 @@ class AccountRetentionLine(models.Model):
                 is_vef_the_base_currency
                 and is_client_retention
                 and record.move_id.payment_state not in ("in_payment", "paid")
-                and abs(record.retention_amount) > abs(record.move_id.amount_residual_signed)
+                # Mismo grano que aplican `AccountRetention.action_post` y el
+                # portal movil: esta era la tercera barrera con la misma regla
+                # escrita a mano, y rechazaba al editar el monto de una linea
+                # ya guardada lo que las otras dos ya aceptaban.
+                and record.company_currency_id.compare_amounts(
+                    abs(record.retention_amount)
+                    - record.move_id.retention_currency_grain(),
+                    abs(record.move_id.amount_residual_signed),
+                ) > 0
             ):
                 raise ValidationError(
                     _(
