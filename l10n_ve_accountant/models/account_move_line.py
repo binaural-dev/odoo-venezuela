@@ -332,7 +332,6 @@ class AccountMoveLine(models.Model):
         "debit",
         "credit",
         "foreign_subtotal",
-        "foreign_balance",
         "amount_currency",
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
