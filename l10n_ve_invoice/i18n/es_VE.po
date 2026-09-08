@@ -580,6 +580,11 @@ msgid "Purchase Book"
 msgstr "Libro de Compras"
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_debit_note__l10n_ve_out_of_fiscal_period_warning
+msgid "Out of Fiscal Period"
+msgstr "Fuera del Periodo Fiscal"
+
+#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_reception_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_reception_date
 msgid "Reception Date"
@@ -708,6 +713,11 @@ msgstr ""
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid "The invoice date cannot be greater than the accounting date."
 msgstr "La fecha de la factura no puede ser mayor que la fecha contable."
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_debit_note_inherit
+msgid "This Debit Note is dated outside the fiscal period of the original invoice."
+msgstr "Esta Nota de Débito está fuera del periodo fiscal de la factura original."
 
 #. module: l10n_ve_invoice
 #. odoo-python
