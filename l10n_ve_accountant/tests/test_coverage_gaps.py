@@ -11,7 +11,7 @@ from odoo.exceptions import UserError, ValidationError
 _logger = logging.getLogger(__name__)
 
 
-@tagged("post_install", "-at_install", "l10n_ve_accountant_coverage")
+@tagged("post_install", "-at_install", "l10n_ve_accountant", "l10n_ve_accountant_coverage")
 class TestCoverageGaps(TransactionCase):
 
     def _set_correlative_if_required(self, form, value):
