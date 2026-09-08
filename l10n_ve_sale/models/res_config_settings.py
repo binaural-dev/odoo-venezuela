@@ -41,3 +41,8 @@ class ResConfigSettings(models.TransientModel):
         related='company_id.maximum_sales_line_limit',
         readonly=False
     )
+
+    convert_currency_from_sale_order = fields.Boolean(
+        related='company_id.convert_currency_from_sale_order',
+        readonly=False,
+    )

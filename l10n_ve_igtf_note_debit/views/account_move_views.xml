@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_form_move_inherited_binaural_advance_payment_note" model="ir.ui.view">
+        <field name="name">account.move.binaural.advance.payment.note</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment" />
+        <field name="arch" type="xml">
+
+            <xpath expr="//div[hasclass('alert', 'alert-info')][3]" position="after">
+                <field name="has_pending_igtf_debit_note" invisible="1"/>
+                <div groups="account.group_account_invoice,account.group_account_readonly"
+                         class="alert alert-warning" role="alert"
+                         invisible="not has_pending_igtf_debit_note">
+                        <a class="alert-link" href="#outstanding" role="button">You have pending IGTF notes to pay</a>.
+                    </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

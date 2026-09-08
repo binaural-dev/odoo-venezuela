@@ -37,3 +37,14 @@ class ResCompany(models.Model):
     )
     
     maximum_sales_line_limit = fields.Integer()
+    convert_currency_from_sale_order = fields.Boolean(
+        string="Convert Currency From Sale Order",
+        help=(
+            "Check this if you want to convert the price unit of the customer "
+            "invoice lines based on the sale order, using the invoice rate. "
+            "It cannot be combined with pricelist rules for the same products: "
+            "if the invoice pricelist defines a rule for a product, the "
+            "recalculation raises an error instead of overriding it."
+        ),
+        default=False,
+    )

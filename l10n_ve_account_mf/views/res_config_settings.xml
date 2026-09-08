@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<odoo>
+    <record id="res_config_settings_view_form_inherit_l10n_ve_account_mf" model="ir.ui.view">
+        <field name="name">res.config.settings.l10n.ve.account.mf</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice"/>
+        <field name="arch" type="xml">
+            <xpath expr="//block[@name='l10n_ve_invoice_block']" position="inside">
+                <separator string="Fiscal Machine"/>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_account_mf_invoice_print_type">
+                    <div class="o_setting_left_pane"/>
+                    <div class="o_setting_right_pane">
+                        <label for="invoice_print_type" class="col-lg-6 o_light_label"/>
+                        <div class="text-muted">
+                            Select the type of invoice to print
+                        </div>
+                        <field name="invoice_print_type"/>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_account_mf_mf_flag_21">
+                    <div class="o_setting_left_pane"/>
+                    <div class="o_setting_right_pane">
+                        <label for="mf_flag_21" class="col-lg-6 o_light_label"/>
+                        <div class="text-muted">
+                            Formato numérico (Flag 21) de la impresora fiscal TFHKA (Web Serial)
+                        </div>
+                        <field name="mf_flag_21"/>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>

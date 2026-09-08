@@ -17,3 +17,13 @@ class TestStockWarehouse(TransactionCase):
         result = warehouse._get_picking_type_create_values(100)
         self.assertIsNotNone(result)
         self.assertIsInstance(result, tuple)
+
+    def test_physical_address_field(self):
+        warehouse = self.env["stock.warehouse"].create({
+            "name": "Test WH Physical Address",
+            "code": "TWPA",
+            "physical_address": "Av. Principal, Zona Industrial, Caracas",
+        })
+        self.assertEqual(
+            warehouse.physical_address, "Av. Principal, Zona Industrial, Caracas"
+        )

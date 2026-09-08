@@ -1,0 +1,51 @@
+<section style="max-width: 900px; margin: 0 auto; font-family: -apple-system, 'Segoe UI', Arial, sans-serif; color: #1e293b; line-height: 1.5;">
+
+  <h1 style="border-bottom: 2px solid #6366f1; padding-bottom: 8px;">Venezuela - Diferencial Cambiario como Notas de Débito/Crédito</h1>
+
+  <p>
+    Este módulo documenta el diferencial cambiario que surge al conciliar una
+    factura de cliente en moneda extranjera contra un pago con una tasa de
+    cambio distinta, usando Notas de Débito/Crédito <strong>fiscales
+    reales</strong> (con correlativo, vinculadas a la factura de origen) en
+    vez del asiento contable genérico e interno que Odoo crea por defecto.
+  </p>
+
+  <img src="diagrama_flujo.svg" alt="Flujo de conciliación y creación de la Nota de Débito/Crédito de diferencial cambiario" style="width: 100%; height: auto; margin: 16px 0;"/>
+
+  <h2 style="color: #3730a3;">Cómo funciona</h2>
+  <ol>
+    <li>La conciliación factura↔pago corre exactamente igual que sin el módulo instalado — incluye conciliaciones agrupadas (un pago aplicado a varias facturas). El diferencial se documenta por separado para <strong>cada</strong> factura involucrada.</li>
+    <li>El monto exacto se obtiene interceptando el hook nativo <code>_prepare_exchange_difference_move_vals</code> que el propio motor de conciliación de Odoo ya calcula — este módulo nunca recalcula el monto por su cuenta.</li>
+    <li>Con ese monto, fechado el día del <strong>pago</strong>, se emite:
+      <ul>
+        <li>Una <strong>Nota de Débito</strong> (ganancia cambiaria), vinculada vía <code>debit_origin_id</code>, en el diario dedicado de ND (<code>is_debit=True</code> con secuencia propia) y en la cuenta de ganancia cambiaria de la compañía.</li>
+        <li>Una <strong>Nota de Crédito</strong> (pérdida cambiaria), vinculada vía <code>reversed_entry_id</code>, en el diario de la factura de origen y en la cuenta de pérdida cambiaria de la compañía.</li>
+      </ul>
+      Ambas quedan conciliadas de inmediato contra el residual que las originó.
+    </li>
+    <li>Si la conciliación que originó la nota se rompe, la nota no se cancela ni se borra — se revierte automáticamente, igual que el asiento genérico nativo de Odoo.</li>
+    <li>Aplica <strong>solo</strong> a documentos de cliente con <code>move_type</code> igual a <code>out_invoice</code> o <code>out_refund</code> -- incluye Notas de Débito de cliente nativas, ya que Odoo las trata como <code>out_invoice</code>. Cualquier otro caso sigue el comportamiento nativo de Odoo sin modificaciones.</li>
+  </ol>
+
+  <h2 style="color: #3730a3;">Configuración</h2>
+  <ul>
+    <li><strong>Compañía</strong> (<em>Ajustes &gt; Contabilidad</em>): activar el uso de ND/NC para diferencial cambiario, y configurar el producto y la lista de precios de la nota (ambos <strong>obligatorios</strong> una vez activado el toggle — la compañía no se puede guardar sin ambos).</li>
+    <li><strong>Diario de venta</strong>: <code>Es Débito</code> activado, con su secuencia dedicada para Notas de Débito asignada — ambos obligatorios para poder emitir una ND.</li>
+  </ul>
+
+  <h2 style="color: #3730a3;">Limitaciones</h2>
+  <ul>
+    <li>Solo cubre documentos de <strong>cliente</strong> con <code>move_type</code> en <code>out_invoice</code>/<code>out_refund</code> -- incluye Notas de Débito de cliente nativas.</li>
+    <li>Requiere producto, lista de precios y (para la rama de ganancia) el diario dedicado de ND correctamente configurados — si falta algo, la conciliación falla con un error claro en vez de dejar una nota incompleta.</li>
+    <li>Compatible con IGTF (<code>l10n_ve_igtf</code>): ajustes independientes sobre la misma conciliación.</li>
+    <li>En pagos agrupados con más de una factura candidata, este módulo determina la factura exacta de cada residual capturando la pareja real (factura, pago) antes de que Odoo calcule el residual — nunca adivina por orden de aparición.</li>
+    <li>El Widget de Conciliación Bancaria de Odoo Enterprise (<code>account_accountant</code>) resuelve su propio ajuste de diferencial internamente y no pasa por este módulo — es un flujo legítimo y no está prohibido.</li>
+    <li>Una factura liquidada en varias cuotas puede acumular más de una ND/NC, una por cuota, cada una con el monto exacto que el motor de Odoo calculó para esa cuota.</li>
+  </ul>
+
+  <h2 style="color: #3730a3;">Créditos</h2>
+  <p><strong>Autor/es:</strong> Binauraldev</p>
+  <p><strong>Mantenedor/es:</strong> Este módulo es mantenido por Binaural.</p>
+  <img src="https://binauraldev.com/wp-content/uploads/2022/01/logo-binaural.png" alt="Binaural dev" style="height: 40px; margin-top: 8px;"/>
+
+</section>
