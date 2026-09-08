@@ -139,6 +139,71 @@ la **fecha** de la tasa, no su valor.
 - **THEN** SHALL usarse la tasa de la tabla a la fecha heredada
 - **AND** el resultado SHALL coincidir con el de la orden de origen
 
+#### Scenario: `rate` de la línea de impuesto en moneda alterna
+
+- **GIVEN** una factura cuya línea de producto ya tiene `foreign_price`
+  calculado con `_convert()` (con la precisión completa de la tabla de tasas)
+- **WHEN** se arma la base line que alimenta al motor de impuestos para esa
+  línea (`_prepare_product_foreign_base_line_for_taxes_computation`)
+- **THEN** el `rate` SHALL derivarse de `foreign_price` y `price_unit` de esa
+  misma línea, no de `move.foreign_rate`
+- **AND** SHALL NOT introducir una diferencia entre el monto reportado
+  (`foreign_price`) y el `rate` que el motor de impuestos usa para
+  reconciliar, aunque `foreign_rate` (redondeado a la precisión "Tasa", 6
+  decimales) difiera del valor exacto de `_convert()`
+
+Motivo: este sitio quedó fuera del inventario original de TA-74966 (no
+aparece en la tabla de 8 sitios productivos revisados) porque no es una
+multiplicación manual visible en un campo, sino el `rate` que alimenta al
+motor de impuestos del core -- pero viola el mismo requirement: usaba
+`move.foreign_rate` directo para calcular, no para informar.
+
+#### Scenario: `rate` de las líneas de pronto pago y redondeo en moneda alterna
+
+- **GIVEN** una factura con descuento por pronto pago (`display_type='epd'`) o
+  con una línea de redondeo de caja (`display_type='rounding'`)
+- **WHEN** se arma la base line foránea de esa línea
+  (`_prepare_epd_foreign_base_line_for_taxes_computation` /
+  `_prepare_cash_rounding_foreign_base_line_for_taxes_computation`)
+- **THEN** el `rate` SHALL derivarse de la conversión ya hecha para el
+  `price_unit` de esa misma línea (`amount_currency` convertido /
+  `amount_currency` original), no de `move.foreign_rate`
+
+Motivo: mismo requirement y mismo argumento que la línea de producto -- estos
+dos sitios seguían con `rate = self.foreign_rate` sin corregir cuando se
+cerró el hallazgo de code review sobre el sitio anterior, dejando el
+inventario incompleto.
+
+### Requirement: `_sync_tax_lines` resincroniza la línea de impuesto cuando cambia la fecha que representa la tasa
+
+Cuando `invoice_date` (facturas y notas) o `date` (asientos manuales y de
+pago) cambian en una factura en estado `draft`, el sistema SHALL
+resincronizar `foreign_balance` de sus líneas de impuesto, aunque ningún otro
+dato del cálculo en moneda de la compañía (precio, cantidad, `tax_ids`) haya
+cambiado.
+
+Motivo: son las mismas fechas que `_get_foreign_rate_date()` usa como fuente
+de la tasa para todo lo demás (`foreign_price`, `foreign_subtotal`) -- si
+`_round_mode` no las trackea, el resto del documento se recalcula vía
+`_convert()` con la fecha nueva pero la línea de impuesto queda con el
+`foreign_balance` de la fecha vieja, congelada.
+
+#### Scenario: Cambio de `invoice_date` en una factura de venta en borrador
+
+- **GIVEN** una factura de venta en estado `draft` con su línea de impuesto ya
+  sincronizada a una tasa
+- **WHEN** se edita `invoice_date` a una fecha con una tasa distinta, sin
+  tocar precio, cantidad ni impuestos de ninguna línea
+- **THEN** `foreign_balance` de la línea de impuesto SHALL recalcularse con la
+  tasa de la nueva fecha
+
+#### Scenario: Cambio de `date` en un asiento manual en borrador
+
+- **GIVEN** un asiento manual (`move_type == 'entry'`) en estado `draft`
+- **WHEN** se edita `date` a una fecha con una tasa distinta
+- **THEN** `foreign_balance` de su línea de impuesto SHALL recalcularse con la
+  tasa de la nueva fecha
+
 ### Requirement: La orden de venta conserva la fecha de su tasa
 
 `sale.order` SHALL exponer `foreign_rate_date` con la fecha de la que se tomó
