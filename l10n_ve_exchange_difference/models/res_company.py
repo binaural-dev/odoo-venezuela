@@ -86,22 +86,55 @@ class ResCompany(models.Model):
         of only surfacing as a `UserError` the next time a customer
         foreign-currency invoice gets paid (`_create_exchange_difference_note`),
         which would fail mid-reconciliation instead of at configuration
-        time."""
+        time.
+
+        Deferred to `cr.precommit` instead of checked in place: the
+        three fields it depends on are `related=..., readonly=False` on
+        `res.config.settings` (`models/res_config_settings.py`), and the
+        ORM's automatic related-field inverse (`_inverse_related`,
+        `odoo/orm/fields.py`) writes each one to `res.company` in its
+        OWN separate `write()` call -- never atomically together, even
+        though the settings form submits all of them in a single
+        `web_save`. Since `l10n_ve_exchange_use_nd_nc` is declared
+        before the product/pricelist fields, its `write()` lands on the
+        company FIRST; checking right here, in place, would see that
+        intermediate state (toggle already `True`, product/pricelist
+        still empty) and raise a false positive. Queuing the actual
+        check on `cr.precommit` runs it once, after every pending
+        `write()` in the transaction (including the other two related
+        fields' own inverse writes) has already landed -- so it only
+        ever evaluates the FINAL state the user actually submitted."""
         for company in self:
-            if not company.l10n_ve_exchange_use_nd_nc:
+            checked = self.env.cr.precommit.data.setdefault(
+                '_l10n_ve_exchange_use_nd_nc_requires_config_checked', set())
+            if company.id in checked:
                 continue
-            missing = []
-            if not company.l10n_ve_exchange_note_product_id:
-                missing.append(_("Exchange Difference Note Product"))
-            if not company.l10n_ve_exchange_note_pricelist_id:
-                missing.append(_("Exchange Difference Note Pricelist"))
-            if missing:
-                raise ValidationError(_(
-                    "With 'Use Debit/Credit Notes for Customer Invoice Exchange "
-                    "Difference' enabled, the following must also be configured: "
-                    "%(missing)s.",
-                    missing=", ".join(missing),
-                ))
+            checked.add(company.id)
+            self.env.cr.precommit.add(
+                lambda company_id=company.id:
+                    self.env['res.company'].browse(company_id)
+                    ._check_l10n_ve_exchange_use_nd_nc_requires_config_final()
+            )
+
+    def _check_l10n_ve_exchange_use_nd_nc_requires_config_final(self):
+        """Actual check, run once via `cr.precommit` -- see docstring
+        on `_check_l10n_ve_exchange_use_nd_nc_requires_config` above
+        for why it can't run in place."""
+        self.ensure_one()
+        if not self.l10n_ve_exchange_use_nd_nc:
+            return
+        missing = []
+        if not self.l10n_ve_exchange_note_product_id:
+            missing.append(_("Exchange Difference Note Product"))
+        if not self.l10n_ve_exchange_note_pricelist_id:
+            missing.append(_("Exchange Difference Note Pricelist"))
+        if missing:
+            raise ValidationError(_(
+                "With 'Use Debit/Credit Notes for Customer Invoice Exchange "
+                "Difference' enabled, the following must also be configured: "
+                "%(missing)s.",
+                missing=", ".join(missing),
+            ))
 
     @api.constrains('l10n_ve_exchange_use_nd_nc')
     def _check_l10n_ve_exchange_debit_journal_sequences(self):
