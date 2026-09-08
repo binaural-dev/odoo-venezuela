@@ -35,6 +35,49 @@
       que reconvertía en tercera moneda
 - [x] 2.8 `_compute_foreign_subtotal` ya usaba `compute_all` desde v16: sin
       cambios
+- [x] 2.9 (TI-15055, posterior) `_prepare_product_foreign_base_line_for_taxes_computation`
+      quedó fuera del inventario original: usaba `move.foreign_rate` (campo
+      informativo, redondeado a "Tasa" = 6 decimales) como `rate` del motor
+      de impuestos, en vez del valor exacto que produjo `_convert()` para esa
+      línea. Corregido derivándolo de `foreign_price / price_unit` de la
+      propia línea -- mismo patrón que la rama no-factura
+      (`amount_currency / balance`)
+- [x] 2.10 (TI-15055) `_sync_tax_lines`/`_round_mode` no resincronizaba la
+      línea de impuesto cuando cambiaba `invoice_date`/`date` sin que
+      cambiara nada más del cálculo en moneda de la compañía (precio,
+      cantidad, `tax_ids`). Se agregó `invoice_date`/`date` al snapshot de
+      `moves_values_before` y un disparador en `_round_mode` que fuerza la
+      resincronización (`round_from_tax_lines=True`) cuando cualquiera de
+      los dos cambia -- son las mismas fechas que
+      `_get_foreign_rate_date()` usa como fuente de la tasa, consistente
+      con 2.1. Se corrigió además `get_value()`, que pedía el campo
+      siempre a `account.move.line` en vez de al modelo real del record
+      (reventaba con `KeyError` al trackear un campo que solo existe en
+      `account.move`)
+- [x] 2.11 (TI-15055, code review de 2.9/2.10) Con 2.9 resuelto,
+      `move_id.foreign_rate` en el `@api.depends` de
+      `_compute_foreign_price` (`account_move_line.py`) quedó como
+      disparador muerto: el compute nunca lee `foreign_rate`, convierte
+      por fecha con `_get_foreign_rate_date()`. Eliminado del `depends`.
+      `_prepare_epd_foreign_base_line_for_taxes_computation` y
+      `_prepare_cash_rounding_foreign_base_line_for_taxes_computation`
+      (`account_move.py`) seguían con `rate = self.foreign_rate` sin
+      tocar -- mismo requirement, mismo argumento que 2.9. Corregidas
+      para derivar `rate` de la conversión ya hecha en esa línea
+      (`converted / amount_currency`), completando el inventario de
+      sitios que arman `rate` para la rama foránea del motor de
+      impuestos
+- [x] 2.12 (TI-15055) Cobertura agregada: el test original de 2.10 solo
+      cubría compra (mira `date`) escribiendo `invoice_date`+`date`
+      juntas. Se agregó `test_invoice_tax_line_foreign_recompute_on_invoice_date_only`
+      -- factura de VENTA escribiendo solo `invoice_date`, el escenario
+      real del ticket y de la UI
+- [x] 2.13 (TI-15055) No aplica: los asientos `move_type='entry'` no
+      llevan impuestos (`tax_repartition_line_id`), así que nunca tienen
+      línea `display_type='tax'` -- el camino que agrega 2.10
+      (`get_tax_lines`, `tax_results['tax_lines_to_add'/'to_update']`)
+      no tiene nada que resincronizar en ese `move_type`. El riesgo que
+      señaló el reviewer no era real
 
 ## 3. `l10n_ve_sale`
 
