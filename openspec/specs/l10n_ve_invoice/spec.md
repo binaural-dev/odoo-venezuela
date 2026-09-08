@@ -144,6 +144,45 @@ El campo `entry_in_period` DEBE (MUST) indicar si un documento entra en el perí
 - **WHEN** el documento está en estado `cancel`
 - **THEN** `entry_in_period` es falso
 
+### Requirement: Advertencia de Nota de Débito de proveedor fuera del período fiscal
+
+El wizard `account.debit.note` DEBE (MUST) exponer `l10n_ve_out_of_fiscal_period_warning` (booleano, solo advertencia -- nunca bloquea la creación), verdadero cuando entre las facturas de proveedor (`in_invoice`) seleccionadas (`move_ids`) alguna tiene su `invoice_date_display` en un mes/año distinto al de la fecha de la Nota de Débito elegida en el wizard (`date`). La comparación usa `invoice_date_display` de la factura origen -- su fecha fiscal real -- y no `date` (fecha contable, que solo se DERIVA de `invoice_date_display` vía `_get_accounting_date_source` de `l10n_ve_accountant` y puede quedar posterior si el documento se contabiliza después de emitido). Documentos de venta (`out_invoice`/`out_refund`) nunca disparan la advertencia.
+
+#### Scenario: Nota de Débito de proveedor en el mismo período que la factura
+
+- **WHEN** se abre el wizard de Nota de Débito sobre una factura de proveedor y la fecha elegida cae en el mismo mes/año que `invoice_date_display` de esa factura
+- **THEN** `l10n_ve_out_of_fiscal_period_warning` es falso
+
+#### Scenario: Nota de Débito de proveedor en un período distinto
+
+- **WHEN** la fecha elegida en el wizard cae en un mes/año distinto al de `invoice_date_display` de la factura de proveedor
+- **THEN** `l10n_ve_out_of_fiscal_period_warning` es verdadero y el formulario del wizard muestra un aviso, sin impedir crear la nota
+
+#### Scenario: La advertencia ignora la fecha contable de la factura, no su fecha fiscal
+
+- **WHEN** la factura de proveedor fue emitida (`invoice_date_display`) en un mes pero contabilizada (`date`) en otro, y la Nota de Débito se fecha en el mes de emisión
+- **THEN** `l10n_ve_out_of_fiscal_period_warning` es falso, porque la comparación usa `invoice_date_display`, no `date`
+
+### Requirement: Preservación de la tasa y de la fecha fiscal propia al crear una Nota de Débito
+
+Al crear una Nota de Débito (`account.debit.note.create_debit`, `_prepare_default_values`), el sistema DEBE (MUST) corregir el comportamiento por defecto del núcleo (`account_debit_note`), que asigna tanto `date` como `invoice_date` a la fecha elegida en el wizard y dependen de `copy()` para heredar `invoice_date_display` de la factura origen sin cambios:
+
+- `invoice_date` (la "Fecha de Tasa" redefinida por `l10n_ve_accountant`/`l10n_ve_invoice`, usada solo para el cálculo de tasa de cambio) DEBE quedar igual a `invoice_date` de la factura origen -- nunca a la fecha del wizard. Sin esta corrección, la nota cotiza a una tasa distinta a la de la factura que corrige/complementa, generando un diferencial cambiario espurio entre dos documentos que son la misma transacción.
+- `invoice_date_display` (la fecha fiscal propia del documento, de la que `date` se deriva vía `_get_accounting_date_source`) DEBE quedar igual a la fecha elegida en el wizard (`self.date` o `move.date` como resguardo) -- nunca heredada en silencio de la factura origen.
+- `date` (fecha contable) sigue como ya lo resuelve el núcleo: la fecha elegida en el wizard.
+
+Aplica a cualquier documento facturable (`is_invoice(include_receipts=True)`), no solo a facturas de proveedor.
+
+#### Scenario: La Nota de Débito conserva la tasa de la factura origen
+
+- **WHEN** se crea una Nota de Débito con una fecha de wizard distinta a la fecha de la factura origen
+- **THEN** `invoice_date` de la nota creada es igual a `invoice_date` de la factura origen, no a la fecha del wizard
+
+#### Scenario: La Nota de Débito declara su propia fecha fiscal
+
+- **WHEN** se crea una Nota de Débito con una fecha de wizard distinta a `invoice_date_display` de la factura origen
+- **THEN** `invoice_date_display` de la nota creada es igual a la fecha elegida en el wizard, y `date` también
+
 ### Requirement: Próxima cuota por vencer
 
 El campo `next_installment_date` DEBE (MUST) calcularse como el menor `date_maturity` mayor o igual a hoy entre las líneas `payment_term` del documento; sin líneas de término de pago, toma `invoice_date_due`.
