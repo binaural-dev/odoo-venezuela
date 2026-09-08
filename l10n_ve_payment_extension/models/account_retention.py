@@ -791,9 +791,9 @@ class AccountRetention(models.Model):
                 _(
                     "The sequence for %s retentions must not allow gaps. "
                     "Please set its Implementation to 'No gap' in the sequence "
-                    "configuration before generating retentions."
+                    "configuration before generating retentions.",
+                    type_retention.upper(),
                 )
-                % type_retention.upper()
             )
 
     @api.model
@@ -816,8 +816,9 @@ class AccountRetention(models.Model):
             padding_by_type = {"iva": 8, "islr": 5, "municipal": 5}
             sequence = self.env["ir.sequence"].create(
                 {
-                    "name": _("Numero de control retenciones %s")
-                    % type_retention.upper(),
+                    "name": _(
+                        "Numero de control retenciones %s", type_retention.upper()
+                    ),
                     "code": code,
                     "padding": padding_by_type.get(type_retention, 5),
                     "company_id": self.env.company.id,
