@@ -115,6 +115,22 @@ class AccountPayment(models.Model):
                 )
             )
 
+    def _generate_move_vals(self, *args, **kwargs):
+        """Pin a retention payment's journal entry to its invoice's own
+        accounting date, instead of the retention's date_accounting (which
+        is what payment.date shows and core would otherwise use here).
+
+        A retention can be processed well after the invoice it retains from,
+        by which time date_accounting may no longer match the invoice's own
+        fiscal period/rate; keeping the move dated with date_accounting would
+        misalign the entry from the invoice it reconciles against.
+        """
+        move_vals = super()._generate_move_vals(*args, **kwargs)
+        move = self.retention_line_ids.move_id
+        if move:
+            move_vals["date"] = move.date
+        return move_vals
+
     def action_draft(self):
 
         if self.env.context.get('bypass_retention_lock'):
