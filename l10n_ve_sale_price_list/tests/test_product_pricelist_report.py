@@ -179,3 +179,56 @@ class TestProductPricelistReport(TransactionCase):
             format_date(self.env, fields.Date.context_today(report_model)), html
         )
         self.assertRegex(html, r"\d{1,2}:\d{2}")
+
+    def test_no_active_ids_returns_no_products(self):
+        """_set_pricelist_prices() early-returns when products_data is
+        empty - exercised when the user opens the report without any
+        product selected."""
+        report_model = self.env["report.product.report_pricelist"]
+        result = report_model._get_report_data(
+            {
+                "pricelist_ids": [self.pricelist_1.id],
+                "active_model": "product.template",
+                "active_ids": [],
+            }
+        )
+
+        self.assertEqual(result["products"], [])
+
+    def test_variants_get_their_own_pricelist_prices(self):
+        """A template with more than one variant gets a 'variants' list
+        from the core report (product_variant_count > 1); each variant
+        must get its own per-pricelist prices via the recursive call in
+        _set_pricelist_prices, not just the template-level entry."""
+        attribute = self.env["product.attribute"].create({"name": "Color"})
+        value_1, value_2 = self.env["product.attribute.value"].create([
+            {"name": "Red", "attribute_id": attribute.id},
+            {"name": "Blue", "attribute_id": attribute.id},
+        ])
+        template = self.env["product.template"].create({
+            "name": "Variant Product",
+            "type": "consu",
+            "list_price": 50.0,
+            "attribute_line_ids": [(0, 0, {
+                "attribute_id": attribute.id,
+                "value_ids": [(6, 0, [value_1.id, value_2.id])],
+            })],
+        })
+        self.assertGreater(template.product_variant_count, 1)
+
+        report_model = self.env["report.product.report_pricelist"]
+        result = report_model._get_report_data(
+            {
+                "pricelist_ids": [self.pricelist_1.id, self.pricelist_2.id],
+                "active_model": "product.template",
+                "active_ids": [template.id],
+            }
+        )
+
+        variants = result["products"][0]["variants"]
+        self.assertEqual(len(variants), 2)
+        for variant in variants:
+            self.assertEqual(
+                set(variant["prices"].keys()),
+                {self.pricelist_1.id, self.pricelist_2.id},
+            )

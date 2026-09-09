@@ -1,4 +1,9 @@
-from odoo.tests import TransactionCase, tagged
+import csv
+import io
+import json
+import zipfile
+
+from odoo.tests import HttpCase, TransactionCase, tagged
 
 from odoo.addons.l10n_ve_sale_price_list.controllers.pricelist_export import (
     ProductPricelistExportController,
@@ -72,3 +77,64 @@ class TestPricelistExportController(TransactionCase):
         rows = self.controller._generate_rows(products_data, self.pricelist_1)
 
         self.assertEqual(rows, [["Product A", "Units", 0.0]])
+
+
+@tagged("post_install", "-at_install", "l10n_ve_sale_price_list")
+class TestPricelistExportControllerHttp(HttpCase):
+    """End-to-end checks of the actual /product/export/pricelist/ route -
+    the unit-level tests above exercise _generate_rows in isolation, but
+    never the route itself nor _generate_csv/_generate_xlsx, which only
+    make sense wired to a real HTTP request (headers, content-type,
+    request.env)."""
+
+    def setUp(self):
+        super().setUp()
+        admin = self.env.ref("base.user_admin")
+        admin.group_ids = [
+            (4, self.env.ref("l10n_ve_sale_price_list.group_pricelist_report_multi").id)
+        ]
+        self.product = self.env["product.template"].create({
+            "name": "HTTP Export Product",
+            "type": "consu",
+            "list_price": 42.0,
+        })
+        self.pricelist = self.env["product.pricelist"].create({"name": "HTTP Export Pricelist"})
+
+    def _export(self, export_format):
+        self.authenticate("admin", "admin")
+        report_data = json.dumps({
+            "pricelist_ids": [self.pricelist.id],
+            "active_model": "product.template",
+            "active_ids": [self.product.id],
+        })
+        return self.url_open(
+            "/product/export/pricelist/",
+            data={"report_data": report_data, "export_format": export_format},
+        )
+
+    def test_export_csv_route_returns_expected_rows(self):
+        response = self._export("csv")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.headers.get("Content-Type"), "text/csv")
+        self.assertIn("Pricelist.csv", response.headers.get("Content-Disposition"))
+
+        rows = list(csv.reader(io.StringIO(response.content.decode())))
+        self.assertEqual(rows[0], ["Product", "UOM", self.pricelist.display_name])
+        self.assertEqual(rows[1][0], self.product.name)
+
+    def test_export_xlsx_route_returns_legend_and_rows(self):
+        response = self._export("xlsx")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            response.headers.get("Content-Type"),
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        )
+        self.assertIn("Pricelist.xlsx", response.headers.get("Content-Disposition"))
+
+        with zipfile.ZipFile(io.BytesIO(response.content)) as workbook:
+            shared_strings = workbook.read("xl/sharedStrings.xml").decode()
+        self.assertIn("Price list report", shared_strings)
+        self.assertIn(self.env.company.display_name, shared_strings)
+        self.assertIn(self.product.name, shared_strings)
