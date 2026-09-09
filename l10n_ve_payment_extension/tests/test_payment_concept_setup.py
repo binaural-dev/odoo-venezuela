@@ -285,6 +285,12 @@ class TestAccountingReportsExtraBranches(RetentionTestCommon):
         inv = self._make_iva_invoice_with_retention()
         wizard = self._make_wizard("purchase")
         retention = inv.retention_iva_line_ids.retention_id
+        # The retention's accounting date must stay on/after the invoice date
+        # (see account_retention._check_accounting_date_vs_invoices), so push
+        # the invoice date back too: this test only cares that a retention
+        # dated outside the wizard's report window is excluded, not about the
+        # accounting-date-vs-invoice-date relationship.
+        inv.invoice_date_display = fields.Date.subtract(fields.Date.today(), days=90)
         retention.write({"date_accounting": fields.Date.subtract(fields.Date.today(), days=60)})
         values = wizard.get_retention_iva_values(inv.id)
         self.assertEqual(values["iva_retained"], 0)

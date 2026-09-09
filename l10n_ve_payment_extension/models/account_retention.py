@@ -517,6 +517,14 @@ class AccountRetention(models.Model):
             if retention.type_retention == "islr" and retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._validate_islr_retention()
 
+            try:
+                retention._check_accounting_date_vs_invoices()
+            except ValidationError as e:
+                if is_automated:
+                    retention.message_post(body=str(e), category='exception')
+                    return False
+                raise
+
         for retention in self:
             vals = {}
             if not retention.date_accounting: vals['date_accounting'] = today
@@ -808,6 +816,48 @@ class AccountRetention(models.Model):
             return config.signature.decode()
         else:
             return False
+
+    def _get_max_invoice_date(self):
+        self.ensure_one()
+        invoice_dates = [
+            date
+            for date in (
+                move.invoice_date_display or move.invoice_date
+                for move in self.retention_line_ids.move_id
+            )
+            if date
+        ]
+        return max(invoice_dates) if invoice_dates else False
+
+    def _check_accounting_date_vs_invoices(self):
+        """
+        A retention's accounting date cannot precede any of the invoices it
+        withholds from: it is a consequence of an invoice already issued.
+        """
+        for retention in self:
+            max_invoice_date = retention._get_max_invoice_date()
+            if not max_invoice_date:
+                continue
+            accounting_date = retention.date_accounting or fields.Date.context_today(retention)
+            if accounting_date < max_invoice_date:
+                invalid_moves = retention.retention_line_ids.move_id.filtered(
+                    lambda move: (move.invoice_date_display or move.invoice_date) == max_invoice_date
+                )
+                raise ValidationError(
+                    _(
+                        "The accounting date (%(accounting_date)s) cannot be earlier than the "
+                        "invoice date (%(invoice_date)s) for invoice %(invoice_name)s."
+                    )
+                    % {
+                        "accounting_date": accounting_date,
+                        "invoice_date": max_invoice_date,
+                        "invoice_name": ", ".join(invalid_moves.mapped("name")),
+                    }
+                )
+
+    @api.constrains("date_accounting", "retention_line_ids")
+    def _check_accounting_date(self):
+        self._check_accounting_date_vs_invoices()
 
     @api.constrains("number", "type")
     def _check_number(self):
