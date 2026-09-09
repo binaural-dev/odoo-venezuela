@@ -11,7 +11,7 @@ from odoo.exceptions import UserError, ValidationError
 _logger = logging.getLogger(__name__)
 
 
-@tagged("post_install", "-at_install", "l10n_ve_accountant_coverage")
+@tagged("post_install", "-at_install", "l10n_ve_accountant", "l10n_ve_accountant_coverage")
 class TestCoverageGaps(TransactionCase):
 
     def _set_correlative_if_required(self, form, value):
@@ -1125,6 +1125,52 @@ class TestCoverageGaps(TransactionCase):
         if rec_line:
             self.assertGreater(rec_line.foreign_debit, 0)
             self.assertEqual(rec_line.foreign_credit, 0.0)
+
+    def test_compute_foreign_debit_credit_does_not_depend_on_foreign_balance(self):
+        """Regression (ticket 14979): `_compute_foreign_debit_credit` must not
+        list `foreign_balance` in its `@api.depends`. `_compute_foreign_balance`
+        depends on `foreign_debit`/`foreign_credit`, which
+        `_compute_foreign_debit_credit` sets -- listing `foreign_balance` back
+        as one of ITS OWN dependencies closes a real A-depends-B/B-depends-A
+        cycle. The payment_term/tax branch of `_get_foreign_value` still reads
+        `self.foreign_balance`, but reacting to a manual write of that field is
+        already `_inverse_foreign_balance`'s job; the depends entry was a
+        redundant trigger and the actual source of the cycle.
+        """
+        compute_name = self.env['account.move.line']._fields['foreign_debit'].compute
+        compute_method = getattr(self.env.registry['account.move.line'], compute_name)
+        self.assertNotIn(
+            'foreign_balance', compute_method._depends,
+            "_compute_foreign_debit_credit depending on foreign_balance recreates "
+            "the circular dependency with _compute_foreign_balance.",
+        )
+
+    def test_foreign_balance_matches_debit_credit_after_recompute(self):
+        """Regression (ticket 14979): production had 615 posted lines where
+        `foreign_credit`/`foreign_debit` recomputed correctly but
+        `foreign_balance` stayed stale (e.g. 0.0), because of the circular
+        `@api.depends` above. Two consecutive writes that retrigger
+        `_compute_foreign_debit_credit` (via `foreign_subtotal`) must still
+        leave every line's `foreign_balance` equal to
+        `foreign_debit - foreign_credit`.
+        """
+        invoice = self._create_invoice(self.currency_usd, 100.0)
+        product_line = invoice.line_ids.filtered(lambda l: l.display_type == 'product')
+        product_line.write({'price_unit': 150.0})
+        product_line.write({'price_unit': 200.0})
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        for line in invoice.line_ids:
+            self.assertAlmostEqual(
+                line.foreign_balance,
+                line.foreign_debit - line.foreign_credit,
+                places=2,
+                msg=(
+                    f"foreign_balance desincronizado en la linea {line.name!r} "
+                    f"(cuenta {line.account_id.code}): "
+                    f"{line.foreign_balance} != {line.foreign_debit} - {line.foreign_credit}"
+                ),
+            )
 
     # ═══════════════════════════════════════════════════════════════
     # account_move_line.py - _compute_foreign_subtotal: base VEF vs base

@@ -693,19 +693,14 @@ class AccountMove(models.Model):
                 continue
             origin = move.reversed_entry_id or move.debit_origin_id
             if origin:
-                move.with_context(l10n_ve_force_rate_write=True).write({
-                    'foreign_rate': origin.foreign_rate,
-                    'foreign_inverse_rate': origin.foreign_inverse_rate,
-                })
+                move.foreign_rate = origin.foreign_rate
+                move.foreign_inverse_rate = origin.foreign_inverse_rate
                 continue
             date_field = "invoice_date" if move.is_invoice(include_receipts=True) else "date"
             rate_date = getattr(move, date_field) or fields.Date.context_today(self)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
-            move.write({
-                'foreign_rate': rate_values.get("foreign_rate", 0),
-                'foreign_inverse_rate': rate_values.get("foreign_inverse_rate", 0),
-            })
-            
+            move.foreign_rate = rate_values.get("foreign_rate", 0)
+            move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
 
     @api.depends("tax_totals")
     def _compute_foreign_taxable_income(self):
@@ -1127,9 +1122,9 @@ class AccountMove(models.Model):
                         fb = magnitude if tl.balance >= 0 else -magnitude
                         if not fc.is_zero(tl.foreign_balance - fb):
                             if fb >= 0:
-                                tl.write({'foreign_debit': fb, 'foreign_credit': 0.0})
+                                tl.write({'foreign_debit': fb, 'foreign_credit': 0.0, 'foreign_balance': fb})
                             else:
-                                tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
+                                tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb, 'foreign_balance': fb})
             finally:
                 guarded.discard(move.id)
 
@@ -1193,9 +1188,9 @@ class AccountMove(models.Model):
                 fb = fee(amount)
                 if not fc.is_zero(tl.foreign_balance - fb):
                     if fb >= 0:
-                        tl.write({'foreign_debit': fb, 'foreign_credit': 0.0})
+                        tl.write({'foreign_debit': fb, 'foreign_credit': 0.0, 'foreign_balance': fb})
                     else:
-                        tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
+                        tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb, 'foreign_balance': fb})
 
     def _distribute_foreign_pt_residual(self, moves):
         """Distributes foreign_debit/foreign_credit across payment term lines
