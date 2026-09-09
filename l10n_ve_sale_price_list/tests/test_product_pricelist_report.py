@@ -1,6 +1,7 @@
 from odoo import fields
 from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools.misc import format_date
 
 
 @tagged("post_install", "-at_install", "l10n_ve_sale_price_list")
@@ -138,6 +139,13 @@ class TestProductPricelistReport(TransactionCase):
         self.assertEqual({p["id"] for p in result["products"]}, set(all_ids))
 
     def test_report_data_includes_printing_company_and_issue_date(self):
+        """issue_date must be a formatted date *and* time string (the task
+        asks for both), not just a date - so it can't be compared against
+        fields.Date.context_today() directly. Comparing the full formatted
+        string against a freshly-formatted "now" would be timing-flaky
+        (seconds can roll over between the two calls), so this only checks
+        that a time component is present alongside today's date.
+        """
         report_model = self.env["report.product.report_pricelist"]
         result = report_model._get_report_data(
             {
@@ -148,7 +156,12 @@ class TestProductPricelistReport(TransactionCase):
         )
 
         self.assertEqual(result["company"], self.env.company)
-        self.assertEqual(result["issue_date"], fields.Date.context_today(report_model))
+        self.assertIsInstance(result["issue_date"], str)
+        self.assertIn(
+            format_date(self.env, fields.Date.context_today(report_model)),
+            result["issue_date"],
+        )
+        self.assertRegex(result["issue_date"], r"\d{1,2}:\d{2}")
 
     def test_pdf_template_renders_with_company_and_date_header(self):
         report_model = self.env["report.product.report_pricelist"]
@@ -162,4 +175,7 @@ class TestProductPricelistReport(TransactionCase):
         )
         html = self.env["ir.qweb"]._render("product.report_pricelist_page", render_values)
         self.assertIn(self.product.name, html)
-        self.assertIn(str(fields.Date.context_today(report_model)), html)
+        self.assertIn(
+            format_date(self.env, fields.Date.context_today(report_model)), html
+        )
+        self.assertRegex(html, r"\d{1,2}:\d{2}")
