@@ -1131,11 +1131,12 @@ class TestCoverageGaps(TransactionCase):
         list `foreign_balance` in its `@api.depends`. `_compute_foreign_balance`
         depends on `foreign_debit`/`foreign_credit`, which
         `_compute_foreign_debit_credit` sets -- listing `foreign_balance` back
-        as one of ITS OWN dependencies closes a real A-depends-B/B-depends-A
-        cycle. The payment_term/tax branch of `_get_foreign_value` still reads
-        `self.foreign_balance`, but reacting to a manual write of that field is
-        already `_inverse_foreign_balance`'s job; the depends entry was a
-        redundant trigger and the actual source of the cycle.
+        as one of ITS OWN dependencies closed a real A-depends-B/B-depends-A
+        cycle. The payment_term/tax branch of `_get_foreign_value` no longer
+        reads `self.foreign_balance` either (it returns `None`, leaving
+        `foreign_debit`/`foreign_credit` untouched): those lines are correctly
+        resolved by `_distribute_foreign_pt_residual` when the document posts,
+        not by this compute.
         """
         compute_name = self.env['account.move.line']._fields['foreign_debit'].compute
         compute_method = getattr(self.env.registry['account.move.line'], compute_name)
