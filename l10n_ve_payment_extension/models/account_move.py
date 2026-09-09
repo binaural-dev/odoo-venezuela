@@ -10,6 +10,43 @@ _logger = logging.getLogger(__name__)
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
 
+    def retention_currency_grain(self):
+        """Lo que vale, en moneda de compania, un centimo de la moneda de
+        ESTA factura, medido con la tasa de la propia factura.
+
+        Una factura en moneda extranjera lleva su importe adeudado en ESA
+        moneda y con la precision de esa moneda; una retencion se calcula
+        sobre el impuesto del asiento, que esta en moneda de compania. Las
+        dos medidas no pueden coincidir al centimo, y la diferencia maxima
+        entre ellas es exactamente un centimo de la moneda de la factura
+        convertido: eso es el "grano".
+
+        La tasa NO se toma de `foreign_rate`. Ese campo describe la divisa
+        alterna de la COMPANIA (`foreign_currency_id`, normalmente el dolar),
+        no la moneda del documento: en una factura en euros o en pesos daria
+        el grano de otra moneda -en pesos, unas 4.000 veces el real- y en una
+        factura en bolivares daria un grano donde no hay ninguno. Se usa la
+        tasa efectiva de la propia factura, la que relaciona sus dos
+        residuales, que es por construccion la misma con la que se valoro el
+        asiento y por tanto la unica coherente con lo que se esta comparando.
+
+        Devuelve 0.0 -comparacion estricta- cuando la factura esta en moneda
+        de compania (no hay dos precisiones que reconciliar) o cuando no
+        queda residual del que deducir la tasa (nada que tolerar).
+        """
+        self.ensure_one()
+        company_currency = self.company_id.currency_id
+        if not company_currency or self.currency_id == company_currency:
+            return 0.0
+        residual = self.amount_residual
+        residual_company = self.amount_residual_signed
+        if self.currency_id.is_zero(residual) or company_currency.is_zero(
+            residual_company
+        ):
+            return 0.0
+        effective_rate = abs(residual_company / residual)
+        return company_currency.round(effective_rate * self.currency_id.rounding)
+
     base_currency_is_vef = fields.Boolean(
         compute="_compute_currency_fields",
     )
