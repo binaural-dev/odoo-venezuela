@@ -452,12 +452,6 @@ msgid "Invoice Date"
 msgstr "Fecha de factura"
 
 #. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
-msgid "Rate Date"
-msgstr "Fecha de tasa"
-
-#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__is_contingency
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_journal__is_contingency
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_contingency
@@ -818,3 +812,15 @@ msgstr ""
 "El monto acreditado para el producto '%(product)s' (%(amount)s, "
 "incluyendo %(already)s ya acreditado por otras notas de crédito) supera "
 "el monto facturado en el documento original '%(origin)s' (%(max)s)."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"The total credited amount on this credit note (%(amount)s, including "
+"%(already)s already credited by other credit notes) exceeds the amount "
+"invoiced on the original document '%(origin)s' (%(max)s)."
+msgstr ""
+"El monto total acreditado en esta nota de crédito (%(amount)s, incluyendo "
+"%(already)s ya acreditado por otras notas de crédito) supera el monto "
+"facturado en el documento original '%(origin)s' (%(max)s)."
