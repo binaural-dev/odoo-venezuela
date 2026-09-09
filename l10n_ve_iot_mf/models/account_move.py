@@ -290,7 +290,7 @@ class AccountMoveInh(models.Model):
                 [("account_move", "in", candidate_move_ids)],
                 order="id desc",
                 limit=1,
-            )
+            ) if "pos.order" in self.env.registry else False
 
             if pos_order and pos_order.payment_ids:
                 for payment in pos_order.payment_ids:
