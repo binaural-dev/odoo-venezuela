@@ -3,6 +3,7 @@ import io
 import json
 import zipfile
 
+from odoo import http
 from odoo.tests import HttpCase, TransactionCase, tagged
 
 from odoo.addons.l10n_ve_sale_price_list.controllers.pricelist_export import (
@@ -109,7 +110,11 @@ class TestPricelistExportControllerHttp(HttpCase):
         })
         return self.url_open(
             "/product/export/pricelist/",
-            data={"report_data": report_data, "export_format": export_format},
+            data={
+                "report_data": report_data,
+                "export_format": export_format,
+                "csrf_token": http.Request.csrf_token(self),
+            },
         )
 
     def test_export_csv_route_returns_expected_rows(self):
