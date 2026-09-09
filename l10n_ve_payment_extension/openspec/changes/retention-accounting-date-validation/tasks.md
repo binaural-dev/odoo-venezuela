@@ -113,10 +113,10 @@
 
 ## 5. Proceso (pendiente, no técnico)
 
-- [ ] 5.1 El cambio vive como working tree sucio sobre `maintenance-19.0`
-      del submódulo `odoo-venezuela`, sin commit ni PR asociado. Falta:
-      crear rama con el id del ticket (convención
-      `maint-19.0-fix-ti_15019_...` o el prefijo TA que corresponda),
-      commitear los 6 archivos tocados + el directorio `openspec/`
-      (actualmente `untracked` en git), y abrir el PR contra
-      `maintenance-19.0` para que el review tenga dónde registrarse
+- [x] 5.1 Rama `maint-19.0-fix-ti-14984-retention-accounting-date` creada
+      desde `maintenance-19.0`, con commit `54480a486` (10 archivos:
+      6 modificados + el directorio `openspec/changes/retention-accounting-date-validation/`
+      completo, antes `untracked`)
+- [ ] 5.2 Abrir el PR contra `maintenance-19.0` para que el review tenga
+      dónde registrarse (no ejecutado: requiere confirmación explícita
+      antes de hacer push)

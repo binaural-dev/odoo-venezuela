@@ -847,7 +847,9 @@ class AccountRetention(models.Model):
                     % {
                         "accounting_date": accounting_date,
                         "invoice_date": max_invoice_date,
-                        "invoice_name": ", ".join(invalid_moves.mapped("name")),
+                        "invoice_name": ", ".join(
+                            move.name or move.ref or str(move.id) for move in invalid_moves
+                        ),
                     }
                 )
 
