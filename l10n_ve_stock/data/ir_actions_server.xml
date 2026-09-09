@@ -13,5 +13,15 @@
             </field>
         </record>
 
+        <record id="sync_physical_quantities" model="ir.actions.server">
+            <field name="name">Synchronize Quantities with Real Quants</field>
+            <field name="type">ir.actions.server</field>
+            <field name="model_id" ref="model_stock_picking_alter_location"/>
+            <field name="binding_model_id" ref="model_stock_picking_alter_location"/>
+            <field name="state">code</field>
+            <field name="code">records.subtract_physical_quantity()</field>
+            <field name="group_ids" eval="[(4, ref('l10n_ve_stock.group_physical_location_edit'))]"/>
+        </record>
+
 	</data>
 </odoo>

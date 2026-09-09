@@ -196,6 +196,49 @@ error de base de datos por `account_id` nulo.
 - **WHEN** se cierra la sesión con un pago de ese método
 - **THEN** la pata transitoria del asiento cae sobre `outstanding_account_id`
 
+### Requirement: Modo `use_suspense` para llamadores fuera de ventas
+
+`_is_cross_move_eligible`, `_get_cross_transitory_account`,
+`_get_cross_real_account`, `_line_vals_move_cross_incoming`/`_outgoing` y
+`_create_cross_move_for` SHALL aceptar un parámetro `use_suspense` (default
+`False`) que no cambia ningún comportamiento de `_validate_cross_move`
+(ventas) ni de las diferencias de apertura/cierre de `binaural_pos_close`
+(`_post_foreign_statement_difference`) — ambos siguen llamando estas
+funciones sin pasarlo. Es un modo opt-in agregado para
+`binaural_pos_close.try_cash_in_out` (ver capability `pos-close-foreign-cash`,
+change `binaural-pos-close-foreign-cash-cross-move`, tareas T2.1/T2.2 para el
+razonamiento contable completo — no se repite aquí).
+
+Con `use_suspense=True`:
+
+- `_get_cross_transitory_account` SHALL devolver
+  `payment_method.journal_id.suspense_account_id` en vez de
+  `default_account_id`/`outstanding_account_id`.
+- `_get_cross_real_account` SHALL devolver `cross_journal.suspense_account_id`
+  en vez de `cross_journal.inbound/outbound_payment_method_line_ids
+  .payment_account_id`.
+- `_create_cross_move_for` SHALL invertir la dirección entrante/saliente
+  (llamando al builder contrario con los importes negados) antes de construir
+  las líneas, porque `suspense_account_id` recibe siempre la polaridad nativa
+  opuesta a `default_account_id` para el mismo movimiento.
+
+#### Scenario: Llamador sin `use_suspense` no cambia
+
+- **GIVEN** cualquier llamada existente a estas funciones sin el parámetro
+  (ventas, diferencias)
+- **WHEN** se ejecuta el cruce
+- **THEN** el comportamiento es idéntico al de antes de agregar el parámetro
+
+#### Scenario: Llamador con `use_suspense=True`
+
+- **GIVEN** un método `cash` con `cross_journal`/`cross_account_journal`
+  configurados
+- **WHEN** `binaural_pos_close.try_cash_in_out` dispara el cruce con
+  `use_suspense=True` para una entrada de efectivo
+- **THEN** el asiento debita `journal_id.suspense_account_id` y acredita
+  `cross_journal.suspense_account_id` — ambas patas quedan pendientes de
+  reconciliación bancaria real, no de las cuentas de liquidez confirmadas
+
 ## REMOVED Requirements
 
 ### Requirement: Cruce automático combine entrante

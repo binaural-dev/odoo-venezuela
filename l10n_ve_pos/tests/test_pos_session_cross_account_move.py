@@ -9,6 +9,7 @@ Verifies the cruce automatico in ``pos_session.py``: ``_validate_cross_move``
 Spec: ``openspec/changes/l10n-ve-pos-cross-move-by-split-transactions/specs/pos-cross-account-move/spec.md``
 """
 
+from odoo import fields
 from odoo.tests import tagged
 
 from .test_pos_session_accounting_common import TestPosSessionAccountingBase
@@ -93,13 +94,50 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             }
         )
 
-    def _legs(self, move, transitory_account):
-        """Split a cross move into (real-account leg, transitory leg)."""
-        real_leg = move.line_ids.filtered(lambda l: l.account_id == self.account_real_bank)
+    def _legs(self, move, transitory_account, real_account=None):
+        """Split a cross move into (real-account leg, transitory leg).
+
+        ``real_account`` defaults to ``account_real_bank`` (every
+        ``use_suspense=False`` caller: ventas). The ``use_suspense=True``
+        tests pass the journal's own suspense account instead -- see
+        ``_configure_use_suspense_accounts``.
+        """
+        real_account = real_account or self.account_real_bank
+        real_leg = move.line_ids.filtered(lambda l: l.account_id == real_account)
         transitory_leg = move.line_ids.filtered(lambda l: l.account_id == transitory_account)
         self.assertTrue(real_leg, "debe haber una linea sobre la cuenta real")
         self.assertTrue(transitory_leg, "debe haber una linea sobre la cuenta transitoria")
         return real_leg, transitory_leg
+
+    def _configure_use_suspense_accounts(self, method):
+        """Wire up dedicated suspense accounts for a ``use_suspense=True`` move.
+
+        Both legs need one: the origin journal's (``method.journal_id``,
+        cleared) and ``real_bank_journal``'s (credited/debited in place of
+        its confirmed liquidity account). Without the second, ``_get_cross_real_account``
+        resolves an empty recordset and ``account.move.create`` fails on a
+        null ``account_id`` -- this is what ``binaural_pos_close`` configures
+        implicitly via `cross_journal` in production.
+        """
+        suspense_origin = self.env["account.account"].create(
+            {
+                "name": f"C Suspense {method.name}",
+                "code": f"19{method.id:04d}C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        suspense_real = self.env["account.account"].create(
+            {
+                "name": f"C Real Bank Suspense {method.name}",
+                "code": f"18{method.id:04d}C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        method.journal_id.suspense_account_id = suspense_origin.id
+        self.real_bank_journal.suspense_account_id = suspense_real.id
+        return suspense_origin, suspense_real
 
     # ------------------------------------------------------------------
     # Granularidad: split_transactions decide cuantos asientos se crean
@@ -373,6 +411,123 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             moves.line_ids.filtered(lambda l: l.account_id == self.account_pos_receivable),
             "la POS receivable ya quedo saldada por el statement line nativo: "
             "el cruce no debe tocarla",
+        )
+
+    # ------------------------------------------------------------------
+    # Modo use_suspense (llamadores fuera de ventas -- ver binaural_pos_close)
+    # ------------------------------------------------------------------
+    def test_use_suspense_incoming_uses_both_suspense_accounts(self):
+        """``use_suspense=True``, entrada: ninguna pata usa las cuentas de
+        ``use_suspense=False`` (``default_account_id`` / ``payment_account_id``
+        de ``cross_journal``) -- ambas caen en el ``suspense_account_id`` de
+        su propio diario.
+
+        Usado por ``binaural_pos_close.try_cash_in_out``: ese flujo nunca fija
+        ``counterpart_account_id`` en su linea de extracto, asi que la nativa
+        cae en ``journal_id.suspense_account_id``, no en ``default_account_id``
+        -- ese es el saldo que este modo debe drenar. Se llama directo a
+        ``_create_cross_move_for`` con importes planos, sin pasar por
+        ``try_cash_in_out`` (vive en otro modulo).
+        """
+        suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+
+        move = session._create_cross_move_for(
+            self.split_cash_method,
+            amount=58.0,
+            foreign_amount=58.0 * 36.5,
+            foreign_rate=36.5,
+            partner=self.env["res.partner"],
+            date=fields.Datetime.now(),
+            ref="use_suspense incoming",
+            use_suspense=True,
+        )
+
+        self.assertEqual(move.state, "draft")
+        real_leg, transitory_leg = self._legs(
+            move, suspense_origin, real_account=suspense_real
+        )
+        self.assertFalse(
+            move.line_ids.filtered(lambda l: l.account_id == self.account_cash),
+            "default_account_id no debe aparecer: ese saldo ya lo drena el "
+            "cruce use_suspense=False (ventas), este es un saldo distinto",
+        )
+        self.assertFalse(
+            move.line_ids.filtered(lambda l: l.account_id == self.account_real_bank),
+            "tampoco la cuenta de liquidez confirmada de cross_journal",
+        )
+        # Polaridad invertida respecto a use_suspense=False: suspense_account_id
+        # recibe siempre el lado nativo opuesto a default_account_id para el
+        # mismo movimiento, asi que limpiarla debita la transitoria (no la
+        # acredita) y acredita la real (no la debita).
+        self.assertAlmostEqual(transitory_leg.debit, 58.0, places=2)
+        self.assertAlmostEqual(transitory_leg.foreign_debit, 58.0 * 36.5, places=2)
+        self.assertAlmostEqual(real_leg.credit, 58.0, places=2)
+        self.assertAlmostEqual(real_leg.foreign_credit, 58.0 * 36.5, places=2)
+
+    def test_use_suspense_outgoing_mirrors_incoming(self):
+        """``use_suspense=True``, salida (``amount<0``): espejo exacto de la
+        entrada -- se debita la real y se acredita la transitoria."""
+        suspense_origin, suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+
+        move = session._create_cross_move_for(
+            self.split_cash_method,
+            amount=-25.0,
+            foreign_amount=-25.0 * 36.5,
+            foreign_rate=36.5,
+            partner=self.env["res.partner"],
+            date=fields.Datetime.now(),
+            ref="use_suspense outgoing",
+            use_suspense=True,
+        )
+
+        real_leg, transitory_leg = self._legs(
+            move, suspense_origin, real_account=suspense_real
+        )
+        self.assertAlmostEqual(transitory_leg.credit, 25.0, places=2)
+        self.assertAlmostEqual(real_leg.debit, 25.0, places=2)
+
+    def test_use_suspense_eligibility_requires_journal_suspense_account(self):
+        """``_is_cross_move_eligible(..., use_suspense=True)`` exige que el
+        diario tenga ``suspense_account_id`` propio -- no le basta con que
+        ``default_account_id`` este resuelto, que es lo unico que exige
+        ``use_suspense=False`` (ventas)."""
+        self._configure_cross(self.split_cash_method)
+        session = self._new_session().with_company(self.company)
+
+        self.assertFalse(
+            self.split_cash_method.journal_id.suspense_account_id,
+            "fixture: sin configurar todavia",
+        )
+        self.assertTrue(
+            session._is_cross_move_eligible(self.split_cash_method),
+            "use_suspense=False (default, ventas) ya es elegible con "
+            "default_account_id resuelto",
+        )
+        self.assertFalse(
+            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            "use_suspense=True no es elegible sin suspense_account_id en el diario",
+        )
+
+        suspense_origin = self.env["account.account"].create(
+            {
+                "name": "C Eligibility Suspense",
+                "code": "199999C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        self.split_cash_method.journal_id.suspense_account_id = suspense_origin.id
+        self.assertTrue(
+            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            "una vez configurado el suspense del diario, si es elegible",
         )
 
     # ------------------------------------------------------------------

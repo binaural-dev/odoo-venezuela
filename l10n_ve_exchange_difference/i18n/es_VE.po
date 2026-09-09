@@ -1,0 +1,619 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_exchange_difference
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260710\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-28 01:06+0000\n"
+"PO-Revision-Date: 2026-08-28 01:06+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_exchange_difference
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid ""
+"Applies only to CUSTOMER invoices and credit notes. The exchange difference "
+"left when reconciling a foreign-currency customer invoice is documented as a"
+" real Debit Note (gain) or Credit Note (loss), instead of a generic entry."
+msgstr ""
+"Aplica solo a facturas y notas de crédito de CLIENTE. El diferencial "
+"cambiario que quede al conciliar una factura de cliente en moneda extranjera"
+" se documenta como Nota de Débito (ganancia) o Nota de Crédito (pérdida) "
+"real, en vez de un asiento genérico."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_journal__l10n_ve_exchange_use_nd_nc
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_use_nd_nc
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_use_nd_nc
+msgid ""
+"Applies only to CUSTOMER invoices and credit notes. When enabled, the "
+"exchange difference left open when reconciling a foreign-currency customer "
+"invoice is NOT absorbed by Odoo's automatic entry -- instead, it is "
+"documented with a real Debit Note (gain) or Credit Note (loss), issued "
+"against the original invoice and reconciled against the remaining residual."
+msgstr ""
+"Cuando está activado, el diferencial cambiario que queda abierto al "
+"conciliar una factura/documento en moneda extranjera NO es absorbido por el "
+"asiento automático de Odoo -- en su lugar, se documenta con una Nota de "
+"Débito (ganancia) o Nota de Crédito (pérdida) real, emitida contra la "
+"factura original y conciliada contra el residual restante."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid ""
+"Cannot determine the accounting account for this exchange difference "
+"Debit/Credit Note line: neither the company's %(account_field)s nor the note"
+" product's own %(product_field)s is configured. Set at least one of them "
+"(Accounting Settings > Default Accounts, or the product's Income/Expense "
+"account) before reconciling foreign-currency invoices with the exchange "
+"difference Debit/Credit Note mode enabled."
+msgstr ""
+"No se pudo determinar la cuenta contable para esta línea de Nota de "
+"Débito/Crédito de diferencial cambiario: no está configurada ni la "
+"%(account_field)s de la compañía ni la %(product_field)s propia del "
+"producto de la nota. Configure al menos una de las dos (Ajustes Contables >"
+" Cuentas por Defecto, o la cuenta de Ingreso/Gasto del producto) antes de "
+"conciliar facturas en moneda extranjera con el modo de ND/NC de "
+"diferencial cambiario activado."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid ""
+"Cannot number this exchange difference Debit/Credit Note: journal "
+"%(journal)s has no dedicated sequence configured for %(kind)s "
+"(date=%(date)s). Configure the journal before reconciling foreign-currency "
+"invoices with the exchange difference Debit/Credit Note mode enabled."
+msgstr ""
+"No se pudo numerar esta Nota de Débito/Crédito de diferencial cambiario: "
+"el diario %(journal)s no tiene una secuencia dedicada configurada para "
+"%(kind)s (fecha=%(date)s). Configure el diario antes de conciliar facturas"
+" en moneda extranjera con el modo de ND/NC de diferencial cambiario "
+"activado."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model,name:l10n_ve_exchange_difference.model_res_company
+msgid "Companies"
+msgstr "Empresas"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model,name:l10n_ve_exchange_difference.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid ""
+"Configure a dedicated 'Refund Sequence' (Credit Note sequence) on journal "
+"%(journal)s before reconciling foreign-currency invoices with the exchange "
+"difference Debit/Credit Note mode enabled -- a Credit Note must never be "
+"numbered with the invoice journal's own sequence."
+msgstr ""
+"Configure una 'Secuencia de Reembolso' (secuencia de Nota de Crédito) "
+"dedicada en el diario %(journal)s antes de conciliar facturas en moneda "
+"extranjera con el modo de ND/NC de diferencial cambiario activado -- una "
+"Nota de Crédito nunca debe numerarse con la secuencia propia del diario de"
+" la factura."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid ""
+"Configure a dedicated 'Refund Sequence' (Credit Note sequence) on journal "
+"%(journal)s before reversing this exchange difference Debit Note -- the "
+"reversal must never be numbered with that journal's own main sequence."
+msgstr ""
+"Configure una 'Secuencia de Reembolso' (secuencia de Nota de Crédito) "
+"dedicada en el diario %(journal)s antes de revertir esta Nota de Débito de"
+" diferencial cambiario -- la reversión nunca debe numerarse con la "
+"secuencia principal propia de ese diario."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid ""
+"Configure a sale journal with 'Is Debit' enabled and its dedicated Exchange "
+"Difference Debit Note sequence assigned before reconciling foreign-currency "
+"invoices with the exchange difference Debit/Credit Note mode enabled -- a "
+"Debit Note must never be numbered with the invoice journal's own sequence."
+msgstr ""
+"Configure un diario de venta con 'Es Débito' activado y su secuencia "
+"dedicada de Nota de Débito de diferencial cambiario asignada, antes de "
+"conciliar facturas en moneda extranjera con el modo de ND/NC de diferencial "
+"cambiario activado -- una Nota de Débito nunca debe numerarse con la "
+"secuencia propia del diario de la factura."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid ""
+"Configure a sale journal with 'Is Debit' enabled and its dedicated Exchange "
+"Difference Debit Note sequence assigned before reversing this exchange "
+"difference Credit Note -- the reversal must never be numbered with the "
+"invoice journal's own Credit Note sequence."
+msgstr ""
+"Configure un diario de venta con 'Es Débito' activado y su secuencia "
+"dedicada de Nota de Débito de diferencial cambiario asignada, antes de "
+"revertir esta Nota de Crédito de diferencial cambiario -- la reversión "
+"nunca debe numerarse con la secuencia propia de Nota de Crédito del diario"
+" de la factura."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid ""
+"Configure the 'Exchange Difference Note Pricelist' (in the company's own "
+"currency) in Settings > Binaural Settings before reconciling foreign-"
+"currency invoices with the exchange difference Debit/Credit Note mode "
+"enabled."
+msgstr ""
+"Configure la 'Lista de Precios de Nota de Diferencial Cambiario' (en la "
+"moneda propia de la compañía) en Ajustes > Ajustes de Binaural antes de "
+"conciliar facturas en moneda extranjera con el modo de ND/NC de "
+"diferencial cambiario activado."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid ""
+"Configure the 'Exchange Difference Note Product' in Settings > Binaural "
+"Settings before reconciling foreign-currency invoices with the exchange "
+"difference Debit/Credit Note mode enabled."
+msgstr ""
+"Configure el 'Producto de Nota de Diferencial Cambiario' en Ajustes > "
+"Ajustes de Binaural antes de conciliar facturas en moneda extranjera con "
+"el modo de ND/NC de diferencial cambiario activado."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid ""
+"Could not find the receivable line on the newly created exchange difference "
+"note '%(note)s' -- this should never happen for a posted customer "
+"invoice/note."
+msgstr ""
+"No se encontró la línea por cobrar en la nota de diferencial cambiario "
+"recién creada '%(note)s' -- esto nunca debería pasar para una "
+"factura/nota de cliente posteada."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_original_id
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_original_id
+msgid ""
+"Credit Note that reverses the original exchange difference Debit Note. Only "
+"set on automatically generated reversal entries."
+msgstr ""
+"Nota de Crédito que revierte la Nota de Débito original de diferencial "
+"cambiario. Solo se establece en asientos de reversión generados "
+"automáticamente."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid "Credit Notes"
+msgstr "Notas de Crédito"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_note_pricelist_id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_note_pricelist_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid "Customer Invoice Exchange Difference Note Pricelist"
+msgstr ""
+"Lista de Precios de Nota de Diferencial Cambiario de Facturas de Cliente"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_note_product_id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_note_product_id
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid "Customer Invoice Exchange Difference Note Product"
+msgstr "Producto de Nota de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid "Customer Invoice Exchange Difference Notes (Venezuela)"
+msgstr "Notas de Diferencial Cambiario de Facturas de Cliente (Venezuela)"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid "Debit Notes"
+msgstr "Notas de Débito"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_journal__display_name
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_partial_reconcile__display_name
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_config_settings__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_journal__l10n_ve_exchange_debit_note_sequence_id
+msgid "Exchange Difference Debit Note Sequence (Customer Invoices)"
+msgstr "Secuencia de Nota de Débito de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid "Exchange Difference Note Pricelist"
+msgstr "Lista de Precios de Nota de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid "Exchange Difference Note Product"
+msgstr "Producto de Nota de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.view_account_invoice_filter_inherit_l10n_ve_exchange
+msgid "Exchange Difference Notes"
+msgstr "Notas de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid "Exchange difference (%(concept)s) on %(invoice)s"
+msgstr "Diferencial cambiario (%(concept)s) s/ %(invoice)s"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid "Expense Account"
+msgstr "Cuenta de Gasto"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid "Gain Exchange Rate Account"
+msgstr "Cuenta de Ganancia Cambiaria"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_journal__id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_partial_reconcile__id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_config_settings__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid "Income Account"
+msgstr "Cuenta de Ingreso"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid ""
+"Internal consistency error: found %(count)s move(s) tagged with "
+"'l10n_ve_exchange_diff_entry' whose move_type ('%(types)s') is neither one "
+"this module issues ('out_invoice'/'out_refund') nor the native generic entry"
+" it tags for traceability ('entry'). This flag must never be set on any "
+"other document type -- aborting instead of silently miscomputing "
+"payment_state."
+msgstr ""
+"Error de consistencia interna: se encontraron %(count)s asiento(s) "
+"marcados con 'l10n_ve_exchange_diff_entry' cuyo move_type ('%(types)s') no"
+" es ninguno de los que este módulo emite ('out_invoice'/'out_refund') ni "
+"el asiento genérico nativo que marca para trazabilidad ('entry'). Este "
+"indicador nunca debe establecerse en ningún otro tipo de documento -- se "
+"aborta en vez de calcular payment_state incorrectamente en silencio."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_is_credit_note
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_is_credit_note
+msgid "Is Direct Exchange Difference Credit Note"
+msgstr "Es Nota de Crédito de Diferencial Cambiario Directa"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_diff_entry
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_diff_entry
+msgid "Is Exchange Difference Note/Entry"
+msgstr "Es Nota/Asiento de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model,name:l10n_ve_exchange_difference.model_account_journal
+msgid "Journal"
+msgstr "Diario"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model,name:l10n_ve_exchange_difference.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model,name:l10n_ve_exchange_difference.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid "Loss Exchange Rate Account"
+msgstr "Cuenta de Pérdida Cambiaria"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid ""
+"Odoo core API incompatibility detected in "
+"`_prepare_reconciliation_single_partial`: expected keys 'aml' in "
+"debit_values and credit_values, but got debit_values.keys()=%(debit_keys)s, "
+"credit_values.keys()=%(credit_keys)s. This module is tightly coupled to Odoo"
+" 19.0-20260710 internal API. Reconciliation aborted to prevent silent mis-"
+"attribution of exchange difference notes to the wrong invoice."
+msgstr ""
+"Se detectó una incompatibilidad con la API interna de Odoo en "
+"`_prepare_reconciliation_single_partial`: se esperaba la clave 'aml' en "
+"debit_values y credit_values, pero se obtuvo "
+"debit_values.keys()=%(debit_keys)s, credit_values.keys()=%(credit_keys)s. "
+"Este módulo depende estrechamente de la API interna de Odoo "
+"19.0-20260710. Se abortó la conciliación para evitar atribuir en silencio "
+"una nota de diferencial cambiario a la factura equivocada."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_invoice_id
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_invoice_id
+msgid ""
+"Original CUSTOMER invoice/note whose residual (in company currency) this "
+"exchange difference Debit/Credit Note settles."
+msgstr ""
+"Factura/Nota original cuyo residual (en moneda de compañía) esta Nota de "
+"Débito/Crédito de diferencial cambiario liquida."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model,name:l10n_ve_exchange_difference.model_account_partial_reconcile
+msgid "Partial Reconcile"
+msgstr "Conciliación parcial"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_payment_id
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_payment_id
+msgid ""
+"Payment entry whose reconciliation against the source invoice originated "
+"this exchange difference Debit/Credit Note. Used to tell apart the note from"
+" a SPECIFIC partial payment from a note already issued for the same invoice "
+"from an EARLIER partial payment -- an invoice paid in several installments "
+"can accrue a distinct exchange difference note per installment."
+msgstr ""
+"Asiento de pago cuya conciliación contra la factura de origen generó esta "
+"Nota de Débito/Crédito de diferencial cambiario. Se usa para distinguir la "
+"nota de un pago parcial ESPECÍFICO de una nota ya emitida para la misma "
+"factura por un pago parcial ANTERIOR -- una factura pagada en varias cuotas "
+"puede acumular una nota de diferencial distinta por cada cuota."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_note_pricelist_id
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_note_pricelist_id
+msgid ""
+"Pricelist used on exchange difference Debit/Credit Notes for CUSTOMER "
+"invoices (`account_invoice_pricelist` requires every invoice/note to have "
+"one whose currency matches the document's own currency). Must be in the "
+"company's own currency -- these notes are always issued in company currency,"
+" never in the partner's foreign pricelist."
+msgstr ""
+"Lista de precios usada en las Notas de Débito/Crédito de diferencial "
+"cambiario para facturas de CLIENTE (`account_invoice_pricelist` exige que "
+"toda factura/nota tenga una cuya moneda coincida con la del propio "
+"documento). Debe estar en la moneda propia de la compañía -- estas notas "
+"siempre se emiten en moneda de compañía, nunca en la lista de precios en "
+"moneda extranjera del contacto."
+
+#. module: l10n_ve_exchange_difference
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid ""
+"Pricelist used on the Debit/Credit Note for CUSTOMER invoices (required by "
+"account_invoice_pricelist). Must be in the company's own currency -- these "
+"notes are always issued in company currency."
+msgstr ""
+"Lista de precios usada en la ND/NC de facturas de CLIENTE (requerida por "
+"account_invoice_pricelist). Debe estar en la moneda propia de la compañía --"
+" estas notas siempre se emiten en moneda de compañía."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_note_product_id
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_note_product_id
+msgid ""
+"Product used as the line of exchange difference Debit/Credit Notes for "
+"CUSTOMER invoices. Must be a service, its income and expense accounts must "
+"be the company's exchange gain/loss accounts, and its sale tax must be the "
+"default sale Exempt tax (l10n_ve_accountant: exent_aliquot_sale) -- the "
+"exchange difference is not a VAT base, but l10n_ve_accountant requires a tax"
+" on every line."
+msgstr ""
+"Producto usado como línea de las Notas de Débito/Crédito de diferencial "
+"cambiario. Debe tener asignado el impuesto Exento de venta y de compra "
+"(l10n_ve_accountant: exent_aliquot_sale / exent_aliquot_purchase) -- el "
+"diferencial cambiario no es base de IVA, pero l10n_ve_accountant exige un "
+"impuesto en cada línea."
+
+#. module: l10n_ve_exchange_difference
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid ""
+"Product used on the line of the Debit/Credit Note for CUSTOMER invoices. "
+"Must have the sale and purchase Exempt tax configured."
+msgstr ""
+"Producto usado en la línea de la ND/NC de facturas de CLIENTE. Debe tener el"
+" impuesto Exento de venta y de compra configurado."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid "Reversal of: %s"
+msgstr "Reversión de: %s"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_original_id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_original_id
+msgid "Reversed Exchange Difference Debit Note"
+msgstr "Nota de Débito de Diferencial Cambiario Revertida"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_journal__l10n_ve_exchange_debit_note_sequence_id
+msgid ""
+"Sequence used to number exchange difference Debit Notes. Configure the "
+"prefix, padding, and periodicity from the sequence record itself."
+msgstr ""
+"Secuencia usada para numerar las Notas de Débito de diferencial cambiario. "
+"Configure el prefijo, el relleno (padding) y la periodicidad desde el propio"
+" registro de la secuencia."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_is_credit_note
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_is_credit_note
+msgid ""
+"Set when this note was created directly as a Credit Note (exchange gain), as"
+" opposed to being the reversal of a Debit Note (see "
+"`l10n_ve_exchange_original_id`)."
+msgstr ""
+"Se establece cuando esta nota fue creada directamente como Nota de Crédito "
+"(ganancia cambiaria), a diferencia de ser una reversión de una Nota de "
+"Débito (ver `l10n_ve_exchange_original_id`)."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_payment_id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_payment_id
+msgid "Settled Payment (Exchange Difference)"
+msgstr "Pago Liquidado (Diferencial Cambiario)"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_invoice_id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_invoice_id
+msgid "Source Customer Invoice (Exchange Difference)"
+msgstr "Factura de Origen (Diferencial Cambiario)"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid ""
+"The Customer Invoice Exchange Difference Note Pricelist ('%(pricelist)s') "
+"must be in the company's own currency (%(currency)s) -- these notes are "
+"always issued in company currency."
+msgstr ""
+"La Lista de Precios de Nota de Diferencial Cambiario de Facturas de Cliente "
+"('%(pricelist)s') debe estar en la moneda propia de la compañía "
+"(%(currency)s) -- estas notas siempre se emiten en moneda de compañía."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid ""
+"The Customer Invoice Exchange Difference Note Product ('%(product)s') must "
+"be a service."
+msgstr ""
+"El Producto de Nota de Diferencial Cambiario de Facturas de Cliente "
+"('%(product)s') debe ser un servicio."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid ""
+"The Customer Invoice Exchange Difference Note Product ('%(product)s') must "
+"have the company's exchange gain account as its income account."
+msgstr ""
+"El Producto de Nota de Diferencial Cambiario de Facturas de Cliente "
+"('%(product)s') debe tener la cuenta de ganancia cambiaria de la compañía "
+"como su cuenta de ingreso."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid ""
+"The Customer Invoice Exchange Difference Note Product ('%(product)s') must "
+"have the company's exchange loss account as its expense account."
+msgstr ""
+"El Producto de Nota de Diferencial Cambiario de Facturas de Cliente "
+"('%(product)s') debe tener la cuenta de pérdida cambiaria de la compañía "
+"como su cuenta de gasto."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid ""
+"The Customer Invoice Exchange Difference Note Product ('%(product)s') must "
+"have the default sale Exempt tax assigned (Settings > Binaural Settings > "
+"Exempt Aliquot)."
+msgstr ""
+"El Producto de Nota de Diferencial Cambiario de Facturas de Cliente "
+"('%(product)s') debe tener asignado el impuesto Exento de venta por "
+"defecto (Ajustes > Ajustes de Binaural > Alícuota Exenta)."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid ""
+"The dedicated Exchange Difference Debit Note journal ('%(journal)s') also "
+"needs its own 'Refund Sequence' (Credit Note sequence) configured -- "
+"required to reverse a Debit Note if its reconciliation is ever broken."
+msgstr ""
+"El diario dedicado de Nota de Débito de diferencial cambiario "
+"('%(journal)s') también necesita su propia 'Secuencia de Reembolso' "
+"(secuencia de Nota de Crédito) configurada -- requerida para revertir una"
+" Nota de Débito si alguna vez se rompe su conciliación."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_journal__l10n_ve_exchange_use_nd_nc
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_use_nd_nc
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_use_nd_nc
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid "Use Debit/Credit Notes for Customer Invoice Exchange Difference"
+msgstr "Usar Notas de Débito/Crédito para Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid ""
+"With 'Use Debit/Credit Notes for Customer Invoice Exchange Difference' "
+"enabled, configure a sale journal with 'Is Debit' enabled and its dedicated "
+"Exchange Difference Debit Note sequence assigned."
+msgstr ""
+"Con 'Usar Notas de Débito/Crédito para Diferencial Cambiario de Facturas "
+"de Cliente' activado, configure un diario de venta con 'Es Débito' "
+"activado y su secuencia dedicada de Nota de Débito de diferencial "
+"cambiario asignada."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
+msgid ""
+"With 'Use Debit/Credit Notes for Customer Invoice Exchange Difference' "
+"enabled, the following must also be configured: %(missing)s."
+msgstr ""
+"Con 'Usar Notas de Débito/Crédito para Diferencial Cambiario de Facturas de "
+"Cliente' activado, también debe configurarse lo siguiente: %(missing)s."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid ""
+"You cannot directly unreconcile an exchange difference Debit/Credit Note. To"
+" undo it, break the original reconciliation between the invoice and the "
+"payment -- the note will be reversed automatically."
+msgstr ""
+"No se puede desconciliar directamente una Nota de Débito/Crédito de "
+"diferencial cambiario. Para deshacerla, rompa la conciliación original entre"
+" la factura y el pago -- la nota se revertirá automáticamente."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid "gain"
+msgstr "ganancia"
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
+msgid "loss"
+msgstr "pérdida"

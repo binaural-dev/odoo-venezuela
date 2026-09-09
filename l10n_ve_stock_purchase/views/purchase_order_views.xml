@@ -1,0 +1,12 @@
+<odoo>
+    <record id="purchase_order_form_alternate_code" model="ir.ui.view">
+        <field name="name">purchase.order.form.alternate.code</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='order_line']/list/field[@name='product_id']" position="after">
+                <field name="alternate_code" optional="show" readonly="1"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

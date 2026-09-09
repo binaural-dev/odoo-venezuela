@@ -17,12 +17,13 @@ class IGTFUtils(models.AbstractModel):
         precision = currency.rounding
         date_conver = payment_date if indexed_default else invoice.invoice_date
 
-        due_amount = self._convert_to_company_currency(
-            invoice.currency_id, invoice.amount_residual, date_conver, company
-        )
-        payment_amount = self._convert_to_company_currency(
-            payment_currency, amount_payment, date_conver, company
-        )
+        due_amount = invoice.amount_residual  # ya está en currency
+        if payment_currency == currency:
+            payment_amount = amount_payment
+        else:
+            payment_amount = payment_currency._convert(
+                amount_payment, currency, company, date_conver,
+            )
 
         principal_amount = min(payment_amount, due_amount)
         igtf_unrounded = principal_amount * (company.igtf_percentage / 100)
@@ -48,7 +49,9 @@ class IGTFUtils(models.AbstractModel):
             return 0.0
 
         if not base:
-            return self._convert_to_external_currency(payment_currency, igtf, date_conver, company)
+            if payment_currency == currency:
+                return igtf
+            return currency._convert(igtf, payment_currency, company, date_conver)
         return igtf
 
     @api.model

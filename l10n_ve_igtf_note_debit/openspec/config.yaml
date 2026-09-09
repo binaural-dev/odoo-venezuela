@@ -1,0 +1,9 @@
+schema: spec-driven
+
+context: |
+  Módulo de localización venezolana para Odoo 19.
+
+  Flujo alterno y opcional de percepción de IGTF: en vez de la línea
+  embebida en el asiento de pago (flujo histórico "inline" de
+  l10n_ve_igtf), genera una Nota de Débito fiscal independiente vía
+  account_debit_note. Opt-in por compañía (igtf_note_debit_mode).

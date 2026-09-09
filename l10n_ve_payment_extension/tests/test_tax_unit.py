@@ -72,9 +72,8 @@ class TestTaxUnit(TransactionCase):
         self.assertEqual(retention.tax_unit_ids.id, ut_2026.id)
         self.assertAlmostEqual(retention.amount_subtract, 500.0004, places=4)
 
-    def test_03_change_active_by_date_edit(self):
-        """ Si muevo la fecha de la activa al pasado, la otra debe activarse """
-       
+    def test_03_edit_value_recomputes_via_form(self):
+        """ Editar el 'value' de la UT activa desde el Form recalcula el sustraendo """
         with Form(self.ut_2025) as f:
             f.value = 150.0
             f.save()
@@ -111,3 +110,129 @@ class TestTaxUnit(TransactionCase):
         # Intentar editar el valor de la inactiva debe lanzar UserError
         with self.assertRaises(UserError):
             self.ut_2025.write({'value': 500.0})
+
+    def test_06_new_inactive_unit_created_after_active_one(self):
+        """ Crear una UT con fecha PASADA (queda inactiva) después de la activa
+        no debe pisar la tarifa con la UT inactiva, aunque su id sea mayor """
+        # ut_2025 (id menor) queda activa por tener la fecha más reciente hasta ahora.
+        with Form(self.env['tax.unit']) as f:
+            f.name = "UT 2024"
+            f.value = 999.0
+            f.available_date = fields.Date.from_string('2024-01-01')
+            ut_2024 = f.save()
+
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        # ut_2024 tiene un id mayor que ut_2025 pero fecha anterior: debe quedar inactiva
+        self.assertFalse(ut_2024.status)
+        self.assertTrue(self.ut_2025.status)
+
+        # La tarifa debe seguir apuntando a la UT activa (ut_2025), no a la recién creada
+        retention = self.env['fees.retention'].browse(self.retention.id)
+        self.assertEqual(retention.tax_unit_ids.id, self.ut_2025.id)
+        self.assertAlmostEqual(retention.amount_subtract, 250.0002, places=4)
+
+    def test_07_updates_all_fees_regardless_of_flags(self):
+        """ La UT activa es única para todas las tarifas: debe propagarse
+        aunque apply_subtracting sea False o la tarifa esté inactiva """
+        other_retention = self.env['fees.retention'].create({
+            'name': 'Retención sin sustraendo',
+            'percentage': 1.0,
+            'apply_subtracting': False,
+            'status': True,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+        inactive_retention = self.env['fees.retention'].create({
+            'name': 'Retención inactiva',
+            'percentage': 2.0,
+            'apply_subtracting': True,
+            'status': False,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+
+        with Form(self.env['tax.unit']) as f:
+            f.name = "UT 2026"
+            f.value = 200.0
+            f.available_date = fields.Date.from_string('2026-01-01')
+            ut_2026 = f.save()
+
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        other_retention.invalidate_recordset()
+        inactive_retention.invalidate_recordset()
+
+        self.assertEqual(other_retention.tax_unit_ids.id, ut_2026.id)
+        self.assertEqual(inactive_retention.tax_unit_ids.id, ut_2026.id)
+
+    def test_08_value_edit_updates_all_fees_regardless_of_flags(self):
+        """ Cambiar el 'value' de la UT activa debe propagarse a TODAS las
+        fees.retention existentes, sin importar apply_subtracting/status """
+        other_retention = self.env['fees.retention'].create({
+            'name': 'Retención sin sustraendo',
+            'percentage': 1.0,
+            'apply_subtracting': False,
+            'status': True,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+        inactive_retention = self.env['fees.retention'].create({
+            'name': 'Retención inactiva',
+            'percentage': 2.0,
+            'apply_subtracting': True,
+            'status': False,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+
+        self.ut_2025.write({'value': 150.0})
+
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        other_retention.invalidate_recordset()
+        inactive_retention.invalidate_recordset()
+
+        # Siguen apuntando a la misma UT (ninguna otra se creó), lo que importa
+        # aquí es que el propio 'value' se propague al recompute de todas.
+        self.assertEqual(other_retention.tax_unit_ids.id, self.ut_2025.id)
+        self.assertEqual(inactive_retention.tax_unit_ids.id, self.ut_2025.id)
+        # Con apply_subtracting=False el sustraendo siempre es 0, sin importar el value.
+        self.assertEqual(other_retention.amount_subtract, 0)
+        # Nuevo cálculo: (150 * 83.3334 * 2 / 100) = 250.0002
+        self.assertAlmostEqual(inactive_retention.amount_subtract, 250.0002, places=4)
+
+    def test_09_status_change_updates_all_fees_regardless_of_flags(self):
+        """ Al cambiar cuál UT queda activa (vía available_date/status), todas
+        las fees.retention deben terminar apuntando a la nueva activa,
+        sin importar apply_subtracting/status """
+        other_retention = self.env['fees.retention'].create({
+            'name': 'Retención sin sustraendo',
+            'percentage': 1.0,
+            'apply_subtracting': False,
+            'status': True,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+        inactive_retention = self.env['fees.retention'].create({
+            'name': 'Retención inactiva',
+            'percentage': 2.0,
+            'apply_subtracting': True,
+            'status': False,
+            'tax_unit_ids': self.ut_2025.id,
+        })
+
+        ut_2026 = self.env['tax.unit'].create({
+            'name': 'UT 2026',
+            'value': 200.0,
+            'available_date': '2026-01-01',
+        })
+
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        other_retention.invalidate_recordset()
+        inactive_retention.invalidate_recordset()
+
+        self.assertTrue(ut_2026.status)
+        self.assertFalse(self.ut_2025.status)
+        self.assertEqual(other_retention.tax_unit_ids.id, ut_2026.id)
+        self.assertEqual(inactive_retention.tax_unit_ids.id, ut_2026.id)

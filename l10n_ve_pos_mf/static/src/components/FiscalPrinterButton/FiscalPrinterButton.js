@@ -1,6 +1,6 @@
 /** @odoo-module */
 
-import { Component, onMounted, useState } from "@odoo/owl";
+import { Component, onMounted, onWillUnmount, useState } from "@odoo/owl";
 import { usePos } from "@point_of_sale/app/hooks/pos_hook";
 import { TfhkaDriver } from "@l10n_ve_mf_base/drivers/TfhkaDriver";
 
@@ -25,7 +25,102 @@ export class FiscalPrinterButton extends Component {
     setup() {
         this.pos = usePos();
         this.state = useState({ status: "disconnected" });
-        onMounted(() => this._autoConnect());
+        this._onSerialConnect = this._onSerialConnect.bind(this);
+        this._onSerialDisconnect = this._onSerialDisconnect.bind(this);
+        this._onFiscalStatus = this._onFiscalStatus.bind(this);
+        onMounted(() => {
+            this._autoConnect();
+            // El hand-off (PosStore.withFiscalPrinterReleased) reconecta/suelta
+            // la MF sin pasar por este componente; escuchamos su estado para no
+            // quedar en verde tras un reclaim fallido.
+            window.addEventListener("mf-fiscal-status", this._onFiscalStatus);
+            // Recuperación mid-sesión: la máquina fiscal puede re-enumerar en
+            // el bus USB (glitch de energía del hub, sobre todo en PCs de
+            // gama baja) sin que se recargue la pestaña. Sin esto, la MF
+            // quedaba "desconectada" hasta que el cajero pulsaba el botón.
+            if ("serial" in navigator) {
+                navigator.serial.addEventListener("connect", this._onSerialConnect);
+                navigator.serial.addEventListener("disconnect", this._onSerialDisconnect);
+            }
+        });
+        onWillUnmount(() => {
+            window.removeEventListener("mf-fiscal-status", this._onFiscalStatus);
+            if ("serial" in navigator) {
+                navigator.serial.removeEventListener("connect", this._onSerialConnect);
+                navigator.serial.removeEventListener("disconnect", this._onSerialDisconnect);
+            }
+        });
+    }
+
+    /**
+     * Estado de la MF notificado por el hand-off (PosStore._broadcastFiscalStatus).
+     * No pisa una reconexión en curso del propio botón.
+     */
+    _onFiscalStatus(ev) {
+        if (this._reconnecting) {
+            return;
+        }
+        this._setStatus(ev?.detail?.connected ? "connected" : "disconnected");
+    }
+
+    _fp() {
+        return this.fiscalPrinter || window.fiscalPrinter || null;
+    }
+
+    /**
+     * Un puerto serial autorizado reapareció (re-enumeración USB). Intenta
+     * reconectar en silencio; connect() → autoConnect() filtra por identidad
+     * (VID/PID), así que solo tendrá éxito si es realmente la máquina fiscal.
+     */
+    async _onSerialConnect() {
+        const fp = this._fp();
+        // No pisar una conexión en curso: el `connect` inicial del bus puede
+        // llegar mientras el _autoConnect del montaje aún conecta (isConnected
+        // todavía false), y dos connect() concurrentes sobre el mismo puerto
+        // dejan el estado inconsistente.
+        if (!fp || fp.isConnected || this._reconnecting || this.state.status === "connecting") {
+            return;
+        }
+        this._reconnecting = true;
+        this._setStatus("connecting");
+        try {
+            // Cerrar cualquier handle viejo ANTES de reconectar. Es lo que
+            // hace el "apagar/prender" manual del botón (el único camino que
+            // reconectaba limpio): tras una re-enumeración USB el puerto
+            // anterior queda medio-abierto y reabrir sin cerrar deja los
+            // streams en null → getStatus()/write() reventaban.
+            try {
+                await fp.disconnect();
+            } catch (e) {
+                // El handle viejo pudo perderse físicamente; da igual, vamos
+                // a reconectar con un puerto fresco de todas formas.
+            }
+            const connected = await fp.connect();
+            this._setStatus(connected ? "connected" : "disconnected");
+        } catch (error) {
+            console.warn("FiscalPrinter:: reconexión automática tras re-enumeración falló", error);
+            this._setStatus("disconnected");
+        } finally {
+            this._reconnecting = false;
+        }
+    }
+
+    /**
+     * Un puerto serial desapareció. Si es el nuestro, refleja el estado como
+     * desconectado (el listener de connect lo recuperará si vuelve).
+     */
+    _onSerialDisconnect(event) {
+        const fp = this._fp();
+        const port = fp && fp.connection ? fp.connection.port : null;
+        if (!fp || !port || (event && event.target && event.target !== port)) {
+            return;
+        }
+        fp.isConnected = false;
+        if (fp.connection) {
+            fp.connection.isConnected = false;
+            fp.connection.port = null;
+        }
+        this._setStatus("disconnected");
     }
 
     get statusTitle() {
