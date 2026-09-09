@@ -1808,6 +1808,13 @@ msgstr ""
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/product_template.py:0
+#, python-format
+msgid "Product '%s':"
+msgstr "Producto '%s':"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/product_template.py:0
 msgid ""
 "\n"
 "\n"
