@@ -97,6 +97,10 @@ class TestProductCompanyEditRestriction(TransactionCase):
     def test_create_with_company_id_with_group_is_allowed(self):
         other_company = self.env["res.company"].create({"name": "Other Company"})
         self.user.group_ids = [(4, self.group.id)]
+        # Independent of the company_id guard being tested: multi-company
+        # record rules require the user to belong to a record's company to
+        # create it at all, regardless of the group.
+        self.user.company_ids = [(4, other_company.id)]
         Template = self.env["product.template"].with_user(self.user)
         template = Template.create({
             "name": "Created by privileged user",
