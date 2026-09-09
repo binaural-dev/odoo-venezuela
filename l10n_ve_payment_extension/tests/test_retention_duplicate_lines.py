@@ -183,9 +183,50 @@ class TestRetentionDuplicateLines(RetentionTestCommon):
 
         with self.assertRaises(ValidationError) as e:
             retention.action_post()
-        self.assertIn("duplicated", str(e.exception))
+        self.assertIn("exceeds the actual base", str(e.exception))
 
         _logger.info("========= test_islr_duplicate_same_concept_raises passed =========")
+
+    def test_islr_several_lines_same_concept_within_base_allowed(self):
+        """Several products on the invoice legitimately share the same
+        payment concept: the module's auto-generation flow creates one
+        retention line per product (not one per concept), so two lines with
+        the same concept must be allowed as long as their declared amounts
+        don't exceed the invoice's real base for that concept."""
+        invoice = self._create_out_invoice_with_lines(
+            [(self.product_islr_one, 500.0), (self.product_islr_iva_one, 300.0)]
+        )
+
+        line_one = {
+            "move_id": invoice.id,
+            "name": "ISLR Retention - product 1",
+            "invoice_type": "out_invoice",
+            "payment_concept_id": self.concept_one.id,
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": 500.0,
+            "retention_amount": 15.0,
+            "foreign_invoice_amount": 500.0,
+            "foreign_retention_amount": 15.0,
+        }
+        line_two = {
+            "move_id": invoice.id,
+            "name": "ISLR Retention - product 2",
+            "invoice_type": "out_invoice",
+            "payment_concept_id": self.concept_one.id,
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": 300.0,
+            "retention_amount": 9.0,
+            "foreign_invoice_amount": 300.0,
+            "foreign_retention_amount": 9.0,
+        }
+        retention = self._make_islr_customer_retention(invoice, [line_one, line_two])
+
+        retention.action_post()
+        self.assertEqual(retention.state, "emitted")
+
+        _logger.info(
+            "========= test_islr_several_lines_same_concept_within_base_allowed passed ========="
+        )
 
     def test_islr_distinct_concept_allowed(self):
         """Same invoice with two different payment concepts is legitimate."""
@@ -223,6 +264,64 @@ class TestRetentionDuplicateLines(RetentionTestCommon):
         self.assertEqual(retention.state, "emitted")
 
         _logger.info("========= test_islr_distinct_concept_allowed passed =========")
+
+    def test_iva_aliquot_not_on_invoice_raises(self):
+        """An aliquot that does not match any tax actually applied on the
+        invoice must be rejected, even as the only line (no duplicate)."""
+        invoice = self._create_out_invoice_with_lines([(self.product_iva, 100.0)])
+
+        line_vals = {
+            "move_id": invoice.id,
+            "name": "Iva Retention",
+            "invoice_type": "out_invoice",
+            "aliquot": 8.0,  # invoice only has a 16% tax
+            "iva_amount": 8.0,
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": invoice.amount_untaxed,
+            "retention_amount": 6.0,
+            "foreign_invoice_amount": invoice.amount_untaxed,
+            "foreign_retention_amount": 6.0,
+            "foreign_currency_rate": 1.0,
+        }
+        retention = self._make_iva_customer_retention(invoice, [line_vals])
+
+        with self.assertRaises(ValidationError) as e:
+            retention.action_post()
+        self.assertIn("does not match any tax", str(e.exception))
+
+        _logger.info("========= test_iva_aliquot_not_on_invoice_raises passed =========")
+
+    def test_islr_concept_not_on_invoice_raises(self):
+        """A payment concept that does not correspond to any product on the
+        invoice must be rejected, even as the only line (no duplicate)."""
+        invoice = self._create_out_invoice_with_lines([(self.product_islr_one, 500.0)])
+        # A brand-new concept, not linked to any product on this invoice
+        # (the common fixture's concept_three/etc. helpers are unreliable:
+        # they're never registered under their xmlid, see
+        # payment_concept.py::create_concept_line).
+        unrelated_concept = self.env["payment.concept"].create({
+            "name": "Concepto no vinculado a ningún producto de esta factura",
+            "status": True,
+        })
+
+        line_vals = {
+            "move_id": invoice.id,
+            "name": "ISLR Retention",
+            "invoice_type": "out_invoice",
+            "payment_concept_id": unrelated_concept.id,  # invoice has concept_one
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": invoice.amount_untaxed,
+            "retention_amount": 15.0,
+            "foreign_invoice_amount": invoice.amount_untaxed,
+            "foreign_retention_amount": 15.0,
+        }
+        retention = self._make_islr_customer_retention(invoice, [line_vals])
+
+        with self.assertRaises(ValidationError) as e:
+            retention.action_post()
+        self.assertIn("does not match any product", str(e.exception))
+
+        _logger.info("========= test_islr_concept_not_on_invoice_raises passed =========")
 
     def test_supplier_retention_not_affected_by_duplicate_check(self):
         """Supplier (in_invoice) retentions must not be touched by this check,
@@ -263,7 +362,7 @@ class TestRetentionDuplicateLines(RetentionTestCommon):
         try:
             retention.action_post()
         except ValidationError as e:
-            self.assertNotIn("duplicated", str(e.exception))
+            self.assertNotIn("duplicated", str(e))
 
         _logger.info(
             "========= test_supplier_retention_not_affected_by_duplicate_check passed ========="
