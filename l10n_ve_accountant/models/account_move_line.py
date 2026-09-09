@@ -141,7 +141,11 @@ class AccountMoveLine(models.Model):
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
     def _compute_foreign_subtotal(self):
         for line in self:
-            line_discount_price_unit = line.foreign_price * (
+            if not line.foreign_currency_id:
+                line.foreign_subtotal = 0.0
+                line.foreign_price_total = 0.0
+                continue
+            foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
             foreign_subtotal = line_discount_price_unit * line.quantity
