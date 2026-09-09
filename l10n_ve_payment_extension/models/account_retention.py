@@ -2,7 +2,7 @@ from odoo import api, models, fields, Command, _
 from datetime import datetime
 import re
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_is_zero
+from odoo.tools import float_is_zero, float_compare
 from odoo.addons.account.models.account_move import BYPASS_LOCK_CHECK
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
@@ -541,15 +541,26 @@ class AccountRetention(models.Model):
     def _check_duplicate_retention_lines(self):
         """
         Prevent the same invoice from being retained twice with the exact
-        same differentiator within this retention (helpdesk #14548):
+        same differentiator within this retention (helpdesk #14548), and
+        reject lines whose declared differentiator does not actually exist
+        on the invoice they claim to retain from:
 
         - ISLR: the invoice (move_id) can legitimately repeat across lines
-          when each line is for a different payment_concept_id (several
-          products under different concepts). The same (move_id,
-          payment_concept_id) combination must not repeat.
+          both when each line is for a different payment_concept_id, and
+          when several products on the invoice share the SAME concept (the
+          standard auto-generation flow from an invoice creates one line per
+          invoice line, not one per concept - see
+          account_move._get_payment_concepts_from_invoice). So instead of
+          forbidding any repeat of (move_id, payment_concept_id), the sum of
+          invoice_amount declared across lines sharing that combination must
+          not exceed the real taxable base of the invoice for that concept
+          (sum of price_subtotal of the invoice lines whose product has that
+          payment_concept). The declared payment_concept_id must also match
+          a product actually billed on that invoice.
         - IVA: the invoice can legitimately repeat when each line has a
           different real tax rate (aliquot). The same (move_id, aliquot)
-          combination must not repeat.
+          combination must not repeat, and the declared aliquot must match a
+          tax actually applied on that invoice.
 
         Only client retentions (out_invoice/out_refund/out_debit) of type
         IVA or ISLR are checked; supplier and municipal retentions are
@@ -564,49 +575,104 @@ class AccountRetention(models.Model):
             return
 
         precision = self.company_currency_id.rounding or self.env.company.currency_id.rounding
-
-        seen_keys = set()
-        for line in self.retention_line_ids.filtered(
+        client_lines = self.retention_line_ids.filtered(
             lambda l: l.is_retention_client and l.move_id
-        ):
-            if self.type_retention == "islr":
-                if not line.payment_concept_id:
-                    continue
-                key = (line.move_id.id, line.payment_concept_id.id)
-                duplicate_msg = _(
-                    "The invoice %(invoice)s is duplicated in this retention for the"
-                    " same payment concept (%(concept)s). Each invoice/concept"
-                    " combination can only appear once."
-                ) % {
-                    "invoice": line.move_id.display_name,
-                    "concept": line.payment_concept_id.display_name,
-                }
-            else:
-                if float_is_zero(line.aliquot, precision_rounding=precision):
-                    continue
-                # Prefer the real account.tax id applied on the invoice for this
-                # aliquot (same matching pattern used in _onchange_move_id) so
-                # that two different taxes sharing a tax_group (or a rounded %)
-                # are not confused; fall back to the rounded aliquot only if a
-                # unique tax cannot be resolved from the invoice.
-                taxes = line.move_id.invoice_line_ids.filtered(
-                    lambda l: l.tax_ids and l.tax_ids[0].amount > 0
-                ).mapped("tax_ids").filtered(
-                    lambda t: t.amount == line.aliquot
-                )
-                tax_key = taxes[:1].id if len(taxes) == 1 else round(line.aliquot, 2)
-                key = (line.move_id.id, tax_key)
-                duplicate_msg = _(
-                    "The invoice %(invoice)s is duplicated in this retention at the"
-                    " same tax rate (%(aliquot)s%%). Each invoice/rate combination"
-                    " can only appear once."
-                ) % {
-                    "invoice": line.move_id.display_name,
-                    "aliquot": line.aliquot,
-                }
+        )
 
+        if self.type_retention == "islr":
+            self._check_islr_concept_amounts(client_lines, precision)
+        else:
+            self._check_iva_duplicate_lines(client_lines, precision)
+
+    def _check_islr_concept_amounts(self, client_lines, precision):
+        """
+        ISLR: several invoice lines can legitimately share the same
+        payment_concept_id (that's how the module auto-generates retention
+        lines from an invoice - one line per product, not one per concept),
+        so the same (move_id, payment_concept_id) combination is allowed to
+        repeat. What must never happen is the declared invoice_amount summed
+        across those repeats exceeding the real taxable base the invoice
+        actually has for that concept (sum of price_subtotal of the invoice
+        lines whose product carries that payment_concept) - that's how
+        someone re-declaring the same product/amount to inflate the
+        retention shows up.
+        """
+        declared_by_key = {}
+        base_by_key = {}
+        for line in client_lines:
+            concept = line.payment_concept_id
+            if not concept:
+                continue
+            invoice_lines_for_concept = line.move_id.invoice_line_ids.filtered(
+                lambda l: l.product_id.product_tmpl_id.payment_concept == concept
+            )
+            if not invoice_lines_for_concept:
+                raise ValidationError(
+                    _(
+                        "The payment concept (%(concept)s) of the line for"
+                        " invoice %(invoice)s does not match any product on"
+                        " that invoice."
+                    )
+                    % {"concept": concept.display_name, "invoice": line.move_id.display_name}
+                )
+            key = (line.move_id.id, concept.id)
+            if key not in base_by_key:
+                base_by_key[key] = sum(invoice_lines_for_concept.mapped("price_subtotal"))
+                declared_by_key[key] = 0.0
+            declared_by_key[key] += line.invoice_amount
+            if float_compare(
+                declared_by_key[key], base_by_key[key], precision_rounding=precision
+            ) > 0:
+                raise ValidationError(
+                    _(
+                        "The taxable base declared across the lines of invoice"
+                        " %(invoice)s for payment concept %(concept)s exceeds"
+                        " the actual base billed under that concept on the"
+                        " invoice."
+                    )
+                    % {"invoice": line.move_id.display_name, "concept": concept.display_name}
+                )
+
+    def _check_iva_duplicate_lines(self, client_lines, precision):
+        """
+        IVA: compute_retention_lines_data generates at most one line per
+        real tax_group on the invoice, so the same real tax must never
+        appear in more than one line of the same retention.
+        """
+        seen_keys = set()
+        for line in client_lines:
+            if float_is_zero(line.aliquot, precision_rounding=precision):
+                continue
+            # Prefer the real account.tax id applied on the invoice for this
+            # aliquot (same matching pattern used in _onchange_move_id) so
+            # that two different taxes sharing a tax_group (or a rounded %)
+            # are not confused; fall back to the rounded aliquot only if a
+            # unique tax cannot be resolved from the invoice.
+            taxes = line.move_id.invoice_line_ids.filtered(
+                lambda l: l.tax_ids and l.tax_ids[0].amount > 0
+            ).mapped("tax_ids").filtered(
+                lambda t: t.amount == line.aliquot
+            )
+            if not taxes:
+                raise ValidationError(
+                    _(
+                        "The tax rate (%(aliquot)s%%) of the line for invoice"
+                        " %(invoice)s does not match any tax applied on that"
+                        " invoice."
+                    )
+                    % {"aliquot": line.aliquot, "invoice": line.move_id.display_name}
+                )
+            tax_key = taxes[0].id if len(taxes) == 1 else round(line.aliquot, 2)
+            key = (line.move_id.id, tax_key)
             if key in seen_keys:
-                raise ValidationError(duplicate_msg)
+                raise ValidationError(
+                    _(
+                        "The invoice %(invoice)s is duplicated in this retention at the"
+                        " same tax rate (%(aliquot)s%%). Each invoice/rate combination"
+                        " can only appear once."
+                    )
+                    % {"invoice": line.move_id.display_name, "aliquot": line.aliquot}
+                )
             seen_keys.add(key)
 
     def _validate_islr_retention(self):
