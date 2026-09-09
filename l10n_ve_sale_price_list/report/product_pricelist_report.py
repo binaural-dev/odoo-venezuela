@@ -1,5 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import AccessError
+from odoo.tools.misc import format_datetime
 
 
 class ProductPricelistReport(models.AbstractModel):
@@ -45,7 +46,8 @@ class ProductPricelistReport(models.AbstractModel):
         # several companies, so "the company" printed is always the one
         # the current user is printing from, not any pricelist's company.
         res["company"] = self.env.company
-        res["issue_date"] = fields.Date.context_today(self)
+        # Requerimiento pide fecha *y* hora de emision, no solo la fecha.
+        res["issue_date"] = format_datetime(self.env, fields.Datetime.now())
         res.pop("pricelist", None)
         res.pop("quantities", None)
         return res
