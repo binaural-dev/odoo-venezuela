@@ -2,6 +2,7 @@ from odoo import api, models, fields, Command, _
 from datetime import datetime
 import re
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_is_zero
 from odoo.addons.account.models.account_move import BYPASS_LOCK_CHECK
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
@@ -483,6 +484,8 @@ class AccountRetention(models.Model):
         is_automated = self.env.context.get('automated_action') or self.env.context.get('cron_id')
 
         for retention in self:
+            retention._check_duplicate_retention_lines()
+
             retention_amounts_by_move = defaultdict(float)
             for line in retention.retention_line_ids:
                 retention_amounts_by_move[line.move_id] += line.retention_amount
@@ -534,6 +537,77 @@ class AccountRetention(models.Model):
 
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
+
+    def _check_duplicate_retention_lines(self):
+        """
+        Prevent the same invoice from being retained twice with the exact
+        same differentiator within this retention (helpdesk #14548):
+
+        - ISLR: the invoice (move_id) can legitimately repeat across lines
+          when each line is for a different payment_concept_id (several
+          products under different concepts). The same (move_id,
+          payment_concept_id) combination must not repeat.
+        - IVA: the invoice can legitimately repeat when each line has a
+          different real tax rate (aliquot). The same (move_id, aliquot)
+          combination must not repeat.
+
+        Only client retentions (out_invoice/out_refund/out_debit) of type
+        IVA or ISLR are checked; supplier and municipal retentions are
+        unaffected.
+        """
+        self.ensure_one()
+        if not (
+            self.type
+            and self.type.startswith("out_")
+            and self.type_retention in ("iva", "islr")
+        ):
+            return
+
+        precision = self.company_currency_id.rounding or self.env.company.currency_id.rounding
+
+        seen_keys = set()
+        for line in self.retention_line_ids.filtered(
+            lambda l: l.is_retention_client and l.move_id
+        ):
+            if self.type_retention == "islr":
+                if not line.payment_concept_id:
+                    continue
+                key = (line.move_id.id, line.payment_concept_id.id)
+                duplicate_msg = _(
+                    "The invoice %(invoice)s is duplicated in this retention for the"
+                    " same payment concept (%(concept)s). Each invoice/concept"
+                    " combination can only appear once."
+                ) % {
+                    "invoice": line.move_id.display_name,
+                    "concept": line.payment_concept_id.display_name,
+                }
+            else:
+                if float_is_zero(line.aliquot, precision_rounding=precision):
+                    continue
+                # Prefer the real account.tax id applied on the invoice for this
+                # aliquot (same matching pattern used in _onchange_move_id) so
+                # that two different taxes sharing a tax_group (or a rounded %)
+                # are not confused; fall back to the rounded aliquot only if a
+                # unique tax cannot be resolved from the invoice.
+                taxes = line.move_id.invoice_line_ids.filtered(
+                    lambda l: l.tax_ids and l.tax_ids[0].amount > 0
+                ).mapped("tax_ids").filtered(
+                    lambda t: t.amount == line.aliquot
+                )
+                tax_key = taxes[:1].id if len(taxes) == 1 else round(line.aliquot, 2)
+                key = (line.move_id.id, tax_key)
+                duplicate_msg = _(
+                    "The invoice %(invoice)s is duplicated in this retention at the"
+                    " same tax rate (%(aliquot)s%%). Each invoice/rate combination"
+                    " can only appear once."
+                ) % {
+                    "invoice": line.move_id.display_name,
+                    "aliquot": line.aliquot,
+                }
+
+            if key in seen_keys:
+                raise ValidationError(duplicate_msg)
+            seen_keys.add(key)
 
     def _validate_islr_retention(self):
         """

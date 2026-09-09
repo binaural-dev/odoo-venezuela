@@ -303,6 +303,35 @@ El constraint `_constraint_amounts_in_zero` de `account.retention.line` DEBE (MU
 - **WHEN** se escribe 0 en el monto retenido, el total facturado o la base de una línea de un comprobante ya emitido
 - **THEN** se lanza un `ValidationError` indicando que no se puede crear una retención con monto 0
 
+### Requirement: Prohibición de duplicar una factura de cliente por concepto/alícuota en un comprobante
+
+Al emitir un comprobante de cliente (`type` que empieza en `out_`) de tipo `iva` o `islr`, `action_post` DEBE (MUST) ejecutar `_check_duplicate_retention_lines` sobre las líneas cliente (`is_retention_client`) con `move_id`. Para ISLR, dos líneas con la misma factura (`move_id`) y el mismo `payment_concept_id` DEBEN (MUST) rechazarse; líneas de la misma factura con distinto concepto de pago son legítimas (varios productos con conceptos distintos) y no se bloquean. Para IVA, dos líneas con la misma factura y la misma alícuota real DEBEN (MUST) rechazarse; el sistema resuelve el impuesto real (`account.tax`) aplicado en la factura para esa alícuota (mismo criterio que `_onchange_move_id`) y usa su id como diferenciador, cayendo a la alícuota redondeada a 2 decimales solo si no puede resolver un único impuesto; líneas de la misma factura con alícuotas distintas (varios impuestos IVA en la misma factura) son legítimas y no se bloquean. Retenciones de proveedor y de tipo `municipal` NO están sujetas a esta validación.
+
+#### Scenario: Misma factura y mismo concepto de pago en ISLR
+
+- **WHEN** se emite un comprobante ISLR de cliente con dos líneas de la misma factura y el mismo `payment_concept_id`
+- **THEN** se lanza un `ValidationError` indicando que la factura está duplicada para ese concepto
+
+#### Scenario: Misma factura con conceptos de pago distintos en ISLR
+
+- **WHEN** se emite un comprobante ISLR de cliente con dos líneas de la misma factura pero concepto de pago distinto (productos distintos)
+- **THEN** el comprobante se emite sin error
+
+#### Scenario: Misma factura y misma alícuota real en IVA
+
+- **WHEN** se emite un comprobante IVA de cliente con dos líneas de la misma factura al mismo impuesto/alícuota
+- **THEN** se lanza un `ValidationError` indicando que la factura está duplicada para esa tasa
+
+#### Scenario: Misma factura con alícuotas distintas en IVA
+
+- **WHEN** se emite un comprobante IVA de cliente con dos líneas de la misma factura pero alícuotas reales distintas (dos impuestos IVA en la misma factura)
+- **THEN** el comprobante se emite sin error
+
+#### Scenario: Retención de proveedor con líneas repetidas
+
+- **WHEN** se emite un comprobante de proveedor (`in_invoice`) con líneas que repiten `move_id`/alícuota
+- **THEN** la validación de duplicidad no se dispara (puede fallar por otras validaciones ajenas a esta)
+
 ### Requirement: Generación y conciliación automática de pagos al emitir
 
 Al emitir un comprobante que aún no tiene pagos, el sistema DEBE (MUST) crear un `account.payment` por cada factura involucrada (agrupando sus líneas por `move_id`), marcado con `is_retention` y `payment_type_retention`, con el diario de retención de la compañía correspondiente al tipo de retención y al flujo (las variantes `in_refund`/`in_debit` se resuelven con el diario de `in_invoice` y las `out_refund`/`out_debit` con el de `out_invoice`), en la moneda de la compañía y con fecha `date_accounting`; el sentido del pago se deriva de si el documento es una nota de crédito del mismo flujo. Los pagos se crean sin monto y este se asigna después con `compute_retention_amount_from_retention_lines`, como suma simple (sin valor absoluto) de los `retention_amount` de las líneas vinculadas. Luego DEBE (MUST) publicarlos todos y conciliarlos contra la línea por cobrar/por pagar del asiento del pago asignándola a las facturas de sus líneas; si el comprobante no generó ningún pago, la conciliación DEBE (MUST) fallar con un `UserError`. Para comprobantes ISLR, antes de crear los pagos se exige que el partner tenga tipo de persona y que exista al menos una línea con concepto de pago. Si el diario correspondiente no está configurado, la emisión DEBE (MUST) fallar con error. Un comprobante que ya tiene pagos se omite en esta etapa.

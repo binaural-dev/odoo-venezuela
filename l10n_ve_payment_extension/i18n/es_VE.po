@@ -2587,6 +2587,30 @@ msgstr "La Rama Económica ya existe."
 #. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s is duplicated in this retention at the"
+" same tax rate (%(aliquot)s%%). Each invoice/rate combination"
+" can only appear once."
+msgstr ""
+"La factura %(invoice)s está duplicada en esta retención a la"
+" misma alícuota (%(aliquot)s%%). Cada combinación de factura/alícuota"
+" solo puede aparecer una vez."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s is duplicated in this retention for the"
+" same payment concept (%(concept)s). Each invoice/concept"
+" combination can only appear once."
+msgstr ""
+"La factura %(invoice)s está duplicada en esta retención para el"
+" mismo concepto de pago (%(concept)s). Cada combinación de factura/concepto"
+" solo puede aparecer una vez."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid "The invoice %s has no tax."
 msgstr "La factura %s no tiene impuesto"
 
