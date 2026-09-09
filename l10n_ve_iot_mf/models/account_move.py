@@ -36,9 +36,13 @@ class AccountMoveInh(models.Model):
     )
     mf_reportz = fields.Char(string="Report number Z", default=False, copy=False, tracking=True)
     
+    def _default_print_type(self):
+        return self.env.company.invoice_print_type
+
     print_type = fields.Selection(
-        related='company_id.invoice_print_type',
-        store=True
+        selection=lambda self: self.env['res.company']._fields['invoice_print_type'].selection,
+        default=_default_print_type,
+        store=True,
     )
 
     def has_printed(self, invoice_number):
@@ -65,7 +69,7 @@ class AccountMoveInh(models.Model):
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
 
-        return True
+        return bool(account_moves)
 
     def report_z(self, serial, response):
         # El driver del IoT puede resolver el listener con un evento valido
@@ -83,32 +87,67 @@ class AccountMoveInh(models.Model):
         # unica referencia de maquina disponible.
         serial = data.get("_registeredMachineNumber") or serial
 
+        last_z_number = self._get_last_z_number(serial)
         account_moves = self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
+            [("mf_serial", "=", serial), ("mf_reportz", "=", False)]
+        )
+        last_number = (
+            self._max_mf_invoice_number_for_z(serial, last_z_number)
+            if last_z_number is not None
+            else None
+        )
+        account_moves = account_moves.filtered(
+            lambda m: self._mf_invoice_number_after(m, last_number)
         )
 
-        _numberOfLastZReport = data.get("_dailyClosureCounter", False)
-        if False in [data, _numberOfLastZReport]:
+        _dailyClosureCounter = data.get("_dailyClosureCounter")
+        if _dailyClosureCounter in (False, None):
             _logger.info("NO SE RECUPERO EL Z DE LA MAQUINA: %s", serial)
-            _numberOfLastZReport = self._get_z_and_add_one(serial)
+            _numberOfLastZReport = (last_z_number or 0) + 1
             _logger.info("ULTIMO Z: %s", _numberOfLastZReport)
+        else:
+            _numberOfLastZReport = int(_dailyClosureCounter)
 
         for invoice in account_moves:
-            invoice.write({"mf_reportz": int(_numberOfLastZReport) + 1})
-        # Contrato numerico: l10n_ve_pos_mf hace int(super().report_z(...)) + 1
-        # sobre este retorno; devolver el dict `response` reventaba con
-        # TypeError al haber ordenes POS pendientes de reportar.
+            invoice.write({"mf_reportz": _numberOfLastZReport})
         return _numberOfLastZReport
 
-    def _get_z_and_add_one(self, serial):
-        account_move = self.env["account.move"].search(
-            ["&", ("mf_serial", "=", serial), ("mf_reportz", "!=", False)],
-            order="mf_reportz desc",
-            limit=1,
+    def _parse_mf_invoice_number(self, move):
+        try:
+            return int(move.mf_invoice_number)
+        except (TypeError, ValueError):
+            return None
+
+    def _mf_invoice_number_after(self, move, last_number):
+        number = self._parse_mf_invoice_number(move)
+        if number is None:
+            return False
+        if last_number is None:
+            return True
+        return number > last_number
+
+    def _get_last_z_number(self, serial):
+        self.env.cr.execute(
+            """
+            SELECT MAX(
+                CASE WHEN mf_reportz ~ '^[0-9]+$'
+                     THEN mf_reportz::integer
+                     ELSE NULL
+                END
+            )
+            FROM account_move
+            WHERE mf_serial = %s AND company_id = %s
+            """,
+            (serial, self.env.company.id),
         )
-        if not account_move:
-            return 0
-        return account_move.mf_reportz
+        return self.env.cr.fetchone()[0]
+
+    def _max_mf_invoice_number_for_z(self, serial, z_number):
+        moves = self.env["account.move"].search(
+            [("mf_serial", "=", serial), ("mf_reportz", "=", str(z_number))]
+        )
+        numbers = [n for n in (self._parse_mf_invoice_number(m) for m in moves) if n is not None]
+        return max(numbers) if numbers else None
 
     @api.onchange("is_credit")
     def _onchange_is_credit(self):
@@ -224,6 +263,14 @@ class AccountMoveInh(models.Model):
         }
         return _data
 
+    def _get_mf_document_date(self):
+        """Fecha real del documento fiscal: usada para validar que la
+        impresion ocurra el mismo dia, y como fecha impresa de la factura
+        referenciada en notas de credito/debito. Clientes donde invoice_date
+        cumple doble funcion (fecha de tasa + fecha de factura) deben
+        sobreescribir este metodo con su propio campo de fecha de factura."""
+        return self.invoice_date
+
     def check_print_out_invoice(self):
         # if not self.journal_id.fiscal:
         #     raise ValidationError(_("You cannot print an invoice with a non-fiscal journal"))
@@ -232,7 +279,7 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has already been printed"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
-            if self.invoice_date != fields.Date.context_today(self):
+            if self._get_mf_document_date() != fields.Date.context_today(self):
                 raise ValidationError(_("Cannot print an invoice with a future date"))
             if self.is_credit and self.amount_residual != self.amount_total:
                 raise ValidationError(_("You cannot print a credit invoice with associated payments"))
@@ -341,7 +388,7 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has already been printed"))
             # if self.iot_mf.serial_machine != self.reversed_entry_id.mf_serial:
             #     raise ValidationError(_("The credit note must be made in the same fiscal machine"))
-            if self.invoice_date != fields.Date.context_today(self):
+            if self._get_mf_document_date() != fields.Date.context_today(self):
                 raise ValidationError(_("The credit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
@@ -368,7 +415,7 @@ class AccountMoveInh(models.Model):
                 [("account_move", "in", candidate_move_ids)],
                 order="id desc",
                 limit=1,
-            )
+            ) if "pos.order" in self.env.registry else False
 
             if pos_order and pos_order.payment_ids:
                 for payment in pos_order.payment_ids:
@@ -437,7 +484,7 @@ class AccountMoveInh(models.Model):
                 "invoice_affected": {
                     "number": data.reversed_entry_id.mf_invoice_number,
                     "serial_machine": data.reversed_entry_id.mf_serial,
-                    "date": data.reversed_entry_id.invoice_date.strftime("%d/%m/%Y"),
+                    "date": data.reversed_entry_id._get_mf_document_date().strftime("%d/%m/%Y"),
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,
@@ -476,7 +523,7 @@ class AccountMoveInh(models.Model):
                 raise ValidationError(_("The invoice has already been printed"))
             # if self.iot_mf.serial_machine != self.debit_origin_id.mf_serial:
             #     raise ValidationError(_("The debit note must be made in the same fiscal machine"))
-            if self.invoice_date != fields.Date.context_today(self):
+            if self._get_mf_document_date() != fields.Date.context_today(self):
                 raise ValidationError(_("The debit note must be made on the same day"))
             if self.state in ["draft", "cancel"]:
                 raise ValidationError(_("Cannot print an invoice without validation"))
@@ -544,7 +591,7 @@ class AccountMoveInh(models.Model):
                 "invoice_affected": {
                     "number": data.debit_origin_id.mf_invoice_number,
                     "serial_machine": data.debit_origin_id.mf_serial,
-                    "date": data.debit_origin_id.invoice_date.strftime("%d/%m/%Y"),
+                    "date": data.debit_origin_id._get_mf_document_date().strftime("%d/%m/%Y"),
                 },
                 "invoice_lines": _invoice_lines,
                 "payment_lines": payment_lines,
