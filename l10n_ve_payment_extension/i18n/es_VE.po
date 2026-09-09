@@ -2599,18 +2599,6 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
-msgid ""
-"The invoice %(invoice)s is duplicated in this retention for the"
-" same payment concept (%(concept)s). Each invoice/concept"
-" combination can only appear once."
-msgstr ""
-"La factura %(invoice)s está duplicada en esta retención para el"
-" mismo concepto de pago (%(concept)s). Cada combinación de factura/concepto"
-" solo puede aparecer una vez."
-
-#. module: l10n_ve_payment_extension
-#. odoo-python
-#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid "The invoice %s has no tax."
 msgstr "La factura %s no tiene impuesto"
 
@@ -2641,6 +2629,18 @@ msgstr "El partner debe tener tipo de persona"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The payment concept (%(concept)s) of the line for"
+" invoice %(invoice)s does not match any product on"
+" that invoice."
+msgstr ""
+"El concepto de pago (%(concept)s) de la línea para la"
+" factura %(invoice)s no coincide con ningún producto de"
+" esa factura."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "The percentage of fees cannot be greater than 100%.\n"
 msgstr "El porcentaje de las tarifas no puede ser mayor que 100%"
@@ -2656,6 +2656,32 @@ msgstr "El porcentaje de retención no puede ser negativo."
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
 msgid "The tariff does not have a valid tax unit."
 msgstr "La tarifa no tiene una unidad tributaria válida."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The tax rate (%(aliquot)s%%) of the line for invoice"
+" %(invoice)s does not match any tax applied on that"
+" invoice."
+msgstr ""
+"La tasa (%(aliquot)s%%) de la línea para la factura"
+" %(invoice)s no coincide con ningún impuesto aplicado en"
+" esa factura."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The taxable base declared across the lines of invoice"
+" %(invoice)s for payment concept %(concept)s exceeds"
+" the actual base billed under that concept on the"
+" invoice."
+msgstr ""
+"La base imponible declarada en las líneas de la factura"
+" %(invoice)s para el concepto de pago %(concept)s excede"
+" la base real facturada bajo ese concepto en la"
+" factura."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
