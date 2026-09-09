@@ -256,8 +256,12 @@ class AccountMoveLine(models.Model):
         if self.display_type in ("payment_term", "tax"):
             return self.foreign_balance
 
-        # 2 — Section / Note: zero
-        if self.display_type in ("line_section", "line_note"):
+        # 2 — Section / Subsection / Note: zero. `line_subsection` is the
+        # display_type Odoo 19 added to this family; without it a
+        # subsection fell through to the branches below and could be
+        # handed a non-zero alternate-currency balance, unbalancing the
+        # entry in the foreign currency.
+        if self.display_type in ("line_section", "line_subsection", "line_note"):
             return 0.0
 
         # 3 — Manual debit adjustment

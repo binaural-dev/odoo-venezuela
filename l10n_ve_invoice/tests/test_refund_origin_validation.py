@@ -116,6 +116,51 @@ class TestRefundOriginValidation(TransactionCase):
                 reversed_entry_id=invoice,
             )
 
+    def test_credit_note_with_a_subsection_is_allowed(self):
+        """`line_subsection` is the display_type Odoo 19 added to the layout
+        family, and it was missing from `product_line_types` in
+        `_check_refund_against_origin()`.
+
+        Without it the subsection was read as a product line to credit and
+        fell into "Every product line on this credit note must have a
+        product" -- the very path
+        `test_credit_note_line_without_product_is_blocked` asserts, which is
+        why the change was invisible to this file. A layout line has no
+        product and nothing to match against the origin by design, so it has
+        to be ignored, not blocked.
+        """
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+
+        refund = self._create_invoice(
+            [
+                Command.create({
+                    "display_type": "line_section",
+                    "name": "Estudios",
+                }),
+                Command.create({
+                    "display_type": "line_subsection",
+                    "name": "Primera etapa",
+                }),
+                self._create_invoice_line(self.product_a, 1, 100.0),
+                Command.create({
+                    "display_type": "line_note",
+                    "name": "Nota",
+                }),
+            ],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+
+        self.assertTrue(refund, "the credit note with a subsection was rejected")
+        self.assertTrue(
+            refund.invoice_line_ids.filtered(
+                lambda l: l.display_type == "line_subsection"
+            ),
+            "fixture is broken: no subsection survived on the credit note, so "
+            "this test would pass without exercising the guard",
+        )
+
     def test_credit_note_exceeding_origin_amount_is_blocked(self):
         invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
         invoice.action_post()
