@@ -69,7 +69,7 @@ class ProductTemplate(models.Model):
             if product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
 
-    def write(self, vals):
+    def _check_company_id_edit_allowed(self, vals):
         if (
             "company_id" in vals
             and not self.env.su
@@ -79,6 +79,9 @@ class ProductTemplate(models.Model):
                 _("No tienes permiso para cambiar la compañía de este producto.")
             )
 
+    def write(self, vals):
+        self._check_company_id_edit_allowed(vals)
+
         res = super().write(vals)
         if "taxes_id" in vals:
             self._validate_single_sale_tax()
@@ -86,6 +89,8 @@ class ProductTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            self._check_company_id_edit_allowed(vals)
         records = super().create(vals_list)
         # Always validate after creation because default taxes can come from multiple sources
         records._validate_single_sale_tax()

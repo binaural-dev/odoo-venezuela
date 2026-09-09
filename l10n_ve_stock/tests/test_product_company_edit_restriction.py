@@ -80,3 +80,35 @@ class TestProductCompanyEditRestriction(TransactionCase):
         template = self.template.with_user(self.user)
         template.write({"name": "Renamed by unprivileged user"})
         self.assertEqual(self.template.name, "Renamed by unprivileged user")
+
+    def test_create_with_company_id_without_group_raises_access_error(self):
+        """create() must enforce the same guard as write() - otherwise a
+        user without the group can set the product's company by creating
+        (or duplicating) it directly, bypassing the write()-only check."""
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        Template = self.env["product.template"].with_user(self.user)
+        with self.assertRaises(AccessError):
+            Template.create({
+                "name": "Created by unprivileged user",
+                "type": "consu",
+                "company_id": other_company.id,
+            })
+
+    def test_create_with_company_id_with_group_is_allowed(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        self.user.group_ids = [(4, self.group.id)]
+        Template = self.env["product.template"].with_user(self.user)
+        template = Template.create({
+            "name": "Created by privileged user",
+            "type": "consu",
+            "company_id": other_company.id,
+        })
+        self.assertEqual(template.company_id, other_company)
+
+    def test_create_without_company_id_is_allowed_without_group(self):
+        Template = self.env["product.template"].with_user(self.user)
+        template = Template.create({
+            "name": "Created without explicit company_id",
+            "type": "consu",
+        })
+        self.assertTrue(template.id)
