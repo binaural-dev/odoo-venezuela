@@ -39,22 +39,32 @@ def _normalize_mislabeled_municipal_sequences(env):
         return
 
     real_iva_sequences = candidates - mislabeled
-    companies_with_real_iva = set(real_iva_sequences.mapped("company_id").ids)
+    companies_with_real_iva = set(real_iva_sequences.mapped(lambda s: s.company_id.id))
 
-    for company in mislabeled.mapped("company_id"):
-        company_mislabeled = mislabeled.filtered(lambda s: s.company_id == company)
+    # Iterate distinct company ids (including False/no-company) rather than
+    # mapped("company_id"), which silently drops empty relations -- a
+    # mislabeled record without a company would otherwise never get fixed.
+    for company_id in set(mislabeled.mapped(lambda s: s.company_id.id)):
+        company = env["res.company"].browse(company_id) if company_id else env["res.company"]
+        company_mislabeled = mislabeled.filtered(lambda s: s.company_id.id == company_id)
         max_next_actual = max(
             (seq.number_next_actual or 1) for seq in company_mislabeled
         )
         company_mislabeled.write({"code": "retention.municipal.control.number"})
+        # get_sequence_retention()'s order="id asc" makes the lowest-id
+        # record the one actually used going forward; raise its counter to
+        # the shared max too (harmless if it was already there) so a fiscal
+        # correlative never ends up lower than one already issued under a
+        # sibling mislabeled record.
+        company_mislabeled.sorted("id")[:1].number_next_actual = max_next_actual
 
         created_iva_id = None
-        if company.id not in companies_with_real_iva:
+        if company_id not in companies_with_real_iva:
             new_iva_sequence = IrSequence.create({
                 "name": "Numero de control retenciones IVA",
                 "code": "retention.iva.control.number",
                 "padding": 8,
-                "company_id": company.id,
+                "company_id": company_id,
             })
             new_iva_sequence.number_next_actual = max_next_actual
             created_iva_id = new_iva_sequence.id

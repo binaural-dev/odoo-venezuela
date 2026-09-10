@@ -106,3 +106,47 @@ class TestRetentionSequenceNoGap(RetentionTestCommon):
         _logger.info(
             "========= test_02_sequence_number_not_consumed_on_rollback passed ========="
         )
+
+    def test_03_check_sequence_no_gap_fixes_standard_sequence_without_resetting_counter(self):
+        """_check_sequence_no_gap() must reach here for sequences supplied by
+        an external override too (e.g. binaural_subsidiary_payment_extension's
+        per-subsidiary municipal sequence, a plain Many2one the user sets by
+        hand and that the migration has no way to know about, since it only
+        touches the three sequences this module owns directly). Such a
+        sequence can arrive in 'standard' implementation -- it must be fixed
+        on demand instead of blocking the user with an error they can't
+        normally act on, and the fix must not reset its counter."""
+        sequence = self.env["ir.sequence"].create({
+            "name": "Test externally-supplied sequence",
+            "code": "test.retention_sequence_no_gap.standard_sequence",
+            "padding": 5,
+            "implementation": "standard",
+        })
+        sequence.next_by_id()
+        sequence.next_by_id()
+        next_before = sequence.number_next_actual
+        self.assertGreater(
+            next_before, 1,
+            "Sanity check: the sequence must have actually advanced before "
+            "reaching _check_sequence_no_gap, or the assertion below would "
+            "pass even without preserving the counter.",
+        )
+
+        self.env["account.retention"]._check_sequence_no_gap(sequence, "iva")
+
+        self.assertEqual(
+            sequence.implementation, "no_gap",
+            "_check_sequence_no_gap must switch a 'standard' sequence to "
+            "'no_gap' instead of raising, since ir.sequence isn't normally "
+            "editable by the accounting user hitting this validation.",
+        )
+        sequence.invalidate_recordset(["number_next_actual"])
+        self.assertEqual(
+            sequence.number_next_actual, next_before,
+            "Switching implementation on demand must not reset the "
+            "sequence's counter.",
+        )
+
+        _logger.info(
+            "========= test_03_check_sequence_no_gap_fixes_standard_sequence_without_resetting_counter passed ========="
+        )
