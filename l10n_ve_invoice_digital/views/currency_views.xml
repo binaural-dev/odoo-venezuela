@@ -1,0 +1,12 @@
+<odoo>
+    <record id="res_currency_view_form_inherit" model="ir.ui.view">
+        <field name="name">res.currency.view.form.inherit</field>
+        <field name="model">res.currency</field>
+        <field name="inherit_id" ref="base.view_currency_form"/>
+        <field name="arch" type="xml">
+            <field name="full_name" position="after">
+                <field name="code_tfhka"/>
+            </field>
+        </field>
+    </record>
+</odoo>

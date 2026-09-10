@@ -7,6 +7,21 @@
             <field name="global" eval="True"/>
             <field name="domain_force"> ['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]</field>
         </record>
+
+        <record id="stock_picking_alter_location_company_rule" model="ir.rule">
+            <field name="name">Stock Picking Alter Location: Multi-Company</field>
+            <field name="model_id" ref="model_stock_picking_alter_location"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]</field>
+        </record>
+
+        <record id="stock_picking_alter_location_line_company_rule" model="ir.rule">
+            <field name="name">Stock Picking Alter Location Line: Multi-Company</field>
+            <field name="model_id" ref="model_stock_picking_alter_location_line"/>
+            <field name="global" eval="True"/>
+            <field name="domain_force">['|', ('company_id', 'in', company_ids), ('company_id', '=', False)]</field>
+        </record>
+
     </data>
 
 </odoo>

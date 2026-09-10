@@ -8,4 +8,5 @@ from . import test_stock_quant_extended
 from . import test_stock_scrap
 from . import test_stock_quantity_history
 from . import test_stock_warehouse
+from . import test_stock_picking_alter_location
 from . import test_stock_picking_product_no_quick_create

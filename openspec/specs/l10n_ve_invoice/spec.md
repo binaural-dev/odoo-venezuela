@@ -112,14 +112,19 @@ Cuando la compañía activa `block_invoice_display_date_upper_than_date`, el sis
 - **WHEN** se guarda una factura de proveedor con fecha de documento posterior a la fecha contable y el bloqueo activo
 - **THEN** se lanza un error "The invoice date cannot be greater than the accounting date."
 
-### Requirement: Solo documentos confirmados se imprimen
+### Requirement: Solo documentos contables confirmados se imprimen
 
-`ir.actions.report` DEBE (MUST) filtrar las impresiones (PDF y HTML) de `account.move` a documentos en estado `posted` y las de `sale.order` a órdenes no borrador, lanzando un error cuando ningún documento seleccionado cumple la condición.
+`ir.actions.report` DEBE (MUST) filtrar las impresiones (PDF y HTML) de `account.move` a documentos en estado `posted`, lanzando un error cuando ningún documento seleccionado cumple la condición. La restricción NO DEBE (MUST NOT) aplicarse a otros modelos: en particular `sale.order`, cuyas cotizaciones se imprimen y se envían por correo estando en borrador.
 
 #### Scenario: Imprimir factura en borrador
 
 - **WHEN** se solicita el PDF de una factura no publicada
 - **THEN** se lanza un error indicando que solo se imprimen documentos publicados
+
+#### Scenario: Imprimir o enviar una cotización en borrador
+
+- **WHEN** se solicita el reporte de una orden de venta en estado `draft` (por el botón Imprimir o por el adjunto que genera el diálogo de envío de correo)
+- **THEN** el reporte se genera normalmente, sin restricción alguna
 
 ### Requirement: Registro de la fecha-hora de emisión
 

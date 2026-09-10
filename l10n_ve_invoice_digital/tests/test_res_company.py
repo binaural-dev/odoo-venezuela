@@ -1,12 +1,12 @@
 from odoo.tests import TransactionCase, tagged
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from unittest.mock import patch, MagicMock
 
 import logging
 
 _logger = logging.getLogger(__name__)
 
-@tagged('l10n_ve_invoice_digital', 'invoice digital') 
+@tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "res_company_digital") 
 class TestAccountMoveApiCalls(TransactionCase):
 
     def setUp(self):
@@ -29,6 +29,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "sequence_validation_tfhka": True,
                 "currency_id": self.currency_usd.id,
                 "foreign_currency_id": self.currency_vef.id,
+                "country_id": self.env.ref('base.ve').id,
             }
         )
         
@@ -78,3 +79,41 @@ class TestAccountMoveApiCalls(TransactionCase):
         with self.assertRaises(UserError):
                 self.company.generate_token_tfhka()
         _logger.info("Test passed: Invalid credentials for TFHKA, UserError raised as expected.")
+
+    @patch('requests.post')
+    def test_06_generate_token_tfhka_request_exception(self, mock_post):
+        import requests
+        mock_post.side_effect = requests.exceptions.RequestException("Connection error")
+        with self.assertRaises(ValidationError):
+            self.company.generate_token_tfhka()
+
+    @patch('requests.post')
+    def test_07_generate_token_tfhka_no_token_in_response(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "codigo": 200,
+            "mensaje": "OK",
+        }
+        mock_post.return_value = mock_response
+        with self.assertRaises(ValidationError):
+            self.company.generate_token_tfhka()
+
+    @patch('requests.post')
+    def test_08_generate_token_tfhka_http_error_no_message(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 500
+        mock_response.json.return_value = {}
+        mock_post.return_value = mock_response
+        with self.assertRaises(ValidationError):
+            self.company.generate_token_tfhka()
+
+    def test_09_handle_tfhka_response_value_error_on_processing(self):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"codigo": 200, "mensaje": "OK"}
+        with patch.object(
+            type(self.company), '_process_tfhka_response_data', side_effect=ValueError("bad data")
+        ):
+            with self.assertRaises(ValidationError):
+                self.company._handle_tfhka_response(mock_response)
