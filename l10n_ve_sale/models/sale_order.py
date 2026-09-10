@@ -692,6 +692,20 @@ class SaleOrder(models.Model):
 
                     order._block_valid_confirm()
 
+            # A la confirmacion (accion explicita del usuario, no un compute
+            # automatico) le corresponde reaccionar de una vez a la falta de
+            # tasa, en vez de dejar pasar la orden con foreign_rate en 0 en
+            # silencio -- exactamente el punto de entrada que el docstring de
+            # compute_rate() reserva para raise_if_not_found=True.
+            if (
+                order.foreign_currency_id
+                and not order.manually_set_rate
+                and float_is_zero(order.foreign_rate, precision_rounding=order.currency_id.rounding)
+            ):
+                rate_date = order.date_order.date() if order.date_order else fields.Date.today()
+                self.env["res.currency.rate"].compute_rate(
+                    order.foreign_currency_id.id, rate_date, raise_if_not_found=True
+                )
 
         res = super().action_confirm()
         for sale in self:
