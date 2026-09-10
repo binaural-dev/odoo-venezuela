@@ -87,6 +87,13 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
         invoice.action_post()
         return invoice
 
+    def _exchange_diff_moves(self, invoice):
+        ap_lines = invoice.line_ids.filtered(
+            lambda l: l.account_id.account_type == "liability_payable"
+        )
+        partials = ap_lines.matched_credit_ids | ap_lines.matched_debit_ids
+        return partials.mapped("exchange_move_id").filtered(lambda m: m)
+
     def test_retention_payment_move_uses_date_accounting(self):
         invoice = self._create_foreign_invoice(amount=200.0)
         invoice_total_vef = abs(invoice.amount_residual_signed)
@@ -128,4 +135,14 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             payment.move_id.date, self.date_accounting,
             "The retention payment's journal entry must be dated like "
             "date_accounting, same as any other payment.",
+        )
+
+        # Independent of the date the move is booked at: reconciling a
+        # retention payment against the invoice it retains from must never
+        # produce a fictitious exchange difference (see the
+        # no_exchange_difference guarantee added in 22a9444b8).
+        self.assertFalse(
+            self._exchange_diff_moves(invoice),
+            "A retention payment must never generate an exchange difference "
+            "against the invoice it retains from.",
         )
