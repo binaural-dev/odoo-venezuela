@@ -17,12 +17,17 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) depende únicamente de `invoice_date`, y en la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
 
 #### Scenario: Factura de venta
 
 - **WHEN** se establece o cambia la fecha de factura de un documento de venta sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a esa fecha
+
+#### Scenario: Factura de compra con solo la fecha contable editada
+
+- **WHEN** se edita únicamente `date` (sin tocar `invoice_date`) en un documento que no es de venta (por ejemplo `in_invoice`), sin tasa manual
+- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`, en vez de quedar congelados con la tasa de la fecha anterior
 
 #### Scenario: Factura de proveedor recién creada
 
@@ -415,7 +420,7 @@ Una regla de registro (`account_move_unlink_draft_only`) DEBE (MUST) aplicar al 
 
 ### Requirement: Fecha de factura desacoplada de la fecha contable
 
-El campo `invoice_date_display` DEBE (MUST) ser la fuente de la fecha contable (`_get_accounting_date_source` devuelve `invoice_date_display` o `date`), permitiendo que `invoice_date` quede reservada al cálculo de tasa; en documentos de venta, cambiar `invoice_date_display` sincroniza `invoice_date` con el mismo valor.
+El campo `invoice_date_display` DEBE (MUST) ser la fuente de la fecha contable (`_get_accounting_date_source` devuelve `invoice_date_display` o `date`), permitiendo que `invoice_date` quede reservada al cálculo de tasa; en documentos de venta, cambiar `invoice_date_display` sincroniza `invoice_date` con el mismo valor. El recálculo de `date` (`_compute_date`) DEBE (MUST) depender de `invoice_date_display` **y** de `company_id`, `move_type` y `taxable_supply_date` — las mismas dependencias adicionales que ya declara `_compute_date` del core (`account`), que su cuerpo (heredado vía `super()`) sigue usando internamente (`_get_accounting_date`, `is_sale_document`, `_affect_tax_report`); omitir alguna de ellas al sobreescribir `@api.depends` (que reemplaza la lista del padre en vez de extenderla) dejaría `date` sin recalcularse ante un cambio de compañía, tipo de documento, o fecha de suministro imponible que no toque también `invoice_date_display`.
 
 #### Scenario: Cambio de fecha en factura de venta
 

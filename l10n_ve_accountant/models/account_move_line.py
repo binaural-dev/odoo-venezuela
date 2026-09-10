@@ -107,13 +107,24 @@ class AccountMoveLine(models.Model):
                 line.price_unit_ves = line.price_unit
                 continue
             # Convertir con _convert() y no dividiendo entre currency_id.rate:
-            # aplica el redondeo de la moneda destino y no revienta si la tasa
-            # del dia no esta cargada (rate = 0).
-            line.price_unit_ves = line.currency_id._convert(
-                line.price_unit,
-                company_currency,
-                line.company_id,
-                line._get_foreign_rate_date(),
+            # no revienta si la tasa del dia no esta cargada (rate = 0).
+            # round=False + redondeo a la precision del campo (igual que
+            # _compute_foreign_price): _convert() redondea por defecto a los
+            # decimales de la moneda destino (VEF = 2), pero "Product Price"
+            # tiene mas digitos (6) - sin round=False esa precision extra se
+            # pierde antes de que el float_round de abajo pueda hacer nada.
+            precision = self.env["decimal.precision"].precision_get(
+                "Product Price"
+            )
+            line.price_unit_ves = float_round(
+                line.currency_id._convert(
+                    line.price_unit,
+                    company_currency,
+                    line.company_id,
+                    line._get_foreign_rate_date(),
+                    round=False,
+                ),
+                precision_digits=precision
             )
 
     def _compute_ves_currency_id(self):
