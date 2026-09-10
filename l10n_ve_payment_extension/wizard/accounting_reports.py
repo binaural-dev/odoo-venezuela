@@ -169,6 +169,7 @@ class WizardAccountingReports(models.TransientModel):
         domain = self._get_retention_domain()
         retention_ids = retention.search(domain)
         moves = retention_ids.mapped("retention_line_ids.move_id")
+        moves = moves.filtered_domain(self._get_domain())
         res_moves |= moves
 
         return res_moves
