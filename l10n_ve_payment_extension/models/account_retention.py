@@ -805,11 +805,12 @@ class AccountRetention(models.Model):
         entry in that selection to get its own sequence automatically.
         """
         code = f"retention.{type_retention}.control.number"
-        sequence = self.env["ir.sequence"].search(
+        sequence = self.env["ir.sequence"].with_context(active_test=False).search(
             [
                 ("code", "=", code),
                 ("company_id", "=", self.env.company.id),
             ],
+            order="id asc",
             limit=1,
         )
         if not sequence:
