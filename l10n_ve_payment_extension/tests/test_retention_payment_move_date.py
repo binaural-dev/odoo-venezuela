@@ -1,6 +1,5 @@
 import logging
 
-from odoo.addons.account.models.account_payment import AccountPayment as CoreAccountPayment
 from odoo.tests import tagged, Form
 from odoo import Command, fields
 
@@ -11,11 +10,12 @@ _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "retention_payment_move_date")
 class TestRetentionPaymentMoveDate(RetentionTestCommon):
-    """Covers the fix in AccountPayment._generate_move_vals /
-    AccountRetention._reconcile_all_payments: a retention payment's journal
-    entry must be dated (and rated) like the invoice it retains from, not
-    like the retention's own date_accounting, even though payment.date keeps
-    showing date_accounting in the UI."""
+    """A retention payment's journal entry must be dated (and rated) with
+    the retention's own date_accounting, like any other payment -- there is
+    no special-casing to pin it to the invoice's own date instead. An
+    earlier version of this module added such an override based on
+    outdated documentation; it was reverted, and this test now asserts the
+    actual expected behavior instead."""
 
     def setUp(self):
         super().setUp()
@@ -60,9 +60,7 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
     def _create_foreign_invoice(self, amount=200.0):
         """Purchase invoice booked in USD (foreign currency), while the
         retention payment is always created in company currency (VEF, see
-        AccountRetention._prepare_retention_payment_vals) -- the combination
-        that exposes a rate mismatch on reconciliation if the payment's move
-        isn't pinned to the invoice's own date/rate.
+        AccountRetention._prepare_retention_payment_vals).
 
         Built through Form (like RetentionTestCommon._create_invoice_reten_iva)
         instead of a raw .create(vals): the fiscal-position/tax onchange chain
@@ -96,7 +94,7 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
         partials = ap_lines.matched_credit_ids | ap_lines.matched_debit_ids
         return partials.mapped("exchange_move_id").filtered(lambda m: m)
 
-    def test_retention_payment_move_uses_invoice_date_and_rate(self):
+    def test_retention_payment_move_uses_date_accounting(self):
         invoice = self._create_foreign_invoice(amount=200.0)
         invoice_total_vef = abs(invoice.amount_residual_signed)
         retention_amount_vef = invoice_total_vef * 0.10
@@ -126,10 +124,9 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
         payment = retention.payment_ids
         self.assertEqual(len(payment), 1, "Exactly one payment must be created for the single invoice retained.")
 
-        # payment.date (shown in the UI) keeps the user-chosen retention date.
         self.assertEqual(
             payment.date, self.date_accounting,
-            "payment.date must still reflect the retention's own date_accounting.",
+            "payment.date must reflect the retention's own date_accounting.",
         )
 
         # The move behind that payment is NOT dated like the invoice (that
@@ -141,8 +138,10 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             "the invoice it retains from; it must keep date_accounting.",
         )
 
-        # Since the move now shares the invoice's date, it must also share its
-        # rate: reconciling them must NOT produce an exchange difference.
+        # Independent of the date the move is booked at: reconciling a
+        # retention payment against the invoice it retains from must never
+        # produce a fictitious exchange difference (see the
+        # no_exchange_difference guarantee added in 22a9444b8).
         self.assertFalse(
             self._exchange_diff_moves(invoice),
             "A retention payment must never generate an exchange difference "
