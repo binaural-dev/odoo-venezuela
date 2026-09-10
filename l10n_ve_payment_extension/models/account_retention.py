@@ -579,7 +579,14 @@ class AccountRetention(models.Model):
 
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
-            sequence = retention.get_sequence_retention(retention.type_retention)
+            # Dispatch through get_sequence_<type>_retention() rather than
+            # calling get_sequence_retention() directly: modules like
+            # binaural_subsidiary_payment_extension override
+            # get_sequence_municipal_retention() to pick a per-subsidiary
+            # sequence, and that override must still run here.
+            sequence = getattr(
+                retention, f"get_sequence_{retention.type_retention}_retention"
+            )()
             retention._check_sequence_no_gap(sequence, retention.type_retention)
             sequence_number = sequence.next_by_id()
             correlative = f"{retention.date_accounting.year}{retention.date_accounting.month:02d}{sequence_number}"
@@ -627,6 +634,15 @@ class AccountRetention(models.Model):
                 }
             )
         return sequence
+
+    def get_sequence_iva_retention(self):
+        return self.get_sequence_retention("iva")
+
+    def get_sequence_islr_retention(self):
+        return self.get_sequence_retention("islr")
+
+    def get_sequence_municipal_retention(self):
+        return self.get_sequence_retention("municipal")
 
     def clear_retention_number(self):
         for rec in self:
