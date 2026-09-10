@@ -21,7 +21,13 @@ class RetentionTestCommon(TransactionCase):
         self.currency_usd.decimal_places = 2
         self.currency_vef.decimal_places = 2
         self.currency_vef.write({
-            
+            'rate_ids': [
+                Command.create({'rate': 1.0, 'name': fields.Date.today()}),
+                Command.create({
+                    'rate': 1.0,
+                    'name': fields.Date.subtract(fields.Date.today(), days=1),
+                }),
+            ],
             'active':True
         })
 

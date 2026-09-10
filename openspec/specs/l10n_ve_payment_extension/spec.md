@@ -303,6 +303,56 @@ El constraint `_constraint_amounts_in_zero` de `account.retention.line` DEBE (MU
 - **WHEN** se escribe 0 en el monto retenido, el total facturado o la base de una línea de un comprobante ya emitido
 - **THEN** se lanza un `ValidationError` indicando que no se puede crear una retención con monto 0
 
+### Requirement: Prohibición de duplicar una factura de cliente por concepto/alícuota en un comprobante
+
+Al emitir un comprobante de cliente (`type` que empieza en `out_`) de tipo `iva` o `islr`, `action_post` DEBE (MUST) ejecutar `_check_duplicate_retention_lines` sobre las líneas cliente (`is_retention_client`) con `move_id`, con una regla distinta por tipo de retención porque el flujo de auto-generación de líneas ISLR desde la factura (`account_move._get_payment_concepts_from_invoice`) crea una línea por cada producto facturado, no una por concepto — por lo que varios productos con el mismo `payment_concept_id` producen legítimamente varias líneas con ese mismo concepto.
+
+Para ISLR (`_check_islr_concept_amounts`), el sistema NO prohíbe repetir la combinación (`move_id`, `payment_concept_id`); en cambio, DEBE (MUST) sumar el `invoice_amount` de todas las líneas que comparten esa combinación y validar que la suma no exceda la base imponible real de la factura para ese concepto (suma de `price_subtotal` de las líneas de factura cuyo producto tiene ese `payment_concept`), usando la precisión de la moneda de la compañía. Además, cada línea con `payment_concept_id` DEBE (MUST) tener al menos un producto facturado con ese concepto; si no, se rechaza aunque sea la única línea.
+
+Para IVA (`_check_iva_duplicate_lines`), `compute_retention_lines_data` genera como máximo una línea por grupo de impuesto real de la factura, por lo que dos líneas con la misma factura y la misma alícuota real SÍ DEBEN (MUST) rechazarse como duplicado estructural (sin sumar montos): el sistema resuelve el impuesto real (`account.tax`) aplicado en la factura para esa alícuota (mismo criterio que `_onchange_move_id`) y usa su id como diferenciador, cayendo a la alícuota redondeada a 2 decimales solo si no puede resolver un único impuesto; líneas de la misma factura con alícuotas distintas (varios impuestos IVA en la misma factura) son legítimas y no se bloquean. Cada línea con `aliquot` distinto de cero DEBE (MUST) coincidir con el porcentaje de al menos un impuesto realmente aplicado en la factura; si no, se rechaza aunque sea la única línea.
+
+Retenciones de proveedor y de tipo `municipal` NO están sujetas a esta validación.
+
+#### Scenario: Varios productos con el mismo concepto de pago en ISLR dentro de la base real
+
+- **WHEN** se emite un comprobante ISLR de cliente con dos líneas de la misma factura y el mismo `payment_concept_id`, una por cada uno de dos productos facturados bajo ese concepto, y la suma de sus `invoice_amount` no excede la base real de ese concepto en la factura
+- **THEN** el comprobante se emite sin error
+
+#### Scenario: Monto declarado por concepto de pago ISLR excede la base real
+
+- **WHEN** se emite un comprobante ISLR de cliente donde la suma de `invoice_amount` de las líneas que comparten `move_id` y `payment_concept_id` excede la base imponible real de ese concepto en la factura (por ejemplo, repitiendo el monto de un mismo producto en más de una línea)
+- **THEN** se lanza un `ValidationError` indicando que la base declarada excede la base real facturada bajo ese concepto
+
+#### Scenario: Misma factura con conceptos de pago distintos en ISLR
+
+- **WHEN** se emite un comprobante ISLR de cliente con dos líneas de la misma factura pero concepto de pago distinto (productos distintos)
+- **THEN** el comprobante se emite sin error
+
+#### Scenario: Misma factura y misma alícuota real en IVA
+
+- **WHEN** se emite un comprobante IVA de cliente con dos líneas de la misma factura al mismo impuesto/alícuota
+- **THEN** se lanza un `ValidationError` indicando que la factura está duplicada para esa tasa
+
+#### Scenario: Misma factura con alícuotas distintas en IVA
+
+- **WHEN** se emite un comprobante IVA de cliente con dos líneas de la misma factura pero alícuotas reales distintas (dos impuestos IVA en la misma factura)
+- **THEN** el comprobante se emite sin error
+
+#### Scenario: Retención de proveedor con líneas repetidas
+
+- **WHEN** se emite un comprobante de proveedor (`in_invoice`) con líneas que repiten `move_id`/alícuota
+- **THEN** la validación de duplicidad no se dispara (puede fallar por otras validaciones ajenas a esta)
+
+#### Scenario: Alícuota IVA que no existe en la factura
+
+- **WHEN** se emite un comprobante IVA de cliente con una línea cuya `aliquot` no corresponde a ningún impuesto aplicado en la factura de origen
+- **THEN** se lanza un `ValidationError` indicando que la tasa no coincide con ningún impuesto de la factura, aunque sea la única línea del comprobante
+
+#### Scenario: Concepto de pago ISLR que no existe en la factura
+
+- **WHEN** se emite un comprobante ISLR de cliente con una línea cuyo `payment_concept_id` no corresponde a ningún producto facturado en la factura de origen
+- **THEN** se lanza un `ValidationError` indicando que el concepto no coincide con ningún producto de la factura, aunque sea la única línea del comprobante
+
 ### Requirement: Generación y conciliación automática de pagos al emitir
 
 Al emitir un comprobante que aún no tiene pagos, el sistema DEBE (MUST) crear un `account.payment` por cada factura involucrada (agrupando sus líneas por `move_id`), marcado con `is_retention` y `payment_type_retention`, con el diario de retención de la compañía correspondiente al tipo de retención y al flujo (las variantes `in_refund`/`in_debit` se resuelven con el diario de `in_invoice` y las `out_refund`/`out_debit` con el de `out_invoice`), en la moneda de la compañía y con fecha `date_accounting`; el sentido del pago se deriva de si el documento es una nota de crédito del mismo flujo. Los pagos se crean sin monto y este se asigna después con `compute_retention_amount_from_retention_lines`, como suma simple (sin valor absoluto) de los `retention_amount` de las líneas vinculadas. Luego DEBE (MUST) publicarlos todos y conciliarlos contra la línea por cobrar/por pagar del asiento del pago asignándola a las facturas de sus líneas; si el comprobante no generó ningún pago, la conciliación DEBE (MUST) fallar con un `UserError`. Para comprobantes ISLR, antes de crear los pagos se exige que el partner tenga tipo de persona y que exista al menos una línea con concepto de pago. Si el diario correspondiente no está configurado, la emisión DEBE (MUST) fallar con error. Un comprobante que ya tiene pagos se omite en esta etapa.
