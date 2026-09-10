@@ -285,7 +285,7 @@ class AccountMoveLine(models.Model):
                 return abs(self.foreign_debit_adjustment)
             if self.foreign_credit_adjustment:
                 return -abs(self.foreign_credit_adjustment)
-            return self.foreign_balance
+            return None
 
         if self.display_type in ("line_section", "line_note"):
             return 0.0
@@ -332,7 +332,6 @@ class AccountMoveLine(models.Model):
         "debit",
         "credit",
         "foreign_subtotal",
-        "foreign_balance",
         "amount_currency",
         "not_foreign_recalculate",
         "foreign_debit_adjustment",

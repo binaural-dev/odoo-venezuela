@@ -1119,9 +1119,9 @@ class AccountMove(models.Model):
                         fb = magnitude if tl.balance >= 0 else -magnitude
                         if not fc.is_zero(tl.foreign_balance - fb):
                             if fb >= 0:
-                                tl.write({'foreign_debit': fb, 'foreign_credit': 0.0})
+                                tl.write({'foreign_debit': fb, 'foreign_credit': 0.0, 'foreign_balance': fb})
                             else:
-                                tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
+                                tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb, 'foreign_balance': fb})
             finally:
                 guarded.discard(move.id)
 
@@ -1185,9 +1185,9 @@ class AccountMove(models.Model):
                 fb = fee(amount)
                 if not fc.is_zero(tl.foreign_balance - fb):
                     if fb >= 0:
-                        tl.write({'foreign_debit': fb, 'foreign_credit': 0.0})
+                        tl.write({'foreign_debit': fb, 'foreign_credit': 0.0, 'foreign_balance': fb})
                     else:
-                        tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb})
+                        tl.write({'foreign_debit': 0.0, 'foreign_credit': -fb, 'foreign_balance': fb})
 
     def _distribute_foreign_pt_residual(self, moves):
         """Distributes foreign_debit/foreign_credit across payment term lines
