@@ -778,71 +778,84 @@ class AccountRetention(models.Model):
 
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
-            sequence_number = ""
-            if retention.type_retention == "iva":
-                sequence_number = retention.get_sequence_iva_retention().next_by_id()
-            elif retention.type_retention == "islr":
-                sequence_number = retention.get_sequence_islr_retention().next_by_id()
-            else:
-                sequence_number = (
-                    retention.get_sequence_municipal_retention().next_by_id()
-                )
+            # Dispatch through get_sequence_<type>_retention() rather than
+            # calling get_sequence_retention() directly: modules like
+            # binaural_subsidiary_payment_extension override
+            # get_sequence_municipal_retention() to pick a per-subsidiary
+            # sequence, and that override must still run here.
+            sequence = getattr(
+                retention, f"get_sequence_{retention.type_retention}_retention"
+            )()
+            retention._check_sequence_no_gap(sequence, retention.type_retention)
+            sequence_number = sequence.next_by_id()
             correlative = f"{retention.date_accounting.year}{retention.date_accounting.month:02d}{sequence_number}"
             retention.name = correlative
             retention.number = correlative
 
+    def _check_sequence_no_gap(self, sequence, type_retention):
+        if sequence.implementation == "no_gap":
+            return
+        # A sequence can reach here through an external override (e.g.
+        # binaural_subsidiary_payment_extension's per-subsidiary municipal
+        # sequence, picked from a plain Many2one the user sets on the
+        # subsidiary form) that this module's migration has no way to know
+        # about -- it only touches the three sequences it owns directly.
+        # Fix it on demand instead of blocking the user with an error they
+        # can't normally act on (ir.sequence isn't editable by an
+        # accounting user): same transition the migrate() script performs,
+        # reading the counter predicted from the PostgreSQL sequence
+        # *before* switching implementation, so the fiscal correlative
+        # doesn't reset to 1.
+        seq_sudo = sequence.sudo()
+        next_actual = seq_sudo.number_next_actual or 1
+        seq_sudo.write({"implementation": "no_gap", "number_next_actual": next_actual})
+        _logger.info(
+            "l10n_ve_payment_extension: sequence %r (id=%s) switched to "
+            "no_gap on demand for a %s retention, continuing from counter "
+            "%s.",
+            sequence.name, sequence.id, type_retention, next_actual,
+        )
+
     @api.model
-    def get_sequence_iva_retention(self):
-        sequence = self.env["ir.sequence"].search(
+    def get_sequence_retention(self, type_retention):
+        """Get (or create) the ir.sequence for a given retention type.
+
+        Fully driven by the `type_retention` selection: the sequence code
+        and name are derived from it, so a new retention type only needs an
+        entry in that selection to get its own sequence automatically.
+        """
+        code = f"retention.{type_retention}.control.number"
+        sequence = self.env["ir.sequence"].with_context(active_test=False).search(
             [
-                ("code", "=", "retention.iva.control.number"),
+                ("code", "=", code),
                 ("company_id", "=", self.env.company.id),
-            ]
+            ],
+            order="id asc",
+            limit=1,
         )
         if not sequence:
+            padding_by_type = {"iva": 8, "islr": 5, "municipal": 5}
             sequence = self.env["ir.sequence"].create(
                 {
-                    "name": "Numero de control retenciones IVA",
-                    "code": "retention.iva.control.number",
-                    "padding": 8,
+                    "name": _(
+                        "Numero de control retenciones %s", type_retention.upper()
+                    ),
+                    "code": code,
+                    "padding": padding_by_type.get(type_retention, 5),
+                    "company_id": self.env.company.id,
+                    "implementation": "no_gap",
                 }
             )
         return sequence
 
-    @api.model
+    def get_sequence_iva_retention(self):
+        return self.get_sequence_retention("iva")
+
     def get_sequence_islr_retention(self):
-        sequence = self.env["ir.sequence"].search(
-            [
-                ("code", "=", "retention.islr.control.number"),
-                ("company_id", "=", self.env.company.id),
-            ]
-        )
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {
-                    "name": "Numero de control retenciones ISLR",
-                    "code": "retention.islr.control.number",
-                    "padding": 5,
-                }
-            )
-        return sequence
+        return self.get_sequence_retention("islr")
 
     def get_sequence_municipal_retention(self):
-        sequence = self.env["ir.sequence"].search(
-            [
-                ("code", "=", "retention.municipal.control.number"),
-                ("company_id", "=", self.env.company.id),
-            ]
-        )
-        if not sequence:
-            sequence = self.env["ir.sequence"].create(
-                {
-                    "name": "Numero de control retenciones Municipal",
-                    "code": "retention.iva.control.number",
-                    "padding": 5,
-                }
-            )
-        return sequence
+        return self.get_sequence_retention("municipal")
 
     def _clear_retention_number_on_invoices(self):
         for line in self.retention_line_ids:
