@@ -45,6 +45,7 @@ class SaleOrder(models.Model):
         store=True,
         readonly=False,
         tracking=True,
+        copy=False,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
@@ -52,10 +53,16 @@ class SaleOrder(models.Model):
         compute="_compute_rate",
         store=True,
         readonly=False,
+        copy=False,
     )
 
     last_foreign_rate = fields.Float(copy=False)
-    manually_set_rate = fields.Boolean(default=False)
+    # copy=False: duplicating an order must always pick up the alterno rate
+    # in effect today (ticket #13998), not carry over a manually-set rate --
+    # manually_set_rate is not a user-facing "I typed this rate by hand"
+    # choice (the field isn't exposed on the client-facing view), so there is
+    # no user intent to preserve across a duplicate.
+    manually_set_rate = fields.Boolean(default=False, copy=False)
 
     total_taxed = fields.Many2one(
         "account.tax",
@@ -252,8 +259,6 @@ class SaleOrder(models.Model):
             else:
                 sale.foreign_rate = 0.0
                 sale.foreign_inverse_rate = 0.0
-
-    
 
     @api.model
     def _has_significant_invoiceable_quantity(self, line):
