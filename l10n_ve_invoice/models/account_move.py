@@ -17,7 +17,6 @@ class AccountMove(models.Model):
     declaration_unique_of_customs = fields.Char('Declaration unique of customs', copy=False)
 
     invoice_date = fields.Date(
-        string="Rate Date",
         default=fields.Date.context_today,
         help="Date of the invoice. Defaults to today when creating a new invoice."
     )
