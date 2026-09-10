@@ -793,15 +793,28 @@ class AccountRetention(models.Model):
             retention.number = correlative
 
     def _check_sequence_no_gap(self, sequence, type_retention):
-        if sequence.implementation != "no_gap":
-            raise UserError(
-                _(
-                    "The sequence for %s retentions must not allow gaps. "
-                    "Please set its Implementation to 'No gap' in the sequence "
-                    "configuration before generating retentions.",
-                    type_retention.upper(),
-                )
-            )
+        if sequence.implementation == "no_gap":
+            return
+        # A sequence can reach here through an external override (e.g.
+        # binaural_subsidiary_payment_extension's per-subsidiary municipal
+        # sequence, picked from a plain Many2one the user sets on the
+        # subsidiary form) that this module's migration has no way to know
+        # about -- it only touches the three sequences it owns directly.
+        # Fix it on demand instead of blocking the user with an error they
+        # can't normally act on (ir.sequence isn't editable by an
+        # accounting user): same transition the migrate() script performs,
+        # reading the counter predicted from the PostgreSQL sequence
+        # *before* switching implementation, so the fiscal correlative
+        # doesn't reset to 1.
+        seq_sudo = sequence.sudo()
+        next_actual = seq_sudo.number_next_actual or 1
+        seq_sudo.write({"implementation": "no_gap", "number_next_actual": next_actual})
+        _logger.info(
+            "l10n_ve_payment_extension: sequence %r (id=%s) switched to "
+            "no_gap on demand for a %s retention, continuing from counter "
+            "%s.",
+            sequence.name, sequence.id, type_retention, next_actual,
+        )
 
     @api.model
     def get_sequence_retention(self, type_retention):
