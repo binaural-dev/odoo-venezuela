@@ -161,12 +161,23 @@ Al sincronizar las líneas dinámicas de una factura **en borrador** (`_distribu
 
 ### Requirement: Corrección de redondeo multi-moneda (porción real)
 
-Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) corregir las diferencias de redondeo entre la suma de balances redondeados línea a línea y la conversión del total a la tasa cruda: distribuye la diferencia entre las líneas de producto proporcionalmente a su balance (`_apply_product_real_portion`), corrige los balances de las líneas de impuesto (`amount_currency / rate` redondeado) y ajusta las líneas de término de pago para que el asiento cierre, acumulando el ajuste en `real_portion_amount` e incrementando `real_portion_count`.
+Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) corregir las diferencias de redondeo introducidas por el redondeo línea a línea, en dos pasos independientes que corren en etapas distintas del ciclo de sincronización:
+
+1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa cruda del documento (`currency_id._convert` a la fecha de factura), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
+2. Durante `_sync_dynamic_lines`, ya con el recompute del core aplicado (`account.move._distribute_invoice_real_portion`): corrige el balance de cada línea de impuesto a `amount_currency / rate` redondeado, y luego ancla la contrapartida (las líneas de término de pago si existen; si no, el resto de líneas sin `tax_repartition_line_id`) a `-actual_non_pt`, donde `actual_non_pt` es la suma REAL de los balances de todas las líneas no-PT/no-COGS tal como quedaron después del recompute — NO una conversión directa del total del documento. El ajuste se acumula en `real_portion_amount` e incrementa `real_portion_count`.
+
+Este segundo paso NO recalcula ni fuerza un total "esperado" a partir de `amount_total`: toma como base fiscal la suma real de los balances de producto e impuesto ya corregidos por el core, para que la contrapartida siga siendo consistente aunque el core recompute las líneas de producto en un sync posterior (p. ej. al cambiar la fecha del documento).
 
 #### Scenario: Factura multi-línea en divisa
 
-- **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total en la unidad de redondeo
-- **THEN** la diferencia se reparte entre las líneas de producto y el asiento queda balanceado al valor esperado
+- **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total de esas líneas en la unidad de redondeo
+- **THEN** la diferencia se reparte entre las líneas de producto (`_apply_product_real_portion`) y, al sincronizar las líneas dinámicas, la contrapartida se ancla a la suma real de las líneas no-PT resultante
+
+#### Scenario: Cambio de fecha a una fecha con la misma tasa vigente no descuadra el asiento (ticket 15089)
+
+- **GIVEN** una factura en divisa ya distribuida, con su contrapartida anclada a `actual_non_pt`
+- **WHEN** se cambia la fecha del documento a otra fecha cuya tasa de cambio vigente es idéntica, y el core recompute las líneas de producto a sus valores originales
+- **THEN** `_distribute_invoice_real_portion` vuelve a calcular `actual_non_pt` a partir de los balances ya recomputados, y reancla la contrapartida a `-actual_non_pt`, dejando el asiento balanceado sin depender de un ajuste previo que el recompute pudo haber descartado
 
 ### Requirement: Totales de factura en moneda alterna
 

@@ -1724,29 +1724,6 @@ class AccountMove(models.Model):
         if cc.is_zero(actual_non_pt):
             return
 
-        # Calculate expected total from direct document conversion
-        total_currency = abs(move.amount_total)
-        rate_date = move._get_invoice_currency_rate_date() or fields.Date.context_today(move)
-        expected_total = cc.round(move.currency_id._convert(
-            total_currency, cc, move.company_id, rate_date
-        ))
-        # non-PT lines are credit for sale docs (negative), debit for purchase docs (positive)
-        sign = -1 if move.amount_total_signed > 0 else 1
-        expected_total *= sign
-
-        # Correct non_pt if it diverges from expected
-        non_pt_diff = cc.round(expected_total - actual_non_pt)
-        tolerance = cc.rounding * len(move.line_ids)
-        if abs(non_pt_diff) > tolerance:
-            _logger.warning(
-                "Real portion: anomalous diff in move %s: diff=%s expected=%s actual=%s",
-                move.id, non_pt_diff, expected_total, actual_non_pt,
-            )
-        if not cc.is_zero(non_pt_diff):
-            self._distribute_to_lines(non_pt, non_pt_diff, cc)
-
-        actual_non_pt = sum(non_pt.mapped('balance'))
-
         pt_lines = move.line_ids.filtered(
             lambda l: l.display_type == 'payment_term'
         )
