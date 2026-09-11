@@ -744,7 +744,20 @@ class AccountMove(models.Model):
                     "foreign_amount_total", 0
                 )
 
-
+    @api.onchange("invoice_date")
+    def _onchange_invoice_date_reset_manual_rate(self):
+        """
+        Un-freeze the rate when the user manually edits the invoice date on a
+        draft move, even if `manually_set_rate` was left set to True (e.g. by
+        the currency real_portion migration, or by the "use rate from sale
+        order" flow). Reversals/debit notes are excluded: their rate must
+        always mirror the origin document, never the edited date.
+        """
+        for move in self:
+            if move.state != "draft" or move.reversed_entry_id or move.debit_origin_id:
+                continue
+            move.manually_set_rate = False
+        self._compute_rate()
 
     @api.onchange("foreign_rate","invoice_date")
     def _onchange_foreign_rate(self):
