@@ -66,6 +66,8 @@ El reporte multi-lista DEBE (MUST) requerir el grupo `l10n_ve_sale_price_list.gr
 
 El nombre visible (`display_name`) de una lista de precios con compañía asignada DEBE (MUST) incluir el nombre de esa compañía entre paréntesis, para identificarla en entornos multi-sucursal. Las listas sin compañía asignada (compartidas entre compañías) usan el `display_name` calculado por el core, sin modificar.
 
+**Efecto global, no acotado a este reporte**: `display_name` es un campo del propio `product.pricelist`, así que este sufijo aparece en cualquier lugar de Odoo donde se muestre el nombre de una lista de precios — el formulario de producto, las líneas de venta, el selector de PdV, el menú de configuración de Listas de Precios — no solo en este reporte multi-lista.
+
 #### Scenario: Lista con compañía
 
 - **WHEN** se calcula el `display_name` de una lista de precios con `company_id` asignado
@@ -76,6 +78,25 @@ El nombre visible (`display_name`) de una lista de precios con compañía asigna
 - **WHEN** se calcula el `display_name` de una lista de precios sin `company_id`
 - **THEN** el resultado es el que calcula el core, sin sufijo de compañía
 
+### Requirement: Aviso de selección grande
+
+Al agregar una lista de precios, imprimir en PDF, o exportar a XLSX, si la cantidad de productos seleccionados supera 800 y la cantidad de listas de precios agregadas es 5 o más, el sistema DEBE (MUST) mostrar una notificación de advertencia no bloqueante indicando que la combinación es grande y que imprimir/exportar puede tardar. La vista en pantalla no se ve afectada por este aviso: sigue paginando de 20 en 20 independientemente del tamaño de la selección.
+
+#### Scenario: Selección grande al agregar una lista
+
+- **WHEN** el usuario tiene más de 800 productos seleccionados y agrega una quinta (o posterior) lista de precios
+- **THEN** se muestra una notificación de advertencia con la cantidad de productos y listas seleccionadas
+
+#### Scenario: Selección grande al imprimir o exportar
+
+- **WHEN** el usuario imprime en PDF o exporta a XLSX con más de 800 productos y 5 o más listas ya agregadas
+- **THEN** se muestra la misma notificación de advertencia antes de generar el archivo
+
+#### Scenario: Selección por debajo del umbral
+
+- **WHEN** la cantidad de productos es 800 o menos, o hay menos de 5 listas agregadas
+- **THEN** no se muestra ninguna advertencia
+
 ## Known limitations
 
-- No hay una alerta preventiva cuando la combinación de productos seleccionados y listas de precios agregadas es grande (p. ej. 800+ productos con 5+ listas); la paginación de la vista en pantalla mitiga el impacto de rendimiento al navegar, pero las exportaciones (que no paginan) siguen calculando la totalidad de la selección en una sola pasada.
+- El aviso de selección grande es una notificación no bloqueante, no un límite duro: el usuario puede seguir imprimiendo/exportando combinaciones grandes. La paginación de la vista en pantalla mitiga el impacto de rendimiento al navegar, pero las exportaciones (que no paginan) siguen calculando la totalidad de la selección en una sola pasada.
