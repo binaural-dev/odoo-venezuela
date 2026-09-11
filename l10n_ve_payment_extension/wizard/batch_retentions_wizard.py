@@ -99,9 +99,10 @@ class BatchRetentionsWizard(models.TransientModel):
                 if not payment_concepts:
                     continue
 
+                invoice_date = rec.move_id.invoice_date_display or rec.move_id.invoice_date
                 vals = {
                     'partner_id': rec.move_id.partner_id.id,
-                    'date_accounting': fields.Date.today(),
+                    'date_accounting': max(fields.Date.today(), invoice_date) if invoice_date else fields.Date.today(),
                     'type_retention': 'islr',
                 }
                 
@@ -145,9 +146,15 @@ class BatchRetentionsWizard(models.TransientModel):
                     'multi':True
                 }
                 
+                invoice_dates = [
+                    move.invoice_date_display or move.invoice_date
+                    for move in data['moves']
+                    if move.invoice_date_display or move.invoice_date
+                ]
+                max_invoice_date = max(invoice_dates) if invoice_dates else False
                 retention = self.env['account.retention'].with_context(ctx).create({
                     'partner_id': partner_id,
-                    'date_accounting': fields.Date.today(),
+                    'date_accounting': max(fields.Date.today(), max_invoice_date) if max_invoice_date else fields.Date.today(),
                     'type_retention': 'islr',
                 })
                 
