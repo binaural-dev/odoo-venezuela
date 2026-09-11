@@ -634,6 +634,15 @@ class AccountRetentionLine(models.Model):
 
    
 
+    @api.constrains("move_id")
+    def _check_retention_accounting_date(self):
+        # account.retention's own @api.constrains("date_accounting",
+        # "retention_line_ids") only fires when the lines are touched
+        # through the parent record. A direct write on this line's move_id
+        # (e.g. from account_retention_line.py:_onchange_move_id callers,
+        # or a wizard) would bypass it, so re-run the same check here.
+        self.retention_id._check_accounting_date_vs_invoices()
+
     @api.constrains(
         "retention_amount",
         "invoice_total",
