@@ -219,6 +219,13 @@ El propio compute también lee `rec.payment_state` en su guard (`if abs(rec.amou
 - **WHEN** la factura de cliente no tiene IGTF aplicado
 - **THEN** `tax_totals['igtf']` reporta `apply_igtf` falso con la base igual al total de la factura y el bloque `igtf_free_form` sugiere el IGTF sobre ese total
 
+El widget `TaxVesTotalsField` (`static/src/components/tax_totals.xml`, usado cuando el documento se opera en moneda de la compañía) DEBE (MUST) renderizar en la fila "IGTF(sugerido)" el monto `totals.igtf.foreign_igtf_amount` (el porcentaje ya aplicado sobre la base), nunca `totals.igtf.foreign_igtf_base_amount` (la base/total del documento) -- ambas claves conviven en el mismo dict y son fáciles de confundir al extender la plantilla.
+
+#### Scenario: IGTF sugerido en la vista de moneda de la compañía
+
+- **WHEN** se muestra el bloque de totales de una factura en moneda de la compañía con `igtf_show` verdadero
+- **THEN** la fila "IGTF(sugerido)" muestra el 3% de la base (`foreign_igtf_amount`), no el total de la factura (`foreign_igtf_base_amount`)
+
 ### Requirement: Widget de anticipos pendientes en la factura
 
 Las facturas publicadas con estado de pago `not_paid` o `partial` DEBEN (MUST) exponer en `invoice_outstanding_credits_debits_widget_advance_payment` las líneas no conciliadas del partner comercial cuyo saldo tenga el signo contrario al documento, buscadas sobre las cuentas por cobrar/pagar de la propia factura más las cuentas de anticipo del tipo que corresponde al `move_type` (`liability_current` para `out_invoice` e `in_refund`; `asset_current` para el resto), y conservando solo las líneas que están en una cuenta de anticipo o que llevan `payment_id_advance`, con el monto residual convertido a la moneda de la factura. El widget estándar de créditos pendientes DEBE (MUST) excluir las líneas de anticipo y los asientos de cruce (`is_advance_move`), y `invoice_has_outstanding` considera ambos widgets. La conversión respeta `keep_alter_value_vef` del pago: los pagos en VEF con la marca se convierten desde `amount_residual` a la fecha del pago (revalorización), y sin la marca desde `amount_residual_currency` a la fecha mayor entre factura y pago; cuando la línea ya está en la moneda de la factura se usa `amount_residual_currency` sin conversión.
