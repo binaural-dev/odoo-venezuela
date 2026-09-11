@@ -44,6 +44,18 @@
                 <attribute name="readonly">1</attribute>
             </xpath>
 
+            <xpath expr="//field[@name='order_line']/list//field[@name='product_id']" position="attributes">
+                <attribute name="options">{'show_label_warning': True, 'no_quick_create': True, 'no_create_edit': True, 'no_create': True}</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/list//field[@name='product_template_id']" position="attributes">
+                <attribute name="options">{'show_label_warning': True, 'no_quick_create': True, 'no_create_edit': True, 'no_create': True}</attribute>
+            </xpath>
+
+            <xpath expr="//field[@name='order_line']/form//field[@name='product_id']" position="attributes">
+                <attribute name="options">{'no_quick_create': True, 'no_create_edit': True, 'no_create': True}</attribute>
+            </xpath>
+
             <xpath expr="//notebook" position="inside">
                 <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_sale.group_foreign_currency_view_sales">
                     <group>
