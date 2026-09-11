@@ -12,12 +12,52 @@ _logger = logging.getLogger(__name__)
 class ProductProduct(models.Model):
     _inherit = "product.product"
 
+    lock_internal_reference_on_moves = fields.Boolean(
+        string="Bloquear referencia interna con movimientos",
+        default=True,
+        help=(
+            "Si está activo, la referencia interna (código) no podrá "
+            "modificarse una vez que el producto (siendo almacenable) tenga "
+            "movimientos de inventario ya validados (estado 'Hecho'). Un "
+            "pedido de compra o venta confirmado, sin la transferencia "
+            "asociada validada todavía, no cuenta como movimiento."
+        ),
+    )
+
+    def _has_moves(self):
+        """Return True if self (variant) has done stock moves."""
+        self.ensure_one()
+        return bool(
+            self.env["stock.move"].sudo().search_count(
+                [("product_id", "=", self.id), ("state", "=", "done")], limit=1
+            )
+        )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Variante del maldito Raiver e.e
         return True
 
     def write(self, vals):
+        if "default_code" in vals:
+            for product in self:
+                lock_enabled = vals.get(
+                    "lock_internal_reference_on_moves",
+                    product.lock_internal_reference_on_moves,
+                )
+                if not product.is_storable or not lock_enabled:
+                    continue
+                if vals["default_code"] == product.default_code:
+                    continue
+                if product._has_moves():
+                    raise ValidationError(
+                        _(
+                            "No se puede modificar la referencia interna del "
+                            "producto '%s' porque ya tiene movimientos de "
+                            "inventario confirmados.",
+                            product.display_name,
+                        )
+                    )
         res = super().write(vals)
         if "list_price" in vals:
             self._validate_list_price()
@@ -204,8 +244,20 @@ class ProductProduct(models.Model):
 
         MoveLine = self.env['stock.move.line'].with_context(active_test=False)
 
-        domain_move_line_in = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_in_loc
-        domain_move_line_out = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_out_loc
+        # These lines are always filtered to state == 'done', so the "final destination
+        # of an in-progress chained move" branch of _get_domain_locations() does not
+        # apply here. `skip_in_progress=True` makes the core return the plain
+        # done-only in/out domains (each already excluding the other side via `~`,
+        # e.g. `dest_loc_domain_done & ~loc_domain`), instead of the union with the
+        # in-progress branch used for stock.move. Without that exclusion, an internal
+        # transfer (both origin and destination inside the selected locations) would
+        # count as incoming AND outgoing at once, inflating both quantities.
+        _, domain_move_line_in_loc, domain_move_line_out_loc = self.with_context(
+            skip_in_progress=True
+        )._get_domain_locations()
+
+        domain_move_line_in = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_line_in_loc
+        domain_move_line_out = [('product_id', 'in', self.ids), ('state', '=', 'done')] + domain_move_line_out_loc
 
         if from_date:
             domain_move_line_in += [('date', '>=', from_date)]
