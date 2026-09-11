@@ -49,7 +49,7 @@ class TfhkaServiceBase(models.AbstractModel):
 
     def _get_party_address(self, partner):
         """Dirección a reportar para el sujeto. Punto de extensión."""
-        return partner.contact_address_complete or "no definida"
+        return partner.contact_address or "no definida"
 
     def _parse_partner_identification(self, partner):
         """(tipo, número) de identificación fiscal a partir de ``vat``/``prefix_vat``.

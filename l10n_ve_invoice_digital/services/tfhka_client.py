@@ -106,7 +106,11 @@ class TfhkaApiClient(models.AbstractModel):
                 # TFHKA devuelve "codigo" indistintamente como entero o cadena
                 # según el endpoint; se normaliza para no depender del tipo.
                 code = str(data.get("codigo"))
-                response_json = json.dumps(data, default=str, indent=2)
+                response_json = json.dumps(
+                    self.env["tfhka.api.log"]._sanitize_payload(data),
+                    default=str,
+                    indent=2,
+                )
                 if code == "200":
                     self._log_call(
                         company, endpoint, payload, origin, response.status_code, response_json, True
