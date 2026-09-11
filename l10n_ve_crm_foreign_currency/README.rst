@@ -51,12 +51,10 @@ Oportunidades (``crm.lead``)
   usando siempre la tasa de cambio vigente en el momento de la consulta.
 - Disponible en el formulario de la oportunidad, en el mini-formulario de
   creación rápida del kanban, y en la tarjeta del kanban de Pipeline.
-- El monto en moneda comercial debe ser estrictamente positivo (no se
-  permiten montos en cero ni negativos) para oportunidades creadas o
-  editadas manualmente. Se exceptúan los leads (no oportunidades) y los
-  registros creados automáticamente por la pasarela de correo o el
-  formulario del sitio web, que no tienen quién llene el monto al momento
-  de crearse.
+- El monto en moneda comercial no puede ser negativo. Se permite en cero
+  (por ejemplo, al convertir un Lead a Oportunidad, cuyo formulario no
+  tiene este campo), sin excepción por tipo de registro ni por el origen
+  de la creación.
 - Los cambios sobre el monto en moneda comercial quedan registrados en el
   historial (chatter) de la oportunidad.
 

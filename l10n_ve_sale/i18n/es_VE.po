@@ -93,6 +93,34 @@ msgstr ""
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
+msgid ""
+"Check this if you want to convert the price unit of the customer invoice "
+"lines based on the sale order, using the invoice rate. It cannot be "
+"combined with pricelist rules for the same products."
+msgstr ""
+"Marque esta opción si desea convertir el precio unitario de las líneas de "
+"la factura de cliente en base al pedido de venta, usando la tasa de la "
+"factura. No se puede combinar con reglas de tarifa para los mismos "
+"productos."
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_company__convert_currency_from_sale_order
+#: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__convert_currency_from_sale_order
+msgid ""
+"Check this if you want to convert the price unit of the customer invoice "
+"lines based on the sale order, using the invoice rate. It cannot be "
+"combined with pricelist rules for the same products: if the invoice "
+"pricelist defines a rule for a product, the recalculation raises an error "
+"instead of overriding it."
+msgstr ""
+"Marque esta opción si desea convertir el precio unitario de las líneas de "
+"la factura de cliente en base al pedido de venta, usando la tasa de la "
+"factura. No se puede combinar con reglas de tarifa para los mismos "
+"productos: si la tarifa de la factura define una regla para un producto, "
+"el recálculo lanza un error en vez de sobrescribirla."
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid "Check this if you want to update the rate of the sale order"
 msgstr "Marque esta opción si desea actualizar la tasa de la orden de venta"
 
@@ -115,6 +143,12 @@ msgstr "Ajustes de configuración"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid "Configuration Sales: Generals"
 msgstr "Configuración Ventas: Generales"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__convert_currency_from_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__convert_currency_from_sale_order
+msgid "Convert Currency From Sale Order"
+msgstr "Convertir Moneda Desde la Orden de Venta"
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
@@ -472,6 +506,25 @@ msgstr "No se puede confirmar el presupuesto. Tiene %s Facturas (%s)."
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid "The order line limit must not exceed %s."
 msgstr "El límite de la línea de pedido no debe exceder de %s."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/account_move.py:0
+msgid ""
+"The pricelist %(pricelist)s defines a rule for the following products, so "
+"their price cannot be recalculated from the sale order: %(products)s.\n"
+"\n"
+"Both mechanisms set the same unit price and one would override the other. "
+"Either remove the pricelist rule or disable \"Convert Currency From Sale "
+"Order\"."
+msgstr ""
+"La tarifa %(pricelist)s define una regla para los siguientes productos, "
+"por lo que su precio no se puede recalcular a partir del pedido de venta: "
+"%(products)s.\n"
+"\n"
+"Ambos mecanismos fijan el mismo precio unitario y uno sobrescribiría al "
+"otro. Elimine la regla de la tarifa o desactive \"Convertir Moneda Desde "
+"la Orden de Venta\"."
 
 #. module: l10n_ve_sale
 #. odoo-python
