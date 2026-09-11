@@ -66,14 +66,14 @@ class ProductTemplate(models.Model):
         # Maldito Raiver e.e
         return True
 
-    @api.constrains("list_price")
+    @api.constrains("list_price", "sale_ok")
     def _check_list_price(self):
 
         if self.env.context.get('install_mode'):
             return
 
         for product in self:
-            if product.list_price <= 0:
+            if product.sale_ok and product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def write(self, vals):
