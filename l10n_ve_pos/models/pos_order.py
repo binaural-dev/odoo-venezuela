@@ -42,6 +42,52 @@ class PosOrder(models.Model):
         )
         return res
 
+    def _amount_to_foreign(self, amount):
+        """Convert a POS main-currency amount (Bs.) into the company's foreign
+        currency (USD) using this order's rate, rounded to the foreign
+        currency precision.
+
+        Mirrors the frontend ``pos.order.localToForeign`` used to fill
+        ``foreign_amount`` on every regular payment line, so any line created
+        server-side (e.g. the change/vuelto line) gets the same value.
+        """
+        self.ensure_one()
+        rate = self.foreign_currency_rate
+        if not rate:
+            return 0.0
+        foreign_amount = amount * rate
+        foreign_currency = self.foreign_currency_id
+        if foreign_currency:
+            foreign_amount = foreign_currency.round(foreign_amount)
+        return foreign_amount
+
+    def _process_payment_lines(self, pos_order, order, pos_session, draft):
+        """Backfill the foreign-currency amount on the change (vuelto) line.
+
+        Odoo core creates the change payment server-side here (``is_change``)
+        without a ``foreign_amount``/``foreign_rate``. Both the invoice payment
+        moves (``pos.payment._create_payment_moves``) and the session-close
+        cross moves (``pos.session``) build the alternate-currency columns
+        (``foreign_debit``/``foreign_credit``) from ``payment.foreign_amount``,
+        so a missing value left the change move with USD 0,00 and the alternate
+        currency unbalanced against the invoice (ticket #15126). Populate it at
+        the source so every downstream consumer reads a correct value.
+        """
+        res = super()._process_payment_lines(pos_order, order, pos_session, draft)
+        change_payments = order.payment_ids.filtered(
+            lambda payment: payment.is_change
+            and payment.amount
+            and not payment.foreign_amount
+        )
+        for payment in change_payments:
+            payment.write(
+                {
+                    "foreign_amount": order._amount_to_foreign(payment.amount),
+                    "foreign_rate": order.foreign_currency_rate,
+                }
+            )
+        return res
+
     @api.model
     def get_payments_order_refund(self, order_ids):
         if not order_ids:
