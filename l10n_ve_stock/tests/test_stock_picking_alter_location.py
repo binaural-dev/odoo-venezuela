@@ -46,7 +46,6 @@ class TestStockPickingAlterLocation(TransactionCase):
             'location_id': self.env.ref('stock.stock_location_suppliers').id,
             'location_dest_id': self.location.id,
             'move_ids': [(0, 0, {
-                'name': product_variant.name,
                 'product_id': product_variant.id,
                 'product_uom_qty': 20,
                 'product_uom': product_variant.uom_id.id,
