@@ -7,8 +7,8 @@
 
 ## 2. Verificación
 
-- [ ] 2.1 Probar en navegador: venta con pago > total sin método de vuelto → el asiento del vuelto (pago de factura) muestra Débito/Crédito alterno con el monto en USD (no 0,00)
-- [ ] 2.2 Conciliación en USD: pago alterno − vuelto alterno = alterno de la factura (cuadra)
+- [x] 2.1 Probar en navegador: venta con pago > total sin método de vuelto → el asiento del vuelto (pago de factura) muestra Débito/Crédito alterno con el monto en USD (no 0,00). Verificado: orden C4-CCS - 000001, asiento del vuelto PVCC4/2026/0008 con foreign_debit/foreign_credit $0,69 (antes $0,00)
+- [x] 2.2 Conciliación en USD: pago alterno − vuelto alterno = alterno de la factura (cuadra). Verificado: pago $5,19 − vuelto $0,69 = $4,50 = factura FCCS4 00049155
 - [ ] 2.3 Regresión: venta pagada justa (sin vuelto) sigue con su alterno correcto
 - [ ] 2.4 Reproducir la variante pagando en USD (EFE $) por encima del total, para confirmar el síntoma de la factura del ticket
 - [ ] 2.5 Cierre de sesión de una orden NO facturada con vuelto → asiento cruzado con alterno correcto
