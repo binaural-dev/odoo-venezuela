@@ -72,8 +72,12 @@ class TestPosChangeForeignAmount(TestPosSessionAccountingBase):
         )
 
     def _add_change(self, order, *, amount=-16.0, foreign_amount=0.0, foreign_rate=0.0):
-        """Add a change line the way core does: is_change, no foreign amount."""
-        return order.add_payment(
+        """Add a change line the way core does: is_change, no foreign amount.
+
+        ``pos.order.add_payment`` returns None, so the created payment is
+        read back from ``order.payment_ids``.
+        """
+        order.add_payment(
             {
                 "name": "CHANGE",
                 "pos_order_id": order.id,
@@ -85,6 +89,7 @@ class TestPosChangeForeignAmount(TestPosSessionAccountingBase):
                 "foreign_rate": foreign_rate,
             }
         )
+        return order.payment_ids.filtered(lambda p: p.is_change)[:1]
 
     def test_amount_to_foreign_multiplies_rounds_and_keeps_sign(self):
         order = self._draft_order(self._new_session(), rate=36.5)
@@ -137,7 +142,7 @@ class TestPosChangeForeignAmount(TestPosSessionAccountingBase):
     def test_process_payment_lines_ignores_non_change_payment(self):
         session = self._new_session()
         order = self._draft_order(session, rate=36.5)
-        regular = order.add_payment(
+        order.add_payment(
             {
                 "name": "REGULAR",
                 "pos_order_id": order.id,
@@ -148,6 +153,7 @@ class TestPosChangeForeignAmount(TestPosSessionAccountingBase):
                 "foreign_amount": 0.0,
             }
         )
+        regular = order.payment_ids.filtered(lambda p: not p.is_change)[:1]
 
         self.env["pos.order"]._process_payment_lines(
             {"amount_return": 0.0}, order, session, False
