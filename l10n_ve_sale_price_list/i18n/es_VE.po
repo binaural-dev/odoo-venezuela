@@ -19,3 +19,53 @@ msgstr ""
 #, python-format
 msgid "Price list report"
 msgstr "Reporte de lista de precios"
+
+#. module: l10n_ve_sale_price_list
+#. odoo-javascript
+#: code:addons/l10n_ve_sale_price_list/static/src/js/pricelist_report/product_pricelist_report.js:0
+#, python-format
+msgid "Selected pricelist not found."
+msgstr "No se encontró la lista de precios seleccionada."
+
+#. module: l10n_ve_sale_price_list
+#. odoo-javascript
+#: code:addons/l10n_ve_sale_price_list/static/src/js/pricelist_report/product_pricelist_report.js:0
+#, python-format
+msgid "This pricelist is already added."
+msgstr "Esta lista de precios ya fue agregada."
+
+#. module: l10n_ve_sale_price_list
+#. odoo-javascript
+#: code:addons/l10n_ve_sale_price_list/static/src/js/pricelist_report/product_pricelist_report.js:0
+#, python-format
+msgid "Select at least one pricelist first."
+msgstr "Selecciona al menos una lista de precios primero."
+
+#. module: l10n_ve_sale_price_list
+#. odoo-javascript
+#: code:addons/l10n_ve_sale_price_list/static/src/js/pricelist_report/product_pricelist_report.js:0
+#, python-format
+msgid "Error exporting file. Please try again."
+msgstr "Error al exportar el archivo. Por favor intenta de nuevo."
+
+#. module: l10n_ve_sale_price_list
+#. odoo-javascript
+#: code:addons/l10n_ve_sale_price_list/static/src/js/pricelist_report/product_pricelist_report.js:0
+#, python-format
+msgid "You selected %(products)s products and %(pricelists)s pricelists. Printing or exporting such a large combination may take a while."
+msgstr "Seleccionaste %(products)s productos y %(pricelists)s listas de precios. Imprimir o exportar una combinación tan grande puede tardar."
+
+#. module: l10n_ve_sale_price_list
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale_price_list.report_pricelist_page_inherit
+msgid "Issue date and time: "
+msgstr "Fecha y hora de emisión: "
+
+#. module: l10n_ve_sale_price_list
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale_price_list.report_pricelist_page_inherit
+msgid "Prices"
+msgstr "Precios"
+
+#. module: l10n_ve_sale_price_list
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale_price_list.report_pricelist_page_inherit
+msgid "Products"
+msgstr "Productos"
