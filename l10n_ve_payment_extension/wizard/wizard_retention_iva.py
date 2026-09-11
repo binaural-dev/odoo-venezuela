@@ -47,7 +47,10 @@ class TxtWizard(models.TransientModel):
         data = []
         for line in retentions.mapped("retention_line_ids"):
             line_data = {}
-            line_data["RIF del agente de retención"] = line.retention_id.company_id.partner_id.vat
+            line_data["RIF del agente de retención"] = (
+                (line.retention_id.company_id.partner_id.prefix_vat or "")
+                + (line.retention_id.company_id.partner_id.vat or "")
+            )
             line_data["Período impositivo"] = line.retention_id.date.strftime("%Y%m")
             line_data["Fecha de factura"] = line.move_id.invoice_date_display.strftime("%Y-%m-%d")
             line_data["Tipo de operación"] = "C"
