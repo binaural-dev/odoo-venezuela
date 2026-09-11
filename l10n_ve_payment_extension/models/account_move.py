@@ -168,6 +168,7 @@ class AccountMoveRetention(models.Model):
     @api.depends(
         "invoice_line_ids",
         "invoice_line_ids.product_id",
+        "invoice_line_ids.product_id.product_tmpl_id.payment_concept",
     )
     def _compute_retention_islr_avalability(self):
         for record in self:
