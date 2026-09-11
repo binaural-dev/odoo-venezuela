@@ -1984,3 +1984,108 @@ class TestRealPortion(TransactionCase):
             msg=f"price_unit_ves = {line.price_unit_ves}. Debe usar la tasa de "
                 f"la fecha del documento (2500), no la de hoy (5000)"
         )
+
+    def test_34_price_unit_ves_recomputes_when_date_changes(self):
+        """La fecha entra en _convert(), asi que debe estar declarada en el
+           @api.depends de _compute_price_unit_ves: mover la fecha de un
+           borrador tiene que recalcular price_unit_ves (igual que
+           test_26 para foreign_price).
+        """
+        self._set_usd_rate(50.0)
+
+        past_date = fields.Date.today() - timedelta(days=30)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 25.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 100.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # 100 USD a tasa 50 = 5000 VEF
+        self.assertAlmostEqual(line.price_unit_ves, 5000.0, places=2)
+
+        # Se mueve la fecha a una con tasa 25 -> 100 * 25 = 2500 VEF
+        invoice.write({
+            "invoice_date": past_date,
+            "date": past_date,
+        })
+
+        self.assertAlmostEqual(
+            line.price_unit_ves, 2500.0, places=2,
+            msg=f"price_unit_ves no se recalculo al cambiar la fecha "
+                f"(esperado 2500, obtenido {line.price_unit_ves})"
+        )
+
+    def test_35_invoice_date_change_same_rate_stays_balanced(self):
+        """Ticket 15089: mover invoice_date_display a otra fecha CUYA TASA
+           TIENE EL MISMO VALOR no debe descuadrar el asiento.
+
+           Antes del fix, _distribute_invoice_real_portion ajustaba las
+           lineas de producto (non_pt) contra un `expected_total` calculado
+           por conversion directa del total, y luego anclaba la
+           contrapartida releyendo ese ajuste. Si la tasa nueva es identica
+           a la anterior, el recompute del core de las lineas de producto
+           (disparado por el cambio de fecha) revierte ese ajuste a su
+           valor original -- pero la contrapartida ya quedo anclada al
+           valor ajustado que no sobrevive. El descuadre es exactamente el
+           residuo de redondeo acumulado entre sumar los balances linea por
+           linea y convertir el total una sola vez, y crece con la cantidad
+           de lineas (ver test_24).
+        """
+        self._set_usd_rate(807.3862)
+
+        n = 60
+        lines = []
+        for i in range(n):
+            price = round(45.4545 + i * 0.1111, 4)
+            lines.append(Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0,
+                "price_unit": price,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(5, 0, 0)],
+            }))
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+        self.assertEqual(invoice.state, 'draft')
+        self._assert_balances(invoice, "test_35_before")
+
+        # Misma tasa (807.3862) vigente en la nueva fecha: no se crea una
+        # tasa nueva, la de hoy sigue siendo la unica/ultima vigente.
+        new_date = fields.Date.today() - timedelta(days=1)
+        invoice.write({
+            "invoice_date_display": new_date,
+            "invoice_date": new_date,
+            "date": new_date,
+        })
+
+        self._assert_balances(invoice, "test_35_after")
