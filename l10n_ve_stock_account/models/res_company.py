@@ -52,3 +52,8 @@ class ResCompany(models.Model):
         help="If enabled, the weight field will be hidden in the dispatch guide.",
     )
 
+    seniat_email = fields.Char(
+        string="SENIAT Email",
+        help="Email address where the SENIAT summary of unbilled dispatch guides will be sent.",
+    )
+

@@ -16,9 +16,10 @@ class StockMove(models.Model):
             line.qty_return = sum(line.returned_move_ids.mapped("quantity"))
 
 
-    def _get_line_values(self, use_foreign_currency=False):
+    def _get_line_values_numeric(self, use_foreign_currency=False):
         """
-        Calculate and return all relevant values for a stock move line, including:
+        Calculate and return all relevant values for a stock move line as raw
+        floats (no currency formatting), including:
         - Quantity
         - Discount (percentage)
         - Discount amount
@@ -32,7 +33,7 @@ class StockMove(models.Model):
                                          If False, use the default currency.
 
         Returns:
-            dict: A dictionary containing the calculated values.
+            dict: A dictionary containing the calculated numeric values.
         """
         self.ensure_one()
 
@@ -65,23 +66,57 @@ class StockMove(models.Model):
 
         total_with_tax = subtotal_after_discount + tax_amount
 
-        currency = self.env.company.currency_id
-
         return {
             "quantity": quantity,
             "discount_percentage": discount,
-            "discount_amount": formatLang(
-                self.env, discount_amount, currency_obj=currency
-            ),
+            "discount_amount": discount_amount,
             "tax_percentage": tax,
-            "tax_amount": formatLang(self.env, tax_amount, currency_obj=currency),
-            "subtotal": formatLang(self.env, subtotal, currency_obj=currency),
-            "subtotal_after_discount": formatLang(
-                self.env, subtotal_after_discount, currency_obj=currency
+            "tax_amount": tax_amount,
+            "subtotal": subtotal,
+            "subtotal_after_discount": subtotal_after_discount,
+            "price_unit": price_unit,
+            "total_with_tax": total_with_tax,
+        }
+
+    def _get_line_values(self, use_foreign_currency=False):
+        """
+        Calculate and return all relevant values for a stock move line, with
+        monetary amounts formatted in the company currency. See
+        :meth:`_get_line_values_numeric` for the raw values.
+
+        Args:
+            use_foreign_currency (bool): If True, use the foreign currency (VEF) for calculations.
+                                         If False, use the default currency.
+
+        Returns:
+            dict: A dictionary containing the calculated values.
+        """
+        self.ensure_one()
+
+        values = self._get_line_values_numeric(use_foreign_currency)
+
+        if not self.sale_line_id:
+            return values
+
+        currency = self.env.company.currency_id
+
+        return {
+            **values,
+            "discount_amount": formatLang(
+                self.env, values["discount_amount"], currency_obj=currency
             ),
-            "price_unit": formatLang(self.env, price_unit, currency_obj=currency),
+            "tax_amount": formatLang(
+                self.env, values["tax_amount"], currency_obj=currency
+            ),
+            "subtotal": formatLang(self.env, values["subtotal"], currency_obj=currency),
+            "subtotal_after_discount": formatLang(
+                self.env, values["subtotal_after_discount"], currency_obj=currency
+            ),
+            "price_unit": formatLang(
+                self.env, values["price_unit"], currency_obj=currency
+            ),
             "total_with_tax": formatLang(
-                self.env, total_with_tax, currency_obj=currency
+                self.env, values["total_with_tax"], currency_obj=currency
             ),
         }
 

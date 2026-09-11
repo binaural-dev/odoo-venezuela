@@ -5,6 +5,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 from odoo.tools.safe_eval import safe_eval
+from odoo.tools.misc import formatLang
 from datetime import date, datetime, timedelta
 import calendar
 
@@ -1330,6 +1331,173 @@ class StockPicking(models.Model):
             ("is_return", "=", False),
             ("type_of_return", "!=", "total"),
         ]
+
+    @api.model
+    def _get_seniat_period_end_date(self, taxpayer_type, today=None):
+        """Return the end date of the current tax period for the given
+        taxpayer type. Special taxpayers close on the 15th (first fortnight)
+        or the last day of the month; ordinary/formal close monthly."""
+        today = today or date.today()
+        if taxpayer_type == "special" and today.day <= 15:
+            return today.replace(day=15)
+        last_day = calendar.monthrange(today.year, today.month)[1]
+        return date(today.year, today.month, last_day)
+
+    @api.model
+    def _get_unbilled_pickings_summary(self, company):
+        """Return the unbilled dispatch guides of the company with the
+        numeric total (taxes included) of each one."""
+        domain = self._get_domain_for_return_picking()
+        domain.append(("company_id", "=", company.id))
+        pickings = self.sudo().with_company(company).search(domain)
+
+        lines = []
+        total_amount = 0.0
+        for picking in pickings:
+            picking_total = sum(
+                move._get_line_values_numeric().get("total_with_tax", 0.0)
+                for move in picking.move_ids
+            )
+            picking_date = picking.date_done or picking.scheduled_date
+            lines.append(
+                {
+                    "name": picking.name,
+                    "date": picking_date and picking_date.strftime("%d-%m-%Y") or "",
+                    "total_with_tax": picking_total,
+                }
+            )
+            total_amount += picking_total
+
+        return {
+            "pickings": pickings,
+            "lines": lines,
+            "total_count": len(pickings),
+            "total_amount": total_amount,
+        }
+
+    @api.model
+    def _send_seniat_summary(self, company):
+        """Send the SENIAT summary email of unbilled dispatch guides for the
+        given company. Returns True if the email was sent, False when there
+        is nothing to report."""
+        company.ensure_one()
+        if not company.seniat_email:
+            raise UserError(
+                _(
+                    "Please configure the SENIAT email for company %(company)s "
+                    "before sending the summary."
+                )
+                % {"company": company.name}
+            )
+
+        summary = self._get_unbilled_pickings_summary(company)
+        if not summary["pickings"]:
+            _logger.info(
+                "SENIAT summary: no unbilled dispatch guides for company %s.",
+                company.name,
+            )
+            return False
+
+        currency = company.currency_id
+        lines = [
+            {
+                **line,
+                "amount_formatted": formatLang(
+                    self.env, line["total_with_tax"], currency_obj=currency
+                ),
+            }
+            for line in summary["lines"]
+        ]
+        period_end = self._get_seniat_period_end_date(company.taxpayer_type)
+        base_url = self.env["ir.config_parameter"].sudo().get_param("web.base.url")
+        template = self.env.ref("l10n_ve_stock_account.mail_template_seniat_summary")
+
+        ctx = {
+            "pickings_summary": lines,
+            "total_count": summary["total_count"],
+            "total_amount": formatLang(
+                self.env, summary["total_amount"], currency_obj=currency
+            ),
+            "period_end_date": period_end.strftime("%d-%m-%Y"),
+            "send_date": date.today().strftime("%d-%m-%Y"),
+            "seniat_company": company,
+            "base_url": base_url,
+        }
+        # Use an address that matches the SMTP server's from_filter.
+        # mail.default.from_filter is guaranteed to match the active
+        # outgoing mail server, so it takes precedence over company.email.
+        email_from = (
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("mail.default.from_filter", "")
+            or self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("mail.default.from", "")
+            or company.email
+        )
+        if not email_from:
+            _logger.error(
+                "SENIAT summary: cannot send email for company %s — "
+                "no sender address matches the outgoing mail server. Please "
+                "set 'mail.default.from_filter' or 'mail.default.from' in "
+                "System Parameters, or configure an email address on the "
+                "company.",
+                company.name,
+            )
+            raise UserError(
+                _(
+                    "Cannot send SENIAT summary for company %(company)s: "
+                    "no sender email matches the outgoing mail server. "
+                    "Please set 'mail.default.from_filter' or "
+                    "'mail.default.from' in System Parameters, or add "
+                    "an email address to the company %(company)s."
+                )
+                % {"company": company.name}
+            )
+        _logger.info(
+            "SENIAT summary: sending email from '%s' to '%s' for company '%s'.",
+            email_from,
+            company.seniat_email,
+            company.name,
+        )
+        template.sudo().with_company(company).with_context(**ctx).send_mail(
+            summary["pickings"][0].id,
+            force_send=True,
+            email_values={
+                "email_to": company.seniat_email,
+                "email_from": email_from,
+                "headers": {"Return-Path": email_from},
+            },
+        )
+        _logger.info(
+            "SENIAT summary: email sent successfully to '%s' for company '%s'.",
+            company.seniat_email,
+            company.name,
+        )
+        return True
+
+    @api.model
+    def _cron_send_seniat_alert(self):
+        """Daily cron: send the SENIAT summary to every company whose tax
+        period closes today."""
+        today = date.today()
+        for company in self.env["res.company"].sudo().search([]):
+            if not company.seniat_email:
+                continue
+            period_end = self._get_seniat_period_end_date(
+                company.taxpayer_type, today
+            )
+            # TODO: descomentar después de probar el envío del correo
+            # if today != period_end:
+            #     continue
+            try:
+                self._send_seniat_summary(company)
+            except Exception as e:
+                _logger.error(
+                    "Error sending SENIAT summary for company %s: %s",
+                    company.name,
+                    str(e),
+                )
 
     def get_foreign_currency_is_vef(self):
         return self.env.company.foreign_currency_id == self.env.ref("base.VEF")
