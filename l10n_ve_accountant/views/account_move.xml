@@ -18,7 +18,10 @@
             <xpath expr="//label[@for='invoice_date'][@invisible=&quot;move_type not in ('out_invoice', 'out_refund', 'out_receipt')&quot;]" position="attributes">
                 <attribute name="string">Rate Date</attribute>
             </xpath>
-            <xpath expr="//field[@name='invoice_date']" position="after">
+            <!-- Placed before the customer label (not the field) so it lands
+                 above the whole Rate Date row, matching the ticket's order:
+                 Invoice Date, Reception Date, Rate Date -->
+            <xpath expr="//label[@for='invoice_date'][@invisible=&quot;move_type not in ('out_invoice', 'out_refund', 'out_receipt')&quot;]" position="before">
                 <field name="invoice_date_display" readonly="state != 'draft'" invisible="move_type == 'entry'" required="move_type in ('in_invoice', 'out_invoice', 'in_refund', 'out_refund')"/>
             </xpath>
             <xpath expr="//div[@name='currency_div']" position="replace">
