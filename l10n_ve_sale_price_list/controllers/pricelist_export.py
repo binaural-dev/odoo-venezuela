@@ -1,3 +1,4 @@
+import base64
 import csv
 import io
 import json
@@ -70,6 +71,12 @@ class ProductPricelistExportController(ProductPricelistExportController):
             company.display_name if company else '',
             issue_date or '',
         ], bold)
+        if company and company.logo:
+            worksheet.insert_image(0, len(headers) + 1, 'logo.png', {
+                'image_data': io.BytesIO(base64.b64decode(company.logo)),
+                'x_scale': 0.3,
+                'y_scale': 0.3,
+            })
         header_row = 2
         worksheet.write_row(header_row, 0, headers)
         rows = self._generate_rows(products, pricelists)
