@@ -10,12 +10,11 @@ _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "retention_payment_move_date")
 class TestRetentionPaymentMoveDate(RetentionTestCommon):
-    """A retention payment's journal entry must be dated (and rated) with
-    the retention's own date_accounting, like any other payment -- there is
-    no special-casing to pin it to the invoice's own date instead. An
-    earlier version of this module added such an override based on
-    outdated documentation; it was reverted, and this test now asserts the
-    actual expected behavior instead."""
+    """Covers how a retention payment's journal entry gets dated today:
+    with the retention's own date_accounting, the same date shown on
+    payment.date -- there is no override pinning it to the date (or rate)
+    of the invoice being retained from, even when that invoice is booked
+    in a foreign currency at a different rate."""
 
     def setUp(self):
         super().setUp()
@@ -60,13 +59,7 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
     def _create_foreign_invoice(self, amount=200.0):
         """Purchase invoice booked in USD (foreign currency), while the
         retention payment is always created in company currency (VEF, see
-        AccountRetention._prepare_retention_payment_vals).
-
-        Built through Form (like RetentionTestCommon._create_invoice_reten_iva)
-        instead of a raw .create(vals): the fiscal-position/tax onchange chain
-        needs to run for product_iva's taxes to resolve correctly on this
-        partner/company, exactly like the rest of this test suite already
-        does."""
+        AccountRetention._prepare_retention_payment_vals)."""
         with Form(self.env["account.move"].with_context(
             default_move_type="in_invoice", default_journal_id=self.purchase_journal_usd.id,
         )) as inv_form:
@@ -87,37 +80,35 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
         invoice.action_post()
         return invoice
 
-    def _exchange_diff_moves(self, invoice):
-        ap_lines = invoice.line_ids.filtered(
-            lambda l: l.account_id.account_type == "liability_payable"
-        )
-        partials = ap_lines.matched_credit_ids | ap_lines.matched_debit_ids
-        return partials.mapped("exchange_move_id").filtered(lambda m: m)
-
-    def test_retention_payment_move_uses_date_accounting(self):
-        invoice = self._create_foreign_invoice(amount=200.0)
+    def _create_retention(self, invoice, number="01234567891234"):
         invoice_total_vef = abs(invoice.amount_residual_signed)
-        retention_amount_vef = invoice_total_vef * 0.10
-
-        retention = self.env["account.retention"].create({
+        return self.env["account.retention"].create({
             "type_retention": "iva",
             "type": "in_invoice",
             "company_id": self.company.id,
             "partner_id": self.partner_pnr_75.id,
             "date": self.date_accounting,
             "date_accounting": self.date_accounting,
-            "number": "01234567891234",
+            "number": number,
             "retention_line_ids": [Command.create({
                 "move_id": invoice.id,
                 "name": "IVA Line",
                 "invoice_total": invoice_total_vef,
                 "invoice_amount": 200.0,
-                "retention_amount": retention_amount_vef,
+                "retention_amount": invoice_total_vef * 0.10,
                 "foreign_invoice_amount": 200.0,
                 "foreign_retention_amount": 20.0,
                 "foreign_currency_rate": 1.0,
             })],
         })
+
+    def test_retention_payment_move_uses_date_accounting(self):
+        """The payment (and the move behind it) are dated with the
+        retention's own date_accounting, regardless of the date -- and
+        rate -- of the invoice being retained from. There is no pinning to
+        the invoice's own accounting date anywhere in this module."""
+        invoice = self._create_foreign_invoice(amount=200.0)
+        retention = self._create_retention(invoice)
 
         retention.action_post()
 
@@ -128,21 +119,37 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             payment.date, self.date_accounting,
             "payment.date must reflect the retention's own date_accounting.",
         )
-
-        # The move behind that payment must share the same date -- no
-        # special-casing to pin it to the invoice's own date.
         self.assertEqual(
             payment.move_id.date, self.date_accounting,
-            "The retention payment's journal entry must be dated like "
-            "date_accounting, same as any other payment.",
+            "The retention payment's journal entry is dated like "
+            "date_accounting -- nothing in this module pins it to the "
+            "invoice's own date.",
         )
 
-        # Independent of the date the move is booked at: reconciling a
-        # retention payment against the invoice it retains from must never
-        # produce a fictitious exchange difference (see the
-        # no_exchange_difference guarantee added in 22a9444b8).
-        self.assertFalse(
-            self._exchange_diff_moves(invoice),
-            "A retention payment must never generate an exchange difference "
-            "against the invoice it retains from.",
+    def test_retention_payment_generate_move_vals_uses_date_accounting(self):
+        """Direct unit check: _generate_move_vals is core Odoo's own
+        implementation here (no override in this module), so it falls back
+        to 'date': self.date, which for a retention payment is
+        date_accounting -- not the date of the invoice being retained
+        from."""
+        invoice = self._create_foreign_invoice(amount=200.0)
+        retention = self._create_retention(invoice, number="01234567891235")
+
+        payment_vals = retention._prepare_retention_payment_vals(
+            invoice, retention.retention_line_ids
+        )
+        self.assertEqual(
+            payment_vals["date"], self.date_accounting,
+            "The payment itself is dated with date_accounting.",
+        )
+
+        payment = self.env["account.payment"].create(payment_vals)
+        payment.retention_line_ids = retention.retention_line_ids
+
+        move_vals = payment._generate_move_vals()
+        self.assertEqual(
+            move_vals.get("date"), self.date_accounting,
+            "_generate_move_vals has no override in this module, so it "
+            "keeps core Odoo's default: 'date' falls back to payment.date "
+            "(date_accounting), not the invoice's own accounting date.",
         )

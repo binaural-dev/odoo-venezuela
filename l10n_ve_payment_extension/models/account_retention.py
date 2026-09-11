@@ -715,11 +715,12 @@ class AccountRetention(models.Model):
         if not payments:
             raise UserError(_("No payments found for reconciliation."))
 
-        # The invoice this retention applies to can already sit in a closed
-        # fiscal period by the time the retention itself is processed --
-        # bypass_lock_check is the core's own escape hatch for that check,
-        # only triggered here by the state -> 'posted' transition (not by
-        # writing 'date', which never happens after creation).
+        # These payments are dated with the retention's own date_accounting
+        # (see _prepare_retention_payment_vals), which can already sit in a
+        # closed fiscal period by the time the retention itself is processed --
+        # bypass_lock_check is the core's own escape hatch for that check, only
+        # triggered here by the state -> 'posted' transition (not by writing
+        # 'date', which never happens after creation).
         payments.with_context(bypass_lock_check=BYPASS_LOCK_CHECK).action_post()
 
         account_type_map = {
@@ -742,9 +743,22 @@ class AccountRetention(models.Model):
                 raise ValidationError(
                     _("No registered lines found in the move to reconcile.")
                 )
-
+            
+            # `l10n_ve_exchange_is_retention_reconcile` -- explicit,
+            # module-owned context key (as opposed to reusing the native
+            # `no_exchange_difference` alone) so that any OTHER module
+            # hooking into reconciliation can tell a retention payoff
+            # apart from any other legitimate reason a caller might set
+            # `no_exchange_difference` (e.g. `l10n_ve_exchange_difference`
+            # itself sets it when closing its own Debit/Credit Note,
+            # `account_move_line.py::_create_exchange_difference_note`).
+            # Coordinated purely via context, not a shared dependency:
+            # `l10n_ve_exchange_difference` reads this key without
+            # depending on this module.
             payment.retention_line_ids.move_id.with_context(
-                no_exchange_difference=True,group_in_single_partial=True
+                no_exchange_difference=True,
+                group_in_single_partial=True,
+                l10n_ve_exchange_is_retention_reconcile=True,
             ).js_assign_outstanding_line(lines[0].id)
 
     @api.model
