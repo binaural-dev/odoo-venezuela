@@ -148,11 +148,11 @@ class AccountMoveLine(models.Model):
             foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
-            foreign_subtotal = line_discount_price_unit * line.quantity
+            foreign_subtotal = foreign_price_unit_full_precision * line.quantity
 
             if line.tax_ids:
                 taxes_res = line.tax_ids.compute_all(
-                    line_discount_price_unit,
+                    foreign_price_unit_full_precision,
                     quantity=line.quantity,
                     currency=line.foreign_currency_id,
                     product=line.product_id,
