@@ -1,4 +1,5 @@
 import html
+import json
 import logging
 import re
 
@@ -9,7 +10,7 @@ from odoo import api, fields, models
 
 _logger = logging.getLogger(__name__)
 
-SENSITIVE_KEYS = {"password", "authorization", "clave"}
+SENSITIVE_KEYS = {"password", "authorization", "clave", "token"}
 PURGE_AFTER_MONTHS = 3
 
 # Tokenizes a pretty-printed JSON string for syntax highlighting. Order
@@ -65,6 +66,17 @@ class TfhkaApiLog(models.Model):
             log.response_payload_html = self._payload_to_html(log.response_payload)
 
     @api.model
+    def _wrap_pre(self, inner_html):
+        return (
+            Markup(
+                '<pre style="white-space:pre-wrap;word-break:break-word;'
+                'font-family:monospace;font-size:12px;margin:0;">'
+            )
+            + Markup(inner_html)
+            + Markup("</pre>")
+        )
+
+    @api.model
     def _payload_to_html(self, value):
         """Render a pretty-printed JSON string as syntax-highlighted HTML.
 
@@ -74,9 +86,21 @@ class TfhkaApiLog(models.Model):
         Every token is escaped before being inserted, and the untouched
         separators (braces, commas, whitespace) can't contain HTML-special
         characters in valid JSON, so this is safe against injection.
+
+        Only applies when ``value`` actually parses as JSON. Some callers
+        persist a raw, non-JSON body here too (e.g. ``response.text`` for an
+        HTTP error from a proxy in front of TFHKA), and the token regex only
+        escapes what it matches — anything else would pass through
+        unescaped. For that case, escape the whole text instead of
+        highlighting it.
         """
         if not value:
             return False
+
+        try:
+            json.loads(value)
+        except (TypeError, ValueError):
+            return self._wrap_pre(html.escape(value))
 
         def _highlight(match):
             kind = match.lastgroup
@@ -84,10 +108,7 @@ class TfhkaApiLog(models.Model):
             return f'<span style="{JSON_TOKEN_STYLES[kind]}">{text}</span>'
 
         highlighted = JSON_TOKEN_RE.sub(_highlight, value)
-        return Markup(
-            '<pre style="white-space:pre-wrap;word-break:break-word;'
-            'font-family:monospace;font-size:12px;margin:0;">'
-        ) + Markup(highlighted) + Markup("</pre>")
+        return self._wrap_pre(highlighted)
 
     @api.model
     def _sanitize_payload(self, payload):

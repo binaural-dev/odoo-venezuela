@@ -77,7 +77,9 @@ class ResCompany(models.Model):
             payload,
             None,
             response.status_code,
-            json.dumps(data, default=str, indent=2),
+            json.dumps(
+                self.env["tfhka.api.log"]._sanitize_payload(data), default=str, indent=2
+            ),
             success,
         )
         if success:

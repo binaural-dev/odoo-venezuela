@@ -23,6 +23,7 @@
         "data/res_currency_data.xml",
         "data/ir_cron.xml",
         "security/ir.model.access.csv",
+        "security/ir_rule.xml",
         "views/res_config_settings.xml",
         "views/account_move_view.xml",
         "views/account_retention_iva.xml",

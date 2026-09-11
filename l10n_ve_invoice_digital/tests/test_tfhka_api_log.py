@@ -80,6 +80,12 @@ class TestTfhkaApiLog(TransactionCase):
         self.assertEqual(self.log_model._sanitize_payload(None), None)
         self.assertEqual(self.log_model._sanitize_payload("raw"), "raw")
 
+    def test_sanitize_payload_redacts_token(self):
+        payload = {"token": "secret-token", "codigo": 200}
+        sanitized = self.log_model._sanitize_payload(payload)
+        self.assertEqual(sanitized["token"], "***")
+        self.assertEqual(sanitized["codigo"], 200)
+
     # ------------------------------------------------------------------
     # Payload HTML formatting
     # ------------------------------------------------------------------
@@ -93,6 +99,15 @@ class TestTfhkaApiLog(TransactionCase):
     def test_payload_to_html_empty_returns_false(self):
         self.assertFalse(self.log_model._payload_to_html(False))
         self.assertFalse(self.log_model._payload_to_html(""))
+
+    def test_payload_to_html_escapes_non_json_payload(self):
+        """A raw, non-JSON body (e.g. an HTML error page from a proxy in
+        front of TFHKA) must come out fully escaped, not partially matched
+        by the JSON token regex."""
+        rendered = self.log_model._payload_to_html("<script>alert(1)</script>")
+        self.assertTrue(rendered.startswith("<pre"))
+        self.assertNotIn("<script>", rendered)
+        self.assertIn("&lt;script&gt;alert(1)&lt;/script&gt;", rendered)
 
     def test_payload_to_html_highlights_tokens(self):
         rendered = self.log_model._payload_to_html('{\n  "a": 1,\n  "b": true\n}')
@@ -198,6 +213,22 @@ class TestTfhkaApiLog(TransactionCase):
         self.assertTrue(log["success"])
         self.assertNotIn("clave_prueba", log["request_payload"])
         self.assertIn("***", log["request_payload"])
+        self.assertNotIn("new-token", log["response_payload"])
+        self.assertIn("***", log["response_payload"])
+        self.assertEqual(self.company.token_auth_tfhka, "new-token")
+
+    def test_request_logs_token_redacted_in_response(self):
+        with patch(
+            CLIENT_REQUESTS_PATH,
+            return_value=_response(
+                json_data={"codigo": "200", "token": "leaked-token"}
+            ),
+        ):
+            self.client.emit(self.company, {"foo": "bar"})
+        log = self._last_log([("endpoint", "=", "/Emision")])
+        self.assertTrue(log)
+        self.assertNotIn("leaked-token", log["response_payload"])
+        self.assertIn("***", log["response_payload"])
 
     # ------------------------------------------------------------------
     # action_open_origin
@@ -221,6 +252,45 @@ class TestTfhkaApiLog(TransactionCase):
         action = log.action_open_origin()
         self.assertEqual(action["res_model"], "res.company")
         self.assertEqual(action["res_id"], self.company.id)
+
+    # ------------------------------------------------------------------
+    # Multi-company access
+    # ------------------------------------------------------------------
+
+    def test_logs_are_restricted_by_company(self):
+        other_company = self.env["res.company"].create({"name": "Other TFHKA Co"})
+        own_log = self.log_model.create(
+            {"endpoint": "/Emision", "company_id": self.company.id}
+        )
+        other_log = self.log_model.create(
+            {"endpoint": "/Emision", "company_id": other_company.id}
+        )
+
+        restricted_user = self.env["res.users"].create(
+            {
+                "name": "TFHKA Restricted User",
+                "login": "tfhka_restricted_user",
+                "group_ids": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(
+                                "l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin"
+                            ).id,
+                        ],
+                    )
+                ],
+                "company_ids": [(6, 0, [self.company.id])],
+                "company_id": self.company.id,
+            }
+        )
+
+        visible_logs = self.log_model.with_user(restricted_user).search(
+            [("id", "in", (own_log + other_log).ids)]
+        )
+        self.assertEqual(visible_logs, own_log)
 
     # ------------------------------------------------------------------
     # cron_purge_old_logs
