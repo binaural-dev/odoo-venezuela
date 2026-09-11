@@ -93,3 +93,27 @@
 - [x] 8.2 PR cliente: https://github.com/binaural-consultoria/Sucursales-Miguel-New-V19/pull/6
       (`fix-ti-15065-error-in-create-company` → `staging`)
 - [x] 8.3 Rama submódulo (cherry-pick puntual sobre base histórica del cliente): `fix-ti-15065-error-in-create-company`
+
+## 9. Follow-ups del review (PR #1305, @pastor-binaural, #pullrequestreview-5171870366)
+
+Review sin condiciones para el merge ("Mergeable. Sin condiciones — se puede mergear tal como
+está"); los siguientes 6 puntos son mejoras aplicadas en la misma rama, no requisitos de merge.
+
+- [x] 9.1 `default_injections` en `_enforce_single_tax_vals_write` pasa a estar clavado por
+      `(field_name, default_tax.id)` en vez de solo `field_name`, y `write()` itera
+      `injection['field']` — corrige que, en un batch con productos de compañías distintas
+      necesitando default cada uno, el segundo se llevaba el impuesto por defecto del primero
+- [x] 9.2 `_enforce_single_tax_vals_create` concatena el impuesto por defecto sobre
+      `vals.get(field_name)` en vez de reemplazarlo — corrige que un `taxes_id` con solo impuestos
+      de otra compañía perdía esos comandos al inyectar el default
+- [x] 9.3 Corregido el docstring de `write()` que describía una re-entrada recursiva que
+      `skip_tax_validation_on_write=True` en realidad evita
+- [x] 9.4 `_relevant_tax_ids` acepta `tax_company_map` opcional; `_enforce_single_tax_vals_write`
+      hace un solo `browse().exists()` para todo el batch en vez de uno por registro y por campo
+- [x] 9.5 `_apply_m2m_commands` usa `fields.Command.SET/LINK/UNLINK/CLEAR` en vez de los códigos
+      numéricos `6/4/3/5` (sin ampliar el soporte a `DELETE`/`CREATE`/`UPDATE`, marcados por el
+      reviewer como huecos preexistentes fuera de alcance)
+- [x] 9.6 Tests nuevos: `test_28` (batch de 2 compañías, cada una con su propio default),
+      `test_29` (create conserva el impuesto de otra compañía y agrega el default), `test_30`
+      (dos combos, uno con impuesto y otro sin, `write({'type': 'consu'})` sobre ambos)
+- [x] 9.7 Manifest `19.0.1.0.16` → `19.0.1.0.17`

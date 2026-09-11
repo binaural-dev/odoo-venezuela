@@ -545,3 +545,104 @@ class TestProductTemplate(TransactionCase):
             set(shared_product.taxes_id.ids),
             {other_company_tax.id, self.tax_sale_1.id},
         )
+
+    # ═══════════════════════════════════════════════════════════════
+    # Review follow-ups (PR #1305, @pastor-binaural,
+    # #pullrequestreview-5171870366) — none blocked the merge, all
+    # applied as a same-branch fix.
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_28_write_batch_two_companies_each_gets_own_default(self):
+        """Follow-up #1: a single write() that needs to inject a default
+        tax for products of TWO DIFFERENT companies must give each product
+        its OWN company's default — not have the second product silently
+        reuse the first product's default (the old code keyed the pending
+        injection only by field_name, so the first record processed won
+        the shared dict entry for that field)."""
+        other_company = self.env["res.company"].create({"name": "Follow-up 1 Company"})
+        other_tax_group = self.env["account.tax.group"].create({
+            "name": "Follow-up 1 Tax Group", "company_id": other_company.id,
+        })
+        other_default_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Follow-up 1 Company Default Sale Tax", "amount": 10,
+            "amount_type": "percent", "type_tax_use": "sale",
+            "company_id": other_company.id, "tax_group_id": other_tax_group.id,
+        })
+        other_purchase_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Follow-up 1 Other Company Purchase Tax", "amount": 5,
+            "amount_type": "percent", "type_tax_use": "purchase",
+            "company_id": other_company.id, "tax_group_id": other_tax_group.id,
+        })
+        other_company.write({"account_sale_tax_id": other_default_tax.id})
+        self.company.write({"account_sale_tax_id": self.tax_sale_1.id})
+
+        product_main = self.env["product.template"].with_company(self.company).create({
+            "name": "Follow-up 1 Main Company Product",
+            "type": "service", "company_id": self.company.id,
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [self.tax_purchase.id])],
+        })
+        product_other = self.env["product.template"].with_company(other_company).create({
+            "name": "Follow-up 1 Other Company Product",
+            "type": "service", "company_id": other_company.id,
+            "taxes_id": [(6, 0, [other_default_tax.id])],
+            "supplier_taxes_id": [(6, 0, [other_purchase_tax.id])],
+        })
+        batch = product_main + product_other
+        # Both taxes cleared in the same write(): each product must be
+        # re-injected with its OWN company's default, not the other's.
+        batch.write({"taxes_id": [(5, 0, 0)]})
+        self.assertEqual(product_main.taxes_id.id, self.tax_sale_1.id)
+        self.assertEqual(product_other.taxes_id.id, other_default_tax.id)
+
+    def test_29_create_keeps_other_company_tax_and_adds_default(self):
+        """Follow-up #2: creating a product whose only taxes_id command
+        points to a tax from ANOTHER (irrelevant) company — so
+        _relevant_tax_ids filters it out and a default gets injected —
+        must ADD the default on top of that command, not replace it and
+        silently drop the caller's original tax."""
+        other_company = self.env["res.company"].create({"name": "Follow-up 2 Company"})
+        other_tax_group = self.env["account.tax.group"].create({
+            "name": "Follow-up 2 Tax Group", "company_id": other_company.id,
+        })
+        other_company_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Follow-up 2 Other Company Sale Tax", "amount": 7,
+            "amount_type": "percent", "type_tax_use": "sale",
+            "company_id": other_company.id, "tax_group_id": other_tax_group.id,
+        })
+        self.company.write({"account_sale_tax_id": self.tax_sale_1.id})
+
+        product = self.env["product.product"].create({
+            "name": "Follow-up 2 Product",
+            "type": "service",
+            "taxes_id": [(6, 0, [other_company_tax.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        self.assertEqual(
+            set(product.taxes_id.ids),
+            {other_company_tax.id, self.tax_sale_1.id},
+        )
+
+    def test_30_write_batch_two_combos_one_with_tax_one_without(self):
+        """Follow-up #5 (task 81303, second scenario): two combo products,
+        one already carrying a valid tax and the other with none, both
+        switched from combo to consu in the SAME write(). Each must be
+        validated individually — the one with a tax stays as-is, the one
+        without gets the company default injected — not skip validation
+        because the per-record union happens to include a tax."""
+        self.company.write({"account_sale_tax_id": self.tax_sale_1.id})
+        combo_with_tax = self.env["product.template"].create({
+            "name": "Follow-up 5 Combo With Tax",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_2.id])],
+        })
+        combo_without_tax = self.env["product.template"].create({
+            "name": "Follow-up 5 Combo Without Tax",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        batch = combo_with_tax + combo_without_tax
+        batch.write({"type": "consu"})
+        self.assertEqual(combo_with_tax.taxes_id.id, self.tax_sale_2.id)
+        self.assertEqual(combo_without_tax.taxes_id.id, self.tax_sale_1.id)
