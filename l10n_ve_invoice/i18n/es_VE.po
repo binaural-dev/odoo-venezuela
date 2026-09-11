@@ -818,3 +818,15 @@ msgstr ""
 "El monto acreditado para el producto '%(product)s' (%(amount)s, "
 "incluyendo %(already)s ya acreditado por otras notas de crédito) supera "
 "el monto facturado en el documento original '%(origin)s' (%(max)s)."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"The total credited amount on this credit note (%(amount)s, including "
+"%(already)s already credited by other credit notes) exceeds the amount "
+"invoiced on the original document '%(origin)s' (%(max)s)."
+msgstr ""
+"El monto total acreditado en esta nota de crédito (%(amount)s, incluyendo "
+"%(already)s ya acreditado por otras notas de crédito) supera el monto "
+"facturado en el documento original '%(origin)s' (%(max)s)."
