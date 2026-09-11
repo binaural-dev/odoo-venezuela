@@ -1,5 +1,7 @@
 import logging
 
+from dateutil.relativedelta import relativedelta
+
 from odoo.tests import tagged, Form
 from odoo import Command, fields
 
@@ -19,8 +21,12 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
 
     def setUp(self):
         super().setUp()
-        self.invoice_date = fields.Date.today().replace(day=1)
+        # relativedelta(months=1) instead of .replace(day=1): the latter
+        # collides with date_accounting (today) on the 1st of any month,
+        # silently turning the assertions below into no-ops. Subtracting a
+        # full month is never equal to today regardless of what today is.
         self.date_accounting = fields.Date.today()
+        self.invoice_date = self.date_accounting - relativedelta(months=1)
 
         self._set_rate(self.currency_usd, self.invoice_date, 40.0)
         self._set_rate(self.currency_usd, self.date_accounting, 60.0)
@@ -129,13 +135,15 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             "payment.date must reflect the retention's own date_accounting.",
         )
 
-        # The move behind that payment is NOT dated like the invoice (that
-        # approach was tried in commit 7dc7660ea and reverted in 22a9444b):
-        # it keeps date_accounting instead.
-        self.assertNotEqual(
-            payment.move_id.date, invoice.date,
-            "The retention payment's journal entry must not be dated like "
-            "the invoice it retains from; it must keep date_accounting.",
+        # The move behind that payment is dated with date_accounting, NOT
+        # with the invoice's own date (pinning it to the invoice's date was
+        # tried in commit 7dc7660ea and reverted in 22a9444b): it must be
+        # AccountRetention._prepare_retention_payment_vals's date_accounting,
+        # verified exactly, not merely "not the invoice's date".
+        self.assertEqual(
+            payment.move_id.date, self.date_accounting,
+            "The retention payment's journal entry must be dated with "
+            "date_accounting.",
         )
 
         # Independent of the date the move is booked at: reconciling a
@@ -146,50 +154,4 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             self._exchange_diff_moves(invoice),
             "A retention payment must never generate an exchange difference "
             "against the invoice it retains from.",
-        )
-
-    def test_retention_payment_generate_move_vals_pins_invoice_date(self):
-        """Direct unit check on the overridden hook itself: _generate_move_vals
-        must inject the invoice's own date as 'date' in the vals used to build
-        the payment's move, precisely because payment.date (date_accounting)
-        is not it."""
-        invoice = self._create_foreign_invoice(amount=200.0)
-        invoice_total_vef = abs(invoice.amount_residual_signed)
-
-        retention = self.env["account.retention"].create({
-            "type_retention": "iva",
-            "type": "in_invoice",
-            "company_id": self.company.id,
-            "partner_id": self.partner_pnr_75.id,
-            "date": self.date_accounting,
-            "date_accounting": self.date_accounting,
-            "number": "01234567891235",
-            "retention_line_ids": [Command.create({
-                "move_id": invoice.id,
-                "name": "IVA Line",
-                "invoice_total": invoice_total_vef,
-                "invoice_amount": 200.0,
-                "retention_amount": invoice_total_vef * 0.10,
-                "foreign_invoice_amount": 200.0,
-                "foreign_retention_amount": 20.0,
-                "foreign_currency_rate": 1.0,
-            })],
-        })
-        payment_vals = retention._prepare_retention_payment_vals(
-            invoice, retention.retention_line_ids
-        )
-        self.assertEqual(
-            payment_vals["date"], self.date_accounting,
-            "The payment itself must still be dated with date_accounting.",
-        )
-
-        payment = self.env["account.payment"].create(payment_vals)
-        payment.retention_line_ids = retention.retention_line_ids
-
-        move_vals = payment._generate_move_vals()
-        self.assertNotEqual(
-            move_vals.get("date"), invoice.date,
-            "_generate_move_vals no longer overrides 'date' to the invoice's "
-            "own accounting date (that override was reverted in 22a9444b); "
-            "it must leave payment.date (date_accounting) as the move's date.",
         )
