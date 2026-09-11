@@ -75,13 +75,46 @@ class AccountMoveLine(models.Model):
     international_purchase_exent_product = fields.Boolean(string="International Purchase Exent Product")
     is_purchase_international = fields.Boolean(related="move_id.journal_id.is_purchase_international")
 
-    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
+    def _get_foreign_rate_date(self):
+        """Fecha con la que se busca la tasa para convertir montos de esta linea.
+
+        Unica fuente de fecha para todo calculo de moneda alterna de la linea:
+        _compute_foreign_price, _compute_price_unit_ves y
+        _get_non_invoice_foreign_value.
+
+        Facturas y notas de credito/debito: invoice_date, que en esta
+        localizacion es la fecha de la tasa (la fecha visible del documento es
+        invoice_date_display). Asientos manuales y de pago: la fecha contable
+        (date), que es la unica que tienen.
+        """
+        self.ensure_one()
+        move = self.move_id
+        if move.is_invoice(include_receipts=True):
+            return move.invoice_date or move.date or fields.Date.context_today(self)
+        return move.date or fields.Date.context_today(self)
+
+    @api.depends(
+        "price_unit",
+        "currency_id",
+        "move_id.currency_id",
+        "move_id.invoice_date",
+        "move_id.date",
+    )
     def _compute_price_unit_ves(self):
         for line in self:
-            if line.currency_id and line.currency_id == line.company_id.currency_id:
+            company_currency = line.company_id.currency_id
+            if not line.currency_id or line.currency_id == company_currency:
                 line.price_unit_ves = line.price_unit
-            else:
-                line.price_unit_ves = line.price_unit / line.currency_id.rate
+                continue
+            # Convertir con _convert() y no dividiendo entre currency_id.rate:
+            # aplica el redondeo de la moneda destino y no revienta si la tasa
+            # del dia no esta cargada (rate = 0).
+            line.price_unit_ves = line.currency_id._convert(
+                line.price_unit,
+                company_currency,
+                line.company_id,
+                line._get_foreign_rate_date(),
+            )
 
     def _compute_ves_currency_id(self):
         ves_currency = self.env.ref("base.VES", raise_if_not_found=False) or self.env["res.currency"].search([("name", "=", "VES")], limit=1)
@@ -126,21 +159,40 @@ class AccountMoveLine(models.Model):
             line.name = line.move_id.name
         return res
 
-    @api.depends("price_unit", "foreign_inverse_rate", "currency_id")
+    @api.depends(
+        "price_unit",
+        "currency_id",
+        "move_id.currency_id",
+        "move_id.invoice_date",
+        "move_id.date",
+    )
     def _compute_foreign_price(self):
         for line in self:
-            company_currency = line.company_id.currency_id
             foreign_currency = line.company_id.foreign_currency_id
-            if line.currency_id.id == company_currency.id:
-                line.foreign_price = line.price_unit * line.foreign_inverse_rate
+            if not foreign_currency:
+                line.foreign_price = 0.0
             elif line.currency_id.id == foreign_currency.id:
                 line.foreign_price = line.price_unit
             else:
-                line.foreign_price = line.currency_id._convert(
-                    line.price_unit,
-                    foreign_currency,
-                    line.company_id,
-                    line.move_id.invoice_date or fields.Date.today(),
+                # round=False + redondeo a la precision del campo: _convert()
+                # redondea por defecto a los decimales de la moneda destino
+                # (USD = 2), pero foreign_price usa "Foreign Product Price"
+                # cuya precision es configurable. Sin esto, un precio
+                # unitario pequeño se pierde al
+                # convertir y foreign_subtotal (= foreign_price x cantidad)
+                # arrastra el error multiplicado por la cantidad.
+                precision = self.env["decimal.precision"].precision_get(
+                    "Foreign Product Price"
+                )
+                line.foreign_price = float_round(
+                    line.currency_id._convert(
+                        line.price_unit,
+                        foreign_currency,
+                        line.company_id,
+                        line._get_foreign_rate_date(),
+                        round=False,
+                    ),
+                    precision_digits=precision,
                 )
 
     @api.depends("foreign_price", "quantity", "discount", "tax_ids", "price_unit")
@@ -184,25 +236,23 @@ class AccountMoveLine(models.Model):
         if balance and len(currency_lines) == 1:
             return -balance
 
-        # Third currency (neither base nor alternate)
-        cur = self.currency_id
-        if cur and cur != self.company_id.foreign_currency_id and cur != self.company_id.currency_id:
-            return self.company_id.currency_id._convert(
-                self.debit - self.credit,
-
-                self.company_id.foreign_currency_id,
-                self.company_id,
-                self.date or fields.Date.context_today(self),
-            )
-
-        # Standard rate
-        return (self.debit - self.credit) * self.foreign_inverse_rate
+        return self.company_id.currency_id._convert(
+            self.debit - self.credit,
+            self.company_id.foreign_currency_id,
+            self.company_id,
+            self._get_foreign_rate_date(),
+        )
 
     def _get_foreign_value(self):
         """Return the foreign value (signed) for this line, or None."""
         self.ensure_one()
 
-        # 1 — PT / Tax: use foreign_balance directly
+        # 1 — PT / Tax: use foreign_balance directly. `_sync_tax_lines`
+        # (account_move.py, `_round_mode`) ahora resincroniza y escribe
+        # `foreign_balance` de la linea de impuesto directamente cuando
+        # cambia `move_currency_to_company_currency_rate` -- esa escritura
+        # dispara `_inverse_foreign_balance`, que fija foreign_debit/credit.
+        # Ya no hace falta re-derivar el valor aca con `_convert()`.
         if self.display_type in ("payment_term", "tax"):
             return self.foreign_balance
 
@@ -253,7 +303,8 @@ class AccountMoveLine(models.Model):
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
-        "foreign_inverse_rate",
+        "move_id.invoice_date",
+        "move_id.date",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
@@ -310,119 +361,6 @@ class AccountMoveLine(models.Model):
 
         res["foreign_amount"] = foreign_amount
         return res
-
-    @api.model
-    def _prepare_move_line_residual_amounts(
-        self,
-        aml_values,
-        counterpart_currency,
-        shadowed_aml_values=None,
-        other_aml_values=None,
-    ):
-        """Prepare the available residual amounts for each currency.
-        :param aml_values: The values of account.move.line to consider.
-        :param counterpart_currency: The currency of the opposite line this line will be reconciled with.
-        :param shadowed_aml_values: A mapping aml -> dictionary to replace some original aml values to something else.
-                                    This is usefull if you want to preview the reconciliation before doing some changes
-                                    on amls like changing a date or an account.
-        :param other_aml_values:    The other aml values to be reconciled with the current one.
-        :return: A mapping currency -> dictionary containing:
-            * residual: The residual amount left for this currency.
-            * rate:     The rate applied regarding the company's currency.
-        """
-
-        def is_payment(aml):
-            return aml.move_id.origin_payment_id or aml.move_id.statement_line_id
-
-        def get_odoo_rate(aml, other_aml, currency):
-            if forced_rate := self._context.get("forced_rate_from_register_payment"):
-                return forced_rate
-            if other_aml and not is_payment(aml) and is_payment(other_aml):
-                # >>>> Integra
-                if aml.move_id.origin_payment_id:
-                    return aml.move_id.origin_payment_id.foreign_inverse_rate
-                # <<<< Integra
-                return get_accounting_rate(other_aml, currency)
-            if aml.move_id.is_invoice(include_receipts=True):
-                exchange_rate_date = aml.move_id.invoice_date
-            else:
-                exchange_rate_date = aml._get_reconciliation_aml_field_value(
-                    "date", shadowed_aml_values
-                )
-            return currency._get_conversion_rate(
-                aml.company_currency_id, currency, aml.company_id, exchange_rate_date
-            )
-
-        def get_accounting_rate(aml, currency):
-            if forced_rate := self._context.get("forced_rate_from_register_payment"):
-                return forced_rate
-            balance = aml._get_reconciliation_aml_field_value(
-                "balance", shadowed_aml_values
-            )
-            amount_currency = aml._get_reconciliation_aml_field_value(
-                "amount_currency", shadowed_aml_values
-            )
-            if not aml.company_currency_id.is_zero(balance) and not currency.is_zero(
-                amount_currency
-            ):
-                return abs(amount_currency / balance)
-
-        aml = aml_values["aml"]
-        other_aml = (other_aml_values or {}).get("aml")
-        remaining_amount_curr = aml_values["amount_residual_currency"]
-        remaining_amount = aml_values["amount_residual"]
-        company_currency = aml.company_currency_id
-        currency = aml._get_reconciliation_aml_field_value(
-            "currency_id", shadowed_aml_values
-        )
-        account = aml._get_reconciliation_aml_field_value(
-            "account_id", shadowed_aml_values
-        )
-        has_zero_residual = company_currency.is_zero(remaining_amount)
-        has_zero_residual_currency = currency.is_zero(remaining_amount_curr)
-        is_rec_pay_account = account.account_type in (
-            "asset_receivable",
-            "liability_payable",
-        )
-
-        available_residual_per_currency = {}
-
-        if not has_zero_residual:
-            available_residual_per_currency[company_currency] = {
-                "residual": remaining_amount,
-                "rate": 1,
-            }
-        if currency != company_currency and not has_zero_residual_currency:
-            available_residual_per_currency[currency] = {
-                "residual": remaining_amount_curr,
-                "rate": get_accounting_rate(aml, currency),
-            }
-
-        if (
-            currency == company_currency
-            and is_rec_pay_account
-            and not has_zero_residual
-            and counterpart_currency != company_currency
-        ):
-            rate = get_odoo_rate(aml, other_aml, counterpart_currency)
-            residual_in_foreign_curr = counterpart_currency.round(
-                remaining_amount * rate
-            )
-            if not counterpart_currency.is_zero(residual_in_foreign_curr):
-                available_residual_per_currency[counterpart_currency] = {
-                    "residual": residual_in_foreign_curr,
-                    "rate": rate,
-                }
-        elif (
-            currency == counterpart_currency
-            and currency != company_currency
-            and not has_zero_residual_currency
-        ):
-            available_residual_per_currency[counterpart_currency] = {
-                "residual": remaining_amount_curr,
-                "rate": get_accounting_rate(aml, currency),
-            }
-        return available_residual_per_currency
 
     @api.model
     def abs_amount_lines_ids_adjust(self):
@@ -506,6 +444,19 @@ class AccountMoveLine(models.Model):
 
     @api.model
     def _apply_product_real_portion(self, lines):
+        """Correct cross-currency rounding on product lines.
+
+        When an invoice is in a foreign currency, each product line's balance
+        (company currency) is independently rounded to the company currency's
+        precision. The sum of these rounded balances can differ by the currency
+        rounding unit from the rounded conversion of the total line amount at
+        the raw exchange rate. This method distributes that difference across
+        product lines proportionally so the entry remains balanced.
+
+        The expected total is computed via ``_convert`` (the raw rate from
+        ``res.currency.rate``), not from ``line.currency_rate`` (which is
+        derived from an already-rounded balance and amplifies the error).
+        """
         for move in lines.move_id:
             if not move.is_invoice(include_receipts=True):
                 continue
@@ -525,12 +476,11 @@ class AccountMoveLine(models.Model):
             if not product_lines:
                 continue
 
-            rate = product_lines[0].currency_rate
-            if not rate:
-                continue
-
             total_currency = sum(product_lines.mapped('amount_currency'))
-            expected = cc.round(total_currency / rate)
+            rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+            expected = cc.round(move.currency_id._convert(
+                total_currency, cc, move.company_id, rate_date
+            ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
 
@@ -575,3 +525,46 @@ class AccountMoveLine(models.Model):
         move.real_portion_count += 1
 
     
+    @api.constrains("discount")
+    def _check_max_discount(self):
+        """Validates that discount value on invoice lines does not reach or exceed 100%."""
+        for line in self:
+            if not line.product_id:
+                continue
+
+            if line.discount >= 100.0:
+                product_name = line.product_id.display_name
+                discount_val = f"{line.discount}%"
+
+                raise UserError(
+                    _(
+                        "Product: %(product)s\n"
+                        "Discount: %(discount)s\n"
+                        "Discounts of 100%% or higher are not allowed on invoices.\n"
+                        "Please adjust the discount percentage before saving."
+                    )
+                    % {
+                        "product": product_name,
+                        "discount": discount_val,
+                    }
+                )
+
+    def _check_constrains_account_id_journal_id(self):
+        for line in self.filtered(
+            lambda x: x.display_type not in ('line_section', 'line_subsection', 'line_note')
+        ):
+            journal = line.move_id.journal_id
+            journal_currency = journal.currency_id
+            # If the journal has no currency of its own, it accepts entries in
+            # any currency (core behavior). If it DOES force a currency, no
+            # line may use a different one -- block before running the core's
+            # own validations (archived account, account secondary currency).
+            if journal_currency and line.currency_id != journal_currency:
+                raise UserError(_(
+                    'The journal %(journal)s only accepts entries in %(journal_currency)s, '
+                    'but this line is in %(line_currency)s.',
+                    journal=journal.name,
+                    journal_currency=journal_currency.name,
+                    line_currency=line.currency_id.name,
+                ))
+        return super()._check_constrains_account_id_journal_id()

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_igtf.ReceiptScreen" t-inherit="point_of_sale.ReceiptScreen" t-inherit-mode="extension" owl="1">
+        <!--
+            El total foráneo del recuadro "Pago exitoso" lo inyecta
+            l10n_ve_pos (receipt_screen.xml) como un <t t-out=".../
+            get_foreign_total_with_tax()"/> dentro de un <span> sin clase ni
+            id. Lo localizamos por su expresión en vez de por posición
+            (span[2]) para no depender del orden en que l10n_ve_pos lo inserte.
+            El total local no necesita xpath: se reemplaza parcheando el getter
+            orderAmountPlusTip en receipt_screen.js.
+        -->
+        <xpath expr="//t[contains(@t-out, 'get_foreign_total_with_tax')]" position="replace">
+            <t t-out="foreignOrderAmountWithIgtf"/>
+        </xpath>
+        <!--
+            Desglose del recargo bajo el total combinado, para que el cajero vea
+            por qué el monto confirmado no coincide con el total de la factura.
+        -->
+        <xpath expr="//div[hasclass('fs-4') and hasclass('fw-bold') and hasclass('d-flex') and hasclass('justify-content-center')]" position="after">
+            <div t-if="igtfAmount" class="fs-6 fw-normal opacity-75">
+                IGTF: <t t-out="igtfAmountLabel"/> / <t t-out="foreignIgtfAmountLabel"/>
+            </div>
+        </xpath>
+    </t>
+</templates>

@@ -19,20 +19,32 @@ class AccountTax(models.Model):
             base_lines, currency, company, cash_rounding
         )
 
+        # `company` es un parámetro EXPLÍCITO de este método -- se usa
+        # acá y en el resto del método en vez de `self.env.company`
+        # (la compañía ACTIVA del entorno, que puede no coincidir: un
+        # cron, un usuario multi-compañía, o cualquier llamador que
+        # arme este summary explícitamente `with_company(otra_compañía)`,
+        # como hace `l10n_ve_exchange_difference._create_exchange_difference_note`
+        # al crear sus notas). El `or self.env.company` es solo un
+        # fallback defensivo por si algún llamador legado pasara
+        # `company=False`; en el camino normal `company` siempre viene
+        # seteado por el núcleo (`account.tax._get_tax_totals_summary`
+        # lo exige como posicional, no `Optional`).
+        company = company or self.env.company
+        ves_currency = company.currency_id
 
-        ves_currency = self.env.company.currency_id
-        
-        active_model = self.env.context.get('active_model')
-        active_id = self.env.context.get('active_id')
-        
+        # `base_lines` es el documento REAL para el que se está armando
+        # este summary -- se intenta derivar `record` de ahí PRIMERO.
+        # `active_model`/`active_id` del contexto son AMBIENTE de la UI
+        # (el registro que el usuario tenía abierto cuando se disparó
+        # este cómputo, no necesariamente el que se está calculando
+        # ahora): un wizard de pago en lote, o un recompute encadenado
+        # de otro documento distinto, pueden dejar un `active_id` ajeno
+        # en el contexto mientras `base_lines` sigue apuntando al
+        # documento correcto -- si el contexto ganara, TODAS las
+        # facturas de ese lote heredarían la tasa/moneda de una sola.
         record = False
-        if active_model and active_id:
-            if isinstance(active_id, api.NewId):
-                active_id = active_id.origin
-            if active_id:
-                record = self.env[active_model].browse(active_id)
-
-        if not record and base_lines:
+        if base_lines:
             try:
                 first_line = base_lines[0].get('record')
                 if first_line and isinstance(first_line, models.Model):
@@ -46,12 +58,75 @@ class AccountTax(models.Model):
                 _logger.warning("Error deduciendo el record al generar summary tax base %s", e)
 
         if not record:
+            active_model = self.env.context.get('active_model')
+            active_id = self.env.context.get('active_id')
+            if active_model and active_id:
+                if isinstance(active_id, api.NewId):
+                    active_id = active_id.origin
+                if active_id:
+                    record = self.env[active_model].browse(active_id)
+
+        if not record:
             return res
-        currency_id = self.env.company.currency_id or False
-        foreign_currency_id = self.env.company.foreign_currency_id or False
+
+        # Fix base_amount for multi-currency invoices. The real portion mechanism corrects
+        # line.balance but does not update line.currency_rate, causing the Odoo core computation
+        # of base_amount to differ from the actual corrected balance by the currency rounding unit.
+        if record._name == 'account.move' and record.is_invoice(include_receipts=True):
+            if record.currency_id and record.company_id.currency_id and record.currency_id != record.company_id.currency_id:
+                product_lines = record.line_ids.filtered(
+                    lambda l: l.display_type == 'product' and not l.tax_repartition_line_id
+                )
+                if product_lines:
+                    cc = record.company_id.currency_id
+                    sign = record.direction_sign
+                    correct_base = cc.round(sum(product_lines.mapped('balance')) * sign)
+                    current_base = res.get('base_amount', 0.0)
+                    diff = cc.round(correct_base - current_base)
+                    if not cc.is_zero(diff):
+                        res['base_amount'] = correct_base
+                        res['total_amount'] = cc.round(res.get('total_amount', 0.0) + diff)
+                        subtotals = res.get('subtotals', [])
+                        if subtotals:
+                            total_sub_base = sum(s.get('base_amount', 0.0) for s in subtotals)
+                            if not cc.is_zero(total_sub_base):
+                                remaining_diff = diff
+                                n_sub = len(subtotals)
+                                for i, subtotal in enumerate(subtotals):
+                                    if i < n_sub - 1:
+                                        ratio = subtotal.get('base_amount', 0.0) / total_sub_base
+                                        share = cc.round(ratio * diff)
+                                        subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + share
+                                        subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + share
+                                        remaining_diff -= share
+                                    else:
+                                        subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + remaining_diff
+                                        subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + remaining_diff
+                                    # Sync tax groups' base_amount with corrected subtotal
+                                    tax_groups = subtotal.get('tax_groups', [])
+                                    if tax_groups:
+                                        tg_total = sum(tg.get('base_amount', 0.0) for tg in tax_groups)
+                                        if not cc.is_zero(tg_total):
+                                            n_tg = len(tax_groups)
+                                            for j, tg in enumerate(tax_groups):
+                                                if j < n_tg - 1:
+                                                    tg_ratio = tg.get('base_amount', 0.0) / tg_total
+                                                    tg_share = cc.round(tg_ratio * subtotal['base_amount'])
+                                                    tg['base_amount'] = tg_share
+                                                    tg['display_base_amount'] = tg_share
+                                                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg_share)
+                                                else:
+                                                    tg['base_amount'] = subtotal['base_amount'] - sum(
+                                                        tax_groups[k]['base_amount'] for k in range(j)
+                                                    )
+                                                    tg['display_base_amount'] = tg['base_amount']
+                                                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg['base_amount'])
+
+        currency_id = company.currency_id or False
+        foreign_currency_id = company.foreign_currency_id or False
         company_rate = 1.0
         has_discount= False
-        if active_model == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
+        if record._name == "account.move" and record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
             company_rate = record.company_currency_rate
             currency_id = record.currency_id
             foreign_currency_id =record.foreign_currency_id
@@ -60,11 +135,11 @@ class AccountTax(models.Model):
                 for line in record.invoice_line_ids
             )
         else: 
-            if hasattr(record, 'company_id'): 
+            if hasattr(record, 'company_id'):
                 currency_id = record.company_id.currency_id
             else:
-                currency_id = self.env.company.currency_id
-            foreign_currency_id = self.env.company.foreign_currency_id
+                currency_id = company.currency_id
+            foreign_currency_id = company.foreign_currency_id
 
         # FIXME: Evaluar escenarios en los que hay descuentos.
         res_without_discount = res.copy()
@@ -94,7 +169,7 @@ class AccountTax(models.Model):
         if record._name == 'account.move':
             foreign_lines, _foreign_tax_lines = record._get_rounded_foreign_base_and_tax_lines()
         elif record._name in ('sale.order','purchase.order'):
-            company_id = (record.company_id or self.env.company)
+            company_id = (record.company_id or company)
             foreign_lines = [
                 line._prepare_foreign_base_line_for_taxes_computation()
                 for line in record.order_line
@@ -111,7 +186,7 @@ class AccountTax(models.Model):
         )
         #amounts in foreign currency
         res['foreign_currency_id'] = foreign_res['currency_id']
-        res['ves_currency_id'] = self.env.company.currency_id.id
+        res['ves_currency_id'] = company.currency_id.id
         res['base_amount_foreign_currency'] = foreign_res['base_amount_currency']
         res['tax_amount_foreign_currency'] = foreign_res['tax_amount_currency']
         res['total_amount_foreign_currency'] = foreign_res['total_amount_currency']
@@ -146,9 +221,14 @@ class AccountTax(models.Model):
             value=res.get('tax_amount', 0.0),
             currency_obj=ves_currency
         )
+        total_ves = (
+            abs(record.amount_total_signed)
+            if record._name == 'account.move'
+            else abs(res.get('total_amount', 0.0))
+        )
         res['formatted_total_amount_currency_ves'] = formatLang(
             env=self.env,
-            value=res.get('total_amount', 0.0),
+            value=total_ves,
             currency_obj=ves_currency
         )
     

@@ -4,6 +4,9 @@
     <field name="model">stock.scrap</field>
     <field name="inherit_id" ref="stock.stock_scrap_form_view"/>
     <field name="arch" type="xml">
+        <xpath expr="//field[@name='should_replenish']" position="attributes">
+            <attribute name="invisible">is_donation</attribute>
+        </xpath>
         <xpath expr="//field[@name='product_id']" position="after">
             <field name="is_donation" invisible="not is_donation" readonly="1"/>
         </xpath>

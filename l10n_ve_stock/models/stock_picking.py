@@ -12,6 +12,14 @@ class StockPicking(models.Model):
 
     package_qty = fields.Integer(default=0)
     reception_date = fields.Date(tracking=True)
+    source_physical_address = fields.Text(
+        string="Source Address",
+        compute="_compute_physical_addresses",
+    )
+    destination_physical_address = fields.Text(
+        string="Destination Address",
+        compute="_compute_physical_addresses",
+    )
 
     def _get_action_picking_delivery_type(self, picking_type):
         # action = self.env["ir.actions.actions"]._for_xml_id("stock.action_picking_tree_all")
@@ -148,6 +156,14 @@ class StockPicking(models.Model):
         for record in self:
             record.type_delivery_step = record.picking_type_id._get_type_steps()
 
+    @api.depends("location_id", "location_dest_id")
+    def _compute_physical_addresses(self):
+        for record in self:
+            source_wh = record.location_id.warehouse_id
+            dest_wh = record.location_dest_id.warehouse_id
+            record.source_physical_address = source_wh.physical_address if source_wh else False
+            record.destination_physical_address = dest_wh.physical_address if dest_wh else False
+
     change_weight = fields.Boolean(
         related="company_id.change_weight",
     )
@@ -241,15 +257,11 @@ class StockPicking(models.Model):
                 picking = picking.with_context(skip_physical_location=True)
         return super().action_assign()
 
-    def button_validate(self):
+    def _pre_action_done_hook(self):
         if self.env.company.not_allow_negative_stock_movement:
-            res = super(StockPicking, self).button_validate()
-            if isinstance(res, dict) and res.get('res_model') == 'stock.backorder.confirmation':
-                return res
-            else:
-                self._check_stock_availability_for_pickings()
-        return super().button_validate()
-        
+            self._check_stock_availability_for_pickings()
+        return super()._pre_action_done_hook()
+
     def _check_stock_availability_for_pickings(self):
         if self.picking_type_id.code in ['internal', 'outgoing']:
             group_product_location_lot = {}

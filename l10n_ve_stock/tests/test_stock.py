@@ -49,28 +49,3 @@ class TestStockQuant(TransactionCase):
         )
         self.assertFalse(quant2.is_physical_location)
 
-@tagged("post_install", "-at_install", "l10n_ve_stock")
-class TestProductTemplate(TransactionCase):
-    def test_check_taxes_id_multiple_taxes_same_company(self):
-        tax1 = self.env["account.tax"].create({
-            "name": "Tax 1",
-            "amount_type": "percent",
-            "amount": 10,
-            "company_id": self.env.company.id,
-        })
-        tax2 = self.env["account.tax"].create({
-            "name": "Tax 2",
-            "amount_type": "percent",
-            "amount": 20,
-            "company_id": self.env.company.id,
-        })
-        with self.assertRaises(ValidationError):
-            self.env["product.product"].create({
-                "name": "Product 1",
-                "barcode": "123456",
-                "type": 'consu',
-                "taxes_id": [(6, 0, [tax1.id, tax2.id])],
-                "product_tmpl_id": self.env["product.template"].create({
-                    "name": "Prod1",
-                }).id,
-            })

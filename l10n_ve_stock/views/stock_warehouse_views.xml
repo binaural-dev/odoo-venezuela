@@ -1,0 +1,13 @@
+
+<odoo>
+    <record id="view_warehouse_inherit_l10n_ve_stock" model="ir.ui.view">
+        <field name="name">stock.warehouse.inherit.l10n.ve.stock</field>
+        <field name="model">stock.warehouse</field>
+        <field name="inherit_id" ref="stock.view_warehouse"/>
+        <field name="arch" type="xml">
+            <field name="partner_id" position="after">
+                <field name="physical_address" placeholder="e.g. Av. Principal, Zona Industrial, Caracas"/>
+            </field>
+        </field>
+    </record>
+</odoo>

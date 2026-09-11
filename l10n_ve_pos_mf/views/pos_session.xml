@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='config_id']" position="after">
                 <field name="report_z"/>
-                <field name="iot_mf"/>
+                <field name="serial_machine"/>
             </xpath>
         </field>
     </record>

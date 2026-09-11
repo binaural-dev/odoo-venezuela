@@ -1,8 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="binaural_pos_mf.ReprintInvoiceButton">
-        <div class="control-button btn btn-light rounded-0 fw-bolder" t-on-click="_onClick" >
-            <i class="fa fa-check-square-o"></i>
-            <span>Reprint Document</span>
-        </div>
+    <t t-name="l10n_ve_pos_mf.ReprintInvoiceButton">
+        <button class="control-button btn btn-secondary btn-lg lh-lg flex-grow-1 flex-shrink-1" t-on-click="_onClick">
+            <i class="fa fa-print me-1"></i>
+            <span>Reimprimir Documento Fiscal</span>
+        </button>
     </t>
 </templates>

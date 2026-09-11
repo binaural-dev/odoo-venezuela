@@ -54,7 +54,7 @@ class StockScrap(models.Model):
             move.with_context(is_scrap=True)._action_done()
             scrap.write({'state': 'done'})
             scrap.date_done = fields.Datetime.now()
-            if scrap.should_replenish:
+            if scrap.should_replenish and not scrap.is_donation:
                 scrap.do_replenish()
 
         # Delegar scraps no-donación al comportamiento estándar
