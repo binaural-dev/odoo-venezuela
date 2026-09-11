@@ -4,6 +4,7 @@
 - [x] 1.2 Override de `pos.order._process_payment_lines` que, tras `super()`, rellena `foreign_amount` y `foreign_rate` de las líneas `is_change` sin alterno
 - [x] 1.3 Fallback en `pos.payment._create_payment_moves`: derivar el alterno de la tasa de la orden cuando `foreign_amount == 0`
 - [x] 1.4 Bump de manifest `l10n_ve_pos` 1.12 → 1.13
+- [x] 1.5 Unit tests (`tests/test_pos_change_foreign_amount.py`): `_amount_to_foreign` (multiplica/redondea/signo, 0 sin tasa) y backfill del vuelto en `_process_payment_lines` (rellena, no sobrescribe, ignora no-`is_change`)
 
 ## 2. Verificación
 
