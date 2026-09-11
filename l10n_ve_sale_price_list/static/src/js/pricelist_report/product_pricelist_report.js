@@ -8,9 +8,17 @@ import { Dropdown } from "@web/core/dropdown/dropdown";
 import { DropdownItem } from "@web/core/dropdown/dropdown_item";
 import { user } from "@web/core/user";
 import { download } from "@web/core/network/download";
-import { useState, onWillStart } from "@odoo/owl";
+import { onWillStart } from "@odoo/owl";
 
 const PAGE_SIZE = 20;
+// Threshold from the task: combining a large product selection with many
+// pricelists is what made the report slow before pagination/batching
+// existed. The on-screen view and the batched price computation
+// (_set_pricelist_prices) already keep this from timing out, but the
+// PDF/XLSX exports never paginate - large exports still take noticeably
+// longer, so the user gets a heads-up instead of no warning at all.
+const LARGE_SELECTION_PRODUCT_THRESHOLD = 800;
+const LARGE_SELECTION_PRICELIST_THRESHOLD = 5;
 
 export class L10nVeSalePriceListReport extends ProductPricelistReport {
     static template = "l10n_ve_sale_price_list.ProductPricelistReport";
@@ -18,7 +26,12 @@ export class L10nVeSalePriceListReport extends ProductPricelistReport {
 
     setup() {
         super.setup();
-        this.state = useState({
+        // Extend the base component's own useState() object instead of
+        // replacing it - this.state already carries pricelists/html/etc,
+        // and the base class's onWillStart (registered by super.setup(),
+        // so it runs before ours) writes into it and calls renderHtml() on
+        // its own. Reassigning this.state here used to throw that away.
+        Object.assign(this.state, {
             selectedPricelists: [],
             page: 1,
         });
@@ -39,7 +52,11 @@ export class L10nVeSalePriceListReport extends ProductPricelistReport {
                 domain,
                 ["id", "display_name"]
             );
-            await this.renderHtml();
+            // No need to call this.renderHtml() here - the base class's own
+            // onWillStart (it runs first, since it was registered first in
+            // super.setup()) already renders once after populating
+            // state.pricelists, and selectedPricelists above is set before
+            // that render resolves.
         });
     }
 
@@ -96,7 +113,34 @@ export class L10nVeSalePriceListReport extends ProductPricelistReport {
         }
 
         this.state.selectedPricelists.push(selectedPl);
+        await this._warnIfLargeSelection();
         this.renderHtml();
+    }
+
+    // Non-blocking heads-up (not a hard limit): the report still works past
+    // this threshold - pagination and the batched price computation already
+    // keep the on-screen view responsive - but a combination this large
+    // makes the (unpaginated) PDF/XLSX export noticeably slower, so the
+    // user gets a chance to reconsider before printing/exporting.
+    async _warnIfLargeSelection() {
+        const productCount = (this.activeIds || []).length;
+        const pricelistCount = this.state.selectedPricelists.length;
+        if (
+            productCount > LARGE_SELECTION_PRODUCT_THRESHOLD &&
+            pricelistCount >= LARGE_SELECTION_PRICELIST_THRESHOLD
+        ) {
+            await this.action.doAction({
+                type: "ir.actions.client",
+                tag: "display_notification",
+                params: {
+                    type: "warning",
+                    message: _t(
+                        "You selected %(products)s products and %(pricelists)s pricelists. Printing or exporting such a large combination may take a while.",
+                        { products: productCount, pricelists: pricelistCount }
+                    ),
+                },
+            });
+        }
     }
 
     async onClickRemovePricelist(ev) {
@@ -128,6 +172,7 @@ export class L10nVeSalePriceListReport extends ProductPricelistReport {
     }
 
     async onClickPrint() {
+        await this._warnIfLargeSelection();
         this.export_pdf();
     }
 
@@ -152,6 +197,7 @@ export class L10nVeSalePriceListReport extends ProductPricelistReport {
             });
             return;
         }
+        await this._warnIfLargeSelection();
         try {
             await download({
                 url: "/product/export/pricelist/",
