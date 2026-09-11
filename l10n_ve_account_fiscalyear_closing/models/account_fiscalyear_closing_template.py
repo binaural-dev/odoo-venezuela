@@ -16,9 +16,12 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
 
     @api.onchange("l_map")
     def inchange_l_map(self):
+        # sudo() removido: este onchange corre en la configuracion del
+        # cierre fiscal, solo accesible a usuarios con el grupo contable,
+        # que ya tienen acceso de lectura al plan de cuentas de su propia
+        # compania (misma compania activa usada en el dominio de busqueda).
         accounts = (
             self.env["account.account"]
-            .sudo()
             .search(
                 [
                     (
@@ -39,7 +42,6 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
 
         config_a = (
             self.env["account.account"]
-            .sudo()
             .search(
                 [
                     ("account_type", "=", "equity_unaffected"),

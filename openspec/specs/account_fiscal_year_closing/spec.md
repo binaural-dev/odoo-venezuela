@@ -2,15 +2,15 @@
 
 ## Purpose
 
-Asistente genérico de cierre de año fiscal (origen OCA account-closing, Tecnativa). Define los modelos concretos `account.fiscalyear.closing` (el cierre de un ejercicio), `account.fiscalyear.closing.config` (cada asiento a generar), `account.fiscalyear.closing.mapping` (mapeo de cuentas origen → destino), `account.fiscalyear.closing.type` (tipo de cierre por tipo de cuenta) y sus contrapartes plantilla (`account.fiscalyear.closing.template`, `...config.template`, `...mapping.template`, `...type.template`). Depende de `account`. Los modelos concretos heredan de los abstractos `account.fiscalyear.closing.abstract`, `account.fiscalyear.closing.config.abstract`, `account.fiscalyear.closing.mapping.abstract` y `account.fiscalyear.closing.type.abstract`, cuya definición no vive en este repositorio; igualmente el wizard `account.fiscalyear.closing.unbalanced.move` se invoca desde este módulo pero su definición base no está en estas fuentes. La extensión venezolana del proceso vive en `l10n_ve_account_fiscalyear_closing`.
+Asistente genérico de cierre de año fiscal (origen OCA account-closing, Tecnativa). Define los modelos concretos `account.fiscalyear.closing` (el cierre de un ejercicio), `account.fiscalyear.closing.config` (cada asiento a generar), `account.fiscalyear.closing.mapping` (mapeo de cuentas origen → destino), `account.fiscalyear.closing.type` (tipo de cierre por tipo de cuenta) y sus contrapartes plantilla (`account.fiscalyear.closing.template`, `...config.template`, `...mapping.template`, `...type.template`). Depende únicamente de `account`. Los modelos concretos heredan de los abstractos `account.fiscalyear.closing.abstract`, `account.fiscalyear.closing.config.abstract`, `account.fiscalyear.closing.mapping.abstract` y `account.fiscalyear.closing.type.abstract` (definidos en `models/account_fiscalyear_closing_abstract.py`); el wizard `account.fiscalyear.closing.unbalanced.move` se define en `wizards/` y se invoca desde `calculate()`. La extensión venezolana del proceso vive en `l10n_ve_account_fiscalyear_closing`.
 
-Nota de estado (rama actual): tampoco existen en estas fuentes los campos `fyc_id` y `closing_type` de `account.move`, aunque el módulo los usa como `inverse_name` de `move_ids`, los escribe en `move_prepare` y los muestra en `views/account_move_views.xml`. El módulo no tiene `__init__.py` ni `models/__init__.py`, y su `__manifest__.py` declara dos archivos que no existen en el árbol (`security/ir.model.access.csv` y `wizards/account_fiscal_year_closing_unbalanced_move_views.xml`); solo está presente `security/account_fiscalyear_closing_security.xml`. Por tanto el módulo, tal como está en esta rama, no es instalable y no aporta ACL propias: los requirements de abajo describen la lógica contenida en `models/`, no un despliegue verificado. Varios campos usan el atributo `states={...}` (retirado de Odoo desde la 17), que hoy es inerte: lo que gobierna la edición por estado son los atributos `readonly="state != 'draft'"` de las vistas.
+Estado actual (post-corrección): el módulo es instalable, con `security/ir.model.access.csv` y `security/account_fiscalyear_closing_security.xml` presentes, y `wizards/account_fiscal_year_closing_unbalanced_move_views.xml` sí existe en el árbol. Los campos `fyc_id` y `closing_type` de `account.move` se definen en `models/account_move.py`. El antiguo constraint SQL `unique(year, company_id)` fue reemplazado por el constraint Python `_check_period_overlap`, que permite varios cierres por compañía/año siempre que sus rangos de fechas no se solapen. `_moves_remove` ya nunca elimina un asiento que llegó a postearse: lo cancela (`button_cancel()` de `account.move`, que desconcilia, pasa a borrador y cancela). `account.fiscalyear.closing.mapping.create`/`write` normalizan correctamente `dest_account_id` acepte el valor un id entero, una lista/tupla o un recordset. `template_id` en `account.fiscalyear.closing.config.template` ya no es `required=True`, para permitir crear/editar plantillas de configuración de forma independiente antes de asociarlas a una plantilla padre.
 
 ## Requirements
 
 ### Requirement: Flujo de estados del cierre
 
-El registro de cierre (`account.fiscalyear.closing`) DEBE (MUST) manejar los estados `draft`, `calculated` (etiqueta "Processed"), `posted` y `cancelled`: `button_calculate` pasa a `calculated` y estampa `calculation_date` solo si el cálculo devolvió `True`; `button_cancel` elimina los asientos y pasa a `cancelled`; `button_recover` escribe `draft` y limpia `calculation_date`. Los métodos no validan el estado de origen: es la vista formulario la que expone `button_calculate` solo en `draft`, `button_recalculate` y `button_post` solo en `calculated`, `button_cancel` en `calculated` o `posted`, y `button_recover` únicamente en `cancelled`.
+El registro de cierre (`account.fiscalyear.closing`) DEBE (MUST) manejar los estados `draft`, `calculated` (etiqueta "Processed"), `posted` y `cancelled`: `button_calculate` pasa a `calculated` y estampa `calculation_date` solo si el cálculo devolvió `True`; `button_cancel` invoca `_moves_remove` (cancela, no elimina, los asientos posteados) y pasa a `cancelled`; `button_recover` escribe `draft` y limpia `calculation_date`. Los métodos no validan el estado de origen: es la vista formulario la que expone `button_calculate` solo en `draft`, `button_recalculate` y `button_post` solo en `calculated`, `button_cancel` en `calculated` o `posted`, y `button_recover` únicamente en `cancelled`.
 
 #### Scenario: Cálculo exitoso
 
@@ -24,12 +24,31 @@ El registro de cierre (`account.fiscalyear.closing`) DEBE (MUST) manejar los est
 
 ### Requirement: Verificación de asientos en borrador antes de calcular
 
-Cuando el flag `check_draft_moves` está activo, el método `calculate` DEBE (MUST) ejecutar `draft_moves_check`, que lanza `ValidationError` listando ID, fecha, número y referencia de cada `account.move` en estado `draft` de la compañía cuyo `date` cae dentro de `date_start`–`date_end`.
+Cuando el flag `check_draft_moves` está activo, el método `calculate` DEBE (MUST) ejecutar `draft_moves_check` antes de generar ningún asiento; este método lanza `ValidationError` listando ID, fecha, número y referencia de cada `account.move` en estado `draft` de la compañía cuyo `date` cae dentro de `date_start`–`date_end`.
 
 #### Scenario: Existen borradores en el período
 
 - **WHEN** se calcula un cierre con `check_draft_moves` activo y hay al menos un asiento en borrador dentro del período
 - **THEN** se lanza un error de validación que enumera los asientos en borrador y no se genera ningún asiento de cierre
+
+### Requirement: Validación de la fecha de bloqueo contable antes de calcular
+
+`calculate` DEBE (MUST) invocar `_check_fiscal_lock_date` antes de crear ningún asiento: por cada configuración habilitada con diario y fecha definidos, obtiene la fecha de bloqueo efectiva para ese diario (`company_id._get_user_fiscal_lock_date(journal)`, que combina la fecha de bloqueo genérica con la específica por tipo de diario — `sale_lock_date`, `purchase_lock_date`, etc.) y lanza `ValidationError` si la fecha de la configuración es menor o igual a esa fecha de bloqueo. Esto evita que Odoo mueva silenciosamente la fecha del asiento a `lock_date + 1 día`, comportamiento por defecto del núcleo que aquí se rechaza explícitamente. Solo se consideran las configuraciones habilitadas (`enabled`); una configuración deshabilitada con fecha dentro del período bloqueado no bloquea el cálculo.
+
+#### Scenario: Fecha de configuración dentro del período bloqueado
+
+- **WHEN** la compañía tiene `fiscalyear_lock_date` igual o posterior a la fecha de una configuración habilitada
+- **THEN** `calculate` lanza `ValidationError` antes de crear ningún asiento
+
+#### Scenario: Fecha de configuración posterior al bloqueo
+
+- **WHEN** la fecha de la configuración es estrictamente posterior a la fecha de bloqueo efectiva del diario
+- **THEN** el cálculo no es bloqueado por esta verificación
+
+#### Scenario: Configuración deshabilitada dentro del período bloqueado
+
+- **WHEN** una configuración con `enabled = False` tiene fecha dentro del período bloqueado
+- **THEN** `calculate` no lanza error por esa configuración y no genera ningún asiento para ella
 
 ### Requirement: Año por defecto del cierre
 
@@ -40,9 +59,38 @@ El campo `year` DEBE (MUST) tomar por defecto el año de `fiscalyear_lock_date` 
 - **WHEN** la compañía cierra el 31/12 y su `fiscalyear_lock_date` es 2025-03-31 (mes 3 < 12 pero día 31 no es menor que 31)
 - **THEN** el campo `year` de un cierre nuevo se propone como 2025, no como 2024
 
+### Requirement: Sin solapamiento de períodos de cierre por compañía
+
+El sistema DEBE (MUST) validar, mediante el constraint Python `_check_period_overlap` (disparado sobre `date_start`, `date_end`, `date_opening`, `company_id` y `state`), que un cierre no activo (`state != 'cancelled'`) cumpla `date_start <= date_end < date_opening`, y que su rango `[date_start, date_end]` no se solape con el de ningún otro cierre no cancelado de la misma compañía. El solape se evalúa con límites inclusivos en ambos extremos (`date_start <= other.date_end` y `date_end >= other.date_start`): un cierre que empieza el mismo día en que otro termina se considera solapado. Esto reemplaza el antiguo `unique(year, company_id)`, permitiendo así varios cierres por año para una misma compañía (por ejemplo, cierres semestrales) mientras sus fechas no se crucen. Los cierres cancelados no se tienen en cuenta ni como origen ni como destino de la comparación. La búsqueda de cierres solapados no usa `sudo()`, de modo que el `name` de un cierre de otra compañía nunca se filtra en el mensaje de error.
+
+#### Scenario: Cierres no solapados en el mismo año permitidos
+
+- **WHEN** se crean dos cierres para la misma compañía y año con rangos de fechas que no se cruzan (p. ej. primer y segundo semestre)
+- **THEN** ambos se crean sin error
+
+#### Scenario: Cierres solapados en la misma compañía
+
+- **WHEN** se crea un cierre cuyo rango de fechas se cruza con el de un cierre existente no cancelado de la misma compañía
+- **THEN** se lanza `ValidationError` y el cierre no se crea
+
+#### Scenario: Contacto borde a borde entre dos cierres
+
+- **WHEN** un cierre nuevo empieza (`date_start`) el mismo día en que termina (`date_end`) un cierre existente de la misma compañía
+- **THEN** se considera solapamiento y se lanza `ValidationError`
+
+#### Scenario: Cierres solapados en compañías distintas
+
+- **WHEN** dos cierres con el mismo rango de fechas pertenecen a compañías distintas
+- **THEN** ninguno bloquea al otro
+
+#### Scenario: Un cierre cancelado no cuenta para el solapamiento
+
+- **WHEN** existe un cierre cancelado cuyo rango se cruzaría con el de un cierre nuevo
+- **THEN** el cierre nuevo se crea sin error, ignorando el cierre cancelado
+
 ### Requirement: Carga de la configuración desde plantilla
 
-Al seleccionar `closing_template_id`, el onchange DEBE (MUST) vaciar `move_config_ids` y reconstruirlo a partir de la plantilla (leída con `with_company(company_id)`): copia `check_draft_moves` y, por cada configuración de plantilla, `name`, `sequence`, `code`, `move_type`, `closing_type_default`, los mapeos y los tipos de cierre, forzando `enabled = True`. El campo `inverse` NO se copia (la línea está comentada en `_prepare_config`), por lo que las configuraciones cargadas desde plantilla nunca traen referencia inversa. La fecha del asiento se fija en `date_end` si `move_date` de la plantilla es `last_ending` y en `date_opening` en cualquier otro caso; el diario es el `journal_id` de la plantilla (campo `company_dependent`) o, si está vacío, el diario de la compañía con código `MISC` y si no existe el primer diario de tipo `general`. La cuenta destino de cada mapeo se resuelve buscando por `=ilike` sobre el `code` entre las cuentas cuyo `company_ids` incluye la compañía del cierre, tomando la primera coincidencia; si no hay coincidencia, el nombre del mapeo se reemplaza por el mensaje "No destination account '%s' found." y el mapeo queda sin cuenta destino.
+Al seleccionar `closing_template_id`, el onchange DEBE (MUST) vaciar `move_config_ids` y reconstruirlo a partir de la plantilla (leída con `with_company(company_id)`): copia `check_draft_moves` y, por cada configuración de plantilla, `name`, `sequence`, `code`, `move_type`, `closing_type_default`, los mapeos y los tipos de cierre, forzando `enabled = True`. El campo `inverse` NO se copia (está comentado en `_prepare_config`), por lo que las configuraciones cargadas desde plantilla nunca traen referencia inversa. La fecha del asiento se fija en `date_end` si `move_date` de la plantilla es `last_ending` y en `date_opening` en cualquier otro caso; el diario es el `journal_id` de la plantilla (campo `company_dependent`) o, si está vacío, el diario de la compañía con código `MISC` y si no existe el primer diario de tipo `general`. La cuenta destino de cada mapeo se resuelve buscando por `=ilike` sobre el `code` entre las cuentas cuyo `company_ids` incluye la compañía del cierre, tomando la primera coincidencia; si no hay coincidencia, el nombre del mapeo se reemplaza por el mensaje "No destination account '%s' found." y el mapeo queda sin cuenta destino.
 
 #### Scenario: Plantilla con fecha de fin de período
 
@@ -54,10 +102,19 @@ Al seleccionar `closing_template_id`, el onchange DEBE (MUST) vaciar `move_confi
 - **WHEN** un mapeo de la plantilla apunta a un patrón de cuenta destino sin coincidencias en la compañía
 - **THEN** el mapeo se carga sin cuenta destino y con el nombre de error "No destination account ... found."
 
-#### Scenario: Plantilla con configuración inversa
+### Requirement: `template_id` opcional en la plantilla de configuración
 
-- **WHEN** la plantilla tiene una configuración de apertura cuyo campo `inverse` apunta al código del cierre
-- **THEN** la configuración se carga con `inverse` vacío y, si tampoco tiene mapeos, al calcular no genera ningún asiento
+`account.fiscalyear.closing.config.template.template_id` DEBE (MUST) permanecer sin `required=True`, de modo que una configuración de plantilla pueda crearse o guardarse de forma independiente (sin pasar por el formulario de la plantilla padre) con `template_id` vacío; al construirla desde el subformulario one2many de una plantilla, `template_id` se completa igualmente por el propio mecanismo del one2many.
+
+#### Scenario: Configuración de plantilla independiente
+
+- **WHEN** se crea directamente un `account.fiscalyear.closing.config.template` sin indicar `template_id`
+- **THEN** el registro se crea correctamente con `template_id` vacío
+
+#### Scenario: Configuración añadida desde el formulario de la plantilla
+
+- **WHEN** se añade una línea de configuración al campo `move_config_ids` de una plantilla mediante su formulario
+- **THEN** la línea se guarda con `template_id` apuntando a la plantilla, sin error de campo obligatorio
 
 ### Requirement: Cálculo de las fechas del ejercicio a partir del año
 
@@ -89,12 +146,17 @@ Por cada configuración habilitada con mapeos, `moves_create` DEBE (MUST) constr
 
 ### Requirement: Normalización de la cuenta destino en los mapeos
 
-`account.fiscalyear.closing.mapping` DEBE (MUST) sobrescribir `create` y `write` para normalizar `dest_account_id`: en `create` la reasignación es un no-op (`vals["dest_account_id"] = vals["dest_account_id"]`), mientras que en `write` toma el primer elemento del valor recibido (`vals["dest_account_id"][0]`), lo que solo funciona si el valor llega como lista o recordset; un `write` con el entero que envía el cliente web falla con `TypeError`.
+`account.fiscalyear.closing.mapping` DEBE (MUST) sobrescribir `create` y `write` para normalizar `dest_account_id` a un id simple antes de delegar en el `super()`, aceptando indistintamente un entero, una lista/tupla (se toma el primer elemento, o `False` si está vacía) o un recordset/valor con atributo `id` (se toma `.id`). El comportamiento es simétrico entre `create` (recibe una lista de `vals`) y `write` (recibe un único `vals`).
 
 #### Scenario: Cambio de cuenta destino desde el formulario
 
 - **WHEN** un usuario cambia la cuenta destino de un mapeo ya guardado y el cliente envía `{"dest_account_id": 42}`
-- **THEN** el `write` intenta indexar el entero y la operación termina en `TypeError`, sin guardar el cambio
+- **THEN** el `write` guarda `dest_account_id = 42` sin error
+
+#### Scenario: Creación programática con recordset
+
+- **WHEN** se crea un mapeo pasando `dest_account_id` como un recordset de `account.account` (por ejemplo desde `_prepare_mapping`)
+- **THEN** el `create` normaliza el valor a su `id` antes de guardar
 
 ### Requirement: Asiento inverso de apertura
 
@@ -117,7 +179,7 @@ Cuando la diferencia absoluta redondeada a 2 decimales entre el total de crédit
 #### Scenario: Descuadre detectado
 
 - **WHEN** el asiento preparado para una configuración tiene débitos y créditos que difieren en 0.01 o más
-- **THEN** se muestra el wizard "Unbalanced journal entry found", se eliminan los asientos ya generados y el cierre permanece en `draft`
+- **THEN** se muestra el wizard "Unbalanced journal entry found", se cancelan/eliminan los asientos ya generados (nunca se borra uno posteado) y el cierre permanece en `draft`
 
 ### Requirement: Publicación de los asientos de cierre
 
@@ -128,14 +190,24 @@ Cuando la diferencia absoluta redondeada a 2 decimales entre el total de crédit
 - **WHEN** se pulsa el botón de publicar sobre un cierre calculado
 - **THEN** los asientos de las configuraciones con `move_id` se postean en orden de secuencia y el estado pasa a `posted`
 
-### Requirement: Cancelación con eliminación de asientos
+### Requirement: Cancelación y recálculo sin eliminar asientos posteados
 
-`button_cancel` y `button_recalculate` DEBEN (MUST) eliminar los asientos generados por el cierre vía `_moves_remove`: se rompe la conciliación de las líneas conciliadas (`remove_move_reconcile`), los asientos se cancelan (`button_cancel` de `account.move`) y se borran; la cancelación deja el cierre en `cancelled` y el recálculo continúa con `button_calculate`.
+`_moves_remove` DEBE (MUST) separar los asientos generados por el cierre en dos grupos: los que llegaron a estar `posted` y el resto. Sobre los posteados, primero desconcilia sus líneas conciliadas (`remove_move_reconcile`) y luego llama `button_cancel()` de `account.move` (que internamente hace la transición `posted -> draft -> cancel`); esos asientos **nunca se eliminan** de la base de datos, quedan en estado `cancel`. Sobre el resto (asientos que nunca llegaron a postearse: `draft` o `calculated`), desconcilia sus líneas conciliadas y los elimina con `unlink()`, para que un recálculo no acumule asientos cancelados basura. `button_cancel` invoca `_moves_remove` y deja el cierre en `cancelled`; `button_recalculate` invoca `_moves_remove` y luego `button_calculate`, generando asientos nuevos que reemplazan a los eliminados (los que sí se postearon quedan cancelados y conviven con los nuevos).
 
-#### Scenario: Cancelar un cierre calculado
+#### Scenario: Cancelar un cierre con un asiento ya posteado
 
-- **WHEN** se cancela un cierre con asientos generados, algunos con líneas conciliadas
-- **THEN** las conciliaciones se deshacen, los asientos se eliminan y el cierre queda en `cancelled`
+- **WHEN** se cancela un cierre cuyo único asiento generado fue posteado, con líneas conciliadas
+- **THEN** las conciliaciones se deshacen, el asiento pasa a estado `cancel` (sigue existiendo en la base de datos) y el cierre queda en `cancelled`
+
+#### Scenario: Recalcular un cierre con un asiento posteado
+
+- **WHEN** se ejecuta `button_recalculate` sobre un cierre cuyo asiento generado fue posteado
+- **THEN** el asiento original queda cancelado (no eliminado), se genera un asiento nuevo distinto en estado `draft` y el cierre vuelve a `calculated`
+
+#### Scenario: Cancelar un cierre con asientos no posteados
+
+- **WHEN** se cancela un cierre cuyos asientos generados nunca se postearon
+- **THEN** esos asientos se eliminan de la base de datos y el cierre queda en `cancelled`
 
 ### Requirement: Borrado restringido por estado
 

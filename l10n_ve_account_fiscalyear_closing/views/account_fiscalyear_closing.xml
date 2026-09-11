@@ -14,6 +14,12 @@
             <!-- <xpath expr="//sheet[1]//sheet[1]//field[@name='inverse']" position="attributes">
                 <attribute name="required">1</attribute>
             </xpath> -->
+            <!-- "/form/sheet" (con slash inicial) ancla en la raiz del arch,
+                 que es el <form> de este documento: solo matchea el sheet
+                 de nivel superior, no el del sub-form de move_config_ids. -->
+            <xpath expr="/form/sheet" position="after">
+                <chatter/>
+            </xpath>
         </field>
     </record>
 
