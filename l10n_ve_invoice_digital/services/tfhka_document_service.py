@@ -38,8 +38,10 @@ class TfhkaDocumentService(models.AbstractModel):
     ``_prepare_document_payload`` que compone todo y un ``send_document`` que
     orquesta el envío. El transporte HTTP lo hace ``tfhka.api.client``
     (``emit`` / ``query_numbering`` / ``get_last_document_number``), al que la
-    compañía se pasa explícita. Extensible vía el hook
-    ``_prepare_extra_payload_values``.
+    compañía se pasa explícita. Extensible vía los hooks
+    ``_prepare_extra_header_values`` (se mezcla en ``encabezado``) y
+    ``_prepare_extra_payload_values`` (se mezcla en la raíz de
+    ``documentoElectronico``).
     """
 
     _name = "tfhka.document.service"
@@ -85,7 +87,7 @@ class TfhkaDocumentService(models.AbstractModel):
         company = invoice.company_id
         client = self.env["tfhka.api.client"]
 
-        client.query_numbering(company, series)
+        client.query_numbering(company, series, origin=invoice)
 
         # Secuencia: en modo "pago primero" (o con la sincronización desactivada)
         # se usa el correlativo local de Odoo; en el modo normal se ADOPTA el
@@ -93,7 +95,7 @@ class TfhkaDocumentService(models.AbstractModel):
         if company.digitalization_with_payment_tfhka or not company.sequence_validation_tfhka:
             document_number = invoice.sequence_number
         else:
-            last = client.get_last_document_number(company, document_type, series)
+            last = client.get_last_document_number(company, document_type, series, origin=invoice)
             try:
                 document_number = int(last) + 1
             except (ValueError, TypeError):
@@ -131,6 +133,9 @@ class TfhkaDocumentService(models.AbstractModel):
             payload["documentoElectronico"]["encabezado"]["vendedor"] = seller
         if foreign_totals:
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
+        payload["documentoElectronico"]["encabezado"].update(
+            self._prepare_extra_header_values(invoice, currency_context)
+        )
         if additional_information:
             payload["documentoElectronico"]["infoAdicional"] = additional_information
         if dispatch_guide_reference:
@@ -138,7 +143,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(invoice))
         _logger.info("Payload: %s", payload)
-        response = self.env["tfhka.api.client"].emit(invoice.company_id, payload)
+        response = self.env["tfhka.api.client"].emit(invoice.company_id, payload, origin=invoice)
 
         if response:
             self._register_success(invoice, response, document_number)
@@ -188,6 +193,10 @@ class TfhkaDocumentService(models.AbstractModel):
 
     def _prepare_extra_payload_values(self, invoice):
         """Hook de extensión: valores extra del payload. Por defecto vacío."""
+        return {}
+
+    def _prepare_extra_header_values(self, invoice, ctx):
+        """Hook de extensión: valores extra para encabezado. Por defecto vacío."""
         return {}
 
     # ------------------------------------------------------------------
