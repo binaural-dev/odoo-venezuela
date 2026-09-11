@@ -529,7 +529,7 @@ msgstr "En esta operación no se puede desechar más de lo fabricado."
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/product_template.py:0
 #, python-format
-msgid "No tienes permiso para cambiar la compañía de este producto."
+msgid "You don't have permission to change this product's company."
 msgstr "No tienes permiso para cambiar la compañía de este producto."
 
 #. module: l10n_ve_stock
@@ -681,12 +681,12 @@ msgstr "Precio + IVA"
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__can_edit_company_id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__can_edit_company_id
-msgid "Puede editar la compañía"
+msgid "Can edit company"
 msgstr "Puede editar la compañía"
 
 #. module: l10n_ve_stock
 #: model:res.groups,name:l10n_ve_stock.group_edit_product_company
-msgid "Puede editar la compañía del producto"
+msgid "Can edit product company"
 msgstr "Puede editar la compañía del producto"
 
 #. module: l10n_ve_stock
