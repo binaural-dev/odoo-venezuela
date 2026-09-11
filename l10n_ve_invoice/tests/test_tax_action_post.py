@@ -97,11 +97,24 @@ class TestInvoiceTaxConstraint(TransactionCase):
             invoice.action_post()
 
     def test_invoice_with_section_and_note_lines(self):
-        """Debe ignorar líneas tipo sección y nota aunque no tengan impuesto."""
+        """Debe ignorar líneas de maquetado aunque no tengan impuesto.
+
+        Incluye `line_subsection`, el display_type que Odoo 19 agregó a esa
+        familia: era el que faltaba en la tupla de `action_post()` y hacía
+        imposible validar cualquier documento que usara una subsección. La
+        regresión también está cubierta en
+        `test_account_move_extended.py::test_action_post_does_not_demand_a_tax_on_layout_lines`,
+        pero este es el archivo dedicado a este guard y es el que abre quien
+        venga a tocarlo.
+        """
         invoice = self._create_new_invoice("out_invoice", [
             (0, 0, {
                 "name": "Section",
                 "display_type": "line_section",
+            }),
+            (0, 0, {
+                "name": "Subsection",
+                "display_type": "line_subsection",
             }),
             (0, 0, {
                 "name": "Note",

@@ -165,7 +165,16 @@ class TestAccountMoveExtended(TransactionCase):
                 }
             )
 
-    def test_price_in_zero_ignores_section_and_note(self):
+    def test_price_in_zero_ignores_layout_lines(self):
+        """Sections, SUBSECTIONS and notes carry no price and must never
+        trip the guard.
+
+        `line_subsection` is the display_type Odoo 19 added alongside the
+        existing two. It was missing from the guard's exclusion tuple, so
+        a subsection -- price_unit = 0 by definition -- was read as a
+        product line and made invoicing impossible for any document that
+        used one (seen on quote S11508 at CDD Las Mercedes).
+        """
         invoice = self.env["account.move"].create(
             {
                 "move_type": "out_invoice",
@@ -180,6 +189,15 @@ class TestAccountMoveExtended(TransactionCase):
                         {
                             "display_type": "line_section",
                             "name": "Section",
+                            "price_unit": 0,
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "display_type": "line_subsection",
+                            "name": "Subsection",
                             "price_unit": 0,
                         },
                     ),
@@ -205,7 +223,60 @@ class TestAccountMoveExtended(TransactionCase):
                 ],
             }
         )
-        self.assertTrue(invoice, "Invoice with section and note should be created")
+        self.assertTrue(
+            invoice, "Invoice with section, subsection and note should be created"
+        )
+
+    def test_action_post_does_not_demand_a_tax_on_layout_lines(self):
+        """`action_post()` requires a tax on every product line. A
+        subsection has no tax and cannot have one, so it must be skipped
+        there too -- otherwise fixing `_check_price_in_zero` alone just
+        moves the block from creating the invoice to validating it."""
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": self.journal_sale.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "display_type": "line_section",
+                            "name": "Section",
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "display_type": "line_subsection",
+                            "name": "Subsection",
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 100,
+                            "tax_ids": [(6, 0, [self.tax_sale.id])],
+                        },
+                    ),
+                ],
+            }
+        )
+
+        # l10n_ve_accountant.action_post() returns the post-alert wizard
+        # for out_invoice/out_refund unless this context key is set, so
+        # without it the invoice just stays draft and proves nothing.
+        # Same key the l10n_ve_invoice_digital suite uses.
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        self.assertEqual(invoice.state, "posted")
 
     # --- _compute_is_debit_journal ---
 
