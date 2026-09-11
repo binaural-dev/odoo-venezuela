@@ -1,7 +1,7 @@
 import logging
 import re
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from collections import defaultdict
 
 _logger = logging.getLogger(__name__)
@@ -46,6 +46,14 @@ class ProductTemplate(models.Model):
 
     liters_per_unit = fields.Float(digits="Stock Weight")
 
+    company_id = fields.Many2one(tracking=True)
+
+    can_edit_company_id = fields.Boolean(
+        string="Can edit company",
+        compute="_compute_can_edit_company_id",
+        help="Indica si el usuario actual puede modificar la compañía del producto.",
+    )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e
@@ -61,7 +69,39 @@ class ProductTemplate(models.Model):
             if product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
 
+    def _check_company_id_edit_allowed(self, vals):
+        if "company_id" not in vals or self.env.su:
+            return
+        if self.env.user.has_group("l10n_ve_stock.group_edit_product_company"):
+            return
+
+        new_company = vals["company_id"] or False
+        if not self:
+            # create(): no existing record to compare against. copy_data()
+            # always sends company_id (field has no copy=False), so
+            # duplicating a product must not be treated as an edit as long
+            # as the copy lands in the user's own active company - only a
+            # value that actually differs from that is a real attempt to
+            # set the company.
+            if new_company != self.env.company.id:
+                raise AccessError(
+                    _("You don't have permission to change this product's company.")
+                )
+            return
+
+        # write() can run on several products at once with a single vals
+        # dict, so "did it change" has to be checked per product: a value
+        # identical to one product's own company_id is a no-op for that
+        # product even if it differs for another one in the same call.
+        for product in self:
+            if new_company != product.company_id.id:
+                raise AccessError(
+                    _("You don't have permission to change this product's company.")
+                )
+
     def write(self, vals):
+        self._check_company_id_edit_allowed(vals)
+
         res = super().write(vals)
         if "taxes_id" in vals:
             self._validate_single_sale_tax()
@@ -69,6 +109,8 @@ class ProductTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            self._check_company_id_edit_allowed(vals)
         records = super().create(vals_list)
         # Always validate after creation because default taxes can come from multiple sources
         records._validate_single_sale_tax()
@@ -130,3 +172,9 @@ class ProductTemplate(models.Model):
         domain = [('free_qty', operator, value)]
         product_variant_query = self.env['product.product'].sudo()._search(domain)
         return [('product_variant_ids', 'in', product_variant_query)]
+
+    @api.depends_context("uid")
+    def _compute_can_edit_company_id(self):
+        can_edit = self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
+        for product in self:
+            product.can_edit_company_id = can_edit
