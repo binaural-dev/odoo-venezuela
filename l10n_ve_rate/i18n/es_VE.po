@@ -99,3 +99,9 @@ msgstr ""
 msgid ""
 "The currency foreign must be different from the currency of the company"
 msgstr "La moneda alterna debería ser diferente a la moneda base"
+
+#. module: l10n_ve_rate
+#. odoo-python
+#: code:addons/l10n_ve_rate/models/res_currency_rate.py:0
+msgid "There is no rate for that date, please configure one."
+msgstr "No hay tasas en esa fecha, configúrela."

@@ -7,3 +7,4 @@ from . import test_sale_order_view_no_quick_create
 from . import test_ta74966_currency
 from . import test_ta80647_invoice_currency
 from . import test_documented_behaviour
+from . import test_action_confirm_requires_rate
