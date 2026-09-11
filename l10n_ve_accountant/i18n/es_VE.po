@@ -1784,11 +1784,12 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/models/product_template.py:0
 #, python-format
 msgid ""
-"- %s: Has %s taxes assigned (exactly one tax is required due to local fiscal"
-" policies)."
+"- %(label)s: Has %(count)s taxes assigned for company '%(company)s' "
+"(exactly one tax per company is required due to local fiscal policies)."
 msgstr ""
-"- %s: Tiene %s impuestos asignados (se requiere exactamente uno "
-"debido a políticas fiscales locales)."
+"- %(label)s: Tiene %(count)s impuestos asignados para la compañía "
+"'%(company)s' (se requiere exactamente uno por compañía debido a "
+"políticas fiscales locales)."
 
 #. module: l10n_ve_accountant
 #. odoo-python
