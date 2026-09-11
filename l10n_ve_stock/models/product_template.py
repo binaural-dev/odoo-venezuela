@@ -49,7 +49,7 @@ class ProductTemplate(models.Model):
     company_id = fields.Many2one(tracking=True)
 
     can_edit_company_id = fields.Boolean(
-        string="Puede editar la compañía",
+        string="Can edit company",
         compute="_compute_can_edit_company_id",
         help="Indica si el usuario actual puede modificar la compañía del producto.",
     )
@@ -70,14 +70,34 @@ class ProductTemplate(models.Model):
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def _check_company_id_edit_allowed(self, vals):
-        if (
-            "company_id" in vals
-            and not self.env.su
-            and not self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
-        ):
-            raise AccessError(
-                _("No tienes permiso para cambiar la compañía de este producto.")
-            )
+        if "company_id" not in vals or self.env.su:
+            return
+        if self.env.user.has_group("l10n_ve_stock.group_edit_product_company"):
+            return
+
+        new_company = vals["company_id"] or False
+        if not self:
+            # create(): no existing record to compare against. copy_data()
+            # always sends company_id (field has no copy=False), so
+            # duplicating a product must not be treated as an edit as long
+            # as the copy lands in the user's own active company - only a
+            # value that actually differs from that is a real attempt to
+            # set the company.
+            if new_company != self.env.company.id:
+                raise AccessError(
+                    _("You don't have permission to change this product's company.")
+                )
+            return
+
+        # write() can run on several products at once with a single vals
+        # dict, so "did it change" has to be checked per product: a value
+        # identical to one product's own company_id is a no-op for that
+        # product even if it differs for another one in the same call.
+        for product in self:
+            if new_company != product.company_id.id:
+                raise AccessError(
+                    _("You don't have permission to change this product's company.")
+                )
 
     def write(self, vals):
         self._check_company_id_edit_allowed(vals)

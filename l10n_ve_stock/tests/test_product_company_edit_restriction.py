@@ -116,3 +116,26 @@ class TestProductCompanyEditRestriction(TransactionCase):
             "type": "consu",
         })
         self.assertTrue(template.id)
+
+    def test_copy_without_group_is_allowed_when_company_unchanged(self):
+        """copy() always sends company_id in the vals (the field has no
+        copy=False), so create()'s guard must not treat "unchanged, just
+        present" as an edit attempt - otherwise duplicating a product
+        breaks for every user without the group, which is the actual bug
+        this test guards against."""
+        template = self.template.with_user(self.user)
+        copy = template.copy()
+        self.assertEqual(copy.company_id, template.company_id)
+
+    def test_copy_with_forced_different_company_without_group_raises(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        template = self.template.with_user(self.user)
+        with self.assertRaises(AccessError):
+            template.copy({"company_id": other_company.id})
+
+    def test_write_company_id_without_group_is_allowed_when_unchanged(self):
+        """Writing the same company_id a product already has must not
+        raise, even without the group - only an actual change is
+        restricted."""
+        template = self.template.with_user(self.user)
+        template.write({"company_id": self.template.company_id.id})
