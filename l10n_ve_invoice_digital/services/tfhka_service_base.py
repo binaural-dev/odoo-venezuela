@@ -48,8 +48,25 @@ class TfhkaServiceBase(models.AbstractModel):
         return record.partner_id
 
     def _get_party_address(self, partner):
-        """Dirección a reportar para el sujeto. Punto de extensión."""
-        return partner.contact_address or "no definida"
+        """Dirección a reportar para el sujeto. Punto de extensión.
+
+        Se arma localmente a partir de los campos de dirección estándar
+        (calle, calle 2, código postal + ciudad, estado, país), sin
+        depender de ``contact_address_complete`` (vive en ``web_map``,
+        Enterprise, no declarado como dependencia de este módulo LGPL-3 -
+        en Community el campo no existe) ni de ``contact_address`` (repite
+        el nombre del contacto, que ya va en ``razonSocial``, y separa con
+        saltos de línea literales).
+        """
+        zip_city = " ".join(filter(None, [partner.zip, partner.city]))
+        parts = [
+            partner.street,
+            partner.street2,
+            zip_city,
+            partner.state_id.name,
+            partner.country_id.name,
+        ]
+        return ", ".join(filter(None, parts)) or "no definida"
 
     def _parse_partner_identification(self, partner):
         """(tipo, número) de identificación fiscal a partir de ``vat``/``prefix_vat``.
