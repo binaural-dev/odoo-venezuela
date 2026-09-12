@@ -9,4 +9,16 @@
             </field>
         </field>
     </record>
+
+    <record id="view_order_form_l10n_ve_donation_document" model="ir.ui.view">
+        <field name="name">sale.order.form.l10n.ve.donation.document</field>
+        <field name="model">sale.order</field>
+        <field name="inherit_id" ref="l10n_ve_stock_account.view_order_form_l10n_ve_stock_account" />
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='document']" position="attributes">
+                <attribute name="readonly">state in ['sale', 'done', 'cancel'] or is_consignation or is_donation</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>
