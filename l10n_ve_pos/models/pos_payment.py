@@ -92,12 +92,20 @@ class PosPayment(models.Model):
                     "manually_set_rate": True,
                 }
             )
+            # Fallback: a change (vuelto) line created server-side may reach
+            # here with foreign_amount == 0 (see pos.order._process_payment_lines).
+            # Derive it from the order rate so the alternate-currency columns are
+            # never silently zeroed (ticket #15126).
+            foreign_amount = payment.foreign_amount
+            if not foreign_amount and payment.amount:
+                foreign_amount = payment.pos_order_id._amount_to_foreign(payment.amount)
+
             for line in payment_move.line_ids:
                 line.write(
                     {
                         "not_foreign_recalculate": True,
-                        "foreign_debit": abs(payment.foreign_amount) if line.debit > 0 else 0,
-                        "foreign_credit":  abs(payment.foreign_amount) if line.credit > 0 else 0,
+                        "foreign_debit": abs(foreign_amount) if line.debit > 0 else 0,
+                        "foreign_credit":  abs(foreign_amount) if line.credit > 0 else 0,
                     }
                 )
         return move_id
