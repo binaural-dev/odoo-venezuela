@@ -27,7 +27,7 @@
             </xpath>
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
                 <attribute name="required">partner_required or is_dispatch_guide</attribute> 
-                <attribute name="readonly">order_is_consignment or partner_required or is_donation</attribute>
+                <attribute name="readonly">state == 'done' or order_is_consignment or partner_required or is_donation</attribute>
             </xpath>
             <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="before">
                 <field name="is_return" invisible="1"/>
