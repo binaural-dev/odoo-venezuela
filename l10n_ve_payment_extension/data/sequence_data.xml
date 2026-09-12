@@ -4,18 +4,21 @@
             <field name="name">Numero de control retenciones IVA</field>
             <field name="code">retention.iva.control.number</field>
             <field name="padding">8</field>
+            <field name="implementation">no_gap</field>
         </record>
 
         <record forcecreate="True" id="sequence_islr_retention" model="ir.sequence">
             <field name="name">Numero de control retenciones ISLR</field>
             <field name="code">retention.islr.control.number</field>
             <field name="padding">5</field>
+            <field name="implementation">no_gap</field>
         </record>
 
         <record forcecreate="True" id="sequence_municipal_retention" model="ir.sequence">
             <field name="name">Numero de control retenciones Municipal</field>
             <field name="code">retention.municipal.control.number</field>
             <field name="padding">5</field>
+            <field name="implementation">no_gap</field>
 	</record>
     </data>
 </odoo>

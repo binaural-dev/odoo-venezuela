@@ -4,7 +4,7 @@ import logging
 import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
-from odoo.tools import format_date
+from odoo.tools import format_date, float_compare
 
 _logger = logging.getLogger(__name__)
 
@@ -117,8 +117,148 @@ class AccountMove(models.Model):
                     raise ValidationError(_("An invoice cannot have a line with a price of zero"))
 
 
+    @api.constrains("invoice_line_ids")
+    def _check_refund_against_origin(self):
+        """Restrict a credit note (out_refund/in_refund) to the products
+        and amounts already present on the invoice it reverses.
+
+        Ticket #13965: a credit note must not introduce a product the
+        original invoice never had, nor credit more than what was
+        originally invoiced for a given product -- counting ALL other
+        credit notes already posted against the same origin, not just the
+        one being validated. Two separate $100 credit notes against a
+        single $100 line must not both pass just because each one, in
+        isolation, stays within the origin's amount. Modules that generate
+        credit notes automatically with a product of their own (e.g. a
+        dedicated exchange-difference or donation product, never part of
+        the original invoice) must opt out explicitly with the
+        `l10n_ve_skip_refund_origin_validation` context key -- this is
+        NOT exposed in the UI, only meant for internal server-side use by
+        those modules.
+        """
+        if self.env.context.get("l10n_ve_skip_refund_origin_validation"):
+            return
+
+        product_line_types = ("line_section", "line_note")
+        for move in self:
+            if move.move_type not in ("out_refund", "in_refund"):
+                continue
+            origin = move.reversed_entry_id
+            if not origin:
+                continue
+
+            origin_totals = {}
+            for line in origin.invoice_line_ids.filtered(
+                lambda l: l.display_type not in product_line_types and l.product_id
+            ):
+                origin_totals[line.product_id.id] = (
+                    origin_totals.get(line.product_id.id, 0.0) + line.price_subtotal
+                )
+
+            # Other credit notes against this same origin (draft or
+            # posted, but not cancelled) -- their amounts count against
+            # the origin's total too. Counting drafts closes the gap
+            # where two never-posted credit notes could each individually
+            # fit under the cap and only exceed it once both are posted,
+            # at which point this constrains would no longer re-trigger.
+            sibling_refunds = self.env["account.move"].search([
+                ("reversed_entry_id", "=", origin.id),
+                ("move_type", "=", move.move_type),
+                ("state", "!=", "cancel"),
+                ("id", "!=", move.id),
+            ])
+            refund_totals = {}
+            for line in sibling_refunds.invoice_line_ids.filtered(
+                lambda l: l.display_type not in product_line_types and l.product_id
+            ):
+                refund_totals[line.product_id.id] = (
+                    refund_totals.get(line.product_id.id, 0.0) + line.price_subtotal
+                )
+
+            current_totals = {}
+            service_exempt_total = 0.0
+            for line in move.invoice_line_ids.filtered(
+                lambda l: l.display_type not in product_line_types
+            ):
+                if not line.product_id:
+                    # A line with no product (e.g. a manual description
+                    # line) can't be matched against the origin at all --
+                    # letting it through would credit an arbitrary amount
+                    # with no product to check it against, defeating both
+                    # the product and the amount restriction below.
+                    raise ValidationError(_(
+                        "Every product line on this credit note must have "
+                        "a product, so it can be matched against the "
+                        "original invoice '%(origin)s'.",
+                        origin=origin.display_name,
+                    ))
+                if line.product_id.id not in origin_totals:
+                    if line.product_id.type == "service":
+                        # Ticket #81674: financial concepts that never
+                        # appear on the original invoice (early payment,
+                        # commercial discount, exchange difference) are
+                        # always service products. They're exempt from
+                        # the per-product origin-membership check, but
+                        # still count against the origin's overall total
+                        # below -- otherwise a service line with no
+                        # origin amount to cap it against could credit
+                        # an unlimited amount.
+                        service_exempt_total += line.price_subtotal
+                        continue
+                    raise ValidationError(_(
+                        "You cannot add the product '%(product)s' to this credit "
+                        "note: it is not part of the original invoice "
+                        "'%(origin)s'.",
+                        product=line.product_id.display_name,
+                        origin=origin.display_name,
+                    ))
+                current_totals[line.product_id.id] = (
+                    current_totals.get(line.product_id.id, 0.0) + line.price_subtotal
+                )
+
+            precision = move.currency_id.rounding
+            for product_id, current_amount in current_totals.items():
+                max_amount = origin_totals.get(product_id, 0.0)
+                already_credited = refund_totals.get(product_id, 0.0)
+                total_credited = already_credited + current_amount
+                if float_compare(total_credited, max_amount, precision_rounding=precision) > 0:
+                    product = self.env["product.product"].browse(product_id)
+                    raise ValidationError(_(
+                        "The amount credited for product '%(product)s' "
+                        "(%(amount)s, including %(already)s already credited "
+                        "by other credit notes) exceeds the amount invoiced "
+                        "on the original document '%(origin)s' (%(max)s).",
+                        product=product.display_name,
+                        amount=total_credited,
+                        already=already_credited,
+                        origin=origin.display_name,
+                        max=max_amount,
+                    ))
+
+            if service_exempt_total:
+                # Ticket #81674: a foreign service line has no per-product
+                # cap (there's nothing on the origin to compare it to), so
+                # it's checked here against the origin's grand total instead
+                # -- credit notes still can't exceed what was invoiced
+                # overall, they just don't have to match line-for-line.
+                origin_total_all = sum(origin_totals.values())
+                already_credited_all = sum(refund_totals.values())
+                current_total_all = sum(current_totals.values()) + service_exempt_total
+                total_credited_all = already_credited_all + current_total_all
+                if float_compare(total_credited_all, origin_total_all, precision_rounding=precision) > 0:
+                    raise ValidationError(_(
+                        "The total credited amount on this credit note "
+                        "(%(amount)s, including %(already)s already credited "
+                        "by other credit notes) exceeds the amount invoiced "
+                        "on the original document '%(origin)s' (%(max)s).",
+                        amount=current_total_all,
+                        already=already_credited_all,
+                        origin=origin.display_name,
+                        max=origin_total_all,
+                    ))
+
     def action_post(self):
-        
+
         for record in self:
             if record.move_type in ("out_invoice", "in_invoice", "out_refund", "in_refund"):
                 for line in record.invoice_line_ids:

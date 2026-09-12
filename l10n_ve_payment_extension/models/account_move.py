@@ -410,8 +410,11 @@ class AccountMoveRetention(models.Model):
 
 
     def _prepare_retention_vals(self, type_retention, payment=False):
+        invoice_date = self.invoice_date_display or self.invoice_date
+        today = fields.Date.context_today(self)
+        date_accounting = max(self.date, invoice_date) if invoice_date else self.date
         retention_vals = {
-            "date_accounting": self.date,
+            "date_accounting": min(date_accounting, today),
             "date": self.date,
             "type_retention": type_retention,
             "type": self.move_type, 
@@ -574,7 +577,7 @@ class AccountMoveRetention(models.Model):
                     if product_tmpl.type == 'service' and product_tmpl.payment_concept:
 
                         concept_id = product_tmpl.payment_concept.id
-                        base_amount = abs(line.price_unit) if use_price_unit else abs(line.move_id.tax_totals["base_amount"])
+                        base_amount = abs(line.price_subtotal) if use_price_unit else abs(line.move_id.tax_totals["base_amount"])
                         payment_concepts.append((
                             concept_id,
                             base_amount,
@@ -595,9 +598,12 @@ class AccountMoveRetention(models.Model):
         
             payment_concepts = rec._get_payment_concepts_from_invoice()
 
+            invoice_date = rec.invoice_date_display or rec.invoice_date
+            today = fields.Date.context_today(rec)
+            date_accounting = max(today, invoice_date) if invoice_date else today
             vals = {
                 'partner_id': rec.partner_id.id,
-                'date_accounting': fields.Date.today(),
+                'date_accounting': min(date_accounting, today),
                 'type_retention': 'islr',
             }
             ctx = {
