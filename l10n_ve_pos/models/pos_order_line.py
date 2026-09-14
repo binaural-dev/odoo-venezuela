@@ -11,6 +11,33 @@ class PosOrderLine(models.Model):
     foreign_subtotal = fields.Float(string="Foreign Subtotal", digits=0)
     foreign_total = fields.Float(string="Foreign Total", digits=0)
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        """Rellena ``foreign_price`` en las líneas de reembolso creadas desde el PdV.
+
+        El flujo de reembolso de Odoo 19 (``TicketScreen.onDoRefund``) crea la
+        línea destino con un ``create`` directo del core que NO pasa por el
+        override JS ``setUnitPrice`` (única vía que fija ``foreign_price`` en el
+        frontend), así que la línea se sincroniza con ``foreign_price = 0``. Ese
+        0 se propaga al asiento de la nota de crédito
+        (``pos.order._get_invoice_lines_values`` copia ``foreign_price`` a la
+        línea contable) y deja los productos en 0,00 en la moneda alterna, con
+        toda la NC descuadrada en USD.
+
+        Reponemos el precio unitario foráneo desde la línea original que se
+        reembolsa (``refunded_orderline_id``), de modo que la NC revierta
+        EXACTAMENTE el monto en USD congelado de la factura de origen —a la tasa
+        del día de la venta, no a la del día del reembolso— (ticket #15106).
+        No sobrescribimos un ``foreign_price`` ya presente (p. ej. el que inyecta
+        ``_prepare_refund_data`` en el reembolso de backend).
+        """
+        lines = super().create(vals_list)
+        for line in lines:
+            original = line.refunded_orderline_id
+            if original and not line.foreign_price and original.foreign_price:
+                line.foreign_price = original.foreign_price
+        return lines
+
     @api.model
     def _load_pos_data_fields(self, config):
         """Odoo 19 replacement for the Odoo 17 ``_export_for_ui``
