@@ -40,6 +40,7 @@ class TestPosRefundForeignPrice(TestPosSessionAccountingBase):
                 "partner_id": self.company.partner_id.id,
                 "pricelist_id": self.company.partner_id.property_product_pricelist.id,
                 "foreign_currency_rate": rate,
+                "foreign_amount_total": 0.0,
                 "amount_total": 0.0,
                 "amount_tax": 0.0,
                 "amount_paid": 0.0,
