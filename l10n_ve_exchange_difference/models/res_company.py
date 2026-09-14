@@ -73,7 +73,7 @@ class ResCompany(models.Model):
         self.ensure_one()
         if not self.l10n_ve_exchange_validate_partner_note:
             return True
-        return bool(partner.l10n_ve_exchange_allow_note)
+        return bool(partner.with_company(self).l10n_ve_exchange_allow_note)
 
 
 
@@ -161,7 +161,7 @@ class ResCompany(models.Model):
         for company in self:
             if not company.l10n_ve_exchange_use_nd_nc:
                 continue
-            debit_journal = self.env['account.journal'].search([
+            debit_journal = self.env['account.journal'].sudo().search([
                 ('company_id', '=', company.id),
                 ('is_debit', '=', True),
                 ('type', '=', 'sale'),

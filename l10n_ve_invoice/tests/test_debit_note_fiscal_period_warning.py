@@ -34,6 +34,15 @@ class TestDebitNoteFiscalPeriodWarning(TransactionCase):
         self.product = self.env["product.product"].create(
             {"name": "Test Product DN Period", "type": "service", "list_price": 100}
         )
+        self.sale_tax = self.env["account.tax"].create(
+            {
+                "name": "IVA 16% DN Period",
+                "amount": 16,
+                "amount_type": "percent",
+                "type_tax_use": "sale",
+                "company_id": self.company.id,
+            }
+        )
 
     def _create_posted_bill(self, invoice_date_display, date=None):
         bill = self.env["account.move"].create(
@@ -113,6 +122,96 @@ class TestDebitNoteFiscalPeriodWarning(TransactionCase):
         action = wizard.create_debit()
         note = self.env["account.move"].browse(action["res_id"])
         self.assertEqual(note.invoice_date, bill.invoice_date)
+
+    def test_special_taxpayer_quincena_warns_within_same_month(self):
+        # Contribuyente especial: el período fiscal corta el día 15, no
+        # el mes calendario. Factura del 2-sept (1ra quincena) y ND del
+        # 16-sept (2da quincena) caen en meses IGUALES pero periodos
+        # DISTINTOS -- debe advertir (caso de aceptación de la tarea 81554).
+        self.company.taxpayer_type = "special"
+        bill = self._create_posted_bill(fields.Date.from_string("2026-09-02"))
+        wizard = self._wizard(bill, fields.Date.from_string("2026-09-16"))
+        self.assertTrue(wizard.l10n_ve_out_of_fiscal_period_warning)
+
+    def test_special_taxpayer_same_quincena_no_warning(self):
+        self.company.taxpayer_type = "special"
+        bill = self._create_posted_bill(fields.Date.from_string("2026-09-02"))
+        wizard = self._wizard(bill, fields.Date.from_string("2026-09-10"))
+        self.assertFalse(wizard.l10n_ve_out_of_fiscal_period_warning)
+
+    def test_non_special_taxpayer_same_month_no_warning(self):
+        # Sin quincena (taxpayer_type != "special"), el período sigue
+        # siendo el mes calendario completo -- mismo caso de fechas que
+        # el test anterior, pero sin advertencia.
+        self.company.taxpayer_type = "ordinary"
+        bill = self._create_posted_bill(fields.Date.from_string("2026-09-02"))
+        wizard = self._wizard(bill, fields.Date.from_string("2026-09-16"))
+        self.assertFalse(wizard.l10n_ve_out_of_fiscal_period_warning)
+
+    def test_customer_debit_note_keeps_origin_rate_date(self):
+        # La Fecha de Tasa (`invoice_date`) debe mantenerse igual a la del
+        # origen para CUALQUIER documento -- venta o compra -- ya que la
+        # ND es la misma transacción subyacente. Antes, esto solo se
+        # aplicaba a compras porque el `onchange` de `invoice_date_display`
+        # (l10n_ve_accountant) lo pisaba en ventas al tocar el formulario;
+        # ese onchange ahora respeta `debit_origin_id`/`reversed_entry_id`.
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "invoice_date": fields.Date.from_string("2026-01-15"),
+                "date": fields.Date.from_string("2026-01-15"),
+                "invoice_line_ids": [
+                    (0, 0, {
+                        "product_id": self.product.id,
+                        "quantity": 1,
+                        "price_unit": 100,
+                        "tax_ids": [(6, 0, [self.sale_tax.id])],
+                    })
+                ],
+            }
+        )
+        invoice.with_context(move_action_post_alert=True).action_post()
+        note_date = fields.Date.from_string("2026-03-05")
+        wizard = self.env["account.debit.note"].with_context(
+            active_model="account.move", active_ids=[invoice.id], active_id=invoice.id
+        ).create({"date": note_date})
+        action = wizard.create_debit()
+        note = self.env["account.move"].browse(action["res_id"])
+        self.assertEqual(note.invoice_date, invoice.invoice_date)
+
+    def test_onchange_invoice_date_display_skips_notes_with_origin(self):
+        # Editar `invoice_date_display` en el formulario de una ND ya
+        # creada NO debe pisar la Fecha de Tasa heredada del origen --
+        # a diferencia de una factura normal, donde sí debe seguir a
+        # `invoice_date_display` (`test_04_onchange_invoice_date_display`,
+        # l10n_ve_accountant).
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "invoice_date": fields.Date.from_string("2026-01-15"),
+                "date": fields.Date.from_string("2026-01-15"),
+                "invoice_line_ids": [
+                    (0, 0, {
+                        "product_id": self.product.id,
+                        "quantity": 1,
+                        "price_unit": 100,
+                        "tax_ids": [(6, 0, [self.sale_tax.id])],
+                    })
+                ],
+            }
+        )
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self.env["account.debit.note"].with_context(
+            active_model="account.move", active_ids=[invoice.id], active_id=invoice.id
+        ).create({"date": fields.Date.from_string("2026-03-05")})
+        action = wizard.create_debit()
+        note = self.env["account.move"].browse(action["res_id"])
+
+        note.invoice_date_display = fields.Date.from_string("2026-03-10")
+        note._onchange_invoice_date_display()
+        self.assertEqual(note.invoice_date, invoice.invoice_date)
 
     def test_created_note_own_fiscal_date_is_wizard_date(self):
         # `invoice_date_display` (the note's OWN declared fiscal date,
