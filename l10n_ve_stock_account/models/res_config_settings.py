@@ -26,10 +26,6 @@ class ResConfigSettings(models.TransientModel):
     indexed_dispatch_guide = fields.Boolean(
         related="company_id.indexed_dispatch_guide", readonly=False
     )
-    hide_disc_field_dispatch_guide = fields.Boolean(
-        related="company_id.hide_disc_field_dispatch_guide", readonly=False
-    )
-
     hide_weight_field_dispatch_guide = fields.Boolean(
         related="company_id.hide_weight_field_dispatch_guide", readonly=False
     )
