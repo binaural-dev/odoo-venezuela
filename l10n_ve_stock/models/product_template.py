@@ -46,6 +46,20 @@ class ProductTemplate(models.Model):
 
     liters_per_unit = fields.Float(digits="Stock Weight")
 
+    lock_internal_reference_on_moves = fields.Boolean(
+        string="Bloquear referencia interna con movimientos",
+        compute="_compute_lock_internal_reference_on_moves",
+        inverse="_set_lock_internal_reference_on_moves",
+        store=True,
+        help=(
+            "Si está activo, la referencia interna (código) no podrá "
+            "modificarse una vez que el producto (siendo almacenable) tenga "
+            "movimientos de inventario ya validados (estado 'Hecho'). Un "
+            "pedido de compra o venta confirmado, sin la transferencia "
+            "asociada validada todavía, no cuenta como movimiento."
+        ),
+    )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e
@@ -62,6 +76,23 @@ class ProductTemplate(models.Model):
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def write(self, vals):
+        # default_code and lock_internal_reference_on_moves are both stored
+        # fields with their own inverse (_set_default_code on the core side,
+        # _set_lock_internal_reference_on_moves here), so Odoo runs them as
+        # separate write() calls on the variant, in vals key order. In the
+        # resolved form arch, default_code renders before the toggle, so it
+        # always arrives first in vals - meaning product.product.write()'s
+        # own same-write guard (which reads
+        # vals.get("lock_internal_reference_on_moves", ...)) never sees the
+        # new toggle value, only the variant's still-locked stored one.
+        # Propagate the toggle to the variants directly, before super()
+        # triggers any inverse, so unlocking and fixing default_code in the
+        # same save always sees the intended state regardless of key order.
+        if "lock_internal_reference_on_moves" in vals and "default_code" in vals:
+            self.product_variant_ids.write(
+                {"lock_internal_reference_on_moves": vals["lock_internal_reference_on_moves"]}
+            )
+
         res = super().write(vals)
         if "taxes_id" in vals:
             self._validate_single_sale_tax()
@@ -130,3 +161,12 @@ class ProductTemplate(models.Model):
         domain = [('free_qty', operator, value)]
         product_variant_query = self.env['product.product'].sudo()._search(domain)
         return [('product_variant_ids', 'in', product_variant_query)]
+
+    @api.depends("product_variant_ids.lock_internal_reference_on_moves")
+    def _compute_lock_internal_reference_on_moves(self):
+        self._compute_template_field_from_variant_field(
+            "lock_internal_reference_on_moves", default=True
+        )
+
+    def _set_lock_internal_reference_on_moves(self):
+        self._set_product_variant_field("lock_internal_reference_on_moves")
