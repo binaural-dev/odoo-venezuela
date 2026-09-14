@@ -102,6 +102,18 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             })],
         })
 
+    def _exchange_diff_moves(self, invoice):
+        """Any core-generated currency exchange difference entry left
+        behind by reconciling `invoice` against something else --
+        `matched_credit_ids`/`matched_debit_ids` on its own
+        payable/receivable line carry `exchange_move_id` when Odoo's
+        native engine had to correct a rate mismatch on that partial."""
+        ap_lines = invoice.line_ids.filtered(
+            lambda l: l.account_id.account_type == "liability_payable"
+        )
+        partials = ap_lines.matched_credit_ids | ap_lines.matched_debit_ids
+        return partials.mapped("exchange_move_id").filtered(lambda m: m)
+
     def test_retention_payment_move_uses_date_accounting(self):
         """The payment (and the move behind it) are dated with the
         retention's own date_accounting, regardless of the date -- and
@@ -124,6 +136,32 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             "The retention payment's journal entry is dated like "
             "date_accounting -- nothing in this module pins it to the "
             "invoice's own date.",
+        )
+
+    def test_retention_reconcile_never_generates_exchange_difference(self):
+        """`_reconcile_all_payments` reconciles with `no_exchange_difference=True`
+        (plus this module's own `l10n_ve_exchange_is_retention_reconcile`,
+        read by `l10n_ve_exchange_difference` when that module is
+        installed) precisely so a retention payoff never manufactures a
+        currency correction of its own -- the invoice/payment dates above
+        are deliberately at DIFFERENT rates (40.0 vs 60.0), which on any
+        OTHER reconciliation path would leave a real residual to correct.
+        Regression coverage for an assertion that existed before this
+        module's date-pinning behavior was found to be undocumented
+        (commit c9ef8996e) and got dropped along with the outdated test it
+        replaced, without a like-for-like replacement through this
+        module's own real flow (`account.retention`, not a hand-rolled
+        `reconcile()` call elsewhere)."""
+        invoice = self._create_foreign_invoice(amount=200.0)
+        retention = self._create_retention(invoice)
+
+        retention.action_post()
+
+        self.assertFalse(
+            self._exchange_diff_moves(invoice),
+            "A retention payment must never generate a currency exchange "
+            "difference entry against the invoice it retains from, even "
+            "when reconciled at a different rate.",
         )
 
     def test_retention_payment_generate_move_vals_uses_date_accounting(self):
