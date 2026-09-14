@@ -52,6 +52,8 @@ class ProductTemplate(models.Model):
         string="Can edit company",
         compute="_compute_can_edit_company_id",
         help="Indica si el usuario actual puede modificar la compañía del producto.",
+    )
+
     lock_internal_reference_on_moves = fields.Boolean(
         string="Bloquear referencia interna con movimientos",
         compute="_compute_lock_internal_reference_on_moves",
