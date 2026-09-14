@@ -116,4 +116,4 @@ class TestAccountMoveApiCalls(TransactionCase):
             type(self.company), '_process_tfhka_response_data', side_effect=ValueError("bad data")
         ):
             with self.assertRaises(ValidationError):
-                self.company._handle_tfhka_response(mock_response)
+                self.company._handle_tfhka_response(mock_response, {"usuario": "u", "clave": "p"})
