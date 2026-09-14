@@ -35,7 +35,8 @@
       self`, para no rehacer `_get_max_invoice_date()` una vez por línea
       modificada
 - [x] 2.7 Bump de versión en `__manifest__.py`: `19.0.2.0.28` →
-      `19.0.2.0.29`
+      `19.0.2.0.29` (superado luego en 3b.5: la base subió a `.30` y el
+      bump propio se perdió en el merge, resuelto con `.31`)
 
 ## 3. Verificación
 
@@ -86,6 +87,56 @@
       2.6) y encontró que `proposal.md`/`spec.md` describían un
       comportamiento del flujo automatizado distinto al real — corregido
       en la sección 4
+
+## 3b. Ronda de review humano (PR #1302)
+
+- [x] 3b.1 `_prepare_retention_vals()` (`models/account_move.py`) y
+      `create_muti_retencion()` (`wizard/batch_retentions_wizard.py`):
+      corregido `date_accounting` para que use
+      `max(fecha_actual, invoice_date_display or invoice_date)` en vez de
+      una fecha fija — cierra el hueco real donde la creación automática de
+      retenciones podía chocar contra el nuevo constraint
+- [x] 3b.2 Agregado `test_13b_accounting_date_before_invoice_date_blocked_on_save_sale`
+      (variante de `test_13` con `out_invoice`/`sale_journal`) para anclar
+      el escenario de venta, no solo el de compra
+- [x] 3b.3 Descartado el punto "líneas canceladas inflan
+      `_get_max_invoice_date()`": `state` en `account.retention.line` es
+      `related="retention_id.state"` (estado de la retención, no de la
+      factura); dentro de una sola retención todas las líneas comparten el
+      mismo valor, así que el filtro propuesto no cambia nada. Documentado
+      en `proposal.md` y como escenario en `spec.md`
+- [x] 3b.4 Confirmado que la ubicación de `openspec/` dentro del módulo
+      (`l10n_ve_payment_extension/openspec/`) sigue un patrón ya usado en
+      otros módulos del repo (además del root en `openspec/specs/` en la
+      raíz) — no requiere moverse
+- [x] 3b.5 Auditoría independiente (5ta ronda) encontró 2 bloqueantes reales
+      sin corregir en 3b.1-3b.4:
+      - `auto_create_islr_retention()` (`models/account_move.py`) tenía el
+        mismo defecto que `_prepare_retention_vals()` y no se había
+        tocado — se llama desde `action_post()` de la factura junto con
+        `_create_retention("iva")`, así que revienta el `action_post()`
+        completo con ISLR automático e `invoice_date_display` futura.
+        Corregido con el mismo criterio de 3b.1
+      - El bump de versión de 2.7 quedó pisado por los merges de
+        `maintenance-19.0` (la base ya estaba en `.30`); repuesto a `.31`
+      También corrigió el fix de 3b.1: `date_accounting` no debe quedar en
+      el futuro respecto a hoy, así que la fórmula pasó de
+      `max(fecha, invoice_date)` a `min(max(fecha, invoice_date), hoy)`
+      en los tres sitios (`account_move.py` x2, `batch_retentions_wizard.py`)
+- [x] 3b.6 Misma auditoría encontró que `test_13b` (3b.2) no probaba nada
+      distinto de `test_13`: `_create_iva_retention()` hardcodea
+      `type="in_invoice"`, así que el `move_type` de venta de la factura no
+      cambiaba el camino ejercitado. Corregido agregando
+      `retention.type = "out_invoice"` explícito (mismo patrón que
+      `test_05`)
+- [x] 3b.7 Misma auditoría refutó 2 afirmaciones falsas en la nota de
+      aclaración de 3b.3 (en `proposal.md`/`spec.md`): la guarda de
+      "no crear retención para factura cancelada" vive en
+      `account_retention.py` y solo aplica a retenciones de terceros (no
+      en `account_move.py` ni de forma general); y una retención `cancel`
+      sí admite `write` vía `action_draft`, no es inmutable. Ambas
+      corregidas — la conclusión (el filtro por `state` es un no-op) no
+      dependía de ninguna de las dos y se mantiene
 
 ## 4. OpenSpec
 

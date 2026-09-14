@@ -297,6 +297,29 @@ class TestRetentionLifecycle(RetentionTestCommon):
             "========= test_13_accounting_date_before_invoice_date_blocked_on_save passed ========="
         )
 
+    def test_13b_accounting_date_before_invoice_date_blocked_on_save_sale(self):
+        invoice = self._create_invoice_reten_iva(
+            amount=200, partner=self.partner_pnr_75,
+            out_invoice="out_invoice", journal=self.sale_journal,
+        )
+        self._prepare_invoice_for_retention(invoice)
+        invoice.action_post()
+
+        retention = self._create_iva_retention(invoice)
+        retention.type = "out_invoice"
+        retention.number = "01234567891234"
+        original_date_accounting = retention.date_accounting
+
+        with self.assertRaises(ValidationError) as e, self.cr.savepoint():
+            retention.date_accounting = invoice.invoice_date_display - timedelta(days=2)
+        self.assertIn("cannot be earlier", str(e.exception))
+        self.assertEqual(retention.date_accounting, original_date_accounting)
+        self.assertEqual(retention.state, "draft")
+
+        _logger.info(
+            "========= test_13b_accounting_date_before_invoice_date_blocked_on_save_sale passed ========="
+        )
+
     def test_14_accounting_date_equal_to_invoice_date_allowed(self):
         invoice = self._create_invoice_reten_iva(
             amount=200, partner=self.partner_pnr_75,

@@ -68,6 +68,25 @@ no solo al aprobar, para que la inconsistencia nunca quede persistida.
   limitación) que ya tiene la validación existente de monto de retención
   vs. factura; este cambio no la corrige, solo la replica.
 
+#### Scenario: Aclaración — líneas de retención "canceladas" no afectan el cálculo
+
+- **GIVEN** `_get_max_invoice_date()` corre sobre una sola retención
+  (`self.ensure_one()`)
+- **WHEN** se evalúa `retention_line_ids.move_id`
+- **THEN** el sistema NO necesita filtrar por `state` de línea: `state` en
+  `account.retention.line` es `related="retention_id.state"`, así que todas
+  las líneas de una misma retención comparten siempre el mismo valor — no
+  hay forma de que una parte de las líneas esté "cancelada" y otra no
+  dentro de una misma retención
+- **AND** este flujo tampoco filtra por `move_id.state` (estado de la
+  factura): `_get_max_invoice_date()` no distingue si la factura de una
+  línea terminó cancelada después de creada la retención — queda fuera de
+  alcance de este cambio, no como comportamiento garantizado. (Una
+  retención en `cancel` sí puede volver a `write` vía `action_draft`, así
+  que no hay inmutabilidad que evite este caso borde; su severidad es baja
+  porque requiere cancelar la factura después de haber creado la retención
+  draft, y no es el escenario del ticket)
+
 #### Scenario: Fuera de alcance — fecha de factura movida después de emitida la retención
 
 - **GIVEN** una retención `emitted` sobre una factura con

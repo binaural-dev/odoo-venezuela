@@ -68,6 +68,36 @@ retención.
     a nivel de línea reinvoca
     `retention_id._check_accounting_date_vs_invoices()` para cerrar ese
     hueco.
+- `l10n_ve_payment_extension/models/account_move.py`
+  - `_prepare_retention_vals()` creaba la retención con `date_accounting =
+    self.date` (fecha contable del asiento), sin mirar
+    `invoice_date_display`. Cuando la factura tiene `invoice_date_display`
+    posterior a `self.date`, la creación automática de la retención desde la
+    factura (el camino real que dispara el escenario del ticket) pasaba a
+    chocar con el nuevo constraint. Corregido a
+    `min(max(self.date, invoice_date_display or invoice_date), hoy)`: nunca
+    antes de la factura, pero tampoco después de hoy — `date_accounting` no
+    puede quedar en el futuro.
+  - `auto_create_islr_retention()` tenía el mismo defecto
+    (`date_accounting = fields.Date.today()` fijo) y **no se había
+    corregido en la primera pasada**: se llama desde `action_post()` de la
+    factura (el mismo bucle que dispara `_create_retention("iva")`), así
+    que con ISLR automático e `invoice_date_display` posterior a hoy
+    revienta el `action_post()` completo de la factura. Mismo fix:
+    `min(max(hoy, invoice_date_display or invoice_date), hoy)`.
+- `l10n_ve_payment_extension/wizard/batch_retentions_wizard.py`
+  - Mismo defecto en `create_muti_retencion()`, en los dos caminos
+    (individual y agrupado por partner): usaban `fields.Date.today()` fijo.
+    Corregido con el mismo criterio: `max` contra la fecha de factura (o el
+    máximo entre todas las facturas del grupo), con techo en hoy.
+- `l10n_ve_payment_extension/__manifest__.py`
+  - Bump `19.0.2.0.30` → `19.0.2.0.31` (el bump original del PR,
+    `.28 → .29`, se perdió en los merges de `maintenance-19.0` porque la
+    base ya traía `.30`).
+- `l10n_ve_payment_extension/tests/test_retention_lifecycle.py`
+  - `test_13b_accounting_date_before_invoice_date_blocked_on_save_sale`:
+    variante de `test_13` con `out_invoice` / `sale_journal`, para anclar el
+    escenario literal del ticket (factura de venta), no solo el de compra.
 - `l10n_ve_payment_extension/tests/test_payment_concept_setup.py`
   - `test_07_get_retention_iva_values_future_date` retrocedía
     `date_accounting` 60 días sin mover la fecha de la factura (que por
@@ -82,8 +112,10 @@ retención.
 ## Impact
 
 - **Capability**: `retention-accounting-date-validation` (nueva).
-- **Módulo**: `l10n_ve_payment_extension`. Solo cambia código Python de un
-  método (`action_post`); no requiere migración de datos.
+- **Módulo**: `l10n_ve_payment_extension`. Cambia varios métodos (`action_post`,
+  `_prepare_retention_vals`, `auto_create_islr_retention`,
+  `create_muti_retencion` del wizard batch) más los constraints nuevos; no
+  requiere migración de datos, solo bump de versión de manifest.
 - **Alcance**: aplica a los tres tipos de retención que comparten
   `action_post()` (`iva`, `islr`, `municipal`) y a los dos sentidos
   (`in_*`/`out_*`), porque todos pasan por la misma validación de fechas
@@ -107,6 +139,25 @@ retención.
   generar retención desde el wizard de registro de pagos es código muerto
   en V19 — no se usa. No se documenta como riesgo porque no hay ejecución
   real que dispare el nuevo constraint por esa vía.
+- **Nota de review (aclaración, no un defecto)**: se planteó en la revisión
+  humana del PR que `_get_max_invoice_date()` debería descartar líneas de
+  retención "canceladas" (por analogía con `_validate_islr_retention`, que
+  sí filtra `rl.state != "cancel"`). No aplica: `state` en
+  `account.retention.line` es un campo `related="retention_id.state"`, es
+  decir, refleja el estado de la retención (padre), no el de la factura. Y
+  como `_get_max_invoice_date()` corre con `self.ensure_one()` sobre una
+  sola retención, **todas sus líneas comparten siempre el mismo `state`**:
+  o la retención está cancelada y todas sus líneas lo reflejan, o no lo
+  está y ninguna línea lo refleja. El filtro nunca podría descartar una
+  línea individual dentro de una misma retención — es matemáticamente un
+  no-op (y de hecho `_validate_islr_retention` tiene el mismo no-op, sobre
+  un resultado que además nunca se lee). Tampoco es una vía real para
+  "facturas canceladas": `_get_max_invoice_date()` no filtra por
+  `move_id.state`, así que si una factura se cancela *después* de creada
+  la retención draft, su fecha sigue contando para el máximo — caso borde
+  de baja severidad, documentado como fuera de alcance en `spec.md`, no
+  como imposible. Conclusión: no hay cambio de código que aplicar aquí,
+  solo la aclaración.
 - **Fuera de alcance, explícito**: los dos constraints nuevos vigilan el
   lado de la retención (`date_accounting`, `retention_line_ids`, `move_id`
   de la línea). Ninguno vigila el lado de la factura: si `invoice_date_display`
