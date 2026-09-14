@@ -72,6 +72,13 @@ class AccountDebitNote(models.TransientModel):
         now itself scoped to skip documents with an origin
         (`debit_origin_id`/`reversed_entry_id`), so both code paths agree.
 
+        DELIBERATELY not scoped to purchases only (an earlier iteration
+        of this fix was): scoping it to purchases would have LEFT that
+        exact inconsistency in place for sale documents instead of
+        closing it -- see PR #1283 discussion (tarea 81554) for the
+        explicit decision to apply this to both directions and fix the
+        onchange at its root instead.
+
         `invoice_date_display` is the Note's own declared fiscal date
         (what the "Out of Fiscal Period" warning above and the wizard's
         own `date` field are about) -- so it must be `self.date`
