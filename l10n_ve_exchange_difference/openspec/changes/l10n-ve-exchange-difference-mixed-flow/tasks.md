@@ -55,9 +55,31 @@
 
 ## 6. Pendiente
 
-- [ ] 6.1 Tests: retención excluida, gate por cliente (ambos casos),
-      flujo mixto desactivado (regresión)
-- [ ] 6.2 Punto 4 de la tarea 81554 (advertencia de período fiscal en ND de
-      proveedor) -- fuera de alcance de este módulo, pendiente de ubicar
-- [ ] 6.3 Levantar en docker-odoo, actualizar módulos y correr suite completa
+- [x] 6.1 Tests: retención excluida, gate por cliente (ambos casos),
+      flujo mixto desactivado (regresión) -- `test_exchange_note_mixed_flow.py`
+- [x] 6.2 Punto 4 de la tarea 81554 (advertencia de período fiscal en ND de
+      proveedor) -- implementado en `l10n_ve_invoice`/`account_debit_note.py`,
+      reutilizando `account.move._get_period_limit` (quincena de
+      contribuyente especial) en vez de comparar mes/año calendario; tests
+      en `l10n_ve_invoice/tests/test_debit_note_fiscal_period_warning.py`
+- [x] 6.3 Levantado en docker-odoo, módulos actualizados y suite completa
+      corrida (`l10n_ve_exchange_difference`, `l10n_ve_invoice`,
+      `l10n_ve_accountant`) -- 0 fallas atribuibles a este change
 - [ ] 6.4 `code-reviewer` antes de abrir PR
+
+## 7. Encontrado durante el seguimiento (revisión de `pastor-binaural`)
+
+- [x] 7.1 `res.partner.l10n_ve_exchange_allow_note` marcado
+      `company_dependent=True` -- el toggle que lo gobierna vive en
+      `res.company`, así que el permiso del cliente no puede ser único
+      para toda la base en multi-compañía
+- [x] 7.2 Fecha de Tasa (`invoice_date`) de la ND: acotada primero solo a
+      compras, pero eso dejaba una inconsistencia real en documentos de
+      venta según si el formulario se abría/editaba antes de guardar
+      (`l10n_ve_accountant._onchange_invoice_date_display` la
+      re-derivaba). Fix definitivo: ese `onchange` ahora respeta
+      `debit_origin_id`/`reversed_entry_id` -- la Fecha de Tasa del origen
+      se mantiene para CUALQUIER Nota, venta o compra
+- [x] 7.3 Test que ejercita el método real
+      `_check_l10n_ve_exchange_debit_journal_sequences` (no solo su query
+      interna) para justificar el `.sudo()` de 3.1

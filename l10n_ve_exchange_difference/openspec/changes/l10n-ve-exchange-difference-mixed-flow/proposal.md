@@ -77,12 +77,19 @@ antes de esta feature.
 - **Módulos**: `l10n_ve_exchange_difference` (campos/lógica nuevos, 3 fixes),
   `l10n_ve_payment_extension` (contexto explícito agregado en
   `_reconcile_all_payments`).
-- **Fuera de alcance de este change**: advertencia de período fiscal en Notas
-  de Débito de PROVEEDOR (punto 4 de la tarea 81554) -- no vive en este
-  módulo (que es exclusivo de facturas de CLIENTE); pendiente de ubicar en
-  el módulo correcto (`l10n_ve_invoice`/`account_debit_note`) antes de
-  implementarse.
+- **Punto 4 de la tarea 81554** (advertencia de período fiscal en Notas de
+  Débito de PROVEEDOR): no vive en este módulo (que es exclusivo de
+  facturas de CLIENTE) -- implementado en el módulo correcto,
+  `l10n_ve_invoice` (`AccountDebitNote._compute_l10n_ve_out_of_fiscal_period_warning`,
+  `account_debit_note.py`), reutilizando la lógica de período por tipo de
+  contribuyente (`account.move._get_period_limit`/`_same_fiscal_period`,
+  quincena para contribuyente especial) en vez de una comparación de mes/año
+  calendario.
 - **Tests existentes**: sin cambios de comportamiento con ambos toggles
-  nuevos desactivados (default) -- no deberían romperse.
-- **Tests nuevos**: pendientes (retención excluida, gate por cliente activado/
-  desactivado, ambos escenarios de flujo mixto).
+  nuevos desactivados (default) -- no se rompieron (suite completa corrida
+  contra Odoo real, 0 fallas atribuibles a este change).
+- **Tests nuevos**: agregados -- retención excluida, gate por cliente
+  activado/desactivado (ambos escenarios), flujo mixto desactivado
+  (regresión), `company_dependent` del permiso del cliente
+  (`test_exchange_note_mixed_flow.py`); búsqueda de diario con `.sudo()`
+  vía el método real, no solo su query (`test_exchange_note_multi_company_journal_search.py`).
