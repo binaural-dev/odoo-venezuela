@@ -125,7 +125,7 @@
                     </td>
                     <td>
                         <span class="o_tax_group_amount_value">
-                            <t t-out="totals.igtf.formatted_foreign_igtf_base_amount"/>
+                            <t t-out="totals.igtf.formatted_foreign_igtf_amount"/>
                         </span>
                     </td>
                 </tr>
