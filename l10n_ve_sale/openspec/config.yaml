@@ -1,0 +1,10 @@
+schema: spec-driven
+context: |
+  Módulo: l10n_ve_sale (src/odoo-venezuela, rama 19.0)
+  Tech stack: Odoo 19.0, Python, PostgreSQL
+  Dominio: Localización venezolana de Ventas — presupuestos/pedidos,
+    reglas de stock y límite de crédito específicas de VE sobre `sale.order`.
+  Dependencias: base, l10n_ve_base, sale, l10n_ve_rate, l10n_ve_contact,
+    l10n_ve_invoice, l10n_ve_filter_partner, l10n_ve_stock.
+  Core Odoo 19: sale.order.action_confirm en
+    /usr/lib/python3/dist-packages/odoo/addons/sale/models/sale_order.py
