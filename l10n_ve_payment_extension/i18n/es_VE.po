@@ -3298,6 +3298,16 @@ msgstr "La factura no tiene impuestos."
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid ""
+"The accounting date (%(accounting_date)s) cannot be earlier than the "
+"invoice date (%(invoice_date)s) for invoice %(invoice_name)s."
+msgstr ""
+"La fecha contable (%(accounting_date)s) no puede ser anterior a la fecha "
+"de factura (%(invoice_date)s) de la factura %(invoice_name)s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
 "The retention amount (%s) cannot be greater than the invoice total signed "
 "amount (%s) for invoice %s."
 msgstr ""
