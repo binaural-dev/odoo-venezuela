@@ -22,8 +22,18 @@ class AccountMove(models.Model):
     invoice_date_display = fields.Date(string="Invoice Date", default=fields.Date.context_today, copy=True)
     is_purchase_international = fields.Boolean(related="journal_id.is_purchase_international")
 
-    @api.depends('invoice_date_display')
+    @api.depends('invoice_date_display', 'company_id', 'move_type', 'taxable_supply_date')
     def _compute_date(self):
+        """
+        Overriding just to swap the trigger from core's `invoice_date` to
+        `invoice_date_display` (this localization's actual accounting-date
+        source, see `_get_accounting_date_source` below) would silently
+        drop the other three dependencies core's own `_compute_date`
+        already relies on (`company_id`, `move_type`, `taxable_supply_date`
+        - used internally via `_get_accounting_date`/`is_sale_document`/
+        `_affect_tax_report`) if not re-declared here: `@api.depends` on an
+        override replaces the parent's list, it doesn't extend it.
+        """
         super()._compute_date()
 
     def _get_accounting_date_source(self):
@@ -123,8 +133,6 @@ class AccountMove(models.Model):
             """
             )
         return res
-    def _get_fields_to_compute_lines(self):
-        return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
 
     def default_alternate_currency(self):
         """
@@ -840,10 +848,17 @@ class AccountMove(models.Model):
                 vat = str(move.partner_id.vat) if move.partner_id.vat else ''
             move.vat = vat.upper()
 
-    @api.depends("invoice_date")
+    @api.depends("invoice_date", "date")
     def _compute_rate(self):
         """
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
+
+        Depends on both dates because `_compute_rate_for_documents` reads
+        `invoice_date` for sale documents but `date` (accounting date) for
+        everything else (purchases, entries): without `date` here, editing
+        only the accounting date on a purchase document never re-triggers
+        this compute, leaving `foreign_rate`/`foreign_inverse_rate` stale
+        relative to the date actually used to look them up.
         """
         self._compute_rate_for_documents(
             self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
@@ -1708,29 +1723,6 @@ class AccountMove(models.Model):
         actual_non_pt = sum(non_pt.mapped('balance'))
         if cc.is_zero(actual_non_pt):
             return
-
-        # Calculate expected total from direct document conversion
-        total_currency = abs(move.amount_total)
-        rate_date = move._get_invoice_currency_rate_date() or fields.Date.context_today(move)
-        expected_total = cc.round(move.currency_id._convert(
-            total_currency, cc, move.company_id, rate_date
-        ))
-        # non-PT lines are credit for sale docs (negative), debit for purchase docs (positive)
-        sign = -1 if move.amount_total_signed > 0 else 1
-        expected_total *= sign
-
-        # Correct non_pt if it diverges from expected
-        non_pt_diff = cc.round(expected_total - actual_non_pt)
-        tolerance = cc.rounding * len(move.line_ids)
-        if abs(non_pt_diff) > tolerance:
-            _logger.warning(
-                "Real portion: anomalous diff in move %s: diff=%s expected=%s actual=%s",
-                move.id, non_pt_diff, expected_total, actual_non_pt,
-            )
-        if not cc.is_zero(non_pt_diff):
-            self._distribute_to_lines(non_pt, non_pt_diff, cc)
-
-        actual_non_pt = sum(non_pt.mapped('balance'))
 
         pt_lines = move.line_ids.filtered(
             lambda l: l.display_type == 'payment_term'
