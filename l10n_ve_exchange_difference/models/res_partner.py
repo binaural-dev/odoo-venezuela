@@ -6,6 +6,7 @@ class ResPartner(models.Model):
 
     l10n_ve_exchange_allow_note = fields.Boolean(
         string='Allow Exchange Difference Note',
+        company_dependent=True,
         default=False,
         help="Only consulted when the company's 'Validate Customer Allows "
              "Exchange Difference Note' setting is enabled -- with it "

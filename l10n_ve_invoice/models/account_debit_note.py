@@ -9,11 +9,15 @@ class AccountDebitNote(models.TransientModel):
         string='Out of Fiscal Period',
         compute='_compute_l10n_ve_out_of_fiscal_period_warning',
         help="True when this Debit Note's own date (`date`) falls in a "
-             "different month/year than `invoice_date_display` (the "
+             "different tax period than `invoice_date_display` (the "
              "vendor bill's own declared fiscal date -- `date`/accounting "
              "date is only DERIVED from it, and can lag behind when the "
              "bill is posted later than issued) of the vendor bill it "
-             "debits. Warning only -- never blocks creating the note.",
+             "debits. Period boundaries follow `account.move."
+             "_get_period_limit` (the same rule `_compute_entry_in_period` "
+             "uses), so a `special` taxpayer's two halves of a month "
+             "count as different periods. Warning only -- never blocks "
+             "creating the note.",
     )
 
     @api.depends('journal_type')
@@ -23,16 +27,19 @@ class AccountDebitNote(models.TransientModel):
         for record in self:
             record.filter_enabled = config
 
-    @api.depends('date', 'move_ids', 'move_ids.invoice_date_display')
+    @api.depends('date', 'move_ids', 'move_ids.invoice_date_display', 'move_ids.company_id.taxpayer_type')
     def _compute_l10n_ve_out_of_fiscal_period_warning(self):
+        AccountMove = self.env['account.move']
         for record in self:
-            moves = record.move_ids.filtered(lambda m: m.move_type == 'in_invoice')
+            moves = record.move_ids.filtered(lambda m: m.move_type in ('in_invoice', 'in_refund'))
             record.l10n_ve_out_of_fiscal_period_warning = bool(
                 record.date
                 and moves
                 and any(
                     m.invoice_date_display
-                    and (record.date.year, record.date.month) != (m.invoice_date_display.year, m.invoice_date_display.month)
+                    and not AccountMove._same_fiscal_period(
+                        record.date, m.invoice_date_display, m.company_id.taxpayer_type
+                    )
                     for m in moves
                 )
             )
@@ -49,11 +56,21 @@ class AccountDebitNote(models.TransientModel):
         rate lookups -- `invoice_date_display` is what actually drives the
         accounting `date` via `_get_accounting_date_source`). Collapsing
         `invoice_date` to the Debit Note's own date makes it price at a
-        DIFFERENT rate than the invoice it's meant to correct/complement,
+        DIFFERENT rate than the bill it's meant to correct/complement,
         manufacturing a spurious exchange difference between the two
         documents that shouldn't exist -- they're the same underlying
         transaction. Overriding it back to `move.invoice_date` keeps the
         SAME rate as the origin.
+
+        Applies to BOTH purchase and sale documents -- a Debit Note is the
+        same underlying transaction as its origin regardless of direction,
+        so its Rate Date must not depend on which side of the ledger it's
+        on. `l10n_ve_accountant._onchange_invoice_date_display` used to
+        re-derive `invoice_date` from `invoice_date_display` for every
+        sale document, which would silently undo this override the moment
+        someone opened the note and touched the form -- that onchange is
+        now itself scoped to skip documents with an origin
+        (`debit_origin_id`/`reversed_entry_id`), so both code paths agree.
 
         `invoice_date_display` is the Note's own declared fiscal date
         (what the "Out of Fiscal Period" warning above and the wizard's
