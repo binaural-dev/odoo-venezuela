@@ -639,9 +639,20 @@ class AccountRetention(models.Model):
         across those repeats - in this retention AND in any other emitted
         retention already holding a line for the same (move, concept) -
         exceeding the real taxable base the invoice actually has for that
-        concept (sum of price_subtotal of the invoice lines whose product
-        carries that payment_concept) - that's how someone re-declaring the
-        same product/amount to inflate the retention shows up.
+        concept (sum of balance - the company-currency amount, not raw
+        price_subtotal - of the invoice lines whose product carries that
+        payment_concept) - that's how someone re-declaring the same
+        product/amount to inflate the retention shows up.
+
+        Special case: when only ONE invoice line carries the concept (mixed
+        with unrelated goods), account.retention.line._get_islr_concept_base_amounts
+        legitimately proposes either the product's own subtotal OR the
+        whole invoice subtotal as the default base, depending on the
+        company's islr_prioritize_product_subtotal_base setting - and the
+        accountant can always edit invoice_amount by hand to use whichever
+        of the two criteria applies. So for that case the cap accepts the
+        larger of the two (max(whole invoice base, product subtotal)),
+        instead of only the product's own subtotal.
         """
         declared_by_key = {}
         base_by_key = {}
