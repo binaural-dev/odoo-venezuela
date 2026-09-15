@@ -5,29 +5,31 @@ import { PosOrderline } from "@point_of_sale/app/models/pos_order_line";
 import { roundPrecision as round_pr } from "@web/core/utils/numbers";
 
 /**
- * Máquina fiscal: sustitución de líneas con descuento del 100% por el mínimo
- * fiscal (0,01). Ticket #15105.
+ * Máquina fiscal: líneas con descuento del 100% → SUBTOTAL de línea 0,01.
+ * Ticket #15105.
  *
- * Problema: la máquina fiscal (TFHKA) no acepta imprimir una línea con precio
- * 0,00 — el driver la descarta (`if (linePrice <= 0) continue;` en
- * `l10n_ve_mf_base/TfhkaDriver.js`), con lo que la factura fiscal saldría sin
- * esa línea. Además, la validación `_check_max_discount` (l10n_ve_accountant)
- * bloquea toda factura con descuento >= 100%. Como el campo `discount` de la
- * factura sólo admite 2 decimales, NO se puede bajar el porcentaje para dejar
- * el neto en 0,01 (redondearía a 100% y volvería a bloquear).
+ * Problema: la máquina fiscal no acepta una línea en 0,00 (el driver la
+ * descarta) y la validación `_check_max_discount` (l10n_ve_accountant) bloquea
+ * toda factura con descuento >= 100%.
  *
- * Solución (definida por Producto en el ticket): cuando un descuento —de línea
- * o global— dejaría el neto de la línea en 0, se sustituye por precio unitario
- * 0,01 SIN descuento. Así el neto queda en el mínimo fiscal, la factura no se
- * bloquea (descuento 0) y la MF imprime la línea. Se guarda el precio original
- * (`_mf_zeroed_original_price`) para revertir si luego se cambia o se quita el
- * descuento.
+ * Solución (definida por Producto): cuando un descuento —de línea o global—
+ * dejaría el neto de la línea en 0, se factura la LÍNEA COMPLETA en el mínimo
+ * fiscal 0,01, conservando la cantidad. No se puede hacer con un precio
+ * unitario fraccionario (precio y descuento de la factura son de 2 decimales y
+ * un unitario de 0,01/qty redondea a 0). En su lugar se fija:
+ *   - precio unitario = 0,01
+ *   - descuento = (1 - 1/qty) * 100
+ * de modo que subtotal = 0,01 * qty * (1/qty) = 0,01 exacto, con el descuento
+ * por debajo de 100% (no bloquea) y el precio > 0. Se guarda el precio original
+ * para revertir, y se recalcula el descuento si cambia la cantidad.
  *
- * Punto de intercepción: `setDiscount`, por el que pasan TODOS los caminos —el
- * descuento por línea del numpad (`pos.setDiscountFromUI` → `line.setDiscount`)
- * y el descuento global de este módulo (`_applyGlobalDiscountBeforeValidation`
- * → `line.setDiscount`)—, más un respaldo en `PosStore.pay()` para órdenes
- * cargadas/reanudadas cuyas líneas ya venían al 100%.
+ * La máquina fiscal (precio × cantidad, 2 decimales) no puede repartir 0,01
+ * entre N unidades; por eso `PosStore._convertOrderForDriver` envía estas
+ * líneas marcadas (`_mf_fiscal_min`) como 1 × 0,01, para que la línea fiscal
+ * sume 0,01 y el cierre 199 cuadre con el pago.
+ *
+ * Punto de intercepción: `setDiscount` (numpad por línea y descuento global) y
+ * `setQuantity` (recálculo), más un respaldo en `PosStore.pay()`.
  */
 
 // Precio mínimo que la máquina fiscal acepta en una línea (Bs 0,01).
@@ -37,8 +39,8 @@ const MF_ROUNDING = 0.01;
 
 patch(PosOrderline.prototype, {
   /**
-   * Restaura el precio unitario real de una línea previamente sustituida por
-   * el mínimo fiscal. No hace nada si la línea no fue sustituida.
+   * Restaura el precio unitario real de una línea sustituida por el mínimo
+   * fiscal y limpia la marca. No hace nada si la línea no fue sustituida.
    */
   mfRestoreOriginalPrice() {
     if (this._mf_zeroed_original_price == null || this._mf_fiscal_guard) {
@@ -47,64 +49,79 @@ patch(PosOrderline.prototype, {
     this._mf_fiscal_guard = true;
     try {
       this.setUnitPrice(this._mf_zeroed_original_price);
-      // Restaurar el tipo de precio original (p. ej. "original") para que la
-      // lista de precios vuelva a recalcular si cambia la cantidad.
       if (this._mf_zeroed_original_price_type != null) {
         this.price_type = this._mf_zeroed_original_price_type;
       }
+      this.discount = 0;
     } finally {
       this._mf_fiscal_guard = false;
     }
     this._mf_zeroed_original_price = null;
     this._mf_zeroed_original_price_type = null;
+    this._mf_fiscal_min = false;
   },
 
   /**
-   * Si el descuento actual dejaría el neto de la línea en 0 (con precio base
-   * positivo), la sustituye por precio 0,01 sin descuento. Idempotente.
+   * Fija precio 0,01 + el descuento que deja el subtotal de la línea en 0,01
+   * para la cantidad actual. Reutilizable al cambiar la cantidad.
    */
-  mfEnsureNonZeroFiscalPrice() {
-    if (this._mf_fiscal_guard) {
-      return;
-    }
-    const base = Number(this.price_unit || 0);
-    if (base <= 0) {
-      // Producto realmente gratuito o línea de descuento global (negativa):
-      // fuera de alcance.
-      return;
-    }
-    const discount = Number(this.discount || 0);
-    const net = base * (1 - discount / 100);
-    if (round_pr(net, MF_ROUNDING) > 0) {
-      return; // el neto no llega a 0: nada que sustituir
+  _mfApplyLineFiscalMin() {
+    const qty = Math.abs(Number(this.getQuantity?.() ?? this.qty ?? 1)) || 1;
+    // subtotal = 0,01 * qty * (1 - disc/100) = 0,01  ⇒  disc = (1 - 1/qty) * 100
+    let disc = qty > 1 ? round_pr((1 - 1 / qty) * 100, 0.01) : 0;
+    if (disc >= 100) {
+      disc = 99.99; // el descuento nunca alcanza 100% (no lo bloquea la factura)
     }
     this._mf_fiscal_guard = true;
     try {
-      this._mf_zeroed_original_price = base;
-      this._mf_zeroed_original_price_type = this.price_type;
-      // setDiscount(0) queda protegido por el guard → llama al core y quita el
-      // descuento sin volver a entrar en esta lógica.
-      this.setDiscount(0);
-      // setUnitPrice actualiza también foreign_price (override de l10n_ve_pos).
       this.setUnitPrice(MF_MIN_LINE_PRICE);
-      // Fijar el precio como manual para que un cambio de cantidad no vuelva a
-      // recalcularlo desde la lista de precios y pierda el 0,01.
+      this.setDiscount(disc); // protegido por el guard → llama al core
       this.price_type = "manual";
     } finally {
       this._mf_fiscal_guard = false;
     }
   },
 
+  /**
+   * Si el descuento actual dejaría el neto de la línea en 0 (con precio base
+   * positivo), factura la línea completa en el mínimo fiscal 0,01. Idempotente.
+   */
+  mfEnsureNonZeroFiscalPrice() {
+    if (this._mf_fiscal_guard || this._mf_fiscal_min) {
+      return; // ya sustituida: no re-sustituir (no sobrescribir el precio original)
+    }
+    const base = Number(this.price_unit || 0);
+    if (base <= 0) {
+      return; // producto gratuito o línea de descuento global (negativa)
+    }
+    const discount = Number(this.discount || 0);
+    if (round_pr(base * (1 - discount / 100), MF_ROUNDING) > 0) {
+      return; // el neto no llega a 0: nada que sustituir
+    }
+    this._mf_zeroed_original_price = base;
+    this._mf_zeroed_original_price_type = this.price_type;
+    this._mf_fiscal_min = true;
+    this._mfApplyLineFiscalMin();
+  },
+
   setDiscount(discount) {
     if (this._mf_fiscal_guard) {
       return super.setDiscount(discount);
     }
-    // Partir siempre del precio real: si la línea fue sustituida antes,
-    // restaurarlo para evaluar el nuevo descuento sobre la base verdadera.
+    // Partir del precio real para evaluar el nuevo descuento sobre la base.
     this.mfRestoreOriginalPrice();
     const result = super.setDiscount(discount);
-    // Si el descuento resultante deja la línea en 0, sustituir por 0,01.
     this.mfEnsureNonZeroFiscalPrice();
     return result;
+  },
+
+  setQuantity(quantity, keep_price) {
+    const res = super.setQuantity(...arguments);
+    // Recalcular el descuento para mantener el subtotal en 0,01 con la nueva
+    // cantidad (el core devuelve true si la cantidad se aplicó).
+    if (res === true && this._mf_fiscal_min && !this._mf_fiscal_guard) {
+      this._mfApplyLineFiscalMin();
+    }
+    return res;
   },
 });

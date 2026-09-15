@@ -10,9 +10,13 @@
 - `_check_max_discount` (l10n_ve_accountant) bloquea `discount >= 100%` en
   cualquier `account.move.line` con producto.
 
-De ahí que el 0,01 se realice como **precio** (`price_unit = 0,01`, `discount =
-0`) y no como porcentaje: es la única forma de que el neto quede en 0,01 y la
-factura no se bloquee, sin tocar `l10n_ve_accountant`.
+El requisito es que la **línea completa** (subtotal, no 0,01 por unidad) quede
+en 0,01 conservando la cantidad. Con 2 decimales no se puede con un precio
+unitario fraccionario (0,01/qty → 0,00). Se fija entonces `price_unit = 0,01` y
+`discount = (1 − 1/qty) × 100`, de modo que subtotal = 0,01 × qty × (1/qty) =
+0,01, con el descuento < 100% (no lo bloquea `_check_max_discount`) y el precio
+> 0. La MF (precio × cantidad, 2 decimales) no puede repartir 0,01 entre N
+unidades, así que esas líneas se le envían como **1 × 0,01**.
 
 ## Punto de intercepción único: `PosOrderline.setDiscount`
 
@@ -32,13 +36,23 @@ Por eso el patch a `setDiscount` cubre ambos con una sola pieza.
    precio real (para evaluar el nuevo descuento sobre la base verdadera).
 3. `super.setDiscount(discount)` (el core clampa a `[0, 100]`).
 4. `mfEnsureNonZeroFiscalPrice()`: si con el descuento aplicado el neto
-   redondea a 0 y el precio base es > 0, guardar el precio original y fijar
-   `precio 0,01 / descuento 0`.
+   redondea a 0 y el precio base es > 0, guardar el precio original, marcar
+   `_mf_fiscal_min` y llamar a `_mfApplyLineFiscalMin()` (precio 0,01 +
+   descuento (1−1/qty)×100 → subtotal 0,01).
 
 El guard `_mf_fiscal_guard` evita recursión (las llamadas internas a
-`setDiscount(0)`/`setUnitPrice` no vuelven a entrar en la lógica).
-`setUnitPrice` es el override de `l10n_ve_pos`, que actualiza también
-`foreign_price`.
+`setDiscount`/`setUnitPrice` no vuelven a entrar en la lógica). `setUnitPrice`
+es el override de `l10n_ve_pos`, que actualiza también `foreign_price`.
+
+### Cambio de cantidad y envío a la MF
+
+- `setQuantity`: si la línea es `_mf_fiscal_min`, tras aplicar la cantidad se
+  vuelve a llamar a `_mfApplyLineFiscalMin()` para recalcular el descuento y
+  mantener el subtotal en 0,01 con la nueva cantidad.
+- `PosStore.get_data_invoice` propaga `_mf_fiscal_min` a cada línea del payload;
+  `_convertOrderForDriver` envía esas líneas a la MF como **1 × 0,01** (única
+  forma de que la línea fiscal sume 0,01 y el cierre `199` cuadre con el pago,
+  ya que la MF trabaja el precio unitario con 2 decimales).
 
 ## Interacción con el descuento global (Estrategia A)
 

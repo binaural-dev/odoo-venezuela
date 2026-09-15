@@ -468,6 +468,9 @@ patch(PosStore.prototype, {
           ),
           code: line.product_id?.default_code,
           tax: fiscalCode,
+          // Línea facturada en el mínimo fiscal (descuento 100% → subtotal 0,01):
+          // la MF la recibe como 1 × 0,01 (ver _convertOrderForDriver). #15105
+          _mf_fiscal_min: Boolean(line._mf_fiscal_min),
         };
       });
 
@@ -924,6 +927,21 @@ patch(PosStore.prototype, {
     }
 
     const lines = POSITIVE_LINES.map((line) => {
+      // Línea de mínimo fiscal (descuento 100% → subtotal de línea 0,01 en
+      // Odoo con la cantidad intacta): la MF arma cada línea como
+      // precio × cantidad con 2 decimales y no puede repartir 0,01 entre N
+      // unidades, así que se manda como 1 × 0,01 para que la línea fiscal sume
+      // 0,01 y el cierre 199 cuadre con el pago. Ticket #15105.
+      if (line._mf_fiscal_min) {
+        return {
+          product_name: line.name,
+          product_code: line.code || line.default_code,
+          price_unit: 0.01,
+          quantity: 1,
+          fiscal_code: line.tax,
+          discount: 0,
+        };
+      }
       const priceUnit = Number(line.price_unit || 0);
       const lineDiscount = Number(line.discount || 0);
       const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);

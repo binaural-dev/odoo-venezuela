@@ -13,41 +13,47 @@ global) deja el neto de la línea en **Bs 0,00**. Eso rompe por dos lados:
    al validar salta *"Discounts of 100% or higher are not allowed on invoices"*.
 
 El ticket define que, para la máquina fiscal, estas ventas deben facturarse en
-el mínimo fiscal **0,01** en lugar de bloquearse.
+el mínimo fiscal **0,01** por la LÍNEA COMPLETA (no 0,01 por unidad), en lugar
+de bloquearse, y conservando la cantidad.
 
-Nota de diseño: **no se puede** lograr el 0,01 bajando el porcentaje de
-descuento, porque el campo `discount` de la factura sólo admite **2 decimales**
-— el descuento necesario (p. ej. 99,9998% para un ítem de Bs 4.816) se
-redondearía a 100,00% y volvería a disparar el bloqueo. Por eso el 0,01 se
-realiza como **precio de línea**, no como porcentaje.
+Nota de diseño: con precios de **2 decimales** no se puede dejar el subtotal en
+0,01 con un precio unitario fraccionario (0,01/qty redondea a 0). Se fija
+entonces **precio unitario 0,01 + descuento = (1 − 1/qty) × 100**, de modo que
+subtotal = 0,01 × qty × (1/qty) = **0,01 exacto**, con el descuento por debajo
+de 100% (no lo bloquea `_check_max_discount`) y el precio > 0. La máquina fiscal
+(precio × cantidad, 2 decimales) no puede repartir 0,01 entre N unidades, así
+que esas líneas se le envían como **1 × 0,01** para que la línea fiscal sume
+0,01 y el cierre `199` cuadre con el pago.
 
 ## What Changes
 
 Todo dentro de `l10n_ve_pos_mf` (sólo PdV; no se toca `l10n_ve_account_mf` ni
 `l10n_ve_accountant`).
 
-- **`overrides/PosOrderline.js` (nuevo):** patch de `PosOrderline.setDiscount`.
-  Cuando el descuento resultante dejaría el neto de la línea en 0 (con precio
-  base > 0), se sustituye la línea por **precio unitario 0,01 y descuento 0**,
-  guardando el precio original en `_mf_zeroed_original_price`. Si luego se
-  cambia o se quita el descuento, se **restaura** el precio original antes de
-  evaluar el nuevo valor (revertible). `setDiscount` es el punto por el que
-  pasan tanto el descuento por línea (numpad → `pos.setDiscountFromUI` →
-  `line.setDiscount`) como el global (`_applyGlobalDiscountBeforeValidation` →
-  `line.setDiscount`), de modo que un solo patch cubre ambos casos.
+- **`overrides/PosOrderline.js` (nuevo):** patch de `PosOrderline.setDiscount` y
+  `setQuantity`. Cuando el descuento dejaría el neto de la línea en 0 (con
+  precio base > 0), la línea se factura en el mínimo fiscal: precio 0,01 +
+  descuento (1 − 1/qty) × 100 → subtotal 0,01 con la cantidad intacta, marcando
+  la línea con `_mf_fiscal_min`. Se guarda el precio original en
+  `_mf_zeroed_original_price` (revertible), se recalcula el descuento si cambia
+  la cantidad (`setQuantity`), y se fija `price_type = "manual"`. `setDiscount`
+  es el punto por el que pasan el descuento por línea (numpad →
+  `pos.setDiscountFromUI` → `line.setDiscount`) y el global
+  (`_applyGlobalDiscountBeforeValidation` → `line.setDiscount`).
 - **`overrides/PosStore.js`:**
+  - `get_data_invoice`: propaga `_mf_fiscal_min` a las líneas del payload.
+  - `_convertOrderForDriver`: las líneas `_mf_fiscal_min` se envían a la MF como
+    `1 × 0,01`.
   - `_applyGlobalDiscountBeforeValidation`: antes de **inferir** el porcentaje
-    global, se restauran los precios reales de las líneas que hubieran sido
-    sustituidas por 0,01 en una aplicación previa, para que la inferencia no
-    use 0,01 como base.
-  - `pay()` (respaldo): antes de ir a la pantalla de pago se recorren las
-    líneas y se aplica la sustitución a las que estén en neto 0, de modo que el
-    total y el pago ya reflejen 0,01. Cubre además órdenes cargadas/reanudadas
-    cuyas líneas ya venían con descuento 100%.
+    global, se restauran los precios reales de las líneas sustituidas en una
+    aplicación previa, para que la inferencia no use 0,01 como base.
+  - `pay()` (respaldo): antes de ir al pago se recorren las líneas y se aplica la
+    sustitución a las que quedaron en neto 0 (órdenes cargadas/reanudadas).
 
-Resultado: la línea queda en 0,01 al **aplicar** el descuento (el cajero ve y
-cobra 0,01), la MF imprime la línea, y la factura generada lleva `discount = 0`
-→ no la bloquea `_check_max_discount`. Fiscal = contabilidad = 0,01.
+Resultado: el subtotal de la línea queda en **0,01** conservando la cantidad
+(el cajero ve N unidades y cobra 0,01), la factura lleva descuento < 100% (no la
+bloquea `_check_max_discount`) y la MF recibe la línea como 1 × 0,01. Fiscal y
+contabilidad cuadran en 0,01.
 
 ## Capabilities
 
@@ -55,8 +61,9 @@ cobra 0,01), la MF imprime la línea, y la factura generada lleva `discount = 0`
 
 - `pos-mf-full-discount-min-price`: invariante de que ninguna línea de una
   orden de PdV con máquina fiscal llegue a la impresión fiscal ni a la factura
-  con neto 0,00 por efecto de un descuento del 100%; en ese caso se factura en
-  el mínimo fiscal 0,01 sin descuento, de forma revertible.
+  con neto 0,00 por efecto de un descuento del 100%; en ese caso la línea
+  completa se factura en el mínimo fiscal 0,01 (conservando la cantidad), de
+  forma revertible.
 
 ## Impact
 
