@@ -452,12 +452,6 @@ msgid "Invoice Date"
 msgstr "Fecha de factura"
 
 #. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
-msgid "Rate Date"
-msgstr "Fecha de tasa"
-
-#. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__is_contingency
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_journal__is_contingency
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__is_contingency
