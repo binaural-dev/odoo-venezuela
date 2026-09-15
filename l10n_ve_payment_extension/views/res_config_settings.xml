@@ -40,25 +40,6 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box">
-                            <div class="o_setting_left_pane">
-                                <field name="islr_prioritize_product_subtotal_base"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="islr_prioritize_product_subtotal_base" string="ISLR: prioritize product subtotal as automatic base" />
-                                <div class="text-muted">
-                                    <p>
-                                        When the invoice mixes goods with a single service that
-                                        carries an ISLR concept, defines what the automatic
-                                        calculation uses as the base: the whole invoice subtotal
-                                        (disabled, default behavior) or just that
-                                        product/service's own subtotal (enabled). The taxable
-                                        base can always be edited by hand with either criterion,
-                                        regardless of this setting.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
                         <!-- Diarios de Retención -->
                         <separator string="Retention Journals" role="section"/>
                         <setting name="retention_journals_settings">
@@ -107,6 +88,40 @@
                             </div>
                         </div>                    
                     </block>
+                </xpath>
+            </field>
+        </record>
+
+        <!-- Task #82491: "Incluir en Binaural Settings > Configuraciones
+             Impuestos un Check" - lives in l10n_ve_accountant's
+             "Configuration Taxes:" block (l10n_ve_tax_block), not in this
+             module's own "Payment Extension Settings" block. -->
+        <record id="res_config_settings_l10n_ve_payment_extension_tax_block" model="ir.ui.view">
+            <field name="name">res.config.settings.l10n.ve.payment.extension.tax.block</field>
+            <field name="model">res.config.settings</field>
+            <field name="inherit_id" ref="l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant" />
+            <field name="arch" type="xml">
+                <xpath expr="//block[@name='l10n_ve_tax_block']" position="inside">
+                    <div class="col-12 col-lg-6 o_setting_box">
+                        <div class="o_setting_left_pane">
+                            <field name="islr_prioritize_product_subtotal_base"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="islr_prioritize_product_subtotal_base" string="ISLR: prioritize product subtotal as automatic base (suppliers)" />
+                            <div class="text-muted">
+                                <p>
+                                    For SUPPLIER invoices only: when the invoice mixes goods
+                                    with a single service that carries an ISLR concept, defines
+                                    what the automatic calculation uses as the base: the whole
+                                    invoice subtotal (disabled, default behavior) or just that
+                                    product/service's own subtotal (enabled). The taxable base
+                                    can always be edited by hand with either criterion,
+                                    regardless of this setting. Client ISLR retentions are
+                                    never affected by this setting.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
                 </xpath>
             </field>
         </record>

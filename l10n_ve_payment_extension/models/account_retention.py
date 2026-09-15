@@ -1,5 +1,4 @@
 from odoo import api, models, fields, Command, _
-from datetime import datetime
 import re
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_is_zero, float_compare
@@ -277,7 +276,12 @@ class AccountRetention(models.Model):
 
     def _load_retention_lines_for_iva_supplier_retention(self):
         self.ensure_one()
-        self.date_accounting = fields.Date.today()
+        # Use the user's local "today" (not UTC) - _check_dates_not_in_future
+        # compares date_accounting against fields.Date.context_today too,
+        # and a UTC "today" can already be tomorrow while the user's local
+        # calendar day hasn't rolled over yet (e.g. Caracas, UTC-4, from
+        # 20:00 local onward), which would falsely reject this same value.
+        self.date_accounting = fields.Date.context_today(self)
         search_domain = [
             ('iva_voucher_number', '=', False),
             ("company_id", "=", self.company_id.id),
@@ -480,7 +484,13 @@ class AccountRetention(models.Model):
         Post the retention, validate amounts per invoice, generate the
         corresponding payments in batch, and reconcile them.
         """
-        today = datetime.now()
+        # date_accounting/date are Date fields checked against the user's
+        # local "today" by _check_dates_not_in_future() - using UTC
+        # datetime.now() here could stamp tomorrow's date while the user's
+        # local calendar day hasn't rolled over yet (e.g. Caracas, UTC-4,
+        # from 20:00 local onward), making this fallback fail the very
+        # constraint it's about to trigger on write() a few lines below.
+        today = fields.Date.context_today(self)
         is_automated = self.env.context.get('automated_action') or self.env.context.get('cron_id')
 
         for retention in self:

@@ -547,7 +547,7 @@ class AccountMoveRetention(models.Model):
             ctx.update({
                 'default_partner_id': record.partner_id.id,
                 'default_invoice_id': record.id,
-                'default_date_accounting': fields.Date.today(),
+                'default_date_accounting': fields.Date.context_today(self),
                 'default_type': record.move_type,
                 'default_type_retention': 'islr',
                 'default_islr_lines': payment_concepts,
@@ -577,11 +577,17 @@ class AccountMoveRetention(models.Model):
                     if product_tmpl.type == 'service' and product_tmpl.payment_concept:
 
                         concept_id = product_tmpl.payment_concept.id
-                      
-                        use_service_subtotal = (
-                            use_price_unit or self.env.company.islr_prioritize_product_subtotal_base
+
+                        # Task #82491 asks specifically for a supplier-side
+                        # setting ("retención de ISLR Proveedores"); it must
+                        # not silently change the base of client ISLR
+                        # retentions, which nobody requested.
+                        is_supplier_invoice = rec.move_type in ("in_invoice", "in_refund", "in_debit")
+                        use_service_subtotal = use_price_unit or (
+                            is_supplier_invoice
+                            and self.env.company.islr_prioritize_product_subtotal_base
                         )
-                        
+
                         base_amount = (
                             abs(line.balance)
                             if use_service_subtotal

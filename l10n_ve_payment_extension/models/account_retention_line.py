@@ -334,11 +334,12 @@ class AccountRetentionLine(models.Model):
           payment concept, the base is the whole invoice subtotal by default
           (any goods on the invoice are deemed necessary for that single
           service, per the norm) - regardless of which concept this line
-          declares - unless the company's
-          islr_prioritize_product_subtotal_base setting opts to propose the
-          service's own subtotal instead. Either way this is only the
-          auto-proposed default: invoice_amount can always be edited by hand
-          afterwards to use the other criterion.
+          declares - unless it's a SUPPLIER invoice and the company's
+          islr_prioritize_product_subtotal_base setting (task #82491, scoped
+          to suppliers only) opts to propose the service's own subtotal
+          instead. Either way this is only the auto-proposed default:
+          invoice_amount can always be edited by hand afterwards to use the
+          other criterion.
         - If the invoice has SEVERAL such lines (own concept and amount
           each), every retention line gets its own matching invoice line's
           amount instead of the invoice total, and account.retention.
@@ -355,7 +356,8 @@ class AccountRetentionLine(models.Model):
             and l.product_id.product_tmpl_id.payment_concept
         )
         if len(concept_lines) <= 1:
-            if self.company_id.islr_prioritize_product_subtotal_base:
+            is_supplier_invoice = move.move_type in ("in_invoice", "in_refund", "in_debit")
+            if is_supplier_invoice and self.company_id.islr_prioritize_product_subtotal_base:
                 return (
                     sum(abs(l.balance) for l in concept_lines),
                     sum(concept_lines.mapped("foreign_subtotal")),

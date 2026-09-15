@@ -112,6 +112,45 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         inv.action_post()
         return inv
 
+    def _create_in_invoice_with_lines(self, product_lines):
+        """product_lines: list of (product, price_unit) tuples. Supplier
+        invoice - used to test islr_prioritize_product_subtotal_base
+        (task #82491), which is scoped to supplier invoices only."""
+        import random
+        with Form(
+            self.env["account.move"].with_context(
+                default_move_type="in_invoice", default_journal_id=self.purchase_journal.id
+            )
+        ) as inv_form:
+            inv_form.partner_id = self.partner_pnr_75
+            inv_form.invoice_date = fields.Date.today()
+            inv_form.currency_id = self.currency_vef
+            inv_form.correlative = str(random.randint(10000000000000, 99999999999999))
+
+        inv = inv_form.save()
+        with Form(inv) as inv_form_edit:
+            for product, price_unit in product_lines:
+                with inv_form_edit.invoice_line_ids.new() as line:
+                    line.product_id = product
+                    line.quantity = 1
+                    line.price_unit = price_unit
+        inv = inv_form_edit.save()
+        inv.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
+        inv.action_post()
+        return inv
+
+    def _make_islr_supplier_retention(self, lines_vals):
+        today = fields.Date.today()
+        return self.env["account.retention"].create({
+            "type_retention": "islr",
+            "type": "in_invoice",
+            "company_id": self.company.id,
+            "partner_id": self.partner_pnr_75.id,
+            "date": today,
+            "date_accounting": today,
+            "retention_line_ids": [Command.create(vals) for vals in lines_vals],
+        })
+
     def _make_iva_customer_retention(self, lines_vals, number="01234567891234"):
         today = fields.Date.today()
         return self.env["account.retention"].create({
@@ -348,12 +387,13 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
     # Rule 2: ISLR base-amount computation (automatic + manual flows)
     # ------------------------------------------------------------------
     def test_islr_automatic_flow_single_concept_defaults_whole_invoice_when_setting_off(self):
-        """Automatic flow (_get_payment_concepts_from_invoice): a single
+        """Automatic flow (_get_payment_concepts_from_invoice), SUPPLIER
+        invoice (task #82491 is scoped to suppliers): a single
         service+concept line alongside a non-service line defaults to the
         WHOLE invoice subtotal (500 + 100 = 600) when the company setting is
         off (default)."""
         self.assertFalse(self.company.islr_prioritize_product_subtotal_base)
-        invoice = self._create_out_invoice_with_lines(
+        invoice = self._create_in_invoice_with_lines(
             [(self.product_islr_one, 500.0), (self.product_iva, 100.0)]
         )
         payment_concepts = invoice._get_payment_concepts_from_invoice()
@@ -368,11 +408,11 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         )
 
     def test_islr_automatic_flow_single_concept_uses_product_subtotal_when_setting_on(self):
-        """Same scenario, but with islr_prioritize_product_subtotal_base=True:
-        the base must be just the service line's own subtotal (500), not the
-        whole invoice (600)."""
+        """Same scenario on a SUPPLIER invoice, but with
+        islr_prioritize_product_subtotal_base=True: the base must be just
+        the service line's own subtotal (500), not the whole invoice (600)."""
         self.company.islr_prioritize_product_subtotal_base = True
-        invoice = self._create_out_invoice_with_lines(
+        invoice = self._create_in_invoice_with_lines(
             [(self.product_islr_one, 500.0), (self.product_iva, 100.0)]
         )
         payment_concepts = invoice._get_payment_concepts_from_invoice()
@@ -382,6 +422,25 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
 
         _logger.info(
             "========= test_islr_automatic_flow_single_concept_uses_product_subtotal_when_setting_on passed ========="
+        )
+
+    def test_islr_automatic_flow_setting_on_does_not_affect_client_invoices(self):
+        """Task #82491 is explicitly scoped to SUPPLIER invoices
+        ("retención de ISLR Proveedores"). With the setting on, a CLIENT
+        (out_invoice) single-concept-line invoice must still default to the
+        whole invoice subtotal (600), never the product's own subtotal
+        (500) - the setting must not silently change client ISLR base."""
+        self.company.islr_prioritize_product_subtotal_base = True
+        invoice = self._create_out_invoice_with_lines(
+            [(self.product_islr_one, 500.0), (self.product_iva, 100.0)]
+        )
+        payment_concepts = invoice._get_payment_concepts_from_invoice()
+        self.assertEqual(len(payment_concepts), 1)
+        _, base_amount, _ = payment_concepts[0]
+        self.assertAlmostEqual(base_amount, 600.0, places=2)
+
+        _logger.info(
+            "========= test_islr_automatic_flow_setting_on_does_not_affect_client_invoices passed ========="
         )
 
     def test_islr_automatic_flow_several_concepts_each_own_subtotal(self):
@@ -402,20 +461,21 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         )
 
     def test_islr_manual_base_defaults_whole_invoice_when_setting_off(self):
-        """Manual flow (_get_islr_concept_base_amounts): single
-        service+concept line on the invoice - default (setting off) proposes
-        the whole invoice subtotal (600), matching the automatic flow."""
+        """Manual flow (_get_islr_concept_base_amounts), SUPPLIER invoice:
+        single service+concept line on the invoice - default (setting off)
+        proposes the whole invoice subtotal (600), matching the automatic
+        flow."""
         self.assertFalse(self.company.islr_prioritize_product_subtotal_base)
-        invoice = self._create_out_invoice_with_lines(
+        invoice = self._create_in_invoice_with_lines(
             [(self.product_islr_one, 500.0), (self.product_iva, 100.0)]
         )
-        retention = self._make_islr_customer_retention([])
+        retention = self._make_islr_supplier_retention([])
         line = self.env["account.retention.line"].create({
             "retention_id": retention.id,
             "move_id": invoice.id,
             "payment_concept_id": self.concept_one.id,
             "name": "ISLR Retention",
-            "invoice_type": "out_invoice",
+            "invoice_type": "in_invoice",
         })
         base, foreign_base = line._get_islr_concept_base_amounts(invoice)
         self.assertAlmostEqual(base, 600.0, places=2)
@@ -430,8 +490,33 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         )
 
     def test_islr_prioritize_product_subtotal_setting_on(self):
-        """Manual flow with the setting on: single service+concept line
-        proposes only its own subtotal (500), not the whole invoice (600)."""
+        """Manual flow with the setting on, SUPPLIER invoice: single
+        service+concept line proposes only its own subtotal (500), not the
+        whole invoice (600)."""
+        self.company.islr_prioritize_product_subtotal_base = True
+        invoice = self._create_in_invoice_with_lines(
+            [(self.product_islr_one, 500.0), (self.product_iva, 100.0)]
+        )
+        retention = self._make_islr_supplier_retention([])
+        line = self.env["account.retention.line"].create({
+            "retention_id": retention.id,
+            "move_id": invoice.id,
+            "payment_concept_id": self.concept_one.id,
+            "name": "ISLR Retention",
+            "invoice_type": "in_invoice",
+        })
+        base, foreign_base = line._get_islr_concept_base_amounts(invoice)
+        self.assertAlmostEqual(base, 500.0, places=2)
+        # 500 / 390.2944 = 1.2811... (see rate note above)
+        self.assertAlmostEqual(foreign_base, 500.0 / self.rate, places=2)
+
+        _logger.info("========= test_islr_prioritize_product_subtotal_setting_on passed =========")
+
+    def test_islr_manual_setting_on_does_not_affect_client_invoices(self):
+        """Manual flow, CLIENT invoice, setting on: task #82491 is scoped to
+        suppliers only, so a client ISLR line must still default to the
+        whole invoice subtotal (600), never the product's own subtotal
+        (500)."""
         self.company.islr_prioritize_product_subtotal_base = True
         invoice = self._create_out_invoice_with_lines(
             [(self.product_islr_one, 500.0), (self.product_iva, 100.0)]
@@ -445,11 +530,11 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "invoice_type": "out_invoice",
         })
         base, foreign_base = line._get_islr_concept_base_amounts(invoice)
-        self.assertAlmostEqual(base, 500.0, places=2)
-        # 500 / 390.2944 = 1.2811... (see rate note above)
-        self.assertAlmostEqual(foreign_base, 500.0 / self.rate, places=2)
+        self.assertAlmostEqual(base, 600.0, places=2)
 
-        _logger.info("========= test_islr_prioritize_product_subtotal_setting_on passed =========")
+        _logger.info(
+            "========= test_islr_manual_setting_on_does_not_affect_client_invoices passed ========="
+        )
 
     def test_islr_manual_no_concept_yet_proposes_zero(self):
         """A manually-added ISLR line without payment_concept_id yet must
