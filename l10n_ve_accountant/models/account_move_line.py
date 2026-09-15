@@ -312,7 +312,7 @@ class AccountMoveLine(models.Model):
 
         if self.display_type in ("product", "cogs"):
             sign = self.move_id.direction_sign * -1
-            return -(self.foreign_subtotal * sign)
+            return self.foreign_currency_id.round(-(self.foreign_subtotal * sign))
 
         return self.company_id.currency_id._convert(
             self.debit - self.credit,

@@ -117,7 +117,9 @@ class SaleOrderLine(models.Model):
                     product=line.product_id,
                     partner=line.order_partner_id,
                 )
-                line.foreign_subtotal = taxes_res["total_excluded"]
+                line.foreign_subtotal = line.foreign_currency_id.round(
+                    taxes_res["total_excluded"]
+                )
             else:
                 line.foreign_subtotal = line.foreign_currency_id.round(
                     foreign_price_unit_full_precision * line.product_uom_qty
