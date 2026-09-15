@@ -577,7 +577,16 @@ class AccountMoveRetention(models.Model):
                     if product_tmpl.type == 'service' and product_tmpl.payment_concept:
 
                         concept_id = product_tmpl.payment_concept.id
-                        base_amount = abs(line.balance) if use_price_unit else abs(line.move_id.tax_totals["base_amount"])
+                      
+                        use_service_subtotal = (
+                            use_price_unit or self.env.company.islr_prioritize_product_subtotal_base
+                        )
+                        
+                        base_amount = (
+                            abs(line.balance)
+                            if use_service_subtotal
+                            else abs(line.move_id.tax_totals["base_amount"])
+                        )
                         payment_concepts.append((
                             concept_id,
                             base_amount,

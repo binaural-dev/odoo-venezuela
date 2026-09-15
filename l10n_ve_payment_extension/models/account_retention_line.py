@@ -331,9 +331,14 @@ class AccountRetentionLine(models.Model):
         (account_move._get_payment_concepts_from_invoice):
 
         - If the invoice has only ONE line that is a service with an ISLR
-          payment concept, the base is the whole invoice subtotal (any goods
-          on the invoice are deemed necessary for that single service, per
-          the norm) - regardless of which concept this line declares.
+          payment concept, the base is the whole invoice subtotal by default
+          (any goods on the invoice are deemed necessary for that single
+          service, per the norm) - regardless of which concept this line
+          declares - unless the company's
+          islr_prioritize_product_subtotal_base setting opts to propose the
+          service's own subtotal instead. Either way this is only the
+          auto-proposed default: invoice_amount can always be edited by hand
+          afterwards to use the other criterion.
         - If the invoice has SEVERAL such lines (own concept and amount
           each), every retention line gets its own matching invoice line's
           amount instead of the invoice total, and account.retention.
@@ -350,6 +355,11 @@ class AccountRetentionLine(models.Model):
             and l.product_id.product_tmpl_id.payment_concept
         )
         if len(concept_lines) <= 1:
+            if self.company_id.islr_prioritize_product_subtotal_base:
+                return (
+                    sum(abs(l.balance) for l in concept_lines),
+                    sum(concept_lines.mapped("foreign_subtotal")),
+                )
             return move.tax_totals["base_amount"], move.tax_totals["base_amount_foreign_currency"]
 
       
