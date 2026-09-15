@@ -1,4 +1,8 @@
+import logging
+
 from odoo import fields, models
+
+_logger = logging.getLogger(__name__)
 
 # Filtro de numero de control que el libro general usa para EXCLUIR los
 # documentos sin correlative (los emitidos por maquina fiscal). Se elimina del
@@ -67,16 +71,33 @@ class WizardAccountingReports(models.TransientModel):
         number = move.mf_invoice_number or ""
         return int(number) if number.isdigit() else 0
 
+    def _only_fiscal_machine(self, moves):
+        """Deja solo los asientos de maquina fiscal. Necesario porque otros
+        modulos que extienden `search_moves` (p.ej. `l10n_ve_payment_extension`)
+        inyectan asientos DESPUES del `super()`, ignorando `_get_domain()`; sin
+        este re-filtro entrarian documentos sin datos de MF al libro fiscal."""
+        return moves.filtered_domain(
+            [
+                ("mf_serial", "!=", False),
+                ("mf_reportz", "!=", False),
+                ("mf_invoice_number", "!=", False),
+            ]
+        )
+
     def search_moves(self):
         if self.all_documents:
-            domain_free_form, domain_fiscal_machine = self._get_domain_all_documents()
-            AccountMove = self.env["account.move"]
-            moves = AccountMove.search(domain_free_form) | AccountMove.search(
+            # Forma libre (con nº de control) + maquina fiscal (sin nº de
+            # control). Se parte de `super().search_moves()` para conservar lo
+            # que aporten otros modulos al libro (retenciones de
+            # payment_extension, etc.) y se une una segunda busqueda solo de
+            # maquina fiscal, en vez de reemplazar la busqueda entera.
+            _domain_free_form, domain_fiscal_machine = self._get_domain_all_documents()
+            moves = super().search_moves() | self.env["account.move"].search(
                 domain_fiscal_machine
             )
             return moves.sorted(key=lambda m: m.invoice_date_display or m.date)
         if self.with_fiscal_machine:
-            moves = super().search_moves()
+            moves = self._only_fiscal_machine(super().search_moves())
             return moves.sorted(
                 key=lambda m: (m.invoice_date_display or m.date, self._mf_sort_number(m))
             )
@@ -105,21 +126,36 @@ class WizardAccountingReports(models.TransientModel):
             {"name": "Serial de Máquina", "field": "mf_serial", "size": 16},
         ]
 
-        for group in groups:
-            if group.get("header") == "DETALLE DEL DOCUMENTO":
-                group_fields = group["fields"]
-                insertion_index = next(
-                    (
-                        i + 1
-                        for i, field_dict in enumerate(group_fields)
-                        if field_dict.get("field") == "move_type"
-                    ),
-                    None,
-                )
-                if insertion_index is not None:
-                    for offset, column in enumerate(extra_fields):
-                        group_fields.insert(insertion_index + offset, column)
-                break
+        detail_group = next(
+            (g for g in groups if g.get("header") == "DETALLE DEL DOCUMENTO"), None
+        )
+        if detail_group is None:
+            _logger.warning(
+                "l10n_ve_account_mf: no se encontro el grupo 'DETALLE DEL "
+                "DOCUMENTO' en el libro; las columnas de maquina fiscal no se "
+                "insertaran. ¿Cambio el layout base de l10n_ve_invoice?"
+            )
+            return groups
+
+        group_fields = detail_group["fields"]
+        insertion_index = next(
+            (
+                i + 1
+                for i, field_dict in enumerate(group_fields)
+                if field_dict.get("field") == "move_type"
+            ),
+            None,
+        )
+        if insertion_index is None:
+            _logger.warning(
+                "l10n_ve_account_mf: no se encontro la columna 'move_type' en "
+                "'DETALLE DEL DOCUMENTO'; las columnas de maquina fiscal no se "
+                "insertaran."
+            )
+            return groups
+
+        for offset, column in enumerate(extra_fields):
+            group_fields.insert(insertion_index + offset, column)
         return groups
 
     def _fiscal_machine_sale_book_groups(self):
@@ -230,7 +266,7 @@ class WizardAccountingReports(models.TransientModel):
     def _mf_init_cumulative(self):
         return {key: 0 for key in self._MF_AMOUNT_KEYS}
 
-    def update_amounts(self, cumulative, amounts):
+    def _mf_update_amounts(self, cumulative, amounts):
         return {
             key: cumulative.get(key, 0) + amounts.get(key, 0)
             for key in self._MF_AMOUNT_KEYS
@@ -270,6 +306,71 @@ class WizardAccountingReports(models.TransientModel):
             "igtf": 0,
         }
 
+    def _mf_is_individual_move(self, move):
+        """Un asiento sale en linea propia (no colapsado en el Resumen Diario)
+        si es nota de credito, nota de debito, o de un contribuyente RIF "J" /
+        especial / no ordinario. Solo los consumidores finales ordinarios se
+        acumulan en el resumen."""
+        return (
+            move.move_type != "out_invoice"
+            or move.journal_id.is_debit
+            or move.partner_id.prefix_vat == "J"
+            or move.partner_id.taxpayer_type != "ordinary"
+        )
+
+    def _mf_parse_report_z(self, report_moves):
+        """Lineas del libro para UN Reporte Z: los consumidores finales
+        ordinarios se colapsan en lineas de Resumen Diario por rango de numero
+        de maquina; los contribuyentes, notas de credito y notas de debito
+        salen linea a linea. El resumen abierto se cierra ANTES de cada linea
+        individual y al terminar el Reporte Z."""
+        lines = []
+        summary = self._mf_init_cumulative()
+        range_start = 0
+        range_last = 0
+        has_open_summary = False
+        summary_ref = self.env["account.move"]
+
+        def flush():
+            # Emite la linea de Resumen con lo acumulado (sin incluir ningun
+            # asiento individual: aqui solo llegan ordinarios) y reinicia estado.
+            nonlocal summary, range_start, range_last, has_open_summary, summary_ref
+            if not has_open_summary:
+                return
+            data = {
+                "move_type": "out_invoice",
+                "range_start": range_start,
+                "range_end": range_last or range_start,
+                "date": summary_ref.invoice_date_display,
+                "mf_reportz": summary_ref.mf_reportz,
+                "mf_serial": summary_ref.mf_serial,
+            }
+            lines.append(self._fields_sale_book_group_line(data, summary))
+            summary = self._mf_init_cumulative()
+            range_start = 0
+            range_last = 0
+            has_open_summary = False
+            summary_ref = self.env["account.move"]
+
+        for move in report_moves:
+            amounts = self._determinate_amount_taxeds(move)
+
+            if self._mf_is_individual_move(move):
+                flush()  # cerrar el resumen de ordinarios que quede abierto
+                lines.append(self._fields_sale_book_line(move, amounts))
+                continue
+
+            # Consumidor final ordinario: acumular en el Resumen Diario.
+            summary = self._mf_update_amounts(summary, amounts)
+            if not has_open_summary:
+                range_start = move.mf_invoice_number
+                has_open_summary = True
+            range_last = move.mf_invoice_number
+            summary_ref = move
+
+        flush()  # resumen que quede abierto al final del Reporte Z
+        return lines
+
     def parse_sale_book_data(self):
         # all_documents y forma libre: linea por linea (comportamiento base, con
         # las columnas de MF que añade _fields_sale_book_line).
@@ -279,100 +380,24 @@ class WizardAccountingReports(models.TransientModel):
         sale_book_lines = []
         moves = self.search_moves()
 
+        # Agrupar por dia (fecha del DOCUMENTO, no `create_date`, que esta en UTC
+        # y arrastraria las ventas nocturnas al bucket del dia siguiente) y luego
+        # por Reporte Z.
         agrouped_by_date = {}
         for move in moves:
-            key = move.create_date.strftime("%d-%m-%Y")
-            if not agrouped_by_date.get(key):
-                agrouped_by_date[key] = move
-            else:
-                agrouped_by_date[key] |= move
+            key = move.invoice_date_display or move.date
+            agrouped_by_date.setdefault(key, self.env["account.move"])
+            agrouped_by_date[key] |= move
 
-        for _date_key, date_moves in agrouped_by_date.items():
+        for _date_key in sorted(agrouped_by_date):
+            date_moves = agrouped_by_date[_date_key]
             agrouped_by_report_z = {}
             for move in date_moves.sorted(self._mf_sort_number):
                 key = f"{move.mf_serial}_{move.mf_reportz}"
-                if not agrouped_by_report_z.get(key):
-                    agrouped_by_report_z[key] = move
-                else:
-                    agrouped_by_report_z[key] |= move
+                agrouped_by_report_z.setdefault(key, self.env["account.move"])
+                agrouped_by_report_z[key] |= move
 
             for _z_key, report_moves in agrouped_by_report_z.items():
-                range_start = 0
-                range_last = 0
-                cumulative = self._mf_init_cumulative()
-                for index, move in enumerate(report_moves):
-                    is_last_move = (index + 1) >= len(report_moves)
-                    next_move = move if is_last_move else report_moves[index + 1]
-
-                    amounts = self._determinate_amount_taxeds(move)
-                    cumulative = self.update_amounts(cumulative, amounts)
-
-                    if range_start == 0:
-                        range_start = move.mf_invoice_number
-
-                    if move.move_type not in ("out_invoice", "out_refund"):
-                        continue
-
-                    # Notas de débito: siempre línea individual.
-                    if move.move_type == "out_invoice" and move.journal_id.is_debit:
-                        sale_book_lines.append(self._fields_sale_book_line(move, amounts))
-                        cumulative = self._mf_init_cumulative()
-                        range_start = 0
-                        continue
-
-                    # Contribuyentes (J / especiales / no ordinarios) y notas de
-                    # crédito: línea individual, cerrando antes el resumen abierto.
-                    if (
-                        move.partner_id.prefix_vat == "J"
-                        or move.partner_id.taxpayer_type != "ordinary"
-                        or move.move_type != "out_invoice"
-                    ):
-                        if cumulative["amount_taxed"] != amounts["amount_taxed"]:
-                            data = {
-                                "move_type": move.move_type,
-                                "range_start": range_start,
-                                "range_end": range_last or move.mf_invoice_number,
-                                "date": move.invoice_date_display,
-                                "mf_reportz": move.mf_reportz,
-                                "mf_serial": move.mf_serial,
-                            }
-                            range_last = 0
-                            sale_book_lines.append(
-                                self._fields_sale_book_group_line(data, cumulative)
-                            )
-                        sale_book_lines.append(self._fields_sale_book_line(move, amounts))
-                        cumulative = self._mf_init_cumulative()
-                        range_start = 0
-                        continue
-
-                    # Consumidores finales ordinarios: se acumulan en el Resumen
-                    # Diario y se emite una línea al cambiar de día/tipo/contribuyente.
-                    if (
-                        (
-                            self._format_date(move.invoice_date_display)
-                            != self._format_date(next_move.invoice_date_display)
-                            or next_move.partner_id.prefix_vat == "J"
-                            or next_move.partner_id.taxpayer_type != "ordinary"
-                            or next_move.move_type != "out_invoice"
-                            or is_last_move
-                        )
-                        and move.partner_id.taxpayer_type == "ordinary"
-                    ):
-                        data = {
-                            "move_type": move.move_type,
-                            "range_start": range_start,
-                            "range_end": move.mf_invoice_number,
-                            "date": move.invoice_date_display,
-                            "mf_reportz": move.mf_reportz,
-                            "mf_serial": move.mf_serial,
-                        }
-                        sale_book_lines.append(
-                            self._fields_sale_book_group_line(data, cumulative)
-                        )
-                        cumulative = self._mf_init_cumulative()
-                        range_start = 0
-                        continue
-
-                    range_last = move.mf_invoice_number
+                sale_book_lines += self._mf_parse_report_z(report_moves)
 
         return sale_book_lines

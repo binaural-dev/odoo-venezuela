@@ -11,10 +11,12 @@ per Z report.
 - **WHEN** the user enables `with_fiscal_machine` and generates the sale book
   for a range containing fiscal-machine POS invoices
 - **THEN** ordinary final-consumer sales are collapsed into a daily summary line
-  per Z report, while taxpayer (RIF "J" / special / non-ordinary) invoices and
-  credit notes appear as individual lines
-- **AND** the sheet shows the columns "N° Máquina Fiscal", "Reporte Z" and
-  "Serial de Máquina"
+  per Z report, while taxpayer (RIF "J" / special / non-ordinary) invoices,
+  credit notes and debit notes appear as individual lines
+- **AND** the sheet replicates the V17 layout: the fiscal-machine number is shown
+  in the existing "N° de documento" column (with "N° de control" left blank) and
+  two extra columns "Reporte Z" and "Serial de Máquina" are added after "Tipo"
+  (the dedicated "N° Máquina Fiscal" column is added only in `all_documents` mode)
 
 ### Requirement: Option to include all issued documents
 The wizard SHALL offer an `all_documents` option that includes BOTH free-form

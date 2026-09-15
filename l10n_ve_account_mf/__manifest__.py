@@ -3,7 +3,7 @@
     "summary": "Impresión de facturas, notas de crédito y notas de débito en "
     "impresoras fiscales The Factory HKA vía Web Serial API desde "
     "Contabilidad/Facturación.",
-    "version": "19.0.1.1.1",
+    "version": "19.0.1.2.0",
     "category": "Accounting",
     "license": "LGPL-3",
     "author": "Binaural",

@@ -32,3 +32,20 @@
 - [ ] 2.5 Sin marcar nada: el libro sale idéntico a hoy (solo documentos con
       número de control)
 - [ ] 2.6 Comprobar que los totales del resumen del pie cuadran con las líneas
+
+## 3. Correcciones de la revisión (PR #1270)
+
+- [x] 3.1 `search_moves` (modo MF): re-filtrar a solo documentos de máquina
+      fiscal tras `super()` (`_only_fiscal_machine`), porque otros módulos
+      inyectan asientos ignorando el dominio (retenciones de payment_extension)
+- [x] 3.2 `search_moves` (modo todos): partir de `super().search_moves()` y unir
+      la búsqueda de MF, en vez de reemplazar la búsqueda entera
+- [x] 3.3 Resumen Diario: reescribir `parse_sale_book_data` con `flush` explícito
+      → elimina el doble conteo, cierra el resumen antes de cada nota de débito y
+      al final del Reporte Z, y sustituye el proxy por monto por una bandera
+- [x] 3.4 Agrupar el Resumen por `invoice_date_display` (no `create_date`, UTC)
+- [x] 3.5 Ocultar los checkboxes en el Libro de Compras (`report == 'purchase'`)
+- [x] 3.6 `_logger.warning` cuando no se encuentra el punto de inserción de las
+      columnas de MF
+- [x] 3.7 Documentar la incompatibilidad con `l10n_ve_iot_mf` (`proposal.md`)
+- [x] 3.8 Corregir `spec.md` (columnas del modo MF) y subir versión a 19.0.1.2.0

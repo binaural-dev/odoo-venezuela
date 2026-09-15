@@ -33,7 +33,8 @@ es el hogar correcto para portar esa extensión.
 - `wizards/accounting_reports_views.xml`: añade los dos checkboxes al wizard
   (heredando `l10n_ve_invoice.wizard_binaural_facturacion_reportes_view`),
   mutuamente excluyentes.
-- `__manifest__.py`: registra la vista y sube versión 19.0.1.0.0 → 19.0.1.1.0.
+- `__manifest__.py`: registra la vista y sube versión (19.0.1.2.0 tras las
+  correcciones de la revisión del PR).
 
 ## Capabilities
 
@@ -54,3 +55,20 @@ es el hogar correcto para portar esa extensión.
 - Verificación: manual en navegador (ver `tasks.md`); no se ejecutaron tests
   ni `odoo -u` como parte de este cambio.
 - Referencia V17: `l10n_ve_iot_mf/wizards/accounting_reports.py`.
+
+## Incompatibilidad conocida: `l10n_ve_iot_mf`
+
+`l10n_ve_iot_mf` (stack IoT legado) sigue en el repo con `installable: True` y
+define esta MISMA extensión del wizard (campo `with_fiscal_machine`, overrides y
+vista heredada en el mismo xpath). Instalar AMBOS módulos en una misma BD
+colisionaría (checkbox duplicado y, según el MRO, la implementación vieja de
+`iot_mf` podría tapar la nueva).
+
+En la práctica no conviven: son stacks mutuamente excluyentes.
+`l10n_ve_iot_mf` depende de `iot` (Odoo **Enterprise**) y es el módulo de
+máquina fiscal por IoT que se retiró en la migración a Web Serial;
+`l10n_ve_account_mf` depende de `l10n_ve_mf_base` y es el módulo de máquina
+fiscal por Web Serial que lo sucede. Una BD migrada a Web Serial no tiene
+`iot_mf` instalado. La convivencia queda registrada aquí como incompatibilidad
+conocida; retirar `l10n_ve_iot_mf` (p.ej. `installable: False`) es decisión del
+líder técnico y queda fuera del alcance de este cambio.
