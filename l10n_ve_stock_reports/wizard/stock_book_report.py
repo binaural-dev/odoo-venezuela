@@ -21,7 +21,7 @@ class WizardStockBookReport(models.TransientModel):
         return is_system_currency_bs
 
     def _default_date_to(self):
-        current_day = fields.Date.today()
+        current_day = fields.Date.context_today(self)
         return current_day
 
     def _default_date_from(self):
@@ -237,14 +237,12 @@ class WizardStockBookReport(models.TransientModel):
                 "field": "incoming_total",
                 "format": "number",
                 "size": 20,
-                "format":"number",
             },
             {
                 "name": "SALIDAS",
                 "field": "outgoing_total",
                 "format": "number",
                 "size": 15,
-                "format":"number",
             },
             {
                 "name": "RETIROS",

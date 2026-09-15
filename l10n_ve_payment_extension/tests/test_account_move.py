@@ -1,5 +1,5 @@
 import logging
-from odoo.tests import tagged, TransactionCase
+from odoo.tests import tagged, TransactionCase, Form
 from odoo import Command, fields
 from odoo.tools.float_utils import float_round
 from odoo.exceptions import UserError, ValidationError
@@ -70,6 +70,23 @@ class TestAccountMove(TransactionCase):
                 "currency_foreign_id": self.currency_vef.id,
                 "iva_supplier_retention_journal_id": self.iva_journal.id,
                 "islr_supplier_retention_journal_id": self.islr_journal.id,
+            }
+        )
+
+        # Tasa de cambio real, igual que en l10n_ve_igtf: sin esto,
+        # _compute_rate_for_documents (l10n_ve_accountant) no encuentra
+        # ningun res.currency.rate y sobreescribe foreign_rate/foreign_inverse_rate
+        # a 0 en cada factura, dejando el impuesto en moneda alterna en 0.
+        self.currency_vef.write(
+            {
+                "rate_ids": [
+                    Command.create(
+                        {
+                            "company_rate": 2.0,
+                            "name": fields.Date.today(),
+                        }
+                    )
+                ],
             }
         )
 
@@ -161,32 +178,24 @@ class TestAccountMove(TransactionCase):
         )
 
     def _create_invoice_simple(self):
-        invoice = self.env["account.move"].create(
-            {
-                "move_type": "in_invoice",
-                "partner_id": self.partner_a.id,
-                "journal_id": self.journal.id,
-                "invoice_date": fields.Date.today(),
-                "invoice_line_ids": [
-                    (
-                        0,
-                        0,
-                        {
-                            "product_id": self.product.id,
-                            "quantity": 2,
-                            "price_unit": 100,
-                            "tax_ids": [(6, 0, [self.tax_iva16.id])],
-                            "price_subtotal": 200,
-                            "price_total": 232,
-                            "foreign_rate": 2.0,
-                            "foreign_price": 200,
-                            "foreign_subtotal": 400,
-                            "foreign_price_total": 464,
-                        },
-                    ),
-                ],
-            }
+        self.__class__._correlative_counter = (
+            getattr(self.__class__, "_correlative_counter", 0) + 1
         )
+        with Form(
+            self.env["account.move"].with_context(default_move_type="in_invoice")
+        ) as inv_form:
+            inv_form.partner_id = self.partner_a
+            inv_form.journal_id = self.journal
+            inv_form.invoice_date = fields.Date.today()
+            inv_form.correlative = str(self.__class__._correlative_counter).zfill(14)
+        invoice = inv_form.save()
+
+        with Form(invoice) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product
+                line.quantity = 2
+                line.price_unit = 100
+        invoice = inv_form_edit.save()
 
         return invoice
 

@@ -164,8 +164,10 @@ class PosSession(models.Model):
                 )
             except KeyError as e:
                 raise ValueError(
-                    _("The category %s does not belong to this company.")
-                    % category["parent_id"][1]
+                    _(
+                        "The category %s does not belong to this company.",
+                        category["parent_id"][1],
+                    )
                 ) from e
 
         return categories
@@ -195,8 +197,10 @@ class PosSession(models.Model):
                 product["categ"] = product_category_by_id[categ_id]
             else:
                 raise ValueError(
-                    _("The category %s does not belong to this company.")
-                    % product["categ_id"][1]
+                    _(
+                        "The category %s does not belong to this company.",
+                        product["categ_id"][1],
+                    )
                 )
 
             product["image_128"] = bool(product["image_128"])
@@ -390,53 +394,86 @@ class PosSession(models.Model):
         split_cash_receivable_lines = res.get("split_cash_receivable_lines")
         combine_cash_receivable_lines = res.get("combine_cash_receivable_lines")
 
+        # Emparejar por cuenta destino, no por monto: dos pagos/métodos con el
+        # mismo importe nativo pero distinto foráneo (p.e. distinta tasa o
+        # IGTF aplicado a uno solo) ya no se pisan entre sí. La cuenta se
+        # deriva igual que Odoo base (_get_receivable_account /
+        # property_account_receivable_id vía _find_accounting_partner), que
+        # es la misma cuenta que usan tanto la línea del cierre como la
+        # contrapartida del extracto (_get_combine_receivable_vals /
+        # _get_combine_statement_line_vals y sus pares split). No se puede
+        # emparejar por posición: cuando esa cuenta no es asset_receivable
+        # (cuenta intermediaria), Odoo base filtra esa línea del extracto por
+        # completo y las listas dejan de tener la misma longitud.
         for payment, amounts in split_receivables_cash.items():
-            lines = split_cash_receivable_lines + split_cash_statement_lines
-            for line in lines:
+            accounting_partner = self.env["res.partner"]._find_accounting_partner(
+                payment.partner_id
+            )
+            target_account = accounting_partner.property_account_receivable_id
+            candidate_lines = (
+                split_cash_receivable_lines + split_cash_statement_lines
+            ).filtered(lambda line, account=target_account: line.account_id == account)
+            for line in candidate_lines:
                 self.set_foreign_amount_in_line(
                     line, amounts["foreign_amount"], amounts["amount"]
                 )
 
         for payment_method, amounts in combine_receivables_cash.items():
-            lines = combine_cash_receivable_lines + combine_cash_statement_lines
-            for line in lines:
+            target_account = self._get_receivable_account(payment_method)
+            candidate_lines = (
+                combine_cash_receivable_lines + combine_cash_statement_lines
+            ).filtered(lambda line, account=target_account: line.account_id == account)
+            for line in candidate_lines:
                 self.set_foreign_amount_in_line(
                     line, amounts["foreign_amount"], amounts["amount"]
                 )
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):
-        other_lines = line.move_id.line_ids.filtered(
+        self.ensure_one()
+        # La contrapartida solo se propaga en los asientos de extracto de caja
+        # (2 líneas). En el asiento de cierre de la sesión la "otra línea" es
+        # de otro método de pago (p.e. una cuenta intermediaria) y escribirle
+        # el monto foráneo descuadra el asiento. La línea propia sí recibe
+        # siempre el monto foráneo del pago, aunque no exista contrapartida,
+        # para que ambos lados del cierre usen la misma fuente y no queden
+        # diferencias de decimales contra el monto calculado por tasa.
+        other_line = line.move_id.line_ids.filtered(
             lambda x: x != line and x.account_id.account_type != "asset_receivable"
-        )
-        if other_lines:
-            other_line = other_lines[0]
+        )[:1]
+        propagate_to_other_line = other_line and line.move_id != self.move_id
+        if (
+            abs(line.credit) > 0
+            and float_compare(
+                line.credit,
+                abs(amount),
+                precision_rounding=self.currency_id.rounding,
+            )
+            == 0
+        ):
+            line.not_foreign_recalculate = True
+            line.foreign_credit = abs(foreign_amount)
             if (
-                abs(line.credit) > 0
-                and float_compare(
-                    line.credit,
-                    abs(amount),
-                    precision_rounding=self.currency_id.rounding,
-                )
-                == 0
+                propagate_to_other_line
+                and other_line.foreign_debit != line.foreign_credit
             ):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(foreign_amount)
-                if other_line.foreign_debit != line.foreign_credit:
-                    other_line.foreign_debit = abs(line.foreign_credit)
+                other_line.foreign_debit = abs(line.foreign_credit)
+        if (
+            abs(line.debit) > 0
+            and float_compare(
+                line.debit,
+                abs(amount),
+                precision_rounding=self.currency_id.rounding,
+            )
+            == 0
+        ):
+            line.not_foreign_recalculate = True
+            line.foreign_debit = abs(foreign_amount)
             if (
-                abs(line.debit) > 0
-                and float_compare(
-                    line.debit,
-                    abs(amount),
-                    precision_rounding=self.currency_id.rounding,
-                )
-                == 0
+                propagate_to_other_line
+                and other_line.foreign_credit != line.foreign_debit
             ):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(foreign_amount)
-                if other_line.foreign_credit != line.foreign_debit:
-                    other_line.foreign_credit = abs(line.foreign_debit)
+                other_line.foreign_credit = abs(line.foreign_debit)
 
     def _validate_cross_move(self):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
@@ -504,11 +541,44 @@ class PosSession(models.Model):
             session._validate_cross_move()
         return res
 
+    def _resolve_pos_foreign_rates(self):
+        """Resolve and validate foreign rates used for POS payment posting.
+
+        Root fix: ensure split/combine payment postings never start with a
+        missing ``foreign_inverse_rate``, because IGTF computations divide by
+        this field while posting account moves.
+        """
+        self.ensure_one()
+
+        foreign_rate = self.config_id.foreign_rate
+        foreign_inverse_rate = self.config_id.foreign_inverse_rate
+
+        if (not foreign_rate or not foreign_inverse_rate) and self.config_id.foreign_currency_id:
+            rate_values = self.env["res.currency.rate"].compute_rate(
+                self.config_id.foreign_currency_id.id,
+                fields.Date.today(),
+            )
+            foreign_rate = foreign_rate or rate_values.get("foreign_rate")
+            foreign_inverse_rate = foreign_inverse_rate or rate_values.get("foreign_inverse_rate")
+
+        if not foreign_inverse_rate:
+            raise ValidationError(
+                _(
+                    "No valid foreign inverse rate was found for POS session %(session)s. "
+                    "Check exchange rates for company %(company)s.",
+                    session=self.name,
+                    company=self.company_id.name,
+                )
+            )
+
+        return foreign_rate, foreign_inverse_rate
+
     def _create_combine_account_payment(self, payment_method, amounts, diff_amount):
         # Se sobreescribe esta funcion para poder reasignar la cuenta de destino del account_payment, ya que odoo base la sobreescribe luego de crearla
         outstanding_account = payment_method.outstanding_account_id or self.company_id.account_journal_payment_debit_account_id
         destination_account = self._get_receivable_account(payment_method)
         pos_receivable_account = destination_account
+        foreign_rate, foreign_inverse_rate = self._resolve_pos_foreign_rates()
 
         if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
             # revert the accounts because account.payment doesn't accept negative amount.
@@ -519,10 +589,12 @@ class PosSession(models.Model):
             'journal_id': payment_method.journal_id.id,
             'force_outstanding_account_id': outstanding_account.id,
             'destination_account_id':  destination_account.id,
-            'ref': _('Combine %s POS payments from %s', payment_method.name, self.name),
+            'ref': _('Combine %(method)s POS payments from %(session)s', method=payment_method.name, session=self.name),
             'pos_payment_method_id': payment_method.id,
             'pos_session_id': self.id,
             'company_id': self.company_id.id,
+            'foreign_rate': foreign_rate,
+            'foreign_inverse_rate': foreign_inverse_rate,
         })
 
         diff_amount_compare_to_zero = self.currency_id.compare_amounts(diff_amount, 0)
@@ -532,8 +604,8 @@ class PosSession(models.Model):
         account_payment.action_post()
         account_payment.with_context(skip_account_move_synchronization=True).write(
             {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
+                "foreign_rate": foreign_rate,
+                "foreign_inverse_rate": foreign_inverse_rate,
                 "destination_account_id": destination_account.id,
             }
         )
@@ -558,15 +630,38 @@ class PosSession(models.Model):
         return res
 
     def _create_split_account_payment(self, payment, amounts):
-        res = super(
-            PosSession, self.with_context(from_pos=True)
-        )._create_split_account_payment(payment, amounts)
-        account_payment = res.move_id.payment_id
-        account_payment.with_context(skip_account_move_synchronization=True).write(
-            {
-                "foreign_rate": self.config_id.foreign_rate,
-                "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-            }
+        payment_method = payment.payment_method_id
+        if not payment_method.journal_id:
+            return self.env['account.move.line']
+
+        outstanding_account = (
+            payment_method.outstanding_account_id
+            or self.company_id.account_journal_payment_debit_account_id
+        )
+        accounting_partner = self.env["res.partner"]._find_accounting_partner(payment.partner_id)
+        destination_account = accounting_partner.property_account_receivable_id
+        foreign_rate, foreign_inverse_rate = self._resolve_pos_foreign_rates()
+
+        if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
+            # revert the accounts because account.payment doesn't accept negative amount.
+            outstanding_account, destination_account = destination_account, outstanding_account
+
+        account_payment = self.env['account.payment'].with_context(from_pos=True, pos_payment=True).create({
+            'amount': abs(amounts['amount']),
+            'partner_id': accounting_partner.id,
+            'journal_id': payment_method.journal_id.id,
+            'force_outstanding_account_id': outstanding_account.id,
+            'destination_account_id': destination_account.id,
+            'ref': _('%(method)s POS payment of %(partner)s in %(session)s', method=payment_method.name, partner=payment.partner_id.display_name, session=self.name),
+            'pos_payment_method_id': payment_method.id,
+            'pos_session_id': self.id,
+            'company_id': self.company_id.id,
+            'foreign_rate': foreign_rate,
+            'foreign_inverse_rate': foreign_inverse_rate,
+        })
+        account_payment.action_post()
+        res = account_payment.move_id.line_ids.filtered(
+            lambda line: line.account_id == account_payment.destination_account_id
         )
 
         for line in account_payment.move_id.line_ids:
@@ -609,7 +704,7 @@ class PosSession(models.Model):
         if not line_ids:
             return move
             
-        move_ref_value = _("Cross Move per Operation - Session: %s") % self.name
+        move_ref_value = _("Cross Move per Operation - Session: %s", self.name)
         move = self.env["account.move"].create(
             {
                 "name": move_name_value,
@@ -659,7 +754,7 @@ class PosSession(models.Model):
         foreign_rate = amounts["foreign_rate"]
 
         move_name_value = self.name
-        move_ref_value = _("Unique PoS Cross Move - Sesión: %s") % self.name
+        move_ref_value = _("Unique PoS Cross Move - Sesión: %s", self.name)
 
         move = self.env["account.move"].create(
             {

@@ -12,6 +12,8 @@ _logger = logging.getLogger(__name__)
 class AccountFiscalyearClosingConfig(models.Model):
     _inherit = "account.fiscalyear.closing.config"
 
+    date = fields.Date(string="Move date", required=True)
+
     @api.onchange("l_map")
     def onchange_l_map(self):
         accounts = (

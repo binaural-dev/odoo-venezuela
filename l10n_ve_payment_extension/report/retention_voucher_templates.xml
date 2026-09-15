@@ -215,12 +215,24 @@
                         <!-- 8 Total Compras Incluyendo el IVA -->
                         <td class="ret-num">
                             <t t-if="foreign_currency_is_vef">
+                                <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
+                                <span t-esc="-line.foreign_invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
+                                <t t-set="total_amount_total" t-value="total_amount_total - line.foreign_invoice_total"/>
+                                </t>
+                                <t t-else="">
                                 <span t-esc="line.foreign_invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_total" t-value="total_amount_total + line.foreign_invoice_total"/>
+                                </t>
                             </t>
                             <t t-else="">
+                                <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
+                                <span t-esc="-line.invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
+                                <t t-set="total_amount_total" t-value="total_amount_total - line.invoice_total"/>
+                                </t>
+                                <t t-else="">
                                 <span t-esc="line.invoice_total" t-options='{"widget":"float","precision":get_digits}'/>
                                 <t t-set="total_amount_total" t-value="total_amount_total + line.invoice_total"/>
+                                </t>
                             </t>
                         </td>
 
@@ -232,8 +244,14 @@
                             <t t-else="">
                                 <t t-set="amount_except" t-value="sum(line.move_id.invoice_line_ids.filtered(lambda l: l.tax_ids.amount == 0).mapped('price_subtotal'))"/>
                             </t>
+                            <t t-if="line.move_id.move_type in ('in_refund','out_refund')">
+                            <span t-esc="-amount_except" t-options='{"widget":"float","precision":get_digits}'/>
+                            <t t-set="total_amount_amount_except" t-value="total_amount_amount_except - amount_except"/>
+                            </t>
+                            <t t-else="">
                             <span t-esc="amount_except" t-options='{"widget":"float","precision":get_digits}'/>
                             <t t-set="total_amount_amount_except" t-value="total_amount_amount_except + amount_except"/>
+                            </t>
                         </td>
 
                         <!-- 10 Base Imponible -->

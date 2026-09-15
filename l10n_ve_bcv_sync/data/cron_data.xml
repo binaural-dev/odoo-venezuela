@@ -1,0 +1,11 @@
+<odoo>
+    <!-- `currency_rate_live.ir_cron_currency_update` is redefined by
+         l10n_ve_currency_rate_live/data/cron_data.xml to scrape BCV from
+         inside Odoo. This module replaces it as the rate source (BCV Sync
+         pushes rates via /api/tasas-bcv), so we only deactivate the cron;
+         no file of l10n_ve_currency_rate_live is touched, which keeps the
+         rest of its functionality intact (field, view, methods, tests). -->
+    <record id="currency_rate_live.ir_cron_currency_update" model="ir.cron">
+        <field name="active" eval="False" />
+    </record>
+</odoo>

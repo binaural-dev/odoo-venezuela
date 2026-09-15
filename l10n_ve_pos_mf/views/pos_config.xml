@@ -1,19 +1,86 @@
 <odoo>
-    <record id="pos_config_view_form_inherit" model="ir.ui.view">
-        <field name="name">pos.config.form.inherit</field>
+    <!-- 
+        Configuración de Máquina Fiscal (Web Serial API)
+        
+        Esta vista agrega los campos de configuración de la máquina fiscal
+        directamente en el formulario de Punto de Venta (pos.config).
+        
+        Ya no usamos IoT Box - la conexión es directa vía Web Serial API.
+        
+        Nota: En Odoo 17, pos_config_view_form usa <setting> dentro de
+        o_settings_container, NO usa <notebook>.
+    -->
+    
+    <record id="view_pos_config_inherit_fiscal_mf" model="ir.ui.view">
+        <field name="name">pos.config.form.inherit.fiscal.mf</field>
         <field name="model">pos.config</field>
-        <field name="inherit_id" ref="pos_iot.pos_iot_config_view_form" />
+        <field name="inherit_id" ref="point_of_sale.pos_config_view_form"/>
         <field name="arch" type="xml">
-            <xpath expr="//div[@class='row'][1]/label[@class='col-lg-4 o_light_label'][1]"
-                position="replace">
-            </xpath>
-            <xpath expr="//div[@class='row'][2]" position="replace"></xpath>
-            <xpath expr="//div[@name='row_scale']" position="after">
-                <div class="row">
-                    <label string="Fiscal Data Module" for="iface_fiscal_data_module"
-                        class="col-lg-4 o_light_label" />
-                    <field name="iface_fiscal_data_module" />
+            <!-- Insertar después del div "More settings" al final del contenedor de configuración -->
+            <xpath expr="//div[@groups='base.group_system']" position="after">
+                
+                <!-- Encabezado de sección -->
+                <div class="col-12">
+                    <h3 class="mt-3">🖨️ Máquina Fiscal (Web Serial API)</h3>
                 </div>
+
+                <!-- Setting: Flag 21 -->
+                <setting string="Flag 21 - Formato de Números" 
+                         help="Determina el formato de montos en la impresora TFHKA. Usar '00' (Estándar) para la mayoría de impresoras.">
+                    <field name="flag_21"/>
+                    <div class="text-muted mt-2">
+                        <strong>00</strong> = Estándar (8+2 enteros, 5+3 cantidad) - Recomendado<br/>
+                        <strong>30</strong> = Montos grandes (14+2 enteros, 14+3 cantidad)
+                    </div>
+                </setting>
+
+                <!-- Setting: Serial de máquina -->
+                <setting string="Serial de Máquina Fiscal" 
+                         help="Serial detectado automáticamente al conectar la impresora">
+                    <field name="serial_machine" readonly="1" placeholder="Se detecta al conectar"/>
+                </setting>
+                
+                <!-- Setting: Gaveta -->
+                <setting string="Gaveta de Efectivo" 
+                         help="Si está activado, la gaveta se abre automáticamente al cobrar en efectivo">
+                    <field name="has_cashbox"/>
+                </setting>
+
+                <!-- Setting: Botón de acceso -->
+                <setting string="Mostrar Botón de Conexión" 
+                         help="Muestra el botón de conexión de la máquina fiscal en la barra superior del POS">
+                    <field name="access_button_mf"/>
+                </setting>
+
+                <setting string="Sincronización Offline en Segundo Plano"
+                         help="Configura la sincronización automática de pedidos impresos offline para esta caja">
+                    <field name="enable_auto_sync"/>
+                    <div class="content-group" invisible="not enable_auto_sync">
+                        <div class="mt-2">
+                            <label for="auto_sync_interval" string="Intervalo (segundos)"/>
+                            <field name="auto_sync_interval" class="oe_inline ms-2"/>
+                        </div>
+                    </div>
+                </setting>
+
+                <!-- Setting: Línea tradicional -->
+                <setting string="Línea Tradicional" 
+                         help="Activar si la impresora usa formato de línea tradicional (solo para modelos antiguos)">
+                    <field name="traditional_line"/>
+                </setting>
+
+                <!-- Ayuda rápida -->
+                <div class="col-12">
+                    <div class="alert alert-info" role="alert">
+                        <strong>📋 Configuración Rápida:</strong>
+                        <ul class="mb-0">
+                            <li><strong>Impuestos:</strong> Configurar <code>fiscal_code</code> en Contabilidad → Impuestos (0=Exento, 1=General, 2=Reducido, 3=Adicional)</li>
+                            <li><strong>Métodos de Pago:</strong> Configurar <code>code_fiscal_printer</code> en Punto de Venta → Métodos de Pago (01=Efectivo, 02=Cheque, 03=Débito, 04=Crédito, etc.)</li>
+                            <li><strong>Conexión:</strong> En el POS, hacer clic en el botón 🖨️ para conectar la impresora fiscal vía Web Serial API</li>
+                        </ul>
+                    </div>
+                </div>
+                
             </xpath>
         </field>
     </record>

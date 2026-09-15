@@ -50,9 +50,6 @@
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='street']" position="attributes">
 						<attribute name="required">type not in ['contact']</attribute>
 				</xpath>
-				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='zip']" position="attributes">
-						<attribute name="required">type not in ['contact']</attribute>
-				</xpath>
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='state_id']" position="attributes">
 						<attribute name="required">type not in ['contact']</attribute>
 				</xpath>

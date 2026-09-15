@@ -199,7 +199,7 @@ class WizardAccountingReports(models.TransientModel):
             retention_data = self.get_retention_iva_values(move.get("_id"))
             move.update(retention_data)
 
-        return data
+        return sorted(data, key=lambda x: datetime.strptime(x.get("document_date"), "%d/%m/%Y"))
 
     def parse_purchase_book_data(self):
         data = super().parse_purchase_book_data()

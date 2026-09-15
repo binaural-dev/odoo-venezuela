@@ -37,7 +37,7 @@ patch(Payment.prototype, {
 				this.set_foreign_amount(this.order.get_foreign_due() + this.order.get_foreign_rounding_applied(), true);
 				return res;
 			}
-			this.foreign_amount = round_di(amount * this.pos.foreign_currency.rate, this.pos.dp["Foreign Product Price"]); 
+			this.foreign_amount = round_di(amount * this.pos.foreign_currency.rate, this.pos.foreign_currency.decimal_places);
 
 		}
 		return res;
