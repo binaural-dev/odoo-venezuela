@@ -40,6 +40,25 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="islr_prioritize_product_subtotal_base"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="islr_prioritize_product_subtotal_base" string="ISLR: prioritize product subtotal as automatic base" />
+                                <div class="text-muted">
+                                    <p>
+                                        When the invoice mixes goods with a single service that
+                                        carries an ISLR concept, defines what the automatic
+                                        calculation uses as the base: the whole invoice subtotal
+                                        (disabled, default behavior) or just that
+                                        product/service's own subtotal (enabled). The taxable
+                                        base can always be edited by hand with either criterion,
+                                        regardless of this setting.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Diarios de Retención -->
                         <separator string="Retention Journals" role="section"/>
                         <setting name="retention_journals_settings">

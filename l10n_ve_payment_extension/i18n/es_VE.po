@@ -1198,6 +1198,56 @@ msgid "ISLR Account"
 msgstr "Cuenta de Retención de ISLR"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__islr_prioritize_product_subtotal_base
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__islr_prioritize_product_subtotal_base
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "ISLR: prioritize product subtotal as automatic base"
+msgstr "ISLR: priorizar subtotal del producto como base automática"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_company__islr_prioritize_product_subtotal_base
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_config_settings__islr_prioritize_product_subtotal_base
+msgid ""
+"When an invoice mixes goods with a single service that carries an ISLR"
+" withholding concept: by default (disabled) the automatic calculation uses"
+" the whole invoice subtotal as the withholding base (the goods are deemed"
+" necessary for the service, per the regulation). If enabled, the automatic"
+" calculation uses only that product/service's own subtotal instead. Either"
+" way, the taxable base can always be edited by hand line by line to use"
+" whichever criterion is needed, regardless of this setting - it only"
+" decides what gets proposed automatically. When 2 or more products/services"
+" carry an ISLR concept on the same invoice, each one always uses its own"
+" subtotal, regardless of this setting."
+msgstr ""
+"Cuando una factura mezcla bienes con un único servicio que lleva un"
+" concepto de retención ISLR: por defecto (desactivado) el cálculo"
+" automático usa el subtotal completo de la factura como base de retención"
+" (el bien se entiende necesario para la prestación del servicio, según la"
+" norma). Si se activa, el cálculo automático usa solo el subtotal de ese"
+" producto/servicio en su lugar. En ambos casos, la base imponible siempre"
+" puede editarse manualmente línea por línea para usar cualquiera de los dos"
+" criterios, sin importar este ajuste - este solo define qué se propone"
+" automáticamente. Cuando hay 2 o más productos/servicios con concepto ISLR"
+" en la misma factura, cada uno siempre usa su propio subtotal, sin importar"
+" este ajuste."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid ""
+"When the invoice mixes goods with a single service that carries an ISLR"
+" concept, defines what the automatic calculation uses as the base: the"
+" whole invoice subtotal (disabled, default behavior) or just that"
+" product/service's own subtotal (enabled). The taxable base can always be"
+" edited by hand with either criterion, regardless of this setting."
+msgstr ""
+"Cuando la factura mezcla bienes con un único servicio con concepto ISLR,"
+" define qué usa el cálculo automático como base: el subtotal completo de la"
+" factura (desactivado, comportamiento por defecto) o solo el subtotal de"
+" ese producto/servicio (activado). La base imponible siempre puede"
+" editarse manualmente con cualquiera de los dos criterios, sin importar"
+" este ajuste."
+
+#. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
