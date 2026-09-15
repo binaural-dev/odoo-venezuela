@@ -49,7 +49,27 @@ motor del timeout es la avalancha de logs, que este fix elimina.
   después (`"876,18\xa0Bs."` → `876.18`).
 - `tests/test_accounting_reports.py`: casos nuevos para símbolo antes con `\xa0`,
   miles + decimales, cero, y símbolo después.
-- `__manifest__.py`: versión `19.0.1.0.13` → `19.0.1.0.14`.
+
+### Rendimiento (segunda iteración)
+
+Tras el fix del parseo, en 2doce (4690 asientos de venta en 1–15 sep) el reporte
+seguía muriendo por `CPU time limit exceeded` (`limit_time_cpu = 60`). Causa:
+`_determinate_amount_taxeds` se invoca ~1 vez por asiento en el cuerpo y ~16
+veces por asiento en el resumen (`_determinate_resume_books` se llama una vez por
+línea de resumen y recorre todos los asientos), o sea ~17× por asiento → ~80k
+invocaciones en el período. `move.tax_totals` ya lo cachea el ORM por request,
+pero la reconstrucción del dict + parseo de importes se repetía en cada llamada.
+
+- Se memoiza `_determinate_amount_taxeds` por `move.id` durante una generación
+  del libro. El cache vive en el contexto (`_ve_book_amounts_cache`), porque los
+  recordsets no admiten atributos (`__slots__`), y lo siembran los entrypoints
+  `generate_sales_book` / `generate_purchases_book` con
+  `self.with_context(...)`. No cambia ninguna firma → cero riesgo para los
+  overrides de `l10n_ve_payment_extension` / `binaural_third_party_invoice`.
+- El resultado del método solo se consume en lectura (`_fields_sale_book_line`
+  arma un dict nuevo, `_determinate_resume_books` solo suma valores), así que
+  devolver el mismo objeto cacheado es seguro.
+- `__manifest__.py`: versión `19.0.1.0.13` → `19.0.1.0.15`.
 
 ## Non-goals
 

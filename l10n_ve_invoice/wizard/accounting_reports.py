@@ -947,6 +947,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return 0.0
 
     def _determinate_amount_taxeds(self, move):
+        # Memoizacion por asiento durante UNA generacion del libro. El libro
+        # llama este metodo ~1 vez por asiento en el cuerpo y ~16 veces por
+        # asiento en el resumen (una por linea de resumen), asi que sin cache el
+        # calculo se repite ~17 veces por asiento. El cache vive en el contexto
+        # (los recordsets no admiten atributos por __slots__) y lo siembran los
+        # entrypoints generate_sales_book/generate_purchases_book. El resultado
+        # solo depende del asiento (los parametros del wizard son fijos durante
+        # la generacion), asi que la clave es move.id.
+        cache = self.env.context.get("_ve_book_amounts_cache")
+        if cache is not None and move.id in cache:
+            return cache[move.id]
         is_posted = move.state == "posted"
 
         if not is_posted:
@@ -983,6 +994,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         "amount_extend_aliquot_no_deductible": 0.0,
                     }
                 )
+            if cache is not None:
+                cache[move.id] = fields_in_zero
             return fields_in_zero
 
         is_credit_note = move.move_type in ["out_refund", "in_refund"]
@@ -1191,10 +1204,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         tax_result['amount_import_international'] = amount_import_international
 
+        if cache is not None:
+            cache[move.id] = tax_result
         return tax_result
 
     def generate_sales_book(self, company_id):
-
+        # Cache de importes por asiento para todo el armado del libro (cuerpo +
+        # resumen), ver _determinate_amount_taxeds.
+        self = self.with_context(_ve_book_amounts_cache={})
         self.company_id = company_id
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
@@ -1330,6 +1347,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return flat_fields
 
     def generate_purchases_book(self, company_id):
+        # Cache de importes por asiento para todo el armado del libro (cuerpo +
+        # resumen), ver _determinate_amount_taxeds.
+        self = self.with_context(_ve_book_amounts_cache={})
         self.company_id = company_id
         purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()

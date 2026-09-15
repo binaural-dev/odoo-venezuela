@@ -22,8 +22,18 @@
 - [ ] 3.2 Confirmar que el resumen del pie ya no sale en cero y cuadra con las
       líneas del cuerpo.
 
-## 4. Follow-up (fuera de alcance)
+## 4. Rendimiento (segunda iteración)
 
-- [ ] 4.1 Memoización de `_determinate_amount_taxeds` por asiento, solo si tras
-      el fix del parseo el período grande sigue lento (con el log ya limpio,
-      `tax_totals` ya lo cachea el ORM).
+Tras el fix del parseo, 2doce seguía muriendo por `CPU time limit exceeded`
+(`limit_time_cpu=60`) con 4690 asientos: `_determinate_amount_taxeds` se
+invocaba ~17× por asiento (1 en el cuerpo + ~16 en el resumen).
+
+- [x] 4.1 Memoizar `_determinate_amount_taxeds` por `move.id` durante una
+      generación del libro, vía cache en el contexto (`_ve_book_amounts_cache`),
+      sembrado por `generate_sales_book` / `generate_purchases_book`. Sin cambios
+      de firma (no rompe overrides de payment_extension / third_party_invoice).
+- [x] 4.2 Verificado que el dict devuelto solo se lee (no se muta), así que
+      devolver el mismo objeto cacheado es seguro. Bump versión → 19.0.1.0.15.
+- [ ] 4.3 Validar en 2doce (1–15 sep) que el libro completa sin exceder el CPU
+      time limit. Si aún queda al límite, subir `LIMIT_TIME_CPU` de la instancia
+      (ops) da el margen restante.
