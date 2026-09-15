@@ -323,9 +323,11 @@ class TestRetentionDuplicateLines(RetentionTestCommon):
 
         _logger.info("========= test_islr_concept_not_on_invoice_raises passed =========")
 
-    def test_supplier_retention_not_affected_by_duplicate_check(self):
-        """Supplier (in_invoice) retentions must not be touched by this check,
-        even if lines happen to repeat move_id/aliquot."""
+    def test_supplier_retention_duplicate_same_tax_raises(self):
+        """As of the cross-retention duplicate check, supplier (in_invoice)
+        retentions ARE covered too: two lines of the same retention that
+        repeat move_id/aliquot must be rejected exactly like on the client
+        side."""
         invoice = self._create_invoice_reten_iva(
             amount=200, partner=self.partner_pnr_75,
             out_invoice="in_invoice", journal=self.purchase_journal,
@@ -356,14 +358,10 @@ class TestRetentionDuplicateLines(RetentionTestCommon):
             ],
         })
 
-        # Should not raise from the new duplicate-lines check (it may still
-        # raise from unrelated business validations, but never with the
-        # "duplicated" wording introduced by this fix).
-        try:
+        with self.assertRaises(ValidationError) as e:
             retention.action_post()
-        except ValidationError as e:
-            self.assertNotIn("duplicated", str(e))
+        self.assertIn("duplicated", str(e.exception))
 
         _logger.info(
-            "========= test_supplier_retention_not_affected_by_duplicate_check passed ========="
+            "========= test_supplier_retention_duplicate_same_tax_raises passed ========="
         )
