@@ -9,18 +9,32 @@
                 <field name="show_digital_invoice" invisible="1"/>
                 <field name="show_digital_credit_note" invisible="1"/>
                 <field name="show_digital_debit_note" invisible="1"/>
-                <button name="generate_document_digital" string="Generate Digital Invoice" type="object" 
-                    invisible="show_digital_invoice"/>
-                <button name="generate_document_digital" string="Generate Digital Credit Note" type="object" 
-                    invisible="show_digital_credit_note"/>
-                <button name="generate_document_digital" string="Generate Digital Debit Note" type="object" 
-                    invisible="show_digital_debit_note"/>            
+                <button name="action_tfhka_generate_digital" string="Generate Digital Invoice" type="object"
+                    invisible="show_digital_invoice or tfhka_digitalization_state != 'none'"/>
+                <button name="action_tfhka_generate_digital" string="Generate Digital Credit Note" type="object"
+                    invisible="show_digital_credit_note or tfhka_digitalization_state != 'none'"/>
+                <button name="action_tfhka_generate_digital" string="Generate Digital Debit Note" type="object"
+                    invisible="show_digital_debit_note or tfhka_digitalization_state != 'none'"/>
+                <button name="action_tfhka_retry_digitalization" string="Retry Digitalization" type="object"
+                    invisible="tfhka_digitalization_state != 'error'"
+                    class="btn-danger"/>
             </xpath>
             <xpath expr="//group[@id='header_right_group']/label[1]" position="before">
                 <field name="journal_digital_invoice" invisible="1"/>
                 <field name="is_digitalized" string="Digitized"
                        invisible="move_type not in ['out_invoice', 'out_refund'] or not journal_digital_invoice"
                        readonly="True"/>
+                <field name="tfhka_digitalization_state" string="Digitalization Status"
+                       invisible="move_type not in ['out_invoice', 'out_refund'] or not journal_digital_invoice or tfhka_digitalization_state == 'success'"
+                       readonly="True" widget="badge"
+                       decoration-success="tfhka_digitalization_state == 'success'"
+                       decoration-danger="tfhka_digitalization_state == 'error'"
+                       decoration-info="tfhka_digitalization_state == 'processing'"
+                       decoration-warning="tfhka_digitalization_state == 'queued'"/>
+                <field name="tfhka_digitalization_error" string="Digitalization Error"
+                       invisible="tfhka_digitalization_state != 'error'"
+                       readonly="True"
+                       groups="l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin"/>
             </xpath>
             <!-- Multi-moneda: checkbox + selector de moneda de línea.
                  Solo visible si multi_currency_enabled (compañía), el diario es
@@ -44,6 +58,43 @@
                 <field name="digitalization_with_payment_active" invisible="1"/>
                 <field name="show_payment_box" invisible="not digitalization_with_payment_active or not journal_digital_invoice"
                        readonly="is_digitalized"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_invoice_tree_inherit_tfhka_digitalization" model="ir.ui.view">
+        <field name="name">account.move.list.inherit.tfhka.digitalization</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="tfhka_digitalization_state"
+                       string="Digitalization Status"
+                       widget="badge"
+                       decoration-success="tfhka_digitalization_state == 'success'"
+                       decoration-danger="tfhka_digitalization_state == 'error'"
+                       decoration-info="tfhka_digitalization_state == 'processing'"
+                       decoration-warning="tfhka_digitalization_state == 'queued'"
+                       optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_invoice_filter_inherit_tfhka_digitalization" model="ir.ui.view">
+        <field name="name">account.invoice.select.inherit.tfhka.digitalization</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='to_check']" position="after">
+                <separator/>
+                <filter name="tfhka_digitalization_error" string="TFHKA: Error"
+                        domain="[('tfhka_digitalization_state', '=', 'error')]"/>
+                <filter name="tfhka_digitalization_queued" string="TFHKA: Queued"
+                        domain="[('tfhka_digitalization_state', '=', 'queued')]"/>
+            </xpath>
+            <xpath expr="//filter[@name='status']" position="after">
+                <filter name="group_tfhka_digitalization_state" string="TFHKA Digitalization Status"
+                        context="{'group_by': 'tfhka_digitalization_state'}"/>
             </xpath>
         </field>
     </record>

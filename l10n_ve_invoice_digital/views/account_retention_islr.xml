@@ -8,9 +8,11 @@
                 <xpath expr="//header" position="inside">
                     <field name="show_digital_retention_islr" invisible="1"/>
                     <field name="control_number_tfhka" invisible="1"/>
-                    <button name="generate_document_digital" string="Generate Digital Retention" type="object"
-                            context="{'document_type': '06'}"
-                            invisible="show_digital_retention_islr"/>
+                    <button name="action_tfhka_generate_digital" string="Generate Digital Retention" type="object"
+                            invisible="show_digital_retention_islr or tfhka_digitalization_state != 'none'"/>
+                    <button name="action_tfhka_retry_digitalization" string="Retry Digitalization" type="object"
+                            invisible="tfhka_digitalization_state != 'error'"
+                            class="btn-danger"/>
                     <field name="annulled_tfhka" invisible="1"/>
                 </xpath>
                 <xpath expr="//button[@name='action_cancel']" position="attributes">
@@ -18,6 +20,16 @@
                 </xpath>
                 <xpath expr="//field[@name='type']" position="before">
                     <field name="is_digitalized" string="Digitized" readonly="True"/>
+                    <field name="tfhka_digitalization_state" string="Digitalization Status" readonly="True"
+                           invisible="tfhka_digitalization_state == 'success'"
+                           widget="badge"
+                           decoration-success="tfhka_digitalization_state == 'success'"
+                           decoration-danger="tfhka_digitalization_state == 'error'"
+                           decoration-info="tfhka_digitalization_state == 'processing'"
+                           decoration-warning="tfhka_digitalization_state == 'queued'"/>
+                    <field name="tfhka_digitalization_error" string="Digitalization Error"
+                           invisible="tfhka_digitalization_state != 'error'" readonly="True"
+                           groups="l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin"/>
                 </xpath>
                 <xpath expr="//field[@name='number']" position="after">
                     <field name="control_number_tfhka" string="Control Number" readonly="True"/>
