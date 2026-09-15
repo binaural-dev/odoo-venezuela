@@ -918,21 +918,30 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ]
     
     def convert_currency_to_float(self, currency_str):
-  
+        # El importe llega formateado por Odoo. El simbolo de moneda y el monto
+        # van separados por un espacio (normal, no-separable \xa0 o salto de
+        # linea), en cualquiera de los dos ordenes segun la posicion del simbolo:
+        #   "Bs.\xa01.234,56"  (simbolo antes, es_VE: punto miles, coma decimal)
+        #   "100.00\xa0Bs.F"   (simbolo despues, Bs.F: punto decimal)
+        # Nos quedamos SOLO con los tokens que contienen digitos, para descartar
+        # el simbolo COMPLETO (incluido su punto, como en "Bs."/"Bs.F", que si no
+        # se cuela como un punto suelto y rompe el float). NO se debe partir por
+        # \xa0 y quedarse con un lado fijo: falla segun donde vaya el simbolo.
         if not currency_str:
             return 0.0
-        
-        cleaned_str = str(currency_str).strip()
-       
-        if '\xa0' in cleaned_str:
-            cleaned_str = cleaned_str.split('\xa0', 1)[0]
-        
-        numeric_part = re.sub(r'[^\d,\.-]', '', cleaned_str)
-        
-        if '.' in numeric_part and ',' in numeric_part:
-            numeric_part = numeric_part.replace('.', '')
-        
-        final_value = numeric_part.replace(',', '.')
+
+        tokens = re.split(r"\s+", str(currency_str).strip())
+        numeric_part = "".join(
+            re.sub(r"[^\d,\.-]", "", token)
+            for token in tokens
+            if any(char.isdigit() for char in token)
+        )
+
+        if "." in numeric_part and "," in numeric_part:
+            # Ambos separadores presentes (es_VE): el punto es de miles -> fuera.
+            numeric_part = numeric_part.replace(".", "")
+
+        final_value = numeric_part.replace(",", ".")
 
         try:
             return float(final_value)
@@ -945,6 +954,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return 0.0
 
     def _determinate_amount_taxeds(self, move):
+        # Memoizacion por asiento durante UNA generacion del libro. El libro
+        # llama este metodo ~1 vez por asiento en el cuerpo y ~16 veces por
+        # asiento en el resumen (una por linea de resumen), asi que sin cache el
+        # calculo se repite ~17 veces por asiento. El cache vive en el contexto
+        # (los recordsets no admiten atributos por __slots__) y lo siembran los
+        # entrypoints generate_sales_book/generate_purchases_book. El resultado
+        # solo depende del asiento (los parametros del wizard son fijos durante
+        # la generacion), asi que la clave es move.id.
+        cache = self.env.context.get("_ve_book_amounts_cache")
+        if cache is not None and move.id in cache:
+            return cache[move.id]
         is_posted = move.state == "posted"
 
         if not is_posted:
@@ -981,6 +1001,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         "amount_extend_aliquot_no_deductible": 0.0,
                     }
                 )
+            if cache is not None:
+                cache[move.id] = fields_in_zero
             return fields_in_zero
 
         is_credit_note = move.move_type in ["out_refund", "in_refund"]
@@ -1189,10 +1211,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         tax_result['amount_import_international'] = amount_import_international
 
+        if cache is not None:
+            cache[move.id] = tax_result
         return tax_result
 
     def generate_sales_book(self, company_id):
-
+        # Cache de importes por asiento para todo el armado del libro (cuerpo +
+        # resumen), ver _determinate_amount_taxeds.
+        self = self.with_context(_ve_book_amounts_cache={})
         self.company_id = company_id
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
@@ -1328,6 +1354,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return flat_fields
 
     def generate_purchases_book(self, company_id):
+        # Cache de importes por asiento para todo el armado del libro (cuerpo +
+        # resumen), ver _determinate_amount_taxeds.
+        self = self.with_context(_ve_book_amounts_cache={})
         self.company_id = company_id
         purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()
