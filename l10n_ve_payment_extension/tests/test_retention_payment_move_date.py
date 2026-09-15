@@ -1,5 +1,7 @@
 import logging
 
+from dateutil.relativedelta import relativedelta
+
 from odoo.tests import tagged, Form
 from odoo import Command, fields
 
@@ -19,8 +21,12 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
 
     def setUp(self):
         super().setUp()
-        self.invoice_date = fields.Date.today().replace(day=1)
+        # relativedelta(months=1) instead of .replace(day=1): the latter
+        # collides with date_accounting (today) on the 1st of any month,
+        # silently turning the assertions below into no-ops. Subtracting a
+        # full month is never equal to today regardless of what today is.
         self.date_accounting = fields.Date.today()
+        self.invoice_date = self.date_accounting - relativedelta(months=1)
 
         self._set_rate(self.currency_usd, self.invoice_date, 40.0)
         self._set_rate(self.currency_usd, self.date_accounting, 60.0)
@@ -129,12 +135,15 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
             "payment.date must reflect the retention's own date_accounting.",
         )
 
-        # The move behind that payment must share the same date -- no
-        # special-casing to pin it to the invoice's own date.
+        # The move behind that payment is dated with date_accounting, NOT
+        # with the invoice's own date (pinning it to the invoice's date was
+        # tried in commit 7dc7660ea and reverted in 22a9444b): it must be
+        # AccountRetention._prepare_retention_payment_vals's date_accounting,
+        # verified exactly, not merely "not the invoice's date".
         self.assertEqual(
             payment.move_id.date, self.date_accounting,
-            "The retention payment's journal entry must be dated like "
-            "date_accounting, same as any other payment.",
+            "The retention payment's journal entry must be dated with "
+            "date_accounting.",
         )
 
         # Independent of the date the move is booked at: reconciling a

@@ -57,7 +57,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         worksheet.merge_range("G8:H8", retention.name, fmt_bold_border)
         
         worksheet.write_rich_string("A11", fmt_bold, "RAZÓN SOCIAL :", str(company.name))
-        worksheet.write_rich_string("A12", fmt_bold, "NUMERO DE REGISTRO ÚNICO DE INFORMACIÓN FISCAL: ", str(company.partner_id.vat))
+        worksheet.write_rich_string("A12", fmt_bold, "NUMERO DE REGISTRO ÚNICO DE INFORMACIÓN FISCAL: ", f"{company.partner_id.prefix_vat or ''}{company.partner_id.vat or ''}")
         worksheet.write_rich_string("E11", fmt_bold, "NUMERO DE LICENCIA DE ACTIVIDADES ECONOMICAS: ", str(tax_auth.economic_activity_number))
         worksheet.write_rich_string("A13", fmt_bold, "DIRECCIÓN FISCAL: ", company.street or "")
 
