@@ -1,5 +1,5 @@
 from odoo import models, api, fields, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 from ..services.tfhka_document_service import VES_CURRENCY_NAMES
 
@@ -95,6 +95,50 @@ class AccountMove(models.Model):
                     )
                     % {"invoice_date": last_invoice.invoice_date_display}
                 )
+
+    def _tfhka_digitalize_on_confirm(self):
+        """Sends each eligible move to TFHKA right after posting.
+
+        Extracted from ``move.action.post.alert.wizard.action_confirm()`` so
+        that ``binaural_third_party_invoice_digital`` can reuse the exact same
+        eligibility checks (digital journal, previous-invoice-digitized guard,
+        payment-driven digitalization) to also digitalize Third Party child
+        invoices once they get posted alongside their parent (see
+        ``third.party.move.action.post.alert.wizard.action_confirm_all`` in
+        that module) -- a flow the base wizard never sees, since it only
+        ever receives the parent invoice as ``move_id``.
+
+        The ``is_digitalized`` guard makes the call idempotent: safe to
+        invoke on a move that was already digitalized elsewhere, which
+        matters for that same third-party flow (the parent may already be
+        digitalized by the time this runs again on the whole batch).
+        """
+        for record in self:
+            if record.is_digitalized or not record.journal_id.digital_invoice:
+                continue
+
+            if record.sequence_number > 1:
+                previous_invoice = self.env["account.move"].search(
+                    [
+                        ("company_id", "=", record.company_id.id),
+                        ("move_type", "=", record.move_type),
+                        ("sequence_number", "!=", record.sequence_number),
+                        ("is_digitalized", "=", False),
+                        ("state", "=", "posted"),
+                        ("journal_id", "=", record.journal_id.id),
+                    ], order="sequence_number asc", limit=1,
+                )
+                if previous_invoice and not previous_invoice.is_digitalized:
+                    move_type = previous_invoice.move_type
+                    if move_type == "out_invoice" and not previous_invoice.debit_origin_id:
+                        raise UserError(_("The invoice %(name)s has not been digitized") % {"name": previous_invoice.name})
+                    if move_type == "out_invoice" and previous_invoice.debit_origin_id:
+                        raise UserError(_("The debit note %(name)s has not been digitized") % {"name": previous_invoice.name})
+                    if move_type == "out_refund":
+                        raise UserError(_("The credit note %(name)s has not been digitized") % {"name": previous_invoice.name})
+
+            if not record.company_id.digitalization_with_payment_tfhka:
+                record.generate_document_digital()
 
     def _is_eligible_for_tfhka(self):
         """Check if the invoice should process TFHKA logic."""
