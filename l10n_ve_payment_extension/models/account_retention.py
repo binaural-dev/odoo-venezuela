@@ -533,6 +533,7 @@ class AccountRetention(models.Model):
 
             try:
                 retention._check_accounting_date_vs_invoices()
+                retention._check_dates_not_in_future()
             except ValidationError as e:
                 if is_automated:
                     retention.message_post(body=str(e), category='exception')
@@ -1113,18 +1114,27 @@ class AccountRetention(models.Model):
 
     def _check_accounting_date_vs_invoices(self):
         """
-        A retention's accounting date cannot precede any of the invoices it
-        withholds from: it is a consequence of an invoice already issued.
+        Neither a retention's accounting date nor its voucher date can
+        precede any of the invoices it withholds from: both are a
+        consequence of an invoice already issued. The accounting-date rule
+        was added for helpdesk #15019/#14984; helpdesk #15188 reported that
+        the voucher date (date) was left uncovered - editing it to a date
+        earlier than the invoice and approving the retention was silently
+        allowed - so the same rule is extended here to cover it too.
         """
         for retention in self:
             max_invoice_date = retention._get_max_invoice_date()
             if not max_invoice_date:
                 continue
+            invalid_moves = retention.retention_line_ids.move_id.filtered(
+                lambda move: (move.invoice_date_display or move.invoice_date) == max_invoice_date
+            )
+            invoice_name = ", ".join(
+                move.name or move.ref or str(move.id) for move in invalid_moves
+            )
+
             accounting_date = retention.date_accounting or fields.Date.context_today(retention)
             if accounting_date < max_invoice_date:
-                invalid_moves = retention.retention_line_ids.move_id.filtered(
-                    lambda move: (move.invoice_date_display or move.invoice_date) == max_invoice_date
-                )
                 raise ValidationError(
                     _(
                         "The accounting date (%(accounting_date)s) cannot be earlier than the "
@@ -1133,15 +1143,51 @@ class AccountRetention(models.Model):
                     % {
                         "accounting_date": accounting_date,
                         "invoice_date": max_invoice_date,
-                        "invoice_name": ", ".join(
-                            move.name or move.ref or str(move.id) for move in invalid_moves
-                        ),
+                        "invoice_name": invoice_name,
                     }
                 )
 
-    @api.constrains("date_accounting", "retention_line_ids")
+            voucher_date = retention.date
+            if voucher_date and voucher_date < max_invoice_date:
+                raise ValidationError(
+                    _(
+                        "The voucher date (%(voucher_date)s) cannot be earlier than the "
+                        "invoice date (%(invoice_date)s) for invoice %(invoice_name)s."
+                    )
+                    % {
+                        "voucher_date": voucher_date,
+                        "invoice_date": max_invoice_date,
+                        "invoice_name": invoice_name,
+                    }
+                )
+
+    def _check_dates_not_in_future(self):
+        """
+        Neither the accounting date nor the voucher date can be later than
+        today - a retention is issued for something already accrued, it
+        cannot be dated in the future.
+        """
+        for retention in self:
+            today = fields.Date.context_today(retention)
+            if retention.date_accounting and retention.date_accounting > today:
+                raise ValidationError(
+                    _(
+                        "The accounting date (%(date)s) cannot be later than today (%(today)s)."
+                    )
+                    % {"date": retention.date_accounting, "today": today}
+                )
+            if retention.date and retention.date > today:
+                raise ValidationError(
+                    _(
+                        "The voucher date (%(date)s) cannot be later than today (%(today)s)."
+                    )
+                    % {"date": retention.date, "today": today}
+                )
+
+    @api.constrains("date_accounting", "date", "retention_line_ids")
     def _check_accounting_date(self):
         self._check_accounting_date_vs_invoices()
+        self._check_dates_not_in_future()
 
     @api.constrains("number", "type")
     def _check_number(self):

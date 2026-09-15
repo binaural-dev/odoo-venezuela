@@ -516,6 +516,82 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         _logger.info("========= test_zero_retention_amount_blocks_post_exact_message passed =========")
 
     # ------------------------------------------------------------------
+    # Rule 5: dates not in future
+    # ------------------------------------------------------------------
+    def test_dates_not_in_future_accounting_and_voucher(self):
+        invoice = self._create_out_invoice_with_lines([(self.product_iva, 100.0)])
+        line_vals = {
+            "move_id": invoice.id,
+            "name": "Iva Retention",
+            "invoice_type": "out_invoice",
+            "aliquot": 16.0,
+            "iva_amount": 16.0,
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": invoice.amount_untaxed,
+            "retention_amount": 12.0,
+            "foreign_invoice_amount": invoice.amount_untaxed,
+            "foreign_retention_amount": 12.0,
+            "foreign_currency_rate": 1.0,
+        }
+        future = fields.Date.add(fields.Date.today(), days=10)
+
+        with self.assertRaises(ValidationError) as e1:
+            self._make_iva_customer_retention([line_vals]).write({"date_accounting": future})
+        self.assertIn("cannot be later than today", str(e1.exception))
+
+        with self.assertRaises(ValidationError) as e2:
+            self._make_iva_customer_retention([dict(line_vals)]).write({"date": future})
+        self.assertIn("cannot be later than today", str(e2.exception))
+
+        _logger.info("========= test_dates_not_in_future_accounting_and_voucher passed =========")
+
+    def test_voucher_date_earlier_than_invoice_blocks_helpdesk_15188(self):
+        """
+        Helpdesk #15188: editing a retention's voucher date (date) to a date
+        earlier than the invoice it withholds from must be blocked, both on
+        save and on Aprobar/action_post - the pre-existing rule from
+        #15019/#14984 only covered date_accounting, leaving date uncovered.
+        """
+        invoice = self._create_out_invoice_with_lines([(self.product_iva, 100.0)])
+        earlier_than_invoice = fields.Date.subtract(invoice.invoice_date, days=2)
+        line_vals = {
+            "move_id": invoice.id,
+            "name": "Iva Retention",
+            "invoice_type": "out_invoice",
+            "aliquot": 16.0,
+            "iva_amount": 16.0,
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": invoice.amount_untaxed,
+            "retention_amount": 12.0,
+            "foreign_invoice_amount": invoice.amount_untaxed,
+            "foreign_retention_amount": 12.0,
+            "foreign_currency_rate": 1.0,
+        }
+
+        with self.assertRaises(ValidationError) as e1:
+            self._make_iva_customer_retention([line_vals]).write({"date": earlier_than_invoice})
+        self.assertIn("The voucher date", str(e1.exception))
+        self.assertIn("cannot be earlier than the invoice date", str(e1.exception))
+
+        # date_accounting earlier than the invoice must still be blocked too
+        # (pre-existing rule from #15019/#14984, unaffected by this change).
+        with self.assertRaises(ValidationError) as e2:
+            self._make_iva_customer_retention([dict(line_vals)]).write(
+                {"date_accounting": earlier_than_invoice}
+            )
+        self.assertIn("The accounting date", str(e2.exception))
+        self.assertIn("cannot be earlier than the invoice date", str(e2.exception))
+
+        # Sanity: a voucher date equal to the invoice date must NOT raise.
+        retention_ok = self._make_iva_customer_retention([dict(line_vals)])
+        retention_ok.write({"date": invoice.invoice_date})
+        self.assertEqual(retention_ok.date, invoice.invoice_date)
+
+        _logger.info(
+            "========= test_voucher_date_earlier_than_invoice_blocks_helpdesk_15188 passed ========="
+        )
+
+    # ------------------------------------------------------------------
     # Rule 6: IVA aliquot recompute on onchange
     # ------------------------------------------------------------------
     def test_iva_onchange_move_proposes_non_conflicting_aliquot(self):
