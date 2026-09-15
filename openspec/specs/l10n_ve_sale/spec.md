@@ -159,6 +159,20 @@ La acción `action_confirm` DEBE (MUST) rechazar con error la confirmación de u
 - **WHEN** se confirma una orden que solo tiene secciones o notas
 - **THEN** se lanza un error indicando que debe agregarse un producto
 
+### Requirement: Confirmación requiere tasa de moneda alterna
+
+Al confirmar (`action_confirm`), si la orden tiene moneda alterna (`foreign_currency_id`), no tiene `manually_set_rate` activo, y `foreign_rate` es cero, el sistema DEBE (MUST) invocar `compute_rate` con `raise_if_not_found=True`, bloqueando la confirmación con un `UserError` en vez de dejar pasar la orden con `foreign_rate` en cero. Es el único punto del módulo donde se usa `raise_if_not_found=True`: a diferencia de los defaults y del propio `_compute_rate`, `action_confirm` es una acción explícita del usuario, no un camino automático que un error ahí pueda romper.
+
+#### Scenario: Confirmación sin tasa configurada
+
+- **WHEN** se confirma una orden con moneda alterna, sin `manually_set_rate`, y no existe ninguna tasa registrada para su fecha
+- **THEN** se lanza un `UserError` y la orden no se confirma
+
+#### Scenario: Confirmación con tasa manual en cero
+
+- **WHEN** se confirma una orden con `manually_set_rate` activo, aunque `foreign_rate` sea cero
+- **THEN** la confirmación no se bloquea por este requirement — la tasa es responsabilidad explícita del usuario
+
 ### Requirement: Bloqueo de venta sin existencias
 
 Cuando la compañía tiene activo `not_allow_sell_products` (configurable desde ajustes) y no se pasa el contexto `skip_not_allow_sell_products_validation`, `action_confirm` DEBE (MUST) impedir confirmar órdenes con líneas de productos almacenables de tipo `consu` cuya cantidad demandada supere `qty_available`.
