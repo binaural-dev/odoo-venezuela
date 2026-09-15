@@ -1,639 +1,403 @@
 from odoo import models, api, fields, _
-from odoo.exceptions import UserError, ValidationError
-from pytz import timezone
-import logging
-import requests
-import json
-import re
+from odoo.exceptions import ValidationError
 
-_logger = logging.getLogger(__name__)
+from ..services.tfhka_document_service import VES_CURRENCY_NAMES
 
-class EndPoints():
-    BASE_ENDPOINTS = {
-        "emision": "/Emision",
-        "ultimo_documento": "/UltimoDocumento",
-        "consulta_numeraciones": "/ConsultaNumeraciones",
-    }
 
 class AccountMove(models.Model):
-    _inherit = 'account.move'
+    _inherit = "account.move"
 
-    is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
-    show_digital_invoice = fields.Boolean(string="Show Digital Invoice", compute="_compute_invisible_check", copy=False)
+    is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
+    show_digital_invoice = fields.Boolean(compute="_compute_invisible_check", copy=False)
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
 
-    def generate_document_digital(self):
-        if not self.company_id.invoice_digital_tfhka:
+    show_payment_box = fields.Boolean(
+        default=False,
+        copy=False,
+        tracking=True,
+        help="If enabled, the digital invoice includes the payment methods block (formasPago).",
+    )
+    digitalization_with_payment_active = fields.Boolean(
+        related="company_id.digitalization_with_payment_tfhka",
+    )
+    journal_digital_invoice = fields.Boolean(
+        related="journal_id.digital_invoice",
+        string="Journal Is Digital",
+        help="Used to hide the TFHKA digitalization fields when the journal is not digital.",
+    )
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        moves._apply_payment_driven_multi_currency()
+        return moves
+
+    def write(self, vals):
+        """Prevent disabling multi_currency_invoice while it is locked by a USD payment."""
+        skip_guard = self.env.context.get('tfhka_skip_multi_currency_guard')
+        if not skip_guard and 'multi_currency_invoice' in vals and not vals.get('multi_currency_invoice'):
+            for move in self:
+                if move.show_payment_box and move._has_usd_reconciled_payment():
+                    raise ValidationError(
+                        _(
+                            "Cannot disable multi-currency invoicing: a payment in USD is already "
+                            "linked to this invoice."
+                        )
+                    )
+        res = super().write(vals)
+        if not skip_guard:
+            self._apply_payment_driven_multi_currency()
+        return res
+
+    def action_post(self):
+        for invoice in self:
+            invoice._tfhka_validate_mixed_invoicing()
+            invoice._tfhka_validate_invoice_date()
+
+        # Marca de contexto: l10n_ve_payment_extension crea y postea las
+        # retenciones de proveedor (IVA/ISLR) dentro de esta misma cadena de
+        # super(); el contexto se propaga hasta account.retention.action_post()
+        # para que sepa que la retención vino de la factura y pueda
+        # auto-digitalizarse (ver account_retention.py).
+        res = super(AccountMove, self.with_context(l10n_ve_invoice_digital_auto_retention=True)).action_post()
+        return res
+
+    def _tfhka_validate_invoice_date(self):
+        """Validates that the emission date of the current invoice is not earlier than the date of the last digitalized invoice."""
+        self.ensure_one()
+        if not self._is_eligible_for_tfhka():
             return
-        
-        document_type = ""
 
-        if self.move_type == "out_invoice":
-            document_type = "03" if self.debit_origin_id else "01"
-        elif self.move_type == "out_refund" and self.reversed_entry_id:
-            document_type = "02"
-        
-        if not document_type: 
-            return
+        domain = [
+            ("state", "=", "posted"),
+            ("journal_id.digital_invoice", "=", True),
+            ("journal_id", "=", self.journal_id.id),
+            ("move_type", "=", self.move_type),
+            ("is_digitalized", "=", True),
+        ]
 
-        series = ""
+        # O19: invoice_date_display es la fecha fiscal del documento; invoice_date
+        # queda reservada al cálculo de la tasa de cambio (ver l10n_ve_accountant).
+        last_invoice = self.env["account.move"].search(
+            domain, order="invoice_date_display desc, name desc", limit=1
+        )
 
-        if self.company_id.group_sales_invoicing_series and self.journal_id.series_correlative_sequence_id:
-            if self.journal_id.sequence_id and self.journal_id.sequence_id.prefix:
-                series = re.sub(r'[^a-zA-Z0-9]', '', self.journal_id.sequence_id.prefix)
-            else:
-                raise UserError(_("The selected series is not configured"))
-            
-        self.query_numbering(series)
-        document_number = self.get_last_document_number(document_type, series)
-        document_number = document_number + 1
-        current_number = self.sequence_number
+        current_invoice_date = self.invoice_date_display or fields.Date.today()
 
-        if document_number != current_number and self.company_id.sequence_validation_tfhka:
-            raise UserError(_("The document sequence in Odoo (%s) does not match the sequence in The Factory (%s).Please check your numbering settings.") % (current_number, document_number))
+        if last_invoice and last_invoice.invoice_date_display:
+            if current_invoice_date < last_invoice.invoice_date_display:
+                raise ValidationError(
+                    _(
+                        "The emission date of the current invoice is earlier than the date of "
+                        "the last digitalized invoice (%(invoice_date)s). "
+                        "This could cause sequence inconsistencies."
+                    )
+                    % {"invoice_date": last_invoice.invoice_date_display}
+                )
 
-        document_number = str(document_number)
+    def _is_eligible_for_tfhka(self):
+        """Check if the invoice should process TFHKA logic."""
+        self.ensure_one()
+        config_invoice_can_be_digitalized = self.company_id.invoice_digital_tfhka
+        if not self.journal_id.digital_invoice or not config_invoice_can_be_digitalized:
+            return False
+        if self.move_type not in ("out_invoice", "out_refund"):
+            return False
+        return True
 
-        self.generate_document_data(document_number, document_type, series)
+    def _tfhka_validate_mixed_invoicing(self):
+        """Validates if mixed invoicing is allowed."""
+        self.ensure_one()
+        config_invoice_can_be_digitalized = self.company_id.invoice_digital_tfhka
+        config_mix_invoicing = self.company_id.mix_invoicing_tfhka
 
-    def get_base_url(self):
-        if self.company_id.url_tfhka:
-            return self.company_id.url_tfhka.rstrip("/")
-        raise UserError(_("The URL is not configured in the company settings."))
+        if not self.journal_id.digital_invoice and config_invoice_can_be_digitalized and not config_mix_invoicing:
+            if self.move_type in ['out_invoice', 'out_refund']:
+                raise ValidationError(_(
+                    "The company is configured for strict digital invoicing (mixed invoicing is disabled). "
+                    "Only journals with digital invoicing enabled are allowed for this operation. "
+                    "Please check the company configuration or select a valid digital journal."
+                ))
 
-    def get_token(self):
-        if self.company_id.token_auth_tfhka:
-            return self.company_id.token_auth_tfhka
-        raise ValidationError(_("Configuration error: The authentication token is empty."))
+    # --- MULTI-MONEDA ---
+    # Flag por factura: habilita el selector de moneda de línea.
+    # Requiere que multi_currency_invoice_tfhka esté activo en la compañía.
+    multi_currency_invoice = fields.Boolean(
+        string='Multi-Currency Invoice',
+        default=False,
+        copy=False,
+        tracking=True,
+        help="When enabled, the 'Line Currency' selector appears, allowing you to choose "
+             "between the base currency (VES) and the pricelist currency (USD/EUR). The "
+             "document is then reported to TFHKA in both currencies. "
+             "Requires 'Multi-currency digital invoicing' in company settings."
+    )
+    # Indica si la funcionalidad multi-moneda está disponible (según compañía).
+    # Controla la visibilidad del campo multi_currency_invoice en vista.
+    multi_currency_enabled = fields.Boolean(
+        string='Multi-currency enabled',
+        compute='_compute_multi_currency_enabled',
+        store=False
+    )
 
-    def call_tfhka_api(self, endpoint_key, payload):
-        base_url = self.get_base_url()
-        endpoint = EndPoints.BASE_ENDPOINTS.get(endpoint_key)
+    @api.depends('company_id.multi_currency_invoice_tfhka')
+    def _compute_multi_currency_enabled(self):
+        for move in self:
+            move.multi_currency_enabled = move.company_id.multi_currency_invoice_tfhka
 
-        if not endpoint:
-            raise UserError(_("Endpoint '%(endpoint_key)s' is not defined.") % {'endpoint_key': endpoint_key})
+    # Bloquea multi_currency_invoice cuando el cuadro de pago está activo y
+    # ya hay un pago en divisa conciliado con la factura: en ese caso el
+    # multi-moneda pasa a ser obligatorio (no se puede desmarcar).
+    multi_currency_invoice_lock = fields.Boolean(
+        compute='_compute_multi_currency_invoice_lock',
+        string='Multi-Currency Invoice Lock',
+    )
 
-        url = f"{base_url}{endpoint}"
-        headers = {"Authorization": f"Bearer {self.get_token()}"}
+    @api.depends('show_payment_box', 'invoice_payments_widget')
+    def _compute_multi_currency_invoice_lock(self):
+        for move in self:
+            is_locked = move.show_payment_box and move._has_usd_reconciled_payment()
+            move.multi_currency_invoice_lock = is_locked
+            if is_locked and not move.multi_currency_invoice:
+                move.multi_currency_invoice = True
+            elif not is_locked and move.multi_currency_invoice:
+                pricelist_currency = move._get_pricelist_currency()
+                pricelist_is_foreign = (
+                    pricelist_currency and pricelist_currency != move.company_id.currency_id
+                )
+                if not pricelist_is_foreign:
+                    move.multi_currency_invoice = False
+                    move.line_currency_id = False
 
-        try:
-            response = requests.post(url, json=payload, headers=headers)
-        
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("codigo") == "200":
-                    return data
-                elif data.get("codigo") == "203" and data.get("validaciones") and endpoint_key == "ultimo_documento":
-                    return 0
+    def _apply_payment_driven_multi_currency(self):
+        """Fuerza la multi-moneda cuando la dirige un pago en divisa conciliado.
+
+        Vive en ``create``/``write`` y no dentro de un ``compute`` (como hacía
+        17.0): escribir un campo almacenado como efecto lateral de un compute
+        depende de cuándo se recalcule el campo técnico y deja el flag sin
+        aplicar en escrituras que no lo disparan. Mismo patrón que
+        ``binaural_unidigital._unidigital_apply_payment_driven_multicurrency``.
+        """
+        for move in self:
+            if move.move_type not in ('out_invoice', 'out_refund'):
+                continue
+            if not (move.show_payment_box and move._has_usd_reconciled_payment()):
+                continue
+            vals = {}
+            if not move.multi_currency_invoice:
+                vals['multi_currency_invoice'] = True
+            if not move.line_currency_id:
+                pricelist_currency = move._get_pricelist_currency()
+                if pricelist_currency and pricelist_currency != move.company_id.currency_id:
+                    # Tarifa en divisa: usar la moneda de la tarifa.
+                    vals['line_currency_id'] = pricelist_currency.id
                 else:
-                    _logger.error(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
-                    raise UserError(_("Error in the API response: %(message)s \n%(validation)s") % {'message': data.get('mensaje'), 'validation': data.get('validaciones')})
-            if response.status_code == 401:
-                _logger.error(_("Error 401: Invalid or expired token."))
-                self.company_id.generate_token_tfhka()
-                return self.call_tfhka_api(endpoint_key, payload)
-            else:
-                _logger.error(_("HTTP error %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
-                raise UserError(_("HTTP error %(status_code)s: %(text)s") % {'status_code': response.status_code, 'text': response.text})
-        except requests.exceptions.RequestException as e:
-            _logger.error(_("Error connecting to the API: %(error)s") % {'error': e})
-            raise UserError(_("Error connecting to the API: %(error)s") % {'error': e})
+                    # Tarifa en moneda base: usar la moneda del pago en divisa.
+                    payment_currency = move._get_payment_driven_currency()
+                    if payment_currency:
+                        vals['line_currency_id'] = payment_currency.id
+            if vals:
+                move.with_context(tfhka_skip_multi_currency_guard=True).write(vals)
 
-    def generate_document_data(self, document_number, document_type, series):
-        document_identification = self.get_document_identification(document_type, document_number, series)
-        seller = self.get_seller()
-        buyer = self.get_buyer()
-        totals, foreign_totals = self.get_totals()
-        details_items = self.get_item_details()
-        additional_information = self.get_additional_information()
-        
-        payload = {
-            "documentoElectronico": {
-                "encabezado": {
-                    "identificacionDocumento": document_identification,
-                    "comprador": buyer,
-                    "totales": totals,
-                },
-                "detallesItems": details_items,
-            }
-        }
+    def _has_usd_reconciled_payment(self):
+        """Check if any payment reconciled with this invoice is in foreign currency.
 
-        if seller:
-            payload["documentoElectronico"]["encabezado"]["vendedor"] = seller
-        if foreign_totals:
-            payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
-        if additional_information:
-            payload["documentoElectronico"]["infoAdicional"] = additional_information
-        response = self.call_tfhka_api("emision", payload)
+        Se considera "divisa" cualquier moneda que no sea el bolívar, en lugar
+        del literal 'USD' de 17.0, para que el bloqueo funcione también con
+        EUR/COP. Se comprueba contra el bolívar y no contra
+        ``company_id.foreign_currency_id`` porque el rol de moneda base y alterna
+        puede estar invertido según la configuración de la compañía.
+        Mismo criterio que ``binaural_unidigital._has_foreign_payment_local``.
+        """
+        self.ensure_one()
+        content = (self.invoice_payments_widget or {}).get('content', [])
+        if not content:
+            return False
+        payment_ids = [item.get('account_payment_id') for item in content if item.get('account_payment_id')]
+        payments = self.env['account.payment'].browse(payment_ids).exists()
+        return any(
+            payment.currency_id.name not in VES_CURRENCY_NAMES for payment in payments
+        )
 
-        if response:
-            self.is_digitalized = True
-            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
-            self.message_post(
-                body=_("Document successfully digitized on %(date)s") % {'date': emission_date},  
-                message_type='comment',
+    # ------------------------------------------------------------------
+    # Moneda de línea derivada de la tarifa
+    # ------------------------------------------------------------------
+
+    def _get_pricelist_currency(self):
+        """Divisa implícita en la tarifa de la factura, con respaldo heredado.
+
+        ``account_invoice_pricelist`` fuerza ``currency_id`` a la moneda de la
+        tarifa, así que la tarifa es la fuente de verdad de la divisa del
+        documento. Para registros sin tarifa (o creados por API) se cae a la
+        moneda extranjera de la compañía. La cadena es la misma que consume
+        el servicio, para que la UI y el payload nunca discrepen.
+        """
+        self.ensure_one()
+        pricelist_currency = (
+            self.pricelist_id.currency_id if "pricelist_id" in self._fields else False
+        )
+        return pricelist_currency or self.company_id.foreign_currency_id
+
+    def _get_payment_driven_currency(self):
+        """Primera moneda extranjera entre los pagos en divisa conciliados.
+
+        Se usa como moneda de línea cuando la factura no tiene tarifa en divisa
+        pero se reconcilia un pago en moneda extranjera (modo pago-primero).
+        Devuelve un recordset vacío si no hay ningún pago en divisa.
+        """
+        self.ensure_one()
+        if not self.show_payment_box:
+            return self.env["res.currency"]
+        content = (self.invoice_payments_widget or {}).get("content", [])
+        payment_ids = [
+            item.get("account_payment_id")
+            for item in content
+            if item.get("account_payment_id")
+        ]
+        if not payment_ids:
+            return self.env["res.currency"]
+        payments = self.env["account.payment"].browse(payment_ids).exists()
+        foreign = payments.filtered(
+            lambda p: p.currency_id.name not in VES_CURRENCY_NAMES
+        ).mapped("currency_id")
+        return foreign[:1]
+
+    multi_currency_available = fields.Boolean(
+        string='Multi-currency available',
+        compute='_compute_multi_currency_available',
+        help="Técnico: True cuando la tarifa está en una moneda distinta a la "
+             "moneda base de la compañía. Controla si el usuario puede marcar "
+             "'Multi-Currency Invoice'.",
+    )
+    allowed_line_currency_ids = fields.Many2many(
+        'res.currency',
+        string='Allowed Line Currencies',
+        compute='_compute_allowed_line_currency_ids',
+        help="Técnico: monedas admitidas en 'Line Currency' — la moneda base "
+             "(VES) y la moneda de la tarifa seleccionada.",
+    )
+    line_currency_id = fields.Many2one(
+        'res.currency',
+        string='Line Currency',
+        copy=False,
+        tracking=True,
+        domain="[('id', 'in', allowed_line_currency_ids)]",
+        help="Currency used for the product line prices sent to TFHKA. It can only "
+             "be the company base currency (VES) or the pricelist currency; the "
+             "document is totalled in both currencies from this selection.",
+    )
+
+    @api.depends('pricelist_id', 'pricelist_id.currency_id',
+                 'company_id.currency_id', 'company_id.foreign_currency_id',
+                 'show_payment_box', 'invoice_payments_widget')
+    def _compute_multi_currency_available(self):
+        for move in self:
+            pricelist_currency = move._get_pricelist_currency()
+            pricelist_foreign = bool(
+                pricelist_currency and pricelist_currency != move.company_id.currency_id
             )
-            num_control_tfhka = response.get("resultado").get("numeroControl")
-            self.correlative = num_control_tfhka
-            return
+            payment_driven = (
+                move.show_payment_box and move._has_usd_reconciled_payment()
+            )
+            move.multi_currency_available = pricelist_foreign or payment_driven
 
-    def get_last_document_number(self, document_type, series):
-        payload = {
-                    "serie": series,
-                    "tipoDocumento": document_type,
-                }
-        response = self.call_tfhka_api("ultimo_documento", payload)
-        
-        if response == 0:
-            return response
-        else:
-            document_number = response["numeroDocumento"] if response["numeroDocumento"] else response
-            return document_number
+    @api.depends('pricelist_id', 'pricelist_id.currency_id',
+                 'company_id.currency_id', 'company_id.foreign_currency_id',
+                 'show_payment_box', 'invoice_payments_widget')
+    def _compute_allowed_line_currency_ids(self):
+        for move in self:
+            currencies = move.company_id.currency_id | move._get_pricelist_currency()
+            if move.show_payment_box and move._has_usd_reconciled_payment():
+                payment_currency = move._get_payment_driven_currency()
+                if payment_currency:
+                    currencies |= payment_currency
+            move.allowed_line_currency_ids = [(6, 0, currencies.ids)]
 
-    def query_numbering(self, series):
-        payload={
-                "serie": series,
-                "tipoDocumento": "",
-                "prefix": ""
-            }
-        response = self.call_tfhka_api("consulta_numeraciones", payload)
+    @api.onchange('pricelist_id')
+    def _onchange_pricelist_id_tfhka(self):
+        """La tarifa manda: al cambiarla se recalcula qué es válido."""
+        for move in self:
+            if not move.multi_currency_available:
+                move.multi_currency_invoice = False
+                move.line_currency_id = False
+            elif (
+                move.line_currency_id
+                and move.line_currency_id not in move.allowed_line_currency_ids
+            ):
+                move.line_currency_id = False
 
-        if response:
-            approves = False
-            for numbering in response.get("numeraciones", []):
-                end_number = 0
-                start_number = 0
-                if series != "":
-                    if numbering.get("serie") == series:
-                        end_number = numbering.get("hasta")
-                        start_number = numbering.get("correlativo")
-                else:
-                    if numbering.get("serie") == "NO APLICA":
-                        end_number = numbering.get("hasta")
-                        start_number = numbering.get("correlativo")
+    @api.onchange('multi_currency_invoice')
+    def _onchange_multi_currency_invoice_tfhka(self):
+        for move in self:
+            if not move.multi_currency_invoice:
+                move.line_currency_id = False
+            elif not move.line_currency_id and move.multi_currency_available:
+                move.line_currency_id = move._get_pricelist_currency()
 
-                if int(start_number) < int(end_number):
-                    approves = True
-                    break
-
-            if approves:
-                return
-
-            raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
-
-    def get_document_identification(self, document_type, document_number, series):
-        for record in self:
-            now = fields.Datetime.now()
-            user_tz = timezone(record.env.user.tz)
-            emission_time = now.astimezone(user_tz).strftime("%I:%M:%S %p").lower()
-            emission_date = now.astimezone(user_tz).date()
-            due_date_obj = record.invoice_date_due
-
-            if due_date_obj:
-                if due_date_obj >= emission_date:
-                    due_date = due_date_obj.strftime("%d/%m/%Y")
-                else:
-                    raise ValidationError(_("The expiration date cannot be less than the digitization date."))
-            else:
-                due_date = emission_date.strftime("%d/%m/%Y")
-            
-            emission_date = emission_date.strftime("%d/%m/%Y")
-            affected_invoice_number = ""
-            affected_invoice_date = ""
-            affected_invoice_amount = ""
-            affected_invoice_comment = ""
-            affected_invoice_series = ""
-
-            if record.debit_origin_id:
-                affected_invoice_number = str(record.debit_origin_id.sequence_number)
-
-                affected_invoice_date = record.debit_origin_id.invoice_date_display.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date_display else ""
-
-                if record.debit_origin_id.journal_id.series_correlative_sequence_id:
-                    affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
-
-                if record.company_id.currency_id.name == "VEF":
-                    affected_invoice_amount = str(record.debit_origin_id.amount_total)
-                else:
-                    tax_totals = record.debit_origin_id.tax_totals
-                    affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
-
-                part = record.ref.split(',')
-                affected_invoice_comment = part[1].strip()
-
-            if record.reversed_entry_id:
-                affected_invoice_number = str(record.reversed_entry_id.sequence_number)
-                
-                affected_invoice_date = record.reversed_entry_id.invoice_date_display.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date_display else ""
-
-                if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
-                    affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
-
-                if record.company_id.currency_id.name == "VEF":
-                    affected_invoice_amount = str(record.reversed_entry_id.amount_total)
-                else:
-                    tax_totals = record.reversed_entry_id.tax_totals
-                    affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
-
-                part = record.ref.split(',')
-                affected_invoice_comment = part[1].strip()
-
-            if not record.invoice_date_display:
-                raise UserError(_("The invoice date is not defined."))
-
-            return {
-                "tipoDocumento": document_type,
-                "numeroDocumento": document_number,
-                "numeroPlanillaImportacion": "",
-                "numeroExpedienteImportacion": "",
-                "serieFacturaAfectada": affected_invoice_series,
-                "numeroFacturaAfectada": affected_invoice_number,
-                "fechaFacturaAfectada": affected_invoice_date,
-                "montoFacturaAfectada": affected_invoice_amount,
-                "comentarioFacturaAfectada": affected_invoice_comment,
-                "regimenEspTributacion": "",
-                "fechaEmision": emission_date,
-                "fechaVencimiento": due_date,
-                "horaEmision": emission_time,
-                "tipoDePago": self.get_payment_type(),
-                "serie": series,
-                "sucursal": "",
-                "tipoDeVenta": "Interna",
-                "moneda": "VEF",
-                "transaccionId": "",
-                "urlPdf": ""
-            }
-
-    def get_totals(self):
-        for record in self:
-            currency = record.company_id.currency_id.name
-            totalIGTF = 0
-            totalIGTF_VES = 0
-            tax_totals = record.tax_totals
-
-            totalIGTF = round(tax_totals.get("igtf", {}).get("igtf_amount", 0), 2)
-            totalIGTF_VES = round(tax_totals.get("igtf", {}).get("foreign_igtf_amount", 0), 2)
-            amounts = {}
-            amounts_foreign = {}
-
-            if currency == "VEF":
-                amounts["montoGravadoTotal"] = str(
-                    round(
-                        tax_totals.get('subtotal', 0) - 
-                        next(
-                            (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
-                        ), 2
+    @api.constrains('multi_currency_invoice', 'line_currency_id', 'pricelist_id', 'move_type')
+    def _check_multi_currency_consistency(self):
+        for move in self:
+            if move.move_type not in ('out_invoice', 'out_refund'):
+                continue
+            if not move.multi_currency_invoice:
+                continue
+            payment_driven = move.show_payment_box and move._has_usd_reconciled_payment()
+            if not payment_driven and not move.multi_currency_available:
+                raise ValidationError(
+                    _(
+                        "'Multi-Currency Invoice' cannot be enabled when the selected "
+                        "pricelist is in the company base currency (%(currency)s)."
                     )
+                    % {"currency": move.company_id.currency_id.name}
                 )
-                amounts["montoExentoTotal"] = str(
-                    round(
-                        next((
-                            group.get('tax_group_base_amount', 0) 
-                            for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
-                        ), 0), 2)
-                )
-                amounts["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
-                amounts["subtotalAntesDescuento"] = str(round(tax_totals.get('subtotal', 0), 2))
-                amounts["totalAPagar"] = str(round(tax_totals.get("amount_total_igtf", 0), 2))
-                amounts["totalIVA"] = round(sum(group.get('tax_group_amount', 0) for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])), 2)
-                amounts["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
-                amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
-                
-                taxes_subtotal = self.get_tax_subtotals(currency)
-
-            else:
-                amounts_foreign["montoGravadoTotal"] = str(
-                    round(
-                        tax_totals.get('subtotal', 0) - 
-                        next(
-                            (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
-                        ), 2
+            if (
+                move.line_currency_id
+                and move.line_currency_id not in move.allowed_line_currency_ids
+            ):
+                raise ValidationError(
+                    _(
+                        "'Line Currency' must be either the company base currency "
+                        "(%(base)s) or the pricelist currency (%(pricelist)s)."
                     )
+                    % {
+                        "base": move.company_id.currency_id.name,
+                        "pricelist": move._get_pricelist_currency().name or "-",
+                    }
                 )
-                amounts_foreign["montoExentoTotal"] = str(
-                    round(
-                        next((
-                            group.get('tax_group_base_amount', 0) 
-                            for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
-                        ), 0), 2)
-                )
-                amounts_foreign["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
-                amounts_foreign["subtotalAntesDescuento"] = str(round(tax_totals.get('subtotal', 0), 2))
-                amounts_foreign["totalAPagar"] = str(round(tax_totals.get("amount_total_igtf", 0), 2))
-                amounts_foreign["totalIVA"] = round(sum(group.get('tax_group_amount', 0) for group in tax_totals.get('groups_by_subtotal', {}).get('Subtotal', [])), 2)
-                amounts_foreign["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
-                amounts_foreign["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
 
-                amounts["montoGravadoTotal"] = str(
-                    round(
-                        tax_totals.get('foreign_subtotal', 0) - 
-                        next(
-                            (group['tax_group_base_amount'] for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")), 0
-                        ), 2
-                    )
-                )
-                amounts["montoExentoTotal"] = str(
-                    round(
-                        next((
-                            group.get('tax_group_base_amount', 0) 
-                            for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])
-                            if group.get('tax_group_name') in ("Exento", "IVA 0%")
-                        ), 0), 2)
-                )
-                amounts["subtotal"] = str(round(tax_totals.get("foreign_amount_untaxed", 0), 2))
-                amounts["subtotalAntesDescuento"] = str(round(tax_totals.get("foreign_subtotal", 0), 2))
-                amounts["totalAPagar"] = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
-                amounts["totalIVA"] = round(sum(group.get('tax_group_amount', 0) for group in tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', [])), 2)
-                amounts["montoTotalConIVA"] = str(round(tax_totals.get("foreign_amount_total", 0), 2))
-                amounts["totalDescuento"] = str(abs(round(tax_totals.get("foreign_discount_amount", 0), 2)))
-                
-                taxes_subtotal, taxes_subtotal_foreign = self.get_tax_subtotals(currency)
+    def copy_data(self, default=None):
+        """Propaga la configuración multi-moneda a notas de crédito y débito.
 
-            totals = {
-                "nroItems": str(len(record.invoice_line_ids)),
-                "montoGravadoTotal": amounts["montoGravadoTotal"],
-                "montoExentoTotal": amounts["montoExentoTotal"],
-                "subtotal": amounts["subtotal"],
-                "subtotalAntesDescuento": amounts["subtotalAntesDescuento"],
-                "totalAPagar": amounts["totalAPagar"],
-                "totalIVA": str(amounts["totalIVA"]),
-                "montoTotalConIVA": amounts["montoTotalConIVA"],
-                "totalDescuento": amounts["totalDescuento"],
-                "impuestosSubtotal": taxes_subtotal,
-                "totalIGTF": str(totalIGTF),
-                "totalIGTF_VES": str(totalIGTF_VES),
-            }
-            payment_forms = self.get_payment_methods()
+        Tanto el asistente de reversión como el de nota de débito crean el
+        documento vía ``copy``. Los campos son ``copy=False`` para no arrastrar
+        valores obsoletos en un duplicado normal, así que hay que reinyectarlos
+        aquí cuando la copia es realmente una NC/ND.
+        """
+        data_list = super().copy_data(default=default)
+        default = default or {}
+        if not (default.get("reversed_entry_id") or default.get("debit_origin_id")):
+            return data_list
 
-            if payment_forms:
-                if len(payment_forms) > 5:
-                    raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
-                totals["formasPago"] = payment_forms
+        for move, data in zip(self, data_list):
+            data["multi_currency_invoice"] = move.multi_currency_invoice
+            data["line_currency_id"] = move.line_currency_id.id
+            if "pricelist_id" in move._fields:
+                data.setdefault("pricelist_id", move.pricelist_id.id)
+        return data_list
 
-            if amounts_foreign:
-                foreign_totals = {
-                    "moneda": record.company_id.foreign_currency_id.name,
-                    "tipoCambio": str(round(record.foreign_rate, 2)),
-                    "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
-                    "montoExentoTotal": amounts_foreign["montoExentoTotal"],
-                    "subtotal": amounts_foreign["subtotal"],
-                    "subtotalAntesDescuento": amounts_foreign["subtotalAntesDescuento"],
-                    "totalAPagar": amounts_foreign["totalAPagar"],
-                    "totalIVA": str(amounts_foreign["totalIVA"]),
-                    "montoTotalConIVA": amounts_foreign["montoTotalConIVA"],
-                    "totalDescuento": amounts_foreign["totalDescuento"],
-                    "totalIGTF": str(totalIGTF),
-                    "totalIGTF_VES": str(totalIGTF_VES),
-                    "impuestosSubtotal": taxes_subtotal_foreign,
-                }
-            else:
-                foreign_totals = False
-        return totals, foreign_totals
+    # Resuelve si esta factura debe tratarse como multi-moneda.
+    # Es el flag de la factura y solo el flag: el ajuste de compañía
+    # (multi_currency_invoice_tfhka) únicamente muestra el campo, y la presencia
+    # de una tasa (foreign_rate) no convierte el documento en bimoneda.
+    def is_invoice_multi_currency_enabled(self):
+        self.ensure_one()
+        return bool(self.multi_currency_invoice)
 
-    def get_tax_subtotals(self, currency):
-        tax_subtotals = []
-        tax_subtotals_foreign = []
-        tax_code = {
-            "IVA 8%": "R",
-            "IVA 16%": "G",
-            "IVA 31%": "A",
-            "Exento": "E",
-            "IVA 0%": "E",
-        }
-        tax_rate = {
-            "IVA 8%": "8.0",
-            "IVA 16%": "16.0",
-            "IVA 31%": "31.0",
-            "Exento": "0.0",
-            "IVA 0%": "0.0",
-            "3.0 %": "3.0"
-        }
-        for record in self:
-            if currency == "VEF":
-                for tax_totals in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
-                    tax_subtotals.append({
-                        "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
-                        "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
-                        "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    })
-                return tax_subtotals
-            else:
-                for tax_totals in record.tax_totals.get('groups_by_foreign_subtotal', {}).get('Subtotal', []):
-                    tax_subtotals.append({
-                        "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
-                        "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
-                        "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    })
-                for tax_totals in record.tax_totals.get('groups_by_subtotal', {}).get('Subtotal', []):
-                    tax_subtotals_foreign.append({
-                        "codigoTotalImp": tax_code[tax_totals.get('tax_group_name')],
-                        "alicuotaImp": tax_rate[tax_totals.get('tax_group_name')],
-                        "baseImponibleImp": str(round(tax_totals.get('tax_group_base_amount'), 2)),
-                        "valorTotalImp": str(round(tax_totals.get('tax_group_amount'), 2)),
-                    })
-                if record.tax_totals.get('igtf', {}).get('apply_igtf'):
-                    igtf = record.tax_totals.get('igtf', {})
-                    tax_subtotals_foreign.append({
-                        "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax_rate[igtf.get('name')],
-                        "baseImponibleImp": str(round(igtf.get('igtf_base_amount'), 2)),
-                        "valorTotalImp": str(round(igtf.get('igtf_amount'), 2)),
-                    })
-                    tax_subtotals.append({
-                        "codigoTotalImp": "IGTF",
-                        "alicuotaImp": tax_rate[igtf.get('name')],
-                        "baseImponibleImp": str(round(igtf.get('foreign_igtf_base_amount'), 2)),
-                        "valorTotalImp": str(round(igtf.get('foreign_igtf_amount'), 2)),
-                    })
-                return tax_subtotals, tax_subtotals_foreign
+    def generate_document_digital(self):
+        # Toda la lógica vive en la capa de servicios (tfhka.document.service).
+        return self.env["tfhka.document.service"].send_document(self)
 
-    def get_item_details(self):
-        item_details = []
-        line_number = 1
-        for record in self:
-            for line in record.invoice_line_ids:
-                tax_mapping = {
-                    0.0: "E",
-                    8.0: "R",
-                    16.0: "G",
-                    31.0: "A",
-                }
-                taxes = line.tax_ids.filtered(lambda t: t.amount)
-                tax_rate = taxes[0].amount if taxes else 0.0
-
-                if record.company_id.currency_id.name == "VEF":
-                    unit_price = round(line.price_unit, 2)
-                    unit_price_discount = round(line.price_unit * (line.discount / 10), 2)
-                    discount_amount = round((line.price_unit * (line.discount / 100)) * line.quantity, 2)
-                    item_price = round(line.price_subtotal, 2)
-                    price_before_discount = round(line.price_unit * line.quantity, 2)
-
-                else:
-                        unit_price = round(line.foreign_price, 2)
-                        unit_price_discount = round(line.foreign_price * (line.discount / 10), 2)
-                        discount_amount = round((line.foreign_price * (line.discount / 100)) * line.quantity, 2)
-                        item_price = round(line.foreign_subtotal, 2)
-                        price_before_discount = round(line.foreign_price * line.quantity, 2)
-
-                vat = round(item_price * line.tax_ids.amount / 100, 2)
-                total_item_value = round(item_price + vat, 2)
-
-                item_details.append({
-                    "numeroLinea": str(line_number),
-                    "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
-                    "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                    "descripcion": line.product_id.name,
-                    "cantidad": str(line.quantity),
-                    "precioUnitario": str(unit_price),
-                    "precioUnitarioDescuento": str(unit_price_discount),
-                    "descuentoMonto": str(discount_amount),
-                    "precioItem": str(item_price),
-                    "precioAntesDescuento": str(price_before_discount),
-                    "codigoImpuesto": tax_mapping[tax_rate],
-                    "tasaIVA": str(round(line.tax_ids.amount, 2)),
-                    "valorIVA": str(vat),
-                    "valorTotalItem": str(total_item_value),
-                })
-                line_number += 1
-        return item_details
-
-    def get_seller(self):
-        for record in self:
-            if "seller_id" in record._fields and record.seller_id:
-                return {
-                    "codigo": str(record.seller_id.id),
-                    "nombre": record.seller_id.name,
-                    "numCajero": ""
-                }
-            else:
-                return False
-
-    def get_buyer(self):
-        for record in self:
-            if record.partner_id:
-                partner_data = {}
-                if not record.partner_id.vat:
-                    raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
-
-                vat = record.partner_id.vat.upper()
-
-                if vat[0].isalpha(): 
-                    partner_data["tipoIdentificacion"] = vat[0]
-                    partner_data["numeroIdentificacion"] = vat[1:]
-                else:
-                    partner_data["tipoIdentificacion"] = ""
-                    partner_data["numeroIdentificacion"] = vat
-
-                if record.partner_id.prefix_vat:
-                    partner_data["tipoIdentificacion"] = record.partner_id.prefix_vat
-
-                partner_data["numeroIdentificacion"] = partner_data["numeroIdentificacion"].replace("-", "").replace(".", "")
-                partner_data["razonSocial"] = record.partner_id.name
-                partner_data["direccion"] = record.partner_id.street or "no definida"
-                partner_data["pais"] = record.partner_id.country_code
-                partner_data["telefono"] = record.partner_id.mobile or record.partner_id.phone
-                partner_data["correo"]= record.partner_id.email
-
-                if not record.partner_id.country_code:
-                    raise UserError(_("The 'Country' field of the Customer cannot be empty for digitalization."))
-
-                if not (record.partner_id.mobile or record.partner_id.phone):
-                    raise UserError(_("The 'Mobile' field of the Customer cannot be empty for digitalization."))
-
-                if not record.partner_id.email:
-                    raise UserError(_("The 'Email' field of the Customer cannot be empty for digitalization."))
-
-                return {
-                    "tipoIdentificacion": partner_data["tipoIdentificacion"],
-                    "numeroIdentificacion": partner_data["numeroIdentificacion"],
-                    "razonSocial": partner_data["razonSocial"],
-                    "direccion": partner_data["direccion"],
-                    "pais": partner_data["pais"],
-                    "telefono": [partner_data["telefono"]],
-                    "notificar": "Si",
-                    "correo": [partner_data["correo"]],
-                }
-        return None
-
-    def get_payment_type(self):
-        for record in self:
-            if record.invoice_payment_term_id.line_ids.nb_days > 0:
-                return "Crédito"
-            else:
-                return "Inmediato"
-
-    def get_payment_methods(self):
-        try:
-            payment_data = []
-            for record in self:
-                content_data = record.invoice_payments_widget.get("content", [])
-                if content_data:
-                    for item in content_data:
-                        payment = self.get_payment(item.get('account_payment_id'))
-                        payment_method = self.get_payment_method(item)
-
-                        if not payment:
-                            continue
-                        
-                        payment_info = self.build_payment_info(payment, payment_method)
-                        payment_data.append(payment_info)
-                    return payment_data
-            return False
-        except Exception as e:
-            _logger.error(f"Error processing payment methods: {e}")
-            return False
-
-    def get_payment_method(self, item):
-        if item.get("payment_method_name") == "Efectivo":
-            return "08" if self.get_currency(item.get('currency_id')) == "VES" else "09"
-        elif item.get("payment_method_name") == "Transferencia":
-            return "03"
-        elif item.get("payment_method_name") == "Manual":
-            return "99"
-        return ""
-
-    def get_currency(self, currency_id):
-        currency_data = self.env['res.currency'].search([('id', '=', currency_id)])
-        return currency_data.name if currency_data else ""
-
-    def get_payment(self, account_payment_id):
-        return self.env['account.payment'].search([('id', '=', account_payment_id)])
-
-    def build_payment_info(self, payment, payment_method):
-        payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
-        currency = payment_id.currency_id.name if payment_id.currency_id else "VES"
-        payment_info = {
-            "descripcion": payment_id.concept if payment_id.concept else "N/A",
-            "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
-            "forma": payment_method,
-            "monto": str(round(payment_id.amount, 2)),
-            "moneda": currency,
-        }
-
-        if currency != "VES":
-            payment_info["tipoCambio"] = str(round(payment_id.foreign_rate, 2))
-
-        return payment_info
-
-    def get_additional_information(self):
-        additional_information = []
-        for record in self:
-            if record.guide_number:
-                additional_information.append({
-                    "campo": "numeroGuia",
-                    "valor": str(record.guide_number),
-                })
-
-        return additional_information
-    
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):
         for record in self:
@@ -641,7 +405,12 @@ class AccountMove(models.Model):
             record.show_digital_debit_note = True
             record.show_digital_credit_note = True
 
-            if record.state != "posted" or record.is_digitalized or not self.company_id.invoice_digital_tfhka:
+            if (
+                record.state != "posted"
+                or record.is_digitalized
+                or not record.company_id.invoice_digital_tfhka
+                or not record.journal_id.digital_invoice
+            ):
                 continue
 
             if (

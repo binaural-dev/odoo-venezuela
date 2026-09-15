@@ -8,3 +8,5 @@ from . import test_report_print_restriction
 from . import test_international_purchase
 from . import test_res_config_settings
 from . import test_accounting_reports
+from . import test_refund_origin_validation
+from . import test_account_move_actions_merge

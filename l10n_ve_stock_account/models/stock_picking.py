@@ -1,4 +1,3 @@
-from odoo.exceptions import UserError
 import logging
 
 from odoo import _, api, fields, models

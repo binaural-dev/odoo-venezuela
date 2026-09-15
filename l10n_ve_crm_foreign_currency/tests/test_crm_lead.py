@@ -15,13 +15,12 @@ class TestCrmLeadForeignCurrency(TransactionCase):
       by the user, in USD, and must never be recalculated.
     - expected_revenue / recurring_revenue are computed (non-stored) from the
       *_foreign fields using the exchange rate in effect at read time.
-    - expected_revenue_foreign must always be strictly positive.
-    - recurring_revenue_foreign can be 0 (no recurring plan set), but must be
-      strictly positive once a recurring_plan is set, and can never be
-      negative either way. These two rules are independent from each other
-      (review feedback: the original single constraint used an "or" that
-      coupled both fields, forcing every opportunity to have a recurring
-      amount even when the recurring-revenue feature isn't in use).
+    - expected_revenue_foreign and recurring_revenue_foreign can never be
+      negative, but 0 is allowed for both regardless of recurring_plan
+      (tarea 80213: el formulario de Lead no tiene ninguno de los dos
+      campos, así que convertir un Lead a Oportunidad — o fusionarlo con
+      una oportunidad existente que ya tenga recurring_plan — enviaba 0 y
+      quedaba bloqueado por la validación anterior de "> 0").
     """
 
     # ------------------------------------------------------------------
@@ -177,7 +176,9 @@ class TestCrmLeadForeignCurrency(TransactionCase):
         self.assertEqual(lead.expected_revenue, 0.0)
 
     # ------------------------------------------------------------------
-    # expected_revenue_foreign: siempre estrictamente positivo
+    # expected_revenue_foreign: negativo rechazado; 0 permitido (tarea 80213:
+    # el formulario de Lead no tiene este campo, así que convertir un Lead a
+    # Oportunidad enviaba 0 y quedaba bloqueado por la validación anterior).
     # ------------------------------------------------------------------
 
     def test_07_expected_revenue_foreign_negative_is_rejected(self):
@@ -188,13 +189,64 @@ class TestCrmLeadForeignCurrency(TransactionCase):
                 "expected_revenue_foreign": -10.0,
             })
 
-    def test_08_expected_revenue_foreign_zero_is_rejected(self):
-        with self.assertRaises(ValidationError):
-            self.env["crm.lead"].create({
-                "name": "Oportunidad monto cero",
-                "company_id": self.company.id,
-                "expected_revenue_foreign": 0.0,
-            })
+    def test_08_expected_revenue_foreign_zero_is_allowed(self):
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad monto cero",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 0.0,
+        })
+        self.assertEqual(lead.expected_revenue_foreign, 0.0)
+
+    def test_08b_lead_to_opportunity_conversion_with_zero_revenue(self):
+        """Escenario de la tarea 80213: convertir un Lead (sin campo de
+        Ingreso Esperado en su formulario) a Oportunidad no debe bloquearse
+        por expected_revenue_foreign en 0."""
+        lead = self.env["crm.lead"].create({
+            "name": "Lead a convertir",
+            "company_id": self.company.id,
+            "type": "lead",
+            "expected_revenue_foreign": 0.0,
+        })
+        lead.write({"type": "opportunity"})
+        self.assertEqual(lead.type, "opportunity")
+        self.assertEqual(lead.expected_revenue_foreign, 0.0)
+
+    def test_08c_merge_with_existing_opportunity_with_recurring_plan(self):
+        """
+        Reporte real: "Fusionar con oportunidades existentes" al convertir
+        un Lead sin campos de moneda comercial, contra una oportunidad
+        destino que ya tiene recurring_plan. merge_opportunity() escribe
+        expected_revenue/recurring_revenue (core) sobre la oportunidad
+        resultante; esos campos son de solo lectura en este módulo, así
+        que el merge debe redirigir esa escritura a los campos en moneda
+        comercial en vez de romperse con UserError.
+        """
+        plan = self.env["crm.recurring.plan"].create({
+            "name": "Mensual Test Merge",
+            "number_of_months": 1,
+        })
+        existing_opportunity = self.env["crm.lead"].create({
+            "name": "Oportunidad existente",
+            "company_id": self.company.id,
+            "type": "opportunity",
+            "expected_revenue_foreign": 200.0,
+            "recurring_plan": plan.id,
+            "recurring_revenue_foreign": 50.0,
+        })
+        lead = self.env["crm.lead"].create({
+            "name": "Lead a fusionar",
+            "company_id": self.company.id,
+            "type": "lead",
+            "expected_revenue_foreign": 0.0,
+        })
+        result = (lead | existing_opportunity).merge_opportunity()
+        self.assertEqual(result.type, "opportunity")
+        # Tarea 80707: no basta con que el merge no explote — el monto debe
+        # aterrizar en el campo correcto (expected_revenue_foreign /
+        # recurring_revenue_foreign), no perderse en el campo de solo
+        # lectura que _merge_get_fields() sustituye.
+        self.assertEqual(result.expected_revenue_foreign, 200.0)
+        self.assertEqual(result.recurring_revenue_foreign, 50.0)
 
     # ------------------------------------------------------------------
     # recurring_revenue_foreign: 0 permitido sin recurring_plan, negativo
@@ -221,20 +273,25 @@ class TestCrmLeadForeignCurrency(TransactionCase):
                 "recurring_revenue_foreign": -5.0,
             })
 
-    def test_11_recurring_revenue_foreign_zero_rejected_with_plan(self):
-        """Con recurring_plan definido, recurring_revenue_foreign debe ser > 0."""
+    def test_11_recurring_revenue_foreign_zero_is_allowed_with_plan(self):
+        """
+        Tarea 80213: con recurring_plan definido, recurring_revenue_foreign
+        en 0 ya no debe rechazarse (el formulario de Lead no tiene este
+        campo, así que "Fusionar con oportunidades existentes" trae
+        recurring_plan de la oportunidad destino pero deja el monto en 0).
+        """
         plan = self.env["crm.recurring.plan"].create({
             "name": "Mensual Test",
             "number_of_months": 1,
         })
-        with self.assertRaises(ValidationError):
-            self.env["crm.lead"].create({
-                "name": "Oportunidad con plan sin monto",
-                "company_id": self.company.id,
-                "expected_revenue_foreign": 100.0,
-                "recurring_plan": plan.id,
-                "recurring_revenue_foreign": 0.0,
-            })
+        lead = self.env["crm.lead"].create({
+            "name": "Oportunidad con plan sin monto",
+            "company_id": self.company.id,
+            "expected_revenue_foreign": 100.0,
+            "recurring_plan": plan.id,
+            "recurring_revenue_foreign": 0.0,
+        })
+        self.assertEqual(lead.recurring_revenue_foreign, 0.0)
 
     def test_12_recurring_revenue_foreign_positive_allowed_with_plan(self):
         """Con recurring_plan y un monto positivo, no debe lanzar nada."""
@@ -290,8 +347,12 @@ class TestCrmLeadForeignCurrency(TransactionCase):
     # Exenciones del constraint de monto > 0 (E1)
     # ------------------------------------------------------------------
 
-    def test_16_lead_type_is_exempt_from_amount_check(self):
-        """Un lead (type='lead', no oportunidad) no requiere monto > 0."""
+    def test_16_lead_type_zero_allowed_but_negative_still_rejected(self):
+        """
+        Tarea 80707: el rechazo de monto negativo es universal, sin
+        excepción por tipo. Un lead (type='lead') acepta 0 pero sigue
+        rechazando un monto negativo.
+        """
         lead = self.env["crm.lead"].create({
             "name": "Lead sin monto",
             "company_id": self.company.id,
@@ -299,11 +360,16 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "expected_revenue_foreign": 0.0,
         })
         self.assertEqual(lead.type, "lead")
+        with self.assertRaises(ValidationError):
+            lead.expected_revenue_foreign = -50.0
 
-    def test_17_mail_gateway_context_is_exempt_from_amount_check(self):
-        """Un registro creado desde la pasarela de correo/formulario web
-        (contexto mail_create_nosubscribe/mail_create_nolog) no requiere
-        monto > 0, aunque resuelva a type='opportunity'."""
+    def test_17_mail_gateway_context_zero_allowed_but_negative_still_rejected(self):
+        """
+        Tarea 80707: el rechazo de monto negativo es universal, sin
+        excepción por contexto. Un registro creado desde la pasarela de
+        correo/formulario web (mail_create_nosubscribe/mail_create_nolog)
+        acepta 0 pero sigue rechazando un monto negativo.
+        """
         lead = self.env["crm.lead"].with_context(mail_create_nosubscribe=True).create({
             "name": "Oportunidad desde el gateway",
             "company_id": self.company.id,
@@ -311,6 +377,8 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "expected_revenue_foreign": 0.0,
         })
         self.assertEqual(lead.expected_revenue_foreign, 0.0)
+        with self.assertRaises(ValidationError):
+            lead.with_context(mail_create_nosubscribe=True).expected_revenue_foreign = -50.0
 
     # ------------------------------------------------------------------
     # Constraints: se saltan (continue) cuando no hay moneda comercial,
