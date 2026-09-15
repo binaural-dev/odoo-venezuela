@@ -246,6 +246,22 @@ class TestStockPickingCoverage(TransactionCase):
         num = picking.get_sequence_guide_num()
         self.assertTrue(num.startswith("GUIDE"))
 
+    def test_set_guide_number_is_idempotent(self):
+        """_set_guide_number must not burn a second correlativo if
+        _action_done() ever runs twice on the same picking -- mirrors the
+        'do not overwrite' guard already on _assign_control_numbers()."""
+        picking = self._create_outgoing_picking()
+        first_guide_number = picking.guide_number
+        self.assertTrue(first_guide_number)
+
+        picking._set_guide_number()
+
+        self.assertEqual(
+            picking.guide_number, first_guide_number,
+            "Re-running _set_guide_number on an already-numbered picking "
+            "must not assign a new correlativo, orphaning the first one.",
+        )
+
     # ── create_multi_invoice: non-outgoing branch ──
 
     def test_create_multi_invoice_non_outgoing(self):

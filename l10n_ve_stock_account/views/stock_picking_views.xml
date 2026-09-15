@@ -72,7 +72,7 @@
                     required="operation_code == 'outgoing' and show_other_causes_transfer_reason" />
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="dispatch_guide_controls" invisible="1" />
-                <field 
+                <field
                     name="guide_number"
                     readonly="1"
                     invisible="not dispatch_guide_controls and is_donation"/>

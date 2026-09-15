@@ -410,3 +410,50 @@ class TestAccountTaxForeign(TransactionCase):
             # Las lineas de impuesto deben tener foreign amount
             self.assertIsNotNone(tline.foreign_balance,
                                  f"Tax line {tline.id} debe tener foreign_balance")
+
+    # ═══════════════════════════════════════════════════════════════
+    # _prepare_foreign_base_line_for_taxes_computation — regresión:
+    # moneda vacía cuando no hay foreign_currency_id configurado
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_11_prepare_foreign_base_line_respects_explicit_currency_kwarg(self):
+        """El currency_id que pasa el caller real (sale.order.line,
+        purchase.order.line via currency_id=self.order_id.currency_id or
+        ...) debe ganarle al foreign_currency_id de la compañia, no ser
+        pisado por él."""
+        base_line = self.env['account.tax']._prepare_foreign_base_line_for_taxes_computation(
+            {},
+            currency_id=self.currency_eur,
+            price_unit=100.0,
+            quantity=1.0,
+        )
+        self.assertEqual(
+            base_line['currency_id'], self.currency_eur,
+            "El currency_id explicito del caller no debe ser reemplazado "
+            "por company.foreign_currency_id (USD en este test).",
+        )
+
+    def test_12_prepare_foreign_base_line_falls_back_to_company_currency(self):
+        """Si la compañia no tiene foreign_currency_id configurado (no usa
+        bimonetario) y el caller tampoco pasa currency_id, no debe caer en
+        un recordset vacio de res.currency -- eso rompe
+        _round_base_lines_tax_details con 'Expected singleton: res.currency()'
+        en cuanto una orden de venta/compra calcula sus totales de
+        impuestos. Debe usar company.currency_id como ultimo respaldo."""
+        self.company.foreign_currency_id = False
+
+        base_line = self.env['account.tax']._prepare_foreign_base_line_for_taxes_computation(
+            {},
+            price_unit=100.0,
+            quantity=1.0,
+        )
+        self.assertEqual(
+            base_line['currency_id'], self.company.currency_id,
+            "Sin foreign_currency_id ni currency_id explicito, debe caer "
+            "a company.currency_id -- nunca a un recordset vacio.",
+        )
+        self.assertTrue(
+            base_line['currency_id'],
+            "currency_id no puede quedar vacio: rompe .round()/.ensure_one() "
+            "downstream en _round_base_lines_tax_details.",
+        )
