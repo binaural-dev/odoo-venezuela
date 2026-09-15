@@ -51,18 +51,25 @@ class WizardAccountingReports(models.TransientModel):
         ]
         return domain
 
+    def _mf_mode(self):
+        """Modo de reporte de máquina fiscal ACTIVO, o `None`. Solo aplica al
+        Libro de Ventas: si el usuario marcó una casilla y luego cambió a
+        Compras, la casilla queda oculta pero su valor NO se limpia, así que
+        aquí se ignora (si no, el libro de compras saldría vacío exigiendo datos
+        de MF). `all_documents` tiene prioridad (son excluyentes en la vista)."""
+        if self.report != "sale":
+            return None
+        if self.all_documents:
+            return "all_documents"
+        if self.with_fiscal_machine:
+            return "with_fiscal_machine"
+        return None
+
     def _get_domain(self):
         domain = super()._get_domain()
-        if not self.with_fiscal_machine:
+        if self._mf_mode() != "with_fiscal_machine":
             return domain
         return self._fiscal_machine_domain(domain)
-
-    def _get_domain_all_documents(self):
-        """Dos dominios independientes: forma libre (con número de control) y
-        máquina fiscal (sin número de control, con datos de MF)."""
-        domain_free_form = super()._get_domain()
-        domain_fiscal_machine = self._fiscal_machine_domain(super()._get_domain())
-        return domain_free_form, domain_fiscal_machine
 
     # ------------------------------------------------------------------
     # Búsqueda de asientos
@@ -85,18 +92,19 @@ class WizardAccountingReports(models.TransientModel):
         )
 
     def search_moves(self):
-        if self.all_documents:
+        mode = self._mf_mode()
+        if mode == "all_documents":
             # Forma libre (con nº de control) + maquina fiscal (sin nº de
             # control). Se parte de `super().search_moves()` para conservar lo
             # que aporten otros modulos al libro (retenciones de
             # payment_extension, etc.) y se une una segunda busqueda solo de
             # maquina fiscal, en vez de reemplazar la busqueda entera.
-            _domain_free_form, domain_fiscal_machine = self._get_domain_all_documents()
+            domain_fiscal_machine = self._fiscal_machine_domain(super()._get_domain())
             moves = super().search_moves() | self.env["account.move"].search(
                 domain_fiscal_machine
             )
             return moves.sorted(key=lambda m: m.invoice_date_display or m.date)
-        if self.with_fiscal_machine:
+        if mode == "with_fiscal_machine":
             moves = self._only_fiscal_machine(super().search_moves())
             return moves.sorted(
                 key=lambda m: (m.invoice_date_display or m.date, self._mf_sort_number(m))
@@ -112,12 +120,13 @@ class WizardAccountingReports(models.TransientModel):
         # Serial, sin columnas de Alícuota %, y grupos VENTAS NACIONALES /
         # INTERNACIONALES). Se reconstruye la lista en vez de partir de la base
         # V19, porque el layout base de V19 es distinto.
-        if self.with_fiscal_machine and not self.all_documents:
+        mode = self._mf_mode()
+        if mode == "with_fiscal_machine":
             return self._fiscal_machine_sale_book_groups()
 
         # "Incluir todos los documentos": layout base V19 + columnas de MF.
         groups = super()._get_sale_book_field_groups()
-        if not self.all_documents:
+        if mode != "all_documents":
             return groups
 
         extra_fields = [
@@ -228,7 +237,8 @@ class WizardAccountingReports(models.TransientModel):
 
     def _fields_sale_book_line(self, move, taxes):
         res = super()._fields_sale_book_line(move, taxes)
-        if not (self.with_fiscal_machine or self.all_documents):
+        mode = self._mf_mode()
+        if mode is None:
             return res
 
         res["mf_reportz"] = move.mf_reportz or "-"
@@ -236,7 +246,7 @@ class WizardAccountingReports(models.TransientModel):
         if move.reversed_entry_id and move.reversed_entry_id.mf_invoice_number:
             res["number_invoice_affected"] = move.reversed_entry_id.mf_invoice_number
 
-        if self.with_fiscal_machine and not self.all_documents:
+        if mode == "with_fiscal_machine":
             # Layout V17: nº MF en "N° de documento", sin nº de control, con
             # columnas de venta internacional (0%) en cero.
             res["document_number"] = move.mf_invoice_number or ""
@@ -374,7 +384,7 @@ class WizardAccountingReports(models.TransientModel):
     def parse_sale_book_data(self):
         # all_documents y forma libre: linea por linea (comportamiento base, con
         # las columnas de MF que añade _fields_sale_book_line).
-        if self.all_documents or not self.with_fiscal_machine:
+        if self._mf_mode() != "with_fiscal_machine":
             return super().parse_sale_book_data()
 
         sale_book_lines = []

@@ -3,7 +3,7 @@
     "summary": "Impresión de facturas, notas de crédito y notas de débito en "
     "impresoras fiscales The Factory HKA vía Web Serial API desde "
     "Contabilidad/Facturación.",
-    "version": "19.0.1.2.0",
+    "version": "19.0.1.2.1",
     "category": "Accounting",
     "license": "LGPL-3",
     "author": "Binaural",
@@ -15,6 +15,9 @@
         "l10n_ve_invoice",
         "l10n_ve_accountant",
         "l10n_ve_stock_account",
+        # taxpayer_type (res.partner) lo usa el Resumen Diario y solo lo define
+        # l10n_ve_tax_payer; no llega por el cierre transitivo de los demas.
+        "l10n_ve_tax_payer",
     ],
     "data": [
         "security/ir.model.access.csv",

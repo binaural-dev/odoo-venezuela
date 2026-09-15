@@ -49,3 +49,16 @@
       columnas de MF
 - [x] 3.7 Documentar la incompatibilidad con `l10n_ve_iot_mf` (`proposal.md`)
 - [x] 3.8 Corregir `spec.md` (columnas del modo MF) y subir versión a 19.0.1.2.0
+
+## 4. Segunda revisión (PR #1270, 2026-09-15)
+
+- [x] 4.1 (A) Añadir `l10n_ve_tax_payer` al `depends` del manifest — el Resumen
+      usa `partner_id.taxpayer_type`, que solo define ese módulo y no llega por
+      el cierre transitivo de las demás dependencias
+- [x] 4.2 (B) Gatear el modo MF por `report == "sale"` (`_mf_mode()`): la casilla
+      queda oculta en Compras pero su valor no se limpiaba, y el libro de compras
+      salía vacío exigiendo datos de MF
+- [x] 4.3 Eliminar `_get_domain_all_documents` (el `_domain_free_form` quedaba sin
+      usar); el dominio de MF se calcula en `search_moves`. Versión → 19.0.1.2.1
+- [ ] 4.4 Validación funcional del modo MF sobre `2doce212` con ESTE commit, con y
+      sin Sucursal, y pegar el cuadre líneas vs pie (task 2.6) → cierra [15]

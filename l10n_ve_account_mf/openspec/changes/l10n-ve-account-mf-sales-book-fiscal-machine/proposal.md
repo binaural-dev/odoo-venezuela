@@ -26,10 +26,13 @@ es el hogar correcto para portar esa extensión.
   - `all_documents` ("Incluir todos los documentos emitidos"): TODOS los
     documentos (forma libre + máquina fiscal), línea por línea.
 - Overrides: `_get_domain` (quita el filtro de correlative y exige datos MF
-  cuando `with_fiscal_machine`), `_get_domain_all_documents`, `search_moves`,
-  `_get_sale_book_field_groups` (añade columnas N° Máquina Fiscal / Reporte Z /
-  Serial), `_fields_sale_book_line`, y `parse_sale_book_data` +
-  `_fields_sale_book_group_line` + `update_amounts` para el Resumen Diario.
+  cuando el modo MF está activo), `search_moves`, `_get_sale_book_field_groups`
+  (añade columnas N° Máquina Fiscal / Reporte Z / Serial), `_fields_sale_book_line`,
+  y `parse_sale_book_data` + `_fields_sale_book_group_line` + `_mf_update_amounts`
+  para el Resumen Diario. El modo activo lo decide `_mf_mode()`, que solo aplica
+  al Libro de Ventas (`report == "sale"`).
+- Dependencia `l10n_ve_tax_payer` (define `res.partner.taxpayer_type`, que usa el
+  Resumen Diario y no llega por el cierre transitivo de las demás dependencias).
 - `wizards/accounting_reports_views.xml`: añade los dos checkboxes al wizard
   (heredando `l10n_ve_invoice.wizard_binaural_facturacion_reportes_view`),
   mutuamente excluyentes.
