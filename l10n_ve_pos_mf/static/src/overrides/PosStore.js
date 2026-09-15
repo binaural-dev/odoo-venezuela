@@ -59,6 +59,24 @@ patch(PosStore.prototype, {
   },
 
   /**
+   * Antes de pasar a la pantalla de pago, sustituye por el mínimo fiscal
+   * (0,01) cualquier línea cuyo descuento (de línea o global) la haya dejado
+   * en 0, para que el total y el pago ya reflejen 0,01 y la MF pueda imprimir
+   * la línea (no acepta 0,00). El caso normal ya lo resuelve el override de
+   * `PosOrderline.setDiscount` al aplicar el descuento; este respaldo cubre
+   * órdenes cargadas/reanudadas cuyas líneas ya venían al 100%. Ticket #15105.
+   */
+  async pay() {
+    const order = this.getOrder();
+    if (order) {
+      for (const line of [...(order.lines || [])]) {
+        line.mfEnsureNonZeroFiscalPrice?.();
+      }
+    }
+    return super.pay(...arguments);
+  },
+
+  /**
    * Obtiene la instancia del driver de la máquina fiscal
    * @returns {TfhkaDriver|null}
    */
@@ -781,6 +799,13 @@ patch(PosStore.prototype, {
 
     if (!hasPendingDiscountLines) {
       return order._mf_global_discount_meta || null;
+    }
+
+    // Restaurar el precio real de líneas sustituidas por el mínimo fiscal
+    // (0,01) en una aplicación previa, para que la inferencia del % global se
+    // calcule sobre el precio verdadero y no sobre 0,01. Ticket #15105.
+    for (const line of [...(order.lines || [])]) {
+      line.mfRestoreOriginalPrice?.();
     }
 
     // Inferir el % real ANTES de tocar ninguna línea
