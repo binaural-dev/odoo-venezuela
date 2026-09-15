@@ -511,6 +511,17 @@ class AccountRetention(models.Model):
                             'type': 'danger',
                         }
                     }
+            zero_retention_lines = retention.retention_line_ids.filtered(
+                lambda l: float_is_zero(l.retention_amount, precision_rounding=self.company_currency_id.rounding)
+            )
+            if zero_retention_lines:
+               
+                error_msg = _("You can not create a retention with 0 amount.")
+                if is_automated:
+                    retention.message_post(body=error_msg, category='exception')
+                    return False
+                raise ValidationError(error_msg)
+
             if retention.type in ["out_invoice", "out_refund", "out_debit"] and not retention.number:
                 raise UserError(_("Insert a number for the retention"))
 
@@ -549,9 +560,10 @@ class AccountRetention(models.Model):
     def _check_duplicate_retention_lines(self):
         """
         Prevent the same invoice from being retained twice with the exact
-        same differentiator within this retention (helpdesk #14548), and
-        reject lines whose declared differentiator does not actually exist
-        on the invoice they claim to retain from:
+        same differentiator - both within this retention (helpdesk #14548)
+        and across any OTHER already-emitted retention of the same type -
+        and reject lines whose declared differentiator does not actually
+        exist on the invoice they claim to retain from:
 
         - ISLR: the invoice (move_id) can legitimately repeat across lines
           both when each line is for a different payment_concept_id, and
@@ -560,53 +572,88 @@ class AccountRetention(models.Model):
           invoice line, not one per concept - see
           account_move._get_payment_concepts_from_invoice). So instead of
           forbidding any repeat of (move_id, payment_concept_id), the sum of
-          invoice_amount declared across lines sharing that combination must
-          not exceed the real taxable base of the invoice for that concept
-          (sum of price_subtotal of the invoice lines whose product has that
+          invoice_amount declared across lines sharing that combination -
+          in this retention AND in any other emitted retention - must not
+          exceed the real taxable base of the invoice for that concept (sum
+          of price_subtotal of the invoice lines whose product has that
           payment_concept). The declared payment_concept_id must also match
           a product actually billed on that invoice.
         - IVA: the invoice can legitimately repeat when each line has a
           different real tax rate (aliquot). The same (move_id, aliquot)
-          combination must not repeat, and the declared aliquot must match a
-          tax actually applied on that invoice.
+          combination must not repeat - in this retention or in any other
+          emitted retention - and the declared aliquot must match a tax
+          actually applied on that invoice.
+        - Municipal: the invoice can legitimately repeat when each line is
+          for a different economic activity of the partner. The same
+          (move_id, economic_activity_id) combination must not repeat - in
+          this retention or in any other emitted retention.
 
-        Only client retentions (out_invoice/out_refund/out_debit) of type
-        IVA or ISLR are checked; supplier and municipal retentions are
-        unaffected.
+        Only other retentions already in state 'emitted' are considered -
+        two drafts referencing the same invoice/differentiator can coexist
+        harmlessly as long as only one of them ever gets confirmed; the
+        conflict only matters once one side is already final.
+
+        Applies to any legal document/retention type - client
+        (out_invoice/out_refund/out_debit) and supplier
+        (in_invoice/in_refund/in_debit) - for IVA, ISLR and Municipal
+        retentions alike.
         """
         self.ensure_one()
-        if not (
-            self.type
-            and self.type.startswith("out_")
-            and self.type_retention in ("iva", "islr")
-        ):
-            return
-
         precision = self.company_currency_id.rounding or self.env.company.currency_id.rounding
-        client_lines = self.retention_line_ids.filtered(
-            lambda l: l.is_retention_client and l.move_id
-        )
+        lines_with_move = self.retention_line_ids.filtered(lambda l: l.move_id)
+        other_lines = self._get_other_emitted_retention_lines(lines_with_move.mapped("move_id"))
 
         if self.type_retention == "islr":
-            self._check_islr_concept_amounts(client_lines, precision)
-        else:
-            self._check_iva_duplicate_lines(client_lines, precision)
+            self._check_islr_concept_amounts(lines_with_move, precision, other_lines)
+        elif self.type_retention == "iva":
+            self._check_iva_duplicate_lines(lines_with_move, precision, other_lines)
+        elif self.type_retention == "municipal":
+            self._check_municipal_duplicate_lines(lines_with_move, other_lines)
 
-    def _check_islr_concept_amounts(self, client_lines, precision):
+    def _get_other_emitted_retention_lines(self, moves):
+        """
+        Retention lines of other already-emitted retentions of the same
+        type_retention, restricted to the invoices this retention is about
+        to touch - used to seed the duplicate-detection accumulators so a
+        conflict against an already-confirmed retention is caught too, not
+        just conflicts within this retention.
+        """
+        self.ensure_one()
+        if not moves:
+            return self.env["account.retention.line"]
+        return self.env["account.retention.line"].search([
+            ("move_id", "in", moves.ids),
+            ("retention_id", "!=", self.id),
+            ("retention_id.state", "=", "emitted"),
+            ("retention_id.type_retention", "=", self.type_retention),
+        ])
+
+    def _check_islr_concept_amounts(self, client_lines, precision, other_lines=None):
         """
         ISLR: several invoice lines can legitimately share the same
         payment_concept_id (that's how the module auto-generates retention
         lines from an invoice - one line per product, not one per concept),
         so the same (move_id, payment_concept_id) combination is allowed to
         repeat. What must never happen is the declared invoice_amount summed
-        across those repeats exceeding the real taxable base the invoice
-        actually has for that concept (sum of price_subtotal of the invoice
-        lines whose product carries that payment_concept) - that's how
-        someone re-declaring the same product/amount to inflate the
-        retention shows up.
+        across those repeats - in this retention AND in any other emitted
+        retention already holding a line for the same (move, concept) -
+        exceeding the real taxable base the invoice actually has for that
+        concept (sum of price_subtotal of the invoice lines whose product
+        carries that payment_concept) - that's how someone re-declaring the
+        same product/amount to inflate the retention shows up.
         """
         declared_by_key = {}
         base_by_key = {}
+        retention_by_key = {}
+
+        for other_line in (other_lines or self.env["account.retention.line"]):
+            concept = other_line.payment_concept_id
+            if not concept:
+                continue
+            key = (other_line.move_id.id, concept.id)
+            declared_by_key[key] = declared_by_key.get(key, 0.0) + other_line.invoice_amount
+            retention_by_key.setdefault(key, other_line.retention_id)
+
         for line in client_lines:
             concept = line.payment_concept_id
             if not concept:
@@ -625,12 +672,28 @@ class AccountRetention(models.Model):
                 )
             key = (line.move_id.id, concept.id)
             if key not in base_by_key:
-                base_by_key[key] = sum(invoice_lines_for_concept.mapped("price_subtotal"))
-                declared_by_key[key] = 0.0
+               
+                base_by_key[key] = sum(abs(l.balance) for l in invoice_lines_for_concept)
+                declared_by_key.setdefault(key, 0.0)
             declared_by_key[key] += line.invoice_amount
             if float_compare(
                 declared_by_key[key], base_by_key[key], precision_rounding=precision
             ) > 0:
+                other_retention = retention_by_key.get(key)
+                if other_retention:
+                    raise ValidationError(
+                        _(
+                            "The taxable base declared for invoice %(invoice)s and payment"
+                            " concept %(concept)s exceeds the actual base billed under that"
+                            " concept, once what retention %(retention)s already retained"
+                            " for it is taken into account."
+                        )
+                        % {
+                            "invoice": line.move_id.display_name,
+                            "concept": concept.display_name,
+                            "retention": other_retention.display_name,
+                        }
+                    )
                 raise ValidationError(
                     _(
                         "The taxable base declared across the lines of invoice"
@@ -641,13 +704,24 @@ class AccountRetention(models.Model):
                     % {"invoice": line.move_id.display_name, "concept": concept.display_name}
                 )
 
-    def _check_iva_duplicate_lines(self, client_lines, precision):
+    def _check_iva_duplicate_lines(self, client_lines, precision, other_lines=None):
         """
         IVA: compute_retention_lines_data generates at most one line per
         real tax_group on the invoice, so the same real tax must never
-        appear in more than one line of the same retention.
+        appear in more than one line, whether in this retention or in any
+        other already-emitted retention.
         """
-        seen_keys = set()
+        seen_keys = {}
+
+        for other_line in (other_lines or self.env["account.retention.line"]):
+            if float_is_zero(other_line.aliquot, precision_rounding=precision):
+                continue
+            taxes = other_line.move_id.invoice_line_ids.filtered(
+                lambda l: l.tax_ids and l.tax_ids[0].amount > 0
+            ).mapped("tax_ids").filtered(lambda t: t.amount == other_line.aliquot)
+            tax_key = taxes[0].id if len(taxes) == 1 else round(other_line.aliquot, 2)
+            seen_keys[(other_line.move_id.id, tax_key)] = other_line.retention_id
+
         for line in client_lines:
             if float_is_zero(line.aliquot, precision_rounding=precision):
                 continue
@@ -673,6 +747,20 @@ class AccountRetention(models.Model):
             tax_key = taxes[0].id if len(taxes) == 1 else round(line.aliquot, 2)
             key = (line.move_id.id, tax_key)
             if key in seen_keys:
+                other_retention = seen_keys[key]
+                if other_retention and other_retention != self:
+                    raise ValidationError(
+                        _(
+                            "The invoice %(invoice)s was already retained at the same tax"
+                            " rate (%(aliquot)s%%) by retention %(retention)s. Each"
+                            " invoice/rate combination can only appear once."
+                        )
+                        % {
+                            "invoice": line.move_id.display_name,
+                            "aliquot": line.aliquot,
+                            "retention": other_retention.display_name,
+                        }
+                    )
                 raise ValidationError(
                     _(
                         "The invoice %(invoice)s is duplicated in this retention at the"
@@ -681,7 +769,50 @@ class AccountRetention(models.Model):
                     )
                     % {"invoice": line.move_id.display_name, "aliquot": line.aliquot}
                 )
-            seen_keys.add(key)
+            seen_keys[key] = self
+
+    def _check_municipal_duplicate_lines(self, lines, other_lines=None):
+        """
+        Municipal: the invoice can legitimately repeat when each line is for
+        a different economic activity of the partner, so the same
+        (move_id, economic_activity_id) combination must never repeat,
+        whether in this retention or in any other already-emitted
+        retention.
+        """
+        seen_keys = {}
+
+        for other_line in (other_lines or self.env["account.retention.line"]):
+            if not other_line.economic_activity_id:
+                continue
+            seen_keys[(other_line.move_id.id, other_line.economic_activity_id.id)] = other_line.retention_id
+
+        for line in lines:
+            if not line.economic_activity_id:
+                continue
+            key = (line.move_id.id, line.economic_activity_id.id)
+            if key in seen_keys:
+                other_retention = seen_keys[key]
+                if other_retention and other_retention != self:
+                    raise ValidationError(
+                        _(
+                            "The invoice %(invoice)s was already retained for the same"
+                            " economic activity (%(activity)s) by retention %(retention)s."
+                        )
+                        % {
+                            "invoice": line.move_id.display_name,
+                            "activity": line.economic_activity_id.display_name,
+                            "retention": other_retention.display_name,
+                        }
+                    )
+                raise ValidationError(
+                    _(
+                        "The invoice %(invoice)s is duplicated in this retention for the"
+                        " same economic activity (%(activity)s). Each invoice/activity"
+                        " combination can only appear once."
+                    )
+                    % {"invoice": line.move_id.display_name, "activity": line.economic_activity_id.display_name}
+                )
+            seen_keys[key] = self
 
     def _validate_islr_retention(self):
         """

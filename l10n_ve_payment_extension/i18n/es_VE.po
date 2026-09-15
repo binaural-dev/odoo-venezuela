@@ -2599,6 +2599,40 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s is duplicated in this retention for the"
+" same economic activity (%(activity)s). Each invoice/activity"
+" combination can only appear once."
+msgstr ""
+"La factura %(invoice)s está duplicada en esta retención para la"
+" misma actividad económica (%(activity)s). Cada combinación de"
+" factura/actividad solo puede aparecer una vez."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s was already retained at the same tax"
+" rate (%(aliquot)s%%) by retention %(retention)s. Each"
+" invoice/rate combination can only appear once."
+msgstr ""
+"La factura %(invoice)s ya fue retenida a la misma alícuota"
+" (%(aliquot)s%%) por la retención %(retention)s. Cada"
+" combinación de factura/alícuota solo puede aparecer una vez."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s was already retained for the same"
+" economic activity (%(activity)s) by retention %(retention)s."
+msgstr ""
+"La factura %(invoice)s ya fue retenida para la misma"
+" actividad económica (%(activity)s) por la retención %(retention)s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid "The invoice %s has no tax."
 msgstr "La factura %s no tiene impuesto"
 
@@ -2685,6 +2719,20 @@ msgstr ""
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The taxable base declared for invoice %(invoice)s and payment"
+" concept %(concept)s exceeds the actual base billed under that"
+" concept, once what retention %(retention)s already retained"
+" for it is taken into account."
+msgstr ""
+"La base imponible declarada para la factura %(invoice)s y el"
+" concepto de pago %(concept)s excede la base real facturada bajo"
+" ese concepto, una vez que se toma en cuenta lo que ya retuvo"
+" la retención %(retention)s por ese mismo concepto."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 msgid ""
 "The taxable base of one of the withholding lines is greater than the taxable"
@@ -2701,6 +2749,17 @@ msgid ""
 " invoice."
 msgstr ""
 "El monto total de la retención es mayor que el monto residual de la factura."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
+msgid ""
+"There are no more products with payment concept"
+" '%(concept)s' on invoice %(invoice)s to retain."
+msgstr ""
+"No hay más productos con el concepto de pago"
+" '%(concept)s' en la factura %(invoice)s para"
+" aplicarles retención."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
