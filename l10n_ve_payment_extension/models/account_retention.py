@@ -659,7 +659,8 @@ class AccountRetention(models.Model):
             concept = line.payment_concept_id
             if not concept:
                 continue
-            invoice_lines_for_concept = line.move_id.invoice_line_ids.filtered(
+            move = line.move_id
+            invoice_lines_for_concept = move.invoice_line_ids.filtered(
                 lambda l: l.product_id.product_tmpl_id.payment_concept == concept
             )
             if not invoice_lines_for_concept:
@@ -671,10 +672,28 @@ class AccountRetention(models.Model):
                     )
                     % {"concept": concept.display_name, "invoice": line.move_id.display_name}
                 )
-            key = (line.move_id.id, concept.id)
+            key = (move.id, concept.id)
             if key not in base_by_key:
-               
-                base_by_key[key] = sum(abs(l.balance) for l in invoice_lines_for_concept)
+                # account.retention.line proposes the default base
+                # (_get_islr_concept_base_amounts) using either the whole
+                # invoice subtotal or just the product's own subtotal,
+                # depending on islr_prioritize_product_subtotal_base - but
+                # that flag only controls what gets auto-proposed on
+                # automatic creation. Once created, the accountant may
+                # deliberately edit invoice_amount to use whichever of the
+                # two legitimate criteria applies, so the tope here must
+                # accept either one explicitly, not just whichever the flag
+                # happens to favor.
+                concept_lines = move.invoice_line_ids.filtered(
+                    lambda l: l.product_id.product_tmpl_id.type == "service"
+                    and l.product_id.product_tmpl_id.payment_concept
+                )
+                if len(concept_lines) <= 1:
+                    whole_invoice_base = move.tax_totals["base_amount"]
+                    product_subtotal_base = sum(abs(l.balance) for l in concept_lines)
+                    base_by_key[key] = max(whole_invoice_base, product_subtotal_base)
+                else:
+                    base_by_key[key] = sum(abs(l.balance) for l in invoice_lines_for_concept)
                 declared_by_key.setdefault(key, 0.0)
             declared_by_key[key] += line.invoice_amount
             if float_compare(

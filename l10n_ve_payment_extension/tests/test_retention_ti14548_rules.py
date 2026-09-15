@@ -239,6 +239,37 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "========= test_cross_retention_islr_concept_base_exceeded_blocks_on_emitted passed ========="
         )
 
+    def test_islr_single_concept_line_accepts_whole_invoice_base_on_post(self):
+        """When the invoice has a single ISLR-concept line mixed with a
+        non-concept product (goods), the accountant may legitimately declare
+        invoice_amount as either the product's own subtotal (500) or the
+        whole invoice subtotal (500 + 100 = 600) - both are valid criteria
+        per _get_islr_concept_base_amounts/_get_payment_concepts_from_invoice.
+        _check_islr_concept_amounts must accept the whole-invoice value too,
+        not just the product's own subtotal, or a legitimately-proposed
+        default gets rejected as "exceeding the real base" on confirm."""
+        invoice = self._create_out_invoice_with_lines(
+            [(self.product_islr_one, 500.0), (self.product_iva, 100.0)]
+        )
+        line = {
+            "move_id": invoice.id,
+            "name": "ISLR Retention",
+            "invoice_type": "out_invoice",
+            "payment_concept_id": self.concept_one.id,
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": 600.0,
+            "retention_amount": 18.0,
+            "foreign_invoice_amount": 600.0,
+            "foreign_retention_amount": 18.0,
+        }
+        retention = self._make_islr_customer_retention([line])
+        retention.action_post()
+        self.assertEqual(retention.state, "emitted")
+
+        _logger.info(
+            "========= test_islr_single_concept_line_accepts_whole_invoice_base_on_post passed ========="
+        )
+
     def test_cross_retention_municipal_duplicate_activity_blocks_on_emitted(self):
         """Municipal: same (invoice, economic_activity) retained by two
         different retentions - the second must be rejected once the first
