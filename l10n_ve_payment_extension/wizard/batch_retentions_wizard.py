@@ -100,9 +100,14 @@ class BatchRetentionsWizard(models.TransientModel):
                     continue
 
                 invoice_date = rec.move_id.invoice_date_display or rec.move_id.invoice_date
+                # Local "today" (not UTC): _check_dates_not_in_future compares
+                # date_accounting against fields.Date.context_today too, and a
+                # UTC "today" can already be tomorrow while the user's local
+                # calendar day hasn't rolled over yet.
+                today = fields.Date.context_today(self)
                 vals = {
                     'partner_id': rec.move_id.partner_id.id,
-                    'date_accounting': max(fields.Date.today(), invoice_date) if invoice_date else fields.Date.today(),
+                    'date_accounting': max(today, invoice_date) if invoice_date else today,
                     'type_retention': 'islr',
                 }
                 
@@ -152,9 +157,10 @@ class BatchRetentionsWizard(models.TransientModel):
                     if move.invoice_date_display or move.invoice_date
                 ]
                 max_invoice_date = max(invoice_dates) if invoice_dates else False
+                today = fields.Date.context_today(self)
                 retention = self.env['account.retention'].with_context(ctx).create({
                     'partner_id': partner_id,
-                    'date_accounting': max(fields.Date.today(), max_invoice_date) if max_invoice_date else fields.Date.today(),
+                    'date_accounting': max(today, max_invoice_date) if max_invoice_date else today,
                     'type_retention': 'islr',
                 })
                 
