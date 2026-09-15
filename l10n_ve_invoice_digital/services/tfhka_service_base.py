@@ -48,8 +48,48 @@ class TfhkaServiceBase(models.AbstractModel):
         return record.partner_id
 
     def _get_party_address(self, partner):
-        """Dirección a reportar para el sujeto. Punto de extensión."""
-        return partner.street or "no definida"
+        """Dirección a reportar para el sujeto. Punto de extensión.
+
+        Se arma localmente a partir de los campos de dirección estándar
+        (calle, calle 2, código postal + ciudad, estado, país), sin
+        depender de ``contact_address_complete`` (vive en ``web_map``,
+        Enterprise, no declarado como dependencia de este módulo LGPL-3 -
+        en Community el campo no existe) ni de ``contact_address`` (repite
+        el nombre del contacto, que ya va en ``razonSocial``, y separa con
+        saltos de línea literales).
+        """
+        zip_city = " ".join(filter(None, [partner.zip, partner.city]))
+        parts = [
+            partner.street,
+            partner.street2,
+            zip_city,
+            partner.state_id.name,
+            partner.country_id.name,
+        ]
+        return ", ".join(filter(None, parts)) or "no definida"
+
+    def _parse_partner_identification(self, partner):
+        """(tipo, número) de identificación fiscal a partir de ``vat``/``prefix_vat``.
+
+        Requiere que ``partner.vat`` ya esté validado como no vacío por el
+        llamador — cada punto de uso lanza su propio mensaje de negocio para
+        ese caso. Compartido entre ``_get_fiscal_party`` (comprador / sujeto
+        retenido) y cualquier otro sujeto fiscal que necesite el mismo
+        formato de RIF/cédula (p. ej. el tercero de facturación a terceros).
+        """
+        vat = partner.vat.upper()
+        if vat[0].isalpha():
+            identification_type = vat[0]
+            identification_number = vat[1:]
+        else:
+            identification_type = ""
+            identification_number = vat
+
+        if partner.prefix_vat:
+            identification_type = partner.prefix_vat
+
+        identification_number = identification_number.replace("-", "").replace(".", "")
+        return identification_type, identification_number
 
     def _get_fiscal_party(self, record):
         """Construye el nodo de identificación (comprador / sujeto retenido).
@@ -66,18 +106,7 @@ class TfhkaServiceBase(models.AbstractModel):
         if not partner.vat:
             raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
 
-        vat = partner.vat.upper()
-        if vat[0].isalpha():
-            identification_type = vat[0]
-            identification_number = vat[1:]
-        else:
-            identification_type = ""
-            identification_number = vat
-
-        if partner.prefix_vat:
-            identification_type = partner.prefix_vat
-
-        identification_number = identification_number.replace("-", "").replace(".", "")
+        identification_type, identification_number = self._parse_partner_identification(partner)
 
         if not partner.country_code:
             raise UserError(_("The 'Country' field of the Customer cannot be empty for digitalization."))

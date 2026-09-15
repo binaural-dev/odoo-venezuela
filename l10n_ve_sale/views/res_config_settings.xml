@@ -41,6 +41,15 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_sale_div_convert_currency_from_sale_order">
+                            <div class="o_setting_left_pane">
+                                <field name="convert_currency_from_sale_order"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="convert_currency_from_sale_order"/>
+                                <div class="text-muted">Check this if you want to convert the price unit of the customer invoice lines based on the sale order, using the invoice rate. It cannot be combined with pricelist rules for the same products.</div>
+                            </div>
+                        </div>
                         <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_sale_div_are_sale_lines_limited">
                             <div class="o_setting_left_pane">
                                 <field name="are_sale_lines_limited"/>
