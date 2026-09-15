@@ -141,6 +141,34 @@ class TestRetentionIvaWizard(RetentionTestCommon):
         with self.assertRaises(UserError):
             wiz.generate_txt()
 
+    def test_06_retention_iva_rif_agente_includes_prefix_vat(self):
+        """Ticket 15038: el TXT del SENIAT debe llevar el literal (J/V/E/G/P/C)
+        del RIF del agente de retención (la compañía), no solo los dígitos."""
+        self.company.partner_id.write({"prefix_vat": "J", "vat": "123456789"})
+        ret = self._create_iva_retention(amount=1000.0)
+        data = self.IvaWizard._retention_iva(ret)
+        self.assertEqual(
+            data[0]["RIF del agente de retención"], "J123456789",
+            "El TXT del SENIAT debe anteponer el literal del RIF de la "
+            "compañía, no solo los dígitos.",
+        )
+
+    def test_07_retention_iva_rif_agente_without_confirmed_prefix_vat_is_v(self):
+        """Documenta el comportamiento actual (ver migración
+        19.0.2.0.31/post-warn_unverified_company_prefix_vat.py, B1 del
+        review del PR #1282): mientras una compañía no confirme su
+        prefix_vat, el TXT sale con el literal por defecto 'V' -- correcto
+        solo si el RIF real de la compañía empieza en efecto por 'V'."""
+        self.company.partner_id.write({"vat": "123456789"})
+        self.assertEqual(
+            self.company.partner_id.prefix_vat, "V",
+            "Precondición del test: prefix_vat sin confirmar debe seguir "
+            "siendo el default 'V' del campo Selection.",
+        )
+        ret = self._create_iva_retention(amount=1000.0)
+        data = self.IvaWizard._retention_iva(ret)
+        self.assertEqual(data[0]["RIF del agente de retención"], "V123456789")
+
 
 @tagged("post_install", "-at_install", "arcv_report_full")
 class TestArcReportFull(RetentionTestCommon):
