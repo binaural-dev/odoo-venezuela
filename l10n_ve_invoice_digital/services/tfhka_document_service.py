@@ -117,6 +117,7 @@ class TfhkaDocumentService(models.AbstractModel):
         details_items = self._prepare_detail_lines(invoice, currency_context)
         additional_information = self._prepare_additional_information(invoice)
         dispatch_guide_reference = self._get_dispatch_guide_reference(invoice)
+        additional_flags = self._prepare_additional_flags(invoice)
 
         payload = {
             "documentoElectronico": {
@@ -133,6 +134,8 @@ class TfhkaDocumentService(models.AbstractModel):
             payload["documentoElectronico"]["encabezado"]["vendedor"] = seller
         if foreign_totals:
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
+        if additional_flags:
+            payload["documentoElectronico"]["encabezado"]["banderasAdicionales"] = additional_flags
         payload["documentoElectronico"]["encabezado"].update(
             self._prepare_extra_header_values(invoice, currency_context)
         )
@@ -198,6 +201,17 @@ class TfhkaDocumentService(models.AbstractModel):
     def _prepare_extra_header_values(self, invoice, ctx):
         """Hook de extensión: valores extra para encabezado. Por defecto vacío."""
         return {}
+
+    def _prepare_additional_flags(self, invoice):
+        """Prepara la sección de banderas adicionales del encabezado (sección 5.1.8).
+
+        Devuelve un diccionario con las banderas adicionales del documento:
+        * ``esLote``: Boolean indicando si forma parte de una emisión por lotes.
+        """
+        
+        return {
+            "esLote": True,
+        }
 
     # ------------------------------------------------------------------
     # Contexto de moneda

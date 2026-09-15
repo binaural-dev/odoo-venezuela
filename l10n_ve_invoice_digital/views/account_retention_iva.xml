@@ -8,9 +8,11 @@
                 <xpath expr="//header" position="inside">
                     <field name="show_digital_retention_iva" invisible="1"/>
                     <field name="control_number_tfhka" invisible="1"/>
-                    <button name="generate_document_digital" string="Generate Digital Retention" type="object"
-                            context="{'document_type': '05'}"
-                            invisible="show_digital_retention_iva"/>
+                    <button name="action_tfhka_generate_digital" string="Generate Digital Retention" type="object"
+                            invisible="show_digital_retention_iva or tfhka_digitalization_state != 'none'"/>
+                    <button name="action_tfhka_retry_digitalization" string="Retry Digitalization" type="object"
+                            invisible="tfhka_digitalization_state != 'error'"
+                            class="btn-danger"/>
                     <field name="annulled_tfhka" invisible="1"/>
                 </xpath>
                 <xpath expr="//button[@name='action_cancel']" position="attributes">
@@ -18,9 +20,55 @@
                 </xpath>
                 <xpath expr="//field[@name='type']" position="before">
                     <field name="is_digitalized" string="Digitized" readonly="True"/>
+                    <field name="tfhka_digitalization_state" string="Digitalization Status" readonly="True"
+                           invisible="tfhka_digitalization_state == 'success'"
+                           widget="badge"
+                           decoration-success="tfhka_digitalization_state == 'success'"
+                           decoration-danger="tfhka_digitalization_state == 'error'"
+                           decoration-info="tfhka_digitalization_state == 'processing'"
+                           decoration-warning="tfhka_digitalization_state == 'queued'"/>
+                    <field name="tfhka_digitalization_error" string="Digitalization Error"
+                           invisible="tfhka_digitalization_state != 'error'" readonly="True"
+                           groups="l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin"/>
                 </xpath>
                 <xpath expr="//field[@name='number']" position="after">
                     <field name="control_number_tfhka" string="Control Number" readonly="True"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_retention_iva_list_inherit_tfhka_digitalization" model="ir.ui.view">
+            <field name="name">Retention IVA client list.inherit.tfhka.digitalization</field>
+            <field name="model">account.retention</field>
+            <field name="inherit_id" ref="l10n_ve_payment_extension.view_retention_iva_list_l10n_ve_payment_extension"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='number']" position="after">
+                    <field name="tfhka_digitalization_state"
+                           string="Digitalization Status"
+                           widget="badge"
+                           decoration-success="tfhka_digitalization_state == 'success'"
+                           decoration-danger="tfhka_digitalization_state == 'error'"
+                           decoration-info="tfhka_digitalization_state == 'processing'"
+                           decoration-warning="tfhka_digitalization_state == 'queued'"
+                           optional="show"/>
+                </xpath>
+            </field>
+        </record>
+
+        <record id="view_retention_iva_search_inherit_tfhka_digitalization" model="ir.ui.view">
+            <field name="name">IVA Retention.inherit.tfhka.digitalization</field>
+            <field name="model">account.retention</field>
+            <field name="inherit_id" ref="l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension"/>
+            <field name="arch" type="xml">
+                <xpath expr="//filter[@name='is_third_party_retention']" position="after">
+                    <filter name="tfhka_digitalization_error" string="TFHKA: Error"
+                            domain="[('tfhka_digitalization_state', '=', 'error')]"/>
+                    <filter name="tfhka_digitalization_queued" string="TFHKA: Queued"
+                            domain="[('tfhka_digitalization_state', '=', 'queued')]"/>
+                </xpath>
+                <xpath expr="//filter[@name='group_state']" position="after">
+                    <filter name="group_tfhka_digitalization_state" string="Group by TFHKA Digitalization Status"
+                            context="{'group_by': 'tfhka_digitalization_state'}"/>
                 </xpath>
             </field>
         </record>

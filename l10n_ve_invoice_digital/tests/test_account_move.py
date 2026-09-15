@@ -2887,3 +2887,21 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.journal.digital_invoice = False
         self.assertFalse(inv.journal_digital_invoice)
 
+    def test_188_generate_document_data_includes_banderas_adicionales(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            do_post=False,
+        )
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit',
+        ) as mock_emit:
+            mock_emit.return_value = {"resultado": {"numeroControl": "00-00000001"}}
+            self.env['tfhka.document.service'].generate_document_data(inv, "145", "01", "")
+        payload = mock_emit.call_args[0][1]
+        self.assertIn("banderasAdicionales", payload["documentoElectronico"]["encabezado"])
+        self.assertEqual(
+            payload["documentoElectronico"]["encabezado"]["banderasAdicionales"],
+            {"esLote": False},
+        )
+
+

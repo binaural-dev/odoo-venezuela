@@ -1,11 +1,13 @@
+import json
+
 from odoo import models, api, fields, _
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import ValidationError
 
 from ..services.tfhka_document_service import VES_CURRENCY_NAMES
 
 
 class AccountMove(models.Model):
-    _inherit = "account.move"
+    _inherit = ["account.move", "tfhka.digitalization.mixin"]
 
     is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
     show_digital_invoice = fields.Boolean(compute="_compute_invisible_check", copy=False)
@@ -96,49 +98,49 @@ class AccountMove(models.Model):
                     % {"invoice_date": last_invoice.invoice_date_display}
                 )
 
-    def _tfhka_digitalize_on_confirm(self):
-        """Sends each eligible move to TFHKA right after posting.
+    def _tfhka_enqueue_eligible_for_digitalization(self):
+        """Enqueues each eligible move for TFHKA digitalization (queue
+        processed by cron, see ``tfhka.digitalization.mixin``).
 
-        Extracted from ``move.action.post.alert.wizard.action_confirm()`` so
-        that ``binaural_third_party_invoice_digital`` can reuse the exact same
-        eligibility checks (digital journal, previous-invoice-digitized guard,
-        payment-driven digitalization) to also digitalize Third Party child
-        invoices once they get posted alongside their parent (see
-        ``third.party.move.action.post.alert.wizard.action_confirm_all`` in
-        that module) -- a flow the base wizard never sees, since it only
-        ever receives the parent invoice as ``move_id``.
+        Called from ``move.action.post.alert.wizard.action_confirm()`` and
+        from ``third.party.move.action.post.alert.wizard`` (in
+        ``binaural_third_party_invoice_digital``) right after posting --
+        the latter is why this lives on the move itself rather than inline
+        in the base wizard: it lets that module reuse the same eligibility
+        check to also enqueue Third Party child invoices once they get
+        posted alongside their parent, a flow the base wizard never sees
+        since it only ever receives the parent invoice.
 
-        The ``is_digitalized`` guard makes the call idempotent: safe to
-        invoke on a move that was already digitalized elsewhere, which
-        matters for that same third-party flow (the parent may already be
-        digitalized by the time this runs again on the whole batch).
+        Eligible: digital journal, not already digitalized, and not in
+        "digitalization with payment" mode (driven by payment reconciliation
+        instead -- see ``digitalization_with_payment_tfhka``).
         """
-        for record in self:
-            if record.is_digitalized or not record.journal_id.digital_invoice:
-                continue
+        eligible = self.filtered(
+            lambda record: not record.is_digitalized
+            and record.journal_id.digital_invoice
+            and not record.company_id.digitalization_with_payment_tfhka
+        )
+        eligible._tfhka_enqueue_digitalization()
 
-            if record.sequence_number > 1:
-                previous_invoice = self.env["account.move"].search(
-                    [
-                        ("company_id", "=", record.company_id.id),
-                        ("move_type", "=", record.move_type),
-                        ("sequence_number", "!=", record.sequence_number),
-                        ("is_digitalized", "=", False),
-                        ("state", "=", "posted"),
-                        ("journal_id", "=", record.journal_id.id),
-                    ], order="sequence_number asc", limit=1,
-                )
-                if previous_invoice and not previous_invoice.is_digitalized:
-                    move_type = previous_invoice.move_type
-                    if move_type == "out_invoice" and not previous_invoice.debit_origin_id:
-                        raise UserError(_("The invoice %(name)s has not been digitized") % {"name": previous_invoice.name})
-                    if move_type == "out_invoice" and previous_invoice.debit_origin_id:
-                        raise UserError(_("The debit note %(name)s has not been digitized") % {"name": previous_invoice.name})
-                    if move_type == "out_refund":
-                        raise UserError(_("The credit note %(name)s has not been digitized") % {"name": previous_invoice.name})
-
-            if not record.company_id.digitalization_with_payment_tfhka:
-                record.generate_document_digital()
+    def _tfhka_reconcile_success_from_log(self, log_entry):
+        """See ``tfhka.digitalization.mixin._tfhka_recover_stuck_processing``:
+        replays ``tfhka.document.service._register_success`` using the
+        response TFHKA already gave us for the interrupted attempt, instead
+        of resubmitting. ``document_number`` is read back from the original
+        *request* (not recomputed) because, in normal mode, it was TFHKA's
+        own last-number-at-the-time plus one -- recomputing it now would give
+        a different (wrong) number, since TFHKA's counter already moved past
+        it once this document was accepted."""
+        self.ensure_one()
+        response = json.loads(log_entry.response_payload)
+        request_payload = json.loads(log_entry.request_payload)
+        document_number = (
+            request_payload.get("documentoElectronico", {})
+            .get("encabezado", {})
+            .get("identificacionDocumento", {})
+            .get("numeroDocumento")
+        )
+        self.env["tfhka.document.service"]._register_success(self, response, document_number)
 
     def _is_eligible_for_tfhka(self):
         """Check if the invoice should process TFHKA logic."""

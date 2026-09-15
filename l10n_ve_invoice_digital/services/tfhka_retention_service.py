@@ -117,21 +117,22 @@ class TfhkaRetentionService(models.AbstractModel):
         response = self.env["tfhka.api.client"].emit(retention.company_id, payload, origin=retention)
 
         if response:
-            retention.is_digitalized = True
-            retention.control_number_tfhka = response.get("resultado").get("numeroControl")
-            retention.document_number_tfhka = str(document_number)
-            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
-            if validation_sequence:
-                retention.message_post(
-                    body=_("Warning accepted: The difference in sequence between Odoo and The Factory is acknowledged and accepted."),
-                    message_type='comment',
-                )
+            self._register_success(retention, response, document_number, validation_sequence)
+
+    def _register_success(self, retention, response, document_number, validation_sequence=False):
+        retention.is_digitalized = True
+        retention.control_number_tfhka = response.get("resultado").get("numeroControl")
+        retention.document_number_tfhka = str(document_number)
+        emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
+        if validation_sequence:
             retention.message_post(
-                body=_("Document successfully digitized on %(date)s") % {"date": emission_date},
+                body=_("Warning accepted: The difference in sequence between Odoo and The Factory is acknowledged and accepted."),
                 message_type='comment',
             )
-
-            return
+        retention.message_post(
+            body=_("Document successfully digitized on %(date)s") % {"date": emission_date},
+            message_type='comment',
+        )
 
     def _prepare_extra_retention_values(self, retention):
         """Hook de extensión: valores extra del payload. Por defecto vacío."""

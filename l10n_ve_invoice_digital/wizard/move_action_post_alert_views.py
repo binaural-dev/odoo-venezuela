@@ -7,7 +7,7 @@ class MoveActionPostAlertWizard(models.TransientModel):
         res = super(MoveActionPostAlertWizard, self).action_confirm()
 
         if self.move_id and self.env.company.invoice_digital_tfhka:
-            self.move_id._tfhka_digitalize_on_confirm()
+            self.move_id._tfhka_enqueue_eligible_for_digitalization()
 
         return res
 

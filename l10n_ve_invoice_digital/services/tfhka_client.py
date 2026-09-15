@@ -19,6 +19,16 @@ TFHKA_ENDPOINTS = {
 # Timeout (segundos) para las llamadas HTTP a TFHKA.
 TFHKA_TIMEOUT = 10
 
+# Marcador del mensaje de negocio de TFHKA para "no repitas esta consulta
+# tan seguido" (ej. ConsultaNumeraciones llamado dos veces en <30s). Usado
+# por tfhka.digitalization.mixin para decidir si vale la pena un único
+# reintento con espera, en vez de tratarlo como cualquier otro error.
+RATE_LIMIT_MESSAGE_MARKER = "realizada previamente"
+
+
+def _is_rate_limit_message(message):
+    return bool(message) and RATE_LIMIT_MESSAGE_MARKER in message.lower()
+
 
 class TfhkaApiClient(models.AbstractModel):
     """Cliente HTTP de la API de The Factory HKA.
