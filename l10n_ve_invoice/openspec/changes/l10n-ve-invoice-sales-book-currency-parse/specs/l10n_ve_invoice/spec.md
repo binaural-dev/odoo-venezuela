@@ -20,6 +20,10 @@ símbolo al partir por el espacio no-separable.
 - **WHEN** se convierte `"1.234,56\xa0Bs."`
 - **THEN** el resultado es `1234.56`
 
+#### Scenario: Símbolo después con decimal de punto (Bs.F)
+- **WHEN** se convierte `"100.00\xa0Bs.F"` (símbolo con punto pegado, decimal de punto)
+- **THEN** el resultado es `100.0` (el punto del símbolo no se cuela como decimal)
+
 #### Scenario: Cadena vacía o no numérica
 - **WHEN** se convierte `""`, `None` o `"ABC"`
 - **THEN** el resultado es `0.0`

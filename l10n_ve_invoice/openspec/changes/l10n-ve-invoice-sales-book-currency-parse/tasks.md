@@ -10,9 +10,16 @@
 
 - [x] 2.1 `tests/test_accounting_reports.py`: casos símbolo-antes con `\xa0`
       (`"Bs.\xa0876,18"` → 876.18; `"Bs.\xa00,00"` → 0.0), miles+decimales
-      (`"Bs.\xa02.382,11"` → 2382.11; `"Bs.\xa013.836,97"` → 13836.97) y
-      símbolo-después (`"1.234,56\xa0Bs."` → 1234.56). Los 4 tests previos
-      (`""`, `None`, `"Bs0.00"`, `"ABC"`) siguen pasando.
+      (`"Bs.\xa02.382,11"` → 2382.11; `"Bs.\xa013.836,97"` → 13836.97),
+      símbolo-después coma-decimal (`"1.234,56\xa0Bs."` → 1234.56) y
+      símbolo-después punto-decimal Bs.F (`"100.00\xa0Bs.F"` → 100.0). Los 4
+      tests previos (`""`, `None`, `"Bs0.00"`, `"ABC"`) siguen pasando.
+- [x] 2.2 Regresión detectada por CI: el `test_amount_taxeds_no_deductible`
+      base usa formato `"100.00\xa0Bs.F"` (símbolo después, decimal de punto).
+      La primera versión del fix (quitar el `split('\xa0')`) dejaba el punto de
+      `"Bs.F"` colándose → 0.0 → `assertGreater` fallaba. Reescrito el parseo
+      para quedarse con el token numérico y descartar el símbolo completo. Bump
+      versión → 19.0.1.0.16.
 
 ## 3. Verificación manual (en 2doce, período 1–15 sep)
 

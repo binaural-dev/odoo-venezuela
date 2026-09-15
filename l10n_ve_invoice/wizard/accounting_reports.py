@@ -918,23 +918,30 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ]
     
     def convert_currency_to_float(self, currency_str):
-        # El importe llega formateado por Odoo, p.ej. "Bs.\xa01.234,56": simbolo
-        # de moneda + espacio no-separable (\xa0) + monto en formato es_VE (punto
-        # de miles, coma decimal). Se conservan solo digitos, coma, punto y signo;
-        # el resto (simbolo, letras y cualquier espacio, \xa0 incluido) se descarta
-        # con la regex. NO se debe partir por \xa0 y quedarse con un lado: cuando el
-        # simbolo va ANTES (caso Bs.), esa particion se queda con "Bs." y el monto
-        # entero se pierde -> devolvia 0.0 en todos los importes.
+        # El importe llega formateado por Odoo. El simbolo de moneda y el monto
+        # van separados por un espacio (normal, no-separable \xa0 o salto de
+        # linea), en cualquiera de los dos ordenes segun la posicion del simbolo:
+        #   "Bs.\xa01.234,56"  (simbolo antes, es_VE: punto miles, coma decimal)
+        #   "100.00\xa0Bs.F"   (simbolo despues, Bs.F: punto decimal)
+        # Nos quedamos SOLO con los tokens que contienen digitos, para descartar
+        # el simbolo COMPLETO (incluido su punto, como en "Bs."/"Bs.F", que si no
+        # se cuela como un punto suelto y rompe el float). NO se debe partir por
+        # \xa0 y quedarse con un lado fijo: falla segun donde vaya el simbolo.
         if not currency_str:
             return 0.0
 
-        numeric_part = re.sub(r'[^\d,\.-]', '', str(currency_str))
+        tokens = re.split(r"\s+", str(currency_str).strip())
+        numeric_part = "".join(
+            re.sub(r"[^\d,\.-]", "", token)
+            for token in tokens
+            if any(char.isdigit() for char in token)
+        )
 
-        if '.' in numeric_part and ',' in numeric_part:
-            # Ambos separadores presentes: el punto es de miles -> se elimina.
-            numeric_part = numeric_part.replace('.', '')
+        if "." in numeric_part and "," in numeric_part:
+            # Ambos separadores presentes (es_VE): el punto es de miles -> fuera.
+            numeric_part = numeric_part.replace(".", "")
 
-        final_value = numeric_part.replace(',', '.')
+        final_value = numeric_part.replace(",", ".")
 
         try:
             return float(final_value)

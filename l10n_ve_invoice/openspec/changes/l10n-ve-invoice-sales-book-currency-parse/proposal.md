@@ -41,14 +41,18 @@ motor del timeout es la avalancha de logs, que este fix elimina.
 
 ## What Changes
 
-- `wizard/accounting_reports.py`, `convert_currency_to_float`: se elimina el
-  bloque que partía por `\xa0`. La regex `[^\d,\.-]` ya descarta el símbolo, las
-  letras y cualquier espacio (incluido `\xa0`), y la regla "si hay punto y coma,
-  el punto es de miles" limpia el punto sobrante de `"Bs."`. El resultado es
-  correcto tanto con el símbolo antes (`"Bs.\xa0876,18"` → `876.18`) como
-  después (`"876,18\xa0Bs."` → `876.18`).
+- `wizard/accounting_reports.py`, `convert_currency_to_float`: se reescribe para
+  quedarse SOLO con los tokens que contienen dígitos (separando por espacio,
+  `\xa0` o salto de línea) y descartar el símbolo completo —incluido su punto,
+  como en `"Bs."`/`"Bs.F"`—. Antes se partía por `\xa0` quedándose con un lado
+  fijo, lo que solo funcionaba según la posición del símbolo. La solución sirve
+  para: símbolo antes es_VE (`"Bs.\xa0876,18"` → `876.18`), símbolo después
+  es_VE (`"876,18\xa0Bs."` → `876.18`) y símbolo después con decimal de punto
+  Bs.F (`"100.00\xa0Bs.F"` → `100.0`, que era el caso que rompía el test
+  `test_amount_taxeds_no_deductible`).
 - `tests/test_accounting_reports.py`: casos nuevos para símbolo antes con `\xa0`,
-  miles + decimales, cero, y símbolo después.
+  miles + decimales, cero, símbolo después (coma-decimal) y símbolo después con
+  punto-decimal (Bs.F).
 
 ### Rendimiento (segunda iteración)
 
@@ -69,7 +73,7 @@ pero la reconstrucción del dict + parseo de importes se repetía en cada llamad
 - El resultado del método solo se consume en lectura (`_fields_sale_book_line`
   arma un dict nuevo, `_determinate_resume_books` solo suma valores), así que
   devolver el mismo objeto cacheado es seguro.
-- `__manifest__.py`: versión `19.0.1.0.13` → `19.0.1.0.15`.
+- `__manifest__.py`: versión `19.0.1.0.13` → `19.0.1.0.16`.
 
 ## Non-goals
 
