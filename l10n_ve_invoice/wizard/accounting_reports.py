@@ -918,20 +918,22 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ]
     
     def convert_currency_to_float(self, currency_str):
-  
+        # El importe llega formateado por Odoo, p.ej. "Bs.\xa01.234,56": simbolo
+        # de moneda + espacio no-separable (\xa0) + monto en formato es_VE (punto
+        # de miles, coma decimal). Se conservan solo digitos, coma, punto y signo;
+        # el resto (simbolo, letras y cualquier espacio, \xa0 incluido) se descarta
+        # con la regex. NO se debe partir por \xa0 y quedarse con un lado: cuando el
+        # simbolo va ANTES (caso Bs.), esa particion se queda con "Bs." y el monto
+        # entero se pierde -> devolvia 0.0 en todos los importes.
         if not currency_str:
             return 0.0
-        
-        cleaned_str = str(currency_str).strip()
-       
-        if '\xa0' in cleaned_str:
-            cleaned_str = cleaned_str.split('\xa0', 1)[0]
-        
-        numeric_part = re.sub(r'[^\d,\.-]', '', cleaned_str)
-        
+
+        numeric_part = re.sub(r'[^\d,\.-]', '', str(currency_str))
+
         if '.' in numeric_part and ',' in numeric_part:
+            # Ambos separadores presentes: el punto es de miles -> se elimina.
             numeric_part = numeric_part.replace('.', '')
-        
+
         final_value = numeric_part.replace(',', '.')
 
         try:
