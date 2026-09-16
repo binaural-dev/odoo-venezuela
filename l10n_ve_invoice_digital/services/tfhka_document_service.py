@@ -208,9 +208,8 @@ class TfhkaDocumentService(models.AbstractModel):
         Devuelve un diccionario con las banderas adicionales del documento:
         * ``esLote``: Boolean indicando si forma parte de una emisión por lotes.
         """
-        
         return {
-            "esLote": True,
+            "esLote": False,
         }
 
     # ------------------------------------------------------------------
