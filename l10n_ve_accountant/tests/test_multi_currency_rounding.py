@@ -141,6 +141,16 @@ class TestMultiCurrencyRounding(TransactionCase):
             ],
         })
 
+    def _create_group_tax(self, name, child_taxes):
+        return self.env["account.tax"].with_company(self.company).create({
+            "name": name,
+            "amount_type": "group",
+            "type_tax_use": "sale",
+            "company_id": self.company.id,
+            "tax_group_id": self.tax_group.id,
+            "children_tax_ids": [(6, 0, child_taxes.ids)],
+        })
+
     def _check_line(self, line):
         """Verifica que amount_currency == round(balance * rate)"""
         if line.display_type not in ('product', 'tax', 'payment_term', 'liquidity'):
@@ -481,7 +491,12 @@ class TestMultiCurrencyRounding(TransactionCase):
     # covers amount_currency, but not the % against the real VEF base).
 
     def _assert_tax_matches_real_base(self, inv):
-        """For each percent tax: tax line balance == round(Σ balance of the product lines using it * %)."""
+        """For each percent tax: tax line balance == round(Σ balance of the product lines using it * %).
+
+        Matches on the tax OR its group_tax_id: `l.tax_ids` holds whatever
+        the user picked, which is the group (not the child) for a percent
+        tax that is a child of a `group` tax.
+        """
         product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
         tax_lines = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
         cc = inv.company_id.currency_id
@@ -490,7 +505,10 @@ class TestMultiCurrencyRounding(TransactionCase):
             tax = rep_line.tax_id
             if tax.amount_type != 'percent':
                 continue
-            base_lines = product_lines.filtered(lambda l: tax in l.tax_ids)
+            group_tax = tax_line.group_tax_id
+            base_lines = product_lines.filtered(
+                lambda l: tax in l.tax_ids or (group_tax and group_tax in l.tax_ids)
+            )
             base_vef = sum(base_lines.mapped('balance'))
             factor = rep_line.factor_percent / 100.0
             expected = cc.round(base_vef * (tax.amount / 100.0) * factor)
@@ -613,7 +631,10 @@ class TestMultiCurrencyRounding(TransactionCase):
             tax = rep_line.tax_id
             if tax.amount_type != 'percent':
                 continue
-            base_lines = product_lines.filtered(lambda l: tax in l.tax_ids)
+            group_tax = tax_line.group_tax_id
+            base_lines = product_lines.filtered(
+                lambda l: tax in l.tax_ids or (group_tax and group_tax in l.tax_ids)
+            )
             base_vef = sum(base_lines.mapped('balance'))
             hand_computed = cc.round(base_vef * tax.amount / 100.0 * rep_line.factor_percent / 100.0)
             self.assertAlmostEqual(
@@ -766,3 +787,58 @@ class TestMultiCurrencyRounding(TransactionCase):
                 td = sum(inv.line_ids.mapped('debit'))
                 tc = sum(inv.line_ids.mapped('credit'))
                 self.assertAlmostEqual(td, tc, places=2, msg=f"Debit != Credit ({currency.name})")
+
+    def test_26_group_tax_two_percent_children_tax_matches_base(self):
+        """A percent child of a `group` tax must not fall back to base_vef=0: `record.tax_ids` holds the group, not the child."""
+        tax_a = self._create_tax('Group child A 5%', 5.0)
+        tax_b = self._create_tax('Group child B 3%', 3.0)
+        group_tax = self._create_group_tax('Group AB', tax_a + tax_b)
+        inv = self._create_invoice_with_precision(self.currency_usd, [
+            (2, 12345.678901, [group_tax]),
+        ])
+        tax_lines = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        self.assertEqual(len(tax_lines), 2, "Expected one tax line per group child")
+        for line in tax_lines:
+            self.assertFalse(
+                self.currency_vef.is_zero(line.balance),
+                msg=f"Tax line {line.name} balance is zero -- group child base lookup failed",
+            )
+        self._assert_header_and_tax_line_match(inv)
+        td = sum(inv.line_ids.mapped('debit'))
+        tc = sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg="Debit != Credit")
+
+    def test_27_amount_currency_rounds_with_document_currency_precision(self):
+        """amount_currency of a percent tax line must round to the document currency's precision, not the company currency's (VEF, 2 decimals)."""
+        currency_3dp = self.env['res.currency'].create({
+            'name': 'XT3',
+            'symbol': 'XT3',
+            'rounding': 0.001,
+            'decimal_places': 3,
+            'active': True,
+        })
+        self.env['res.currency.rate'].create({
+            'name': fields.Date.today(),
+            'currency_id': currency_3dp.id,
+            'inverse_company_rate': 47.0,
+            'company_id': self.company.id,
+        })
+        inv = self._create_invoice_with_precision(currency_3dp, [
+            (1, 137.918273, [self.tax_16]),
+        ])
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        base_vef = sum(
+            inv.line_ids.filtered(lambda l: l.display_type == 'product').mapped('balance')
+        )
+        raw_tax_vef = base_vef * 0.16
+        rate = inv.invoice_currency_rate
+        expected_3dp = currency_3dp.round(raw_tax_vef * rate)
+        expected_if_rounded_as_vef = self.currency_vef.round(raw_tax_vef * rate)
+        self.assertNotEqual(
+            expected_3dp, expected_if_rounded_as_vef,
+            msg="Test setup does not exercise a 3rd-decimal difference; adjust the numbers",
+        )
+        self.assertAlmostEqual(
+            tax_line.amount_currency, expected_3dp, places=3,
+            msg="amount_currency was rounded with the wrong currency's precision",
+        )
