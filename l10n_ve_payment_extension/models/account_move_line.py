@@ -4,6 +4,18 @@ from odoo import api, fields, models
 class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
+    def _get_foreign_rate_date(self):
+        
+        self.ensure_one()
+        payment = self.move_id.origin_payment_id
+        if payment and payment.is_retention:
+            invoice = payment.retention_line_ids.mapped("move_id")
+            if len(invoice) == 1:
+                invoice_date = invoice.invoice_date or invoice.date
+                if invoice_date:
+                    return invoice_date
+        return super()._get_foreign_rate_date()
+
     ciu_id = fields.Many2one(
         "economic.activity", string="CIU", compute="_compute_ciu_id", store=True, readonly=False
     )
