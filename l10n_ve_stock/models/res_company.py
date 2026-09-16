@@ -18,6 +18,8 @@ class ResCompany(models.Model):
 
     use_physical_location = fields.Boolean()
 
+    use_alternate_locations = fields.Boolean()
+
     use_free_qty_odoo = fields.Boolean()
 
     # not_allow_sell_products = fields.Boolean(
