@@ -1,7 +1,8 @@
 import logging
 import time
+from datetime import timedelta
 
-from odoo import _, fields, models
+from odoo import _, fields, models, tools
 from odoo.exceptions import AccessError, UserError
 
 from ..services.tfhka_client import TFHKA_ENDPOINTS, _is_rate_limit_message
@@ -19,6 +20,20 @@ RATE_LIMIT_RETRY_WAIT = 5
 # Safety cap so one cron run can't try to drain an unbounded backlog in a
 # single transaction (risking hitting limit_time_cron on a long queue).
 QUEUE_BATCH_SIZE = 200
+
+# Safety margin absorbing clock drift between the Odoo app server (which
+# stamps tfhka_processing_started_at via fields.Datetime.now()) and the
+# database server (which stamps tfhka.api.log's create_date) when checking
+# whether a log postdates a given attempt in _tfhka_reconcile_stuck_processing.
+# Measured up to ~2s between these two containers in this environment (and
+# it's the kind of gap that can vary run to run, not a fixed constant) --
+# 30s is deliberately far more generous than that. Safe to be generous: the
+# closest "wrong" candidate this could accidentally match is a *previous*
+# attempt's own log, and consecutive attempts on the same document are
+# always at least RATE_LIMIT_RETRY_WAIT apart (automatic retry) or minutes
+# apart (a human clicking retry), so even 30s of margin can't reach into
+# genuinely unrelated territory.
+CLOCK_SKEW_MARGIN = timedelta(seconds=30)
 
 
 class TfhkaDigitalizationMixin(models.AbstractModel):
@@ -78,6 +93,17 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
              "Cleared once the document digitalizes successfully.",
     )
 
+    def _tfhka_commit(self):
+        """Commits the current transaction -- except under the test runner,
+        where Odoo's test framework forbids cr.commit()/rollback() (it needs
+        the whole test to stay inside one rollback-able savepoint). All the
+        durability guarantees this mixin relies on (durable 'processing'
+        marker, per-document visibility, crash recovery) only matter in real
+        cron/request execution; skipping the commit in tests is safe since
+        the test's own transaction rollback at teardown covers cleanup."""
+        if not tools.config["test_enable"]:
+            self.env.cr.commit()
+
     def _tfhka_enqueue_digitalization(self):
         """Enqueue: call this instead of generate_document_digital() directly
         from action_post()/button_validate(). Never calls TFHKA -- just a
@@ -109,7 +135,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         # started, so a kill during the TFHKA call below leaves the document
         # visibly 'processing' instead of silently rolling back to 'queued'.
         # See _tfhka_recover_stuck_processing().
-        self.env.cr.commit()
+        self._tfhka_commit()
         try:
             try:
                 self.generate_document_digital()
@@ -161,7 +187,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         stuck = self.search([("tfhka_digitalization_state", "=", "processing")])
         for record in stuck:
             record._tfhka_reconcile_stuck_processing()
-            self.env.cr.commit()
+            self._tfhka_commit()
 
     def _tfhka_reconcile_stuck_processing(self):
         self.ensure_one()
@@ -171,7 +197,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 ("res_id", "=", self.id),
                 ("endpoint", "=", TFHKA_ENDPOINTS["emision"]),
                 ("success", "=", True),
-                ("create_date", ">=", self.tfhka_processing_started_at),
+                ("create_date", ">=", self.tfhka_processing_started_at - CLOCK_SKEW_MARGIN),
             ],
             order="create_date desc",
             limit=1,
@@ -235,7 +261,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             # Commit right after each document so its result is visible in
             # Odoo immediately, instead of only once the whole batch (up to
             # QUEUE_BATCH_SIZE documents) finishes processing.
-            self.env.cr.commit()
+            self._tfhka_commit()
             if not success:
                 break  # halt this model's queue here; resumes once retried successfully
 
@@ -289,7 +315,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                     continue
                 record = queue[index]
                 success = record._tfhka_process_digitalization()
-                self.env.cr.commit()
+                self._tfhka_commit()
                 if not success:
                     halted.add(name)  # halt only this model; others keep going
 

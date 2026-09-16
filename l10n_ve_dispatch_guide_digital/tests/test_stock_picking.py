@@ -309,6 +309,11 @@ class TestStockPickingApiCalls(TransactionCase):
         picking = self.create_picking()
         self.validate_picking(picking)
 
+        # button_validate() only enqueues now (see tfhka.digitalization.mixin);
+        # the cron is what actually calls TFHKA.
+        self.assertEqual(picking.tfhka_digitalization_state, "queued")
+        self.env["stock.picking"]._tfhka_cron_process_queue()
+
         self.assertTrue(picking.is_digitalized)
         self.assertEqual(picking.control_number_tfhka, "00-00000001")
         self.assertTrue(picking.guide_number)
@@ -332,9 +337,15 @@ class TestStockPickingApiCalls(TransactionCase):
         self.company.sequence_validation_tfhka = True
 
         picking = self.create_picking()
+        self.validate_picking(picking)
 
-        with self.assertRaises(UserError):
-            self.validate_picking(picking)
+        # The mismatch now only surfaces once the cron actually attempts the
+        # digitalization -- button_validate() itself never calls TFHKA, so it
+        # can't raise synchronously anymore. The queue halts with the
+        # document left in 'error' instead.
+        self.env["stock.picking"]._tfhka_cron_process_queue()
+        self.assertEqual(picking.tfhka_digitalization_state, "error")
+        self.assertIn("does not match the sequence", picking.tfhka_digitalization_error)
 
     @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
     def test_send_document_sequence_mismatch_ignored_when_validation_disabled(self, mock_call):
@@ -346,6 +357,7 @@ class TestStockPickingApiCalls(TransactionCase):
 
         picking = self.create_picking()
         self.validate_picking(picking)
+        self.env["stock.picking"]._tfhka_cron_process_queue()
 
         self.assertTrue(picking.is_digitalized)
 
@@ -375,6 +387,7 @@ class TestStockPickingApiCalls(TransactionCase):
         )
 
         self.validate_picking(picking)
+        self.env["stock.picking"]._tfhka_cron_process_queue()
 
         self.assertTrue(picking.is_digitalized)
         self.assertEqual(picking.control_number_tfhka, "00-00000001")
@@ -673,7 +686,10 @@ class TestStockPickingApiCalls(TransactionCase):
         self.company.dispatch_guide_digital_tfhka = True
         picking = self.create_picking(picking_type=self.picking_type_int)
         self.validate_picking(picking)
-        mock_generate.assert_called_once()
+        # button_validate() only enqueues now (see tfhka.digitalization.mixin);
+        # generate_document_digital() is only called later by the cron.
+        mock_generate.assert_not_called()
+        self.assertEqual(picking.tfhka_digitalization_state, "queued")
 
     @patch(GENERATE_DIGITAL_PATCH)
     def test_button_validate_skipped_when_company_flag_disabled(self, mock_generate):
