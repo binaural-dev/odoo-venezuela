@@ -10,14 +10,12 @@ _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "retention_payment_move_date")
 class TestRetentionPaymentMoveDate(RetentionTestCommon):
-    """Covers the fix in AccountRetention._reconcile_all_payments (the
-    no_exchange_difference / group_in_single_partial context flags, together
-    with the forced foreign_rate/foreign_inverse_rate in
-    AccountPayment._synchronize_to_moves): a retention payment's journal
-    entry stays dated like the retention's own date_accounting (same as
-    payment.date), never like the invoice it retains from, and reconciling
-    it against that invoice must never generate an exchange difference even
-    though the invoice was booked at a different date/rate."""
+    """A retention payment's journal entry must be dated (and rated) with
+    the retention's own date_accounting, like any other payment -- there is
+    no special-casing to pin it to the invoice's own date instead. An
+    earlier version of this module added such an override based on
+    outdated documentation; it was reverted, and this test now asserts the
+    actual expected behavior instead."""
 
     def setUp(self):
         super().setUp()
@@ -62,9 +60,7 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
     def _create_foreign_invoice(self, amount=200.0):
         """Purchase invoice booked in USD (foreign currency), while the
         retention payment is always created in company currency (VEF, see
-        AccountRetention._prepare_retention_payment_vals) -- the combination
-        that would expose a rate mismatch on reconciliation if the payment's
-        move wasn't protected from generating an exchange difference.
+        AccountRetention._prepare_retention_payment_vals).
 
         Built through Form (like RetentionTestCommon._create_invoice_reten_iva)
         instead of a raw .create(vals): the fiscal-position/tax onchange chain
@@ -98,7 +94,7 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
         partials = ap_lines.matched_credit_ids | ap_lines.matched_debit_ids
         return partials.mapped("exchange_move_id").filtered(lambda m: m)
 
-    def test_retention_payment_move_uses_date_accounting_without_exchange_diff(self):
+    def test_retention_payment_move_uses_date_accounting(self):
         invoice = self._create_foreign_invoice(amount=200.0)
         invoice_total_vef = abs(invoice.amount_residual_signed)
         retention_amount_vef = invoice_total_vef * 0.10
@@ -128,23 +124,23 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
         payment = retention.payment_ids
         self.assertEqual(len(payment), 1, "Exactly one payment must be created for the single invoice retained.")
 
-        # payment.date (shown in the UI) keeps the user-chosen retention date.
         self.assertEqual(
             payment.date, self.date_accounting,
-            "payment.date must still reflect the retention's own date_accounting.",
+            "payment.date must reflect the retention's own date_accounting.",
         )
 
-        # The move behind that payment must stay dated like the payment
-        # itself, not like the (differently-dated) invoice it retains from.
+        # The move behind that payment must share the same date -- no
+        # special-casing to pin it to the invoice's own date.
         self.assertEqual(
             payment.move_id.date, self.date_accounting,
-            "The retention payment's journal entry must be dated like the "
-            "payment's own date_accounting, not the invoice it retains from.",
+            "The retention payment's journal entry must be dated like "
+            "date_accounting, same as any other payment.",
         )
 
-        # Even though the invoice was booked at a different date/rate, the
-        # no_exchange_difference/group_in_single_partial reconciliation must
-        # never produce an exchange difference against it.
+        # Independent of the date the move is booked at: reconciling a
+        # retention payment against the invoice it retains from must never
+        # produce a fictitious exchange difference (see the
+        # no_exchange_difference guarantee added in 22a9444b8).
         self.assertFalse(
             self._exchange_diff_moves(invoice),
             "A retention payment must never generate an exchange difference "
