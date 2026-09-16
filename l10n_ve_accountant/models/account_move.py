@@ -1037,7 +1037,11 @@ class AccountMove(models.Model):
         for invoice in self:
             is_draft = invoice.id != invoice._origin.id
             sign = 1 if invoice.is_inbound(include_receipts=True) else -1
-            if invoice.is_invoice(True) and invoice.invoice_line_ids:
+            if (
+                invoice.is_invoice(True)
+                and invoice.invoice_line_ids
+                and isinstance(invoice.needed_terms, dict)
+            ):
                 invoice._compute_tax_totals()
                 if invoice.invoice_payment_term_id:
                     if is_draft:
