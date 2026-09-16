@@ -941,7 +941,7 @@ class TestAccumulatedRate(TransactionCase):
         # action_post() ahora solo encola (ver tfhka.digitalization.mixin);
         # el cron es el que efectivamente llama a TFHKA.
         self.assertEqual(retention.tfhka_digitalization_state, "queued")
-        self.env["account.retention"]._tfhka_cron_process_queue_multi(["account.retention"])
+        self.env["account.retention"]._tfhka_cron_process_queue()
         self.assertTrue(retention.is_digitalized)
 
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
@@ -951,7 +951,7 @@ class TestAccumulatedRate(TransactionCase):
         retention = self._create_retention("islr", account_move)
         retention.with_context(l10n_ve_invoice_digital_auto_retention=True).action_post()
         self.assertEqual(retention.tfhka_digitalization_state, "queued")
-        self.env["account.retention"]._tfhka_cron_process_queue_multi(["account.retention"])
+        self.env["account.retention"]._tfhka_cron_process_queue()
         self.assertTrue(retention.is_digitalized)
 
     def test_44_action_post_without_invoice_context_stays_manual(self):
@@ -980,7 +980,7 @@ class TestAccumulatedRate(TransactionCase):
         self.assertTrue(retention, "La retencion IVA deberia haberse creado automaticamente al postear la factura")
         self.assertEqual(retention.state, "emitted")
         self.assertEqual(retention.tfhka_digitalization_state, "queued")
-        self.env["account.retention"]._tfhka_cron_process_queue_multi(["account.retention"])
+        self.env["account.retention"]._tfhka_cron_process_queue()
         self.assertTrue(retention.is_digitalized)
 
     def test_46_prepare_detail_lines_monto_exento(self):
