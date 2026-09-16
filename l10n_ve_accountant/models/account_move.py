@@ -1519,40 +1519,46 @@ class AccountMove(models.Model):
                         for base_line, to_update in tax_results['base_lines_to_update']
                     }
 
-                    def _vef_base_for_tax(tax):
+                    def _vef_base_for_tax(tax, group_tax):
+                        # `record.tax_ids` holds the tax as the user picked
+                        # it: for a percent tax that is a child of a
+                        # `group`, that's the group, not the child -- match
+                        # on either.
                         total = 0.0
                         for base_line, _to_update in tax_results['base_lines_to_update']:
                             record = base_line['record']
-                            if tax in record.tax_ids:
+                            if tax in record.tax_ids or (group_tax and group_tax in record.tax_ids):
                                 total += fresh_balance_by_line_id.get(record.id, 0.0)
                         return total
 
                     RepLine = self.env['account.tax.repartition.line']
+                    Tax = self.env['account.tax']
 
-                    def _get_rep_line(value):
-                        # tax_repartition_line_id: id (tax_lines_to_add) or
+                    def _get_recordset(model, value):
+                        # Values come as an id (tax_lines_to_add) or a
                         # recordset (tax_lines_to_update).
                         if isinstance(value, models.BaseModel):
                             return value
-                        return RepLine.browse(value) if value else RepLine
+                        return model.browse(value) if value else model
 
-                    def _apply_vef_first(to_update, rep_line_value):
-                        rep_line = _get_rep_line(rep_line_value)
+                    def _apply_vef_first(to_update, rep_line_value, group_tax_value):
+                        rep_line = _get_recordset(RepLine, rep_line_value)
                         tax = rep_line.tax_id if rep_line else False
                         if not tax or tax.amount_type != 'percent':
                             # Fixed/group/formula: keep original behavior.
                             to_update['balance'] = cc.round(to_update['amount_currency'] / rate)
                             return
+                        group_tax = _get_recordset(Tax, group_tax_value)
                         factor = rep_line.factor_percent / 100.0
-                        base_vef = _vef_base_for_tax(tax)
+                        base_vef = _vef_base_for_tax(tax, group_tax)
                         new_balance = cc.round(base_vef * (tax.amount / 100.0) * factor)
                         to_update['balance'] = new_balance
-                        to_update['amount_currency'] = cc.round(new_balance * rate)
+                        to_update['amount_currency'] = move.currency_id.round(new_balance * rate)
 
                     for vals in tax_results['tax_lines_to_add']:
-                        _apply_vef_first(vals, vals.get('tax_repartition_line_id'))
+                        _apply_vef_first(vals, vals.get('tax_repartition_line_id'), vals.get('group_tax_id'))
                     for (_line, _key, to_update) in tax_results['tax_lines_to_update']:
-                        _apply_vef_first(to_update, _line.get('tax_repartition_line_id'))
+                        _apply_vef_first(to_update, _line.get('tax_repartition_line_id'), _line.get('group_tax_id'))
 
             # ── Base lines ───────────────────────────────────────────
             for base_line, to_update in tax_results['base_lines_to_update']:
