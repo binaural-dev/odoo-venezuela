@@ -1505,12 +1505,54 @@ class AccountMove(models.Model):
                 rate = move.invoice_currency_rate
                 if rate:
                     cc = move.company_id.currency_id
-                    for vals in tax_results['tax_lines_to_add']:
-                        vals['balance'] = cc.round(vals['amount_currency'] / rate)
-                    for (_line, _key, to_update) in tax_results['tax_lines_to_update']:
-                        to_update['balance'] = cc.round(to_update['amount_currency'] / rate)
+
+                    # Base lines: unchanged. amount_currency is fresh this
+                    # cycle, so dividing by rate here is safe.
                     for (_base_line, to_update) in tax_results['base_lines_to_update']:
                         to_update['balance'] = cc.round(to_update['amount_currency'] / rate)
+
+                    # record.id -> balance just computed above, not
+                    # `record.balance` (stale this cycle if price/qty
+                    # changed, which caused "entry not balanced").
+                    fresh_balance_by_line_id = {
+                        base_line['record'].id: to_update['balance']
+                        for base_line, to_update in tax_results['base_lines_to_update']
+                    }
+
+                    def _vef_base_for_tax(tax):
+                        total = 0.0
+                        for base_line, _to_update in tax_results['base_lines_to_update']:
+                            record = base_line['record']
+                            if tax in record.tax_ids:
+                                total += fresh_balance_by_line_id.get(record.id, 0.0)
+                        return total
+
+                    RepLine = self.env['account.tax.repartition.line']
+
+                    def _get_rep_line(value):
+                        # tax_repartition_line_id: id (tax_lines_to_add) or
+                        # recordset (tax_lines_to_update).
+                        if isinstance(value, models.BaseModel):
+                            return value
+                        return RepLine.browse(value) if value else RepLine
+
+                    def _apply_vef_first(to_update, rep_line_value):
+                        rep_line = _get_rep_line(rep_line_value)
+                        tax = rep_line.tax_id if rep_line else False
+                        if not tax or tax.amount_type != 'percent':
+                            # Fixed/group/formula: keep original behavior.
+                            to_update['balance'] = cc.round(to_update['amount_currency'] / rate)
+                            return
+                        factor = rep_line.factor_percent / 100.0
+                        base_vef = _vef_base_for_tax(tax)
+                        new_balance = cc.round(base_vef * (tax.amount / 100.0) * factor)
+                        to_update['balance'] = new_balance
+                        to_update['amount_currency'] = cc.round(new_balance * rate)
+
+                    for vals in tax_results['tax_lines_to_add']:
+                        _apply_vef_first(vals, vals.get('tax_repartition_line_id'))
+                    for (_line, _key, to_update) in tax_results['tax_lines_to_update']:
+                        _apply_vef_first(to_update, _line.get('tax_repartition_line_id'))
 
             # ── Base lines ───────────────────────────────────────────
             for base_line, to_update in tax_results['base_lines_to_update']:
@@ -1710,6 +1752,14 @@ class AccountMove(models.Model):
 
         tax_lines = move.line_ids.filtered('tax_repartition_line_id')
         for tax_line in tax_lines:
+            rep_line = tax_line.tax_repartition_line_id
+            tax = rep_line.tax_id if rep_line else False
+            if tax and tax.amount_type == 'percent':
+                # `_sync_tax_lines` already set this balance natively in
+                # VEF. Recomputing via amount_currency/rate here would
+                # amplify document-currency rounding into a larger VEF
+                # error (confirmed by test_23/test_24). Keep it as is.
+                continue
             correct_balance = cc.round(tax_line.amount_currency / rate)
             if not cc.is_zero(correct_balance - tax_line.balance):
                 tax_line.balance = correct_balance
