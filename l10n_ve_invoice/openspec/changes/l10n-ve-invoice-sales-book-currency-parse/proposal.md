@@ -1,85 +1,74 @@
-# Fix: parseo de importes formateados en el Libro de Compras/Ventas
+# Fix: importes del Libro de Compras/Ventas leídos crudos (no re-parseados)
 
 ## Why
 
 Ticket Helpdesk #15026 (validación en 2doce). Al generar el Libro de Ventas de
-un período con muchos registros (1–15 sep), el reporte prácticamente da timeout
-(la conexión se pierde y reconecta) y el log se inunda de miles de líneas:
+un período con muchos registros (1–15 sep, 4690 asientos), el reporte fallaba de
+dos formas encadenadas:
 
-```
-WARNING ... l10n_ve_invoice.wizard.accounting_reports:
-No se pudo convertir la cadena de moneda 'Bs. 876,18' a float. Valor final procesado: '.'
-```
+1. El log se inundaba de miles de líneas y los totales del pie salían en cero:
 
-Causa raíz en `convert_currency_to_float` (`wizard/accounting_reports.py`): los
-importes llegan formateados por Odoo desde `move.tax_totals`, con la forma
-`"Bs.\xa01.234,56"` (símbolo + espacio no-separable `\xa0` + monto es_VE). La
-función partía la cadena por `\xa0` y se quedaba con el **lado izquierdo**:
+   ```
+   WARNING ... No se pudo convertir la cadena de moneda 'Bs. 876,18' a float.
+   Valor final procesado: '.'
+   ```
 
-```python
-if '\xa0' in cleaned_str:
-    cleaned_str = cleaned_str.split('\xa0', 1)[0]   # -> "Bs." (¡el símbolo!)
-```
+2. Tras mitigar eso, el worker moría por `Exception: CPU time limit exceeded`.
 
-Como en la localización venezolana el símbolo va **antes** del monto, el lado
-izquierdo es `"Bs."`, la regex posterior lo reduce a `"."`, y `float(".")` lanza
-`ValueError` → la función devuelve `0.0` y loguea el warning. Es decir:
+**Causa raíz común:** `_determinate_amount_taxeds` tomaba los importes ya
+**formateados** desde `move.tax_totals` (`formatted_base_amount_currency_ves`,
+`formatted_tax_amount_currency_ves`) y los **re-parseaba** a `float` con
+`convert_currency_to_float`. Eso es frágil y caro:
 
-1. **Todos los importes VES daban 0.0** → el resumen del pie del Libro de
-   Compras/Ventas (`_determinate_resume_books`) sumaba ceros; los totales del
-   reporte salían mal.
-2. **Inundación de logs / timeout**: `_determinate_amount_taxeds` (que llama a
-   `convert_currency_to_float` ~varias veces por asiento) se invoca ~30+ veces
-   por asiento entre el cuerpo y el resumen (16 líneas de resumen × varias
-   pasadas). Con el bug, cada llamada emite un `WARNING`, produciendo cientos de
-   miles de líneas de log síncronas en un período grande → la petición se
-   estanca y el proxy corta la conexión.
+- **Frágil / dependiente del idioma:** esos string los arma `formatLang`, que usa
+  el idioma del **usuario** que dispara el reporte, no el de la compañía. En
+  es_VE el decimal es coma; con un usuario en inglés es punto. El parser no puede
+  adivinar el separador sin equivocarse, y una heurística fija produce importes
+  **silenciosamente errados** (p.ej. dividir entre 1000) en un libro que va al
+  SENIAT. La versión original además se quedaba con el lado equivocado al partir
+  por el espacio no-separable `\xa0`, devolviendo `0.0` en todos los importes VES.
+- **Caro:** `_determinate_amount_taxeds` se invoca ~1 vez por asiento en el cuerpo
+  y ~16 veces por asiento en el resumen (`_determinate_resume_books` corre una vez
+  por línea de resumen y recorre todos los asientos), ~17× por asiento. Formatear
+  + re-parsear en cada una, ~80k veces, era el grueso del costo de CPU.
 
-`move.tax_totals` es un campo computado `store=False`, cacheado por el ORM dentro
-del request, así que la recomputación repetida no es el cuello de botella: el
-motor del timeout es la avalancha de logs, que este fix elimina.
+El float crudo (`base_amount` / `tax_amount`, ya en VES) **está en el mismo dict**
+de `tax_totals`: es exactamente el valor que `l10n_ve_accountant` formatea para
+producir los `formatted_*_currency_ves` (`models/account_tax.py:213-222`,
+`:273-282`, `:328-337`). Leerlo directo mata las dos causas de raíz.
 
 ## What Changes
 
-- `wizard/accounting_reports.py`, `convert_currency_to_float`: se reescribe para
-  quedarse SOLO con los tokens que contienen dígitos (separando por espacio,
-  `\xa0` o salto de línea) y descartar el símbolo completo —incluido su punto,
-  como en `"Bs."`/`"Bs.F"`—. Antes se partía por `\xa0` quedándose con un lado
-  fijo, lo que solo funcionaba según la posición del símbolo. La solución sirve
-  para: símbolo antes es_VE (`"Bs.\xa0876,18"` → `876.18`), símbolo después
-  es_VE (`"876,18\xa0Bs."` → `876.18`) y símbolo después con decimal de punto
-  Bs.F (`"100.00\xa0Bs.F"` → `100.0`, que era el caso que rompía el test
-  `test_amount_taxeds_no_deductible`).
-- `tests/test_accounting_reports.py`: casos nuevos para símbolo antes con `\xa0`,
-  miles + decimales, cero, símbolo después (coma-decimal) y símbolo después con
-  punto-decimal (Bs.F).
-
-### Rendimiento (segunda iteración)
-
-Tras el fix del parseo, en 2doce (4690 asientos de venta en 1–15 sep) el reporte
-seguía muriendo por `CPU time limit exceeded` (`limit_time_cpu = 60`). Causa:
-`_determinate_amount_taxeds` se invoca ~1 vez por asiento en el cuerpo y ~16
-veces por asiento en el resumen (`_determinate_resume_books` se llama una vez por
-línea de resumen y recorre todos los asientos), o sea ~17× por asiento → ~80k
-invocaciones en el período. `move.tax_totals` ya lo cachea el ORM por request,
-pero la reconstrucción del dict + parseo de importes se repetía en cada llamada.
-
-- Se memoiza `_determinate_amount_taxeds` por `move.id` durante una generación
-  del libro. El cache vive en el contexto (`_ve_book_amounts_cache`), porque los
-  recordsets no admiten atributos (`__slots__`), y lo siembran los entrypoints
-  `generate_sales_book` / `generate_purchases_book` con
-  `self.with_context(...)`. No cambia ninguna firma → cero riesgo para los
-  overrides de `l10n_ve_payment_extension` / `binaural_third_party_invoice`.
-- El resultado del método solo se consume en lectura (`_fields_sale_book_line`
-  arma un dict nuevo, `_determinate_resume_books` solo suma valores), así que
-  devolver el mismo objeto cacheado es seguro.
+- **`wizard/accounting_reports.py`, `_determinate_amount_taxeds` (fix principal):**
+  se leen los importes crudos `base_amount` / `tax_amount` de `tax_totals` (a
+  nivel top y por `tax_group`) en vez de re-parsear los `formatted_*_currency_ves`
+  (`:1036-1037`, `:1094-1095`). Elimina la dependencia del idioma, los ceros y el
+  grueso del costo de CPU.
+- **Memoización** de `_determinate_amount_taxeds` por `move.id` durante una
+  generación del libro, para no repetir el cálculo ~17× por asiento. El cache vive
+  en el contexto (`_ve_book_amounts_cache`, porque los recordsets no admiten
+  atributos por `__slots__`) y lo siembran los entrypoints `generate_sales_book` /
+  `generate_purchases_book` con `self.with_context(...)`. No cambia ninguna firma
+  → no rompe los overrides de `l10n_ve_payment_extension` /
+  `binaural_third_party_invoice`. El dict devuelto solo se consume en lectura
+  (`_fields_sale_book_line` arma un dict nuevo; `_determinate_resume_books` solo
+  suma), así que devolver el mismo objeto cacheado es seguro.
+- `convert_currency_to_float`: queda endurecido (parseo por token) pero **ya no se
+  usa en el camino del libro**; se conserva como utilidad.
+- `tests/test_accounting_reports.py`: casos de `convert_currency_to_float`. Los
+  tests existentes de `_determinate_amount_taxeds` cubren la ruta de lectura cruda.
 - `__manifest__.py`: versión `19.0.1.0.13` → `19.0.1.0.16`.
 
 ## Non-goals
 
-- No se toca la memoización de `_determinate_amount_taxeds`: `tax_totals` ya está
-  cacheado por el ORM y el fix del parseo elimina la avalancha de logs, que era
-  el driver del timeout. Queda como follow-up solo si tras esto sigue lento.
-- No se cambia el diseño de leer importes ya formateados desde `tax_totals`
-  (huele a re-parseo, pero es el diseño base de la migración V19 y excede este
-  fix).
+- **Rendimiento en producción sin validar aún:** la medición previa se hizo con
+  `LIMIT_TIME_CPU` subido a 300 **solo en la instancia local** (cambio de ops, no
+  de este PR). Falta re-medir con el límite de producción (60s) y este código.
+- **Controlador `/web/download_sales_book`:** escalado a superusuario, `company_id`
+  del query string sin validar y `search([], limit=1)` sobre el último wizard de
+  cualquier usuario. Pre-existente; queda para un ticket aparte de seguridad /
+  multi-compañía.
+- **`UserError` por asiento sin `invoice_date_display`:** hoy aborta el libro
+  entero (`_fields_sale_book_line:68`). Ahora que #1270 mete facturas de máquina
+  fiscal/PdV al libro conviene evaluar degradarlo a línea omitida + warning; fuera
+  de alcance de este fix.

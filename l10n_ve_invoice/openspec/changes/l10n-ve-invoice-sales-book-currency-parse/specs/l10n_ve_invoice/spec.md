@@ -1,29 +1,29 @@
 ## ADDED Requirements
 
-### Requirement: Parseo correcto de importes formateados en el libro de compras/ventas
-`convert_currency_to_float` DEBE (MUST) convertir a `float` los importes que el
-libro toma ya formateados desde `move.tax_totals`, cualquiera sea la posición del
-símbolo de moneda, incluyendo el formato de la localización venezolana `"Bs."`
-seguido de un espacio no-separable (`\xa0`) y el monto en formato es_VE (punto de
-miles, coma decimal). NO debe descartar el monto por quedarse con el lado del
-símbolo al partir por el espacio no-separable.
+### Requirement: Importes del libro leídos crudos, independientes del idioma
+El Libro de Compras/Ventas DEBE (MUST) obtener los importes de cada asiento
+(`_determinate_amount_taxeds`) a partir de los valores numéricos crudos de
+`move.tax_totals` (`base_amount` / `tax_amount`, en VES), NO re-parseando los
+string `formatted_*_currency_ves`. El resultado NO debe depender del idioma del
+usuario que dispara el reporte (el formateo de `formatLang` usa ese idioma, así
+que su separador decimal varía).
 
-#### Scenario: Símbolo antes del monto con espacio no-separable
-- **WHEN** se convierte `"Bs.\xa0876,18"`
-- **THEN** el resultado es `876.18` y no se registra ningún warning de conversión
+#### Scenario: Usuario con idioma de decimal-punto
+- **WHEN** un usuario con la interfaz en inglés (decimal `.`, miles `,`) genera el
+  libro de un asiento cuya base imponible es `1234.56` VES
+- **THEN** el libro reporta `1234.56` (y no `1.23456` ni `0.0`)
 
-#### Scenario: Miles y decimales en formato es_VE
-- **WHEN** se convierte `"Bs.\xa02.382,11"`
-- **THEN** el resultado es `2382.11`
+#### Scenario: Usuario con idioma es_VE
+- **WHEN** un usuario en es_VE (decimal `,`, miles `.`) genera el mismo libro
+- **THEN** el libro reporta el mismo `1234.56`
 
-#### Scenario: Símbolo después del monto
-- **WHEN** se convierte `"1.234,56\xa0Bs."`
-- **THEN** el resultado es `1234.56`
+### Requirement: Memoización de importes por asiento durante la generación
+`_determinate_amount_taxeds` DEBE (MUST) calcularse a lo sumo una vez por asiento
+durante una misma generación del libro, aunque el cuerpo y el resumen lo
+consulten muchas veces.
 
-#### Scenario: Símbolo después con decimal de punto (Bs.F)
-- **WHEN** se convierte `"100.00\xa0Bs.F"` (símbolo con punto pegado, decimal de punto)
-- **THEN** el resultado es `100.0` (el punto del símbolo no se cuela como decimal)
-
-#### Scenario: Cadena vacía o no numérica
-- **WHEN** se convierte `""`, `None` o `"ABC"`
-- **THEN** el resultado es `0.0`
+#### Scenario: El resumen no recalcula por línea
+- **WHEN** se genera un libro cuyo resumen tiene varias líneas que recorren los
+  mismos asientos
+- **THEN** el importe de cada asiento se calcula una sola vez (cache por
+  `move.id` en el contexto), y el valor cacheado es igual al calculado en el cuerpo

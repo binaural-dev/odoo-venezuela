@@ -1020,13 +1020,21 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         tax_base_extend_aliquot = 0.0
         amount_extend_aliquot = 0.0
 
-        base_key = "formatted_base_amount_currency_ves"
-        tax_key = "formatted_tax_amount_currency_ves"
+        # Se leen los importes CRUDOS (floats) que el core ya calculo, no los
+        # string formateados (`formatted_*_currency_ves`). Esos los arma
+        # `formatLang` con el idioma del USUARIO que dispara el reporte, asi que
+        # con un usuario en ingles el decimal es punto y re-parsear saldria mal
+        # EN SILENCIO (importes /1000). `base_amount`/`tax_amount` son el valor
+        # en VES: es justo lo que l10n_ve_accountant formatea a
+        # `formatted_*_currency_ves` (models/account_tax.py:213-222, :273-282,
+        # :328-337). Ademas evita formatear + re-parsear ~80k veces por libro.
+        base_key = "base_amount"
+        tax_key = "tax_amount"
 
         # Sumar totales generales
         if tax_totals:
-            amount_untaxed = self.convert_currency_to_float(tax_totals.get(base_key, ''))
-            amount_taxed = self.convert_currency_to_float(tax_totals.get(tax_key, ''))
+            amount_untaxed = tax_totals.get(base_key, 0.0)
+            amount_taxed = tax_totals.get(tax_key, 0.0)
             if is_credit_note:
                 amount_untaxed *= -1
                 amount_taxed *= -1
@@ -1083,8 +1091,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             for subtotal in tax_totals["subtotals"]:
                 for group in subtotal.get("tax_groups", []):
                     group_id = group.get("id")
-                    base = self.convert_currency_to_float(group.get(base_key,''))
-                    tax = self.convert_currency_to_float(group.get(tax_key,''))
+                    base = group.get(base_key, 0.0)
+                    tax = group.get(tax_key, 0.0)
                     if is_credit_note:
                         base *= -1
                         tax *= -1

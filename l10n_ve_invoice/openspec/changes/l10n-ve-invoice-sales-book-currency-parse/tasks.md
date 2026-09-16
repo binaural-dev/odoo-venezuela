@@ -1,46 +1,41 @@
-## 1. Fix del parseo
+## 1. Leer importes crudos (fix principal)
 
-- [x] 1.1 `wizard/accounting_reports.py`, `convert_currency_to_float`: eliminar
-      el `split('\xa0')[0]` (se quedaba con el símbolo "Bs." y perdía el monto);
-      dejar que la regex descarte símbolo/espacios y la regla punto-de-miles
-      limpie el punto sobrante. Verificado leyendo el diff.
-- [x] 1.2 Bump de manifest `19.0.1.0.13` → `19.0.1.0.14`.
+- [x] 1.1 `wizard/accounting_reports.py`, `_determinate_amount_taxeds`: leer
+      `base_amount` / `tax_amount` crudos de `tax_totals` (top y por `tax_group`,
+      `:1036-1037`, `:1094-1095`) en vez de re-parsear los
+      `formatted_*_currency_ves`. Elimina la dependencia del idioma del usuario
+      (importes silenciosamente errados con UI en inglés), los ceros y el grueso
+      del costo de CPU. Verificado que el crudo es el valor VES que
+      `l10n_ve_accountant` formatea (`models/account_tax.py:213-222`, etc.).
+- [x] 1.2 `convert_currency_to_float` queda fuera del camino del libro (se
+      conserva endurecido como utilidad). Bump manifest → `19.0.1.0.16`.
 
-## 2. Tests
+## 2. Rendimiento (memoización)
 
-- [x] 2.1 `tests/test_accounting_reports.py`: casos símbolo-antes con `\xa0`
-      (`"Bs.\xa0876,18"` → 876.18; `"Bs.\xa00,00"` → 0.0), miles+decimales
-      (`"Bs.\xa02.382,11"` → 2382.11; `"Bs.\xa013.836,97"` → 13836.97),
-      símbolo-después coma-decimal (`"1.234,56\xa0Bs."` → 1234.56) y
-      símbolo-después punto-decimal Bs.F (`"100.00\xa0Bs.F"` → 100.0). Los 4
-      tests previos (`""`, `None`, `"Bs0.00"`, `"ABC"`) siguen pasando.
-- [x] 2.2 Regresión detectada por CI: el `test_amount_taxeds_no_deductible`
-      base usa formato `"100.00\xa0Bs.F"` (símbolo después, decimal de punto).
-      La primera versión del fix (quitar el `split('\xa0')`) dejaba el punto de
-      `"Bs.F"` colándose → 0.0 → `assertGreater` fallaba. Reescrito el parseo
-      para quedarse con el token numérico y descartar el símbolo completo. Bump
-      versión → 19.0.1.0.16.
+`_determinate_amount_taxeds` se invoca ~17× por asiento (1 cuerpo + ~16 resumen).
 
-## 3. Verificación manual (en 2doce, período 1–15 sep)
+- [x] 2.1 Memoizar por `move.id` durante una generación del libro, vía cache en el
+      contexto (`_ve_book_amounts_cache`; los recordsets no admiten atributos por
+      `__slots__`), sembrado por `generate_sales_book` / `generate_purchases_book`.
+      Sin cambios de firma (no rompe overrides de payment_extension /
+      third_party_invoice).
+- [x] 2.2 Verificado que el dict devuelto solo se lee (no se muta), así que
+      devolver el mismo objeto cacheado es seguro.
 
-- [ ] 3.1 Actualizar `l10n_ve_invoice` y generar el Libro de Ventas del período:
-      ya no debe inundar el log con el warning de conversión ni cortar la
-      conexión.
-- [ ] 3.2 Confirmar que el resumen del pie ya no sale en cero y cuadra con las
-      líneas del cuerpo.
+## 3. Tests
 
-## 4. Rendimiento (segunda iteración)
+- [x] 3.1 `tests/test_accounting_reports.py`: casos de `convert_currency_to_float`
+      (utilidad). Los tests existentes de `_determinate_amount_taxeds`
+      (`:461-560`) ejercitan la lectura cruda con el formato del entorno de test
+      (`"100.00\xa0Bs.F"`).
+- [ ] 3.2 Follow-up: test end-to-end de `generate_sales_book` (cuerpo + resumen)
+      con máquina fiscal, y test de la memoización (valor cacheado == calculado,
+      no contaminación entre asientos).
 
-Tras el fix del parseo, 2doce seguía muriendo por `CPU time limit exceeded`
-(`limit_time_cpu=60`) con 4690 asientos: `_determinate_amount_taxeds` se
-invocaba ~17× por asiento (1 en el cuerpo + ~16 en el resumen).
+## 4. Verificación manual (en 2doce, período 1–15 sep, con este código)
 
-- [x] 4.1 Memoizar `_determinate_amount_taxeds` por `move.id` durante una
-      generación del libro, vía cache en el contexto (`_ve_book_amounts_cache`),
-      sembrado por `generate_sales_book` / `generate_purchases_book`. Sin cambios
-      de firma (no rompe overrides de payment_extension / third_party_invoice).
-- [x] 4.2 Verificado que el dict devuelto solo se lee (no se muta), así que
-      devolver el mismo objeto cacheado es seguro. Bump versión → 19.0.1.0.15.
-- [ ] 4.3 Validar en 2doce (1–15 sep) que el libro completa sin exceder el CPU
-      time limit. Si aún queda al límite, subir `LIMIT_TIME_CPU` de la instancia
-      (ops) da el margen restante.
+- [ ] 4.1 Generar el Libro de Ventas del período: el log ya no debe inundarse con
+      el warning de conversión.
+- [ ] 4.2 El resumen del pie ya no sale en cero y cuadra con las líneas del cuerpo.
+- [ ] 4.3 Re-medir con el `LIMIT_TIME_CPU` de producción (60s), NO con el 300
+      subido en local: confirmar que el libro completa dentro del límite.
