@@ -339,12 +339,16 @@ class TestISLRRetention(RetentionTestCommon):
                          "Customer ISLR has 0 amount in draft (no auto-concept match)")
         self.assertFalse(ret.payment_ids)
 
-        # Posting a customer ISLR retention with 0 amount fails at reconciliation
-        # (same as IVA customer — 0-amount payment has no reconcilable lines)
+        # Posting a customer ISLR retention with 0 amount now fails earlier,
+        # at the explicit zero-amount guard in action_post (rule from
+        # helpdesk #14548 follow-up), reusing account.retention.line's own
+        # "0 amount" constraint message instead of surfacing a confusing
+        # reconciliation error.
         with self.assertRaises(ValidationError) as cm:
             ret.action_post()
-        self.assertIn("No registered lines found in the move to reconcile",
-                      str(cm.exception))
+        self.assertEqual(
+            "You can not create a retention with 0 amount.", str(cm.exception)
+        )
 
         # State unchanged (still draft after failed post)
         self.assertEqual(ret.state, "draft")
