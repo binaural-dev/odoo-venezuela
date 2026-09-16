@@ -83,9 +83,14 @@ class TestRetention(RetentionTestCommon):
         with self.assertRaises(UserError) as cm:
             invoice.retention_iva_line_ids[0].retention_id.action_post()
             
-        # Validamos que el texto del error contenga una frase específica esperada
-        Message = "No registered lines found in the move to reconcile."
-        self.assertIn(Message, str(cm.exception), "No se puede publicar la retencion porq no las lineas de retenciones no tienen monto a retener")
+        # Validamos que el texto del error contenga una frase específica esperada.
+        # Posting a 0-amount retention now fails earlier, at the explicit
+        # zero-amount guard in action_post (rule from helpdesk #14548
+        # follow-up), reusing account.retention.line's own "0 amount"
+        # constraint message instead of surfacing a confusing reconciliation
+        # error.
+        Message = "You can not create a retention with 0 amount."
+        self.assertEqual(Message, str(cm.exception), "No se puede publicar la retencion porq no las lineas de retenciones no tienen monto a retener")
 
         self.assertEqual(invoice.retention_iva_line_ids[0].invoice_amount, 1000.0, "base imponible debe ser 1000.0")
         self.assertEqual(invoice.retention_iva_line_ids[0].invoice_total, 1160.0, "total de factura debe ser 1160.0")
@@ -522,12 +527,17 @@ class TestRetention(RetentionTestCommon):
         self.assertTrue(invoice.iva_voucher_number,
                         "Invoice gets voucher number from draft retention")
 
-        # Posting a customer retention with 0 amount fails at reconciliation
+        # Posting a customer retention with 0 amount now fails earlier, at
+        # the explicit zero-amount guard in action_post (rule from helpdesk
+        # #14548 follow-up), reusing account.retention.line's own "0
+        # amount" constraint message instead of a confusing reconciliation
+        # error.
         ret.number = "12345678901234"
         with self.assertRaises(ValidationError) as cm:
             ret.action_post()
-        self.assertIn("No registered lines found in the move to reconcile",
-                      str(cm.exception))
+        self.assertEqual(
+            "You can not create a retention with 0 amount.", str(cm.exception)
+        )
 
         # State unchanged (still draft after failed post)
         self.assertEqual(ret.state, "draft")
