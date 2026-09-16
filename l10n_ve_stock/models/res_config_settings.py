@@ -23,6 +23,12 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
     )
 
+    use_alternate_locations = fields.Boolean(
+        string="Use Alternate Locations",
+        related="company_id.use_alternate_locations",
+        readonly=False,
+    )
+
     use_free_qty_odoo = fields.Boolean(
         related="company_id.use_free_qty_odoo",
         readonly=False,

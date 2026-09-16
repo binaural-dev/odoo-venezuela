@@ -3,7 +3,9 @@
         <xpath expr="//div[hasclass('pos-receipt-amount')]" position="after">
             <div class="pos-receipt-amount">
                 TOTAL
-                <span t-if="props.formatForeignCurrency" t-out="props.formatForeignCurrency(props.data.foreign_amount_total)" class="pos-receipt-right-align"/>
+                <span t-if="props.formatForeignCurrency and order?.get_foreign_total_with_tax"
+                      t-out="props.formatForeignCurrency(order.get_foreign_total_with_tax())"
+                      class="pos-receipt-right-align"/>
             </div>
         </xpath>
         <xpath expr="//div[hasclass('pos-receipt-taxes')]" position="replace">

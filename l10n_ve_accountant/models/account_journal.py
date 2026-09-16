@@ -44,6 +44,7 @@ class AccountJournal(models.Model):
                 domain = [
                     ('is_purchase_international', '=', True),
                     ('id', '!=', record.id),
+                    ('company_id', '=', record.company_id)
                 ]
                 
                 if self.search_count(domain) > 0:
@@ -67,7 +68,7 @@ class AccountJournal(models.Model):
 
                 raise UserError(
                     _(
-                        f"You do not have permissions to create/update a journal with this type."
+                        "You do not have permissions to create/update a journal with this type."
                     )
                 )
 

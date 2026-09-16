@@ -1,24 +1,19 @@
 /** @odoo-module */
 
 import { PaymentScreenPaymentLines } from "@point_of_sale/app/screens/payment_screen/payment_lines/payment_lines";
-import { patch } from "@web/core/utils/patch";
 
-// New orders are now associated with the current table, if any.
-patch(PaymentScreenPaymentLines.prototype, {
-  formatLineAmount(paymentline) {
-    let amount = this.env.utils.formatCurrency(paymentline.get_amount(), true)
-    let foreign_amount = this.env.utils.formatForeignCurrency(paymentline.get_foreign_amount())
-    if (paymentline.selected) {
-      if (paymentline.payment_method.is_foreign_currency) {
-        return foreign_amount
-      } else {
-        return amount
-      }
-    }
-    if (paymentline.payment_method.is_foreign_currency) {
-      return foreign_amount + " / " + amount
-    } else {
-      return foreign_amount + " / " + amount
-    }
-  }
-})
+// Redirect the component to use our primary-inherited template.
+//
+// We could not use `t-inherit-mode="extension"` because the core template
+// has two `PriceFormatter` occurrences (one per branch of the
+// selected/not-selected t-if/t-else) and `//PriceFormatter position="replace"`
+// with multiple matches is unreliable in qweb-inherit — it replaces only
+// one of them.
+//
+// Instead we do a `primary` inherit under a new template name and rebind
+// the component to it here.
+//
+// See:
+//  - static/src/overrides/screens/payment_line/payment_line.xml
+//  - engram discovery/odoo-19/qweb-inherit-multi-match-trap
+PaymentScreenPaymentLines.template = "l10n_ve_pos.PaymentScreenPaymentLines";

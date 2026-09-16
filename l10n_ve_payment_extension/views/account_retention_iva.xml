@@ -257,8 +257,7 @@
                         (0, 0, {'view_mode': 'list', 'view_id': ref('view_retention_iva_list_l10n_ve_payment_extension')}),
                         (0, 0, {'view_mode': 'form', 'view_id': ref('view_retention_iva_form_l10n_ve_payment_extension')})]" />
             <field name="context">{"default_type":'out_invoice', "default_type_retention":'iva'}</field>
-            <field name="domain">[('type_retention', '=', 'iva'), ('type', '=', 'out_invoice')]</field>
-        </record>
+            <field name="domain">[('type_retention', '=', 'iva'), ('type', 'in', ['out_invoice', 'out_refund', 'out_debit'] )]</field>        </record>
         <record id="action_retention_iva_supplier" model="ir.actions.act_window">
             <field name="name">IVA Retention Suppliers</field>
             <field name="res_model">account.retention</field>
@@ -269,7 +268,8 @@
                         (0, 0, {'view_mode': 'list', 'view_id': ref('view_retention_iva_list_l10n_ve_payment_extension')}),
                         (0, 0, {'view_mode': 'form', 'view_id': ref('view_retention_iva_form_l10n_ve_payment_extension')})]" />
             <field name="context">{"default_type":'in_invoice', "default_type_retention":'iva'}</field>
-            <field name="domain">[('type_retention', '=', 'iva'), ('type', '=', 'in_invoice')]</field>
+            <field name="domain">[('type_retention', '=', 'iva'), ('type', 'in', ['in_invoice', 'in_refund', 'in_debit'])]</field>
+
         </record>
     </data>
 </odoo>

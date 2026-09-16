@@ -11,27 +11,29 @@ class SaleOrderLine(models.Model):
     @api.constrains("product_id", "order_id")
     def _check_product_in_consignation(self):
         for line in self:
-            warehouse = line.order_id.warehouse_id
-            if warehouse and warehouse.is_consignation_warehouse:
-                picking_location = self.env["stock.quant"].search_count(
-                    [
-                        ("product_id", "=", line.product_id.id),
-                        ("location_id.partner_id", "=", line.order_id.partner_id.id),
-                        ("location_id.usage", "=", "internal"),
-                        ("quantity", ">", 0),
-                    ]
-                )
-                if picking_location == 0:
-                    raise ValidationError(
-                        _("The product is not available in the customer's consignation location.")
+            if line.product_id and line.product_id.type != "service":
+                warehouse = line.order_id.warehouse_id
+                if warehouse and warehouse.is_consignation_warehouse:
+                    picking_location = self.env["stock.quant"].search_count(
+                        [
+                            ("product_id", "=", line.product_id.id),
+                            ("location_id.partner_id", "=", line.order_id.partner_id.id),
+                            ("location_id.usage", "=", "internal"),
+                            ("quantity", ">", 0),
+                        ]
                     )
+                    if not picking_location:
+                        raise ValidationError(
+                            _("The product is not available in the customer's consignation location.")
+                        )
 
     @api.constrains("product_uom_qty")
     def _check_quantity_in_consignation(self):
         for line in self:
-            warehouse = line.order_id.warehouse_id
-            if warehouse and warehouse.is_consignation_warehouse:
-                if line.product_uom_qty > line.free_qty_today:
-                    raise ValidationError(
-                        _("Cannot sell more than the available consignation stock.")
-                    )
+            if line.product_id and line.product_id.type != "service":
+                warehouse = line.order_id.warehouse_id
+                if warehouse and warehouse.is_consignation_warehouse:
+                    if line.product_uom_qty > line.free_qty_today:
+                        raise ValidationError(
+                            _("Cannot sell more than the available consignation stock.")
+                        )

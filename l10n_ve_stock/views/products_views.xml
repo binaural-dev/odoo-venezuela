@@ -55,8 +55,16 @@
                 <field name="liters_per_unit" groups="l10n_ve_stock.group_block_liters_per_unit"/>
             </xpath>
             <xpath expr="//group[@name='inventory']" position="inside">
+                <field name="show_physical_locations" invisible="1"/>
                 <group>
-                    <field name="physical_location_id" options="{'no_create': True}"/>
+                    <field name="physical_locations_ids" 
+                        widget="many2many_tags" 
+                        options="{'no_create': True}" 
+                        placeholder="Locations..."
+                        domain="[('location_id', '!=', False), ('child_ids', '=', False)]"
+                        invisible="not show_physical_locations"/>
+                    <field name="physical_location_id" options="{'no_create': True}"
+                        invisible="not show_physical_locations"/>
                 </group>
             </xpath>
         </field>
@@ -69,6 +77,14 @@
             <xpath expr="//field[@name='default_code']" position="after">
                 <field name="alternate_code"/>
             </xpath>
+            <xpath expr="//group[@name='group_lots_and_weight']" position="inside">
+                <field
+                    name="lock_internal_reference_on_moves"
+                    widget="boolean_toggle"
+                    invisible="not is_storable"
+                    help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos de inventario validados (estado 'Hecho')."
+                />
+            </xpath>
         </field>
     </record>
     <record id="product_normal_form_view" model="ir.ui.view">
@@ -78,6 +94,14 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='barcode']" position="before">
                 <field name="alternate_code"/>
+            </xpath>
+            <xpath expr="//group[@name='group_lots_and_weight']" position="inside">
+                <field
+                    name="lock_internal_reference_on_moves"
+                    widget="boolean_toggle"
+                    invisible="not is_storable"
+                    help="Al activarlo, la referencia interna no podrá modificarse una vez que el producto tenga movimientos de inventario validados (estado 'Hecho')."
+                />
             </xpath>
         </field>
     </record>

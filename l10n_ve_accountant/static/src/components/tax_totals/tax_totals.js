@@ -92,27 +92,32 @@ Object.defineProperty(TaxTotalsComponent.prototype, "readonly", {
   configurable: true,
 });
 
-export class TaxTotalsComponents extends TaxTotalsComponent {
+class TaxForeignTotalsComponent extends TaxTotalsComponent {
   get readonly() {
     return true;
   }
 }
-TaxTotalsComponents.template = "l10n_ve_accountant.TaxForeignTotalsField";
-TaxTotalsComponents.template = "l10n_ve_accountant.TaxVesTotalsField";
-TaxTotalsComponents.props = {
-  ...standardFieldProps,
-};
+TaxForeignTotalsComponent.template = "l10n_ve_accountant.TaxForeignTotalsField";
+TaxForeignTotalsComponent.props = { ...standardFieldProps };
 
-export const taxTotalsComponent = {
-  component: TaxTotalsComponents,
-};
+class TaxVesTotalsComponent extends TaxTotalsComponent {
+  get readonly() {
+    return true;
+  }
+}
+TaxVesTotalsComponent.template = "l10n_ve_accountant.TaxVesTotalsField";
+TaxVesTotalsComponent.props = { ...standardFieldProps };
 
 const fieldsRegistry = registry.category("fields");
 
 if (!fieldsRegistry.contains("account-tax-foreign-totals-field")) {
-  fieldsRegistry.add("account-tax-foreign-totals-field", taxTotalsComponent);
+  fieldsRegistry.add("account-tax-foreign-totals-field", {
+    component: TaxForeignTotalsComponent,
+  });
 }
 
 if (!fieldsRegistry.contains("account-tax-ves-totals-field")) {
-  fieldsRegistry.add("account-tax-ves-totals-field", taxTotalsComponent);
+  fieldsRegistry.add("account-tax-ves-totals-field", {
+    component: TaxVesTotalsComponent,
+  });
 }

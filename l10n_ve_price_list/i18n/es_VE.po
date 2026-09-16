@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251124\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260619\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-11-28 19:26+0000\n"
-"PO-Revision-Date: 2025-11-28 19:26+0000\n"
+"POT-Creation-Date: 2026-06-29 18:47+0000\n"
+"PO-Revision-Date: 2026-06-29 18:47+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -26,7 +26,23 @@ msgstr "Puede editar precios en las lineas de factura"
 #: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_template__display_name
 #: model:ir.model.fields,field_description:l10n_ve_price_list.field_sale_order_line__display_name
 msgid "Display Name"
-msgstr "Nombre en pantalla"
+msgstr "Nombre para mostrar"
+
+#. module: l10n_ve_price_list
+#: model:res.groups,name:l10n_ve_price_list.group_editing_prices_sales_orders_and_invoices
+msgid "Editing prices on sales orders and invoices"
+msgstr "Edición de precios en pedidos de venta y facturas"
+
+#. module: l10n_ve_price_list
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_product__hide_list_price
+#: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_template__hide_list_price
+msgid "Hide List Price"
+msgstr "Ocultar precio de venta"
+
+#. module: l10n_ve_price_list
+#: model:res.groups,name:l10n_ve_price_list.group_hide_product_sale_prices
+msgid "Hide product sale prices"
+msgstr "Ocultar precio de venta en productos"
 
 #. module: l10n_ve_price_list
 #: model:ir.model.fields,field_description:l10n_ve_price_list.field_account_move__id
@@ -52,11 +68,6 @@ msgid "Pricelist Change Permission"
 msgstr "Permiso para cambiar listas de precios"
 
 #. module: l10n_ve_price_list
-#: model:res.groups,name:l10n_ve_price_list.group_pricelist_see_permission
-msgid "Pricelist See Permission"
-msgstr "Permiso para ver listas de precios en productos"
-
-#. module: l10n_ve_price_list
 #: model:ir.model,name:l10n_ve_price_list.model_product_template
 msgid "Product"
 msgstr "Producto"
@@ -70,12 +81,6 @@ msgstr ""
 #. module: l10n_ve_price_list
 #: model:ir.model.fields,field_description:l10n_ve_price_list.field_sale_order_line__can_edit_prices
 msgid "Puede editar precios"
-msgstr ""
-
-#. module: l10n_ve_price_list
-#: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_product__can_view_list_price_uom
-#: model:ir.model.fields,field_description:l10n_ve_price_list.field_product_template__can_view_list_price_uom
-msgid "Puede ver unidad de precio"
 msgstr ""
 
 #. module: l10n_ve_price_list

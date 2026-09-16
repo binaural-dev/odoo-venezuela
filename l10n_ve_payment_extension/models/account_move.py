@@ -410,9 +410,12 @@ class AccountMoveRetention(models.Model):
 
 
     def _prepare_retention_vals(self, type_retention, payment=False):
+        invoice_date = self.invoice_date_display or self.invoice_date
+        today = fields.Date.context_today(self)
+        date_accounting = max(self.date, invoice_date) if invoice_date else self.date
         retention_vals = {
-            "date_accounting": self.date,
-            "date": self.date if self.move_type in ["in_invoice", "out_invoice"] else False,
+            "date_accounting": min(date_accounting, today),
+            "date": self.date,
             "type_retention": type_retention,
             "type": self.move_type, 
             "partner_id": self.partner_id.id,
@@ -531,9 +534,9 @@ class AccountMoveRetention(models.Model):
             
             payment_concepts = self._get_payment_concepts_from_invoice()
                         
-            if record.move_type == 'in_invoice':
+            if record.move_type in ['in_invoice', 'in_refund']:
                 xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_supplier'
-            elif record.move_type == 'out_invoice':
+            elif record.move_type in ['out_invoice', 'out_refund']:
                 xml_action_id = 'l10n_ve_payment_extension.action_retention_islr_client'
             else:
                 raise UserError(_("This action is only valid for customer or vendor invoices."))
@@ -544,7 +547,7 @@ class AccountMoveRetention(models.Model):
             ctx.update({
                 'default_partner_id': record.partner_id.id,
                 'default_invoice_id': record.id,
-                'default_date_accounting': fields.Date.today(),
+                'default_date_accounting': fields.Date.context_today(self),
                 'default_type': record.move_type,
                 'default_type_retention': 'islr',
                 'default_islr_lines': payment_concepts,
@@ -574,7 +577,22 @@ class AccountMoveRetention(models.Model):
                     if product_tmpl.type == 'service' and product_tmpl.payment_concept:
 
                         concept_id = product_tmpl.payment_concept.id
-                        base_amount = abs(line.price_unit) if use_price_unit else abs(line.move_id.tax_totals["base_amount"])
+
+                        # Task #82491 asks specifically for a supplier-side
+                        # setting ("retención de ISLR Proveedores"); it must
+                        # not silently change the base of client ISLR
+                        # retentions, which nobody requested.
+                        is_supplier_invoice = rec.move_type in ("in_invoice", "in_refund", "in_debit")
+                        use_service_subtotal = use_price_unit or (
+                            is_supplier_invoice
+                            and self.env.company.islr_prioritize_product_subtotal_base
+                        )
+
+                        base_amount = (
+                            abs(line.balance)
+                            if use_service_subtotal
+                            else abs(line.move_id.tax_totals["base_amount"])
+                        )
                         payment_concepts.append((
                             concept_id,
                             base_amount,
@@ -595,9 +613,12 @@ class AccountMoveRetention(models.Model):
         
             payment_concepts = rec._get_payment_concepts_from_invoice()
 
+            invoice_date = rec.invoice_date_display or rec.invoice_date
+            today = fields.Date.context_today(rec)
+            date_accounting = max(today, invoice_date) if invoice_date else today
             vals = {
                 'partner_id': rec.partner_id.id,
-                'date_accounting': fields.Date.today(),
+                'date_accounting': min(date_accounting, today),
                 'type_retention': 'islr',
             }
             ctx = {

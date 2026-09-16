@@ -7,4 +7,4 @@ class AccountMoveLine(models.Model):
     
     def _compute_can_edit_prices(self):
         for line in self:
-            line.can_edit_prices = self.env.user.has_group("l10n_ve_price_list.group_pricelist_change_permission")
+            line.can_edit_prices = self.env.user.has_group("l10n_ve_price_list.group_editing_prices_sales_orders_and_invoices")

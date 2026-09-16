@@ -3,12 +3,11 @@ from odoo import models, fields
 class ProductTemplate(models.Model):
     _inherit = 'product.template'
 
-    can_view_list_price_uom = fields.Boolean(
-        string='Puede ver unidad de precio',
-        compute='_compute_can_view_list_price_uom',
+    hide_list_price = fields.Boolean(
+        compute='_compute_hide_list_price',
         store=False
     )
 
-    def _compute_can_view_list_price_uom(self):
+    def _compute_hide_list_price(self):
         for product in self:
-            product.can_view_list_price_uom = self.env.user.has_group('l10n_ve_price_list.group_pricelist_see_permission')
+            product.hide_list_price = self.env.user.has_group('l10n_ve_price_list.group_hide_product_sale_prices')

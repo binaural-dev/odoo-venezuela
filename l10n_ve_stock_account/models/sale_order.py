@@ -95,6 +95,8 @@ class SaleOrder(models.Model):
         for order in self:
             if order.warehouse_id.is_consignation_warehouse:
                 for line in order.order_line:
+                    if line.product_id and line.product_id.type == "service":
+                        continue
                     picking_location_count = self.env["stock.quant"].search_count(
                         [
                             ("product_id", "=", line.product_id.id),

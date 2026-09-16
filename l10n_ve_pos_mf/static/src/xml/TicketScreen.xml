@@ -1,29 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <templates id="template" xml:space="preserve">
-    <t t-name="TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension" owl="1">
+    <t t-name="l10n_ve_pos_mf.TicketScreen" t-inherit="point_of_sale.TicketScreen" t-inherit-mode="extension">
+
+        <!-- Botones fiscales en el panel de control del pedido seleccionado -->
         <xpath expr="//div[hasclass('control-buttons')]" position="inside">
-        <t t-if="_selectedSyncedOrder">
-                <t t-if="_selectedSyncedOrder &amp;&amp; _selectedSyncedOrder.get_total_with_tax() > 0">
+            <t t-if="_selectedSyncedOrder">
+                <t t-if="_selectedSyncedOrder.mf_invoice_number">
                     <ReprintInvoiceButton order="_selectedSyncedOrder" />
+                </t>
+                <t t-if="!_selectedSyncedOrder.mf_invoice_number">
+                    <PrintPendingOrderButton order="_selectedSyncedOrder" onOrderFiscalized.bind="onOrderFiscalized" />
                 </t>
             </t>
         </xpath>
-        <xpath expr="//InvoiceButton[1]" position="replace"> 
-         </xpath> 
-         <xpath expr="//ReprintReceiptButton[1]" position="replace"> 
-         </xpath> 
 
-        <xpath expr="//div[hasclass('header-row')]" position="inside">
-            <div class="col">
-                <div class="col">N Invoice</div>
-            </div>
-        </xpath>
-        <xpath expr="//div[hasclass('order-row')]" position="inside">
-            <div class="col">
-                <t t-log="order"/>
-                <div><t t-esc="order.mf_invoice_number != 0 ? order.mf_invoice_number : ''  "></t></div>
-            </div>
-        </xpath>
+        <!-- Sin factura contable manual: la facturación fiscal la maneja la MF -->
+        <xpath expr="//InvoiceButton" position="replace" />
 
+        <!-- Columna "N Factura Fiscal" en la lista de pedidos -->
+        <xpath expr="//td[hasclass('order-name')]" position="after">
+            <td class="align-middle">
+                <div class="small text-muted">MF</div>
+                <div class="fw-bolder"><t t-esc="order.mf_invoice_number || ''"/></div>
+            </td>
+        </xpath>
 
     </t>
 </templates>

@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_l10n_ve_mf_reports_wizard_form" model="ir.ui.view">
+        <field name="name">l10n.ve.mf.reports.wizard.form</field>
+        <field name="model">l10n_ve.mf.reports.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Reportes Maquina Fiscal">
+                <!-- ===================================================== -->
+                <!-- Reportes del dia fiscal en curso (no usan el rango)   -->
+                <!-- ===================================================== -->
+                <group string="Reportes del dia fiscal en curso">
+                    <div class="text-muted o_form_label" colspan="2">
+                        El Reporte X y el Reporte Z corresponden siempre al
+                        <b>dia fiscal en curso</b>; no utilizan fechas. Para
+                        fechas pasadas usa "Reporte de memoria fiscal".
+                    </div>
+                    <group>
+                        <widget name="mf-reports-webserial-button" action="report_x"/>
+                        <widget name="mf-reports-webserial-button" action="report_z"/>
+                    </group>
+                </group>
+
+                <!-- ===================================================== -->
+                <!-- Reporte de memoria fiscal por rango de fechas (I2)     -->
+                <!-- ===================================================== -->
+                <group string="Reporte de memoria fiscal por rango de fechas">
+                    <div class="text-muted o_form_label" colspan="2">
+                        Lee la memoria fiscal (permanente). Es la via para
+                        obtener los cierres Z de fechas pasadas.
+                    </div>
+                    <group>
+                        <field name="date_from"/>
+                        <field name="date_to"/>
+                        <field name="memory_report_type"/>
+                    </group>
+                    <group>
+                        <widget name="mf-reports-webserial-button" action="memory_report"/>
+                    </group>
+                </group>
+
+                <!-- ===================================================== -->
+                <!-- Reimpresion de documentos POR NUMERO (memoria auditoria)-->
+                <!-- ===================================================== -->
+                <group string="Reimpresion de documentos por numero (memoria de auditoria)">
+                    <div class="text-muted o_form_label" colspan="2">
+                        Reimpresion por rango de <b>numero</b> de documento.
+                        Para reportes por <b>fecha</b> usa el "Reporte de memoria
+                        fiscal" de arriba. Se mostrara el mensaje que devuelva la
+                        maquina fiscal.
+                    </div>
+                    <group>
+                        <field name="reprint_doc_type"/>
+                        <field name="number_from" required="1"/>
+                        <field name="number_to" required="1"/>
+                    </group>
+                    <group>
+                        <widget name="mf-reports-webserial-button" action="reprint_range"/>
+                    </group>
+                </group>
+
+                <footer>
+                    <button string="Cerrar" class="btn-secondary" special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <record id="action_l10n_ve_mf_reports_wizard" model="ir.actions.act_window">
+        <field name="name">Reportes Maquina Fiscal</field>
+        <field name="res_model">l10n_ve.mf.reports.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="view_id" ref="view_l10n_ve_mf_reports_wizard_form"/>
+    </record>
+
+    <menuitem
+        id="menu_l10n_ve_mf_reports"
+        name="Reportes Maquina Fiscal"
+        parent="l10n_ve_accountant.account_report_detail_sale_menu"
+        action="action_l10n_ve_mf_reports_wizard"
+        sequence="20"
+    />
+</odoo>

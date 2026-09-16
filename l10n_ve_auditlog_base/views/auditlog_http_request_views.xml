@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<odoo>
+    <record id="view_auditlog_http_request_form" model="ir.ui.view">
+        <field name="name">l10n_ve.auditlog.http.request.form</field>
+        <field name="model">auditlog.http.request</field>
+        <field name="inherit_id" ref="auditlog.view_auditlog_http_request_form" />
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="is_outgoing" />
+                <field name="http_method" invisible="not is_outgoing" />
+            </field>
+            <xpath expr="//form/sheet/group[1]" position="after">
+                <group string="Outgoing Request" invisible="not is_outgoing">
+                    <field name="request_url" />
+                    <field name="response_status" />
+                    <field name="error_type" />
+                    <field name="error_message" />
+                    <field name="error_traceback" readonly="1" />
+                    <field name="request_body" readonly="1" widget="text" style="max-height: 150px; overflow-y: auto; display: block;" />
+                    <field name="response_body" readonly="1" widget="text" style="max-height: 150px; overflow-y: auto; display: block;" />
+                    <field name="response_headers" readonly="1" widget="text" style="max-height: 150px; overflow-y: auto; display: block;" />
+                </group>
+            </xpath>
+        </field>
+    </record>
+    <record id="view_auditlog_http_request_tree" model="ir.ui.view">
+        <field name="name">l10n_ve.auditlog.http.request.list</field>
+        <field name="model">auditlog.http.request</field>
+        <field name="inherit_id" ref="auditlog.view_auditlog_http_request_tree" />
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="is_outgoing" />
+                <field name="http_method" />
+                <field name="error_type" />
+                <field name="response_status" />
+            </field>
+        </field>
+    </record>
+    <record id="view_auditlog_http_request_search" model="ir.ui.view">
+        <field name="name">l10n_ve.auditlog.http.request.search</field>
+        <field name="model">auditlog.http.request</field>
+        <field name="inherit_id" ref="auditlog.view_auditlog_http_request_search" />
+        <field name="arch" type="xml">
+            <field name="name" position="after">
+                <field name="is_outgoing" />
+                <field name="http_method" />
+                <field name="error_type" />
+                <field name="request_url" />
+            </field>
+            <group position="after">
+                <separator />
+                <filter
+                    name="outgoing_requests"
+                    string="Outgoing Requests"
+                    domain="[('is_outgoing', '=', True)]"
+                />
+                <filter
+                    name="failed_requests"
+                    string="Failed Requests"
+                    domain="[('is_outgoing', '=', True), ('error_type', '!=', False)]"
+                />
+                <separator />
+                <filter
+                    name="group_by_error_type"
+                    string="Error Type"
+                    domain="[]"
+                    context="{'group_by': 'error_type'}"
+                />
+                <filter
+                    name="group_by_http_method"
+                    string="HTTP Method"
+                    domain="[]"
+                    context="{'group_by': 'http_method'}"
+                />
+            </group>
+        </field>
+    </record>
+</odoo>

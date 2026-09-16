@@ -1,0 +1,269 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_auditlog_base
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260707\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-07-17 07:57+0000\n"
+"PO-Revision-Date: 2026-07-17 07:57+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model,name:l10n_ve_auditlog_base.model_auditlog_http_request
+msgid "Auditlog - HTTP request log"
+msgstr "Auditlog - Registro de peticiones HTTP"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.ui.menu,name:l10n_ve_auditlog_base.menu_auditoria_root
+msgid "Auditoría"
+msgstr "Auditoría"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model,name:l10n_ve_auditlog_base.model_res_company
+msgid "Companies"
+msgstr "Empresas"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model,name:l10n_ve_auditlog_base.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_res_company__log_outgoing_requests
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_res_config_settings__log_outgoing_requests
+msgid ""
+"Controls how outgoing HTTP requests are logged. 'Log Only Failed Requests' "
+"records only failed requests; 'Log All Outgoing Requests' records both "
+"successful and failed requests."
+msgstr ""
+"Controla cómo se registran las solicitudes HTTP salientes. 'Registrar solo "
+"solicitudes fallidas' registra solo las fallidas; 'Registrar todas las "
+"solicitudes salientes' registra tanto exitosas como fallidas."
+
+#. module: l10n_ve_auditlog_base
+#: model_terms:ir.ui.view,arch_db:l10n_ve_auditlog_base.res_config_settings_l10n_ve_auditlog_base
+msgid ""
+"Controls logging of outgoing HTTP requests (API calls to Tesore, Megasoft, "
+"BCV, etc.)"
+msgstr ""
+"Controla el registro de solicitudes HTTP salientes (llamadas API a Tesore, "
+"Megasoft, BCV, etc.)"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_res_config_settings__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__error_message
+msgid "Error Message"
+msgstr "Mensaje de error"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__error_traceback
+msgid "Error Traceback"
+msgstr "Traza de error"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__error_type
+#: model_terms:ir.ui.view,arch_db:l10n_ve_auditlog_base.view_auditlog_http_request_search
+msgid "Error Type"
+msgstr "Tipo de error"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_auditlog_http_request__error_message
+msgid "Exception message with details about why the request failed."
+msgstr "Mensaje de excepción con detalles sobre por qué falló la solicitud."
+
+#. module: l10n_ve_auditlog_base
+#: model_terms:ir.ui.view,arch_db:l10n_ve_auditlog_base.view_auditlog_http_request_search
+msgid "Failed Requests"
+msgstr "Solicitudes fallidas"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_auditlog_http_request__error_traceback
+msgid ""
+"Full Python traceback at the moment the failure occurred, useful for "
+"debugging."
+msgstr ""
+"Traza completa de Python al momento en que ocurrió la falla, útil para "
+"depuración."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_auditlog_http_request__request_url
+msgid "Full URL of the external endpoint that was called."
+msgstr "URL completa del endpoint externo que fue llamado."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__http_method
+#: model_terms:ir.ui.view,arch_db:l10n_ve_auditlog_base.view_auditlog_http_request_search
+msgid "HTTP Method"
+msgstr "Método HTTP"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.ui.menu,name:l10n_ve_auditlog_base.menu_auditoria_http_requests
+msgid "HTTP Requests"
+msgstr "Solicitudes HTTP"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_auditlog_http_request__http_method
+msgid ""
+"HTTP method used for the outgoing request: GET, POST, PUT, DELETE, etc."
+msgstr ""
+"Método HTTP usado para la solicitud saliente: GET, POST, PUT, DELETE, etc."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_auditlog_http_request__response_status
+msgid ""
+"HTTP status code returned by the external server, if a response was received"
+" before the error occurred (e.g. 500, 502, 503)."
+msgstr ""
+"Código de estado HTTP devuelto por el servidor externo, si se recibió una "
+"respuesta antes de que ocurriera el error (ej. 500, 502, 503)."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__id
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_res_config_settings__id
+msgid "ID"
+msgstr "ID"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_auditlog_http_request__is_outgoing
+msgid ""
+"If True, this record corresponds to an outgoing external HTTP request (e.g. "
+"API call to Tesote, Megasoft, BCV, etc.) rather than an incoming Odoo "
+"request."
+msgstr ""
+"Si es Verdadero, este registro corresponde a una solicitud HTTP saliente "
+"(ej. llamada API a Tesore, Megasoft, BCV, etc.) en lugar de una solicitud "
+"entrante de Odoo."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__is_outgoing
+msgid "Is Outgoing Request"
+msgstr "Es solicitud saliente"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields.selection,name:l10n_ve_auditlog_base.selection__res_company__log_outgoing_requests__all
+msgid "Log All Outgoing Requests"
+msgstr "Registrar todas las solicitudes salientes"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.ui.menu,name:l10n_ve_auditlog_base.menu_auditoria_log_lines
+msgid "Log Lines"
+msgstr "Líneas de registro"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields.selection,name:l10n_ve_auditlog_base.selection__res_company__log_outgoing_requests__errors_only
+msgid "Log Only Failed Requests"
+msgstr "Registrar solo solicitudes fallidas"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.ui.menu,name:l10n_ve_auditlog_base.menu_auditoria_logs
+msgid "Logs"
+msgstr "Registros"
+
+#. module: l10n_ve_auditlog_base
+#: model_terms:ir.ui.view,arch_db:l10n_ve_auditlog_base.res_config_settings_l10n_ve_auditlog_base
+msgid ""
+"Maximum characters to store for the response body. Set to 0 for full "
+"content."
+msgstr ""
+"Máximo de caracteres a almacenar para el cuerpo de la respuesta. "
+"Establezca 0 para el contenido completo."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_res_company__response_body_max_chars
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_res_config_settings__response_body_max_chars
+msgid ""
+"Maximum characters to store for the response body. Set to 0 to store the "
+"full response without truncation."
+msgstr ""
+"Máximo de caracteres a almacenar para el cuerpo de la respuesta. "
+"Establezca 0 para almacenar la respuesta completa sin truncamiento."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__display_name
+msgid "Name"
+msgstr "Nombre"
+
+#. module: l10n_ve_auditlog_base
+#: model_terms:ir.ui.view,arch_db:l10n_ve_auditlog_base.view_auditlog_http_request_form
+msgid "Outgoing Request"
+msgstr "Solicitud saliente"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_res_company__log_outgoing_requests
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_res_config_settings__log_outgoing_requests
+#: model_terms:ir.ui.view,arch_db:l10n_ve_auditlog_base.res_config_settings_l10n_ve_auditlog_base
+msgid "Outgoing Request Logging"
+msgstr "Registro de solicitudes salientes"
+
+#. module: l10n_ve_auditlog_base
+#: model_terms:ir.ui.view,arch_db:l10n_ve_auditlog_base.view_auditlog_http_request_search
+msgid "Outgoing Requests"
+msgstr "Solicitudes salientes"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_auditlog_http_request__request_body
+msgid ""
+"Payload sent in the request body (truncation is configurable via 'Response "
+"Body Max Chars' setting)."
+msgstr ""
+"Contenido enviado en el cuerpo de la solicitud (el truncamiento es "
+"configurable mediante la opción 'Máx. caracteres cuerpo de respuesta')."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,help:l10n_ve_auditlog_base.field_auditlog_http_request__error_type
+msgid "Python exception class name: ConnectionError, Timeout, HTTPError, etc."
+msgstr "Nombre de la clase de excepción de Python: ConnectionError, Timeout, HTTPError, etc."
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__request_body
+msgid "Request Body"
+msgstr "Cuerpo de la solicitud"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__request_url
+msgid "Request URL"
+msgstr "URL de la solicitud"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__response_body
+msgid "Response Body"
+msgstr "Cuerpo de la respuesta"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_res_company__response_body_max_chars
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_res_config_settings__response_body_max_chars
+msgid "Response Body Max Chars"
+msgstr "Máx. caracteres cuerpo de respuesta"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__response_headers
+msgid "Response Headers"
+msgstr "Encabezados de la respuesta"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.model.fields,field_description:l10n_ve_auditlog_base.field_auditlog_http_request__response_status
+msgid "Response Status"
+msgstr "Estado de la respuesta"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.ui.menu,name:l10n_ve_auditlog_base.menu_auditoria_rules
+msgid "Rules"
+msgstr "Reglas"
+
+#. module: l10n_ve_auditlog_base
+#: model:ir.ui.menu,name:l10n_ve_auditlog_base.menu_auditoria_http_sessions
+msgid "User Sessions"
+msgstr "Sesiones de usuario"

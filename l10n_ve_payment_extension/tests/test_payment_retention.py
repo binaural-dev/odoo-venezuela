@@ -1,4 +1,4 @@
-from odoo.tests import tagged
+from odoo.tests import tagged, Form
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
 from .test_withholding_common_VEF import RetentionTestCommon
@@ -35,11 +35,26 @@ class TestPaymentRetention(RetentionTestCommon):
         retention.action_post()
         return retention
 
-    def test_01_compute_rate_skips_retention(self):
+    def test_01_compute_rate_retention(self):
         retention = self._create_retention_with_payment()
         for payment in retention.payment_ids:
             payment._compute_rate()
-        _logger.info("========= test_01_compute_rate_skips_retention passed =========")
+        _logger.info("========= test_01_compute_rate_retention passed =========")
+
+    def test_rate_computed_on_payment(self):
+        retention = self._create_retention_with_payment()
+        payment = retention.payment_ids[0]
+        _logger.info(
+            "PAYMENT foreign_rate=%s foreign_inverse_rate=%s foreign_currency_id=%s date=%s rate_table=%s",
+            payment.foreign_rate,
+            payment.foreign_inverse_rate,
+            payment.foreign_currency_id.name,
+            payment.date,
+            self.rate,
+        )
+        self.assertTrue(payment.foreign_rate > 0)
+        self.assertAlmostEqual(payment.foreign_rate, self.rate, places=2)
+        _logger.info("========= test_rate_computed_on_payment passed =========")
 
     def test_02_synchronize_to_moves_municipal(self):
         invoice = self._create_invoice_reten_iva(
@@ -285,6 +300,47 @@ class TestPaymentRetention(RetentionTestCommon):
         concepts = invoice._get_payment_concepts_from_invoice()
         self.assertGreater(len(concepts), 0)
         _logger.info("========= test_16 passed =========")
+
+    def test_16b_get_payment_concepts_from_invoice_multi_line_qty_discount(self):
+        # Two ISLR-eligible lines force use_price_unit=True. Each line has
+        # quantity > 1 and a discount, so price_unit alone (without qty/discount)
+        # would not match the real base amount for the retention.
+        with Form(self.env["account.move"].with_context(
+            default_move_type="in_invoice", default_journal_id=self.purchase_journal.id,
+        )) as inv_form:
+            inv_form.partner_id = self.partner_pnr_75
+            inv_form.invoice_date = fields.Date.today()
+            inv_form.currency_id = self.currency_vef
+            inv_form.correlative = "10000000000001"
+
+        invoice = inv_form.save()
+        with Form(invoice) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product_islr_one
+                line.quantity = 3
+                line.price_unit = 100.0
+                line.discount = 10.0
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product_islr_iva_one
+                line.quantity = 5
+                line.price_unit = 50.0
+                line.discount = 20.0
+        invoice = inv_form_edit.save()
+        invoice.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
+
+        concepts = invoice._get_payment_concepts_from_invoice()
+        self.assertEqual(len(concepts), 2)
+
+        base_amounts = {line_id: amount for _concept_id, amount, line_id in concepts}
+        for line in invoice.invoice_line_ids:
+            self.assertIn(line.id, base_amounts)
+            self.assertAlmostEqual(
+                base_amounts[line.id], abs(line.price_subtotal), places=2,
+            )
+            self.assertNotAlmostEqual(
+                base_amounts[line.id], abs(line.price_unit), places=2,
+            )
+        _logger.info("========= test_16b passed =========")
 
     def test_17_view_third_party_iva_retentions(self):
         invoice = self._create_invoice_reten_iva(

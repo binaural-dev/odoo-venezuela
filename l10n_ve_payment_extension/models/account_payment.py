@@ -49,11 +49,6 @@ class AccountPayment(models.Model):
         compute="_compute_retention_foreign_amount", store=True, copy=False
     )
 
-    @api.depends("date")
-    def _compute_rate(self):
-        to_compute = self.filtered(lambda p: not (p.is_retention and p.foreign_rate))
-        super(AccountPayment, to_compute)._compute_rate()
-
     def _synchronize_to_moves(self, changed_fields):
         """
         Override the original method to change the name of the move based on the retention type
@@ -85,9 +80,10 @@ class AccountPayment(models.Model):
                     f"-{retention_line_id.economic_activity_id.branch_id.name}"
                 )
 
-            vals_to_change = {"name": move_name, "is_manually_modified": True}
+            vals_to_change = {"name": move_name, "is_manually_modified": True, "foreign_rate": retention_line_id.move_id.foreign_rate, "foreign_inverse_rate": retention_line_id.move_id.foreign_inverse_rate}
             move.write(vals_to_change)
         return res
+
 
     def unlink(self):
         for payment in self:

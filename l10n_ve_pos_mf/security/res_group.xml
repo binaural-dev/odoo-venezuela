@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+<data>
+
+    <record id="group_pos_close_native" model="res.groups">
+        <field name="name">Close POS session natively (skip mandatory Z report)</field>
+        <!-- Sin privilege_id a propósito: mismo patrón que
+             l10n_ve_pos.group_change_qty_on_pos_order, para que quede como
+             checkbox independiente en "Extra Rights" y no como opción
+             excluyente con group_pos_user/group_pos_manager. -->
+        <field name="privilege_id" eval="False"/>
+    </record>
+
+</data>
+</odoo>
