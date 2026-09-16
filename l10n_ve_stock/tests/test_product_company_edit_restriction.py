@@ -139,3 +139,31 @@ class TestProductCompanyEditRestriction(TransactionCase):
         restricted."""
         template = self.template.with_user(self.user)
         template.write({"company_id": self.template.company_id.id})
+
+    def test_write_company_id_on_variant_without_group_raises_access_error(self):
+        """company_id on product.product is a writable related field
+        (materialized by _inherits, not readonly on the core field) -
+        writing it there reaches the same column without ever going
+        through product.template.write(), so the guard has to be enforced
+        on product.product too, or this is a bypass."""
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        variant = self.template.product_variant_id.with_user(self.user)
+        with self.assertRaises(AccessError):
+            variant.write({"company_id": other_company.id})
+
+    def test_write_company_id_on_variant_with_group_is_allowed(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        self.user.group_ids = [(4, self.group.id)]
+        variant = self.template.product_variant_id.with_user(self.user)
+        variant.write({"company_id": other_company.id})
+        self.assertEqual(self.template.company_id, other_company)
+
+    def test_create_variant_with_company_id_without_group_raises_access_error(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        Product = self.env["product.product"].with_user(self.user)
+        with self.assertRaises(AccessError):
+            Product.create({
+                "name": "Variant created by unprivileged user",
+                "type": "consu",
+                "company_id": other_company.id,
+            })
