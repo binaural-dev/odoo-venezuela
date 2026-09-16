@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_team_salesteams_view_form_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.team.form.foreign.currency</field>
+        <field name="model">crm.team</field>
+        <field name="inherit_id" ref="sale.crm_team_salesteams_view_form"/>
+        <field name="arch" type="xml">
+            <div id="invoiced_target" position="before">
+                <field name="foreign_currency_id" invisible="1"/>
+                <label for="invoiced_target_foreign"/>
+                <div class="o_row">
+                    <field
+                        name="invoiced_target_foreign"
+                        widget="monetary"
+                        options="{'currency_field': 'foreign_currency_id'}"
+                        class="oe_inline"
+                    />
+                    <span class="ms-2 text-nowrap">/ Mes</span>
+                </div>
+            </div>
+            <div id="invoiced_target" position="attributes">
+                <attribute name="invisible">1</attribute>
+            </div>
+        </field>
+    </record>
+
+    <record id="crm_team_view_kanban_dashboard_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.team.view.kanban.dashboard.foreign.currency</field>
+        <field name="model">crm.team</field>
+        <field name="inherit_id" ref="sale.crm_team_view_kanban_dashboard"/>
+        <field name="arch" type="xml">
+            <xpath expr="//templates" position="before">
+                <field name="foreign_currency_id"/>
+                <field name="invoiced_target_foreign"/>
+                <field name="invoiced_foreign"/>
+            </xpath>
+            <xpath expr="//div[hasclass('crm_team_kanban_bottom')]" position="before">
+                <div class="d-flex align-items-center text-muted small" invisible="not invoiced_target_foreign">
+                    <field name="invoiced_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+                    <span class="mx-1">/</span>
+                    <field name="invoiced_target_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
