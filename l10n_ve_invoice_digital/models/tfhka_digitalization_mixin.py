@@ -33,6 +33,20 @@ LOCAL_VALIDATION_ENDPOINT = "(local validation)"
 # hitting limit_time_cron.
 QUEUE_BATCH_SIZE = 200
 
+# Safety margin absorbing clock drift between the Odoo app server (which
+# stamps tfhka_processing_started_at via fields.Datetime.now()) and the
+# database server (which stamps tfhka.api.log's create_date) when checking
+# whether a log postdates a given attempt in _tfhka_reconcile_stuck_processing.
+# Measured up to ~2s between these two containers in this environment (and
+# it's the kind of gap that can vary run to run, not a fixed constant) --
+# 30s is deliberately far more generous than that. Safe to be generous: the
+# closest "wrong" candidate this could accidentally match is a *previous*
+# attempt's own log, and consecutive attempts on the same document are
+# always at least RATE_LIMIT_RETRY_WAIT apart (automatic retry) or minutes
+# apart (a human clicking retry), so even 30s of margin can't reach into
+# genuinely unrelated territory.
+CLOCK_SKEW_MARGIN = timedelta(seconds=30)
+
 
 class TfhkaDigitalizationMixin(models.AbstractModel):
     """Digitalization queue fields, shared by every TFHKA-digitalizable
@@ -93,11 +107,6 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
              "Cleared once the document digitalizes successfully.",
     )
 
-    def write(self, vals):
-        if "tfhka_digitalization_state" in vals:
-            vals = dict(vals, date_state=fields.Datetime.now())
-        return super().write(vals)
-
     def _tfhka_commit(self):
         """Commits the current transaction -- except under the test runner,
         where Odoo's test framework forbids cr.commit()/rollback() (it needs
@@ -151,12 +160,9 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         self.write({"tfhka_digitalization_state": "processing"})
         # Committed right away -- durable proof that this specific attempt
         # started, so a kill during the TFHKA call below leaves the document
-        # visibly 'processing' (with date_state marking when) instead of
-        # silently rolling back to 'queued'. See _tfhka_cron_step().
+        # visibly 'processing' instead of silently rolling back to 'queued'.
+        # See _tfhka_recover_stuck_processing().
         self._tfhka_commit()
-        api_log = self.env["tfhka.api.log"].sudo()
-        log_domain = [("res_model", "=", self._name), ("res_id", "=", self.id)]
-        logged_before = api_log.search_count(log_domain)
         try:
             try:
                 self.generate_document_digital()
@@ -218,8 +224,72 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         that threshold, does nothing -- it's simply too soon to tell apart
         from a still-in-flight call.
         """
+        stuck = self.search([("tfhka_digitalization_state", "=", "processing")])
+        for record in stuck:
+            record._tfhka_reconcile_stuck_processing()
+            self._tfhka_commit()
+
+    def _tfhka_reconcile_stuck_processing(self):
         self.ensure_one()
-        if fields.Datetime.now() - self.date_state < PROCESSING_TIMEOUT:
+        log_entry = self.env["tfhka.api.log"].sudo().search(
+            [
+                ("res_model", "=", self._name),
+                ("res_id", "=", self.id),
+                ("endpoint", "=", TFHKA_ENDPOINTS["emision"]),
+                ("success", "=", True),
+                ("create_date", ">=", self.tfhka_processing_started_at - CLOCK_SKEW_MARGIN),
+            ],
+            order="create_date desc",
+            limit=1,
+        )
+        if log_entry:
+            self._tfhka_reconcile_success_from_log(log_entry)
+            self.write({
+                "tfhka_digitalization_state": "success",
+                "tfhka_digitalization_error": False,
+                "is_digitalized": True,
+            })
+            self.message_post(
+                body=_(
+                    "TFHKA digitalization was interrupted before Odoo could record the "
+                    "result, but the API log shows it actually succeeded (see The Factory "
+                    "HKA API Log #%s). Recovered automatically -- the document was not "
+                    "resubmitted."
+                ) % log_entry.id,
+            )
+        else:
+            _logger.info(
+                "TFHKA: %s #%s was left in 'processing' by an interrupted attempt with no "
+                "matching successful call in tfhka.api.log -- requeuing for a clean retry.",
+                self._name, self.id,
+            )
+            self.write({
+                "tfhka_digitalization_state": "queued",
+                "tfhka_processing_started_at": False,
+            })
+
+    def _tfhka_reconcile_success_from_log(self, log_entry):
+        """Replays the bookkeeping a normal successful digitalization would
+        have done, using the response TFHKA already gave us (stored in
+        ``log_entry``) instead of calling TFHKA again. Each concrete model
+        (account.move, account.retention, stock.picking) must implement
+        this, since each records success differently (different fields,
+        and account.move additionally resyncs its own sequence)."""
+        raise NotImplementedError(
+            "%s must implement _tfhka_reconcile_success_from_log()" % self._name
+        )
+
+    def _tfhka_cron_process_queue(self):
+        """Cron entry point -- operates on self (the concrete model the
+        calling cron is bound to: account.move, account.retention or
+        stock.picking).
+
+        Queue lock: if this model already has a document in 'error', nothing
+        is processed -- that document must be resolved (retried
+        successfully) before the rest of this model's queue can advance.
+        """
+        self._tfhka_recover_stuck_processing()
+        if self.search_count([("tfhka_digitalization_state", "=", "error")]):
             return
         message = _(
             "TFHKA digitalization timed out: this document was left in "
@@ -260,10 +330,14 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             order="tfhka_queued_at asc, id asc",
             limit=1,
         )
-        if not record:
-            return False
-        record._tfhka_process_digitalization()
-        return True
+        for record in queued:
+            success = record._tfhka_process_digitalization()
+            # Commit right after each document so its result is visible in
+            # Odoo immediately, instead of only once the whole batch (up to
+            # QUEUE_BATCH_SIZE documents) finishes processing.
+            self._tfhka_commit()
+            if not success:
+                break  # halt this model's queue here; resumes once retried successfully
 
     def _tfhka_cron_process_queue_multi(self, model_names):
         """Entry point for the single unified cron: drains every model's
@@ -291,16 +365,32 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 continue
             active.append(model)
 
-        for _ in range(QUEUE_BATCH_SIZE):
-            if not active:
-                break
-            still_active = []
-            for model in active:
-                advanced = model._tfhka_cron_step()
+        halted = set()
+        queues = {}
+        for model in models:
+            if model.search_count([("tfhka_digitalization_state", "=", "error")]):
+                halted.add(model._name)
+                continue
+            queues[model._name] = model.search(
+                [("tfhka_digitalization_state", "=", "queued")],
+                order="tfhka_queued_at asc, id asc",
+                limit=QUEUE_BATCH_SIZE,
+            )
+
+        max_len = max((len(queue) for queue in queues.values()), default=0)
+        for index in range(max_len):
+            for model in models:
+                name = model._name
+                if name in halted:
+                    continue
+                queue = queues.get(name)
+                if not queue or index >= len(queue):
+                    continue
+                record = queue[index]
+                success = record._tfhka_process_digitalization()
                 self._tfhka_commit()
-                if advanced:
-                    still_active.append(model)
-            active = still_active
+                if not success:
+                    halted.add(name)  # halt only this model; others keep going
 
     def _tfhka_digitalization_alert_data(self, model_names):
         """Records currently blocking their model's queue (state == 'error'),

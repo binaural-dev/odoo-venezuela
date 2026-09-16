@@ -312,7 +312,7 @@ class TestStockPickingApiCalls(TransactionCase):
         # button_validate() only enqueues now (see tfhka.digitalization.mixin);
         # the cron is what actually calls TFHKA.
         self.assertEqual(picking.tfhka_digitalization_state, "queued")
-        self.env["stock.picking"]._tfhka_cron_process_queue_multi(["stock.picking"])
+        self.env["stock.picking"]._tfhka_cron_process_queue()
 
         self.assertTrue(picking.is_digitalized)
         self.assertEqual(picking.control_number_tfhka, "00-00000001")
@@ -343,7 +343,7 @@ class TestStockPickingApiCalls(TransactionCase):
         # digitalization -- button_validate() itself never calls TFHKA, so it
         # can't raise synchronously anymore. The queue halts with the
         # document left in 'error' instead.
-        self.env["stock.picking"]._tfhka_cron_process_queue_multi(["stock.picking"])
+        self.env["stock.picking"]._tfhka_cron_process_queue()
         self.assertEqual(picking.tfhka_digitalization_state, "error")
         self.assertIn("does not match the sequence", picking.tfhka_digitalization_error)
 
@@ -357,7 +357,7 @@ class TestStockPickingApiCalls(TransactionCase):
 
         picking = self.create_picking()
         self.validate_picking(picking)
-        self.env["stock.picking"]._tfhka_cron_process_queue_multi(["stock.picking"])
+        self.env["stock.picking"]._tfhka_cron_process_queue()
 
         self.assertTrue(picking.is_digitalized)
 
@@ -387,7 +387,7 @@ class TestStockPickingApiCalls(TransactionCase):
         )
 
         self.validate_picking(picking)
-        self.env["stock.picking"]._tfhka_cron_process_queue_multi(["stock.picking"])
+        self.env["stock.picking"]._tfhka_cron_process_queue()
 
         self.assertTrue(picking.is_digitalized)
         self.assertEqual(picking.control_number_tfhka, "00-00000001")
