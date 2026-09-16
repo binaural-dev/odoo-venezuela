@@ -51,7 +51,7 @@ class ProductTemplate(models.Model):
     can_edit_company_id = fields.Boolean(
         string="Can edit company",
         compute="_compute_can_edit_company_id",
-        help="Indica si el usuario actual puede modificar la compañía del producto.",
+        help="Whether the current user can modify the product's company.",
     )
 
     lock_internal_reference_on_moves = fields.Boolean(

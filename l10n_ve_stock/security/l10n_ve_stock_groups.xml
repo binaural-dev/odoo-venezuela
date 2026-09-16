@@ -58,7 +58,7 @@
         </record>
 
         <record id="edit_product_company_privilege" model="res.groups.privilege">
-            <field name="name">Editar compañía del producto</field>
+            <field name="name">Edit product company</field>
             <field name="category_id" ref="base.module_category_hidden"/>
         </record>
         <record id="group_edit_product_company" model="res.groups">

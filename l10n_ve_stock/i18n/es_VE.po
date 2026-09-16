@@ -685,9 +685,20 @@ msgid "Can edit company"
 msgstr "Puede editar la compañía"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_product__can_edit_company_id
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_template__can_edit_company_id
+msgid "Whether the current user can modify the product's company."
+msgstr "Indica si el usuario actual puede modificar la compañía del producto."
+
+#. module: l10n_ve_stock
 #: model:res.groups,name:l10n_ve_stock.group_edit_product_company
 msgid "Can edit product company"
 msgstr "Puede editar la compañía del producto"
+
+#. module: l10n_ve_stock
+#: model:res.groups.privilege,name:l10n_ve_stock.edit_product_company_privilege
+msgid "Edit product company"
+msgstr "Editar compañía del producto"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__price_with_tax
