@@ -45,7 +45,7 @@
                         <t groups="base.group_no_one">
                             <field name="foreign_inverse_rate" invisible="1" />
                         </t>
-                        <field name="foreign_rate" readonly="move_type not in ['in_invoice'] or move_type in ['in_invoice'] and state == 'posted'" force_save="1"  options="{'precision': 'Tasa'}"/>
+                        <field name="foreign_rate" readonly="not (state == 'draft' and (move_type == 'in_invoice' or (move_type == 'entry' and manually_set_rate)))" force_save="1"  options="{'precision': 'Tasa'}"/>
                     </group>
                     <group colspan="4">
                         <group class="oe_subtotal_footer oe_right"
