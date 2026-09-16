@@ -77,8 +77,10 @@ class SaleOrderLine(models.Model):
             discount = line.discount if line.discount and not float_is_zero(line.discount, precision_digits=2) else 0.0
             
             price_with_discount = line.foreign_price * (1 - (discount / 100.0))
-            
-            line.foreign_subtotal = price_with_discount * line.product_uom_qty
+
+            line.foreign_subtotal = line.foreign_currency_id.round(
+                price_with_discount * line.product_uom_qty
+            )
             
     def _prepare_invoice_line(self, **optional_values):
        

@@ -282,9 +282,9 @@ class AccountMoveLine(models.Model):
             line.foreign_credit = new_foreign_credit
 
     def _calculate_from_product(self, line):
-        
+
         sign = line.move_id.direction_sign * -1
-        amount = line.foreign_subtotal * sign
+        amount = line.foreign_currency_id.round(line.foreign_subtotal * sign)
         new_foreign_debit = abs(amount) if amount < 0 else 0.0
         if line.foreign_debit != new_foreign_debit:
             line.foreign_debit = new_foreign_debit
