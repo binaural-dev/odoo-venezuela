@@ -24,6 +24,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
     )
 
     def print_xlsx(self):
+        self.env.company._check_prefix_vat_confirmed_for_fiscal_documents()
         domain = self._get_municipal_retention_domain()
         retentions_count = self.env["account.retention"].search_count(domain)
         do_not_validate_missing_tax_authorities_name_per_company = self.env.context.get(
