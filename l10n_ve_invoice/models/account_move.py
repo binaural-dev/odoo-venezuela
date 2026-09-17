@@ -21,7 +21,6 @@ class AccountMove(models.Model):
     )
 
     invoice_date = fields.Date(
-        string="Rate Date",
         default=fields.Date.context_today,
         help="Date of the invoice. Defaults to today when creating a new invoice.",
     )
@@ -519,14 +518,12 @@ class AccountMove(models.Model):
                     invoice.next_installment_date = line.date_maturity
                     break
 
-    @api.depends("invoice_date", "state")
+    @api.depends("invoice_date_display", "state")
     def _compute_display_date_warning(self):
         today = fields.Date.context_today(self)
         for move in self:
             move.display_date_warning = bool(
-                move.invoice_date
-                and move.state == "draft"
-                and move.invoice_date < today
+                move.invoice_date_display and move.state == "draft" and move.invoice_date_display < today
             )
 
     def _post(self, soft=True):
