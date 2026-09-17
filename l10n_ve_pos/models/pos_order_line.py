@@ -101,7 +101,13 @@ class PosOrderLine(models.Model):
         precision = self.env["decimal.precision"].precision_get("Product Price")
         for line in self:
             order = line.order_id
-            discount_product = order.config_id.discount_product_id
+            config = order.config_id
+            # `discount_product_id` is a `pos_discount` field, not a
+            # `l10n_ve_pos` dependency: on a DB without `pos_discount`
+            # installed, `pos.config` doesn't have it at all.
+            if "discount_product_id" not in config._fields:
+                continue
+            discount_product = config.discount_product_id
             if not discount_product or line.product_id != discount_product:
                 continue
             if float_compare(line.price_unit, 0.0, precision_digits=precision) <= 0:
