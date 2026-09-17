@@ -124,26 +124,6 @@ msgid "Queued"
 msgstr "En Cola"
 
 #. module: l10n_ve_dispatch_guide_digital
-#: model:ir.model.fields,help:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_processing_started_at
-msgid ""
-"When the current/last digitalization attempt started. Committed to the "
-"database immediately (unlike the rest of this attempt's writes) so that if "
-"Odoo is killed while waiting on TFHKA's response, this document is durably "
-"left in 'processing' instead of silently rolling back to 'queued'. On the "
-"next cron run, this timestamp scopes the tfhka.api.log lookup used to "
-"check whether TFHKA actually processed that specific interrupted attempt "
-"before it's safe to retry."
-msgstr ""
-"Momento en que empezó el intento de digitalización actual/último. Se "
-"guarda de inmediato en la base de datos (a diferencia del resto de las "
-"escrituras de este intento), así que si Odoo se cae mientras espera la "
-"respuesta de TFHKA, el documento queda visiblemente en 'En proceso' en "
-"lugar de volver silenciosamente a 'En cola'. En la siguiente corrida del "
-"cron, esta fecha acota la búsqueda en el historial de API usada para "
-"verificar si TFHKA realmente procesó ese intento interrumpido antes de que "
-"sea seguro reintentar."
-
-#. module: l10n_ve_dispatch_guide_digital
 #: model:ir.model.fields,help:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_queued_at
 msgid ""
 "When this document entered the digitalization queue. Determines the order "
@@ -177,11 +157,6 @@ msgstr "Estado de Digitalización TFHKA"
 #: model:ir.model.fields.selection,name:l10n_ve_dispatch_guide_digital.selection__stock_picking__tfhka_digitalization_state__success
 msgid "TFHKA Digitalization Success"
 msgstr "Exitoso"
-
-#. module: l10n_ve_dispatch_guide_digital
-#: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_processing_started_at
-msgid "TFHKA Processing Started At"
-msgstr "Inicio de Procesamiento TFHKA"
 
 #. module: l10n_ve_dispatch_guide_digital
 #: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_queued_at

@@ -9,7 +9,7 @@ class AccountRetentionAlertWizard(models.TransientModel):
     
     def action_confirm(self):
         self.move_id.tfhka_auto_accept_sequence_mismatch = True
-        self.move_id._tfhka_process_digitalization()
+        self.move_id._tfhka_enqueue_digitalization()
 
     def action_cancel(self):
         return {'type': 'ir.actions.act_window_close'}

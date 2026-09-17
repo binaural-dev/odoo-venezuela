@@ -120,7 +120,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             'odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.generate_document_digital',
             lambda self: self.write({'is_digitalized': True}),
         ):
-            self.env['account.move']._tfhka_cron_process_queue()
+            self.env['account.move']._tfhka_cron_process_queue_multi(['account.move'])
 
         self.assertTrue(inv.is_digitalized)
         self.assertEqual(inv.tfhka_digitalization_state, "success")
