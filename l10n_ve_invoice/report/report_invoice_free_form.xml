@@ -156,7 +156,7 @@
                                         <t t-set="current_subtotal" t-value="current_subtotal + line.price_subtotal" groups="account.group_show_line_subtotals_tax_included"/>
                                     </t>
 
-                                    <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
+                                    <tr t-att-class="'bg-200 fw-bold o_line_section' if line.display_type == 'line_section' else 'fw-bold o_line_subsection' if line.display_type == 'line_subsection' else 'fst-italic o_line_note' if line.display_type == 'line_note' else ''">
                                         <t t-if="line.display_type == 'product'" name="account_invoice_line_accountable">
                                             <td t-if="o.company_id.show_column_default_code_free_form">
                                                 <span t-field="line.product_id.default_code"/>
@@ -197,6 +197,22 @@
                                             </td>
                                             <t t-set="current_section" t-value="line"/>
                                             <t t-set="current_subtotal" t-value="0"/>
+                                        </t>
+                                        <!--
+                                            line_subsection is the display_type
+                                            Odoo 19 added to the layout family.
+                                            Without a branch of its own it
+                                            matched none of the three above and
+                                            the row rendered EMPTY: the
+                                            subsection's text simply vanished
+                                            from the printed invoice, silently.
+                                            Indented to read as nested under
+                                            its section, the way core does it.
+                                        -->
+                                        <t t-if="line.display_type == 'line_subsection'">
+                                            <td colspan="99" class="ps-4">
+                                                <span t-field="line.name" t-options="{'widget': 'text'}"/>
+                                            </td>
                                         </t>
                                         <t t-if="line.display_type == 'line_note'">
                                             <td colspan="99">
