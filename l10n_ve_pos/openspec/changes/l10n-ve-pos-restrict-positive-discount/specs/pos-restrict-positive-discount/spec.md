@@ -78,3 +78,47 @@ mismas exenciones que el guard de JS.
 - GIVEN una línea del producto de descuento en una orden que no es de reembolso
 - WHEN se escribe `price_unit` positivo directamente (RPC, sync del PdV, o edición manual)
 - THEN `pos.order.line` lanza `ValidationError` y no permite guardar el registro
+
+### Requirement: El parseo del monto no reinterpreta valores generados por el propio core
+
+El parseo del precio recibido en `setUnitPrice` DEBE probar primero una
+conversión nativa (`Number()`) antes de caer al parser sensible al locale.
+Un valor de entrada con punto decimal puede venir de dos orígenes distintos:
+lo que teclea el cajero (nunca lleva punto en `es_VE`, el numpad solo ofrece
+la tecla de coma) o lo que arma el propio core al serializar un número
+(`String(numero)`, que SIEMPRE usa punto, sin importar el locale activo). Si
+se parseara ese segundo caso directo con el parser de locale, el punto se
+leería como separador de miles.
+
+#### Scenario: El core reasigna el monto como string con punto decimal
+
+- GIVEN locale `es_VE` (coma decimal, punto de miles) y una línea de
+  descuento con precio `-4842.69`
+- WHEN `setUnitPrice` recibe el string `"-4842.69"` (con punto, no tecleado
+  por el cajero)
+- THEN el precio resultante es `-4842.69`
+- AND NO es `-484269` (el error de multiplicar por 100)
+
+### Requirement: "+/-" sobre la línea de descuento con el buffer vacío es un no-op
+
+En modo precio, con el buffer del numpad recién limpio, pulsar "+/-" sobre la
+línea de descuento NO DEBE alterar su monto. El core reconstruye ese caso
+desde `selectedLine.prices.total_excluded_currency` (el monto sin impuesto)
+en vez de `price_unit`; con un impuesto tax-included (como el de la línea de
+descuento) eso no es el mismo número, así que el monto se encogería por el
+factor del impuesto. Como el modelo ya garantiza que esta línea nunca queda
+positiva, no hay signo que invertir.
+
+#### Scenario: "+/-" con buffer vacío no cambia el monto del descuento
+
+- GIVEN una línea de descuento seleccionada en modo precio, con el buffer del
+  numpad vacío, y un impuesto tax-included asociado a la línea
+- WHEN el cajero pulsa "+/-"
+- THEN el precio de la línea de descuento no cambia
+
+#### Scenario: "+/-" sigue funcionando normalmente en otras líneas y modos
+
+- GIVEN una línea que no es la de descuento, o la línea de descuento en modo
+  cantidad, o una línea de descuento en una orden de reembolso
+- WHEN el cajero pulsa "+/-"
+- THEN se aplica el comportamiento nativo del core (sin el no-op)

@@ -290,15 +290,24 @@ patch(PosOrderline.prototype, {
     },
 
     _numberFromInput(value) {
-      // Mismo parseo que el core (pos_order_line.js `setQuantity` /
-      // `setUnitPrice`), pero sin dejar escapar una excepción del parser
-      // sensible al locale: si no se puede interpretar, se devuelve NaN y
-      // el guard delega en el core para que falle exactamente igual que en
-      // Odoo estándar. Se usa tanto para cantidad como para precio: ambos
-      // llegan como el buffer crudo del number_buffer cuando el cajero
-      // teclea, o como número ya parseado en otras rutas (p. ej. "+/-").
+      // Mismo criterio que el core (pos_order_line.js `setUnitPrice`): probar
+      // primero `Number()` nativo (sin locale) y solo caer al parser sensible
+      // al locale si eso falla. Esto importa porque `value` no siempre viene
+      // tecleado por el cajero: el "+/-" del numpad con buffer vacío arma el
+      // nuevo monto con `String(numero)` (SIEMPRE con punto decimal, sea cual
+      // sea el locale — ver `OrderSummary.updateSelectedOrderline`), y ese
+      // string vuelve a pasar por acá en la siguiente pulsación. Si se
+      // parseara directo con `parseFloatLocale` (coma decimal en es_VE), el
+      // punto se leería como separador de miles y el monto se multiplicaría
+      // por 100 (p. ej. "-4842.69" → -484269). `Number()` sí interpreta bien
+      // ese string (independiente del locale), y solo se delega al parser de
+      // locale para lo que el cajero tecleó de verdad (p. ej. "500,50").
       if (typeof value === "number") {
         return value;
+      }
+      const native = Number(value);
+      if (Number.isFinite(native)) {
+        return native;
       }
       try {
         return parseFloatLocale("" + (value ? value : 0));

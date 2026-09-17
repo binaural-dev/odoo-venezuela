@@ -11,6 +11,30 @@ patch(OrderSummary.prototype, {
   // (PosOrderline.setUnitPrice fuerza el descuento a negativo), para que el
   // cajero pueda cambiar el monto sin recibir una alerta en cada tecla.
 
+  async updateSelectedOrderline({ buffer, key }) {
+    // "+/-" con el buffer recién limpio, en modo precio, sobre la línea de
+    // descuento: el core arma el nuevo monto desde
+    // `selectedLine.prices.total_excluded_currency` (sin impuesto) en vez de
+    // `price_unit`. La línea de descuento lleva un impuesto tax-included, así
+    // que ese monto NO es el mismo: se encoge por el factor del impuesto
+    // (p. ej. -5.617,52 → -4.842,69 con 16% IVA). Como el modelo ya garantiza
+    // que esta línea nunca queda positiva (`setUnitPrice`), "+/-" no tiene
+    // signo que invertir — se vuelve no-op para no alterar el monto.
+    const order = this.pos.getOrder();
+    const selectedLine = order?.getSelectedOrderline();
+    if (
+      buffer === "-0" &&
+      key === "-" &&
+      this.pos.numpadMode === "price" &&
+      selectedLine?._isDiscountProductLine?.() &&
+      !selectedLine._isRefundLine?.()
+    ) {
+      this.numberBuffer.reset();
+      return;
+    }
+    return super.updateSelectedOrderline(...arguments);
+  },
+
   getConversionRateForDisplay() {
     const order = this.currentOrder;
     if (!order) {

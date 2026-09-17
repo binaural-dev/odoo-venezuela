@@ -14,6 +14,16 @@
       generaliza a `_numberFromInput()` (mismo parser, ahora reusado por
       `setQuantity` y `setUnitPrice`) para no fallar con el separador decimal
       de `es_VE` (coma)
+- [x] 1.5 `_numberFromInput()` prueba primero `Number()` nativo (mismo
+      criterio que el `setUnitPrice` del core) antes de caer al parser de
+      locale — corrige que un string con punto decimal armado por el propio
+      core (`String(numero)` en la rama "+/-" con buffer vacío) se
+      multiplicara ×100 al reinterpretar el punto como separador de miles
+- [x] 1.6 `static/src/overrides/screens/product_screen/order_summary/order_summary.js`:
+      override de `updateSelectedOrderline()` — "+/-" con buffer vacío en
+      modo precio sobre la línea de descuento es no-op (el core arma ese
+      caso desde `prices.total_excluded_currency`, que con un impuesto
+      tax-included no es `price_unit`, y encogía el monto del descuento)
 
 ## 2. Backend
 
@@ -33,12 +43,19 @@
 
 ## 4. Verificación
 
-- [ ] 4.1 Test unitario (hoot) `setUnitPrice` sobre línea de descuento:
+- [x] 4.1 Test unitario (hoot) `setUnitPrice` sobre línea de descuento:
       monto entero (`"500"`), monto con coma decimal (`"500,50"`), número ya
-      parseado (`+/-`), línea exenta por `order_id.isRefund`, línea que no es
-      de descuento
+      parseado (`+/-`), string con punto decimal armado por el core
+      (`"-4842.69"`, `"4842.69"`), línea exenta por `order_id.isRefund`,
+      línea que no es de descuento
+- [x] 4.1b Test unitario (hoot) `OrderSummary.updateSelectedOrderline`: no-op
+      en la línea de descuento con buffer vacío en modo precio; delega al
+      core en reembolso, línea normal, y modo cantidad
 - [ ] 4.2 Navegador: "+/-" y tecleo de monto con decimales sobre la línea de
       descuento en locale `es_VE` → la línea permanece negativa
+- [ ] 4.2b Navegador: "+/-" con buffer vacío sobre la línea de descuento con
+      un impuesto tax-included → el monto no cambia (antes se encogía por el
+      factor del impuesto, y al segundo "+/-" se multiplicaba por 100)
 - [ ] 4.3 Navegador: descuento global en una orden reembolsada vía Órdenes →
       Reembolsar (sin preset de devolución) → el precio positivo legítimo no
       se altera
