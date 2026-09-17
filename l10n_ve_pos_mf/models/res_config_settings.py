@@ -10,3 +10,6 @@ class ResConfigSettings(models.TransientModel):
     message_in_head = fields.Boolean(
         related="pos_config_id.message_in_head", readonly=False
     )
+    pos_native_global_discount_line = fields.Boolean(
+        related="pos_config_id.native_global_discount_line", readonly=False
+    )

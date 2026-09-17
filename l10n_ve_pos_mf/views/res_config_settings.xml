@@ -45,4 +45,33 @@
             </xpath>
         </field>
     </record>
+
+    <!--
+        Descuento global: opción para usar la línea nativa de Odoo
+        (pos_discount) en vez de redistribuir el % por línea, sin afectar
+        lo que se envía a la impresora fiscal.
+    -->
+    <record id="view_res_config_settings_native_global_discount_line" model="ir.ui.view">
+        <field name="name">view.res.config.setting.pos.mf.native.global.discount.line</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="point_of_sale.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='pos_discount_pc']/.." position="after">
+                <div class="row mt8" invisible="not pos_module_pos_discount">
+                    <div class="col-lg-6">
+                        <field name="pos_native_global_discount_line"
+                               readonly="pos_has_active_session"
+                               class="oe_inline"/>
+                        <label for="pos_native_global_discount_line"
+                               string="Usar línea nativa de descuento (solo Odoo)"/>
+                        <div class="text-muted">
+                            No afecta el ticket fiscal impreso: solo cambia cómo
+                            se ve el descuento global en el POS, el pedido y la
+                            factura de Odoo.
+                        </div>
+                    </div>
+                </div>
+            </xpath>
+        </field>
+    </record>
 </odoo>

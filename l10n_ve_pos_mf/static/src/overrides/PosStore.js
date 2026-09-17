@@ -615,7 +615,7 @@ patch(PosStore.prototype, {
   },
 
   _onReactiveOrderUpdated(order) {
-    if (!this._mf_global_discount_syncing) {
+    if (!this.config.native_global_discount_line && !this._mf_global_discount_syncing) {
       this._mf_global_discount_syncing = true;
       try {
         this._applyGlobalDiscountBeforeValidation(order, { force: true });
@@ -734,7 +734,9 @@ patch(PosStore.prototype, {
    * 3. Sincronización con backend - con buffer offline si falla
    */
   async push_single_order(order, opts) {
-    this._applyGlobalDiscountBeforeValidation(order);
+    if (!this.config.native_global_discount_line) {
+      this._applyGlobalDiscountBeforeValidation(order);
+    }
 
     // 1. Validación contable previa (dry-run) - tolerante a fallos de red
     try {
