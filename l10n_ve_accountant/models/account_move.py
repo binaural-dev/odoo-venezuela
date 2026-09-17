@@ -326,7 +326,19 @@ class AccountMove(models.Model):
 
     @api.onchange('invoice_date_display')
     def _onchange_invoice_date_display(self):
+        """`invoice_date` ("Rate Date") tracks the document's own fiscal
+        date for regular sale documents. Debit/Credit Notes are the
+        exception: `debit_origin_id`/`reversed_entry_id` mark them as the
+        SAME transaction as their origin, and their Rate Date is set to
+        the origin's `invoice_date` on creation (`account_debit_note.py`,
+        `account_move_reversal.py`) precisely so both documents price at
+        the same rate. Re-deriving it here from the note's OWN fiscal
+        date the moment someone touches the form would silently undo
+        that and manufacture a spurious exchange difference between the
+        two documents."""
         for move in self:
+            if move.debit_origin_id or move.reversed_entry_id:
+                continue
             if move.invoice_date_display and move.is_sale_document(include_receipts=True):
                 move.invoice_date = move.invoice_date_display
 

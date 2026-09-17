@@ -129,6 +129,20 @@ class AccountMove(models.Model):
         last_day = calendar.monthrange(today.year, today.month)[1]
         return date(today.year, today.month, last_day)
 
+    def _same_fiscal_period(self, date_a, date_b, taxpayer_type):
+        """Whether `date_a` and `date_b` fall in the same tax period.
+
+        Reuses `_get_period_limit` instead of a plain (year, month)
+        comparison so that, for a `special` taxpayer, the two halves
+        of a month (before/after the 15th) count as different periods --
+        same logic already used by `_compute_entry_in_period`.
+        """
+        if not date_a or not date_b:
+            return False
+        if (date_a.year, date_a.month) != (date_b.year, date_b.month):
+            return False
+        return self._get_period_limit(date_a, taxpayer_type) == self._get_period_limit(date_b, taxpayer_type)
+
     @api.constrains("invoice_line_ids")
     def _check_price_in_zero(self):
         from_pos = self.env.context.get("from_pos", False)

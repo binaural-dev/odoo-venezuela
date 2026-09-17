@@ -18,7 +18,6 @@
         "l10n_ve_contact",
         "l10n_ve_tax_payer",
         "product",
-        "stock",
     ],
     "data": [
         "security/ir.model.access.csv",
