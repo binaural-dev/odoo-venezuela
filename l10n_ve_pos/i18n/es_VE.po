@@ -216,6 +216,16 @@ msgid "Difference"
 msgstr "Diferencia"
 
 #. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_order_line.py:0
+msgid ""
+"Discount line price cannot be positive. Product \"%(product)s\" has a "
+"price of %(price)s in order %(order)s."
+msgstr ""
+"El precio de la línea de descuento no puede ser positivo. El producto "
+"\"%(product)s\" tiene un precio de %(price)s en la orden %(order)s."
+
+#. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move_line__display_name
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_partial_reconcile__display_name
