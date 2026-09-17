@@ -95,7 +95,7 @@ class PosPayment(models.Model):
             # Fallback: a change (vuelto) line created server-side may reach
             # here with foreign_amount == 0 (see pos.order._process_payment_lines).
             # Derive it from the order rate so the alternate-currency columns are
-            # never silently zeroed (ticket #15126).
+            # never silently zeroed (ticket #15090).
             foreign_amount = payment.foreign_amount
             if not foreign_amount and payment.amount:
                 foreign_amount = payment.pos_order_id._amount_to_foreign(payment.amount)

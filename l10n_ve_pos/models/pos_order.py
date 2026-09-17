@@ -70,7 +70,7 @@ class PosOrder(models.Model):
         cross moves (``pos.session``) build the alternate-currency columns
         (``foreign_debit``/``foreign_credit``) from ``payment.foreign_amount``,
         so a missing value left the change move with USD 0,00 and the alternate
-        currency unbalanced against the invoice (ticket #15126). Populate it at
+        currency unbalanced against the invoice (ticket #15090). Populate it at
         the source so every downstream consumer reads a correct value.
         """
         res = super()._process_payment_lines(pos_order, order, pos_session, draft)
