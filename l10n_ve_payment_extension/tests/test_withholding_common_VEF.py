@@ -21,17 +21,6 @@ class RetentionTestCommon(TransactionCase):
         self.currency_usd.rounding = 0.01
         self.currency_usd.decimal_places = 2
         self.currency_vef.decimal_places = 2
-        self.currency_vef.write({
-            'rate_ids': [
-                Command.create({'rate': 1.0, 'name': fields.Date.today()}),
-                Command.create({
-                    'rate': 1.0,
-                    'name': fields.Date.subtract(fields.Date.today(), days=1),
-                }),
-            ],
-            'active':True
-        })
-
         # VEF es la moneda de la compañía: su propia serie de tasas debe
         # mantenerse en 1.0 para que la normalización de company_rate/
         # inverse_company_rate (introducida en el core de Odoo 19, que
@@ -41,15 +30,13 @@ class RetentionTestCommon(TransactionCase):
         # tasa foránea usada por las retenciones.
         self.currency_vef.write({
             'rate_ids': [
-                Command.create({
-                    'rate': 1.0,
-                    'name': fields.Date.today(),
-                }),
+                Command.create({'rate': 1.0, 'name': fields.Date.today()}),
                 Command.create({
                     'rate': 1.0,
                     'name': fields.Date.subtract(fields.Date.today(), days=1),
                 }),
             ],
+            'active':True
         })
 
         self.rate = 390.2944  # 1 USD = 201.47bs
