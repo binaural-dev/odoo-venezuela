@@ -58,3 +58,14 @@ class PosConfigInherit(models.Model):
         default=60,
         help="Intervalo en segundos para sincronizar pedidos offline con Odoo"
     )
+
+    native_global_discount_line = fields.Boolean(
+        string="Descuento Global - Línea Nativa en Odoo",
+        default=False,
+        help="Si está activo, el botón de Descuento Global deja la línea de "
+             "producto de descuento nativa de Odoo tal cual (en el POS, en el "
+             "pedido y en la factura) en vez de redistribuirla como % por "
+             "línea. No afecta lo que se envía a la impresora fiscal: el "
+             "ticket impreso sigue mostrando el descuento por línea igual "
+             "que hoy."
+    )

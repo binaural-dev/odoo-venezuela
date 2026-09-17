@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
-    "version": "17.0.2.1.0",
+    "version": "17.0.2.1.1",
     "category": "Accounting",
     "summary": "Venezuela - Integración de Punto de Venta con Maquina Fiscal",
     "sequence": "1",
@@ -9,6 +9,7 @@
     "support": "contacto@binaural.dev",
     "depends": [
         "point_of_sale",
+        "pos_discount",
         "l10n_ve_pos",
         "l10n_ve_mf_base",
         # DEPRECATED: Eliminamos dependencias del IoT Box (ahora usamos Web Serial API)
@@ -34,13 +35,11 @@
             "l10n_ve_pos_mf/static/src/utils/*.js",
             "l10n_ve_pos_mf/static/src/overrides/*.js",
             "l10n_ve_pos_mf/static/src/components/**/*.js",
-            
             # Archivos legacy (mantenemos temporalmente por compatibilidad)
             "l10n_ve_pos_mf/static/src/js/ReprintInvoiceButton.js",
             "l10n_ve_pos_mf/static/src/js/ClosePosPopup.js",
             # "l10n_ve_pos_mf/static/src/js/DebugWidget.js", # DEPRECATED: Consolidado en overrides/DebugWidget.js
             "l10n_ve_pos_mf/static/src/js/OrderState.js",
-            
             # Templates y CSS
             "l10n_ve_pos_mf/static/src/xml/*.xml",
             "l10n_ve_pos_mf/static/src/components/**/*.xml",
