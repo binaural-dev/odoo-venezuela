@@ -1,5 +1,3 @@
-import json
-
 from odoo import models, api, fields
 
 
@@ -39,18 +37,6 @@ class AccountRetention(models.Model):
         # including the sequence alert wizard flow.
         return self.env["tfhka.retention.service"].send_retention(
             self.with_context(**context)
-        )
-
-    def _tfhka_reconcile_success_from_log(self, log_entry):
-        """See ``tfhka.digitalization.mixin._tfhka_recover_stuck_processing``.
-        Unlike account.move, the retention's own document number
-        (``self.number``) never gets rewritten by a successful digitalization,
-        so it's safe to reuse directly instead of reading it back from the
-        interrupted attempt's stored request."""
-        self.ensure_one()
-        response = json.loads(log_entry.response_payload)
-        self.env["tfhka.retention.service"]._register_success(
-            self, response, str(self.number)
         )
 
     def action_post(self):
