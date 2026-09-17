@@ -15,6 +15,15 @@
                             <div class="text-muted">Allows to show the available quantity (Total minus reserved) in both product template and variant of it.</div>
                         </div>
                     </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_group_alter_locations">
+                        <div class="o_setting_left_pane">
+                            <field name="use_alternate_locations" class="oe_inline"/>
+                        </div>
+                        <div class="o_setting_right_pane">
+                            <label for="use_alternate_locations" />
+                            <div class="text-muted">Enable alternate locations tracking and transfers between physical and alternate locations.</div>
+                        </div>
+                    </div>
                     <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_stock_use_main_warehouse">
                         <div class="o_setting_left_pane">
                             <field name="use_main_warehouse"/>
