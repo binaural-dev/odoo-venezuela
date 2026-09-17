@@ -10,6 +10,7 @@
                 <group>
                     <field name="prefix_vat" nolabel="1"/>
                     <field name="vat" required="1" nolabel="1" placeholder="CI/RIF: 12345678"/>
+                    <field name="prefix_vat_confirmed"/>
                 </group>
             </xpath>
             <xpath expr="//field[@name='street']" position="attributes">
