@@ -374,6 +374,79 @@ class TestStockPickingButtonValidate(TransactionCase):
         res = picking.button_validate()
         self.assertIn(picking.state, ["done", "assigned", "waiting", "confirmed"])
 
+    def test_button_validate_internal_transfer_allows_exact_zero(self):
+        warehouse = self.env["stock.warehouse"].search([], limit=1)
+        self.env.company.not_allow_negative_stock_movement = True
+        product = self.env["product.product"].create({
+            "name": "Exact Zero Prod",
+            "type": "consu",
+            "is_storable": True,
+        })
+        self.env["stock.quant"].create({
+            "product_id": product.id,
+            "location_id": warehouse.lot_stock_id.id,
+            "quantity": 5,
+        })
+        internal_loc = self.env["stock.location"].create({
+            "name": "Internal Zero Loc",
+            "usage": "internal",
+        })
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": warehouse.int_type_id.id,
+            "location_id": warehouse.lot_stock_id.id,
+            "location_dest_id": internal_loc.id,
+            "move_ids": [Command.create({
+                "product_id": product.id,
+                "product_uom_qty": 5,
+            })],
+        })
+        picking.action_assign()
+        for move in picking.move_ids:
+            move.quantity = move.product_uom_qty
+        picking.button_validate()
+        self.assertEqual(picking.state, "done")
+        self.assertEqual(
+            self.env["stock.quant"]._get_available_quantity(product, warehouse.lot_stock_id),
+            0,
+        )
+
+    def test_button_validate_internal_transfer_blocks_negative_before_moving_stock(self):
+        warehouse = self.env["stock.warehouse"].search([], limit=1)
+        self.env.company.not_allow_negative_stock_movement = True
+        product = self.env["product.product"].create({
+            "name": "Blocked Negative Prod",
+            "type": "consu",
+            "is_storable": True,
+        })
+        self.env["stock.quant"].create({
+            "product_id": product.id,
+            "location_id": warehouse.lot_stock_id.id,
+            "quantity": 5,
+        })
+        internal_loc = self.env["stock.location"].create({
+            "name": "Internal Negative Loc",
+            "usage": "internal",
+        })
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": warehouse.int_type_id.id,
+            "location_id": warehouse.lot_stock_id.id,
+            "location_dest_id": internal_loc.id,
+            "move_ids": [Command.create({
+                "product_id": product.id,
+                "product_uom_qty": 5,
+            })],
+        })
+        picking.action_assign()
+        for move in picking.move_ids:
+            move.quantity = 6
+        with self.assertRaises(ValidationError):
+            picking.button_validate()
+        self.assertEqual(
+            product.with_context(location=warehouse.lot_stock_id.id).qty_available,
+            5,
+        )
+        self.assertNotEqual(picking.state, "done")
+
 
 @tagged("post_install", "-at_install", "l10n_ve_stock")
 class TestStockPickingCheckStockAvailability(TransactionCase):

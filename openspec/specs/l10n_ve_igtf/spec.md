@@ -176,7 +176,9 @@ Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` e
 
 ### Requirement: Base imponible del IGTF acumulada en la factura
 
-`compute_bi_igtf` de `account.move` DEBE (MUST) mantener por factura: `igtf_top_aply` (tope = `amount_total_signed` por el porcentaje, menos el porcentaje de IGTF de los importes conciliados por pagos sin línea de IGTF), `bi_igtf` (base imponible acumulada de los pagos con IGTF conciliados, limitada a `amount_total_signed`), `alter_bi_igtf` (IGTF acumulado aplicado) y `foreign_bi_igtf` (base convertida a la moneda del documento, limitada a `amount_total`), recorriendo los asientos de pago conciliados y sus conciliaciones parciales. El cálculo solo se ejecuta cuando el residual del documento es distinto de cero o su `payment_state` es `paid`/`in_payment`; en cualquier otro caso los cuatro campos quedan en cero.
+`compute_bi_igtf` de `account.move` DEBE (MUST) mantener por factura: `igtf_top_aply` (tope = `amount_total_signed` por el porcentaje, menos el porcentaje de IGTF de los importes conciliados por pagos sin línea de IGTF), `bi_igtf` (base imponible acumulada de los pagos con IGTF conciliados, limitada a `amount_total_signed`), `alter_bi_igtf` (IGTF acumulado aplicado) y `foreign_bi_igtf` (base convertida a la moneda del documento, limitada a `amount_total`), recorriendo los asientos de pago conciliados y sus conciliaciones parciales -- derivados directamente de `matched_debit_ids`/`matched_credit_ids` sobre las líneas conciliables (no del Many2many computado `reconciled_lines_ids`, que dispara el `Field.write()` completo al escribirse y puede producir `RecursionError` en cadenas de `super()` profundas, ver ticket 14119, PR #1163). El cálculo solo se ejecuta cuando el residual del documento es distinto de cero o su `payment_state` es `paid`/`in_payment`; en cualquier otro caso los cuatro campos quedan en cero.
+
+Ese derivado DEBE (MUST) resolverse con `.sudo()` antes de leer las líneas del asiento de pago contraparte: a diferencia de `reconciled_lines_ids` (núcleo), que filtra sus contrapartes con `_filtered_access('read')` antes de devolverlas, `matched_debit_ids`/`matched_credit_ids` no aplica ese mismo filtro -- sin `.sudo()`, este compute ALMACENADO (`store=True`) lanzaría `AccessError` en cuanto el usuario actual no tenga permiso de lectura sobre la contraparte (ej. un pago en OTRA compañía), en vez de simplemente omitir esa línea como hacía el comportamiento anterior.
 
 #### Scenario: Factura pagada con IGTF
 
@@ -193,6 +195,16 @@ Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` e
 - **WHEN** el documento tiene residual cero y su `payment_state` no es `paid` ni `in_payment`
 - **THEN** `igtf_top_aply`, `bi_igtf`, `alter_bi_igtf` y `foreign_bi_igtf` quedan en cero
 
+#### Scenario: Pago conciliado en una compañía sin acceso de lectura para el usuario actual
+
+- **GIVEN** una factura conciliada contra un pago cuyo asiento vive en una compañía a la que el usuario actual no tiene acceso de lectura
+- **WHEN** se recomputa `compute_bi_igtf` para esa factura
+- **THEN** el cálculo se completa sin `AccessError`, incluyendo ese pago en la base imponible
+
+**Decisión sobre bases ya instaladas (sin recompute retroactivo):** cuando la fórmula de este compute cambió (PR #1163, del derivado por `reconciled_lines_ids` al de `matched_debit_ids`/`matched_credit_ids`), NO se agregó ningún script de migración para forzar el recálculo de los 4 campos en facturas ya cerradas de bases existentes -- decisión CONFIRMADA con el responsable del ticket. Los 4 campos son `@api.depends('amount_residual')`, así que cualquier factura que vuelva a tocarse (nueva conciliación, romper una existente) recomputa sola con la fórmula nueva; una factura cerrada que nadie vuelve a tocar conserva su base imponible tal como quedó reportada en su momento -- alterar en silencio la base imponible de un período fiscal ya declarado sería peor que la inconsistencia entre facturas viejas y nuevas en la misma base.
+
+El propio compute también lee `rec.payment_state` en su guard (`if abs(rec.amount_residual) > 0 or rec.payment_state in ['paid','in_payment']`), campo que NO está en el `@api.depends` -- estructuralmente, un cambio de `payment_state` sin un cambio acompañante de `amount_residual` no dispara el recompute por sí solo. Investigado (`l10n_ve_exchange_difference`, Requirement "Corrección de `payment_state`...") si esto era explotable en la práctica -- vía el único caso real donde `payment_state` se corrige DESPUÉS de que el núcleo lo calculó mal (factura cerrada por anticipo + NC de diferencial, sin pago real de por medio) -- y NO lo es, por dos razones independientes: (1) el acceso a un campo marcado "por computar" en Odoo siempre dispara su cómputo completo de forma síncrona antes de devolver el valor, así que no hay forma de leer un `payment_state` a medio corregir vía la API de campos; y (2) en ese mismo escenario (cero pagos reales en todo el historial de conciliación), la fórmula de este compute tampoco encuentra ningún pago real del cual sacar base imponible, así que da 0 de todas formas, con o sin `payment_state` corregido -- no hay base real que una lectura obsoleta pudiera perder. Confirmado con test (`test_invoice_closed_by_advance_cross_and_note_does_not_end_up_reversed`, `l10n_ve_exchange_difference`). La ausencia de `payment_state` en el `@api.depends` sigue siendo una simplificación de la decisión de arriba, no una garantía separada -- pero no hay hoy un escenario conocido donde importe.
+
 ### Requirement: Bloque IGTF en el resumen de impuestos
 
 `_get_tax_totals_summary` de `account.tax` DEBE (MUST) agregar al resumen la clave `igtf` con: `apply_igtf` (verdadero solo cuando `bi_igtf > 0`), `igtf_show` (verdadero cuando el importe es solo sugerido), el nombre con el porcentaje, y la base y el monto del IGTF en moneda del documento y de la compañía con sus formatos; cuando `bi_igtf` es cero la base usada es el total del documento, de modo que el bloque reporta un IGTF sugerido en lugar de cero. En la raíz del resumen (no dentro de `igtf`) DEBE (MUST) agregar `amount_total_igtf` / `foreign_amount_total_igtf` con sus versiones formateadas. Para `out_invoice` agrega además el bloque `igtf_free_form` con el IGTF calculado sobre el total de la factura y el flag `show_igtf_suggested_account_move` de la compañía, que se expone como dato del bloque y no condiciona su creación.
@@ -206,6 +218,13 @@ Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` e
 
 - **WHEN** la factura de cliente no tiene IGTF aplicado
 - **THEN** `tax_totals['igtf']` reporta `apply_igtf` falso con la base igual al total de la factura y el bloque `igtf_free_form` sugiere el IGTF sobre ese total
+
+El widget `TaxVesTotalsField` (`static/src/components/tax_totals.xml`, usado cuando el documento se opera en moneda de la compañía) DEBE (MUST) renderizar en la fila "IGTF(sugerido)" el monto `totals.igtf.foreign_igtf_amount` (el porcentaje ya aplicado sobre la base), nunca `totals.igtf.foreign_igtf_base_amount` (la base/total del documento) -- ambas claves conviven en el mismo dict y son fáciles de confundir al extender la plantilla.
+
+#### Scenario: IGTF sugerido en la vista de moneda de la compañía
+
+- **WHEN** se muestra el bloque de totales de una factura en moneda de la compañía con `igtf_show` verdadero
+- **THEN** la fila "IGTF(sugerido)" muestra el 3% de la base (`foreign_igtf_amount`), no el total de la factura (`foreign_igtf_base_amount`)
 
 ### Requirement: Widget de anticipos pendientes en la factura
 
