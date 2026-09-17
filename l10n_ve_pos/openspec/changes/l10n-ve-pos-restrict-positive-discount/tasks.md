@@ -49,8 +49,13 @@
       (`"-4842.69"`, `"4842.69"`), línea exenta por `order_id.isRefund`,
       línea que no es de descuento
 - [x] 4.1b Test unitario (hoot) `OrderSummary.updateSelectedOrderline`: no-op
-      en la línea de descuento con buffer vacío en modo precio; delega al
-      core en reembolso, línea normal, y modo cantidad
+      en la línea de descuento con buffer vacío en modo precio. La condición
+      vive aparte en `_shouldSkipDiscountLineSignToggle` (testeada directo,
+      sin pasar por `super`) para no depender de que el core reviente sobre
+      un stub incompleto como señal de "no se tomó la rama de no-op"
+- [x] 4.1c Test unitario (hoot) `setQuantity` sobre línea de descuento con los
+      mismos casos de parseo (`_numberFromInput` es compartido): entero,
+      coma decimal, string con punto armado por el core
 - [ ] 4.2 Navegador: "+/-" y tecleo de monto con decimales sobre la línea de
       descuento en locale `es_VE` → la línea permanece negativa
 - [ ] 4.2b Navegador: "+/-" con buffer vacío sobre la línea de descuento con

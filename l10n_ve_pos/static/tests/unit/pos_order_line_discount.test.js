@@ -101,20 +101,84 @@ describe("l10n_ve_pos discount line setUnitPrice", () => {
 });
 
 describe("l10n_ve_pos discount line +/- no-op (OrderSummary.updateSelectedOrderline)", () => {
-    function makeOrderSummaryStub({ selectedLine, numpadMode = "price" }) {
+    function makeOrderSummaryStub({ numpadMode = "price" } = {}) {
         const calls = { reset: 0 };
-        const order = { getSelectedOrderline: () => selectedLine };
         const stub = {
-            pos: { getOrder: () => order, numpadMode },
+            pos: { numpadMode },
             numberBuffer: { reset: () => calls.reset++ },
         };
         return { stub, calls };
     }
 
-    test("+/- con buffer vacío sobre la línea de descuento es no-op", async () => {
+    // La decisión de hacer no-op vive en `_shouldSkipDiscountLineSignToggle`,
+    // separada de `updateSelectedOrderline` a propósito: testearla directo
+    // evita depender de que el `super` (el core real) reviente sobre un stub
+    // incompleto para "demostrar" que no se tomó la rama de no-op — antes,
+    // esa dependencia hacía que estos casos pasaran igual aunque la condición
+    // estuviera mal (con tal de que algo, lo que sea, tirara una excepción).
+    describe("_shouldSkipDiscountLineSignToggle", () => {
+        test("buffer vacío + modo precio + línea de descuento (no reembolso) → true", () => {
+            const line = makeDiscountLine();
+            const { stub } = makeOrderSummaryStub();
+            expect(
+                OrderSummary.prototype._shouldSkipDiscountLineSignToggle.call(stub, line, {
+                    buffer: "-0",
+                    key: "-",
+                })
+            ).toBe(true);
+        });
+
+        test("línea de reembolso → false", () => {
+            const line = makeDiscountLine({ order_id: { isRefund: true } });
+            const { stub } = makeOrderSummaryStub();
+            expect(
+                OrderSummary.prototype._shouldSkipDiscountLineSignToggle.call(stub, line, {
+                    buffer: "-0",
+                    key: "-",
+                })
+            ).toBe(false);
+        });
+
+        test("línea que no es de descuento → false", () => {
+            const line = makeDiscountLine({ product_id: { id: 999 } });
+            const { stub } = makeOrderSummaryStub();
+            expect(
+                OrderSummary.prototype._shouldSkipDiscountLineSignToggle.call(stub, line, {
+                    buffer: "-0",
+                    key: "-",
+                })
+            ).toBe(false);
+        });
+
+        test("modo cantidad → false", () => {
+            const line = makeDiscountLine();
+            const { stub } = makeOrderSummaryStub({ numpadMode: "quantity" });
+            expect(
+                OrderSummary.prototype._shouldSkipDiscountLineSignToggle.call(stub, line, {
+                    buffer: "-0",
+                    key: "-",
+                })
+            ).toBe(false);
+        });
+
+        test("buffer no vacío (cajero ya tecleó) → false", () => {
+            const line = makeDiscountLine();
+            const { stub } = makeOrderSummaryStub();
+            expect(
+                OrderSummary.prototype._shouldSkipDiscountLineSignToggle.call(stub, line, {
+                    buffer: "500",
+                    key: "-",
+                })
+            ).toBe(false);
+        });
+    });
+
+    test("updateSelectedOrderline: +/- con buffer vacío sobre la línea de descuento es no-op", async () => {
         const line = makeDiscountLine();
         const priceBefore = line.price_unit;
-        const { stub, calls } = makeOrderSummaryStub({ selectedLine: line });
+        const order = { getSelectedOrderline: () => line };
+        const { stub, calls } = makeOrderSummaryStub();
+        stub.pos.getOrder = () => order;
         await OrderSummary.prototype.updateSelectedOrderline.call(stub, {
             buffer: "-0",
             key: "-",
@@ -122,48 +186,38 @@ describe("l10n_ve_pos discount line +/- no-op (OrderSummary.updateSelectedOrderl
         expect(calls.reset).toBe(1);
         expect(line.price_unit).toBe(priceBefore);
     });
+});
 
-    test("+/- en línea de reembolso no hace no-op (delega al core)", async () => {
-        const line = makeDiscountLine({ order_id: { isRefund: true } });
-        const { stub, calls } = makeOrderSummaryStub({ selectedLine: line });
-        try {
-            await OrderSummary.prototype.updateSelectedOrderline.call(stub, {
-                buffer: "-0",
-                key: "-",
-            });
-        } catch {
-            // El core necesita un entorno completo (dialog, numberBuffer real,
-            // getOrder, etc.) que este stub no provee; lo que importa acá es
-            // que NO se tomó la rama de no-op.
-        }
-        expect(calls.reset).toBe(0);
-    });
-
-    test("+/- en línea que no es de descuento no hace no-op (delega al core)", async () => {
-        const line = makeDiscountLine({ product_id: { id: 999 } });
-        const { stub, calls } = makeOrderSummaryStub({ selectedLine: line });
-        try {
-            await OrderSummary.prototype.updateSelectedOrderline.call(stub, {
-                buffer: "-0",
-                key: "-",
-            });
-        } catch {
-            // Idem: solo importa que no se haya hecho no-op.
-        }
-        expect(calls.reset).toBe(0);
-    });
-
-    test("modo cantidad sobre la línea de descuento no hace no-op (delega al core)", async () => {
+describe("l10n_ve_pos discount line setQuantity (bloqueo, comparte _numberFromInput)", () => {
+    // `setQuantity` corta ANTES de `super` cuando bloquea (devuelve el
+    // objeto {title, body} sin tocar el core), así que estos casos no
+    // necesitan stub de `models["pos.order"]`/`uiState` — solo el camino de
+    // "cantidad válida, delega al core" los necesitaría, y eso ya lo cubre
+    // (en navegador) el change hermano `l10n-ve-pos-no-negative-qty-outside-refund`.
+    test("cantidad negativa fuera de reembolso se bloquea (entero tecleado)", () => {
         const line = makeDiscountLine();
-        const { stub, calls } = makeOrderSummaryStub({ selectedLine: line, numpadMode: "quantity" });
-        try {
-            await OrderSummary.prototype.updateSelectedOrderline.call(stub, {
-                buffer: "-0",
-                key: "-",
-            });
-        } catch {
-            // Idem: solo importa que no se haya hecho no-op.
-        }
-        expect(calls.reset).toBe(0);
+        const result = line.setQuantity("-3");
+        expect(typeof result).toBe("object");
+        expect(typeof result.title).toBe("string");
+    });
+
+    test("cantidad negativa con coma decimal en es_VE también se bloquea", () => {
+        patchWithCleanup(localization, { decimalPoint: ",", thousandsSep: "." });
+        const line = makeDiscountLine();
+        const result = line.setQuantity("-3,5");
+        expect(typeof result).toBe("object");
+    });
+
+    test("string con punto decimal generado por el core no se multiplica por 100 en setQuantity", () => {
+        patchWithCleanup(localization, { decimalPoint: ",", thousandsSep: "." });
+        const line = makeDiscountLine();
+        // Mismo helper que setUnitPrice (_numberFromInput): un "-4842.69"
+        // (punto, no tecleado por el cajero) debe seguir bloqueado por
+        // negativo, sin importar si se lee bien como -4842.69 o mal como
+        // -484269 — pero si el bug ×100 volviera, este caso lo seguiría
+        // detectando como bloqueado igual; lo que realmente lo cubre es el
+        // test de `setUnitPrice` de más arriba con el mismo string.
+        const result = line.setQuantity("-4842.69");
+        expect(typeof result).toBe("object");
     });
 });
