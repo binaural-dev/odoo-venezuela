@@ -21,7 +21,9 @@
         "security/security_groups.xml",
         "data/payment_method_data_tfhka.xml",
         "data/res_currency_data.xml",
+        "data/ir_cron.xml",
         "security/ir.model.access.csv",
+        "security/ir_rule.xml",
         "views/res_config_settings.xml",
         "views/account_move_view.xml",
         "views/account_retention_iva.xml",
@@ -31,5 +33,6 @@
         "views/account_journal.xml",
         "views/payment_method_tfhka.xml",
         "views/currency_views.xml",
+        "views/tfhka_api_log_views.xml",
     ],
 }

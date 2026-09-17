@@ -1,5 +1,6 @@
 from odoo import fields, models, api, _
 from odoo.exceptions import ValidationError, UserError
+import json
 import requests
 import logging
 
@@ -50,9 +51,12 @@ class ResCompany(models.Model):
 
         try:
             response = requests.post(url, json=payload, timeout=10)
-            self._handle_tfhka_response(response)
+            self._handle_tfhka_response(response, payload)
         except requests.exceptions.RequestException as e:
             _logger.error("Error connecting to the TFHKA API: %s", e)
+            self.env["tfhka.api.client"]._log_call(
+                self, "/Autenticacion", payload, None, None, str(e), False
+            )
             raise ValidationError(_("Error connecting to the TFHKA API: %s", e))
 
     def _validate_tfhka_credentials(self):
@@ -64,9 +68,21 @@ class ResCompany(models.Model):
             raise UserError(_("You must register the URL for TFHKA."))
         _logger.info("TFHKA credentials validated successfully.")
 
-    def _handle_tfhka_response(self, response):
+    def _handle_tfhka_response(self, response, payload):
         data = response.json()
-        if response.status_code == 200 and data.get("codigo") == 200:
+        success = response.status_code == 200 and data.get("codigo") == 200
+        self.env["tfhka.api.client"]._log_call(
+            self,
+            "/Autenticacion",
+            payload,
+            None,
+            response.status_code,
+            json.dumps(
+                self.env["tfhka.api.log"]._sanitize_payload(data), default=str, indent=2
+            ),
+            success,
+        )
+        if success:
             try:
                 self._process_tfhka_response_data(data)
             except ValueError:
