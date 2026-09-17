@@ -1,5 +1,7 @@
 import logging
 
+from dateutil.relativedelta import relativedelta
+
 from odoo.tests import tagged, Form
 from odoo import Command, fields
 
@@ -18,8 +20,12 @@ class TestRetentionPaymentMoveDate(RetentionTestCommon):
 
     def setUp(self):
         super().setUp()
-        self.invoice_date = fields.Date.today().replace(day=1)
+        # relativedelta(months=1) instead of .replace(day=1): the latter
+        # collides with date_accounting (today) on the 1st of any month,
+        # silently turning the assertions below into no-ops. Subtracting a
+        # full month is never equal to today regardless of what today is.
         self.date_accounting = fields.Date.today()
+        self.invoice_date = self.date_accounting - relativedelta(months=1)
 
         self._set_rate(self.currency_usd, self.invoice_date, 40.0)
         self._set_rate(self.currency_usd, self.date_accounting, 60.0)
