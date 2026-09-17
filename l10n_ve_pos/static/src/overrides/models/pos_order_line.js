@@ -117,13 +117,22 @@ patch(PosOrderline.prototype, {
       // al teclear el monto en modo precio), se fuerza a negativo en vez de
       // bloquear. Así el cajero SÍ puede cambiar el monto del descuento, pero
       // nunca se convierte en recargo.
+      //
+      // `price` no siempre es un número: cuando el cajero teclea el monto en
+      // modo precio, `OrderSummary._setValue` pasa el buffer crudo del
+      // number_buffer, que usa el separador decimal del locale (coma en
+      // es_VE). `Number(price)` con ese string da NaN y el guard nunca
+      // dispara, así que se parsea con `_numberFromInput` (mismo parser
+      // sensible al locale que ya usa `setQuantity`).
       let unitPrice = price;
+      const parsed = this._numberFromInput(price);
       if (
         this._isDiscountProductLine() &&
         !this._isRefundLine() &&
-        Number(price) > 0
+        Number.isFinite(parsed) &&
+        parsed > 0
       ) {
-        unitPrice = -Math.abs(Number(price));
+        unitPrice = -Math.abs(parsed);
       }
       super.setUnitPrice(unitPrice);
       const dp = this._foreignUnitPriceDp();
@@ -273,19 +282,26 @@ patch(PosOrderline.prototype, {
     // un objeto `{title, body}` que `OrderSummary._setValue` muestra como
     // `AlertDialog` y seguido resetea el `number_buffer`.
     _isRefundLine() {
-      return Boolean(this.refunded_orderline_id) || Boolean(this.order_id?.preset_id?.is_return);
+      return (
+        Boolean(this.refunded_orderline_id) ||
+        Boolean(this.order_id?.preset_id?.is_return) ||
+        Boolean(this.order_id?.isRefund)
+      );
     },
 
-    _quantityAsNumber(quantity) {
-      // Mismo parseo que el core (pos_order_line.js `setQuantity`), pero sin
-      // dejar escapar una excepción del parser sensible al locale: si no se
-      // puede interpretar, se devuelve NaN y el guard delega en el core para
-      // que falle exactamente igual que en Odoo estándar.
-      if (typeof quantity === "number") {
-        return quantity;
+    _numberFromInput(value) {
+      // Mismo parseo que el core (pos_order_line.js `setQuantity` /
+      // `setUnitPrice`), pero sin dejar escapar una excepción del parser
+      // sensible al locale: si no se puede interpretar, se devuelve NaN y
+      // el guard delega en el core para que falle exactamente igual que en
+      // Odoo estándar. Se usa tanto para cantidad como para precio: ambos
+      // llegan como el buffer crudo del number_buffer cuando el cajero
+      // teclea, o como número ya parseado en otras rutas (p. ej. "+/-").
+      if (typeof value === "number") {
+        return value;
       }
       try {
-        return parseFloatLocale("" + (quantity ? quantity : 0));
+        return parseFloatLocale("" + (value ? value : 0));
       } catch {
         return NaN;
       }
@@ -293,7 +309,7 @@ patch(PosOrderline.prototype, {
 
     setQuantity(quantity, keep_price) {
       if (!this._isRefundLine()) {
-        const quant = this._quantityAsNumber(quantity);
+        const quant = this._numberFromInput(quantity);
         // `-0 < 0` es false, así que poner una línea en cero sigue permitido
         // (es como el cajero borra una línea desde el numpad).
         if (Number.isFinite(quant) && quant < 0) {

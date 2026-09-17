@@ -32,12 +32,25 @@ intercepta en el modelo: si es la línea de descuento (no reembolso) y el precio
 resultante sería positivo, se coacciona a `-|price|`. Coaccionar en lugar de
 bloquear permite editar el monto del descuento con normalidad. La línea de
 descuento se identifica por `pos.config.discount_product_id`; se respeta el flujo
-de reembolsos vía el helper existente `_isRefundLine()`.
+de reembolsos vía el helper existente `_isRefundLine()` (que también exime
+`order_id.isRefund`, no solo `refunded_orderline_id`/`preset_id.is_return`).
+
+El precio que llega a `setUnitPrice` no siempre es un número: cuando el
+cajero teclea el monto, es el buffer crudo del `number_buffer`, sensible al
+locale (coma decimal en `es_VE`). El guard parsea con `_numberFromInput`
+(generalización de `_quantityAsNumber`, que ya usa el `parseFloat` sensible
+al locale de `@web/views/fields/parsers`) en vez de `Number()`.
+
+Como refuerzo, hay caminos del core que escriben `price_unit` sin pasar por
+`setUnitPrice` (`pos_discount` al aplicar el descuento, long-press de
+`OrderSummary`), así que se añade una `@api.constrains` en `pos.order.line`
+que replica la misma garantía en el servidor, con las mismas exenciones.
 
 ## Affected Areas
 
 | Área | Impacto |
 |------|---------|
-| `l10n_ve_pos` modelo `pos.order.line` (JS) | `setUnitPrice` fuerza a negativo el precio de la línea de descuento (no reembolso); nuevo helper `_isDiscountProductLine` |
+| `l10n_ve_pos` modelo `pos.order.line` (JS) | `setUnitPrice` fuerza a negativo el precio de la línea de descuento (no reembolso), con parseo sensible al locale; nuevo helper `_isDiscountProductLine`; `_isRefundLine` exime también `order_id.isRefund` |
+| `l10n_ve_pos` modelo `pos.order.line` (Python) | `@api.constrains` `_check_discount_price_not_positive` como refuerzo de servidor |
 
 References: helpdesk.ticket 14352 — "Restringir descuentos positivos en POS V19"
