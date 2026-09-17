@@ -12,6 +12,20 @@ class AccountJournal(models.Model):
 
     is_purchase_international = fields.Boolean(string="International purchase",default=False)
 
+    @api.onchange('default_account_id', 'type')
+    def _onchange_default_account_id_payment_method_lines(self):
+        for journal in self:
+            if journal.type != 'bank':
+                continue
+
+            if not journal.default_account_id:
+                continue
+
+            all_lines = journal.inbound_payment_method_line_ids | journal.outbound_payment_method_line_ids
+            for line in all_lines:
+                if not line.payment_account_id:
+                    line.payment_account_id = journal.default_account_id
+
     @api.model_create_multi
     def create(self, vals_list):
 
