@@ -661,6 +661,12 @@ msgid "Created on"
 msgstr "Creado en"
 
 #. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "Currency precision rounding"
+msgstr "Redondeo de precisión de moneda"
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
 msgid "Customer Journal"
 msgstr "Diario del Cliente"
@@ -2606,6 +2612,19 @@ msgstr ""
 msgid "The company must have a journal for municipal supplier retention."
 msgstr ""
 "La compañía debe tener un diario para retenciones municipales de proveedor."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The company must have an 'Exchange Gain Account' configured to issue this "
+"retention: invoice %(invoice)s has a currency-precision surplus of "
+"%(amount)s %(currency)s that needs to be recorded there."
+msgstr ""
+"La compañía debe tener configurada una 'Cuenta de Ganancia por Diferencial "
+"Cambiario' para emitir esta retención: la factura %(invoice)s tiene un "
+"sobrante de precisión de moneda de %(amount)s %(currency)s que debe "
+"registrarse ahí."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
