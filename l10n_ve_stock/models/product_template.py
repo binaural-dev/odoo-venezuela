@@ -1,7 +1,7 @@
 import logging
 import re
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from collections import defaultdict
 
 _logger = logging.getLogger(__name__)
@@ -61,6 +61,14 @@ class ProductTemplate(models.Model):
 
     liters_per_unit = fields.Float(digits="Stock Weight")
 
+    company_id = fields.Many2one(tracking=True)
+
+    can_edit_company_id = fields.Boolean(
+        string="Can edit company",
+        compute="_compute_can_edit_company_id",
+        help="Whether the current user can modify the product's company.",
+    )
+
     lock_internal_reference_on_moves = fields.Boolean(
         string="Bloquear referencia interna con movimientos",
         compute="_compute_lock_internal_reference_on_moves",
@@ -90,7 +98,38 @@ class ProductTemplate(models.Model):
             if product.sale_ok and product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
 
+    def _check_company_id_edit_allowed(self, vals):
+        if "company_id" not in vals or self.env.su:
+            return
+        if self.env.user.has_group("l10n_ve_stock.group_edit_product_company"):
+            return
+
+        new_company = vals["company_id"] or False
+        if not self:
+            # create(): no existing record to compare against. copy_data()
+            # always sends company_id (field has no copy=False), so
+            # duplicating a product must not be treated as an edit as long
+            # as the copy lands in the user's own active company - only a
+            # value that actually differs from that is a real attempt to
+            # set the company.
+            if new_company != self.env.company.id:
+                raise AccessError(
+                    _("You don't have permission to change this product's company.")
+                )
+            return
+
+        # write() can run on several products at once with a single vals
+        # dict, so "did it change" has to be checked per product: a value
+        # identical to one product's own company_id is a no-op for that
+        # product even if it differs for another one in the same call.
+        for product in self:
+            if new_company != product.company_id.id:
+                raise AccessError(
+                    _("You don't have permission to change this product's company.")
+                )
+
     def write(self, vals):
+        self._check_company_id_edit_allowed(vals)
 
         old_physical_locations_ids = {
             tmpl.id: tmpl.physical_locations_ids for tmpl in self
@@ -134,6 +173,8 @@ class ProductTemplate(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            self._check_company_id_edit_allowed(vals)
         records = super().create(vals_list)
         # Always validate after creation because default taxes can come from multiple sources
         records._validate_single_sale_tax()
@@ -208,204 +249,12 @@ class ProductTemplate(models.Model):
         product_variant_query = self.env['product.product'].sudo()._search(domain)
         return [('product_variant_ids', 'in', product_variant_query)]
 
-    #PHYSICAL LOCATIONS
+    @api.depends_context("uid")
+    def _compute_can_edit_company_id(self):
+        can_edit = self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
+        for product in self:
+            product.can_edit_company_id = can_edit
 
-    def _create_or_update_alter_location(self, old_location=None):
-        self.ensure_one()
-        alter_location_model = self.env["stock.picking.alter.location"]
-
-        new_location = self.physical_location_id
-        if not new_location:
-            return
-
-        product_variant = self.product_variant_id
-        if not product_variant:
-            return
-
-        new_warehouse = self._find_warehouse_from_location(new_location)
-        if not new_warehouse:
-            return
-
-        existing = alter_location_model.search(
-            [
-                ("product_id", "=", product_variant.id),
-                ("warehouse_id", "=", new_warehouse.id),
-            ],
-            limit=1,
-        )
-
-        if not existing:
-            alter_lines = self._get_quants_for_alter_lines(
-                new_location, warehouse=new_warehouse
-            )
-            alter_location_model.sudo().create(
-                {
-                    "product_id": product_variant.id,
-                    "pick_location": new_location.id,
-                    "warehouse_id": new_warehouse.id,
-                    "stock_alter_location_lines": alter_lines,
-                }
-            )
-            return
-
-        existing.pick_location = new_location
-
-    def _sync_alter_locations_from_physical_locations(self):
-        alter_location_model = self.env["stock.picking.alter.location"]
-
-        for template in self:
-            product_variant = template.product_variant_id
-            if not product_variant:
-                continue
-
-            physical_locations = template.physical_locations_ids
-            active_warehouses = set()
-
-            if physical_locations:
-                warehouse_groups = {}
-                for location in physical_locations:
-                    warehouse = template._find_warehouse_from_location(location)
-                    if not warehouse:
-                        continue
-                    warehouse_groups.setdefault(warehouse, []).append(location)
-                    active_warehouses.add(warehouse.id)
-
-                for warehouse, locations in warehouse_groups.items():
-                    pick_location = locations[0]
-
-                    existing = alter_location_model.search(
-                        [
-                            ("product_id", "=", product_variant.id),
-                            ("warehouse_id", "=", warehouse.id),
-                        ],
-                        limit=1,
-                    )
-                    if not existing:
-                        archived = alter_location_model.with_context(active_test=False).search(
-                            [
-                                ("product_id", "=", product_variant.id),
-                                ("warehouse_id", "=", warehouse.id),
-                                ("active", "=", False),
-                            ],
-                            limit=1,
-                        )
-                        if archived:
-                            archived.write(
-                                {
-                                    "active": True,
-                                    "pick_location": pick_location.id,
-                                }
-                            )
-                        else:
-                            alter_lines = template._get_quants_for_alter_lines(
-                                pick_location, warehouse=warehouse
-                            )
-                            alter_location_model.sudo().create(
-                                {
-                                    "product_id": product_variant.id,
-                                    "pick_location": pick_location.id,
-                                    "warehouse_id": warehouse.id,
-                                    "stock_alter_location_lines": alter_lines,
-                                }
-                            )
-                    elif existing.pick_location.id != pick_location.id:
-                        existing.pick_location = pick_location.id
-
-            inactive_alters = alter_location_model.with_context(active_test=False).search(
-                [
-                    ("product_id", "=", product_variant.id),
-                    ("active", "=", True),
-                ]
-            )
-            for alter in inactive_alters:
-                if alter.warehouse_id.id not in active_warehouses:
-                    alter.write({"active": False})
-
-    def _get_quants_for_alter_lines(self, pick_location, warehouse=None):
-        self.ensure_one()
-        alter_lines_list = []
-        if warehouse is None:
-            warehouse = self._find_warehouse_from_location(pick_location)
-        if not warehouse:
-            return alter_lines_list
-
-        quants = self.env["stock.quant"].search(
-            [
-                ("product_tmpl_id", "=", self.id),
-                ("location_id", "in", warehouse.view_location_id.child_internal_location_ids.ids),
-            ]
-        )
-
-        for quant in quants:
-            if quant.available_quantity > 0:
-                alter_lines_list.append(
-                    (
-                        0,
-                        0,
-                        {
-                            "location_id": quant.location_id.id,
-                            "available_qty": quant.available_quantity,
-                        },
-                    )
-                )
-
-        return alter_lines_list
-
-    def _find_warehouse_from_location(self, location):
-        warehouse_model = self.env["stock.warehouse"]
-        loc = location
-        while loc:
-            wh = warehouse_model.search(
-                [("view_location_id", "=", loc.id)], limit=1
-            )
-            if wh:
-                return wh
-            loc = loc.location_id
-        return warehouse_model.browse()
-
-    def _create_putaway_rules(self, locations):
-        """Creates or updates storage (Putaway Rules) for the given locations.
-
-        If a rule already exists for the product and incoming location (parent),
-        updates its destination location. Otherwise, creates it.
-        """
-        putaway_obj = self.env['stock.putaway.rule']
-        
-        for template in self:
-            for location in locations:
-                parent_location = location.location_id
-
-                if not parent_location:
-                    continue
-                
-                for variant in template.product_variant_ids:
-                    existing_rule = putaway_obj.search([
-                        ('product_id', '=', variant.id),
-                        ('location_in_id', '=', parent_location.id),
-                    ], limit=1)
-                    
-                    if existing_rule:
-                        existing_rule.write({'location_out_id': location.id})
-                    else:
-                        putaway_obj.create({
-                            'product_id': variant.id,
-                            'location_in_id': parent_location.id,
-                            'location_out_id': location.id,
-                            'company_id': template.company_id.id or self.env.company.id,
-                        })
-
-    def _remove_putaway_rules(self, locations):
-        """Removes the storage rules associated with the removed locations."""
-        putaway_obj = self.env['stock.putaway.rule']
-        
-        for template in self:
-            for location in locations:
-                for variant in template.product_variant_ids:
-                    rules = putaway_obj.search([
-                        ('product_id', '=', variant.id),
-                        ('location_out_id', '=', location.id),
-                    ])
-                    rules.unlink()
     @api.depends("product_variant_ids.lock_internal_reference_on_moves")
     def _compute_lock_internal_reference_on_moves(self):
         self._compute_template_field_from_variant_field(
