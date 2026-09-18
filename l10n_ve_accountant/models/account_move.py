@@ -30,62 +30,56 @@ class AccountMove(models.Model):
     ]
 
     def _auto_init(self):
-        res = super()._auto_init()
+        # Se ejecuta ANTES de super()._auto_init(): el _auto_init de core
+        # (account/models/account_move.py) intenta crear su propio índice
+        # account_move_unique_name (name, journal_id) de forma incondicional,
+        # sin protección alguna. Si ya existe un índice con ese nombre --el
+        # nuestro, más amplio-- core detecta que ya existe y se salta su
+        # propio intento, evitando que la instalación truene por facturas de
+        # distintos proveedores que comparten número en el mismo diario.
         if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # Make all values of `name` different (naming them `name (1)`, `name (2)`...) so that
-            # we can add the following UNIQUE INDEX
-            self.env.cr.execute(
-                """
-                WITH duplicated_sequence AS (
-                    SELECT name, partner_id, state, journal_id
-                    FROM account_move
-                    WHERE state = 'posted'
-                    AND name != '/'
-                    AND move_type IN ('in_invoice', 'in_refund', 'in_receipt')
-                GROUP BY partner_id, journal_id, name, state
-                    HAVING COUNT(*) > 1
-                ),
-                to_update AS (
-                    SELECT move.id,
-                        move.name,
-                        move.state,
-                        move.date,
-                        row_number() OVER(PARTITION BY move.name, move.partner_id, move.partner_id, move.date) AS row_seq
-                        FROM duplicated_sequence
-                        JOIN account_move move ON move.name = duplicated_sequence.name
-                                            AND move.partner_id = duplicated_sequence.partner_id
-                                            AND move.state = duplicated_sequence.state
-                                            AND move.journal_id = duplicated_sequence.journal_id
-                ),
-                new_vals AS (
-                    SELECT id,
-                            name || ' (' || (row_seq-1)::text || ')' AS name
-                        FROM to_update
-                        WHERE row_seq > 1
+            groups = self.env["account.move"]._read_group(
+                domain=[
+                    ("state", "=", "posted"),
+                    ("name", "!=", "/"),
+                    ("partner_id", "!=", False),
+                ],
+                groupby=["partner_id", "journal_id", "company_id", "name"],
+                aggregates=["__count"],
+            )
+            collisions = [group for group in groups if group[-1] > 1]
+            if collisions:
+                _logger.warning(
+                    "l10n_ve_accountant: no se reemplazó el índice único "
+                    "account_move_unique_name por account_move_unique_name_ve "
+                    "porque existen %d grupo(s) de account.move con el mismo "
+                    "nombre para el mismo proveedor/diario/compañía. No se "
+                    "modificó ningún dato -- revisar manualmente si son "
+                    "duplicados reales antes de forzar la unicidad. Grupos: %s",
+                    len(collisions), collisions,
                 )
-                UPDATE account_move
-                SET name = new_vals.name
-                FROM new_vals
-                WHERE account_move.id = new_vals.id;
-            """
-            )
-
-            self.env.cr.execute(
-                """
-                CREATE UNIQUE INDEX account_move_unique_name
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-                CREATE UNIQUE INDEX account_move_unique_name_ve
-                    ON account_move(
-                        name, partner_id, company_id, journal_id
-                    )
-                WHERE state = 'posted' AND name != '/';
-            """
-            )
-        return res
+            else:
+                # Solo se descarta el índice de core (name, journal_id) una vez
+                # confirmado que es seguro reemplazarlo por uno más permisivo
+                # (incluye partner_id/company_id): en Venezuela distintos
+                # proveedores pueden repetir el mismo número de factura en el
+                # mismo diario.
+                drop_index(self.env.cr, "account_move_unique_name", self._table)
+                self.env.cr.execute(
+                    """
+                    CREATE UNIQUE INDEX account_move_unique_name
+                        ON account_move(
+                            name, partner_id, company_id, journal_id
+                        )
+                    WHERE state = 'posted' AND name != '/';
+                    CREATE UNIQUE INDEX account_move_unique_name_ve
+                        ON account_move(
+                            name, partner_id, company_id, journal_id
+                        )
+                    WHERE state = 'posted' AND name != '/';
+                    """
+                )
+        return super()._auto_init()
 
     def _get_fields_to_compute_lines(self):
         return ["invoice_line_ids", "line_ids", "foreign_inverse_rate", "foreign_rate"]
