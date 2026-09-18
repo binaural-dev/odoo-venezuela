@@ -28,7 +28,7 @@ Cambios en UI / Modelos impactados
   configuración; wizard y reportes de libro de compras/ventas y de
   factura de forma libre.
 """,
-    "version": "17.0.1.0.5",
+    "version": "17.0.1.0.6",
     "license": "LGPL-3",
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
