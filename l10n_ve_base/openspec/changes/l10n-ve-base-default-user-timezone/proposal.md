@@ -1,5 +1,7 @@
 # Fix: usuarios sin zona horaria configurada desfasan la fecha contable un día (TI-15211)
 
+**Ticket:** https://binaural.odoo.com/odoo/helpdesk/action-389/15211
+
 ## Why
 
 Ticket TI-15211: al registrar o validar una factura en horario nocturno
