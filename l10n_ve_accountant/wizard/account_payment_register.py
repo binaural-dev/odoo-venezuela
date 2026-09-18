@@ -80,7 +80,7 @@ class AccountPaymentRegister(models.TransientModel):
 
     indexed_default = fields.Boolean(default=lambda self: self.env.company.indexed_default, string="Payment indexed")
 
-    @api.depends("currency_id")
+    @api.depends("currency_id", "indexed_default", "payment_date")
     def _compute_rates(self):
         """
         Compute the currency and compute the foreign rate
@@ -91,7 +91,7 @@ class AccountPaymentRegister(models.TransientModel):
                 return
             currency_to_use = payment.currency_id.id if payment.currency_id != payment.company_id.currency_id else payment.company_id.foreign_currency_id.id
             rate_values = Rate.compute_rate(
-                currency_to_use, payment.payment_date
+                currency_to_use, payment._get_conversion_date()
             )
             payment.foreign_rate = rate_values.get("foreign_rate", 0.0)
             payment.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0.0)
@@ -121,7 +121,7 @@ class AccountPaymentRegister(models.TransientModel):
             if not bool(payment.payment_date):
                 return
             rate_values = Rate.compute_rate(
-                payment.foreign_currency_id.id, payment.payment_date
+                payment.foreign_currency_id.id, payment._get_conversion_date()
             )
             payment.update(rate_values)
 
@@ -184,6 +184,12 @@ class AccountPaymentRegister(models.TransientModel):
     def _convert_to_wizard_currency(self, installments):
         self.ensure_one()
         conversion_date = self._get_conversion_date()
+        invoice_dates = set(
+            self.line_ids.move_id.filtered(
+                lambda m: m.is_invoice(include_receipts=True)
+            ).mapped('invoice_date')
+        )
+        same_date_as_invoice = len(invoice_dates) == 1 and self.payment_date in invoice_dates
 
         total_per_currency = defaultdict(lambda: {
             'amount_residual': 0.0,
@@ -203,9 +209,12 @@ class AccountPaymentRegister(models.TransientModel):
             if currency == wizard_curr:
                 total_amount += amount_residual_currency
             elif currency != comp_curr and wizard_curr == comp_curr:
-                total_amount += currency._convert(
-                    amount_residual_currency, comp_curr, self.company_id, conversion_date,
-                )
+                if self.indexed_default and same_date_as_invoice:
+                    total_amount += amount_residual
+                else:
+                    total_amount += currency._convert(
+                        amount_residual_currency, comp_curr, self.company_id, conversion_date,
+                    )
             elif currency == comp_curr and wizard_curr != comp_curr:
                 total_amount += comp_curr._convert(
                     amount_residual, wizard_curr, self.company_id, conversion_date,
@@ -228,6 +237,32 @@ class AccountPaymentRegister(models.TransientModel):
                 "foreign_inverse_rate": self.foreign_inverse_rate,
             }
         )
+
+        conversion_date = self._get_conversion_date()
+        if conversion_date != self.payment_date and self.currency_id != self.company_currency_id:
+            for line_vals in payment_vals.get('write_off_line_vals', []):
+                if 'amount_currency' in line_vals and 'balance' in line_vals:
+                    line_vals['balance'] = self.currency_id._convert(
+                        line_vals['amount_currency'],
+                        self.company_id.currency_id,
+                        self.company_id,
+                        conversion_date,
+                    )
+
         return payment_vals
+
+    def _create_payments(self):
+        """
+        Pass the indexation conversion date via context instead of a stored field on
+        account.payment: _prepare_move_lines_per_type (account_payment.py) reads
+        context key 'l10n_ve_conversion_date' to convert the liquidity line using the
+        invoice date when the payment is not indexed.
+        """
+        return super(
+            AccountPaymentRegister,
+            self.with_context(l10n_ve_conversion_date=self._get_conversion_date()),
+        )._create_payments()
+
+  
 
     

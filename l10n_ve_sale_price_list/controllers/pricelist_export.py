@@ -1,3 +1,4 @@
+import base64
 import csv
 import io
 import json
@@ -27,7 +28,10 @@ class ProductPricelistExportController(ProductPricelistExportController):
         headers = [_("Product"), _("UOM")] + [pricelist.display_name for pricelist in pricelists]
         if export_format == 'csv':
             return self._generate_csv(pricelists, products, headers)
-        return self._generate_xlsx(pricelists, products, headers)
+        return self._generate_xlsx(
+            pricelists, products, headers,
+            company=report_data['company'], issue_date=report_data['issue_date'],
+        )
 
     def _generate_rows(self, products, pricelists):
         rows = []
@@ -53,15 +57,31 @@ class ProductPricelistExportController(ProductPricelistExportController):
         ]
         return request.make_response(content, response_headers)
 
-    def _generate_xlsx(self, pricelists, products, headers):
+    def _generate_xlsx(self, pricelists, products, headers, company=None, issue_date=None):
         buffer = io.BytesIO()
         import xlsxwriter  # noqa: PLC0415
         workbook = xlsxwriter.Workbook(buffer, {'in_memory': True})
         worksheet = workbook.add_worksheet()
-        worksheet.write_row(0, 0, headers)
+        bold = workbook.add_format({'bold': True})
+        # Row 1: basic legend (report title, company, issue date/time) so
+        # the file is identifiable on its own once downloaded, same
+        # information already shown in the PDF header.
+        worksheet.write_row(0, 0, [
+            _("Price list report"),
+            company.display_name if company else '',
+            issue_date or '',
+        ], bold)
+        if company and company.logo:
+            worksheet.insert_image(0, len(headers) + 1, 'logo.png', {
+                'image_data': io.BytesIO(base64.b64decode(company.logo)),
+                'x_scale': 0.3,
+                'y_scale': 0.3,
+            })
+        header_row = 2
+        worksheet.write_row(header_row, 0, headers)
         rows = self._generate_rows(products, pricelists)
         column_widths = [len(str(header)) for header in headers]
-        for row_idx, row in enumerate(rows, start=1):
+        for row_idx, row in enumerate(rows, start=header_row + 1):
             worksheet.write_row(row_idx, 0, row)
             for col_idx, cell_value in enumerate(row):
                 column_widths[col_idx] = max(column_widths[col_idx], len(str(cell_value)))

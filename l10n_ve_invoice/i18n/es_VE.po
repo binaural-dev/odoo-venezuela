@@ -445,9 +445,7 @@ msgid "Invoice Configuration"
 msgstr "Configuración de Facturación"
 
 #. module: l10n_ve_invoice
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_date_display_datetime
-#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__invoice_date_display_datetime
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.l10n_ve_invoice_view_invoice_tree_datetime
 msgid "Invoice Date"
@@ -574,6 +572,11 @@ msgstr "Declaración Única de Aduana"
 #: model:ir.ui.menu,name:l10n_ve_invoice.account_report_purchase_menu
 msgid "Purchase Book"
 msgstr "Libro de Compras"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_debit_note__l10n_ve_out_of_fiscal_period_warning
+msgid "Out of Fiscal Period"
+msgstr "Fuera del Periodo Fiscal"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__invoice_reception_date
@@ -706,6 +709,11 @@ msgid "The invoice date cannot be greater than the accounting date."
 msgstr "La fecha de la factura no puede ser mayor que la fecha contable."
 
 #. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_debit_note_inherit
+msgid "This Debit Note is dated outside the fiscal period of the original invoice."
+msgstr "Esta Nota de Débito está fuera del periodo fiscal de la factura original."
+
+#. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid "The sale's series sequence must be in the selected journal."
@@ -782,3 +790,47 @@ msgid ""
 msgstr ""
 "Ninguna de las órdenes de venta seleccionadas está confirmada.\n"
 "Solo las órdenes no borrador se pueden imprimir."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"Every product line on this credit note must have a product, so it can "
+"be matched against the original invoice '%(origin)s'."
+msgstr ""
+"Toda línea de producto de esta nota de crédito debe tener un producto, "
+"para poder contrastarla contra la factura original '%(origin)s'."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"You cannot add the product '%(product)s' to this credit note: it is not "
+"part of the original invoice '%(origin)s'."
+msgstr ""
+"No puede agregar el producto '%(product)s' a esta nota de crédito: no "
+"forma parte de la factura original '%(origin)s'."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"The amount credited for product '%(product)s' (%(amount)s, including "
+"%(already)s already credited by other credit notes) exceeds the amount "
+"invoiced on the original document '%(origin)s' (%(max)s)."
+msgstr ""
+"El monto acreditado para el producto '%(product)s' (%(amount)s, "
+"incluyendo %(already)s ya acreditado por otras notas de crédito) supera "
+"el monto facturado en el documento original '%(origin)s' (%(max)s)."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"The total credited amount on this credit note (%(amount)s, including "
+"%(already)s already credited by other credit notes) exceeds the amount "
+"invoiced on the original document '%(origin)s' (%(max)s)."
+msgstr ""
+"El monto total acreditado en esta nota de crédito (%(amount)s, incluyendo "
+"%(already)s ya acreditado por otras notas de crédito) supera el monto "
+"facturado en el documento original '%(origin)s' (%(max)s)."

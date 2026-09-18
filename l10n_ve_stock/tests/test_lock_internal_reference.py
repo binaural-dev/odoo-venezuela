@@ -63,6 +63,40 @@ class TestLockInternalReferenceOnMoves(TransactionCase):
         product.write({"default_code": "REF004-B"})
         self.assertEqual(product.default_code, "REF004-B")
 
+    def test_write_default_code_allowed_when_lock_disabled_in_same_write(self):
+        """Disabling the toggle and changing default_code in a single write
+        (the natural flow to unlock and fix a product) must not raise -
+        the guard has to read the incoming value from vals, not the
+        still-True value stored on the record before the write applies.
+        """
+        product = self._create_product("REF006")
+        self._create_done_move(product)
+        product.write({
+            "lock_internal_reference_on_moves": False,
+            "default_code": "REF006-B",
+        })
+        self.assertEqual(product.default_code, "REF006-B")
+        self.assertFalse(product.lock_internal_reference_on_moves)
+
+    def test_write_template_default_code_allowed_when_lock_disabled_in_same_write(self):
+        """Same unlock-and-fix flow as
+        test_write_default_code_allowed_when_lock_disabled_in_same_write,
+        but through product.template.write() - the real path the product
+        form uses. default_code and lock_internal_reference_on_moves each
+        have their own inverse, run as separate calls in vals key order;
+        the resolved form arch renders default_code before the toggle, so
+        it is listed first here too, matching what the UI actually sends.
+        """
+        product = self._create_product("REF007")
+        self._create_done_move(product)
+        template = product.product_tmpl_id
+        template.write({
+            "default_code": "REF007-B",
+            "lock_internal_reference_on_moves": False,
+        })
+        self.assertEqual(product.default_code, "REF007-B")
+        self.assertFalse(product.lock_internal_reference_on_moves)
+
     def test_write_default_code_allowed_when_not_storable(self):
         product = self.env["product.product"].create(
             {

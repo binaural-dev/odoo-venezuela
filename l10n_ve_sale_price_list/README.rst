@@ -122,9 +122,14 @@ allá de tener las listas de precio (``product.pricelist``) creadas con su
   de precios (Ventas/Facturación → Configuración → Listas de Precios).
 - Para que una lista esté disponible/precargada en todas las compañías,
   dejar el campo **Compañía** vacío.
-- No hace falta ningún grupo de seguridad ni permiso especial: cualquier
-  usuario con acceso al reporte nativo de lista de precios puede usar
-  esta versión extendida.
+- Para poder generar y exportar este reporte multi-lista (HTML, PDF, CSV,
+  XLSX), el usuario debe pertenecer al grupo **Ver reporte multi-lista de
+  precios** (``l10n_ve_sale_price_list.group_pricelist_report_multi``,
+  Ajustes → Usuarios y Compañías → Grupos). Este grupo es independiente
+  del grupo nativo "Usar múltiples listas de precios"
+  (``product.group_product_pricelist``): tenerlo asignado únicamente
+  habilita el botón nativo que dispara este reporte, no basta por sí solo
+  para generarlo.
 
 Créditos
 ========

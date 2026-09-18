@@ -30,6 +30,18 @@ class TestProductTemplate(TransactionCase):
             "type_tax_use": "purchase", "company_id": self.company.id,
             "tax_group_id": self.tax_group.id,
         })
+        # Combo choice fixture: every product.template with type='combo' requires
+        # at least 1 combo_ids -> combo_item_ids (core constraint, unrelated to taxes).
+        self.combo_component = self.env["product.product"].create({
+            "name": "Combo Component",
+            "type": "consu",
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        self.combo = self.env["product.combo"].create({
+            "name": "Test Combo Choice",
+            "combo_item_ids": [(0, 0, {"product_id": self.combo_component.id})],
+        })
 
     # ═══════════════════════════════════════════════════════════════
     # Positive tests — product creation / write should succeed
@@ -204,19 +216,201 @@ class TestProductTemplate(TransactionCase):
             product.write({"taxes_id": [(3, self.tax_sale_1.id)]})
 
     # ═══════════════════════════════════════════════════════════════
-    # TI-15065: batch write on 2+ records must not crash with ensure_one
+    # Combo products — exempt from single-tax validation
     # ═══════════════════════════════════════════════════════════════
 
-    def test_14_write_batch_multi_record_error_no_ensure_one_crash(self):
+    def test_14_create_combo_without_taxes_no_default(self):
+        """Crear producto combo sin taxes y sin defaults de compañía -> OK"""
+        self.company.write({
+            "account_sale_tax_id": False,
+            "account_purchase_tax_id": False,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo No Taxes",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        self.assertFalse(product.taxes_id)
+        self.assertFalse(product.supplier_taxes_id)
+
+    def test_15_write_existing_combo_taxes_exempt(self):
+        """Combo existente recibe 2 taxes por write -> OK, la regla no aplica a combo"""
+        self.company.write({
+            "account_sale_tax_id": False,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo Write",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        # FIX-062: No need to reset context — create() no longer sets
+        # skip_tax_validation_on_write. Combo is exempt regardless.
+        product.write({"taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])]})
+        self.assertEqual(len(product.taxes_id), 2)
+
+    def test_16_write_change_type_consu_to_combo(self):
+        """Write que cambia type de consu a combo junto con taxes invalidos -> OK"""
+        product = self.env["product.template"].create({
+            "name": "Test Consu To Combo",
+            "type": "consu",
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        # FIX-062: No need to reset context — create() no longer sets
+        # skip_tax_validation_on_write.
+        product.write({
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+        })
+        self.assertEqual(product.type, "combo")
+        self.assertEqual(len(product.taxes_id), 2)
+
+    def test_17_write_change_type_combo_to_consu(self):
+        """Write que cambia type de combo a consu junto con taxes invalidos -> UserError"""
+        product = self.env["product.template"].create({
+            "name": "Test Combo To Consu",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+        })
+        # FIX-062: No need to reset context.
+        with self.assertRaises(UserError):
+            product.write({
+                "type": "consu",
+                "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+            })
+
+    def test_18_write_mixed_recordset_combo_and_non_combo(self):
+        """Write sobre recordset mixto (combo + no-combo) -> valida solo el no-combo"""
+        combo_product = self.env["product.template"].create({
+            "name": "Test Mixed Combo",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        regular_product = self.env["product.template"].create({
+            "name": "Test Mixed Regular",
+            "type": "service",
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        # FIX-062: No need to reset context.
+        mixed = combo_product + regular_product
+        with self.assertRaises(UserError):
+            mixed.write({"taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])]})
+
+    # ═══════════════════════════════════════════════════════════════
+    # FIX-060: vals mutation isolation
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_19_default_injection_does_not_leak_to_combo(self):
+        """FIX-060: When a non-combo product triggers default injection, the
+        default tax must NOT be applied to excluded combo products in the
+        same recordset."""
+        self.company.write({
+            "account_sale_tax_id": self.tax_sale_1.id,
+        })
+        combo_product = self.env["product.template"].create({
+            "name": "Test Leak Combo",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        regular_product = self.env["product.template"].create({
+            "name": "Test Leak Regular",
+            "type": "service",
+            "taxes_id": [(5, 0, 0)],  # empty → will trigger default injection
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        mixed = combo_product + regular_product
+        # Writing taxes_id empty on both: non-combo gets default, combo stays empty.
+        mixed.write({"taxes_id": [(5, 0, 0)]})
+        # The combo product must NOT have received the default tax.
+        self.assertFalse(combo_product.taxes_id,
+                         "Combo product must not receive default tax from non-combo validation")
+        # The regular product gets the company default.
+        self.assertEqual(regular_product.taxes_id.id, self.tax_sale_1.id)
+
+    # ═══════════════════════════════════════════════════════════════
+    # FIX-061: trigger completeness — type change without taxes
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_20_write_combo_to_consu_without_taxes_no_default(self):
+        """FIX-061: Changing type from combo to consu WITHOUT touching taxes
+        must trigger validation. Combo had 2 taxes → error on consu."""
+        self.company.write({
+            "account_sale_tax_id": False,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo To Consu No Tax",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
+        })
+        with self.assertRaises(UserError):
+            product.write({"type": "consu"})  # no taxes in vals
+
+    def test_21_write_combo_to_consu_without_taxes_with_default(self):
+        """FIX-061: Changing combo→consu without taxes: if combo had 1 tax,
+        it's valid for consu too → OK."""
+        product = self.env["product.template"].create({
+            "name": "Test Combo To Consu Valid",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+        })
+        product.write({"type": "consu"})
+        self.assertEqual(product.type, "consu")
+        self.assertEqual(product.taxes_id.id, self.tax_sale_1.id)
+
+    def test_22_write_combo_to_consu_empty_taxes_with_default(self):
+        """FIX-061: Changing combo→consu when combo had no taxes:
+        company default is injected → OK."""
+        self.company.write({
+            "account_sale_tax_id": self.tax_sale_1.id,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo Empty To Consu",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        product.write({"type": "consu"})
+        self.assertEqual(product.type, "consu")
+        self.assertEqual(product.taxes_id.id, self.tax_sale_1.id)
+
+    def test_23_write_combo_to_consu_empty_taxes_no_default(self):
+        """FIX-061: Changing combo→consu when combo had no taxes and
+        no company default → UserError."""
+        self.company.write({
+            "account_sale_tax_id": False,
+            "account_purchase_tax_id": False,
+        })
+        product = self.env["product.template"].create({
+            "name": "Test Combo Empty No Default",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        with self.assertRaises(UserError):
+            product.write({"type": "consu"})
+
+    # ═══════════════════════════════════════════════════════════════
+    # TI-15065: batch write on 2+ records must not crash with ensure_one,
+    # and must validate EACH product individually, not the union of taxes
+    # across the whole recordset (deuda técnica: test_18/test_19 always
+    # collapse to a single non-combo record after filtered(), so they
+    # never exercised a real multi-record batch — these do).
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_24_write_batch_multi_record_error_no_ensure_one_crash(self):
         """TI-15065: A single write() on a product.template RECORDSET of 2+
         records (not through the product.product _inherits delegation,
         which splits the write per template) that ends up in a fiscal error
         state must raise a UserError listing every affected product — not
         crash with `ValueError: Expected singleton` when the error branch
-        reads records.name on a multi-record recordset. This reproduces the
-        real scenario from account.chart.template._post_load_data, which
-        calls product.template(id1, id2, ...).write({'taxes_id': ...})
-        directly on a multi-record product.template recordset."""
+        reads records.name/records.company_id on a multi-record recordset.
+        Reproduces the real scenario from
+        account.chart.template._post_load_data, which calls
+        product.template(id1, id2, ...).write({'taxes_id': ...}) directly
+        on a multi-record product.template recordset."""
         product_a = self.env["product.template"].create({
             "name": "Test Batch Error A",
             "type": "service",
@@ -229,11 +423,7 @@ class TestProductTemplate(TransactionCase):
             "taxes_id": [(6, 0, [self.tax_sale_1.id])],
             "supplier_taxes_id": [(6, 0, [])],
         })
-        # create() on product.template sets skip_tax_validation_on_write=True
-        # in the context it uses internally, and the returned recordset
-        # carries that context forward — clear it so the write() below
-        # actually runs the validation being tested.
-        batch = (product_a + product_b).with_context(skip_tax_validation_on_write=False)
+        batch = product_a + product_b
         with self.assertRaises(UserError) as cm:
             batch.write({
                 "taxes_id": [(6, 0, [self.tax_sale_1.id, self.tax_sale_2.id])],
@@ -242,12 +432,7 @@ class TestProductTemplate(TransactionCase):
         self.assertIn(product_a.name, message)
         self.assertIn(product_b.name, message)
 
-    # ═══════════════════════════════════════════════════════════════
-    # TI-15065: batch write must validate EACH product individually,
-    # not the union of taxes across the whole recordset
-    # ═══════════════════════════════════════════════════════════════
-
-    def test_15_write_batch_untouched_field_not_validated(self):
+    def test_25_write_batch_untouched_field_not_validated(self):
         """TI-15065: account._force_default_sale_tax only ever writes
         `taxes_id` (never `supplier_taxes_id`) in a single batch write. A
         previous version of this method always validated BOTH fields on
@@ -274,16 +459,17 @@ class TestProductTemplate(TransactionCase):
             "taxes_id": [(6, 0, [self.tax_sale_1.id])],
             "supplier_taxes_id": [(6, 0, [other_purchase_tax.id])],
         })
-        batch = (product_a + product_b).with_context(skip_tax_validation_on_write=False)
-        # Only touches taxes_id -> supplier_taxes_id (different per record)
-        # must be left out of validation entirely.
+        batch = product_a + product_b
+        # Only touches taxes_id (redundant link, both already have
+        # tax_sale_1) -> supplier_taxes_id (different per record) must be
+        # left out of validation entirely.
         batch.write({"taxes_id": [(4, self.tax_sale_1.id)]})
         self.assertEqual(product_a.taxes_id.ids, [self.tax_sale_1.id])
         self.assertEqual(product_b.taxes_id.ids, [self.tax_sale_1.id])
         self.assertEqual(product_a.supplier_taxes_id.id, self.tax_purchase.id)
         self.assertEqual(product_b.supplier_taxes_id.id, other_purchase_tax.id)
 
-    def test_16_write_batch_only_offending_record_raises(self):
+    def test_26_write_batch_only_offending_record_raises(self):
         """TI-15065: When a batch write() leaves exactly one product with
         2+ taxes (a genuine violation) while others stay valid, the
         UserError must name only the offending product — not conflate it
@@ -302,19 +488,14 @@ class TestProductTemplate(TransactionCase):
             "taxes_id": [(6, 0, [self.tax_sale_2.id])],
             "supplier_taxes_id": [(6, 0, [])],
         })
-        batch = (product_ok + product_offender).with_context(skip_tax_validation_on_write=False)
+        batch = product_ok + product_offender
         with self.assertRaises(UserError) as cm:
             batch.write({"taxes_id": [(4, self.tax_sale_1.id)]})
         message = str(cm.exception)
         self.assertIn(product_offender.name, message)
         self.assertNotIn(product_ok.name, message)
 
-    # ═══════════════════════════════════════════════════════════════
-    # TI-15065: a tax belonging to an unrelated company must not count
-    # towards "exactly one tax" for a DIFFERENT company
-    # ═══════════════════════════════════════════════════════════════
-
-    def test_17_write_batch_shared_product_ignores_other_company_taxes(self):
+    def test_27_write_batch_shared_product_ignores_other_company_taxes(self):
         """TI-15065: account.tax.company_id is mandatory and NOT
         company_dependent, and taxes_id/supplier_taxes_id on
         product.template carry no company domain either — so a product
@@ -350,18 +531,118 @@ class TestProductTemplate(TransactionCase):
             "supplier_taxes_id": [(6, 0, [other_company_purchase_tax.id])],
         })
         # Only touches company_id (not taxes_id/supplier_taxes_id), so the
-        # custom write() override's validation isn't triggered by this —
-        # simulates the product becoming shared/company-independent, as
-        # base/demo products commonly are.
+        # write() override's validation isn't triggered by this — simulates
+        # the product becoming shared/company-independent, as base/demo
+        # products commonly are.
         shared_product.write({"company_id": False})
 
         # Simulates account._force_default_sale_tax linking self.company's
         # default tax onto this shared product during self.company's own
         # creation — must not raise, since only self.company's own tax
         # counts for self.company's validation.
-        batch = shared_product.with_context(skip_tax_validation_on_write=False)
-        batch.write({"taxes_id": [(4, self.tax_sale_1.id)]})
+        shared_product.write({"taxes_id": [(4, self.tax_sale_1.id)]})
         self.assertEqual(
             set(shared_product.taxes_id.ids),
             {other_company_tax.id, self.tax_sale_1.id},
         )
+
+    # ═══════════════════════════════════════════════════════════════
+    # Review follow-ups (PR #1305, @pastor-binaural,
+    # #pullrequestreview-5171870366) — none blocked the merge, all
+    # applied as a same-branch fix.
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_28_write_batch_two_companies_each_gets_own_default(self):
+        """Follow-up #1: a single write() that needs to inject a default
+        tax for products of TWO DIFFERENT companies must give each product
+        its OWN company's default — not have the second product silently
+        reuse the first product's default (the old code keyed the pending
+        injection only by field_name, so the first record processed won
+        the shared dict entry for that field)."""
+        other_company = self.env["res.company"].create({"name": "Follow-up 1 Company"})
+        other_tax_group = self.env["account.tax.group"].create({
+            "name": "Follow-up 1 Tax Group", "company_id": other_company.id,
+        })
+        other_default_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Follow-up 1 Company Default Sale Tax", "amount": 10,
+            "amount_type": "percent", "type_tax_use": "sale",
+            "company_id": other_company.id, "tax_group_id": other_tax_group.id,
+        })
+        other_purchase_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Follow-up 1 Other Company Purchase Tax", "amount": 5,
+            "amount_type": "percent", "type_tax_use": "purchase",
+            "company_id": other_company.id, "tax_group_id": other_tax_group.id,
+        })
+        other_company.write({"account_sale_tax_id": other_default_tax.id})
+        self.company.write({"account_sale_tax_id": self.tax_sale_1.id})
+
+        product_main = self.env["product.template"].with_company(self.company).create({
+            "name": "Follow-up 1 Main Company Product",
+            "type": "service", "company_id": self.company.id,
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [self.tax_purchase.id])],
+        })
+        product_other = self.env["product.template"].with_company(other_company).create({
+            "name": "Follow-up 1 Other Company Product",
+            "type": "service", "company_id": other_company.id,
+            "taxes_id": [(6, 0, [other_default_tax.id])],
+            "supplier_taxes_id": [(6, 0, [other_purchase_tax.id])],
+        })
+        batch = product_main + product_other
+        # Both taxes cleared in the same write(): each product must be
+        # re-injected with its OWN company's default, not the other's.
+        batch.write({"taxes_id": [(5, 0, 0)]})
+        self.assertEqual(product_main.taxes_id.id, self.tax_sale_1.id)
+        self.assertEqual(product_other.taxes_id.id, other_default_tax.id)
+
+    def test_29_create_keeps_other_company_tax_and_adds_default(self):
+        """Follow-up #2: creating a product whose only taxes_id command
+        points to a tax from ANOTHER (irrelevant) company — so
+        _relevant_tax_ids filters it out and a default gets injected —
+        must ADD the default on top of that command, not replace it and
+        silently drop the caller's original tax."""
+        other_company = self.env["res.company"].create({"name": "Follow-up 2 Company"})
+        other_tax_group = self.env["account.tax.group"].create({
+            "name": "Follow-up 2 Tax Group", "company_id": other_company.id,
+        })
+        other_company_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Follow-up 2 Other Company Sale Tax", "amount": 7,
+            "amount_type": "percent", "type_tax_use": "sale",
+            "company_id": other_company.id, "tax_group_id": other_tax_group.id,
+        })
+        self.company.write({"account_sale_tax_id": self.tax_sale_1.id})
+
+        product = self.env["product.product"].create({
+            "name": "Follow-up 2 Product",
+            "type": "service",
+            "taxes_id": [(6, 0, [other_company_tax.id])],
+            "supplier_taxes_id": [(6, 0, [])],
+        })
+        self.assertEqual(
+            set(product.taxes_id.ids),
+            {other_company_tax.id, self.tax_sale_1.id},
+        )
+
+    def test_30_write_batch_two_combos_one_with_tax_one_without(self):
+        """Follow-up #5 (task 81303, second scenario): two combo products,
+        one already carrying a valid tax and the other with none, both
+        switched from combo to consu in the SAME write(). Each must be
+        validated individually — the one with a tax stays as-is, the one
+        without gets the company default injected — not skip validation
+        because the per-record union happens to include a tax."""
+        self.company.write({"account_sale_tax_id": self.tax_sale_1.id})
+        combo_with_tax = self.env["product.template"].create({
+            "name": "Follow-up 5 Combo With Tax",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+            "taxes_id": [(6, 0, [self.tax_sale_2.id])],
+        })
+        combo_without_tax = self.env["product.template"].create({
+            "name": "Follow-up 5 Combo Without Tax",
+            "type": "combo",
+            "combo_ids": [(6, 0, [self.combo.id])],
+        })
+        batch = combo_with_tax + combo_without_tax
+        batch.write({"type": "consu"})
+        self.assertEqual(combo_with_tax.taxes_id.id, self.tax_sale_2.id)
+        self.assertEqual(combo_without_tax.taxes_id.id, self.tax_sale_1.id)

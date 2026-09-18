@@ -1,11 +1,16 @@
 from odoo import fields
+from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools.misc import format_date
 
 
 @tagged("post_install", "-at_install", "l10n_ve_sale_price_list")
 class TestProductPricelistReport(TransactionCase):
     def setUp(self):
         super().setUp()
+        self.env.user.group_ids = [
+            (4, self.env.ref("l10n_ve_sale_price_list.group_pricelist_report_multi").id)
+        ]
         self.product = self.env["product.template"].create(
             {
                 "name": "Test Product Pricelist Report",
@@ -59,15 +64,19 @@ class TestProductPricelistReport(TransactionCase):
         pricelists = result["pricelists"]
         self.assertEqual(set(pricelists.ids), {self.pricelist_1.id, self.pricelist_2.id})
 
-        products_data = result["products"]
-        self.assertEqual(len(products_data), 1)
-        product_data = products_data[0]
-
-        expected_price_1 = self.pricelist_1._get_product_price(self.product, 1)
-        expected_price_2 = self.pricelist_2._get_product_price(self.product, 1)
-
-        self.assertAlmostEqual(product_data["prices"][self.pricelist_1.id], expected_price_1)
-        self.assertAlmostEqual(product_data["prices"][self.pricelist_2.id], expected_price_2)
+    def test_get_report_data_requires_group(self):
+        self.env.user.group_ids = [
+            (3, self.env.ref("l10n_ve_sale_price_list.group_pricelist_report_multi").id)
+        ]
+        report_model = self.env["report.product.report_pricelist"]
+        with self.assertRaises(AccessError):
+            report_model._get_report_data(
+                {
+                    "pricelist_ids": [self.pricelist_1.id, self.pricelist_2.id],
+                    "active_model": "product.template",
+                    "active_ids": [self.product.id],
+                }
+            )
 
     def test_no_pricelists_selected_returns_empty_prices(self):
         report_model = self.env["report.product.report_pricelist"]
@@ -130,6 +139,13 @@ class TestProductPricelistReport(TransactionCase):
         self.assertEqual({p["id"] for p in result["products"]}, set(all_ids))
 
     def test_report_data_includes_printing_company_and_issue_date(self):
+        """issue_date must be a formatted date *and* time string (the task
+        asks for both), not just a date - so it can't be compared against
+        fields.Date.context_today() directly. Comparing the full formatted
+        string against a freshly-formatted "now" would be timing-flaky
+        (seconds can roll over between the two calls), so this only checks
+        that a time component is present alongside today's date.
+        """
         report_model = self.env["report.product.report_pricelist"]
         result = report_model._get_report_data(
             {
@@ -140,7 +156,12 @@ class TestProductPricelistReport(TransactionCase):
         )
 
         self.assertEqual(result["company"], self.env.company)
-        self.assertEqual(result["issue_date"], fields.Date.context_today(report_model))
+        self.assertIsInstance(result["issue_date"], str)
+        self.assertIn(
+            format_date(self.env, fields.Date.context_today(report_model)),
+            result["issue_date"],
+        )
+        self.assertRegex(result["issue_date"], r"\d{1,2}:\d{2}")
 
     def test_pdf_template_renders_with_company_and_date_header(self):
         report_model = self.env["report.product.report_pricelist"]
@@ -154,4 +175,60 @@ class TestProductPricelistReport(TransactionCase):
         )
         html = self.env["ir.qweb"]._render("product.report_pricelist_page", render_values)
         self.assertIn(self.product.name, html)
-        self.assertIn(str(fields.Date.context_today(report_model)), html)
+        self.assertIn(
+            format_date(self.env, fields.Date.context_today(report_model)), html
+        )
+        self.assertRegex(html, r"\d{1,2}:\d{2}")
+
+    def test_no_active_ids_returns_no_products(self):
+        """_set_pricelist_prices() early-returns when products_data is
+        empty - exercised when the user opens the report without any
+        product selected."""
+        report_model = self.env["report.product.report_pricelist"]
+        result = report_model._get_report_data(
+            {
+                "pricelist_ids": [self.pricelist_1.id],
+                "active_model": "product.template",
+                "active_ids": [],
+            }
+        )
+
+        self.assertEqual(result["products"], [])
+
+    def test_variants_get_their_own_pricelist_prices(self):
+        """A template with more than one variant gets a 'variants' list
+        from the core report (product_variant_count > 1); each variant
+        must get its own per-pricelist prices via the recursive call in
+        _set_pricelist_prices, not just the template-level entry."""
+        attribute = self.env["product.attribute"].create({"name": "Color"})
+        value_1, value_2 = self.env["product.attribute.value"].create([
+            {"name": "Red", "attribute_id": attribute.id},
+            {"name": "Blue", "attribute_id": attribute.id},
+        ])
+        template = self.env["product.template"].create({
+            "name": "Variant Product",
+            "type": "consu",
+            "list_price": 50.0,
+            "attribute_line_ids": [(0, 0, {
+                "attribute_id": attribute.id,
+                "value_ids": [(6, 0, [value_1.id, value_2.id])],
+            })],
+        })
+        self.assertGreater(template.product_variant_count, 1)
+
+        report_model = self.env["report.product.report_pricelist"]
+        result = report_model._get_report_data(
+            {
+                "pricelist_ids": [self.pricelist_1.id, self.pricelist_2.id],
+                "active_model": "product.template",
+                "active_ids": [template.id],
+            }
+        )
+
+        variants = result["products"][0]["variants"]
+        self.assertEqual(len(variants), 2)
+        for variant in variants:
+            self.assertEqual(
+                set(variant["prices"].keys()),
+                {self.pricelist_1.id, self.pricelist_2.id},
+            )

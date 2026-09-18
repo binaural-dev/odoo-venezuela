@@ -79,6 +79,17 @@
         </field>
     </record>
 
+    <record id="view_stock_move_operations" model="ir.ui.view">
+        <field name="name">stock.move.operations.form.no.quick.create</field>
+        <field name="model">stock.move</field>
+        <field name="inherit_id" ref="stock.view_stock_move_operations"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='product_id']" position="attributes">
+                <attribute name="options">{'no_quick_create': True, 'no_create_edit': True, 'no_create': True}</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="vpicktree" model="ir.ui.view">
         <field name="name">stock.picking.tree</field>
         <field name="model">stock.picking</field>

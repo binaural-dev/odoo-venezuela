@@ -1,4 +1,6 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import AccessError
+from odoo.tools.misc import format_datetime
 
 
 class ProductPricelistReport(models.AbstractModel):
@@ -16,6 +18,10 @@ class ProductPricelistReport(models.AbstractModel):
         selection doesn't have to be computed all at once just to show one
         page of it.
         """
+        if not self.env.user.has_group("l10n_ve_sale_price_list.group_pricelist_report_multi"):
+            raise AccessError(
+                _("No tienes permiso para generar el reporte de varias listas de precios.")
+            )
         pricelist_ids = data.get("pricelist_ids") or []
         pricelists = self.env["product.pricelist"].browse(pricelist_ids).exists()
 
@@ -40,7 +46,8 @@ class ProductPricelistReport(models.AbstractModel):
         # several companies, so "the company" printed is always the one
         # the current user is printing from, not any pricelist's company.
         res["company"] = self.env.company
-        res["issue_date"] = fields.Date.context_today(self)
+        # Requerimiento pide fecha *y* hora de emision, no solo la fecha.
+        res["issue_date"] = format_datetime(self.env, fields.Datetime.now())
         res.pop("pricelist", None)
         res.pop("quantities", None)
         return res

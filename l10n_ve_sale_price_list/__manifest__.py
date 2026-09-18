@@ -24,6 +24,7 @@
     "category": "Sales",
     "depends": ["product"],
     "data": [
+        "security/res_groups.xml",
         "report/product_pricelist_report_templates.xml",
     ],
     "assets": {

@@ -4,7 +4,7 @@ from odoo import api, models
 class ProductPricelist(models.Model):
     _inherit = "product.pricelist"
 
-    @api.depends("company_id")
+    @api.depends("name", "currency_id", "company_id", "company_id.name")
     def _compute_display_name(self):
         """Extend the core "Name (Currency)" display name with the
         pricelist's company, so it's identifiable at a glance wherever

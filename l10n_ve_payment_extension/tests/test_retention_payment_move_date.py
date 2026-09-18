@@ -1,0 +1,199 @@
+import logging
+
+from dateutil.relativedelta import relativedelta
+
+from odoo.tests import tagged, Form
+from odoo import Command, fields
+
+from .test_withholding_common_VEF import RetentionTestCommon
+
+_logger = logging.getLogger(__name__)
+
+
+@tagged("post_install", "-at_install", "retention_payment_move_date")
+class TestRetentionPaymentMoveDate(RetentionTestCommon):
+    """Covers how a retention payment's journal entry gets dated today:
+    with the retention's own date_accounting, the same date shown on
+    payment.date -- there is no override pinning it to the date (or rate)
+    of the invoice being retained from, even when that invoice is booked
+    in a foreign currency at a different rate."""
+
+    def setUp(self):
+        super().setUp()
+        # relativedelta(months=1) instead of .replace(day=1): the latter
+        # collides with date_accounting (today) on the 1st of any month,
+        # silently turning the assertions below into no-ops. Subtracting a
+        # full month is never equal to today regardless of what today is.
+        self.date_accounting = fields.Date.today()
+        self.invoice_date = self.date_accounting - relativedelta(months=1)
+
+        self._set_rate(self.currency_usd, self.invoice_date, 40.0)
+        self._set_rate(self.currency_usd, self.date_accounting, 60.0)
+
+        # purchase_journal (RetentionTestCommon) forces VEF
+        # (_check_constrains_account_id_journal_id, l10n_ve_accountant); this
+        # invoice needs a journal without a forced currency so it can be
+        # booked in USD.
+        self.purchase_journal_usd = self.env["account.journal"].create({
+            "name": "Diario Compra USD",
+            "type": "purchase",
+            "code": "PURUS",
+            "company_id": self.company.id,
+        })
+
+    def _set_rate(self, currency, date, inverse_company_rate):
+        currency_rate = self.env["res.currency.rate"].search(
+            [
+                ("name", "=", date),
+                ("currency_id", "=", currency.id),
+                ("company_id", "=", self.company.id),
+            ],
+            limit=1,
+        )
+        if currency_rate:
+            currency_rate.write({"inverse_company_rate": inverse_company_rate})
+            return currency_rate
+        return self.env["res.currency.rate"].create(
+            {
+                "name": date,
+                "currency_id": currency.id,
+                "inverse_company_rate": inverse_company_rate,
+                "company_id": self.company.id,
+            }
+        )
+
+    def _create_foreign_invoice(self, amount=200.0):
+        """Purchase invoice booked in USD (foreign currency), while the
+        retention payment is always created in company currency (VEF, see
+        AccountRetention._prepare_retention_payment_vals)."""
+        with Form(self.env["account.move"].with_context(
+            default_move_type="in_invoice", default_journal_id=self.purchase_journal_usd.id,
+        )) as inv_form:
+            inv_form.partner_id = self.partner_pnr_75
+            inv_form.invoice_date = self.invoice_date
+            inv_form.currency_id = self.currency_usd
+            inv_form.correlative = "12345678901234"
+        invoice = inv_form.save()
+
+        with Form(invoice) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product_iva
+                line.quantity = 1
+                line.price_unit = amount
+        invoice = inv_form_edit.save()
+
+        invoice.write({"date": self.invoice_date, "invoice_date_display": self.invoice_date})
+        invoice.action_post()
+        return invoice
+
+    def _create_retention(self, invoice, number="01234567891234"):
+        invoice_total_vef = abs(invoice.amount_residual_signed)
+        return self.env["account.retention"].create({
+            "type_retention": "iva",
+            "type": "in_invoice",
+            "company_id": self.company.id,
+            "partner_id": self.partner_pnr_75.id,
+            "date": self.date_accounting,
+            "date_accounting": self.date_accounting,
+            "number": number,
+            "retention_line_ids": [Command.create({
+                "move_id": invoice.id,
+                "name": "IVA Line",
+                "invoice_total": invoice_total_vef,
+                "invoice_amount": 200.0,
+                "retention_amount": invoice_total_vef * 0.10,
+                "foreign_invoice_amount": 200.0,
+                "foreign_retention_amount": 20.0,
+                "foreign_currency_rate": 1.0,
+            })],
+        })
+
+    def _exchange_diff_moves(self, invoice):
+        """Any core-generated currency exchange difference entry left
+        behind by reconciling `invoice` against something else --
+        `matched_credit_ids`/`matched_debit_ids` on its own
+        payable/receivable line carry `exchange_move_id` when Odoo's
+        native engine had to correct a rate mismatch on that partial."""
+        ap_lines = invoice.line_ids.filtered(
+            lambda l: l.account_id.account_type == "liability_payable"
+        )
+        partials = ap_lines.matched_credit_ids | ap_lines.matched_debit_ids
+        return partials.mapped("exchange_move_id").filtered(lambda m: m)
+
+    def test_retention_payment_move_uses_date_accounting(self):
+        """The payment (and the move behind it) are dated with the
+        retention's own date_accounting, regardless of the date -- and
+        rate -- of the invoice being retained from. There is no pinning to
+        the invoice's own accounting date anywhere in this module."""
+        invoice = self._create_foreign_invoice(amount=200.0)
+        retention = self._create_retention(invoice)
+
+        retention.action_post()
+
+        payment = retention.payment_ids
+        self.assertEqual(len(payment), 1, "Exactly one payment must be created for the single invoice retained.")
+
+        self.assertEqual(
+            payment.date, self.date_accounting,
+            "payment.date must reflect the retention's own date_accounting.",
+        )
+        self.assertEqual(
+            payment.move_id.date, self.date_accounting,
+            "The retention payment's journal entry is dated like "
+            "date_accounting -- nothing in this module pins it to the "
+            "invoice's own date.",
+        )
+
+    def test_retention_reconcile_never_generates_exchange_difference(self):
+        """`_reconcile_all_payments` reconciles with `no_exchange_difference=True`
+        (plus this module's own `l10n_ve_exchange_is_retention_reconcile`,
+        read by `l10n_ve_exchange_difference` when that module is
+        installed) precisely so a retention payoff never manufactures a
+        currency correction of its own -- the invoice/payment dates above
+        are deliberately at DIFFERENT rates (40.0 vs 60.0), which on any
+        OTHER reconciliation path would leave a real residual to correct.
+        Regression coverage for an assertion that existed before this
+        module's date-pinning behavior was found to be undocumented
+        (commit c9ef8996e) and got dropped along with the outdated test it
+        replaced, without a like-for-like replacement through this
+        module's own real flow (`account.retention`, not a hand-rolled
+        `reconcile()` call elsewhere)."""
+        invoice = self._create_foreign_invoice(amount=200.0)
+        retention = self._create_retention(invoice)
+
+        retention.action_post()
+
+        self.assertFalse(
+            self._exchange_diff_moves(invoice),
+            "A retention payment must never generate a currency exchange "
+            "difference entry against the invoice it retains from, even "
+            "when reconciled at a different rate.",
+        )
+
+    def test_retention_payment_generate_move_vals_uses_date_accounting(self):
+        """Direct unit check: _generate_move_vals is core Odoo's own
+        implementation here (no override in this module), so it falls back
+        to 'date': self.date, which for a retention payment is
+        date_accounting -- not the date of the invoice being retained
+        from."""
+        invoice = self._create_foreign_invoice(amount=200.0)
+        retention = self._create_retention(invoice, number="01234567891235")
+
+        payment_vals = retention._prepare_retention_payment_vals(
+            invoice, retention.retention_line_ids
+        )
+        self.assertEqual(
+            payment_vals["date"], self.date_accounting,
+            "The payment itself is dated with date_accounting.",
+        )
+
+        payment = self.env["account.payment"].create(payment_vals)
+        payment.retention_line_ids = retention.retention_line_ids
+
+        move_vals = payment._generate_move_vals()
+        self.assertEqual(
+            move_vals.get("date"), self.date_accounting,
+            "_generate_move_vals has no override in this module, so it "
+            "keeps core Odoo's default: 'date' falls back to payment.date "
+            "(date_accounting), not the invoice's own accounting date.",
+        )

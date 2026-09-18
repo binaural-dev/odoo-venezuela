@@ -80,9 +80,10 @@ class AccountPayment(models.Model):
                     f"-{retention_line_id.economic_activity_id.branch_id.name}"
                 )
 
-            vals_to_change = {"name": move_name, "is_manually_modified": True}
+            vals_to_change = {"name": move_name, "is_manually_modified": True, "foreign_rate": retention_line_id.move_id.foreign_rate, "foreign_inverse_rate": retention_line_id.move_id.foreign_inverse_rate}
             move.write(vals_to_change)
         return res
+
 
     def unlink(self):
         for payment in self:

@@ -1,3 +1,4 @@
+from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -10,6 +11,18 @@ class TestProductCompanyEditRestriction(TransactionCase):
             "name": "Test User Company Edit",
             "login": "test_user_company_edit",
             "email": "test_user_company_edit@example.com",
+            # Passing group_ids explicitly skips res.users' own default
+            # (base.group_user + implied groups), so it has to be listed here
+            # too - otherwise the user lacks even base internal-user access
+            # (e.g. to res.company) and every write() fails before it ever
+            # reaches the company_id guard being tested.
+            "group_ids": [(6, 0, [
+                self.env.ref("base.group_user").id,
+                # Base write access to product.template (Products/Create), so
+                # the write()-level tests below exercise the company_id guard
+                # itself instead of failing earlier on the base ACL.
+                self.env.ref("product.group_product_manager").id,
+            ])],
         })
         self.template = self.env["product.template"].create({
             "name": "Product Company Edit Restriction",
@@ -17,12 +30,11 @@ class TestProductCompanyEditRestriction(TransactionCase):
         })
         # Odoo's mail.thread.create() discards pending write-tracking for the
         # new record right after logging its creation message, but only
-        # finalizes that discard on a real DB flush/commit. Flush here so
-        # creation-time bookkeeping doesn't leak into a later write() within
-        # this same test transaction (this has no effect outside tests,
-        # where each request is its own transaction).
-        self.env.flush_all()
-        self.cr.flush()
+        # finalizes that discard on a real DB commit's precommit hooks.
+        # Run those here so creation-time bookkeeping doesn't leak into a
+        # later write() within this same test transaction (this has no
+        # effect outside tests, where each request is its own transaction).
+        self.env.cr.precommit.run()
 
     def test_can_edit_company_id_false_without_group(self):
         template = self.template.with_user(self.user)
@@ -40,14 +52,118 @@ class TestProductCompanyEditRestriction(TransactionCase):
         # Odoo defers tracking-message creation to a cr.precommit hook, which
         # only runs on a real DB commit. Force it here so the assertions
         # below see the tracking message within this test's transaction.
-        self.env.flush_all()
-        self.cr.flush()
-        tracking_values = self.template.message_ids[0].tracking_value_ids
+        self.env.cr.precommit.run()
         self.assertGreater(
             len(self.template.message_ids), message_count_before,
             "Changing company_id should post a tracking message to the chatter.",
         )
+        tracking_values = self.template.message_ids[0].tracking_value_ids
         self.assertTrue(
             any(tv.field_id.name == "company_id" for tv in tracking_values),
             "The tracking message should include a tracking value for company_id.",
         )
+
+    def test_write_company_id_without_group_raises_access_error(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        template = self.template.with_user(self.user)
+        with self.assertRaises(AccessError):
+            template.write({"company_id": other_company.id})
+
+    def test_write_company_id_with_group_is_allowed(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        self.user.group_ids = [(4, self.group.id)]
+        template = self.template.with_user(self.user)
+        template.write({"company_id": other_company.id})
+        self.assertEqual(self.template.company_id, other_company)
+
+    def test_write_without_company_id_is_allowed_without_group(self):
+        template = self.template.with_user(self.user)
+        template.write({"name": "Renamed by unprivileged user"})
+        self.assertEqual(self.template.name, "Renamed by unprivileged user")
+
+    def test_create_with_company_id_without_group_raises_access_error(self):
+        """create() must enforce the same guard as write() - otherwise a
+        user without the group can set the product's company by creating
+        (or duplicating) it directly, bypassing the write()-only check."""
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        Template = self.env["product.template"].with_user(self.user)
+        with self.assertRaises(AccessError):
+            Template.create({
+                "name": "Created by unprivileged user",
+                "type": "consu",
+                "company_id": other_company.id,
+            })
+
+    def test_create_with_company_id_with_group_is_allowed(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        self.user.group_ids = [(4, self.group.id)]
+        # Independent of the company_id guard being tested: multi-company
+        # record rules require the user to belong to a record's company to
+        # create it at all, regardless of the group.
+        self.user.company_ids = [(4, other_company.id)]
+        Template = self.env["product.template"].with_user(self.user)
+        template = Template.create({
+            "name": "Created by privileged user",
+            "type": "consu",
+            "company_id": other_company.id,
+        })
+        self.assertEqual(template.company_id, other_company)
+
+    def test_create_without_company_id_is_allowed_without_group(self):
+        Template = self.env["product.template"].with_user(self.user)
+        template = Template.create({
+            "name": "Created without explicit company_id",
+            "type": "consu",
+        })
+        self.assertTrue(template.id)
+
+    def test_copy_without_group_is_allowed_when_company_unchanged(self):
+        """copy() always sends company_id in the vals (the field has no
+        copy=False), so create()'s guard must not treat "unchanged, just
+        present" as an edit attempt - otherwise duplicating a product
+        breaks for every user without the group, which is the actual bug
+        this test guards against."""
+        template = self.template.with_user(self.user)
+        copy = template.copy()
+        self.assertEqual(copy.company_id, template.company_id)
+
+    def test_copy_with_forced_different_company_without_group_raises(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        template = self.template.with_user(self.user)
+        with self.assertRaises(AccessError):
+            template.copy({"company_id": other_company.id})
+
+    def test_write_company_id_without_group_is_allowed_when_unchanged(self):
+        """Writing the same company_id a product already has must not
+        raise, even without the group - only an actual change is
+        restricted."""
+        template = self.template.with_user(self.user)
+        template.write({"company_id": self.template.company_id.id})
+
+    def test_write_company_id_on_variant_without_group_raises_access_error(self):
+        """company_id on product.product is a writable related field
+        (materialized by _inherits, not readonly on the core field) -
+        writing it there reaches the same column without ever going
+        through product.template.write(), so the guard has to be enforced
+        on product.product too, or this is a bypass."""
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        variant = self.template.product_variant_id.with_user(self.user)
+        with self.assertRaises(AccessError):
+            variant.write({"company_id": other_company.id})
+
+    def test_write_company_id_on_variant_with_group_is_allowed(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        self.user.group_ids = [(4, self.group.id)]
+        variant = self.template.product_variant_id.with_user(self.user)
+        variant.write({"company_id": other_company.id})
+        self.assertEqual(self.template.company_id, other_company)
+
+    def test_create_variant_with_company_id_without_group_raises_access_error(self):
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        Product = self.env["product.product"].with_user(self.user)
+        with self.assertRaises(AccessError):
+            Product.create({
+                "name": "Variant created by unprivileged user",
+                "type": "consu",
+                "company_id": other_company.id,
+            })
