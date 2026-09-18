@@ -11,4 +11,15 @@
             
         </field>
     </record>
+
+    <record id="view_journal_form_inherit_bank_required_account" model="ir.ui.view">
+        <field name="name">account.journal.form.bank.required.account</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='default_account_id']" position="attributes">
+                <attribute name="required">type == 'bank' or (id and type in ('bank', 'cash', 'credit'))</attribute>
+            </xpath>
+        </field>
+    </record>
 </odoo>
