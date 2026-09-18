@@ -40,17 +40,24 @@ El sistema DEBE (MUST) impedir modificar `foreign_currency_id` de una compañía
 
 ### Requirement: Cálculo de tasa y tasa inversa por fecha
 
-El método `compute_rate(foreign_currency_id, rate_date)` de `res.currency.rate` DEBE (MUST) devolver la tasa (`foreign_rate`) y la tasa inversa (`foreign_inverse_rate`) tomando el registro de tasa más reciente cuya fecha sea menor o igual a `rate_date` para esa moneda y la compañía activa. Si la moneda solicitada es la moneda principal de la compañía, ambos valores son `company_rate`; en caso contrario `foreign_rate` es `inverse_company_rate` y `foreign_inverse_rate` es `company_rate`. La tasa inversa es el factor por el que se multiplican los montos para obtener su equivalente en moneda alterna.
+El método `compute_rate(foreign_currency_id, rate_date, raise_if_not_found=False)` de `res.currency.rate` DEBE (MUST) devolver la tasa (`foreign_rate`) y la tasa inversa (`foreign_inverse_rate`) tomando el registro de tasa más reciente cuya fecha sea menor o igual a `rate_date` para esa moneda y la compañía activa. Si la moneda solicitada es la moneda principal de la compañía, ambos valores son `company_rate`; en caso contrario `foreign_rate` es `inverse_company_rate` y `foreign_inverse_rate` es `company_rate`. La tasa inversa es el factor por el que se multiplican los montos para obtener su equivalente en moneda alterna. Solo considera tasas con fecha `<=` `rate_date`: si existe una tasa exacta para esa fecha o una anterior, se usa la más cercana hacia atrás; las tasas con fecha posterior a `rate_date` quedan excluidas y nunca se consideran, sin importar qué tan cercanas estén.
 
 #### Scenario: Moneda alterna distinta a la de la compañía
 
 - **WHEN** se invoca `compute_rate` con una moneda distinta a la moneda principal de la compañía y existe una tasa registrada en o antes de la fecha dada
 - **THEN** devuelve `foreign_rate = inverse_company_rate` y `foreign_inverse_rate = company_rate` de la tasa más reciente aplicable
 
-#### Scenario: Sin tasa registrada
+#### Scenario: Sin tasa registrada (comportamiento por defecto)
 
-- **WHEN** se invoca `compute_rate` y no existe ninguna tasa registrada en o antes de la fecha dada para esa moneda y compañía
+- **WHEN** se invoca `compute_rate` sin `raise_if_not_found` (o con `raise_if_not_found=False`) y no existe ninguna tasa registrada en o antes de la fecha dada para esa moneda y compañía
 - **THEN** devuelve un diccionario vacío
+
+#### Scenario: Sin tasa registrada, con `raise_if_not_found=True`
+
+- **WHEN** se invoca `compute_rate` con `raise_if_not_found=True` y no existe ninguna tasa registrada en o antes de la fecha dada para esa moneda y compañía
+- **THEN** lanza `UserError` indicando que no hay tasa configurada para esa fecha
+
+`raise_if_not_found=True` está reservado para un punto de entrada que se construya específicamente para que el usuario reaccione al error en el momento (por ejemplo, un botón dedicado de recálculo). Ningún llamador actual del código pasa `True`: los `default` de creación, las comparaciones de `create()` para el chatter, y el propio compute explícito de `foreign_rate`/`foreign_inverse_rate` (que el ORM puede disparar por su cuenta con solo leer el campo) usan el valor por defecto (`False`), porque ninguno de esos puntos puede reaccionar de forma útil a un error duro sin bloquear una operación no relacionada (crear la orden, preparar la factura).
 
 ### Requirement: Inversión de tasa solo con moneda alterna USD
 

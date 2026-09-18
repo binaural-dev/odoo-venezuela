@@ -593,6 +593,7 @@ class TestStockPickingCoverage(TransactionCase):
 
     def test_compute_partner_required(self):
         picking = self._create_internal_picking(reason=self.reason_consignment)
+        picking.location_dest_id.partner_id = self.partner
         picking.is_dispatch_guide = True
         picking.is_consignment = True
         picking._compute_partner_required()
