@@ -83,12 +83,35 @@ patch(PosOrderline.prototype, {
   },
 
   /**
+   * Devolución de una línea facturada en el mínimo fiscal. El core crea la
+   * línea de la devolución copiando precio (0,01) y descuento de la original
+   * sin pasar por `setDiscount`, así que no queda marcada; y con 2 unidades
+   * (descuento 50%) el neto por unidad redondea a 0,01, por lo que
+   * `mfEnsureNonZeroFiscalPrice` tampoco la detecta. Se reconoce por la línea
+   * original: precio 0,01 con descuento.
+   */
+  mfIsRefundOfFiscalMin() {
+    const original = this.refunded_orderline_id;
+    return Boolean(
+      original &&
+        Math.abs(Number(original.price_unit || 0) - MF_MIN_LINE_PRICE) < 1e-9 &&
+        Number(original.discount || 0) > 0
+    );
+  },
+
+  /**
    * Si el descuento actual dejaría el neto de la línea en 0 (con precio base
    * positivo), factura la línea completa en el mínimo fiscal 0,01. Idempotente.
    */
   mfEnsureNonZeroFiscalPrice() {
     if (this._mf_fiscal_guard || this._mf_fiscal_min) {
       return; // ya sustituida: no re-sustituir (no sobrescribir el precio original)
+    }
+    if (this.mfIsRefundOfFiscalMin()) {
+      // Ya trae el precio 0,01 y el descuento de la original (subtotal igual
+      // al facturado): sólo se marca, sin recalcular el descuento.
+      this._mf_fiscal_min = true;
+      return;
     }
     const base = Number(this.price_unit || 0);
     if (base <= 0) {

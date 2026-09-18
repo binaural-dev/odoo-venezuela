@@ -12,9 +12,11 @@ por debajo de 100% (no lo bloquea `_check_max_discount`) y el precio unitario
 mayor que 0. El sistema SHALL recalcular ese descuento si cambia la cantidad, y
 SHALL guardar el precio original para poder restaurarlo. Como la máquina fiscal
 arma cada línea como precio × cantidad con 2 decimales y no puede repartir 0,01
-entre N unidades, el sistema SHALL enviar estas líneas a la máquina fiscal como
-1 × 0,01. El sistema NO SHALL modificar la validación `_check_max_discount` ni
-ningún módulo fuera de l10n_ve_pos_mf.
+entre N unidades con el precio, el sistema SHALL enviar estas líneas a la
+máquina fiscal con su cantidad entera N a 0,01 y un descuento por monto sobre el
+ítem de (N − 1) × 0,01, y con cantidad fraccionaria como 1 × 0,01 con la
+cantidad real en la descripción. El sistema NO SHALL modificar la validación
+`_check_max_discount`.
 
 #### Scenario: Descuento por línea del 100% con cantidad grande
 
@@ -23,7 +25,7 @@ ningún módulo fuera de l10n_ve_pos_mf.
 - **WHEN** el cajero aplica un descuento del 100% a esa línea
 - **THEN** el subtotal de la línea queda en 0,01 (no 0,50), la cantidad sigue en
   50, la factura no se bloquea (descuento < 100%) y la máquina fiscal recibe esa
-  línea como 1 × 0,01
+  línea como 50 × 0,01 con un descuento de 0,49 sobre el ítem (neto 0,01)
 
 #### Scenario: Descuento global del 100%
 
@@ -51,6 +53,22 @@ ningún módulo fuera de l10n_ve_pos_mf.
 - **GIVEN** líneas previamente facturadas en el mínimo fiscal
 - **WHEN** se vuelve a aplicar/recalcular el descuento global
 - **THEN** la inferencia del porcentaje usa el precio real (restaurado), no 0,01
+
+#### Scenario: Nota de crédito de una línea en el mínimo fiscal
+
+- **GIVEN** una orden facturada con una línea de 2 o más unidades en el mínimo
+  fiscal (precio 0,01 con descuento)
+- **WHEN** se devuelve esa línea y se imprime la nota de crédito
+- **THEN** la línea de la devolución conserva el precio 0,01 y el descuento de
+  la original, y la MF la recibe con su cantidad y un descuento por monto que la
+  deja en 0,01, igual que en Odoo
+
+#### Scenario: Cantidad fraccionaria en el mínimo fiscal
+
+- **GIVEN** un producto pesado con 1,25 kg facturado en el mínimo fiscal
+- **WHEN** se imprime la factura fiscal
+- **THEN** la MF recibe la línea como 1 × 0,01 con la descripción
+  `CANT 1,25 KG - <producto>`
 
 #### Scenario: Monto informativo del descuento global sobre el precio real
 

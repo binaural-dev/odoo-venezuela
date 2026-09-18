@@ -896,6 +896,24 @@ export class TfhkaDriver {
      * @param {number} decPart - Dígitos de la parte decimal
      * @returns {string} - Número formateado (ej: "0000010050" para 100.50)
      */
+    /**
+     * Descuento por monto sobre el ítem recién agregado a `commands`: `q-`
+     * enviado antes del subtotal (`3`) rebaja el último ítem (manual HKA
+     * V8.5.0, págs. 27 y 34-35; válido también en nota de crédito, pág. 37).
+     * Lo usa el PdV para las líneas de mínimo fiscal: N × 0,01 con descuento
+     * (N − 1) × 0,01 → la línea suma 0,01 mostrando la cantidad real.
+     *
+     * @param {Array} commands - Buffer de comandos fiscales
+     * @param {Object} line - Línea del documento (`discount_amount` opcional)
+     * @param {Object} config - Formato numérico según flag 21
+     */
+    _appendItemDiscount(commands, line, config) {
+        const amount = Number(line?.discount_amount || 0);
+        if (amount > 0) {
+            commands.push(`q-${this._formatAmount(amount, config.disc_int, config.disc_decimal)}`);
+        }
+    }
+
     _formatAmount(num, intPart, decPart) {
         const fixed = Number(num).toFixed(decPart);
         const [integer, decimal] = fixed.split('.');
@@ -1281,6 +1299,7 @@ export class TfhkaDriver {
                 }
 
                 phase1Commands.push(`${taxChar}${price}${qty}${code}${desc}`);
+                this._appendItemDiscount(phase1Commands, line, config);
             }
 
             // 7. Subtotal
@@ -1505,6 +1524,7 @@ export class TfhkaDriver {
                 }
 
                 phase1Commands.push(`d${fiscalCode}${price}${qty}${code}${desc}`);
+                this._appendItemDiscount(phase1Commands, line, config);
             }
 
             // 9. Subtotal
