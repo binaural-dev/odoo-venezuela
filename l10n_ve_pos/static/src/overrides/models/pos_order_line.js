@@ -102,13 +102,16 @@ patch(PosOrderline.prototype, {
       if (this._is_order_in_foreign_currency()) {
         return baseUnitPrice;
       }
-      const frozenRate = this._refundOriginalRate();
-      if (frozenRate != null) {
-        return baseUnitPrice * frozenRate;
-      }
       const order = this.order_id;
       if (!order || typeof order.localToForeign !== "function") {
         return 0;
+      }
+      const frozenRate = this._refundOriginalRate();
+      if (frozenRate != null) {
+        // Raw (no money rounding) main→foreign at the frozen sale rate; the
+        // caller rounds with the catalog dp. Same engine primitive as the
+        // live path, just with doRound = false.
+        return order.localToForeignAtRate(baseUnitPrice, frozenRate, false);
       }
       // Raw (no rounding) — caller decides how to round.
       return order.localToForeign(baseUnitPrice, false);
@@ -188,7 +191,20 @@ patch(PosOrderline.prototype, {
       }
       const frozenRate = this._refundOriginalRate();
       if (frozenRate != null) {
-        return order.roundForeignMoney(localAmount * frozenRate);
+        // main→foreign at the ORIGINAL sale's frozen rate, via the shared
+        // engine primitive (same rounding as the live localToForeign).
+        return order.localToForeignAtRate(localAmount, frozenRate);
+      }
+      // Reopened (synced) order — e.g. shown in the ticket screen: value each
+      // line at the rate the order was SOLD at, not today's live rate, so the
+      // per-line foreign amount matches the order-level foreign totals
+      // (pos_order.js::_isFrozenRateOrder). The live in-progress order is
+      // excluded, so counter sales keep converting at the live rate.
+      if (
+        typeof order._isFrozenRateOrder === "function" &&
+        order._isFrozenRateOrder()
+      ) {
+        return order._frozenLocalToForeign(localAmount);
       }
       return order.localToForeign(localAmount);
     },
