@@ -1,10 +1,7 @@
 from odoo import api, fields, models, _
 from odoo.tools import formatLang, float_is_zero, float_compare
 from odoo.tools.float_utils import float_round
-
-import logging
-
-_logger = logging.getLogger(__name__)
+from odoo.exceptions import ValidationError
 
 
 class PosPayment(models.Model):
@@ -20,6 +17,50 @@ class PosPayment(models.Model):
         res["igtf_amount"] = payment.igtf_amount
         res["foreign_igtf_amount"] = payment.foreign_igtf_amount
         return res
+
+    def _sanitize_payment_move_line_vals(
+        self,
+        line_vals,
+        payment_move,
+        accounting_partner,
+        fallback_account_id=False,
+    ):
+        """Normalize account.move.line vals for POS invoice-payment moves.
+
+        This DB enforces `display_type` as NOT NULL and some companies require
+        partner on receivable/payable accounts, so we make the vals explicit.
+        """
+        if not line_vals:
+            return line_vals
+
+        vals = dict(line_vals)
+        account_id = vals.get("account_id") or fallback_account_id
+        if not account_id:
+            raise ValidationError(
+                _("Customer receivable account is not configured for POS payment posting.")
+            )
+
+        vals["account_id"] = account_id
+        vals["move_id"] = payment_move.id
+        vals["display_type"] = vals.get("display_type") or "product"
+        vals["name"] = vals.get("name") or _("PoS invoice payment")
+
+        account_type = self.env["account.account"].browse(account_id).account_type
+        if account_type in ("asset_receivable", "liability_payable") and not vals.get("partner_id"):
+            vals["partner_id"] = accounting_partner.id
+
+        return vals
+
+    def _get_partner_receivable_account_id(self, order, accounting_partner):
+        partner_receivable = accounting_partner.with_company(
+            order.company_id
+        ).property_account_receivable_id.id
+        if not partner_receivable:
+            raise ValidationError(
+                _("Customer receivable account is not configured for partner '%s'.")
+                % accounting_partner.display_name
+            )
+        return partner_receivable
 
     def _create_payment_moves(self, is_reverse=False):
         result = self.env["account.move"]
@@ -60,11 +101,12 @@ class PosPayment(models.Model):
 
             if payment.include_igtf:
                 if not (amounts["amount"] - amount_igtf == 0):
+                    partner_receivable_account_id = self._get_partner_receivable_account_id(
+                        order, accounting_partner
+                    )
                     add_credit_line_vals = pos_session._credit_amounts(
                         {
-                            "account_id": accounting_partner.with_company(
-                                order.company_id
-                            ).property_account_receivable_id.id,
+                            "account_id": partner_receivable_account_id,
                             "partner_id": accounting_partner.id,
                             "move_id": payment_move.id,
                         },
@@ -82,11 +124,12 @@ class PosPayment(models.Model):
                     amount_igtf,
                 )
             else:
+                partner_receivable_account_id = self._get_partner_receivable_account_id(
+                    order, accounting_partner
+                )
                 credit_line_vals = pos_session._credit_amounts(
                     {
-                        "account_id": accounting_partner.with_company(
-                            order.company_id
-                        ).property_account_receivable_id.id,
+                        "account_id": partner_receivable_account_id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
                     },
@@ -116,18 +159,53 @@ class PosPayment(models.Model):
                 amounts["amount_converted"],
             )
 
+            credit_fallback_account_id = payment.payment_method_id.receivable_account_id.id
+            debit_fallback_account_id = self.company_id.account_default_pos_receivable_account_id.id
+
+            if not debit_line_vals.get("account_id") and not debit_fallback_account_id:
+                raise ValidationError(
+                    _("Default POS receivable account is not configured for payment posting.")
+                )
+
+            credit_line_vals = self._sanitize_payment_move_line_vals(
+                credit_line_vals,
+                payment_move,
+                accounting_partner,
+                credit_fallback_account_id,
+            )
+            debit_line_vals = self._sanitize_payment_move_line_vals(
+                debit_line_vals,
+                payment_move,
+                accounting_partner,
+                debit_fallback_account_id,
+            )
+            add_credit_line_vals = self._sanitize_payment_move_line_vals(
+                add_credit_line_vals,
+                payment_move,
+                accounting_partner,
+                credit_fallback_account_id,
+            )
+
             if add_credit_line_vals:
                 receivable_line = self.env["account.move.line"].with_context(check_move_validity=False).create(
                     [add_credit_line_vals]
                 )
-                receivable_line.not_foreign_recalculate = True
-                receivable_line.foreign_credit = abs(payment.foreign_amount - payment.foreign_igtf_amount)
+                receivable_line = receivable_line.exists()
+                if receivable_line:
+                    receivable_line.not_foreign_recalculate = True
+                    receivable_line.foreign_credit = abs(payment.foreign_amount - payment.foreign_igtf_amount)
+            other_lines = self.env["account.move.line"].with_context(check_move_validity=False).create([credit_line_vals, debit_line_vals])
+            other_lines = other_lines.exists()
 
-            other_lines = self.env["account.move.line"].with_context(check_move_validity=False).create(
-                [credit_line_vals, debit_line_vals]
-            )
-            igtf_or_receivable_line = other_lines[0]
-            debit_line = other_lines[1]
+            credit_lines = other_lines.filtered(lambda line: line.credit > 0)
+            debit_lines = other_lines.filtered(lambda line: line.debit > 0)
+            if not credit_lines or not debit_lines:
+                raise ValidationError(
+                    _("POS IGTF payment lines could not be created correctly. Check server logs for details.")
+                )
+
+            igtf_or_receivable_line = credit_lines[0]
+            debit_line = debit_lines[0]
 
             # Setear Bs correctos en la línea de débito (CUENTA POR COBRAR POS)
             debit_line.not_foreign_recalculate = True
