@@ -2,7 +2,7 @@ from odoo import models, api, fields
 
 
 class AccountRetention(models.Model):
-    _inherit = "account.retention"
+    _inherit = ["account.retention", "tfhka.digitalization.mixin"]
 
     is_digitalized = fields.Boolean(string="Digitized", default=False, copy=False, tracking=True)
     show_digital_retention_iva = fields.Boolean(string="Show Digital Retention", compute="_compute_visibility_button", copy=False)
@@ -10,11 +10,34 @@ class AccountRetention(models.Model):
     control_number_tfhka = fields.Char(string="Control Number", copy=False)
     document_number_tfhka = fields.Char(string="Document Number TFHKA", copy=False)
     annulled_tfhka = fields.Boolean(string="Annulled in TFHKA", default=False, copy=False, tracking=True)
+    tfhka_auto_accept_sequence_mismatch = fields.Boolean(
+        default=False,
+        copy=False,
+        help="Equivalent to confirming the sequence-mismatch alert wizard "
+             "automatically. Set before enqueueing from the automatic "
+             "post-triggered flow (no human present to answer that wizard) "
+             "or from the wizard itself once a human confirms it manually; "
+             "read by generate_document_digital() at digitalization time, "
+             "since that call is now deferred to the queue's cron and can't "
+             "rely on the caller's context surviving that long.",
+    )
 
     def generate_document_digital(self):
+        self.ensure_one()
+        # document_type/account_retention_alert used to be passed in by each
+        # caller via with_context(); computed here instead so the call is
+        # self-contained regardless of when it actually runs (the queue
+        # defers it to a later cron, well after any caller-supplied context
+        # would have been lost).
+        document_type = "05" if self.type_retention == "iva" else "06"
+        context = {"document_type": document_type}
+        if self.tfhka_auto_accept_sequence_mismatch:
+            context["account_retention_alert"] = True
         # All logic lives in the service layer (tfhka.retention.service),
         # including the sequence alert wizard flow.
-        return self.env["tfhka.retention.service"].send_retention(self)
+        return self.env["tfhka.retention.service"].send_retention(
+            self.with_context(**context)
+        )
 
     def action_post(self):
         res = super().action_post()
@@ -26,15 +49,12 @@ class AccountRetention(models.Model):
                 and not retention.is_digitalized
                 and retention.env.context.get("l10n_ve_invoice_digital_auto_retention")
             ):
-                document_type = "05" if retention.type_retention == "iva" else "06"
-                # account_retention_alert=True: equivalente a "confirmar y
-                # continuar" del wizard de alerta de secuencia. En el flujo
-                # automatico no hay nadie para responder ese wizard, asi que
-                # se adopta el correlativo igual que haria un usuario al
-                # confirmar la alerta manualmente.
-                retention.with_context(
-                    document_type=document_type, account_retention_alert=True
-                ).generate_document_digital()
+                # No human is present to answer the sequence-mismatch alert
+                # in this automatic flow, so it adopts TFHKA's correlative
+                # the same way a user would by confirming that alert
+                # manually (see generate_document_digital()).
+                retention.tfhka_auto_accept_sequence_mismatch = True
+                retention._tfhka_enqueue_digitalization()
         return res
 
     def action_cancel_retention(self):

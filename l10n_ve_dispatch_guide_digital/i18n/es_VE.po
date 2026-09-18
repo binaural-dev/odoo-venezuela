@@ -29,6 +29,17 @@ msgid "Control Number"
 msgstr "Número de control"
 
 #. module: l10n_ve_dispatch_guide_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_stock_form_inherit
+msgid "Digitalization Error"
+msgstr "Error de Digitalización"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_picking_tree_inherit_tfhka_digitalization
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_stock_form_inherit
+msgid "Digitalization Status"
+msgstr "Estado de Digitalización"
+
+#. module: l10n_ve_dispatch_guide_digital
 #: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__is_digitalized
 #: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_stock_form_inherit
 msgid "Digitized"
@@ -47,6 +58,11 @@ msgstr "Documento digitalizado exitosamente el %(date)s"
 #, python-format
 msgid "Endpoint '%(endpoint_key)s' is not defined."
 msgstr "El punto final '%(endpoint_key)s' no está definido."
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields.selection,name:l10n_ve_dispatch_guide_digital.selection__stock_picking__tfhka_digitalization_state__error
+msgid "Error"
+msgstr "Error"
 
 #. module: l10n_ve_dispatch_guide_digital
 #. odoo-python
@@ -76,6 +92,15 @@ msgstr ""
 "%(validation)s"
 
 #. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields,help:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_digitalization_error
+msgid ""
+"Error message from the last failed digitalization attempt. Cleared once the "
+"document digitalizes successfully."
+msgstr ""
+"Mensaje de error del último intento fallido de digitalización. Se limpia "
+"una vez que el documento se digitaliza exitosamente."
+
+#. module: l10n_ve_dispatch_guide_digital
 #. odoo-python
 #: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
 #: code:addons/l10n_ve_dispatch_guide_digital/models/stock_picking.py:0
@@ -84,9 +109,69 @@ msgid "HTTP error %(status_code)s: %(text)s"
 msgstr "Error HTTP %(status_code)s: %(text)s"
 
 #. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields.selection,name:l10n_ve_dispatch_guide_digital.selection__stock_picking__tfhka_digitalization_state__none
+msgid "Not Digitalized"
+msgstr "Sin Digitalizar"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields.selection,name:l10n_ve_dispatch_guide_digital.selection__stock_picking__tfhka_digitalization_state__processing
+msgid "Processing"
+msgstr "En Proceso"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields.selection,name:l10n_ve_dispatch_guide_digital.selection__stock_picking__tfhka_digitalization_state__queued
+msgid "Queued"
+msgstr "En Cola"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields,help:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_queued_at
+msgid ""
+"When this document entered the digitalization queue. Determines the order "
+"in which the cron digitalizes queued documents (oldest first)."
+msgstr ""
+"Momento en que el documento entró a la cola de digitalización. Determina el "
+"orden en que el cron digitaliza los documentos en cola (más antiguo "
+"primero)."
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_stock_form_inherit
+msgid "Retry Digitalization"
+msgstr "Reintentar Digitalización"
+
+#. module: l10n_ve_dispatch_guide_digital
 #: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__show_digital_dispatch_guide
 msgid "Show Digital Dispatch Guide"
 msgstr "Mostrar guía de despacho digital"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_digitalization_error
+msgid "TFHKA Digitalization Error"
+msgstr "Error de Digitalización TFHKA"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_digitalization_state
+msgid "TFHKA Digitalization Status"
+msgstr "Estado de Digitalización TFHKA"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields.selection,name:l10n_ve_dispatch_guide_digital.selection__stock_picking__tfhka_digitalization_state__success
+msgid "TFHKA Digitalization Success"
+msgstr "Exitoso"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_queued_at
+msgid "TFHKA Queued At"
+msgstr "Fecha de Encolado TFHKA"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_picking_internal_search_inherit_tfhka_digitalization
+msgid "TFHKA: Error"
+msgstr "TFHKA: Error"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_picking_internal_search_inherit_tfhka_digitalization
+msgid "TFHKA: Queued"
+msgstr "TFHKA: En Cola"
 
 #. module: l10n_ve_dispatch_guide_digital
 #. odoo-python

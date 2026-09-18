@@ -5,7 +5,7 @@ from ..services.tfhka_document_service import VES_CURRENCY_NAMES
 
 
 class AccountMove(models.Model):
-    _inherit = "account.move"
+    _inherit = ["account.move", "tfhka.digitalization.mixin"]
 
     is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
     show_digital_invoice = fields.Boolean(compute="_compute_invisible_check", copy=False)
@@ -95,6 +95,30 @@ class AccountMove(models.Model):
                     )
                     % {"invoice_date": last_invoice.invoice_date_display}
                 )
+
+    def _tfhka_enqueue_eligible_for_digitalization(self):
+        """Enqueues each eligible move for TFHKA digitalization (queue
+        processed by cron, see ``tfhka.digitalization.mixin``).
+
+        Called from ``move.action.post.alert.wizard.action_confirm()`` and
+        from ``third.party.move.action.post.alert.wizard`` (in
+        ``binaural_third_party_invoice_digital``) right after posting --
+        the latter is why this lives on the move itself rather than inline
+        in the base wizard: it lets that module reuse the same eligibility
+        check to also enqueue Third Party child invoices once they get
+        posted alongside their parent, a flow the base wizard never sees
+        since it only ever receives the parent invoice.
+
+        Eligible: digital journal, not already digitalized, and not in
+        "digitalization with payment" mode (driven by payment reconciliation
+        instead -- see ``digitalization_with_payment_tfhka``).
+        """
+        eligible = self.filtered(
+            lambda record: not record.is_digitalized
+            and record.journal_id.digital_invoice
+            and not record.company_id.digitalization_with_payment_tfhka
+        )
+        eligible._tfhka_enqueue_digitalization()
 
     def _is_eligible_for_tfhka(self):
         """Check if the invoice should process TFHKA logic."""

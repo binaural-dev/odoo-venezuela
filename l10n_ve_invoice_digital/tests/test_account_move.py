@@ -911,48 +911,6 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         _logger.info("Test passed: code 200 error, UserError raised as expected.")
 
-    # Validacion de factura sin digitalizar
-    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
-    def test_15_generate_document_digital_has_not_been_digitized_error(self, mock_call):
-
-        # El wizard solo aplica la logica TFHKA en diarios digitales, y para que
-        # exista una factura previa "sin digitalizar" la compania debe estar en
-        # modo pago-primero (no digitaliza automaticamente al confirmar).
-        self.journal.digital_invoice = True
-        self.company.digitalization_with_payment_tfhka = True
-
-        self.invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ]
-        )
-
-        self.env['move.action.post.alert.wizard'].create({
-            'move_id': self.invoice.id
-        }).action_confirm()
-
-        invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ]
-        )
-        
-        with self.assertRaises(UserError) as e:        
-            self.env['move.action.post.alert.wizard'].create({
-                'move_id': invoice.id
-            }).action_confirm()
-
-            _logger.info(e.exception)
-        _logger.info("Test passed: ")
-
     # Validacion de fecha
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_16_generate_document_digital_validation_expiration_date_error(self, mock_call):
@@ -2928,4 +2886,22 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertTrue(inv.journal_digital_invoice)
         self.journal.digital_invoice = False
         self.assertFalse(inv.journal_digital_invoice)
+
+    def test_188_generate_document_data_includes_banderas_adicionales(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            do_post=False,
+        )
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit',
+        ) as mock_emit:
+            mock_emit.return_value = {"resultado": {"numeroControl": "00-00000001"}}
+            self.env['tfhka.document.service'].generate_document_data(inv, "145", "01", "")
+        payload = mock_emit.call_args[0][1]
+        self.assertIn("banderasAdicionales", payload["documentoElectronico"]["encabezado"])
+        self.assertEqual(
+            payload["documentoElectronico"]["encabezado"]["banderasAdicionales"],
+            {"esLote": False},
+        )
+
 
