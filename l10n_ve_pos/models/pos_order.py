@@ -134,5 +134,14 @@ class PosOrder(models.Model):
         # (`point_of_sale/models/pos_order.py:220`). Forward it verbatim
         # and only inject the Venezuelan ``foreign_price``.
         res = super()._get_invoice_lines_values(line_values, pos_order_line, move_type)
-        res["foreign_price"] = pos_order_line.foreign_price
+        foreign_price = pos_order_line.foreign_price
+        # Red de seguridad para las notas de crédito: si la línea de reembolso
+        # llegó sin precio foráneo (líneas sincronizadas antes del backfill de
+        # ``pos.order.line.create``, o por cualquier otra vía), lo tomamos de la
+        # línea original para que la NC revierta 1:1 el USD de la factura de
+        # origen y no recalcule con la tasa del día del reembolso (ticket #15106).
+        original_line = pos_order_line.refunded_orderline_id
+        if original_line and not foreign_price:
+            foreign_price = original_line.foreign_price
+        res["foreign_price"] = foreign_price
         return res

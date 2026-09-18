@@ -70,7 +70,19 @@ patch(PosOrderline.prototype, {
       // "Foreign Product Price" is a Decimal Precision on the res.company
       // used for catalog-level foreign prices. Higher precision than a
       // monetary rounding (which is money-level).
-      const dp = this.pos?.dp?.["Foreign Product Price"];
+      //
+      // OJO Odoo 19: en la orderline las decimal.precision llegan en
+      // `this.models["decimal.precision"]` (así las lee el core, p. ej.
+      // pos_order_line.js busca "Product Unit"/"Product Price"). El
+      // `this.pos.dp[...]` de Odoo 17 NO existe en 19 —de hecho `this.pos` no
+      // existe en la línea—, así que leerlo devolvía undefined y caíamos SIEMPRE
+      // al fallback de 2 decimales: el precio unitario foráneo se redondeaba a 2
+      // dp y, al multiplicarlo por la cantidad, la suma de líneas se desviaba del
+      // total que el PdV cobró (ticket #15106).
+      const dpRecord = this.models?.["decimal.precision"]?.find?.(
+        (dp) => dp.name === "Foreign Product Price"
+      );
+      const dp = Number(dpRecord?.digits);
       if (Number.isInteger(dp) && dp >= 0) {
         return dp;
       }
