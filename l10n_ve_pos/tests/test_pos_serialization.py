@@ -140,7 +140,13 @@ class TestPosSerialization(TransactionCase):
                 "available_in_pos": True,
                 "company_id": cls.company.id,
                 "categ_id": cls.product_category.id,
+                # l10n_ve_accountant.ProductTemplate._enforce_single_tax_vals_create
+                # requires exactly one tax in BOTH taxes_id and
+                # supplier_taxes_id (this test company has no default fiscal
+                # configuration). Reusing the sale tax for both is enough:
+                # this product is never actually purchased in these tests.
                 "taxes_id": [(6, 0, cls.tax.ids)],
+                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
             }
         )
         # `property_account_income_id` is company_dependent. Set it FOR the

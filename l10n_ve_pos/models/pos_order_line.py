@@ -106,6 +106,54 @@ class PosOrderLine(models.Model):
                 )
             )
 
+    @api.constrains("price_unit", "product_id", "order_id")
+    def _check_discount_price_not_positive(self):
+        """La línea del producto de descuento no puede quedar con precio
+        positivo (Ticket 14352).
+
+        Refuerzo en servidor del guard del PdV
+        (``static/src/overrides/models/pos_order_line.js``, ``setUnitPrice``):
+        el frontend fuerza el precio a negativo, pero hay caminos del propio
+        core que escriben ``price_unit`` directamente sin pasar por
+        ``setUnitPrice`` (``pos_discount`` al aplicar el descuento global,
+        y el long-press de ``OrderSummary`` sobre una línea), así que el
+        guard de JS solo no es suficiente.
+
+        Exenciones — idénticas a ``_check_qty_not_negative_outside_refund``:
+
+        * ``refunded_orderline_id``: línea de reembolso real.
+        * ``order_id.is_refund``: orden marcada como reembolso por el core.
+        * ``order_id.preset_id.is_return``: preset "Return mode" nativo.
+        """
+        precision = self.env["decimal.precision"].precision_get("Product Price")
+        for line in self:
+            order = line.order_id
+            config = order.config_id
+            # `discount_product_id` is a `pos_discount` field, not a
+            # `l10n_ve_pos` dependency: on a DB without `pos_discount`
+            # installed, `pos.config` doesn't have it at all.
+            if "discount_product_id" not in config._fields:
+                continue
+            discount_product = config.discount_product_id
+            if not discount_product or line.product_id != discount_product:
+                continue
+            if float_compare(line.price_unit, 0.0, precision_digits=precision) <= 0:
+                continue
+            if line.refunded_orderline_id:
+                continue
+            if order.is_refund or order.preset_id.is_return:
+                continue
+            raise ValidationError(
+                _(
+                    "Discount line price cannot be positive. Product "
+                    '"%(product)s" has a price of %(price)s in order '
+                    "%(order)s.",
+                    product=line.product_id.display_name,
+                    price=line.price_unit,
+                    order=order.name or order.pos_reference or "",
+                )
+            )
+
     def _prepare_refund_data(self, refund_order, PosPackOperationLot):
         """Odoo 19 keeps this hook; we just inject ``foreign_price``
         so the refund line preserves the Venezuelan contract (refund

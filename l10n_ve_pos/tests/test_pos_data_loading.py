@@ -94,6 +94,13 @@ class TestPosDataLoading(TransactionCase):
                 "standard_price": 5.0,
                 "available_in_pos": True,
                 "company_id": cls.company.id,
+                # l10n_ve_accountant.ProductTemplate._enforce_single_tax_vals_create
+                # requires exactly one tax in BOTH taxes_id and
+                # supplier_taxes_id (this test company has no default fiscal
+                # configuration). Reusing the sale tax for both is enough:
+                # this product is never actually purchased in these tests.
+                "taxes_id": [(6, 0, cls.tax.ids)],
+                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
             }
         )
         cls.categ = cls.env["product.category"].create({"name": "Test Cat VE"})

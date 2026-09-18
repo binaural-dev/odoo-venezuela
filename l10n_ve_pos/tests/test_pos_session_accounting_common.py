@@ -276,6 +276,13 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "company_id": cls.company.id,
                 "categ_id": cls.product_category.id,
                 "taxes_id": [(6, 0, cls.tax.ids)],
+                # l10n_ve_accountant.ProductTemplate._enforce_single_tax_vals_create
+                # requires exactly one tax in BOTH taxes_id and
+                # supplier_taxes_id (this test company has no default
+                # purchase tax configured). This product is only ever sold
+                # via POS in these tests, never purchased, so reusing the
+                # same tax record here is enough to satisfy the constraint.
+                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
             }
         )
         cls.product.with_company(cls.company).write(
