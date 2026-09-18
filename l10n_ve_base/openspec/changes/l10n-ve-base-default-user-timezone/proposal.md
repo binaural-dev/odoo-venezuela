@@ -68,10 +68,13 @@ creación queda permanentemente en `False`.
 
 - `l10n_ve_base/models/res_partner.py` (nuevo): override de `tz` en
   `res.partner` — `default=lambda self: self.env.context.get("tz") or
-  "America/Caracas"`. Sigue respetando el tz que mande el cliente si viene
-  en el contexto; solo aplica el fallback regional cuando no hay nada.
-  Como `res.users` delega el campo `tz` a `res.partner` vía `_inherits`,
-  cubre ambos modelos.
+  self.env.company.partner_id.tz or DEFAULT_TZ` (`DEFAULT_TZ =
+  "America/Caracas"`, definida una sola vez en este archivo e importada por
+  la migración en vez de duplicar el literal). Sigue respetando el tz que
+  mande el cliente si viene en el contexto, luego intenta derivarlo de la
+  compañía activa, y solo cae al fallback regional fijo cuando ninguno de
+  los dos está disponible. Como `res.users` delega el campo `tz` a
+  `res.partner` vía `_inherits`, cubre ambos modelos.
 - `l10n_ve_base/__init__.py`: estaba **vacío** (0 bytes) — el paquete
   `models/` nunca se importaba, así que `ir_module.py` (campo `binaural`)
   e `ir_ui_view.py` (override vacío) llevaban inertes desde siempre.
@@ -83,14 +86,35 @@ creación queda permanentemente en `False`.
   (formato `19.0.x.y.z` usado en el resto del repo; necesario para que
   Odoo dispare la migración en `-u`).
 - `l10n_ve_base/migrations/19.0.1.0.1/post-migrate.py` (nuevo): backfillea
-  `tz = "America/Caracas"` en todo `res.users` con `tz` vacío al momento
-  de actualizar el módulo. Necesario porque el default de campo solo se
-  evalúa en `create()` — no es retroactivo para usuarios ya existentes.
+  `tz = DEFAULT_TZ` en `res.users` internos (`share = False`) con `tz`
+  vacío al momento de actualizar el módulo, buscando con
+  `active_test=False` para no saltarse cuentas archivadas (OdooBot,
+  Public user) que operan sin sesión interactiva y son las que más
+  disparan el bug original. Se excluyen usuarios `share = True`
+  (portal/público) porque son partners de clientes, no cuentas
+  internas/de sistema. Necesario porque el default de campo solo se evalúa
+  en `create()` — no es retroactivo para usuarios ya existentes.
 - `l10n_ve_base/tests/` (nuevo): `test_res_partner_tz_default.py` (default
   respeta contexto/valor explícito, aplica tanto a `res.partner` como a
   `res.users`) y `test_migration_backfill_tz.py` (la migración backfillea
-  solo a quien tiene `tz` vacío, y no falla cuando no hay nada que
-  corregir). Sin datos demo/fixture: cada test crea sus propios registros.
+  usuarios activos y archivados con `tz` vacío, no toca usuarios portal ni
+  a quien ya tiene `tz`, y no falla cuando no hay nada que corregir). Sin
+  datos demo/fixture: cada test crea sus propios registros.
+- `l10n_ve_invoice/tests/test_ti_15211_invoice_date_timezone.py`
+  (nuevo; vive en `l10n_ve_invoice` y no en `l10n_ve_accountant` porque el
+  default de `invoice_date` -- `fields.Date.context_today` -- está
+  declarado en `l10n_ve_invoice/models/account_move.py`, módulo que
+  `l10n_ve_accountant` no depende de él): reproduce el síntoma exacto del
+  ticket end-to-end -- crea un
+  `account.move` con un usuario sin `tz`, congelando la hora del servidor
+  en un UTC que ya cruzó al día siguiente respecto a Caracas, y verifica
+  que `invoice_date`, `invoice_date_display` y `date` coinciden en el día
+  local correcto una vez que el usuario tiene `tz = "America/Caracas"`
+  (y que, sin tz, efectivamente se desfasan -- confirma que el test
+  reproduce el bug real, no solo el mecanismo del default).
+- `l10n_ve_base/models/ir_ui_view.py`: eliminado -- override vacío sobre
+  `ir.ui.view` sin ningún campo/método agregado, código muerto desde su
+  creación.
 
 ## Impact
 
@@ -104,6 +128,17 @@ creación queda permanentemente en `False`.
   validaciones de "no future date") se beneficia del mismo fix, porque la
   causa raíz era la resolución del tz del usuario, no un campo puntual de
   `account.move`.
+- **El default aplica a todo `res.partner`, no solo a usuarios**: como
+  `res.users` delega `tz` a `res.partner` vía `_inherits`, el override en
+  `res_partner.py` corre para **cualquier partner nuevo** (clientes,
+  proveedores, contactos), no solo para cuentas de usuario. Por eso el
+  fallback ya no es una constante regional fija: se resuelve primero contra
+  `self.env.company.partner_id.tz` (la zona horaria de la compañía activa) y
+  solo cae a `DEFAULT_TZ = "America/Caracas"` cuando ni el contexto ni la
+  compañía tienen un tz configurado. Esto evita fijar "America/Caracas" a
+  ciegas en contactos de compañías que operan en otra zona horaria (p. ej.
+  un cliente remoto), sin dejar de resolver el caso original (usuario/
+  compañía sin tz).
 - **Datos existentes**: requiere `-u l10n_ve_base` para que la migración
   corra. Usuarios con `tz` ya seteado (aunque sea distinto de
   `America/Caracas`, p. ej. un usuario remoto) no se tocan.

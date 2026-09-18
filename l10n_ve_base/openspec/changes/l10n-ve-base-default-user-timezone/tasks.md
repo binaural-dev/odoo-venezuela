@@ -59,12 +59,37 @@
 
 - [ ] 5.1 Auditar `res.users` con `tz = False` en ambientes productivos
       antes de generalizar el deploy
-- [ ] 5.2 Confirmar en el cliente reportante (TI-15211) que, tras
-      `-u l10n_ve_base`, las facturas nocturnas dejan de desfasarse
+- [ ] 5.2 (Verificación manual del líder técnico / consultor, no
+      automatizable desde este repo) Confirmar en el cliente reportante
+      (TI-15211) que, tras `-u l10n_ve_base`, las facturas nocturnas dejan
+      de desfasarse. El repro automatizado equivalente ya vive en
+      `l10n_ve_accountant/tests/test_ti_15211_invoice_date_timezone.py`.
 - [ ] 5.3 Revisar si algún otro flujo (vencimientos, reportes, cron) se
       vio afectado por el mismo `tz` vacío en el mismo ambiente
 
 ## 6. OpenSpec
 
 - [x] 6.1 `proposal.md` + spec delta (`user-timezone-default`)
-- [ ] 6.2 `openspec validate --changes`
+- [ ] 6.2 (Verificación manual del líder técnico: requiere el CLI
+      `openspec` instalado/configurado, no disponible en este entorno de
+      corrección) `openspec validate --changes`
+
+## 7. Correcciones del review (PR #1346, pastor-binaural)
+
+- [x] 7.1 Migración: `active_test=False` para alcanzar usuarios archivados
+      (OdooBot, Public user)
+- [x] 7.2 Migración: `share = False` para no tocar partners de usuarios
+      portal
+- [x] 7.3 Test que reproduce el síntoma real (`account.move` con fechas
+      desfasadas) en `l10n_ve_accountant`
+- [x] 7.4 Default de `tz` en `res_partner.py` derivado de
+      `env.company.partner_id.tz` antes de caer al literal fijo
+- [x] 7.5 Eliminado `models/ir_ui_view.py` (override vacío sin uso) y su
+      import en `models/__init__.py`
+- [x] 7.6 `test_noop_when_no_user_has_empty_tz` fuerza el estado noop
+      explícitamente; quitado el `try/except Exception` que ocultaba el
+      traceback
+- [x] 7.7 `DEFAULT_TZ` definido una sola vez (`res_partner.py`), importado
+      por `post-migrate.py`
+- [x] 7.8 Newline final agregado en `l10n_ve_base/__init__.py` y
+      `l10n_ve_base/models/__init__.py`

@@ -64,12 +64,37 @@ class TestMigrationBackfillTz(TransactionCase):
 
         self.assertEqual(user.tz, "UTC")
 
+    def test_backfills_archived_users_with_empty_tz(self):
+        """`res.users.search()` uses `active_test=True` by default and would
+        silently skip archived accounts -- notably OdooBot (uid=1) and the
+        Public user, which run crons/portal requests without an interactive
+        session and are exactly the accounts most likely to trigger the
+        original bug. The migration must reach them too."""
+        user = self._create_user("test_l10n_ve_base_migrate_archived", tz=False)
+        # Archiving the user is enough to drop out of the default
+        # `active_test=True` search -- no need to (and some enterprise
+        # modules like `web_map` won't let us) archive the partner directly
+        # while it's still linked to an active user.
+        user.active = False
+        self.assertFalse(user.tz)
+
+        self.migration.migrate(self.env.cr, "19.0.1.0.1")
+
+        self.assertEqual(
+            user.with_context(active_test=False).tz, "America/Caracas"
+        )
+
     def test_noop_when_no_user_has_empty_tz(self):
         """Guard against the early-return path raising or misbehaving when
-        there's nothing to backfill."""
+        there's nothing to backfill. The migration's domain now always
+        includes system/archived users (`active_test=False`), so the noop
+        state can't just rely on "no users created in this test" -- it must
+        be forced explicitly, otherwise pre-existing system users (e.g.
+        OdooBot) with an empty `tz` would make this test backfill something
+        anyway."""
         self._create_user("test_l10n_ve_base_migrate_noop", tz="UTC")
+        self.env["res.users"].with_context(active_test=False).search(
+            [("tz", "=", False), ("share", "=", False)]
+        ).partner_id.write({"tz": "UTC"})
 
-        try:
-            self.migration.migrate(self.env.cr, "19.0.1.0.1")
-        except Exception as exc:  # pragma: no cover - failure path
-            self.fail(f"migrate() raised unexpectedly with nothing to backfill: {exc}")
+        self.migration.migrate(self.env.cr, "19.0.1.0.1")
