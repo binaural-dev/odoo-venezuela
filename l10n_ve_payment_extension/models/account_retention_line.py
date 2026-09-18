@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_compare
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -152,10 +153,63 @@ class AccountRetentionLine(models.Model):
             else:
                 record.allowed_payment_concept_ids = self.env['payment.concept'].search([])
 
+    def _apply_iva_tax_group_values(self, invoice_id, tax_group, tax, withholding_amount):
+        """
+        Fills this retention line with the amounts of a single tax_group of
+        the invoice (one real tax rate/aliquot).
+        """
+        self.ensure_one()
+        retention_amount = abs(tax_group["tax_amount"] * (withholding_amount / 100))
+        self.name = _("Iva Retention")
+        self.invoice_type = invoice_id.move_type
+        self.aliquot = tax.amount
+        self.iva_amount = tax_group["tax_amount"]
+        self.invoice_total = invoice_id.tax_totals["total_amount"]
+        self.related_percentage_tax_base = withholding_amount
+        self.invoice_amount = tax_group["base_amount"]
+        self.foreign_currency_rate = invoice_id.foreign_rate
+        self.foreign_invoice_amount = tax_group["base_amount_foreign_currency"]
+        self.foreign_iva_amount = tax_group["tax_amount_foreign_currency"]
+        self.foreign_invoice_total = invoice_id.tax_totals["total_amount_foreign_currency"]
+
+        if invoice_id.move_type == "out_invoice":
+            if self.env.company.auto_fill_retention_amount_iva:
+                self.retention_amount = retention_amount
+                self.foreign_retention_amount = self.foreign_iva_amount * (withholding_amount / 100)
+            else:
+                self.retention_amount = 0.0
+                self.foreign_retention_amount = 0.0
+        else:
+            self.retention_amount = retention_amount
+            self.foreign_retention_amount = self.foreign_iva_amount * (withholding_amount / 100)
+
+    def _get_iva_tax_groups_and_taxes(self, invoice_id):
+        """
+        Returns [(tax_group, tax)] for every real tax_group applied on the
+        invoice, in the order they appear on invoice_id.tax_totals.
+        """
+        tax_ids = invoice_id.invoice_line_ids.filtered(
+            lambda l: l.tax_ids and l.tax_ids[0].amount > 0
+        ).mapped("tax_ids")
+        result = []
+        for tax_group in invoice_id.tax_totals["subtotals"][0]["tax_groups"]:
+            taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["id"])
+            if taxes:
+                result.append((tax_group, taxes[0]))
+        return result
+
     @api.onchange("move_id")
     def _onchange_move_id(self):
         """
         Calcula y actualiza los campos de la línea de retención cuando cambia la factura.
+
+        Cuando la factura tiene varias alícuotas de IVA (varios tax_group),
+        se elige por defecto la primera alícuota que todavía no esté usada
+        por otra línea de la misma factura en esta retención, en vez de
+        siempre la primera - así, si se borra y se vuelve a agregar la
+        misma factura, o si la factura tiene una alícuota ya cubierta por
+        otra línea, se sugiere la alícuota que falta en vez de repetir la
+        primera.
         """
         for record in self:
             if not record.move_id:
@@ -178,13 +232,9 @@ class AccountRetentionLine(models.Model):
                 else 0
             )
 
-            # Aquí va la lógica de tu método original
-            tax_ids = invoice_id.invoice_line_ids.filtered(
-                lambda l: l.tax_ids and l.tax_ids[0].amount > 0
-            ).mapped("tax_ids")
+            tax_groups_and_taxes = record._get_iva_tax_groups_and_taxes(invoice_id)
 
-            if not any(tax_ids):
-
+            if not tax_groups_and_taxes:
                 return {
                     "warning": {
                         "title": _("Atención"),
@@ -192,40 +242,59 @@ class AccountRetentionLine(models.Model):
                     }
                 }
 
-            tax_groups = invoice_id.tax_totals["subtotals"][0]["tax_groups"]
+            sibling_lines = record.retention_id.retention_line_ids.filtered(
+                lambda l: l.move_id == invoice_id and l != record
+            )
+            used_aliquots = set(sibling_lines.mapped("aliquot"))
 
-            for tax_group in tax_groups:
-                taxes = tax_ids.filtered(lambda l: l.tax_group_id.id == tax_group["id"])
-                if not taxes:
-                    continue
+            tax_group, tax = next(
+                (
+                    (tg, t)
+                    for tg, t in tax_groups_and_taxes
+                    if t.amount not in used_aliquots
+                ),
+                tax_groups_and_taxes[0],
+            )
 
-                tax = taxes[0]
-                retention_amount = abs(tax_group["tax_amount"] * (withholding_amount / 100))
-                record.name = _("Iva Retention")
-                record.invoice_type = invoice_id.move_type
-                record.move_id = invoice_id.id
-                record.aliquot = tax.amount
-                record.iva_amount = tax_group["tax_amount"]
-                record.invoice_total = invoice_id.tax_totals["total_amount"]
-                record.related_percentage_tax_base = withholding_amount
-                record.invoice_amount = tax_group["base_amount"]
-                record.foreign_currency_rate = invoice_id.foreign_rate
-                record.foreign_invoice_amount = tax_group["base_amount_foreign_currency"]
-                record.foreign_iva_amount = tax_group["tax_amount_foreign_currency"]
-                record.foreign_invoice_total = invoice_id.tax_totals["total_amount_foreign_currency"]
+            record._apply_iva_tax_group_values(invoice_id, tax_group, tax, withholding_amount)
 
-                if invoice_id.move_type == "out_invoice":
-                    if self.env.company.auto_fill_retention_amount_iva:
-                        record.retention_amount = retention_amount
-                        record.foreign_retention_amount = record.foreign_iva_amount * (withholding_amount / 100)
-                    else:
-                        record.retention_amount = 0.0
-                        record.foreign_retention_amount = 0.0
-                else:
-                    record.retention_amount = retention_amount
-                    record.foreign_retention_amount = record.foreign_iva_amount * (withholding_amount / 100)
+    @api.onchange("aliquot")
+    def _onchange_aliquot(self):
+        """
+        Recalcula los montos de la línea cuando el usuario cambia manualmente
+        la alícuota, buscando el tax_group real de la factura que corresponde
+        a esa alícuota.
+        """
+        for record in self:
+            if not record.move_id or not record.retention_id or record.retention_id.type_retention != "iva":
+                continue
 
-                break
+            invoice_id = record.move_id
+            withholding_partner = (
+                record.retention_id.partner_id
+                if record.retention_id.partner_id
+                else invoice_id.partner_id
+            )
+            withholding_amount = (
+                withholding_partner.withholding_type_id.value
+                if withholding_partner and withholding_partner.withholding_type_id
+                else 0
+            )
+
+            tax_groups_and_taxes = record._get_iva_tax_groups_and_taxes(invoice_id)
+            match = next(
+                (
+                    (tg, t)
+                    for tg, t in tax_groups_and_taxes
+                    if float_compare(t.amount, record.aliquot, precision_digits=2) == 0
+                ),
+                None,
+            )
+            if not match:
+                continue
+
+            tax_group, tax = match
+            record._apply_iva_tax_group_values(invoice_id, tax_group, tax, withholding_amount)
 
     @api.depends("retention_id.type_retention", "move_id")
     def _compute_name(self):
@@ -255,6 +324,124 @@ class AccountRetentionLine(models.Model):
             if record.payment_id:
                 record.payment_id.unlink()
         return super().unlink()
+
+    def _get_islr_concept_base_amounts(self, move):
+        """Return (base_amount, foreign_base_amount) for this line, matching
+        the same rule the "Retención ISLR" button on the invoice uses
+        (account_move._get_payment_concepts_from_invoice):
+
+        - If the invoice has only ONE line that is a service with an ISLR
+          payment concept, the base is the whole invoice subtotal by default
+          (any goods on the invoice are deemed necessary for that single
+          service, per the norm) - regardless of which concept this line
+          declares - unless it's a SUPPLIER invoice and the company's
+          islr_prioritize_product_subtotal_base setting (task #82491, scoped
+          to suppliers only) opts to propose the service's own subtotal
+          instead. Either way this is only the auto-proposed default:
+          invoice_amount can always be edited by hand afterwards to use the
+          other criterion.
+        - If the invoice has SEVERAL such lines (own concept and amount
+          each), every retention line gets its own matching invoice line's
+          amount instead of the invoice total, and account.retention.
+          _check_islr_concept_amounts still caps the declared total per
+          concept at the real base for that concept.
+        """
+        self.ensure_one()
+        if not self.payment_concept_id:
+           
+            return 0.0, 0.0
+
+        concept_lines = move.invoice_line_ids.filtered(
+            lambda l: l.product_id.product_tmpl_id.type == "service"
+            and l.product_id.product_tmpl_id.payment_concept
+        )
+        if len(concept_lines) <= 1:
+            is_supplier_invoice = move.move_type in ("in_invoice", "in_refund", "in_debit")
+            if is_supplier_invoice and self.company_id.islr_prioritize_product_subtotal_base:
+                return (
+                    sum(abs(l.balance) for l in concept_lines),
+                    sum(concept_lines.mapped("foreign_subtotal")),
+                )
+            return move.tax_totals["base_amount"], move.tax_totals["base_amount_foreign_currency"]
+
+      
+        invoice_lines_for_concept = concept_lines.filtered(
+            lambda l: l.product_id.product_tmpl_id.payment_concept == self.payment_concept_id
+        ).sorted("id")
+
+        if len(invoice_lines_for_concept) <= 1:
+            return (
+                sum(abs(l.balance) for l in invoice_lines_for_concept),
+                sum(invoice_lines_for_concept.mapped("foreign_subtotal")),
+            )
+
+        same_concept_siblings = (
+            self.retention_id.retention_line_ids.filtered(
+                lambda l: l.move_id == move and l.payment_concept_id == self.payment_concept_id
+            )
+            if self.retention_id
+            else self
+        )
+        try:
+            index = list(same_concept_siblings).index(self)
+        except ValueError:
+            index = len(same_concept_siblings)
+
+        if index >= len(invoice_lines_for_concept):
+            # More retention lines than invoice lines left for this concept.
+            return 0.0, 0.0
+
+        matched_line = invoice_lines_for_concept[index]
+        return abs(matched_line.balance), matched_line.foreign_subtotal
+
+    @api.onchange("payment_concept_id", "move_id")
+    def _onchange_payment_concept_id_islr_warning(self):
+        """
+        Block immediately (instead of silently leaving invoice_amount at 0
+        and only surfacing the problem later at Aprobar time) when the
+        selected (invoice, concept) has no invoice line left to assign.
+        """
+        for record in self:
+            if not (record.move_id and record.payment_concept_id and record.retention_id):
+                continue
+            if record.retention_id.type_retention != "islr":
+                continue
+
+            move = record.move_id
+            concept_lines = move.invoice_line_ids.filtered(
+                lambda l: l.product_id.product_tmpl_id.type == "service"
+                and l.product_id.product_tmpl_id.payment_concept
+            )
+            if len(concept_lines) <= 1:
+                # Single-concept invoice: base is always the whole invoice
+                # subtotal, nothing to exhaust.
+                continue
+
+            invoice_lines_for_concept = concept_lines.filtered(
+                lambda l: l.product_id.product_tmpl_id.payment_concept == record.payment_concept_id
+            )
+            if not invoice_lines_for_concept:
+                continue
+
+            same_concept_siblings = record.retention_id.retention_line_ids.filtered(
+                lambda l: l.move_id == move and l.payment_concept_id == record.payment_concept_id
+            )
+            try:
+                index = list(same_concept_siblings).index(record)
+            except ValueError:
+                index = len(same_concept_siblings)
+
+            if index >= len(invoice_lines_for_concept):
+                raise UserError(
+                    _(
+                        "There are no more products with payment concept"
+                        " '%(concept)s' on invoice %(invoice)s to retain."
+                    )
+                    % {
+                        "concept": record.payment_concept_id.display_name,
+                        "invoice": move.display_name,
+                    }
+                )
 
     def _get_islr_type_person_id(self):
         """Return the type person used to match ISLR concept lines.
@@ -329,9 +516,10 @@ class AccountRetentionLine(models.Model):
                         else:
 
                             if record.invoice_amount == 0 and record.invoice_total > 0:
-                                record.invoice_amount =  move.tax_totals["base_amount"]
-                                record.foreign_invoice_amount = move.tax_totals["base_amount_currency"]
-                              
+                                concept_base, concept_foreign_base = record._get_islr_concept_base_amounts(move)
+                                record.invoice_amount = concept_base
+                                record.foreign_invoice_amount = concept_foreign_base
+
                     else:
                         invoice_date = record.move_id.invoice_date_display or fields.Date.today()
 
@@ -425,8 +613,11 @@ class AccountRetentionLine(models.Model):
                         else:
 
                             if record.invoice_amount == 0 and record.invoice_total > 0:
-                                record.invoice_amount = record.move_id.tax_totals["base_amount"]
-                                record.foreign_invoice_amount = record.move_id.tax_totals["base_amount_currency"]
+                                concept_base, concept_foreign_base = record._get_islr_concept_base_amounts(
+                                    record.move_id
+                                )
+                                record.invoice_amount = concept_base
+                                record.foreign_invoice_amount = concept_foreign_base
 
     @api.depends("invoice_amount", "foreign_invoice_amount", "move_id")
     def _compute_amounts(self):
@@ -633,6 +824,15 @@ class AccountRetentionLine(models.Model):
             )
 
    
+
+    @api.constrains("move_id")
+    def _check_retention_accounting_date(self):
+        # account.retention's own @api.constrains("date_accounting",
+        # "retention_line_ids") only fires when the lines are touched
+        # through the parent record. A direct write on this line's move_id
+        # (e.g. from account_retention_line.py:_onchange_move_id callers,
+        # or a wizard) would bypass it, so re-run the same check here.
+        self.retention_id._check_accounting_date_vs_invoices()
 
     @api.constrains(
         "retention_amount",

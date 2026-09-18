@@ -153,12 +153,15 @@ class TestMoveActionPostAlertWizard(TransactionCase):
         self.assertIn("debit note", str(e.exception).lower())
 
     def test_08_wizard_previous_credit_note_not_digitized(self):
-        prod = self.env['product.product'].create({
-            'name': 'Prod Credit', 'type': 'service', 'list_price': 100, 'taxes_id': [Command.set([self.tax_iva16.id])],
-        })
         base_inv = self._create_invoice(post=False)
+        # Cantidad 2 para que el monto facturado alcance para las dos notas de
+        # crédito (100 c/u) sin exceder lo facturado por el producto.
+        base_inv.invoice_line_ids.quantity = 2
         base_inv.with_context(move_action_post_alert=True).action_post()
         self._advance_correlative_sequence()
+        # La nota de crédito debe usar el mismo producto de base_inv: l10n_ve_invoice
+        # exige que los productos de una nota de crédito existan en la factura original.
+        prod = base_inv.invoice_line_ids.product_id
 
         credit1 = self._create_debit_or_credit("out_refund", prod, "reversed_entry_id", base_inv)
         credit1.with_context(move_action_post_alert=True).action_post()

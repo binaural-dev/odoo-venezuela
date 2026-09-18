@@ -44,3 +44,7 @@ class ResConfigSettings(models.TransientModel):
     auto_fill_retention_amount_iva = fields.Boolean(
         related="company_id.auto_fill_retention_amount_iva", readonly=False
     )
+
+    islr_prioritize_product_subtotal_base = fields.Boolean(
+        related="company_id.islr_prioritize_product_subtotal_base", readonly=False
+    )

@@ -36,6 +36,14 @@ class TestRefundOriginValidation(TransactionCase):
             "name": "Producto C",
             "type": "service",
         })
+        cls.product_storable = cls.env["product.product"].create({
+            "name": "Producto Almacenable",
+            "type": "consu",
+        })
+        cls.service_early_payment = cls.env["product.product"].create({
+            "name": "Pronto Pago",
+            "type": "service",
+        })
         cls.partner = cls.env["res.partner"].create({"name": "Cliente de prueba"})
         cls.journal = cls.env["account.journal"].create({
             "name": "Diario de Ventas Refund Test",
@@ -93,7 +101,115 @@ class TestRefundOriginValidation(TransactionCase):
         invoice.action_post()
         with self.assertRaises(ValidationError):
             self._create_invoice(
-                [self._create_invoice_line(self.product_b, 1, 10.0)],
+                [self._create_invoice_line(self.product_storable, 1, 10.0)],
+                move_type="out_refund",
+                reversed_entry_id=invoice,
+            )
+
+    def test_credit_note_with_foreign_service_product_is_allowed(self):
+        """Ticket #81674: financial concepts that never appear on the
+        original invoice (early payment, commercial discount, exchange
+        difference) are service products and must not be blocked by the
+        origin-membership check, unlike storable/consumable products."""
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+        credit_note = self._create_invoice(
+            [self._create_invoice_line(self.service_early_payment, 1, 10.0)],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+        self.assertEqual(credit_note.invoice_line_ids.product_id, self.service_early_payment)
+
+    def test_credit_note_with_foreign_service_product_cannot_exceed_origin_total(self):
+        """A foreign service line has no per-product cap, but it must
+        still respect the origin's grand total."""
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+        with self.assertRaises(ValidationError):
+            self._create_invoice(
+                [self._create_invoice_line(self.service_early_payment, 1, 150.0)],
+                move_type="out_refund",
+                reversed_entry_id=invoice,
+            )
+
+    def test_credit_note_with_foreign_service_product_exactly_at_origin_total_is_allowed(self):
+        """The boundary case: a foreign service line that credits exactly
+        the origin's total (not a cent more) must be allowed."""
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+        credit_note = self._create_invoice(
+            [self._create_invoice_line(self.service_early_payment, 1, 100.0)],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+        self.assertEqual(credit_note.amount_untaxed, 100.0)
+
+    def test_credit_note_mixing_origin_product_and_foreign_service_cannot_exceed_origin_total(self):
+        """A credit note combining a same-origin product line with a
+        foreign service line must respect the origin's grand total across
+        both lines together, not just the per-product cap on the first
+        one."""
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+        with self.assertRaises(ValidationError):
+            self._create_invoice(
+                [
+                    self._create_invoice_line(self.product_a, 1, 60.0),
+                    self._create_invoice_line(self.service_early_payment, 1, 60.0),
+                ],
+                move_type="out_refund",
+                reversed_entry_id=invoice,
+            )
+
+    def test_credit_note_mixing_origin_product_and_foreign_service_within_origin_total_is_allowed(self):
+        """Same combination as above, but staying within the origin's
+        grand total, so it must be allowed."""
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+        credit_note = self._create_invoice(
+            [
+                self._create_invoice_line(self.product_a, 1, 60.0),
+                self._create_invoice_line(self.service_early_payment, 1, 30.0),
+            ],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+        self.assertEqual(credit_note.amount_untaxed, 90.0)
+
+    def test_credit_note_with_multiple_foreign_service_products_cannot_exceed_origin_total(self):
+        """Several distinct foreign service products on the same credit
+        note must have their amounts summed for the grand-total check,
+        not evaluated independently of each other."""
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+        with self.assertRaises(ValidationError):
+            self._create_invoice(
+                [
+                    self._create_invoice_line(self.service_early_payment, 1, 60.0),
+                    self._create_invoice_line(self.product_c, 1, 60.0),
+                ],
+                move_type="out_refund",
+                reversed_entry_id=invoice,
+            )
+
+    def test_cumulative_credit_notes_with_foreign_service_cannot_exceed_origin_total(self):
+        """A first credit note against a normal product line uses up part
+        of the origin's total; a second credit note with only a foreign
+        service line must still be capped by what's left, not treated as
+        starting from zero."""
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+
+        first_credit_note = self._create_invoice(
+            [self._create_invoice_line(self.product_a, 1, 70.0)],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+        self.assertTrue(first_credit_note.id)
+
+        with self.assertRaises(ValidationError):
+            self._create_invoice(
+                [self._create_invoice_line(self.service_early_payment, 1, 40.0)],
                 move_type="out_refund",
                 reversed_entry_id=invoice,
             )
@@ -116,6 +232,51 @@ class TestRefundOriginValidation(TransactionCase):
                 reversed_entry_id=invoice,
             )
 
+    def test_credit_note_with_a_subsection_is_allowed(self):
+        """`line_subsection` is the display_type Odoo 19 added to the layout
+        family, and it was missing from `product_line_types` in
+        `_check_refund_against_origin()`.
+
+        Without it the subsection was read as a product line to credit and
+        fell into "Every product line on this credit note must have a
+        product" -- the very path
+        `test_credit_note_line_without_product_is_blocked` asserts, which is
+        why the change was invisible to this file. A layout line has no
+        product and nothing to match against the origin by design, so it has
+        to be ignored, not blocked.
+        """
+        invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
+        invoice.action_post()
+
+        refund = self._create_invoice(
+            [
+                Command.create({
+                    "display_type": "line_section",
+                    "name": "Estudios",
+                }),
+                Command.create({
+                    "display_type": "line_subsection",
+                    "name": "Primera etapa",
+                }),
+                self._create_invoice_line(self.product_a, 1, 100.0),
+                Command.create({
+                    "display_type": "line_note",
+                    "name": "Nota",
+                }),
+            ],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+
+        self.assertTrue(refund, "the credit note with a subsection was rejected")
+        self.assertTrue(
+            refund.invoice_line_ids.filtered(
+                lambda l: l.display_type == "line_subsection"
+            ),
+            "fixture is broken: no subsection survived on the credit note, so "
+            "this test would pass without exercising the guard",
+        )
+
     def test_credit_note_exceeding_origin_amount_is_blocked(self):
         invoice = self._create_invoice([self._create_invoice_line(self.product_a, 1, 100.0)])
         invoice.action_post()
@@ -137,7 +298,7 @@ class TestRefundOriginValidation(TransactionCase):
         bill.action_post()
         with self.assertRaises(ValidationError):
             self._create_invoice(
-                [self._create_invoice_line(self.product_b, 1, 10.0, tax=self.purchase_tax)],
+                [self._create_invoice_line(self.product_storable, 1, 10.0, tax=self.purchase_tax)],
                 move_type="in_refund",
                 reversed_entry_id=bill,
                 journal=self.purchase_journal,
@@ -169,7 +330,7 @@ class TestRefundOriginValidation(TransactionCase):
             "invoice_date": fields.Date.today(),
             "invoice_date_display": fields.Date.today(),
             "reversed_entry_id": invoice.id,
-            "invoice_line_ids": [self._create_invoice_line(self.product_b, 1, 999.0)],
+            "invoice_line_ids": [self._create_invoice_line(self.product_storable, 1, 999.0)],
         })
         self.assertTrue(credit_note.id)
 
@@ -209,7 +370,7 @@ class TestRefundOriginValidation(TransactionCase):
         )
         line = credit_note.invoice_line_ids[0]
         with self.assertRaises(ValidationError):
-            line.write({"product_id": self.product_c.id})
+            line.write({"product_id": self.product_storable.id})
 
     def test_line_write_raising_amount_over_cap_is_blocked(self):
         """Same line-level trigger, but for the amount check instead of
