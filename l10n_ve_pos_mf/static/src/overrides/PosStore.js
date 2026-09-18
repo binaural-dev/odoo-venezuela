@@ -844,6 +844,17 @@ patch(PosStore.prototype, {
       return quantity > 0 && unitPrice >= 0;
     });
 
+    // Base del descuento con el precio real, ANTES de aplicarlo: con un global
+    // del 100% `setDiscount` sustituye el precio por el mínimo fiscal (0,01) y
+    // el monto informativo (DESC. GLOBAL) saldría como Σ 0,01 × cantidad.
+    // Ticket #15105.
+    let rawTotal = 0;
+    for (const line of positiveLines) {
+      const quantity = Math.abs(Number(line.getQuantity?.() ?? line.qty ?? 0));
+      const unitPrice = Number(line.getUnitPrice?.() ?? line.price_unit ?? 0);
+      rawTotal += Math.abs(unitPrice * quantity);
+    }
+
     for (const line of positiveLines) {
       if (typeof line.setDiscount === "function") {
         line.setDiscount(inference.inferredPercent);
@@ -852,12 +863,6 @@ patch(PosStore.prototype, {
       }
     }
 
-    let rawTotal = 0;
-    for (const line of positiveLines) {
-      const quantity = Math.abs(Number(line.getQuantity?.() ?? line.qty ?? 0));
-      const unitPrice = Number(line.getUnitPrice?.() ?? line.price_unit ?? 0);
-      rawTotal += Math.abs(unitPrice * quantity);
-    }
     const correctedAmount = round_pr(
       (rawTotal * inference.inferredPercent) / 100,
       this.currency?.rounding || 0.01

@@ -52,6 +52,14 @@ ningún módulo fuera de l10n_ve_pos_mf.
 - **WHEN** se vuelve a aplicar/recalcular el descuento global
 - **THEN** la inferencia del porcentaje usa el precio real (restaurado), no 0,01
 
+#### Scenario: Monto informativo del descuento global sobre el precio real
+
+- **GIVEN** una orden con 3 líneas de 2 unidades cada una y precio > 0
+- **WHEN** el cajero aplica un descuento global del 100% y se imprime la factura
+  fiscal
+- **THEN** la línea informativa `DESC. GLOBAL` muestra el total real de las
+  líneas (precio real × cantidad), no Σ 0,01 × cantidad (0,06)
+
 #### Scenario: Descuento parcial sin cambios
 
 - **WHEN** se aplica un descuento menor al 100% (el neto queda > 0)

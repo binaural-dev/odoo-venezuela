@@ -18,6 +18,9 @@
 - [x] 2.3 `_applyGlobalDiscountBeforeValidation`: restaurar precios reales antes
       de inferir el % global
 - [x] 2.4 `pay()`: respaldo que sustituye líneas en neto 0 antes del pago
+- [x] 2.5 `_applyGlobalDiscountBeforeValidation`: calcular la base del monto
+      informativo (`DESC. GLOBAL`) ANTES de `setDiscount`, que con el 100%
+      sustituye el precio por 0,01 (salía Σ 0,01 × cantidad; review PR #1323)
 
 ## 3. Metadatos
 
@@ -29,9 +32,15 @@
 - [x] 4.1 Reconstruir/servir assets (`-u l10n_ve_pos_mf`) + hard refresh
 - [x] 4.2 Descuento **por línea** 100% con cantidad grande → subtotal de la
       línea 0,01 (probado qty 10 → 0,01), cantidad intacta, sin bloqueo
-- [ ] 4.3 Descuento **global** 100% → cada línea con subtotal 0,01, cantidad
-      intacta
-- [ ] 4.4 Cambiar la cantidad tras la sustitución → subtotal sigue en 0,01
+- [x] 4.3 Descuento **global** 100% → cada línea con subtotal 0,01, cantidad
+      intacta (2026-09-18, caja C1-CCS, orden C1-CCS - 000003: 3 líneas × 2 uds
+      → 0,01 c/u, total 0,03)
+- [x] 4.4 Cambiar la cantidad tras la sustitución → subtotal sigue en 0,01
+      (2026-09-18, caja C1-CCS)
 - [ ] 4.5 Quitar/cambiar el descuento tras un 100% → precio original restaurado
-- [ ] 4.6 Descuento parcial (< 100%) → comportamiento idéntico al actual
-- [ ] 4.7 Impresión en la MF (línea 1 × 0,01) y cierre `199` cuadra con el pago
+- [x] 4.6 Descuento parcial (< 100%) → comportamiento idéntico al actual
+      (2026-09-18, caja C1-CCS)
+- [x] 4.7 Impresión en la MF (línea 1 × 0,01) y cierre `199` cuadra con el pago
+      (2026-09-18, misma orden → factura fiscal 403 por 0,03)
+- [ ] 4.8 Descuento global 100% en la MF → `DESC. GLOBAL` muestra el total real
+      de las líneas (antes del fix 2.5 imprimió 0,06 en la factura 403)
