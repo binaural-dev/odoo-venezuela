@@ -42,7 +42,7 @@ momento de creación de la factura.
 - `models/account_move.py`: se agrega
   `"invoice_line_ids.product_id.product_tmpl_id.payment_concept"` al
   `@api.depends` de `_compute_retention_islr_avalability`.
-- Bump de manifest: `19.0.2.0.29` -> `19.0.2.0.30`.
+- Bump de manifest: `19.0.2.0.32` -> `19.0.2.0.33`.
 
 ## Non-goals
 

@@ -19,15 +19,15 @@
 - [x] 2.1 Agregar
       `"invoice_line_ids.product_id.product_tmpl_id.payment_concept"` al
       `@api.depends` de `_compute_retention_islr_avalability`.
-- [x] 2.2 Bump de versión del manifest (`19.0.2.0.29` -> `19.0.2.0.30`).
+- [x] 2.2 Bump de versión del manifest (`19.0.2.0.32` -> `19.0.2.0.33`).
 
 ## 3. Verificación manual
 
-- [ ] 3.1 Crear una factura de proveedor con un producto tipo Servicio
+- [x] 3.1 Crear una factura de proveedor con un producto tipo Servicio
       sin "Concepto de pago" configurado; confirmar que no aparece en el
       selector de retención ISLR.
-- [ ] 3.2 Asignarle "Concepto de pago" al producto (sin tocar la
+- [x] 3.2 Asignarle "Concepto de pago" al producto (sin tocar la
       factura) y confirmar que la factura ahora sí aparece disponible en
       el selector, sin necesidad de reabrir/editar sus líneas.
-- [ ] 3.3 Confirmar que quitarle el concepto de pago al producto excluye
+- [x] 3.3 Confirmar que quitarle el concepto de pago al producto excluye
       la factura de nuevo del selector.
