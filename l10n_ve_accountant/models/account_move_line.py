@@ -216,6 +216,10 @@ class AccountMoveLine(models.Model):
         """
         usd = self.env.ref("base.USD", raise_if_not_found=False)
         for line in self:
+            if not line.foreign_currency_id:
+                line.foreign_subtotal = 0.0
+                line.foreign_price_total = 0.0
+                continue
             foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
