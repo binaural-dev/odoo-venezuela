@@ -100,7 +100,7 @@ Esta localización incluye los siguientes módulos, diseñados para cumplir con 
    Gestión de contabilidad de inventarios adaptada a las normativas fiscales venezolanas. Permite realizar el seguimiento y la contabilidad de los movimientos de inventarios de acuerdo con los requerimientos del SENIAT.
 
 - **l10n_ve_stock_purchase**  
-   Gestión de compras de inventarios con integración fiscal. Este módulo permite la creación de órdenes de compra y la integración de los movimientos de inventario con el sistema contable y fiscal.
+   Gestión de compras de inventarios con integración fiscal. Este módulo permite la creación de órdenes de compra y la integración de los movimientos de inventario con el sistema contable y fiscal. Incluye búsqueda de producto por Código Alterno y su columna de referencia en la línea de compra.
 
 - **l10n_ve_stock_reports**  
    Informes relacionados con la gestión de inventarios y operaciones fiscales. Este módulo genera reportes detallados que ayudan a las empresas a cumplir con las regulaciones fiscales en términos de inventarios.
