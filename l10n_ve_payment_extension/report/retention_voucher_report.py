@@ -12,6 +12,9 @@ class PaymentExtensionRetentionIvaVoucher(models.AbstractModel):
             raise ValidationError(
                 _("Municipal retentions do not have PDF voucher. Please print the xslx")
             )
+        docs_retentions.mapped(
+            "company_id"
+        )._check_prefix_vat_confirmed_for_fiscal_documents()
 
         return {
             "docids": docids,

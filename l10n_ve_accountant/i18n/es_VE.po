@@ -825,6 +825,13 @@ msgid "International purchase"
 msgstr "Es Compra Internacional"
 
 #. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_account_move_form_l10n_ve_accountant
+msgid "Rate Date"
+msgstr "Fecha de tasa"
+
+#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__invoice_date_display
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__invoice_date_display
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.l10n_ve_accountant_view_account_invoice_filter
