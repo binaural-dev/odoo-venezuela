@@ -85,6 +85,35 @@ El sistema DEBE (MUST) impedir guardar facturas con líneas de producto cuyo `pr
 - **WHEN** la línea a precio no positivo es una línea de descuento reconocida
 - **THEN** la factura se guarda sin error
 
+### Requirement: Descuento por monto fijo en líneas de factura
+
+La compañía DEBE (MUST) tener `discount_type` (Selection: `percent`/`amount`, default `percent`) que determina, de forma homogénea para todas las facturas y líneas del sistema (no por línea ni por documento), si `account.move.line` opera con el `discount` (%) nativo o con `discount_fixed` (monto fijo sobre el subtotal bruto de la línea, precisión "Product Price"). Cuando `discount_type = 'amount'`, el onchange `_onchange_discount_fixed` calcula `discount = (discount_fixed / (price_unit * quantity)) * 100` y lo asigna al campo estándar — de modo que el monto fijo descuenta la Base Imponible de la línea completa (no el precio unitario) antes del cálculo de impuestos, sin sobreescribir `_compute_totals`, impuestos, ni los montos en moneda alterna de `l10n_ve_accountant` (que ya dependen de `discount`). La traducción ocurre ÚNICAMENTE en el onchange: escribir `discount_fixed` por código (`create`/`write`, importaciones, otros módulos) NO modifica `discount`. La vista de factura muestra `discount_fixed` en vez de `discount` (`column_invisible`/`invisible` sobre `parent.discount_type`) según ese ajuste.
+
+#### Scenario: Edición en el formulario
+
+- **WHEN** el usuario edita `discount_fixed` en una línea con `price_unit * quantity` distinto de cero
+- **THEN** el onchange asigna a `discount` el porcentaje equivalente sobre el subtotal bruto de la línea, redondeado a la precisión "Discount"
+
+#### Scenario: Base Imponible con descuento fijo y cantidad mayor a uno
+
+- **WHEN** una línea tiene cantidad 2, precio unitario $50,00 e IVA 16%, y se ingresa un descuento fijo de $20,00
+- **THEN** la Base Imponible queda en $80,00, el IVA en $12,80 y el Total en $92,80
+
+#### Scenario: `price_unit * quantity` en cero
+
+- **WHEN** el onchange se dispara con `price_unit * quantity` igual a cero
+- **THEN** `discount` queda en 0.0, sin división por cero
+
+#### Scenario: Escritura por código sin pasar por el onchange
+
+- **WHEN** se crea o escribe una línea fijando `discount_fixed` sin fijar `discount` explícitamente, fuera del formulario
+- **THEN** `discount` no se modifica
+
+#### Scenario: Modo porcentaje activo
+
+- **WHEN** la compañía tiene `discount_type = 'percent'`
+- **THEN** la grilla de líneas de factura muestra únicamente `discount` (%) y el cálculo nativo de Odoo no se altera
+
 ### Requirement: Impuesto obligatorio por línea para confirmar
 
 `action_post` DEBE (MUST) impedir confirmar facturas y notas (`out_invoice`, `in_invoice`, `out_refund`, `in_refund`) con alguna línea de producto sin impuestos (`tax_ids` vacío), excluyendo secciones y notas.

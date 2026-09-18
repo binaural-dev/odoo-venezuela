@@ -124,6 +124,20 @@
                     data-hotkey="x"/>
             </xpath>
 
+            <!-- Fixed-amount discount on invoice lines: shown instead of the
+                 native percentage discount when the company setting is on.
+                 discount_fixed only feeds the native discount (%) field, so
+                 taxes/totals/foreign amounts keep using the native field. -->
+            <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="attributes">
+                <attribute name="column_invisible">parent.discount_type == 'amount'</attribute>
+                <attribute name="invisible">parent.discount_type == 'amount'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="after">
+                <field name="discount_fixed"
+                    column_invisible="parent.discount_type != 'amount'"
+                    invisible="parent.discount_type != 'amount'"/>
+            </xpath>
+
         </field>
     </record>
     <!-- Hiding native print button -->
