@@ -18,24 +18,24 @@ msgstr ""
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_abstract
 msgid "Account fiscalyear closing abstract"
-msgstr "Cierre de año fiscal (abstracto)"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_unbalanced_move
 msgid "Account fiscalyear closing unbalanced move"
-msgstr "Asiento descuadrado de cierre de año fiscal"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_unbalanced_move_line
 msgid "Account fiscalyear closing unbalanced move line"
-msgstr "Línea de asiento descuadrado de cierre de año fiscal"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__company_id
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_abstract__company_id
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_template__company_id
 msgid "Company"
-msgstr "Compañía"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__display_name
@@ -46,37 +46,37 @@ msgstr "Compañía"
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move__display_name
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__display_name
 msgid "Display Name"
-msgstr "Nombre mostrado"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing
 msgid "Fiscal year closing"
-msgstr "Cierre de año fiscal"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_config
 msgid "Fiscal year closing configuration"
-msgstr "Configuración de cierre de año fiscal"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_config_template
 msgid "Fiscal year closing configuration template"
-msgstr "Plantilla de configuración de cierre de año fiscal"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_mapping
 msgid "Fiscal year closing mapping"
-msgstr "Mapeo de cierre de año fiscal"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__foreign_credit
 msgid "Foreign Credit"
-msgstr "Crédito foráneo"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__foreign_debit
 msgid "Foreign Debit"
-msgstr "Débito foráneo"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__id
@@ -87,19 +87,19 @@ msgstr "Débito foráneo"
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move__id
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__id
 msgid "ID"
-msgstr "ID"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config__l_map
 #: model_terms:ir.ui.view,arch_db:l10n_ve_account_fiscalyear_closing.account_fiscal_year_closing_inherit_binaural
 #: model_terms:ir.ui.view,arch_db:l10n_ve_account_fiscalyear_closing.account_fiscal_year_closing_template_inherit_binaural
 msgid "Load Accounts"
-msgstr "Cargar cuentas"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config_template__l_map
 msgid "Load accounts"
-msgstr "Cargar cuentas"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #. odoo-python
@@ -108,7 +108,7 @@ msgid ""
 "No account of type 'Current Year Earnings' (equity_unaffected) found "
 "configured for company %(company)s. Configure the chart of accounts before "
 "performing the fiscal closing."
-msgstr "No se encontró una cuenta de tipo 'Resultados del ejercicio actual' (equity_unaffected) configurada para la compañía %(company)s. Configure el plan de cuentas antes de realizar el cierre fiscal."
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #. odoo-python
@@ -118,22 +118,21 @@ msgid ""
 "%(start)s and %(end)s: none of the mapped accounts had a balance to close "
 "in that period. Check the account mappings and the period dates before "
 "calculating again."
-msgstr "No se generó ningún asiento de cierre fiscal para %(company)s entre %(start)s y %(end)s: ninguna de las cuentas mapeadas tuvo saldo que cerrar en ese período. Revise los mapeos de cuentas y las fechas del período antes de calcular de nuevo."
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move__foreign_currency_rate
 msgid "Rate"
-msgstr "Tasa"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #. odoo-python
 #: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
 msgid "Result"
-msgstr "Resultado"
+msgstr ""
 
 #. module: l10n_ve_account_fiscalyear_closing
 #. odoo-python
 #: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
 msgid "Se encontraron uno o más movimientos sin asentar: \n"
-msgstr "Se encontraron uno o más movimientos sin asentar: \n"
-
+msgstr ""
