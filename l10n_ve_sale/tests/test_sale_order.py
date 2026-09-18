@@ -3,6 +3,7 @@ from odoo.tests import Form
 from odoo.tests.common import TransactionCase
 from odoo.exceptions import UserError
 from odoo.tests import tagged
+from datetime import timedelta
 import logging
 import random
 
@@ -347,6 +348,100 @@ class TestSaleOrderInvoice(TransactionCase):
         finally:
             dp.digits = original
             self.env.registry.clear_cache()
+
+    def test_05_duplicate_order_updates_foreign_rate(self):
+        """Duplicating an old sale order must refresh the alterno rate to the
+        one in effect today, instead of keeping the original order's rate
+        frozen (ticket #13998)."""
+        # Explicit, not relied-upon-by-default: this is the setting under
+        # which the bug reproduces (INDUVAR runs with it False).
+        self.company.update_sale_order_rate_using_date_order = False
+
+        old_date = fields.Datetime.now() - timedelta(days=60)
+        rate_model = self.env["res.currency.rate"]
+        rate_model.search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+            ("name", "in", [old_date.date(), fields.Date.today()]),
+        ]).unlink()
+        rate_model.create({
+            "currency_id": self.currency_usd.id,
+            "company_id": self.company.id,
+            "name": old_date.date(),
+            "rate": 1 / 100.0,
+        })
+        rate_model.create({
+            "currency_id": self.currency_usd.id,
+            "company_id": self.company.id,
+            "name": fields.Date.today(),
+            "rate": 1 / 200.0,
+        })
+
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "date_order": old_date,
+        })
+        self.assertAlmostEqual(
+            order.foreign_rate, 100.0, places=4,
+            msg="test premise: the original order must pick up the old rate",
+        )
+
+        duplicate = order.copy()
+
+        self.assertAlmostEqual(
+            duplicate.foreign_rate, 200.0, places=4,
+            msg="duplicating an old order must refresh the alterno rate to "
+                "today's, not keep it frozen at the original order's rate",
+        )
+        _logger.info("test_05_duplicate_order_updates_foreign_rate --- successfully")
+
+    def test_06_duplicate_manual_rate_order_also_updates_rate(self):
+        """manually_set_rate isn't a user-facing "I typed this by hand"
+        choice (it's not exposed on the client view) -- it must not survive
+        a duplicate either. Duplicating an order that had it set must clear
+        the flag and refresh the rate to today's, same as any other order."""
+        self.company.update_sale_order_rate_using_date_order = False
+
+        old_date = fields.Datetime.now() - timedelta(days=60)
+        rate_model = self.env["res.currency.rate"]
+        rate_model.search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+            ("name", "in", [old_date.date(), fields.Date.today()]),
+        ]).unlink()
+        rate_model.create({
+            "currency_id": self.currency_usd.id,
+            "company_id": self.company.id,
+            "name": old_date.date(),
+            "rate": 1 / 100.0,
+        })
+        rate_model.create({
+            "currency_id": self.currency_usd.id,
+            "company_id": self.company.id,
+            "name": fields.Date.today(),
+            "rate": 1 / 200.0,
+        })
+
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "date_order": old_date,
+            "manually_set_rate": True,
+            "foreign_rate": 999.99,
+            "foreign_inverse_rate": 1 / 999.99,
+        })
+
+        duplicate = order.copy()
+
+        self.assertFalse(
+            duplicate.manually_set_rate,
+            "manually_set_rate must not survive a duplicate",
+        )
+        self.assertAlmostEqual(
+            duplicate.foreign_rate, 200.0, places=4,
+            msg="a duplicate must get today's alterno rate even if the "
+                "original had manually_set_rate=True",
+        )
+        _logger.info("test_06_duplicate_manual_rate_order_also_updates_rate --- successfully")
 
 
 @tagged("post_install", "-at_install", "l10n_ve_sale")
