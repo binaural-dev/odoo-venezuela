@@ -10,6 +10,16 @@ _logger = logging.getLogger(__name__)
 class ProductTemplate(models.Model):
     _inherit = "product.template"
 
+    physical_locations_ids = fields.Many2many(
+        'stock.location', 
+        string='Physical Locations', 
+        domain="[('location_id', '!=', False), ('child_ids', '=', False)]"
+    )
+
+    show_physical_locations = fields.Boolean(
+        compute="_compute_show_physical_locations",
+    )
+
     quantity = fields.Float(
         compute="_compute_available_quantity",
         help="The Availability of the product to sell.",
@@ -29,6 +39,7 @@ class ProductTemplate(models.Model):
         string="Alternate Code",
         help="Alternate code for the product",
     )
+
     physical_location_id = fields.Many2one(
         "stock.location",
         string="Physical Location",
@@ -40,6 +51,10 @@ class ProductTemplate(models.Model):
     priority_location = fields.Integer(
         string="Priority", related="physical_location_id.priority", store=True
     )
+
+    def _compute_show_physical_locations(self):
+        for product in self:
+            product.show_physical_locations = self.env.company.use_alternate_locations
 
     price_with_tax = fields.Float(compute="_compute_prices_with_tax")
     price_without_tax = fields.Float(compute="_compute_prices_with_tax")
@@ -73,14 +88,14 @@ class ProductTemplate(models.Model):
         # Maldito Raiver e.e
         return True
 
-    @api.constrains("list_price")
+    @api.constrains("list_price", "sale_ok")
     def _check_list_price(self):
 
         if self.env.context.get('install_mode'):
             return
 
         for product in self:
-            if product.list_price <= 0:
+            if product.sale_ok and product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def _check_company_id_edit_allowed(self, vals):
@@ -115,6 +130,10 @@ class ProductTemplate(models.Model):
 
     def write(self, vals):
         self._check_company_id_edit_allowed(vals)
+
+        old_physical_locations_ids = {
+            tmpl.id: tmpl.physical_locations_ids for tmpl in self
+        }
         # default_code and lock_internal_reference_on_moves are both stored
         # fields with their own inverse (_set_default_code on the core side,
         # _set_lock_internal_reference_on_moves here), so Odoo runs them as
@@ -135,6 +154,21 @@ class ProductTemplate(models.Model):
         res = super().write(vals)
         if "taxes_id" in vals:
             self._validate_single_sale_tax()
+
+        if not self.env.company.use_alternate_locations:
+            return res
+
+        if "physical_locations_ids" in vals:
+            for tmpl in self:
+                old_locations = old_physical_locations_ids.get(tmpl.id, self.env["stock.location"])
+                new_locations = tmpl.physical_locations_ids
+                removed_locations = old_locations - new_locations
+                added_locations = new_locations - old_locations
+                if removed_locations:
+                    tmpl._remove_putaway_rules(removed_locations)
+                if added_locations:
+                    tmpl._create_putaway_rules(added_locations)
+            self._sync_alter_locations_from_physical_locations()
         return res
 
     @api.model_create_multi
@@ -144,10 +178,22 @@ class ProductTemplate(models.Model):
         records = super().create(vals_list)
         # Always validate after creation because default taxes can come from multiple sources
         records._validate_single_sale_tax()
+
+        if not self.env.company.use_alternate_locations:
+            return records
+
+        for tmpl, vals in zip(records, vals_list):
+            if vals.get("physical_locations_ids"):
+                tmpl._create_putaway_rules(tmpl.physical_locations_ids)
+
+        records._sync_alter_locations_from_physical_locations()
         return records
 
     def _validate_single_sale_tax(self):
-        for product in self:
+        # Combo products carry no taxes of their own (their taxes come from
+        # the component products), so the single-tax rule does not apply to
+        # them - same exemption as l10n_ve_accountant (#14405).
+        for product in self.filtered(lambda p: p.type != "combo"):
             taxes_by_company = defaultdict(int)
             for tax in product.taxes_id.sudo():
                 taxes_by_company[tax.company_id] += 1
@@ -208,6 +254,7 @@ class ProductTemplate(models.Model):
         can_edit = self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
         for product in self:
             product.can_edit_company_id = can_edit
+
     @api.depends("product_variant_ids.lock_internal_reference_on_moves")
     def _compute_lock_internal_reference_on_moves(self):
         self._compute_template_field_from_variant_field(
