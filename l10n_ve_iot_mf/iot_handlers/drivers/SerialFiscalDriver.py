@@ -282,7 +282,7 @@ class SerialFiscalDriver(SerialDriver):
         self._actions.update(
             {
                 "status": self.get_status_machine,
-                "status1": self.get_s1_printer_data,
+                "status1": lambda data: self.get_s1_printer_data(),
                 "logger": self.logger,
                 "logger_multi": self.logger_multi,
                 "programacion": self.programacion,
@@ -772,7 +772,7 @@ class SerialFiscalDriver(SerialDriver):
         :return: Resultado de la operación.
         """
         msg = "Factura impresa correctamente"
-        estado_s1 = self.get_s1_printer_data()
+        estado_s1 = self._get_s1_printer_data_after_print(required_field="LastInvoiceNumber")
         
         if estado_s1:
             number = estado_s1.LastInvoiceNumber
@@ -1225,8 +1225,8 @@ class SerialFiscalDriver(SerialDriver):
                 if not result:
                     _logger.error("Fallo al enviar comando: %s", command)
 
-            estado_s1 = self.get_s1_printer_data()
-            
+            estado_s1 = self._get_s1_printer_data_after_print(required_field="LastCreditNoteNumber")
+
             if estado_s1:
                 number = estado_s1.LastCreditNoteNumber
                 machine_number = estado_s1.RegisteredMachineNumber
@@ -2135,6 +2135,29 @@ class SerialFiscalDriver(SerialDriver):
             event_manager.device_changed(self)
             return {"valid": False, "message": str(e)}
         
+    def _get_s1_printer_data_after_print(self, required_field="RegisteredMachineNumber", timeout=30, poll_interval=2):
+        """
+        Lee el estado S1 justo despues de imprimir un documento (factura,
+        nota de credito, Reporte Z). Segun el manual de protocolos (Tabla
+        59), la impresora puede quedar ocupada unos segundos emitiendo el
+        reporte de estado de transmision y rechazar cualquier comando
+        mientras tanto, incluida la lectura de S1 (con excepcion o con una
+        respuesta vacia/incompleta). Se reintenta hasta que la impresora
+        responda con datos validos o se agote el timeout.
+        """
+        deadline = time.time() + timeout
+        last_error = Exception("Timeout esperando datos S1 tras imprimir")
+        while time.time() < deadline:
+            try:
+                data = self.get_s1_printer_data()
+                if data and getattr(data, required_field, None) is not None:
+                    return data
+                last_error = Exception("S1 respondio vacio o incompleto tras imprimir")
+            except Exception as e:
+                last_error = e
+            time.sleep(poll_interval)
+        raise last_error
+
     def PrintZReport(self, data, *items):
         try:
             status = self.ReadFpStatus(True)
@@ -2142,12 +2165,31 @@ class SerialFiscalDriver(SerialDriver):
                 raise Exception(status["data"]["error"]["msg"])
             if status["data"]["status"]["code"] not in ["1", "4"]:
                 raise Exception(status["data"]["status"]["msg"])
-            
+
             self.tfhka.PrintZReport()
+
+            try:
+                estado_s1 = self._get_s1_printer_data_after_print(required_field="DailyClosureCounter")
+                response_data = {
+                    "_registeredMachineNumber": estado_s1.RegisteredMachineNumber,
+                    "_dailyClosureCounter": estado_s1.DailyClosureCounter,
+                } if estado_s1 else {}
+            except Exception as e:
+                _logger.warning("Reporte Z impreso pero no se pudo leer S1: %s", e)
+                response_data = {}
+
             _logger.info("Reporte Z impreso correctamente.")
-            self.data["value"] = {"valid": True, "message": "Reporte Z impreso correctamente."}
+            self.data["value"] = {
+                "valid": True,
+                "message": "Reporte Z impreso correctamente.",
+                "data": response_data,
+            }
             event_manager.device_changed(self)
-            return {"valid": True, "message": "Reporte Z impreso correctamente."}
+            return {
+                "valid": True,
+                "message": "Reporte Z impreso correctamente.",
+                "data": response_data,
+            }
         except Exception as e:
             _logger.error("Error al imprimir el reporte Z: %s", e)
             self.data["value"] = {"valid": False, "message": str(e)}
