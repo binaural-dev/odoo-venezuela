@@ -357,10 +357,11 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         # at all -- must not be silently requeued (that would risk a
         # duplicate if TFHKA actually received it): a human must review it.
         inv = self._create_invoice()
-        inv.write({
-            "tfhka_digitalization_state": "processing",
-            "tfhka_processing_started_at": fields.Datetime.now() - timedelta(minutes=2),
-        })
+        inv.write({"tfhka_digitalization_state": "processing"})
+        # A second, separate write: date_state is auto-stamped to now()
+        # whenever tfhka_digitalization_state is written (see write()), so
+        # backdating it must happen in its own call afterwards.
+        inv.write({"date_state": fields.Datetime.now() - timedelta(minutes=2)})
 
         self.env["account.move"]._tfhka_recover_stuck_processing()
 
@@ -373,16 +374,14 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         # from "TFHKA hasn't answered/logged it yet" -- must not error out a
         # call that may still be in flight.
         inv = self._create_invoice()
-        inv.write({
-            "tfhka_digitalization_state": "processing",
-            "tfhka_processing_started_at": fields.Datetime.now() - timedelta(seconds=59),
-        })
+        inv.write({"tfhka_digitalization_state": "processing"})
+        inv.write({"date_state": fields.Datetime.now() - timedelta(seconds=59)})
 
         resolved = self.env["account.move"]._tfhka_recover_stuck_processing()
 
         self.assertFalse(resolved)
         self.assertEqual(inv.tfhka_digitalization_state, "processing")
-        self.assertTrue(inv.tfhka_processing_started_at)
+        self.assertTrue(inv.date_state)
 
     def test_recover_stuck_processing_within_grace_period_halts_only_this_model_queue(self):
         # A halts on its own stuck 'processing' record (still fresh); B is a
@@ -390,10 +389,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         # not be touched either, since the whole model's queue is frozen
         # until A is resolved one way or the other.
         stuck = self._create_invoice()
-        stuck.write({
-            "tfhka_digitalization_state": "processing",
-            "tfhka_processing_started_at": fields.Datetime.now(),
-        })
+        stuck.write({"tfhka_digitalization_state": "processing"})
         queued = self._create_invoice()
         queued._tfhka_enqueue_digitalization()
 
@@ -410,10 +406,8 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         # 'error', regardless of how long ago the attempt started.
         inv = self._create_invoice()
         started_at = fields.Datetime.now() - timedelta(hours=1)
-        inv.write({
-            "tfhka_digitalization_state": "processing",
-            "tfhka_processing_started_at": started_at,
-        })
+        inv.write({"tfhka_digitalization_state": "processing"})
+        inv.write({"date_state": started_at})
         self.env["tfhka.api.log"].sudo().create({
             "company_id": self.company.id,
             "res_model": "account.move",
@@ -439,10 +433,8 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
     def test_recover_stuck_processing_ignores_log_from_an_unrelated_endpoint(self):
         inv = self._create_invoice()
         started_at = fields.Datetime.now() - timedelta(minutes=2)
-        inv.write({
-            "tfhka_digitalization_state": "processing",
-            "tfhka_processing_started_at": started_at,
-        })
+        inv.write({"tfhka_digitalization_state": "processing"})
+        inv.write({"date_state": started_at})
         # A successful call did happen for this document after the attempt
         # started, but not the submission itself (e.g. ConsultaNumeraciones,
         # which also logs with origin=invoice) -- must not count as proof
@@ -466,19 +458,14 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
     def test_recover_stuck_processing_orders_oldest_first(self):
         # Two stuck documents of the same model: an old one (past the grace
         # period, no log -> resolves to 'error') and a fresh one (within
-        # grace). Without ordering by tfhka_processing_started_at asc, the
-        # fresh one could be visited first and halt the loop before the old
-        # one is ever resolved.
+        # grace). Without ordering by date_state asc, the fresh one could be
+        # visited first and halt the loop before the old one is ever
+        # resolved.
         old = self._create_invoice()
-        old.write({
-            "tfhka_digitalization_state": "processing",
-            "tfhka_processing_started_at": fields.Datetime.now() - timedelta(minutes=5),
-        })
+        old.write({"tfhka_digitalization_state": "processing"})
+        old.write({"date_state": fields.Datetime.now() - timedelta(minutes=5)})
         fresh = self._create_invoice()
-        fresh.write({
-            "tfhka_digitalization_state": "processing",
-            "tfhka_processing_started_at": fields.Datetime.now(),
-        })
+        fresh.write({"tfhka_digitalization_state": "processing"})
 
         resolved = self.env["account.move"]._tfhka_recover_stuck_processing()
 

@@ -32,7 +32,7 @@ DATA_ERROR_TFHKA_CODES = {"203", "205"}
 QUEUE_BATCH_SIZE = 200
 
 # Safety margin absorbing clock drift between the Odoo app server (which
-# stamps tfhka_processing_started_at via fields.Datetime.now()) and the
+# stamps date_state via fields.Datetime.now()) and the
 # database server (which stamps tfhka.api.log's create_date) when checking
 # whether a log postdates a given attempt in _tfhka_reconcile_stuck_processing.
 # Measured up to ~2s between these two containers in this environment (and
@@ -246,7 +246,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         _tfhka_reconcile_stuck_processing's own time-based decision (error
         once STUCK_PROCESSING_GRACE_PERIOD has passed, otherwise left as-is).
 
-        Processed oldest-first (``tfhka_processing_started_at asc``) so that,
+        Processed oldest-first (``date_state asc``) so that,
         if more than one document of this model is stuck, an old one that's
         past the grace period gets resolved before a fresh one halts the
         loop -- order matters here, not just cosmetics.
@@ -260,7 +260,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         """
         stuck = self.search(
             [("tfhka_digitalization_state", "=", "processing")],
-            order="tfhka_processing_started_at asc",
+            order="date_state asc",
         )
         for record in stuck:
             resolved = record._tfhka_reconcile_stuck_processing()
@@ -280,7 +280,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 ("res_id", "=", self.id),
                 ("endpoint", "=", TFHKA_ENDPOINTS["emision"]),
                 ("success", "=", True),
-                ("create_date", ">=", self.tfhka_processing_started_at - CLOCK_SKEW_MARGIN),
+                ("create_date", ">=", self.date_state - CLOCK_SKEW_MARGIN),
             ],
             order="create_date desc",
             limit=1,
@@ -302,7 +302,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             )
             return True
 
-        elapsed = fields.Datetime.now() - self.tfhka_processing_started_at
+        elapsed = fields.Datetime.now() - self.date_state
         if elapsed > STUCK_PROCESSING_GRACE_PERIOD:
             minutes = STUCK_PROCESSING_GRACE_PERIOD.seconds // 60
             self.write({
