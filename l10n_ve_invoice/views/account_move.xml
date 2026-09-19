@@ -65,7 +65,10 @@
                 <field name="declaration_unique_of_customs" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
                 <field name="import_file_number_purchase_international" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
             </xpath>
-            <xpath expr="//field[@name='invoice_date']" position="after">
+            <!-- Placed before the customer label (not the field) so it lands
+                 right above the Rate Date row, matching the ticket's order:
+                 Invoice Date, Reception Date, Rate Date -->
+            <xpath expr="//label[@for='invoice_date'][@invisible=&quot;move_type not in ('out_invoice', 'out_refund', 'out_receipt')&quot;]" position="before">
                 <field name="invoice_reception_date"
                     options="{'datepicker': {'warn_future': true}}"
                     invisible="move_type not in ('out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt')"
