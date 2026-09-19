@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields
 
 class AccountRetentionAlertWizard(models.TransientModel):
     _name = 'account.retention.alert.wizard'

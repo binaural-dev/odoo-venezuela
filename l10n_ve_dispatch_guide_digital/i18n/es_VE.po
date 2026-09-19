@@ -155,8 +155,13 @@ msgstr "Estado de Digitalización TFHKA"
 
 #. module: l10n_ve_dispatch_guide_digital
 #: model:ir.model.fields.selection,name:l10n_ve_dispatch_guide_digital.selection__stock_picking__tfhka_digitalization_state__success
-msgid "TFHKA Digitalization Success"
-msgstr "Exitoso"
+msgid "Digitalized"
+msgstr "Digitalizado"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model:ir.model.fields.selection,name:l10n_ve_dispatch_guide_digital.selection__stock_picking__tfhka_digitalization_state__data_error
+msgid "Data Error"
+msgstr "Error de Datos"
 
 #. module: l10n_ve_dispatch_guide_digital
 #: model:ir.model.fields,field_description:l10n_ve_dispatch_guide_digital.field_stock_picking__tfhka_queued_at
@@ -167,6 +172,11 @@ msgstr "Fecha de Encolado TFHKA"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_picking_internal_search_inherit_tfhka_digitalization
 msgid "TFHKA: Error"
 msgstr "TFHKA: Error"
+
+#. module: l10n_ve_dispatch_guide_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_picking_internal_search_inherit_tfhka_digitalization
+msgid "TFHKA: Data Error"
+msgstr "TFHKA: Error de Datos"
 
 #. module: l10n_ve_dispatch_guide_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_picking_internal_search_inherit_tfhka_digitalization

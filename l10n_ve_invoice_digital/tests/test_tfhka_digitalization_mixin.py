@@ -1,7 +1,10 @@
 import json
+from datetime import timedelta
 from unittest.mock import patch
 
 from odoo import Command, fields
+from odoo.addons.l10n_ve_invoice_digital.services.tfhka_client import TfhkaBusinessError
+from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaDataError
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
@@ -170,6 +173,81 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertIn("Some unrelated business error", inv.tfhka_digitalization_error)
 
     # ------------------------------------------------------------------
+    # error vs data_error classification (by TFHKA business code)
+    # ------------------------------------------------------------------
+
+    def test_process_digitalization_data_error_code_203(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            raise TfhkaBusinessError("Missing required field", tfhka_code="203")
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "data_error")
+        self.assertIn("Missing required field", inv.tfhka_digitalization_error)
+
+    def test_process_digitalization_data_error_code_205(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            raise TfhkaBusinessError("Does not meet minimum validations", tfhka_code="205")
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "data_error")
+
+    def test_process_digitalization_other_tfhka_code_stays_grave_error(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            raise TfhkaBusinessError("Duplicate document", tfhka_code="201")
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    def test_process_digitalization_local_validation_is_a_data_error(self):
+        # TfhkaDataError is raised by tfhka.service.base/tfhka.document.service
+        # BEFORE any call to TFHKA (e.g. the customer's NIF is empty, the
+        # invoice date is missing) -- it has no .tfhka_code at all, but it
+        # must still classify as 'data_error', not the grave 'error'.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            raise TfhkaDataError("The 'NIF' field of the Customer cannot be empty for digitalization.")
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "data_error")
+        self.assertIn("NIF", inv.tfhka_digitalization_error)
+
+    def test_process_digitalization_error_without_tfhka_code_stays_grave_error(self):
+        # A plain UserError (401, HTTP != 200, RequestException, ...) has no
+        # .tfhka_code at all -- must default to the grave 'error' state, not
+        # crash on the getattr lookup.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=UserError("HTTP error 500: boom")):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    # ------------------------------------------------------------------
     # _tfhka_cron_process_queue: halt-on-error guard + FIFO halt
     # ------------------------------------------------------------------
 
@@ -196,6 +274,18 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.assertEqual(inv1.tfhka_digitalization_state, "error")
         self.assertEqual(inv2.tfhka_digitalization_state, "queued", "The 2nd document must not be touched once the 1st halts the queue.")
+
+    def test_cron_process_queue_does_nothing_while_model_has_a_data_error(self):
+        data_errored = self._create_invoice()
+        data_errored.write({"tfhka_digitalization_state": "data_error", "tfhka_digitalization_error": "bad field"})
+        queued = self._create_invoice()
+        queued._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        mock_generate.assert_not_called()
+        self.assertEqual(queued.tfhka_digitalization_state, "queued")
 
     def test_cron_process_queue_processes_all_when_all_succeed(self):
         inv1 = self._create_invoice()
@@ -225,6 +315,18 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual(errored.tfhka_digitalization_state, "success")
         self.assertEqual(queued.tfhka_digitalization_state, "success", "A successful retry must resume the rest of the queue right away.")
 
+    def test_retry_action_resumes_the_rest_of_the_queue_from_data_error(self):
+        data_errored = self._create_invoice()
+        data_errored.write({"tfhka_digitalization_state": "data_error", "tfhka_digitalization_error": "bad field"})
+        queued = self._create_invoice()
+        queued._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            data_errored.action_tfhka_retry_digitalization()
+
+        self.assertEqual(data_errored.tfhka_digitalization_state, "success")
+        self.assertEqual(queued.tfhka_digitalization_state, "success")
+
     def test_retry_action_does_not_resume_queue_when_retry_itself_fails(self):
         errored = self._create_invoice()
         errored.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
@@ -250,21 +352,64 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
     # _tfhka_recover_stuck_processing (crash-recovery on the next cron tick)
     # ------------------------------------------------------------------
 
-    def test_recover_stuck_processing_without_matching_log_requeues(self):
+    def test_recover_stuck_processing_without_matching_log_and_past_grace_period_errors(self):
+        # Well past STUCK_PROCESSING_GRACE_PERIOD (1 minute), no log evidence
+        # at all -- must not be silently requeued (that would risk a
+        # duplicate if TFHKA actually received it): a human must review it.
         inv = self._create_invoice()
         inv.write({
             "tfhka_digitalization_state": "processing",
-            "tfhka_processing_started_at": fields.Datetime.now(),
+            "tfhka_processing_started_at": fields.Datetime.now() - timedelta(minutes=2),
         })
 
         self.env["account.move"]._tfhka_recover_stuck_processing()
 
-        self.assertEqual(inv.tfhka_digitalization_state, "queued")
-        self.assertFalse(inv.tfhka_processing_started_at)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertTrue(inv.tfhka_digitalization_error)
+        self.assertIn("TFHKA", inv.tfhka_digitalization_error)
 
-    def test_recover_stuck_processing_with_matching_success_log_recovers_success(self):
+    def test_recover_stuck_processing_within_grace_period_is_left_untouched(self):
+        # 59s < the 1-minute grace period: no log yet is indistinguishable
+        # from "TFHKA hasn't answered/logged it yet" -- must not error out a
+        # call that may still be in flight.
         inv = self._create_invoice()
-        started_at = fields.Datetime.now()
+        inv.write({
+            "tfhka_digitalization_state": "processing",
+            "tfhka_processing_started_at": fields.Datetime.now() - timedelta(seconds=59),
+        })
+
+        resolved = self.env["account.move"]._tfhka_recover_stuck_processing()
+
+        self.assertFalse(resolved)
+        self.assertEqual(inv.tfhka_digitalization_state, "processing")
+        self.assertTrue(inv.tfhka_processing_started_at)
+
+    def test_recover_stuck_processing_within_grace_period_halts_only_this_model_queue(self):
+        # A halts on its own stuck 'processing' record (still fresh); B is a
+        # separate, unrelated 'queued' document of the SAME model -- it must
+        # not be touched either, since the whole model's queue is frozen
+        # until A is resolved one way or the other.
+        stuck = self._create_invoice()
+        stuck.write({
+            "tfhka_digitalization_state": "processing",
+            "tfhka_processing_started_at": fields.Datetime.now(),
+        })
+        queued = self._create_invoice()
+        queued._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        mock_generate.assert_not_called()
+        self.assertEqual(stuck.tfhka_digitalization_state, "processing")
+        self.assertEqual(queued.tfhka_digitalization_state, "queued")
+
+    def test_recover_stuck_processing_with_matching_success_log_recovers_success_even_when_old(self):
+        # An hour old -- well past the grace period -- but the log still
+        # wins: TFHKA actually received it, so it must be 'success', never
+        # 'error', regardless of how long ago the attempt started.
+        inv = self._create_invoice()
+        started_at = fields.Datetime.now() - timedelta(hours=1)
         inv.write({
             "tfhka_digitalization_state": "processing",
             "tfhka_processing_started_at": started_at,
@@ -293,7 +438,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
     def test_recover_stuck_processing_ignores_log_from_an_unrelated_endpoint(self):
         inv = self._create_invoice()
-        started_at = fields.Datetime.now()
+        started_at = fields.Datetime.now() - timedelta(minutes=2)
         inv.write({
             "tfhka_digitalization_state": "processing",
             "tfhka_processing_started_at": started_at,
@@ -316,7 +461,30 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.env["account.move"]._tfhka_recover_stuck_processing()
 
-        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    def test_recover_stuck_processing_orders_oldest_first(self):
+        # Two stuck documents of the same model: an old one (past the grace
+        # period, no log -> resolves to 'error') and a fresh one (within
+        # grace). Without ordering by tfhka_processing_started_at asc, the
+        # fresh one could be visited first and halt the loop before the old
+        # one is ever resolved.
+        old = self._create_invoice()
+        old.write({
+            "tfhka_digitalization_state": "processing",
+            "tfhka_processing_started_at": fields.Datetime.now() - timedelta(minutes=5),
+        })
+        fresh = self._create_invoice()
+        fresh.write({
+            "tfhka_digitalization_state": "processing",
+            "tfhka_processing_started_at": fields.Datetime.now(),
+        })
+
+        resolved = self.env["account.move"]._tfhka_recover_stuck_processing()
+
+        self.assertFalse(resolved)
+        self.assertEqual(old.tfhka_digitalization_state, "error")
+        self.assertEqual(fresh.tfhka_digitalization_state, "processing")
 
     # ------------------------------------------------------------------
     # _tfhka_digitalization_alert_data (top-of-page banner)
@@ -333,6 +501,14 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual([a["name"] for a in alerts], [errored.display_name])
         self.assertIn("model=account.move", alerts[0]["url"])
         self.assertIn("res_id=%s" % errored.id, alerts[0]["url"])
+
+    def test_alert_data_lists_data_errored_documents_too(self):
+        data_errored = self._create_invoice()
+        data_errored.write({"tfhka_digitalization_state": "data_error", "tfhka_digitalization_error": "bad field"})
+
+        alerts = self.env["account.move"]._tfhka_digitalization_alert_data(["account.move"])
+
+        self.assertEqual([a["name"] for a in alerts], [data_errored.display_name])
 
     def test_alert_data_empty_for_non_internal_user(self):
         errored = self._create_invoice()
