@@ -72,7 +72,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
     queue for each model one document at a time, waiting for each response
     before moving to the next.
 
-    Invariant maintained by that cron (see ``_tfhka_cron_step``): a given
+    Invariant maintained by that cron (see ``_tfhka_cron_process_queue``): a given
     model never has more than one document in 'processing' and never more
     than one in 'error' at the same time. A document in 'error' halts the
     whole queue until a human resolves it -- the queue never skips ahead of
@@ -117,7 +117,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         help="When tfhka_digitalization_state last changed. Kept up to date "
              "automatically (see write()); used by the cron to tell a "
              "healthy 'processing' attempt from one abandoned by an "
-             "interrupted run (see PROCESSING_TIMEOUT).",
+             "interrupted run (see STUCK_PROCESSING_GRACE_PERIOD).",
     )
     tfhka_digitalization_error = fields.Text(
         string="TFHKA Digitalization Error",
@@ -223,9 +223,9 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             )
             return False
 
-    def _tfhka_timeout_if_stuck(self):
+    def _tfhka_recover_stuck_processing(self):
         """Called on a single document found in 'processing' at the start
-        of a cron tick (see _tfhka_cron_step). A healthy attempt is never
+        of a cron tick (see _tfhka_cron_process_queue). A healthy attempt is never
         observed here: one cron tick always resolves 'processing' to
         'success'/'error' before it ends, so the only way a fresh tick can
         find one is a previous run that got interrupted mid-flight (Odoo
@@ -362,44 +362,10 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             return
         if self.search_count([("tfhka_digitalization_state", "in", ("error", "data_error"))]):
             return
-        message = _(
-            "TFHKA digitalization timed out: this document was left in "
-            "'Processing' for over %(minutes)s minute(s) without a "
-            "response, and was marked as an error."
-        ) % {"minutes": int(PROCESSING_TIMEOUT.total_seconds() // 60)}
-        self.write({
-            "tfhka_digitalization_state": "error",
-            "tfhka_digitalization_error": message,
-        })
-        self.message_post(body=message)
-
-    def _tfhka_cron_step(self):
-        """Advances this model's queue by exactly one document, in this
-        priority order:
-
-        1. A document in 'error' halts everything: returns False, nothing
-           else runs until a human resolves it (see
-           action_tfhka_retry_digitalization).
-        2. Otherwise, a document in 'processing' halts this step too (see
-           _tfhka_timeout_if_stuck for why, and what happens to it) --
-           returns False.
-        3. Otherwise, the single oldest 'queued' document is digitalized.
-
-        Returns True when a document was actually digitalized (whether it
-        ended in 'success' or 'error') so the caller knows there may be
-        more work to do; False when nothing happened this call (queue
-        empty, or halted by 1./2. above) -- the caller's signal to stop.
-        """
-        if self.search_count([("tfhka_digitalization_state", "=", "error")]):
-            return False
-        stuck = self.search([("tfhka_digitalization_state", "=", "processing")], limit=1)
-        if stuck:
-            stuck._tfhka_timeout_if_stuck()
-            return False
-        record = self.search(
+        queued = self.search(
             [("tfhka_digitalization_state", "=", "queued")],
             order="tfhka_queued_at asc, id asc",
-            limit=1,
+            limit=QUEUE_BATCH_SIZE,
         )
         for record in queued:
             success = record._tfhka_process_digitalization()
@@ -417,9 +383,9 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         one model's entire backlog before starting the next -- otherwise
         a large backlog in one model (e.g. account.move) would starve the
         others for this whole run, since they'd never get a turn until it
-        finished. A model drops out of the rotation once its own
-        _tfhka_cron_step() reports nothing more to do; the run ends once
-        every model has dropped out, or after QUEUE_BATCH_SIZE rounds.
+        finished. A model drops out of the rotation once its own queue is
+        empty or halts on an error; the run ends once every model has
+        dropped out, or after QUEUE_BATCH_SIZE rounds.
 
         ``model_names`` may include models that don't exist in this registry
         or never inherited this mixin (e.g. stock.picking when the dispatch
