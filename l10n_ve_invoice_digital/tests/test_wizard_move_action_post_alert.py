@@ -125,7 +125,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
         self.assertTrue(inv.is_digitalized)
         self.assertEqual(inv.tfhka_digitalization_state, "success")
 
-    def test_wizard_non_digital_journal_does_not_enqueue(self):
+    def test_wizard_non_digital_journal_marks_not_applicable(self):
         self.journal.digital_invoice = False
         inv = self._create_invoice(post=False)
         wizard = self.env['move.action.post.alert.wizard'].create({'move_id': inv.id})
@@ -133,7 +133,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
         wizard.action_confirm()
 
         self.assertEqual(inv.state, "posted")
-        self.assertEqual(inv.tfhka_digitalization_state, "none")
+        self.assertEqual(inv.tfhka_digitalization_state, "not_applicable")
 
     def test_wizard_no_move_id(self):
         wizard = self.env['move.action.post.alert.wizard'].create({'move_id': False})
@@ -159,3 +159,40 @@ class TestMoveActionPostAlertWizard(TransactionCase):
 
         self.assertEqual(inv.state, "posted")
         self.assertEqual(inv.tfhka_digitalization_state, "none")
+
+    def test_wizard_with_payment_enabled_and_non_digital_journal_marks_not_applicable(self):
+        # "digitalization with payment" only changes HOW an eligible move
+        # gets enqueued (manual button instead of auto at posting) -- it
+        # doesn't bypass the digital-journal requirement, since the manual
+        # "Generate Digital Invoice" button is hidden without one too (see
+        # account_move._compute_invisible_check). A non-digital journal is a
+        # dead end in either mode, so this must still become 'not_applicable'.
+        self.company.digitalization_with_payment_tfhka = True
+        self.journal.digital_invoice = False
+        inv = self._create_invoice(post=False)
+        wizard = self.env['move.action.post.alert.wizard'].create({'move_id': inv.id})
+
+        wizard.action_confirm()
+
+        self.assertEqual(inv.state, "posted")
+        self.assertEqual(inv.tfhka_digitalization_state, "not_applicable")
+
+    def test_enqueue_eligible_skips_not_applicable_for_non_invoice_move_type(self):
+        # Non-regression: a plain journal entry (not out_invoice/out_refund)
+        # on a non-digital journal must not be marked 'not_applicable' --
+        # it was never a digitalization candidate to begin with.
+        general_journal = self.env["account.journal"].create({
+            "name": "General Test",
+            "code": "GENT",
+            "type": "general",
+            "company_id": self.company.id,
+            "digital_invoice": False,
+        })
+        entry = self.env["account.move"].create({
+            "move_type": "entry",
+            "journal_id": general_journal.id,
+        })
+
+        entry._tfhka_enqueue_eligible_for_digitalization()
+
+        self.assertEqual(entry.tfhka_digitalization_state, "none")

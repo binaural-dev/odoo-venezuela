@@ -13,16 +13,17 @@
                        invisible="show_digital_dispatch_guide or tfhka_digitalization_state == 'success'" readonly="True"
                        widget="badge"
                        decoration-success="tfhka_digitalization_state == 'success'"
-                       decoration-danger="tfhka_digitalization_state == 'error'"
+                       decoration-danger="tfhka_digitalization_state in ('error', 'data_error')"
                        decoration-info="tfhka_digitalization_state == 'processing'"
-                       decoration-warning="tfhka_digitalization_state == 'queued'"/>
+                       decoration-warning="tfhka_digitalization_state == 'queued'"
+                       decoration-primary="tfhka_digitalization_state == 'none'"/>
                 <field name="tfhka_digitalization_error" string="Digitalization Error"
-                       invisible="tfhka_digitalization_state != 'error'" readonly="True"
+                       invisible="tfhka_digitalization_state not in ('error', 'data_error')" readonly="True"
                        groups="l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin"/>
             </xpath>
             <xpath expr="//button[@name='print_dispatch_guide']" position="after">
                 <button name="action_tfhka_retry_digitalization" string="Retry Digitalization" type="object"
-                        invisible="tfhka_digitalization_state != 'error'"
+                        invisible="tfhka_digitalization_state not in ('error', 'data_error')"
                         class="btn-danger"/>
             </xpath>
             <xpath expr="//button[@name='print_dispatch_guide']" position="attributes">
@@ -41,9 +42,10 @@
                        string="Digitalization Status"
                        widget="badge"
                        decoration-success="tfhka_digitalization_state == 'success'"
-                       decoration-danger="tfhka_digitalization_state == 'error'"
+                       decoration-danger="tfhka_digitalization_state in ('error', 'data_error')"
                        decoration-info="tfhka_digitalization_state == 'processing'"
                        decoration-warning="tfhka_digitalization_state == 'queued'"
+                       decoration-primary="tfhka_digitalization_state == 'none'"
                        optional="show"/>
             </xpath>
         </field>
@@ -58,6 +60,8 @@
                 <separator/>
                 <filter name="tfhka_digitalization_error" string="TFHKA: Error"
                         domain="[('tfhka_digitalization_state', '=', 'error')]"/>
+                <filter name="tfhka_digitalization_data_error" string="TFHKA: Data Error"
+                        domain="[('tfhka_digitalization_state', '=', 'data_error')]"/>
                 <filter name="tfhka_digitalization_queued" string="TFHKA: Queued"
                         domain="[('tfhka_digitalization_state', '=', 'queued')]"/>
             </xpath>

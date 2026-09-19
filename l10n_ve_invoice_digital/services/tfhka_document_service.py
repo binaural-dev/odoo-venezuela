@@ -2,7 +2,8 @@ import logging
 import re
 
 from odoo import _, fields, models
-from odoo.exceptions import UserError, ValidationError
+
+from .tfhka_service_base import TfhkaDataError
 
 _logger = logging.getLogger(__name__)
 
@@ -66,7 +67,7 @@ class TfhkaDocumentService(models.AbstractModel):
             if invoice.journal_id.sequence_id and invoice.journal_id.sequence_id.prefix:
                 series = re.sub(r'[^a-zA-Z0-9]', '', invoice.journal_id.sequence_id.prefix)
             else:
-                raise UserError(_("The selected series is not configured"))
+                raise TfhkaDataError(_("The selected series is not configured"))
         return series
 
     # ------------------------------------------------------------------
@@ -271,7 +272,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
         if invoice.multi_currency_invoice:
             if not foreign_currency:
-                raise UserError(
+                raise TfhkaDataError(
                     _(
                         "This invoice is flagged as multi-currency but its pricelist is "
                         "in the company base currency (%(currency)s), so there is no "
@@ -280,7 +281,7 @@ class TfhkaDocumentService(models.AbstractModel):
                     % {"currency": base_currency.name}
                 )
             if not invoice.line_currency_id:
-                raise UserError(
+                raise TfhkaDataError(
                     _(
                         "This invoice is flagged as multi-currency but no 'Line Currency' "
                         "has been selected."
@@ -363,7 +364,7 @@ class TfhkaDocumentService(models.AbstractModel):
         )
         rate = rate_values.get("foreign_rate")
         if not rate:
-            raise UserError(
+            raise TfhkaDataError(
                 _(
                     "No %(currency)s exchange rate found for %(date)s. Please configure "
                     "the currency rate before digitalizing this document."
@@ -381,7 +382,7 @@ class TfhkaDocumentService(models.AbstractModel):
         """
         missing = currencies.filtered(lambda currency: not currency.code_tfhka)
         if missing:
-            raise UserError(
+            raise TfhkaDataError(
                 _(
                     "The currency %(currencies)s has no 'Code TFHKA' configured. Set it "
                     "in Accounting > Configuration > Currencies before digitalizing this "
@@ -453,7 +454,7 @@ class TfhkaDocumentService(models.AbstractModel):
                 if due_date_obj >= emission_date:
                     due_date = due_date_obj.strftime("%d/%m/%Y")
                 else:
-                    raise ValidationError(_("The expiration date cannot be less than the digitization date."))
+                    raise TfhkaDataError(_("The expiration date cannot be less than the digitization date."))
             else:
                 due_date = emission_date.strftime("%d/%m/%Y")
 
@@ -497,7 +498,7 @@ class TfhkaDocumentService(models.AbstractModel):
             # O19: invoice_date_display es la fecha fiscal del documento
             # (invoice_date quedó reservada al cálculo de la tasa de cambio).
             if not record.invoice_date_display:
-                raise UserError(_("The invoice date is not defined."))
+                raise TfhkaDataError(_("The invoice date is not defined."))
 
             # La moneda del encabezado es la del contexto, sin literales: cubre
             # VES, USD, EUR o cualquier otra moneda con code_tfhka cargado.
@@ -730,9 +731,9 @@ class TfhkaDocumentService(models.AbstractModel):
 
                 if payment_forms:
                     if len(payment_forms) > 5:
-                        raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
+                        raise TfhkaDataError(_("The maximum number of payment methods is 5. Please check your payment methods."))
                     if any(not method.get('forma') for method in payment_forms):
-                        raise ValidationError(_("The payment method code is not configured in the journal."))
+                        raise TfhkaDataError(_("The payment method code is not configured in the journal."))
                     totals["formasPago"] = payment_forms
 
             if amounts_foreign:
@@ -773,7 +774,7 @@ class TfhkaDocumentService(models.AbstractModel):
         for group in self._get_tax_groups(invoice):
             group_name = group.get("group_name")
             if group_name not in TFHKA_TAX_CODE:
-                raise UserError(
+                raise TfhkaDataError(
                     _(
                         "The tax group '%(group)s' has no TFHKA equivalent configured. "
                         "Please review the taxes applied to this document."
@@ -850,7 +851,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
                 tax_code = tax_mapping.get(tax_rate)
                 if tax_code is None:
-                    raise UserError(
+                    raise TfhkaDataError(
                         _(
                             "The tax rate %(rate)s%% on product '%(product)s' is not supported "
                             "by TFHKA digitalization (allowed rates: 0, 8, 16, 31)."
@@ -936,9 +937,8 @@ class TfhkaDocumentService(models.AbstractModel):
 
     def _build_payment_info(self, invoice, payment, ctx=None):
         ctx = ctx or self._get_currency_context(invoice)
-        payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
-        payment_currency = payment_id.currency_id or invoice.company_id.currency_id
-        payment_method = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else False
+        payment_currency = payment.currency_id or invoice.company_id.currency_id
+        payment_method = payment.journal_id.payment_method_code if payment.journal_id.payment_method_code else False
 
         # La moneda del pago se reporta con su propio code_tfhka, igual que el
         # resto del payload: 17.0 mandaba aquí el nombre de la moneda de Odoo,
@@ -950,13 +950,13 @@ class TfhkaDocumentService(models.AbstractModel):
             exchange_rate = None
         else:
             # Pago en divisa: se incluye el tipo de cambio del propio pago.
-            exchange_rate = "{:.4f}".format(payment_id.foreign_rate)
+            exchange_rate = "{:.4f}".format(payment.foreign_rate)
 
         payment_info = {
             "descripcion": payment_method.description if payment_method else "",
-            "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
+            "fecha": payment.date.strftime("%d/%m/%Y") if payment.date else "",
             "forma": payment_method.code if payment_method else "",
-            "monto": str(round(payment_id.amount, 2)),
+            "monto": str(round(payment.amount, 2)),
             "moneda": currency_code,
         }
 
@@ -966,12 +966,7 @@ class TfhkaDocumentService(models.AbstractModel):
         return payment_info
 
     def _prepare_additional_information(self, invoice):
-        additional_information = []
-        # for record in invoice:
-        #     if record.guide_number:
-        #         additional_information.append({
-        #             "campo": "numeroGuia",
-        #             "valor": str(record.guide_number),
-        #         })
-
-        return additional_information
+        """Hook de extensión: información adicional del documento (sección
+        ``infoAdicional``). Por defecto vacío -- el número de guía ya se
+        reporta vía ``_get_dispatch_guide_reference`` (sección ``FacturaGuia``)."""
+        return []
