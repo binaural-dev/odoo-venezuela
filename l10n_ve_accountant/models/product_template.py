@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
 
@@ -178,12 +180,31 @@ class ProductTemplate(models.Model):
                         _("- %s: No tax is assigned and the company has no "
                           "default fiscal configuration.") % label
                     )
-            elif len(tax_ids) > 1:
-                errors.append(
-                    _("- %s: Has %s taxes assigned (exactly one tax is "
-                      "required due to local fiscal policies).")
-                    % (label, len(tax_ids))
-                )
+
+            for tax_company_id, company_taxes_for_id in taxes_by_company.items():
+                if len(company_taxes_for_id) > 1:
+                    # .sudo(): a shared product can carry a tax that belongs
+                    # to a company the current user doesn't have access to
+                    # (multi-company record rule on res.company) - same risk
+                    # already handled above for account.tax.company_id. Only
+                    # the name is read here, purely to build the error
+                    # message.
+                    tax_company_name = (
+                        self.env['res.company'].sudo().browse(tax_company_id).name
+                        if tax_company_id
+                        else _("no company")
+                    )
+                    errors.append(
+                        _("- %(label)s: Has %(count)s taxes assigned for "
+                          "company '%(company)s' (exactly one tax per "
+                          "company is required due to local fiscal "
+                          "policies).")
+                        % {
+                            "label": label,
+                            "count": len(company_taxes_for_id),
+                            "company": tax_company_name,
+                        }
+                    )
 
         if errors:
             name = vals.get('name') or ''
