@@ -304,37 +304,53 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
     # ------------------------------------------------------------------
 
     def test_retry_action_resumes_the_rest_of_the_queue_on_success(self):
+        # action_tfhka_retry_digitalization() only re-queues the document --
+        # the cron's next tick is what actually resumes the rest of the
+        # queue (see the method's docstring: digitalization is only ever
+        # triggered by the cron step, never inline by a button/request).
         errored = self._create_invoice()
+        errored._tfhka_enqueue_digitalization()
         errored.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
         queued = self._create_invoice()
         queued._tfhka_enqueue_digitalization()
 
+        errored.action_tfhka_retry_digitalization()
+        self.assertEqual(errored.tfhka_digitalization_state, "queued")
+
         with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
-            errored.action_tfhka_retry_digitalization()
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
 
         self.assertEqual(errored.tfhka_digitalization_state, "success")
-        self.assertEqual(queued.tfhka_digitalization_state, "success", "A successful retry must resume the rest of the queue right away.")
+        self.assertEqual(queued.tfhka_digitalization_state, "success", "A successful retry must resume the rest of the queue on the cron's next tick.")
 
     def test_retry_action_resumes_the_rest_of_the_queue_from_data_error(self):
         data_errored = self._create_invoice()
+        data_errored._tfhka_enqueue_digitalization()
         data_errored.write({"tfhka_digitalization_state": "data_error", "tfhka_digitalization_error": "bad field"})
         queued = self._create_invoice()
         queued._tfhka_enqueue_digitalization()
 
+        data_errored.action_tfhka_retry_digitalization()
+        self.assertEqual(data_errored.tfhka_digitalization_state, "queued")
+
         with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
-            data_errored.action_tfhka_retry_digitalization()
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
 
         self.assertEqual(data_errored.tfhka_digitalization_state, "success")
         self.assertEqual(queued.tfhka_digitalization_state, "success")
 
     def test_retry_action_does_not_resume_queue_when_retry_itself_fails(self):
         errored = self._create_invoice()
+        errored._tfhka_enqueue_digitalization()
         errored.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
         queued = self._create_invoice()
         queued._tfhka_enqueue_digitalization()
 
+        errored.action_tfhka_retry_digitalization()
+        self.assertEqual(errored.tfhka_digitalization_state, "queued")
+
         with patch(GENERATE_DIGITAL_PATCH, side_effect=UserError("still broken")):
-            errored.action_tfhka_retry_digitalization()
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
 
         self.assertEqual(errored.tfhka_digitalization_state, "error")
         self.assertEqual(queued.tfhka_digitalization_state, "queued")
