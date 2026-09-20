@@ -126,6 +126,16 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
              "Cleared once the document digitalizes successfully.",
     )
 
+    def write(self, vals):
+        """Stamps date_state on every tfhka_digitalization_state change --
+        the crash-recovery guard (_tfhka_reconcile_stuck_processing) reads
+        it to tell how long a document has been in its current state, so
+        this must never be left unset when the state moves into
+        'processing' (or any other value)."""
+        if "tfhka_digitalization_state" in vals:
+            vals = dict(vals, date_state=fields.Datetime.now())
+        return super().write(vals)
+
     def _tfhka_commit(self):
         """Commits the current transaction -- except under the test runner,
         where Odoo's test framework forbids cr.commit()/rollback() (it needs
