@@ -477,21 +477,22 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         return alerts
 
     def action_tfhka_retry_digitalization(self):
-        """Button shown when state == 'error'. Only re-queues the document
-        -- the cron (never this request) is what actually digitalizes it,
-        so a double-click before the view refreshes the button's
-        visibility, or two sessions retrying the same document, can never
-        race the cron into moving the same document to 'processing' twice.
-        Silently ignores any record not currently in 'error'.
+        """Button shown when state is 'error' or 'data_error' (see the
+        views). Only re-queues the document -- the cron (never this
+        request) is what actually digitalizes it, so a double-click before
+        the view refreshes the button's visibility, or two sessions
+        retrying the same document, can never race the cron into moving
+        the same document to 'processing' twice. Silently ignores any
+        record not currently in 'error'/'data_error'.
 
         Deliberately does not go through _tfhka_enqueue_digitalization():
         that resets tfhka_queued_at to now, which would send the document
         to the back of the FIFO queue -- behind every document queued
-        while it sat in 'error'. A retry must resume the queue at the
-        same position it halted it, so tfhka_queued_at is left untouched
-        (e.g. document #5 of 10 fails and gets retried: it must be
-        processed next, not after #6-#10)."""
-        eligible = self.filtered(lambda record: record.tfhka_digitalization_state == "error")
+        while it sat in 'error'/'data_error'. A retry must resume the
+        queue at the same position it halted it, so tfhka_queued_at is
+        left untouched (e.g. document #5 of 10 fails and gets retried: it
+        must be processed next, not after #6-#10)."""
+        eligible = self.filtered(lambda record: record.tfhka_digitalization_state in ("error", "data_error"))
         eligible.write({
             "tfhka_digitalization_state": "queued",
             "tfhka_digitalization_error": False,
