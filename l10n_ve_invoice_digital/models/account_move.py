@@ -1,3 +1,5 @@
+import json
+
 from odoo import models, api, fields, _
 from odoo.exceptions import ValidationError
 
@@ -160,6 +162,26 @@ class AccountMove(models.Model):
 
         eligible = self.filtered(lambda record: record._tfhka_is_eligible_for_digitalization())
         eligible._tfhka_enqueue_digitalization()
+
+    def _tfhka_reconcile_success_from_log(self, log_entry):
+        """See ``tfhka.digitalization.mixin._tfhka_recover_stuck_processing``:
+        replays ``tfhka.document.service._register_success`` using the
+        response TFHKA already gave us for the interrupted attempt, instead
+        of resubmitting. ``document_number`` is read back from the original
+        *request* (not recomputed) because, in normal mode, it was TFHKA's
+        own last-number-at-the-time plus one -- recomputing it now would give
+        a different (wrong) number, since TFHKA's counter already moved past
+        it once this document was accepted."""
+        self.ensure_one()
+        response = json.loads(log_entry.response_payload)
+        request_payload = json.loads(log_entry.request_payload)
+        document_number = (
+            request_payload.get("documentoElectronico", {})
+            .get("encabezado", {})
+            .get("identificacionDocumento", {})
+            .get("numeroDocumento")
+        )
+        self.env["tfhka.document.service"]._register_success(self, response, document_number)
 
     def _is_eligible_for_tfhka(self):
         """Check if the invoice should process TFHKA logic."""
