@@ -141,6 +141,59 @@ class TestRetentionIvaWizard(RetentionTestCommon):
         with self.assertRaises(UserError):
             wiz.generate_txt()
 
+    def test_06_retention_iva_rif_agente_includes_prefix_vat(self):
+        """Ticket 15038: el TXT del SENIAT debe llevar el literal (J/V/E/G/P/C)
+        del RIF del agente de retención (la compañía), no solo los dígitos."""
+        self.company.partner_id.write({"prefix_vat": "J", "vat": "123456789"})
+        ret = self._create_iva_retention(amount=1000.0)
+        data = self.IvaWizard._retention_iva(ret)
+        self.assertEqual(
+            data[0]["RIF del agente de retención"], "J123456789",
+            "El TXT del SENIAT debe anteponer el literal del RIF de la "
+            "compañía, no solo los dígitos.",
+        )
+
+    def test_07_retention_iva_rif_agente_without_confirmed_prefix_vat_is_v(self):
+        """Documenta, a nivel de _retention_iva() (el método de datos, sin
+        pasar por generate_txt() y su guard de B6), qué literal saldría si
+        prefix_vat nunca se confirmó: el default 'V' del campo Selection --
+        correcto solo si el RIF real de la compañía empieza en efecto por
+        'V'. Es justo el caso que test_08 bloquea en el punto de emisión."""
+        self.company.partner_id.write({"vat": "123456789"})
+        self.assertEqual(
+            self.company.partner_id.prefix_vat, "V",
+            "Precondición del test: prefix_vat sin confirmar debe seguir "
+            "siendo el default 'V' del campo Selection.",
+        )
+        self.assertFalse(
+            self.company.partner_id.prefix_vat_confirmed,
+            "Precondición del test: prefix_vat_confirmed debe seguir en "
+            "False mientras nadie lo haya tocado.",
+        )
+        ret = self._create_iva_retention(amount=1000.0)
+        data = self.IvaWizard._retention_iva(ret)
+        self.assertEqual(data[0]["RIF del agente de retención"], "V123456789")
+
+    def test_08_generate_txt_blocks_unconfirmed_prefix_vat(self):
+        """Ticket 15038 (B6 del review del PR #1282): con prefix_vat sin
+        confirmar, generate_txt() debe rechazar la emisión del TXT del
+        SENIAT en vez de emitirlo con un literal que nadie revisó."""
+        self.company.partner_id.write({"vat": "123456789"})
+        self._create_iva_retention(amount=1000.0)
+        wiz = self.IvaWizard.create({
+            "date_start": date.today().replace(day=1),
+            "date_end": date.today(),
+        })
+        with self.assertRaises(
+            UserError,
+            msg="generate_txt() debe bloquear la emisión mientras "
+            "prefix_vat_confirmed sea False.",
+        ):
+            wiz.generate_txt()
+
+        self.company.partner_id.write({"prefix_vat_confirmed": True})
+        wiz.generate_txt()
+
 
 @tagged("post_install", "-at_install", "arcv_report_full")
 class TestArcReportFull(RetentionTestCommon):

@@ -162,6 +162,10 @@ class WizardAccountingReports(models.TransientModel):
         ]
         return domain
 
+    def _filter_retention_moves(self, moves):
+        """Hook para módulos que segmentan el libro (p.ej. binaural_operative)."""
+        return moves
+
     def search_moves(self):
         retention = self.env["account.retention"]
         res_moves = super().search_moves()
@@ -169,6 +173,7 @@ class WizardAccountingReports(models.TransientModel):
         domain = self._get_retention_domain()
         retention_ids = retention.search(domain)
         moves = retention_ids.mapped("retention_line_ids.move_id")
+        moves = self._filter_retention_moves(moves)
         res_moves |= moves
 
         return res_moves
