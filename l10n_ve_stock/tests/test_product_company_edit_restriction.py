@@ -165,6 +165,17 @@ class TestProductCompanyEditRestriction(TransactionCase):
         template.write({"company_id": False})
         self.assertFalse(self.template.company_id)
 
+    def test_write_company_id_via_sudo_without_group_raises_access_error(self):
+        """sudo() does not change env.uid, only bypasses access rights - it
+        must not be usable as an implicit bypass of this business
+        restriction. A sudo() call still running as the unprivileged user
+        must be blocked from assigning a specific, different company just
+        like a non-sudo call would."""
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        template = self.template.with_user(self.user).sudo()
+        with self.assertRaises(AccessError):
+            template.write({"company_id": other_company.id})
+
     def test_write_company_id_on_variant_without_group_raises_access_error(self):
         """company_id on product.product is a writable related field
         (materialized by _inherits, not readonly on the core field) -
