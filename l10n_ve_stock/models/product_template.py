@@ -89,7 +89,7 @@ class ProductTemplate(models.Model):
         if self.env.user.has_group("l10n_ve_stock.group_edit_product_company"):
             return
 
-        new_company = vals["company_id"] or False
+        new_company = vals["company_id"]
         if not self:
             # create(): no existing record to compare against. copy_data()
             # always sends company_id (field has no copy=False), so
