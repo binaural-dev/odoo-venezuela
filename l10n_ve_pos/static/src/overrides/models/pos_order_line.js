@@ -70,7 +70,19 @@ patch(PosOrderline.prototype, {
       // "Foreign Product Price" is a Decimal Precision on the res.company
       // used for catalog-level foreign prices. Higher precision than a
       // monetary rounding (which is money-level).
-      const dp = this.pos?.dp?.["Foreign Product Price"];
+      //
+      // OJO Odoo 19: en la orderline las decimal.precision llegan en
+      // `this.models["decimal.precision"]` (así las lee el core, p. ej.
+      // pos_order_line.js busca "Product Unit"/"Product Price"). El
+      // `this.pos.dp[...]` de Odoo 17 NO existe en 19 —de hecho `this.pos` no
+      // existe en la línea—, así que leerlo devolvía undefined y caíamos SIEMPRE
+      // al fallback de 2 decimales: el precio unitario foráneo se redondeaba a 2
+      // dp y, al multiplicarlo por la cantidad, la suma de líneas se desviaba del
+      // total que el PdV cobró (ticket #15106).
+      const dpRecord = this.models?.["decimal.precision"]?.find?.(
+        (dp) => dp.name === "Foreign Product Price"
+      );
+      const dp = Number(dpRecord?.digits);
       if (Number.isInteger(dp) && dp >= 0) {
         return dp;
       }
@@ -90,13 +102,16 @@ patch(PosOrderline.prototype, {
       if (this._is_order_in_foreign_currency()) {
         return baseUnitPrice;
       }
-      const frozenRate = this._refundOriginalRate();
-      if (frozenRate != null) {
-        return baseUnitPrice * frozenRate;
-      }
       const order = this.order_id;
       if (!order || typeof order.localToForeign !== "function") {
         return 0;
+      }
+      const frozenRate = this._refundOriginalRate();
+      if (frozenRate != null) {
+        // Raw (no money rounding) main→foreign at the frozen sale rate; the
+        // caller rounds with the catalog dp. Same engine primitive as the
+        // live path, just with doRound = false.
+        return order.localToForeignAtRate(baseUnitPrice, frozenRate, false);
       }
       // Raw (no rounding) — caller decides how to round.
       return order.localToForeign(baseUnitPrice, false);
@@ -176,7 +191,20 @@ patch(PosOrderline.prototype, {
       }
       const frozenRate = this._refundOriginalRate();
       if (frozenRate != null) {
-        return order.roundForeignMoney(localAmount * frozenRate);
+        // main→foreign at the ORIGINAL sale's frozen rate, via the shared
+        // engine primitive (same rounding as the live localToForeign).
+        return order.localToForeignAtRate(localAmount, frozenRate);
+      }
+      // Reopened (synced) order — e.g. shown in the ticket screen: value each
+      // line at the rate the order was SOLD at, not today's live rate, so the
+      // per-line foreign amount matches the order-level foreign totals
+      // (pos_order.js::_isFrozenRateOrder). The live in-progress order is
+      // excluded, so counter sales keep converting at the live rate.
+      if (
+        typeof order._isFrozenRateOrder === "function" &&
+        order._isFrozenRateOrder()
+      ) {
+        return order._frozenLocalToForeign(localAmount);
       }
       return order.localToForeign(localAmount);
     },

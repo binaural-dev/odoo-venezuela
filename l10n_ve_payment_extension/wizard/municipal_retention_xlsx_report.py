@@ -24,6 +24,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
     )
 
     def print_xlsx(self):
+        self.env.company._check_prefix_vat_confirmed_for_fiscal_documents()
         domain = self._get_municipal_retention_domain()
         retentions_count = self.env["account.retention"].search_count(domain)
         do_not_validate_missing_tax_authorities_name_per_company = self.env.context.get(
@@ -73,7 +74,7 @@ class MunicipalRetentionXlsxReport(models.TransientModel):
         worksheet2.write("A8", "AGENTE DE RETENCIÓN:", bold)
         worksheet2.write("C8", company.name)
         worksheet2.write("A9", "NUMERO DE REGISTRO UNICO DE INFORMACION FISCAL:", bold)
-        worksheet2.write("D9", company.partner_id.vat)
+        worksheet2.write("D9", f"{company.partner_id.prefix_vat or ''}{company.partner_id.vat or ''}")
         worksheet2.write("A10", "DIRECCION FISCAL:", bold)
         worksheet2.write("B10", company.street)
         date = get_current_date_format(self.date_start)

@@ -17,6 +17,7 @@ class TxtWizard(models.TransientModel):
             raise UserError(_("You must enter a start and end date"))
         if not self.env.company.vat:
             raise UserError(_("No VAT number for company %s" % self.env.company.name))
+        self.env.company._check_prefix_vat_confirmed_for_fiscal_documents()
         retention_count = self.env["account.retention"].search_count(
             [
                 ("date", ">=", self.date_start),
@@ -47,7 +48,10 @@ class TxtWizard(models.TransientModel):
         data = []
         for line in retentions.mapped("retention_line_ids"):
             line_data = {}
-            line_data["RIF del agente de retención"] = line.retention_id.company_id.partner_id.vat
+            line_data["RIF del agente de retención"] = (
+                (line.retention_id.company_id.partner_id.prefix_vat or "")
+                + (line.retention_id.company_id.partner_id.vat or "")
+            )
             line_data["Período impositivo"] = line.retention_id.date.strftime("%Y%m")
             line_data["Fecha de factura"] = line.move_id.invoice_date_display.strftime("%Y-%m-%d")
             line_data["Tipo de operación"] = "C"
