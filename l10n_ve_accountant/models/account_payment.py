@@ -184,6 +184,19 @@ class AccountPayment(models.Model):
                 payment.currency_id == payment.company_id.foreign_currency_id
             )
 
+    @api.depends('payment_type')
+    def _compute_available_journal_ids(self):
+        super(AccountPayment, self)._compute_available_journal_ids()
+        for pay in self:
+            if pay.payment_type == 'inbound':
+                pay.available_journal_ids = pay.available_journal_ids.filtered(
+                    lambda journal: journal.inbound_payment_method_line_ids.payment_account_id
+                )
+            else:
+                pay.available_journal_ids = pay.available_journal_ids.filtered(
+                    lambda journal: journal.outbound_payment_method_line_ids.payment_account_id
+                )
+
     @api.model_create_multi
     def create(self, vals_list):
         """
