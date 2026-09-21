@@ -1,4 +1,4 @@
-def migrate(cr, installed_version):
+def migrate(cr, version):
     cr.execute(
         """
         DELETE from ir_model_data where module = 'l10n_ve_stock' and name ilike 'group_hide_add_new_product_in_dispatch'

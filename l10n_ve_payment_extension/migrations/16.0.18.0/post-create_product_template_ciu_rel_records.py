@@ -1,4 +1,4 @@
-def migrate(cr, installed_version):
+def migrate(cr, version):
     cr.execute(
         """
         DELETE FROM product_template_ciu_rel;
