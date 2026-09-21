@@ -485,6 +485,13 @@ class TestSaleOrderInvoice(TransactionCase):
             "foreign_currency_id": self.currency_usd.id,
             "date_order": old_date,
         })
+        # Force the compute on `order` alone before duplicating (same idiom
+        # as test_05/test_06): otherwise `order` and `duplicate` recompute
+        # together as a single multi-record batch, which trips the
+        # preexisting (unrelated) self.foreign_rate-vs-sale.foreign_rate bug
+        # a few lines below in _compute_rate instead of exercising the
+        # per-company guard this test targets.
+        self.assertIsNotNone(order.foreign_rate)
 
         # Active session company stays self.company (company A) on purpose:
         # duplicating must still resolve against the order's own company.
