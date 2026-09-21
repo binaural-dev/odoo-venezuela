@@ -443,6 +443,61 @@ class TestSaleOrderInvoice(TransactionCase):
         )
         _logger.info("test_06_duplicate_manual_rate_order_also_updates_rate --- successfully")
 
+    def test_07_duplicate_order_uses_own_company_not_active_session_company(self):
+        """_compute_rate must resolve the rate/config against the order's own
+        company_id, not the active session company (ticket #15340, follow-up
+        of #13998: making foreign_rate copy=False makes this guard reachable
+        on duplicate, so a session-company mismatch now matters)."""
+        self.company.update_sale_order_rate_using_date_order = False
+
+        other_company = self.env["res.company"].create({
+            "name": "Otra Compañia (tasa distinta)",
+            "currency_id": self.currency_vef.id,
+            "currency_foreign_id": self.currency_usd.id,
+            "update_sale_order_rate_using_date_order": False,
+        })
+
+        rate_model = self.env["res.currency.rate"]
+        rate_model.search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "in", [self.company.id, other_company.id]),
+            ("name", "=", fields.Date.today()),
+        ]).unlink()
+        rate_model.create({
+            "currency_id": self.currency_usd.id,
+            "company_id": self.company.id,
+            "name": fields.Date.today(),
+            "rate": 1 / 200.0,
+        })
+        rate_model.create({
+            "currency_id": self.currency_usd.id,
+            "company_id": other_company.id,
+            "name": fields.Date.today(),
+            "rate": 1 / 500.0,
+        })
+
+        old_date = fields.Datetime.now() - timedelta(days=60)
+        order = self.env["sale.order"].with_company(other_company).create({
+            "partner_id": self.partner.id,
+            "company_id": other_company.id,
+            "foreign_currency_id": self.currency_usd.id,
+            "date_order": old_date,
+        })
+
+        # Active session company stays self.company (company A) on purpose:
+        # duplicating must still resolve against the order's own company.
+        duplicate = order.copy()
+
+        self.assertAlmostEqual(
+            duplicate.foreign_rate, 500.0, places=4,
+            msg="duplicating an order must recompute the rate against its "
+                "own company_id, not the session's active company",
+        )
+        _logger.info(
+            "test_07_duplicate_order_uses_own_company_not_active_session_company"
+            " --- successfully"
+        )
+
 
 @tagged("post_install", "-at_install", "l10n_ve_sale")
 class TestSaleOrderForeignTotals(TransactionCase):
