@@ -84,7 +84,7 @@ class ProductTemplate(models.Model):
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def _check_company_id_edit_allowed(self, vals):
-        if "company_id" not in vals or self.env.su:
+        if "company_id" not in vals:
             return
         if self.env.user.has_group("l10n_ve_stock.group_edit_product_company"):
             return
