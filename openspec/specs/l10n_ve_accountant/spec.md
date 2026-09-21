@@ -447,3 +447,22 @@ Cuando una línea de extracto (`account.bank.statement.line`) tiene `foreign_amo
 
 - **WHEN** se registra una línea de extracto con `foreign_amount` positivo
 - **THEN** la línea de liquidez recibe ese monto como `foreign_debit` y la contrapartida como `foreign_credit`, ambas sin recálculo posterior
+
+### Requirement: Importe alterno de la línea analítica proporcional a su distribución
+
+El override de `account.move.line._prepare_analytic_distribution_line` DEBE (MUST) inyectar `foreign_amount` en el diccionario devuelto por el método nativo, calculado como `-foreign_balance * distribution / 100.0` — o, para la cuenta cuya distribución completa el 100% de su plan, como `-foreign_balance * (100 - total_previo_del_plan) / 100.0`, tomando ese total previo ANTES de que el propio `super()` lo mute (evita el doble conteo que inhabilitaría permanentemente esta rama de cierre). El parámetro `account_ids` recibido NO DEBE (MUST NOT) asumirse como un único id: es la clave cruda del diccionario `analytic_distribution`, que el núcleo une con comas cuando una sola distribución abarca cuentas de más de un plan analítico a la vez; el método DEBE (MUST) iterar sobre todos los ids de esa clave (vía `browse(map(int, account_ids.split(","))).exists()`), igual que hace el método nativo al que llama por `super()`.
+
+#### Scenario: Distribución exacta entre dos cuentas del mismo plan
+
+- **WHEN** una línea con `foreign_balance` de 40 se distribuye 60%/40% entre dos cuentas analíticas del mismo plan
+- **THEN** la primera línea analítica recibe `foreign_amount = -24` y la segunda `foreign_amount = -16`, cada una distinta y ninguna igual al `foreign_balance` completo
+
+#### Scenario: Distribución de tres cuentas con porcentajes que no reducen exacto
+
+- **WHEN** una línea se distribuye 33.34%/33.33%/33.33% entre tres cuentas del mismo plan
+- **THEN** la suma de los `foreign_amount` de las tres líneas analíticas es exactamente `-foreign_balance`, sin perder ni ganar una fracción por arrastre de redondeo
+
+#### Scenario: Una sola clave de distribución abarca dos planes analíticos a la vez
+
+- **WHEN** una línea distribuye el 100% de su importe a una clave que combina una cuenta del plan A y una cuenta del plan B (`"id_a,id_b": 100.0`)
+- **THEN** se crea una única línea analítica con ambas columnas de plan pobladas y `foreign_amount` igual a `-foreign_balance`, sin lanzar `ValueError`
