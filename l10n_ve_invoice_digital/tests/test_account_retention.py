@@ -133,6 +133,14 @@ class TestAccumulatedRate(TransactionCase):
             'pay_from': 0.13,
         })
 
+        # _check_islr_concept_amounts (l10n_ve_payment_extension) requires the
+        # invoice's own product to advertise the same payment_concept as the
+        # retention line built from it (account_retention.py:684-690) --
+        # without this, every ISLR retention built from self.product fails
+        # action_post() with "the payment concept does not match any product
+        # on that invoice", regardless of anything else in the fixture.
+        self.product.payment_concept = self.payment_concept.id
+
         self.payment_concept.write({"line_payment_concept_ids": [(6, 0, [self.line_payment_concept.id])]})
 
         self.partner_a = self.env["res.partner"].create({
