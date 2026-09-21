@@ -449,6 +449,8 @@ class TestSaleOrderInvoice(TransactionCase):
         of #13998: making foreign_rate copy=False makes this guard reachable
         on duplicate, so a session-company mismatch now matters)."""
         self.company.update_sale_order_rate_using_date_order = False
+        # Shared across companies so _check_company doesn't reject the order.
+        self.partner.company_id = False
 
         other_company = self.env["res.company"].create({
             "name": "Otra Compañia (tasa distinta)",
