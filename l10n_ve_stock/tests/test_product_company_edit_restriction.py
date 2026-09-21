@@ -117,6 +117,21 @@ class TestProductCompanyEditRestriction(TransactionCase):
         })
         self.assertTrue(template.id)
 
+    def test_create_with_explicit_false_company_id_is_allowed_without_group(self):
+        """company_id=False ("Visible for all companies") is the least
+        privileged state, not a company change - env.company.id is never
+        False, so comparing new_company straight against it made this
+        always raise for every non-privileged user, regardless of who
+        created the product (shared products, imports, other modules'
+        create())."""
+        Template = self.env["product.template"].with_user(self.user)
+        template = Template.create({
+            "name": "Shared across all companies",
+            "type": "consu",
+            "company_id": False,
+        })
+        self.assertFalse(template.company_id)
+
     def test_copy_without_group_is_allowed_when_company_unchanged(self):
         """copy() always sends company_id in the vals (the field has no
         copy=False), so create()'s guard must not treat "unchanged, just

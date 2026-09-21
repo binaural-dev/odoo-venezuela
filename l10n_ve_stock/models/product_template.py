@@ -96,8 +96,15 @@ class ProductTemplate(models.Model):
             # duplicating a product must not be treated as an edit as long
             # as the copy lands in the user's own active company - only a
             # value that actually differs from that is a real attempt to
-            # set the company.
-            if new_company != self.env.company.id:
+            # set the company. False (no company / "Visible for all
+            # companies") is the least privileged state, not a change of
+            # company - env.company.id is never False, so comparing
+            # against it unconditionally made every explicit
+            # company_id=False create() fail for every non-privileged
+            # user (shared products, imports, other modules' create()).
+            # Only a truthy, different company is a real attempt to
+            # assign the product somewhere specific.
+            if new_company and new_company != self.env.company.id:
                 raise AccessError(
                     _("You don't have permission to change this product's company.")
                 )
