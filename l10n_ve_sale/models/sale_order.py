@@ -238,20 +238,20 @@ class SaleOrder(models.Model):
             ):
                 continue
             if (
-                not self.env.company.update_sale_order_rate_using_date_order
+                not sale.company_id.update_sale_order_rate_using_date_order
                 and not float_is_zero(
                     sale.foreign_rate,
-                    precision_rounding=self.env.company.currency_id.rounding,
+                    precision_rounding=sale.company_id.currency_id.rounding,
                 )
             ):
                 continue
-            
+
             if  sale.foreign_currency_id.id and sale.date_order:
-                
-                rate_values = Rate.compute_rate(
+
+                rate_values = Rate.with_company(sale.company_id).compute_rate(
                     sale.foreign_currency_id.id,
                     sale.date_order
-                )   
+                )
                 if rate_values.get("foreign_rate", 0) != self.foreign_rate:
                     sale.foreign_rate = rate_values.get("foreign_rate", 0) 
                 if rate_values.get("foreign_inverse_rate", 0) != self.foreign_inverse_rate:
