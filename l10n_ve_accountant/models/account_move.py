@@ -270,8 +270,43 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
-    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
+    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True,
                                             compute='_compute_foreign_untaxed_total' )
+
+    # ── Alternate-currency exchange difference traceability ──
+    # No custom reversal/idempotency machinery: the standalone entry's own
+    # `account.partial.reconcile.exchange_move_id` (native field) carries
+    # that -- core already reverses it automatically when the partial is
+    # removed (`account.partial.reconcile.unlink()`, core). `copy=True`
+    # here only so that automatic reversal (a `.copy()` under the hood)
+    # keeps this flag on the reversal move too, for consistent filtering.
+    l10n_ve_exchange_foreign_diff_entry = fields.Boolean(
+        string='Is Alternate Currency Exchange Difference Entry',
+        default=False,
+        copy=True,
+        help="Set when this entry carries an alternate-currency exchange "
+             "difference amount, native or standalone.",
+    )
+    l10n_ve_exchange_foreign_source_move_id = fields.Many2one(
+        'account.move',
+        string='Source Document (Alternate Currency Exchange Difference)',
+        copy=False,
+        check_company=True,
+        help="Document whose reconciliation produced a standalone "
+             "alternate-currency exchange difference entry -- kept even "
+             "after the underlying `account.partial.reconcile` is later "
+             "deleted (e.g. the settlement gets undone), since that's the "
+             "only place this information would otherwise survive.",
+    )
+    l10n_ve_exchange_foreign_payment_move_id = fields.Many2one(
+        'account.move',
+        string='Settling Document (Alternate Currency Exchange Difference)',
+        copy=False,
+        check_company=True,
+        help="Counterpart document (payment/settlement) whose reconciliation "
+             "produced this standalone alternate-currency exchange "
+             "difference entry -- informational only, human-readable.",
+    )
     amount = fields.Float(tracking=True)
 
     real_portion_amount = fields.Monetary(

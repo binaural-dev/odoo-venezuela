@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from odoo import api, fields, models, _
+from odoo import api, fields, models, Command, _
 from odoo.tools import float_compare ,float_round, float_is_zero
 from odoo.exceptions import UserError, ValidationError
 import logging
@@ -582,4 +582,354 @@ class AccountMoveLine(models.Model):
                     journal_currency=journal_currency.name,
                     line_currency=line.currency_id.name,
                 ))
-        return super()._check_constrains_account_id_journal_id()
+
+    # ── Alternate-currency ("moneda alterna") exchange difference ──
+    # Extends core's OWN exchange-difference move (not a separate one) so
+    # its two lines carry both the company-currency amount (untouched) and
+    # `foreign_debit`/`foreign_credit`. If company currency needs no fix at
+    # all, the same two-line shape is built standalone, alternate-only.
+    # Hooked at `_prepare_reconciliation_single_partial` (runs every
+    # partial, unlike `_prepare_exchange_difference_move_vals`).
+
+    def _prepare_reconciliation_single_partial(self, debit_values, credit_values, shadowed_aml_values=None, **kwargs):
+        debit_line = debit_values.get('aml')
+        credit_line = credit_values.get('aml')
+        initial_debit_residual = debit_values.get('amount_residual')
+        initial_credit_residual = credit_values.get('amount_residual')
+
+        res = super()._prepare_reconciliation_single_partial(
+            debit_values, credit_values, shadowed_aml_values=shadowed_aml_values, **kwargs
+        )
+
+        # Core itself uses this context to suppress its OWN exchange-diff
+        # logic (e.g. closing the diff entry's own receivable line, CABA
+        # entries) -- honoring it the same way is required, otherwise an
+        # absent `exchange_values` here (because core skipped it) reads as
+        # "nothing to fix" and wrongly falls through to the standalone
+        # branch below, creating an entry core deliberately did not want.
+        if self.env.context.get('no_exchange_difference') or self.env.context.get('no_exchange_difference_no_recursive'):
+            return res
+
+        exchange_values = (res or {}).get('exchange_values') or {}
+        line_commands = (exchange_values.get('move_values') or {}).get('line_ids') or []
+
+        if not debit_line or not credit_line or not (res or {}).get('partial_values'):
+            return res
+
+        # When core built its own exchange move, reuse its EXACT date
+        # (`max(debit_aml.date, credit_aml.date)`, same convention core
+        # itself uses). When it didn't (standalone branch), that date was
+        # never computed at all -- falling back to "today" here would
+        # silently use TODAY's rate instead of THIS partial's actual
+        # settlement date, corrupting every installment except one that
+        # happens to be reconciled on the same day the test/process runs.
+        exchange_date = exchange_values.get('move_values', {}).get('date') or max(debit_line.date, credit_line.date)
+
+        # Prefer the invoice side as "the document" whose booking rate
+        # matters -- same preference `account.partial.reconcile._compute_company_id`
+        # already uses ("exchange diff entries should be created on the
+        # invoice side if any"). Needed even in the injection branch below:
+        # core is free to pick EITHER side (often the payment's own
+        # internal 'entry' move) as the one it fixes, and that side's own
+        # `foreign_inverse_rate` reflects ITS OWN date (the payment/
+        # settlement date), not the original booking rate -- comparing a
+        # line against its own rate always yields zero.
+        if debit_line.move_id.is_invoice(True):
+            rate_source, counterpart = debit_line, credit_line
+        elif credit_line.move_id.is_invoice(True):
+            rate_source, counterpart = credit_line, debit_line
+        elif debit_line.date <= credit_line.date:
+            # Neither is a real invoice (misc entries, both sides
+            # 'entry') -- prefer the EARLIER-dated line: it is the one
+            # whose booking rate can actually differ from the settlement
+            # rate. Preferring an arbitrary side (e.g. always debit) risks
+            # picking the line dated AT settlement, whose own rate always
+            # equals the current one, silently zeroing the diff.
+            rate_source, counterpart = debit_line, credit_line
+        else:
+            rate_source, counterpart = credit_line, debit_line
+
+        if line_commands:
+            # Core itself decided a company-currency fix is needed for at
+            # least one of these two lines -- reuse ITS OWN computed
+            # amount per pair (never re-derive it independently: a plain
+            # before/after residual comparison is nonzero for BOTH sides
+            # of any ordinary settlement, not just the side that actually
+            # needs a currency correction, and would misattribute an
+            # alt-diff to the wrong/unaffected side).
+            self._inject_foreign_exchange_amounts(exchange_values, exchange_date, rate_source)
+            return res
+
+        # `line_commands` empty means no OTHER module intercepted core's
+        # generic entry either (e.g. `l10n_ve_exchange_difference` diverting
+        # it into a fiscal Note) -- if one had, `debit_values`/`credit_values`
+        # `amount_residual` would already read as closed regardless (core
+        # zeroes out `remaining_debit/credit_amount` itself, BEFORE handing
+        # off to whichever module ends up building the actual document --
+        # verified against core `account/models/account_move_line.py`,
+        # `_prepare_reconciliation_single_partial`). So an empty
+        # `line_commands` here genuinely means "nothing needed fixing in
+        # company currency at all", not just "core didn't build one".
+        # Safe to derive the settled amount from a before/after residual
+        # comparison: with no fix of any kind involved, both sides settle
+        # the exact same principal, so there's no per-side asymmetry to
+        # misattribute.
+        settled = self._get_settled_company_amount(
+            debit_line, debit_values.get('amount_residual'), initial_debit_residual,
+        )
+        if not settled:
+            return res
+        # Re-orient the sign to `rate_source`'s own side: `settled` above
+        # is signed from the debit side's perspective.
+        if rate_source is credit_line:
+            settled = -settled
+
+        self._queue_standalone_foreign_exchange_difference(rate_source, counterpart, settled, exchange_date)
+        return res
+
+    def _get_settled_company_amount(self, debit_line, new_residual, initial_residual):
+        """Signed company-currency amount settled in this partial, from the
+        DEBIT side's perspective, same sign convention as `amount_residual`.
+        Only meaningful when core found no per-side currency asymmetry to
+        fix (see caller).
+        """
+        company_currency = debit_line.company_id.currency_id
+        consumed = company_currency.round(abs(initial_residual or 0.0) - abs(new_residual or 0.0))
+        if company_currency.is_zero(consumed):
+            return 0.0
+        sign = 1.0 if (initial_residual or 0.0) >= 0 else -1.0
+        return sign * consumed
+
+    def _compute_foreign_exchange_amount(self, base_amount, exchange_date):
+        """Alternate-currency amount for `base_amount` (company currency),
+        re-priced at `exchange_date` vs. the document's own booking rate.
+        Returns 0.0 if disabled, misconfigured, or no rate to compare.
+        """
+        self.ensure_one()
+        company = self.company_id
+        if not company.l10n_ve_use_foreign_exchange_diff:
+            return 0.0
+        foreign_currency = company.foreign_currency_id
+        if not foreign_currency or foreign_currency == company.currency_id:
+            return 0.0
+        if company.currency_id.is_zero(base_amount):
+            return 0.0
+        # `self` (rate_source) is the invoice-side line. When the invoice
+        # itself is denominated IN the alternate currency, its exposure in
+        # that currency is already fixed and exact (`amount_currency`) --
+        # there is nothing left to revalue, regardless of any native
+        # company-currency diff (that diff is purely an artifact of
+        # measuring value in a currency that moved, not a real change in
+        # the USD-denominated debt). Re-pricing it via the company-currency
+        # rate delta here would inject a fictitious alternate-currency
+        # difference and unbalance the alternate-currency total.
+        if self.currency_id == foreign_currency:
+            return 0.0
+        original_inverse_rate = self.move_id.foreign_inverse_rate
+        if not original_inverse_rate:
+            return 0.0
+        # `with_company(company)` -- `compute_rate` (`l10n_ve_rate`) filters
+        # by `self.env.company` internally; without this, a caller whose
+        # active company differs from `company` (multi-company cron, a
+        # user in another branch) would read the wrong company's rate,
+        # possibly with the currency/inverse convention flipped.
+        rate_values = self.env['res.currency.rate'].with_company(company).compute_rate(
+            foreign_currency.id, exchange_date or fields.Date.context_today(self)
+        )
+        current_inverse_rate = rate_values.get('foreign_inverse_rate')
+        if not current_inverse_rate:
+            _logger.warning(
+                "l10n_ve_use_foreign_exchange_diff: no exchange rate for %s at %s "
+                "(move %s) -- alternate-currency exchange difference skipped.",
+                foreign_currency.name, exchange_date, self.move_id.id,
+            )
+            return 0.0
+        # `foreign_inverse_rate` is alt-per-company-unit (e.g. USD per VES).
+        # If it DROPS (VES weakens), the alt-currency value of `base_amount`
+        # fell -- a loss, which must be POSITIVE (same sign convention as
+        # `amount_residual`: positive = loss). Hence (original - current),
+        # not (current - original).
+        diff_foreign = foreign_currency.round(base_amount * (original_inverse_rate - current_inverse_rate))
+        return 0.0 if foreign_currency.is_zero(diff_foreign) else diff_foreign
+
+    def _inject_foreign_exchange_amounts(self, exchange_values, exchange_date, rate_source):
+        """Adds `foreign_debit`/`foreign_credit` to the lines core just
+        built in `exchange_values['move_values']['line_ids']`, deriving
+        the base amount directly from what core itself put in each pair's
+        `debit`/`credit` (never re-derived independently -- see the
+        caller for why that would misattribute the wrong side). The
+        booking rate always comes from `rate_source` (the invoice side of
+        THIS partial), never from whichever line core happens to close --
+        core may pick the payment's own internal entry, whose own rate is
+        dated at settlement, making a self-comparison always zero.
+        """
+        line_commands = (exchange_values.get('move_values') or {}).get('line_ids') or []
+        i = 0
+        while i + 1 < len(line_commands):
+            closing_vals = line_commands[i][2]
+            gain_vals = line_commands[i + 1][2]
+            # Reconstructs core's own signed `amount_residual` from the
+            # exact `debit`/`credit` it computed for the closing line
+            # (`'debit': -residual if residual<0 else 0, 'credit':
+            # residual if residual>0 else 0` -- see core's
+            # `_prepare_exchange_difference_move_vals`). Core has a SECOND
+            # branch (`recon_currency == company_currency`) where the fix
+            # is expressed via `amount_residual_currency` instead --
+            # `debit`/`credit` are both 0 there and the amount lives in
+            # `amount_currency` (`-amount_residual_currency`) -- fall back
+            # to that so this branch isn't silently skipped.
+            base_amount = closing_vals.get('credit', 0.0) - closing_vals.get('debit', 0.0)
+            if not base_amount:
+                base_amount = -closing_vals.get('amount_currency', 0.0)
+            alt_diff = rate_source._compute_foreign_exchange_amount(base_amount, exchange_date)
+            if alt_diff:
+                closing_vals['foreign_debit'] = abs(alt_diff) if alt_diff < 0.0 else 0.0
+                closing_vals['foreign_credit'] = abs(alt_diff) if alt_diff > 0.0 else 0.0
+                closing_vals['not_foreign_recalculate'] = True
+                gain_vals['foreign_debit'] = abs(alt_diff) if alt_diff > 0.0 else 0.0
+                gain_vals['foreign_credit'] = abs(alt_diff) if alt_diff < 0.0 else 0.0
+                gain_vals['not_foreign_recalculate'] = True
+                exchange_values['move_values']['l10n_ve_exchange_foreign_diff_entry'] = True
+            i += 2
+
+    def _queue_standalone_foreign_exchange_difference(self, line, counterpart, base_amount, exchange_date):
+        """Queues a standalone, alternate-only exchange difference entry
+        for `line`/`counterpart` on the cursor, flushed once by
+        `_create_exchange_difference_moves` below (the exact
+        `account.partial.reconcile` these two lines become doesn't exist
+        yet at this point in core's flow -- it's located later, once it
+        does, by `_create_standalone_foreign_exchange_difference_entry`).
+        """
+        exchange_date = exchange_date or fields.Date.context_today(self)
+        alt_diff = line._compute_foreign_exchange_amount(base_amount, exchange_date)
+        if not alt_diff:
+            return
+        queue = getattr(self.env.cr, '_l10n_ve_foreign_exchange_pending', None)
+        if queue is None:
+            queue = []
+            self.env.cr._l10n_ve_foreign_exchange_pending = queue
+        queue.append({
+            'line': line, 'counterpart': counterpart,
+            'amount_foreign': alt_diff, 'date': exchange_date,
+        })
+
+    @api.model
+    def _create_exchange_difference_moves(self, exchange_diff_values_list):
+        """Runs `super()` first (native entries, already carrying injected
+        alternate amounts), then flushes the standalone-entry queue.
+        """
+        exchange_moves = super()._create_exchange_difference_moves(exchange_diff_values_list)
+
+        # Popped BEFORE processing, in a `try/finally` -- same reasoning as
+        # `l10n_ve_exchange_difference._create_exchange_difference_moves`:
+        # this is plain cursor state, not ORM-transactional, so it must
+        # never survive a savepoint rollback (a failed entry creation)
+        # into the next attempt on the same cursor.
+        pending = getattr(self.env.cr, '_l10n_ve_foreign_exchange_pending', None) or []
+        self.env.cr._l10n_ve_foreign_exchange_pending = []
+        try:
+            for descriptor in pending:
+                descriptor['line']._create_standalone_foreign_exchange_difference_entry(
+                    descriptor['counterpart'], descriptor['amount_foreign'], descriptor['date'],
+                )
+        finally:
+            self.env.cr._l10n_ve_foreign_exchange_pending = []
+
+        return exchange_moves
+
+    def _find_settlement_partial(self, counterpart):
+        """The exact `account.partial.reconcile` these two specific LINES
+        (not just moves -- a line-level match is precise even across
+        several installments, since each installment normally involves a
+        fresh payment line) became, once core has created it -- available
+        by the time this runs (`_create_exchange_difference_moves`, AFTER
+        core's own partial-creation step).
+        """
+        self.ensure_one()
+        return self.env['account.partial.reconcile'].search([
+            ('debit_move_id', 'in', (self.id, counterpart.id)),
+            ('credit_move_id', 'in', (self.id, counterpart.id)),
+        ], order='id desc', limit=1)
+
+    def _create_standalone_foreign_exchange_difference_entry(self, counterpart, amount_foreign, entry_date):
+        """Posts core's same two-line exchange-difference shape (same
+        accounts/journal) with zero company-currency amounts and only
+        `foreign_debit`/`foreign_credit` set. Not reconciled against the
+        original line -- there is no company-currency residual to close.
+
+        Idempotency and reversal both ride on the NATIVE
+        `account.partial.reconcile.exchange_move_id` field -- the same one
+        core's own generic entries use, and core ALREADY reverses it
+        automatically when the partial is removed
+        (`account.partial.reconcile.unlink()`, core). No custom key or
+        override needed: if this exact partial already has an
+        `exchange_move_id`, reuse it; otherwise create the entry and
+        claim it.
+        """
+        self.ensure_one()
+        company = self.company_id
+        payment_move = counterpart.move_id if counterpart else self.env['account.move']
+        partial = self._find_settlement_partial(counterpart)
+
+        if partial and partial.exchange_move_id:
+            return partial.exchange_move_id
+
+        journal = self._get_exchange_journal(company)
+        exchange_account = self._get_exchange_account(company, amount_foreign)
+        if not journal or not exchange_account:
+            raise UserError(_(
+                "Configure the 'Exchange Gain or Loss Journal' and its "
+                "Gain/Loss accounts in your company settings before "
+                "reconciling documents with the alternate currency "
+                "exchange difference enabled."
+            ))
+
+        move = self.env['account.move'].with_company(company).with_context(no_exchange_difference=True).create({
+            'move_type': 'entry',
+            'journal_id': journal.id,
+            'date': entry_date,
+            'l10n_ve_exchange_foreign_diff_entry': True,
+            'l10n_ve_exchange_foreign_source_move_id': self.move_id.id,
+            'l10n_ve_exchange_foreign_payment_move_id': payment_move.id,
+            'line_ids': [
+                Command.create({
+                    'name': _('Alternate currency exchange difference'),
+                    'account_id': self.account_id.id,
+                    'currency_id': self.currency_id.id,
+                    'partner_id': self.partner_id.id,
+                    'debit': 0.0,
+                    'credit': 0.0,
+                    'not_foreign_recalculate': True,
+                    'foreign_debit': abs(amount_foreign) if amount_foreign < 0.0 else 0.0,
+                    'foreign_credit': abs(amount_foreign) if amount_foreign > 0.0 else 0.0,
+                }),
+                Command.create({
+                    'name': _('Alternate currency exchange difference'),
+                    'account_id': exchange_account.id,
+                    'currency_id': self.currency_id.id,
+                    'partner_id': self.partner_id.id,
+                    'debit': 0.0,
+                    'credit': 0.0,
+                    'not_foreign_recalculate': True,
+                    'foreign_debit': abs(amount_foreign) if amount_foreign > 0.0 else 0.0,
+                    'foreign_credit': abs(amount_foreign) if amount_foreign < 0.0 else 0.0,
+                }),
+            ],
+        })
+        move.with_context(validate_analytic=False)._post(soft=False)
+
+        if partial:
+            # Claims this move as the partial's own exchange-diff move --
+            # from here on, breaking this exact settlement (removing
+            # `partial`) makes core reverse `move` automatically, the same
+            # way it already does for its own native exchange entries.
+            partial.exchange_move_id = move.id
+        else:
+            _logger.warning(
+                "l10n_ve_use_foreign_exchange_diff: could not locate the "
+                "settlement partial for move %s (source %s) -- entry %s "
+                "was created but will NOT be reversed automatically if "
+                "this reconciliation is later undone.",
+                self.move_id.id, self.id, move.id,
+            )
+        return move
