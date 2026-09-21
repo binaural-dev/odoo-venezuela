@@ -20,6 +20,14 @@ class ResCompany(models.Model):
 
     use_alternate_locations = fields.Boolean()
 
+    physical_relocation_transfer = fields.Boolean(
+        string="Generate automatic internal transfer when physical location changes",
+        help="When a physical location is replaced by another, generates "
+        "and validates an internal transfer that carries the stock from "
+        "the old location to the new one. Only applies to the inventory "
+        "manager.",
+    )
+
     use_free_qty_odoo = fields.Boolean()
 
     # not_allow_sell_products = fields.Boolean(
