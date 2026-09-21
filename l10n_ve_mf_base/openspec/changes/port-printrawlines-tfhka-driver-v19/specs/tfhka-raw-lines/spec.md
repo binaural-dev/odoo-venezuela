@@ -1,5 +1,6 @@
 ## ADDED Requirements
 
+
 ### Requirement: Envío secuencial de líneas crudas sin transformación
 `TfhkaDriver.printRawLines(lines)` SHALL enviar cada elemento del arreglo
 `lines` como un comando independiente al protocolo TFHKA, respetando el
