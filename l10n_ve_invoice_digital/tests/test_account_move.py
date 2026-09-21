@@ -3014,7 +3014,14 @@ class TestAccountMoveSequenceValidation(TransactionCase):
                 "tax_ids": [Command.set([self.tax_iva16.id])],
             })],
         })
+        # action_post() in this codebase opens the move.action.post.alert.wizard
+        # confirmation instead of posting synchronously (see wizard/move_action_
+        # post_alert_views.py) -- posting only actually happens once the wizard
+        # is confirmed, which is also what assigns the real sequential name via
+        # _compute_name_by_sequence. Same pattern as test_wizard_move_action_
+        # post_alert.py's own _create_invoice helper.
         inv.action_post()
+        self.env["move.action.post.alert.wizard"].create({"move_id": inv.id}).action_confirm()
         return inv
 
     def test_payment_first_mode_real_gap_blocks(self):
