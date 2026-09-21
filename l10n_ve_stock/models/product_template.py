@@ -114,8 +114,11 @@ class ProductTemplate(models.Model):
         # dict, so "did it change" has to be checked per product: a value
         # identical to one product's own company_id is a no-op for that
         # product even if it differs for another one in the same call.
+        # False is the same least-privileged state as in create() above, so
+        # clearing a product's company is allowed without the group too -
+        # only assigning a specific, different company is restricted.
         for product in self:
-            if new_company != product.company_id.id:
+            if new_company and new_company != product.company_id.id:
                 raise AccessError(
                     _("You don't have permission to change this product's company.")
                 )

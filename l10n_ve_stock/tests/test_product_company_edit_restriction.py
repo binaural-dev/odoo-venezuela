@@ -155,6 +155,16 @@ class TestProductCompanyEditRestriction(TransactionCase):
         template = self.template.with_user(self.user)
         template.write({"company_id": self.template.company_id.id})
 
+    def test_write_company_id_to_false_without_group_is_allowed(self):
+        """company_id=False ("Visible for all companies") is the least
+        privileged state, not a company change - clearing it via write()
+        must be allowed without the group too, same as create()."""
+        self.template.sudo().write({"company_id": self.env.company.id})
+        self.assertTrue(self.template.company_id)
+        template = self.template.with_user(self.user)
+        template.write({"company_id": False})
+        self.assertFalse(self.template.company_id)
+
     def test_write_company_id_on_variant_without_group_raises_access_error(self):
         """company_id on product.product is a writable related field
         (materialized by _inherits, not readonly on the core field) -
