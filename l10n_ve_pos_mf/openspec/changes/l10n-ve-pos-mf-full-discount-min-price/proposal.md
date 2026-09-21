@@ -35,9 +35,13 @@ el cierre `199` cuadre con el pago y la MF muestre la cantidad real.
   `setQuantity`. Cuando el descuento dejaría el neto de la línea en 0 (con
   precio base > 0), la línea se factura en el mínimo fiscal: precio 0,01 +
   descuento (1 − 1/qty) × 100 → subtotal 0,01 con la cantidad intacta, marcando
-  la línea con `_mf_fiscal_min`. Se guarda el precio original en
-  `_mf_zeroed_original_price` (revertible), se recalcula el descuento si cambia
-  la cantidad (`setQuantity`), y se fija `price_type = "manual"`. `setDiscount`
+  la línea con `_mf_fiscal_min`. Con cantidad < 0,5 (pesados) el precio sube
+  al céntimo siguiente de 0,01 / cantidad, sin descuento. Se guarda el precio
+  original en `_mf_zeroed_original_price` (revertible), se recalculan precio y
+  descuento si cambia la cantidad (`setQuantity`), y se fija
+  `price_type = "manual"`. `mfIsFiscalMinLine()` reconoce además la línea por
+  sus datos (sobrevive a recargar la caja y a reimprimir pedidos pendientes), y
+  `setUnitPrice` la desmarca si se cambia el precio a mano. `setDiscount`
   es el punto por el que pasan el descuento por línea (numpad →
   `pos.setDiscountFromUI` → `line.setDiscount`) y el global
   (`_applyGlobalDiscountBeforeValidation` → `line.setDiscount`).
@@ -46,9 +50,9 @@ el cierre `199` cuadre con el pago y la MF muestre la cantidad real.
   - `_convertOrderForDriver`: las líneas `_mf_fiscal_min` se envían a la MF como
     `N × 0,01` con `discount_amount = (N − 1) × 0,01` (cantidad fraccionaria:
     `1 × 0,01` con `CANT <cantidad> <unidad> -` en la descripción).
-  - `_applyGlobalDiscountBeforeValidation`: antes de **inferir** el porcentaje
-    global, se restauran los precios reales de las líneas sustituidas en una
-    aplicación previa, para que la inferencia no use 0,01 como base.
+  - `_applyGlobalDiscountBeforeValidation`: en la aplicación manual usa el
+    porcentaje tecleado (`expectedPercent`) en vez del inferido del monto de
+    `pos_discount`, que falla con líneas en el mínimo fiscal.
   - `pay()` (respaldo): antes de ir al pago se recorren las líneas y se aplica la
     sustitución a las que quedaron en neto 0 (órdenes cargadas/reanudadas).
 - **`overrides/PosOrderline.js`:** `mfIsRefundOfFiscalMin()` reconoce la

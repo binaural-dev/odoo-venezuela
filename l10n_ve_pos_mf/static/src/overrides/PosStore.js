@@ -453,6 +453,7 @@ patch(PosStore.prototype, {
           ? line.price_unit
           : line.get_foreign_unit_price?.() ?? line.price_unit;
 
+        const isFiscalMin = Boolean(line.mfIsFiscalMinLine?.());
         const taxes = line.tax_ids || [];
         const fiscalCode =
           taxes.length > 0
@@ -468,15 +469,15 @@ patch(PosStore.prototype, {
           ),
           code: line.product_id?.default_code,
           tax: fiscalCode,
-          // Línea facturada en el mínimo fiscal (descuento 100% → subtotal 0,01):
-          // la MF la recibe como 1 × 0,01 (ver _convertOrderForDriver). #15105
-          _mf_fiscal_min: Boolean(
-            line._mf_fiscal_min || line.mfIsRefundOfFiscalMin?.()
-          ),
+          // Línea facturada en el mínimo fiscal (descuento 100% → subtotal 0,01),
+          // reconocida por la marca o por sus datos, que sobreviven a recargar
+          // la caja y a reimprimir pedidos pendientes. Ver
+          // _convertOrderForDriver. #15105
+          _mf_fiscal_min: isFiscalMin,
           // Unidad de los productos pesados, para imprimir la cantidad real en
           // la descripción de las líneas de mínimo fiscal. #15105
           _mf_uom_name:
-            line._mf_fiscal_min && line.product_id?.to_weight
+            isFiscalMin && line.product_id?.to_weight
               ? this.normalizeProductName(line.product_id?.uom_id?.name || "")
               : "",
         };
@@ -829,18 +830,21 @@ patch(PosStore.prototype, {
       return order._mf_global_discount_meta || null;
     }
 
-    // Restaurar el precio real de líneas sustituidas por el mínimo fiscal
-    // (0,01) en una aplicación previa, para que la inferencia del % global se
-    // calcule sobre el precio verdadero y no sobre 0,01. Ticket #15105.
-    for (const line of [...(order.lines || [])]) {
-      line.mfRestoreOriginalPrice?.();
-    }
-
     // Inferir el % real ANTES de tocar ninguna línea
     const inference = this._inferGlobalDiscountPercent(order);
     if (!inference) {
       return order._mf_global_discount_meta || null;
     }
+
+    // En la aplicación manual se usa el % que tecleó el cajero. Inferirlo del
+    // monto de pos_discount falla si hay líneas en el mínimo fiscal: el monto
+    // se calcula sobre su subtotal de 0,01 y la base de la inferencia no
+    // coincide (p.ej. un 50% tras un global de 100% salía 0,01%). #15105
+    const appliedPercent =
+      expectedPercent != null
+        ? Math.min(Math.max(Number(expectedPercent) || 0, 0), 100)
+        : inference.inferredPercent;
+    const appliedClamped = expectedPercent != null ? false : inference.clamped;
 
     // Remover primero las líneas de descuento global para que
     // globalDiscountPc sea 0 antes de modificar líneas y evitar
@@ -882,25 +886,25 @@ patch(PosStore.prototype, {
 
     for (const line of positiveLines) {
       if (typeof line.setDiscount === "function") {
-        line.setDiscount(inference.inferredPercent);
+        line.setDiscount(appliedPercent);
       } else {
-        line.discount = inference.inferredPercent;
+        line.discount = appliedPercent;
       }
     }
 
     const correctedAmount = round_pr(
-      (rawTotal * inference.inferredPercent) / 100,
+      (rawTotal * appliedPercent) / 100,
       this.currency?.rounding || 0.01
     );
 
     order._mf_global_discount_applied = true;
     order._mf_global_discount_meta = {
       global_discount_amount: correctedAmount,
-      global_discount_rate: inference.inferredPercent,
-      global_clamped: inference.clamped,
+      global_discount_rate: appliedPercent,
+      global_clamped: appliedClamped,
     };
     order._mf_last_applied_discount_percent = Number(
-      expectedPercent ?? inference.inferredPercent ?? 0
+      appliedPercent ?? 0
     );
 
     return order._mf_global_discount_meta;

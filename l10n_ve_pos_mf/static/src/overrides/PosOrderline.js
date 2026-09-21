@@ -62,20 +62,38 @@ patch(PosOrderline.prototype, {
   },
 
   /**
-   * Fija precio 0,01 + el descuento que deja el subtotal de la línea en 0,01
+   * Precio y descuento que dejan el subtotal de la línea en 0,01 para `qty`:
+   * - qty > 1: precio 0,01 y descuento (1 − 1/qty) × 100, de modo que
+   *   0,01 × qty × (1/qty) = 0,01. Nunca llega a 100% (tope 99,99).
+   * - 0,5 ≤ qty ≤ 1: precio 0,01 sin descuento (0,01 × qty redondea a 0,01).
+   * - qty < 0,5 (pesados): 0,01 × qty redondearía a 0,00, así que el precio
+   *   sube al céntimo siguiente de 0,01 / qty, sin descuento (0,3 kg → 0,04).
+   */
+  _mfFiscalMinTarget(qty) {
+    if (qty > 1) {
+      let discount = round_pr((1 - 1 / qty) * 100, 0.01);
+      if (discount >= 100) {
+        discount = 99.99; // el descuento nunca alcanza 100% (no lo bloquea la factura)
+      }
+      return { price: MF_MIN_LINE_PRICE, discount };
+    }
+    if (qty > 0 && qty < 0.5) {
+      return { price: Math.ceil((MF_MIN_LINE_PRICE / qty) * 100 - 1e-9) / 100, discount: 0 };
+    }
+    return { price: MF_MIN_LINE_PRICE, discount: 0 };
+  },
+
+  /**
+   * Fija el precio y el descuento que dejan el subtotal de la línea en 0,01
    * para la cantidad actual. Reutilizable al cambiar la cantidad.
    */
   _mfApplyLineFiscalMin() {
     const qty = Math.abs(Number(this.getQuantity?.() ?? this.qty ?? 1)) || 1;
-    // subtotal = 0,01 * qty * (1 - disc/100) = 0,01  ⇒  disc = (1 - 1/qty) * 100
-    let disc = qty > 1 ? round_pr((1 - 1 / qty) * 100, 0.01) : 0;
-    if (disc >= 100) {
-      disc = 99.99; // el descuento nunca alcanza 100% (no lo bloquea la factura)
-    }
+    const { price, discount } = this._mfFiscalMinTarget(qty);
     this._mf_fiscal_guard = true;
     try {
-      this.setUnitPrice(MF_MIN_LINE_PRICE);
-      this.setDiscount(disc); // protegido por el guard → llama al core
+      this.setUnitPrice(price);
+      this.setDiscount(discount); // protegido por el guard → llama al core
       this.price_type = "manual";
     } finally {
       this._mf_fiscal_guard = false;
@@ -83,20 +101,46 @@ patch(PosOrderline.prototype, {
   },
 
   /**
+   * ¿Los datos de la línea son los de una línea en el mínimo fiscal con
+   * cantidad > 1 (precio 0,01 con el descuento que corresponde a su
+   * cantidad)? Esa combinación sólo la produce este módulo y, a diferencia de
+   * la marca `_mf_fiscal_min` (que vive sólo en memoria), sobrevive a
+   * recargar la caja y a la reimpresión de pedidos pendientes, donde la orden
+   * viene del servidor. Con cantidad ≤ 1 no hay descuento que la distinga de
+   * un precio normal, así que no se reconoce.
+   */
+  _mfMatchesFiscalMinData() {
+    const qty = Math.abs(Number(this.qty || 0));
+    if (!(qty > 1)) {
+      return false;
+    }
+    const target = this._mfFiscalMinTarget(qty);
+    return (
+      Math.abs(Number(this.price_unit || 0) - target.price) < 1e-9 &&
+      Math.abs(Number(this.discount || 0) - target.discount) < 1e-6
+    );
+  },
+
+  /**
+   * ¿La línea está facturada en el mínimo fiscal? Por la marca de esta sesión,
+   * por sus datos o por ser la devolución de una línea en el mínimo fiscal.
+   */
+  mfIsFiscalMinLine() {
+    return Boolean(
+      this._mf_fiscal_min || this._mfMatchesFiscalMinData() || this.mfIsRefundOfFiscalMin()
+    );
+  },
+
+  /**
    * Devolución de una línea facturada en el mínimo fiscal. El core crea la
    * línea de la devolución copiando precio (0,01) y descuento de la original
    * sin pasar por `setDiscount`, así que no queda marcada; y con 2 unidades
    * (descuento 50%) el neto por unidad redondea a 0,01, por lo que
-   * `mfEnsureNonZeroFiscalPrice` tampoco la detecta. Se reconoce por la línea
-   * original: precio 0,01 con descuento.
+   * `mfEnsureNonZeroFiscalPrice` tampoco la detecta. Se reconoce por los
+   * datos de la línea original, que sirve también en devoluciones parciales.
    */
   mfIsRefundOfFiscalMin() {
-    const original = this.refunded_orderline_id;
-    return Boolean(
-      original &&
-        Math.abs(Number(original.price_unit || 0) - MF_MIN_LINE_PRICE) < 1e-9 &&
-        Number(original.discount || 0) > 0
-    );
+    return Boolean(this.refunded_orderline_id?._mfMatchesFiscalMinData?.());
   },
 
   /**
@@ -107,9 +151,10 @@ patch(PosOrderline.prototype, {
     if (this._mf_fiscal_guard || this._mf_fiscal_min) {
       return; // ya sustituida: no re-sustituir (no sobrescribir el precio original)
     }
-    if (this.mfIsRefundOfFiscalMin()) {
-      // Ya trae el precio 0,01 y el descuento de la original (subtotal igual
-      // al facturado): sólo se marca, sin recalcular el descuento.
+    if (this._mfMatchesFiscalMinData() || this.mfIsRefundOfFiscalMin()) {
+      // Ya trae los datos del mínimo fiscal (orden recargada, pedido pendiente
+      // o devolución): sólo se marca, sin recalcular. El precio original no se
+      // conoce, así que quitar el descuento después no lo restaura.
       this._mf_fiscal_min = true;
       return;
     }
@@ -132,18 +177,37 @@ patch(PosOrderline.prototype, {
       return super.setDiscount(discount);
     }
     // Partir del precio real para evaluar el nuevo descuento sobre la base.
+    // Si la línea estaba marcada sin precio original guardado (reconocida por
+    // sus datos), se desmarca y se vuelve a evaluar con el nuevo descuento.
     this.mfRestoreOriginalPrice();
+    this._mf_fiscal_min = false;
     const result = super.setDiscount(discount);
     this.mfEnsureNonZeroFiscalPrice();
     return result;
   },
 
   setQuantity(quantity, keep_price) {
+    // Se evalúa antes de cambiar la cantidad: el reconocimiento por datos
+    // depende de la cantidad actual.
+    const wasFiscalMin = !this._mf_fiscal_guard && this.mfIsFiscalMinLine();
     const res = super.setQuantity(...arguments);
-    // Recalcular el descuento para mantener el subtotal en 0,01 con la nueva
-    // cantidad (el core devuelve true si la cantidad se aplicó).
-    if (res === true && this._mf_fiscal_min && !this._mf_fiscal_guard) {
+    // Recalcular precio y descuento para mantener el subtotal en 0,01 con la
+    // nueva cantidad (el core devuelve true si la cantidad se aplicó).
+    if (res === true && wasFiscalMin) {
+      this._mf_fiscal_min = true;
       this._mfApplyLineFiscalMin();
+    }
+    return res;
+  },
+
+  setUnitPrice(price) {
+    const res = super.setUnitPrice(...arguments);
+    if (!this._mf_fiscal_guard) {
+      // Precio cambiado a mano (numpad, lista de precios…): la línea deja de
+      // estar en el mínimo fiscal y el precio original guardado ya no aplica.
+      this._mf_fiscal_min = false;
+      this._mf_zeroed_original_price = null;
+      this._mf_zeroed_original_price_type = null;
     }
     return res;
   },

@@ -16,8 +16,9 @@
 - [x] 2.2 `_convertOrderForDriver`: enviar las líneas `_mf_fiscal_min` a la MF
       como N × 0,01 + `discount_amount` (N − 1) × 0,01 (versión inicial:
       1 × 0,01, sin la cantidad real)
-- [x] 2.3 `_applyGlobalDiscountBeforeValidation`: restaurar precios reales antes
-      de inferir el % global
+- [x] 2.3 `_applyGlobalDiscountBeforeValidation`: usar el % tecleado
+      (`expectedPercent`) en la aplicación manual. La versión inicial restauraba
+      precios antes de inferir; se quitó porque daba otro % (code review, C2).
 - [x] 2.4 `pay()`: respaldo que sustituye líneas en neto 0 antes del pago
 - [x] 2.5 `_applyGlobalDiscountBeforeValidation`: calcular la base del monto
       informativo (`DESC. GLOBAL`) ANTES de `setDiscount`, que con el 100%
@@ -37,6 +38,13 @@
       - leer el flag con `S3` antes de imprimir, porque es lento;
       - avisar al teclear el 100%, porque nunca podía dispararse.
 - [x] 2.10 Test unitario del driver: `q-` en nota de crédito (no corrido).
+- [x] 2.11 Pesados < 0,5 kg: precio = 0,01 / cantidad redondeado hacia arriba,
+      sin descuento (`_mfFiscalMinTarget`); antes el subtotal quedaba en 0,00
+      (code review, B1).
+- [x] 2.12 Reconocimiento por datos (`mfIsFiscalMinLine`,
+      `_mfMatchesFiscalMinData`) en `get_data_invoice`,
+      `mfEnsureNonZeroFiscalPrice` y `setQuantity`; `setUnitPrice` desmarca al
+      cambiar el precio a mano (code review, B2).
 
 ## 3. Metadatos
 
@@ -53,7 +61,7 @@
       → 0,01 c/u, total 0,03)
 - [x] 4.4 Cambiar la cantidad tras la sustitución → subtotal sigue en 0,01
       (2026-09-18, caja C1-CCS)
-- [ ] 4.5 Quitar/cambiar el descuento tras un 100% → precio original restaurado
+- [x] 4.5 Quitar/cambiar el descuento tras un 100% → precio original restaurado
 - [x] 4.6 Descuento parcial (< 100%) → comportamiento idéntico al actual
       (2026-09-18, caja C1-CCS)
 - [x] 4.7 Impresión en la MF (línea 1 × 0,01) y cierre `199` cuadra con el pago
@@ -72,6 +80,14 @@
       unidades) → la NC sale con la cantidad real, `q-` y total 0,01; el `199`
       cuadra.
       (4.8, 4.9, 4.10 y 4.13 probadas en la MF física de 2doce el 2026-09-18.)
+- [x] 4.15 Pesado de 0,300 kg al 100% → subtotal 0,01 en Odoo y 1 × 0,01 en
+      la MF con `CANT 0,3 KG -`.
+- [x] 4.16 Recargar la caja con una línea de 2 y otra de 3 unidades al 100%, y
+      reimprimir un pedido pendiente con esas líneas → la MF recibe N × 0,01 +
+      `q-`, total 0,01 por línea.
+- [x] 4.17 Global 100% y luego global 50% → se aplica 50% sobre los precios
+      reales.
+      (4.5, 4.15, 4.16 y 4.17 probadas en la MF física de 2doce el 2026-09-21.)
 - [ ] 4.12 Probar en una MF de cada familia (SRP-812/HKA-80/DT-230/PP9 y
       SRP-350/HKA-112/HSP7000/TD1125/KUBE):
       - `D` (flag 21 y firmware);

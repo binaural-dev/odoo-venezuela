@@ -15,7 +15,9 @@ en 0,01 conservando la cantidad. Con 2 decimales no se puede con un precio
 unitario fraccionario (0,01/qty → 0,00). Se fija entonces `price_unit = 0,01` y
 `discount = (1 − 1/qty) × 100`, de modo que subtotal = 0,01 × qty × (1/qty) =
 0,01, con el descuento < 100% (no lo bloquea `_check_max_discount`) y el precio
-> 0. La MF (precio × cantidad, 2 decimales) no puede repartir 0,01 entre N
+> 0. Con cantidad < 0,5 (pesados) 0,01 × cantidad redondearía a 0,00: el
+precio sube al céntimo siguiente de 0,01 / cantidad, sin descuento (0,3 kg →
+0,04 → subtotal 0,01). La MF (precio × cantidad, 2 decimales) no puede repartir 0,01 entre N
 unidades con el precio, así que con cantidad entera se le envían como
 **N × 0,01 con un descuento por monto sobre el ítem de (N − 1) × 0,01** (`q-`
 justo después del ítem): la línea fiscal suma 0,01 e imprime la cantidad real.
@@ -65,13 +67,61 @@ es el override de `l10n_ve_pos`, que actualiza también `foreign_price`.
 
 ## Interacción con el descuento global (Estrategia A)
 
-`_applyGlobalDiscountBeforeValidation` **infiere** el porcentaje global a partir
-de los precios de línea. Si una línea quedó sustituida a 0,01 en una aplicación
-anterior, la inferencia usaría 0,01 como base y daría un porcentaje erróneo. Por
-eso, antes de inferir (y sólo cuando se va a re-aplicar, tras los early-returns),
-se restauran los precios reales con `mfRestoreOriginalPrice()`. El caso de
-finalización (`finalizeValidation`) hace early-return cuando el global ya está
-aplicado, así que **no** deshace la sustitución.
+`_applyGlobalDiscountBeforeValidation` **infiere** el porcentaje global del
+monto de las líneas de `pos_discount`. Con líneas en el mínimo fiscal esa
+inferencia falla: `pos_discount` calcula el monto sobre su subtotal de 0,01 y
+la base de la inferencia es otra.
+
+- **Aplicación manual** (`applyDiscount`, que pasa `expectedPercent`): se usa el
+  **porcentaje tecleado** por el cajero en vez del inferido. La inferencia sólo
+  se usa para ubicar las líneas de `pos_discount` que hay que borrar.
+- `_resetGlobalDiscountOnLines` (`setDiscount(0)`) restaura los precios reales
+  antes de aplicar el nuevo porcentaje.
+- **Versión anterior (quitada):** restauraba los precios antes de inferir. Con
+  eso, un 50% tecleado tras un global del 100% salía 0,01% (0,01 / 200).
+- **Finalización** (`finalizeValidation`, sin `expectedPercent`): hace
+  early-return cuando el global ya está aplicado, así que no deshace la
+  sustitución.
+
+## Reconocimiento por datos
+
+`_mf_fiscal_min` y `_mf_zeroed_original_price` son propiedades en memoria. No
+son campos: el core no las serializa, ni en IndexedDB ni al servidor. Por eso
+se pierden en tres casos:
+
+- al recargar la caja;
+- en "Imprimir pedido pendiente", donde la orden viene del servidor;
+- en las devoluciones.
+
+Por eso `mfIsFiscalMinLine()` reconoce la línea de tres formas:
+
+- por la marca;
+- por sus datos (`_mfMatchesFiscalMinData`): precio 0,01 con el descuento
+  exacto que corresponde a su cantidad, sólo con cantidad > 1. Esa
+  combinación sólo la produce este módulo;
+- por ser devolución de una línea así (`mfIsRefundOfFiscalMin`).
+
+Se usa en tres puntos:
+
+- `get_data_invoice`, para el payload de la MF;
+- `mfEnsureNonZeroFiscalPrice`, que sólo marca, sin recalcular;
+- `setQuantity`, que se evalúa antes de cambiar la cantidad y luego recalcula
+  precio y descuento.
+
+**`setUnitPrice`:** un precio puesto a mano (numpad, lista de precios) desmarca
+la línea y olvida el precio original. Si no, la MF seguiría recibiendo 0,01 y,
+al tocar luego el descuento, se restauraría el precio viejo.
+
+**Limitaciones:**
+
+- **Tras recargar no se conoce el precio original:** quitar el descuento deja
+  la línea en 0,01 sin descuento, con MF y Odoo coherentes.
+- **Pesados con cantidad ≤ 1:** no tienen descuento que los distinga, así que
+  tras recargar van por la vía normal.
+  - Con < 0,5 kg el precio subido deja precio × cantidad entre 0,01 y 0,015:
+    la MF da 0,01 redondee o trunque.
+  - Entre 0,5 y 1 kg depende de que la MF redondee (0,005–0,01) en vez de
+    truncar.
 
 ## Respaldo en `pay()`
 
