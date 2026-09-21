@@ -3014,14 +3014,21 @@ class TestAccountMoveSequenceValidation(TransactionCase):
                 "tax_ids": [Command.set([self.tax_iva16.id])],
             })],
         })
-        # action_post() in this codebase opens the move.action.post.alert.wizard
-        # confirmation instead of posting synchronously (see wizard/move_action_
-        # post_alert_views.py) -- posting only actually happens once the wizard
-        # is confirmed, which is also what assigns the real sequential name via
-        # _compute_name_by_sequence. Same pattern as test_wizard_move_action_
-        # post_alert.py's own _create_invoice helper.
-        inv.action_post()
-        self.env["move.action.post.alert.wizard"].create({"move_id": inv.id}).action_confirm()
+        # _tfhka_validate_sequence_before_queue() only reads state/name/
+        # sequence_number/journal_id/tfhka_digitalization_state -- it doesn't
+        # need a real accounting-correct posted invoice. Going through the
+        # full action_post() -> move.action.post.alert.wizard -> stock/sale
+        # posting pipeline (like a real user would) pulls in unrelated
+        # machinery (stock reservations, sale_stock hooks, ...) that isn't
+        # needed here and has caused cross-test registry interference in the
+        # full suite. Assigning the name directly from the journal's own
+        # sequence keeps this a narrow unit test of the validation logic
+        # alone, while still exercising the real _inverse_name() ->
+        # _compute_split_sequence() chain so sequence_number is genuine.
+        inv.write({
+            "state": "posted",
+            "name": (journal or self.journal).sequence_id.next_by_id(),
+        })
         return inv
 
     def test_payment_first_mode_real_gap_blocks(self):
