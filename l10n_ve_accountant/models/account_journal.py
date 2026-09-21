@@ -53,29 +53,37 @@ class AccountJournal(models.Model):
     @api.constrains('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
     def _check_payment_method_line_accounts(self):
 
-        if self.env.context.get('chart_template_load'):
+        if self.env.context.get('chart_template_load') or self.env.context.get('install_mode'):
             return
-        
+
         for journal in self:
-            
+
             if journal.type == 'bank':
+                if not journal.inbound_payment_method_line_ids:
+                    raise UserError(_(
+                        "Journal \"%(journal)s\" must have at least one inbound payment method.",
+                        journal=journal.display_name,
+                    ))
+
+                if not journal.outbound_payment_method_line_ids:
+                    raise UserError(_(
+                        "Journal \"%(journal)s\" must have at least one outbound payment method.",
+                        journal=journal.display_name,
+                    ))
+
                 all_lines = journal.inbound_payment_method_line_ids | journal.outbound_payment_method_line_ids
-                
-                for line in all_lines:
-                    if not line.payment_account_id:
-                       
-                        raise UserError(_("All payment methods must have an assigned account.")) 
+                if not all_lines.mapped('payment_account_id'):
+                    raise UserError(_("All payment methods must have an assigned account."))
 
     @api.constrains('is_purchase_international')
     def _check_single_international_purchase_journal(self):
-        
         for record in self:
             if record.is_purchase_international:
                 domain = [
                     ('is_purchase_international', '=', True),
                     ('id', '!=', record.id),
                 ]
-                
+
                 if self.search_count(domain) > 0:
                     raise ValidationError(
                         _("An International Purchase Journal is already enabled. Only one is allowed.")
