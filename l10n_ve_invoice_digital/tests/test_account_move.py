@@ -2941,6 +2941,95 @@ class TestAccountMoveApiCalls(TransactionCase):
             {"esLote": False},
         )
 
+    # ------------------------------------------------------------------
+    # _get_document_name: el nombre debe salir de la secuencia (ticket
+    # #15324) -- interpolando marcadores como %(range_year)s y con el
+    # padding configurado, no un padding fijo de 8 dígitos.
+    # ------------------------------------------------------------------
+
+    def test_get_document_name_interpolates_range_year_and_uses_configured_padding(self):
+        sequence = self.env['ir.sequence'].create({
+            'name': 'FCON Test',
+            'code': '',
+            'prefix': 'FCON/%(range_year)s/',
+            'padding': 4,
+            'number_next_actual': 1,
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'Facturas de Conductores Test',
+            'code': 'FCONT',
+            'type': 'sale',
+            'sequence_id': sequence.id,
+            'company_id': self.company.id,
+        })
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            do_post=False,
+        )
+        # account.move.write() bloquea cambiar journal_id con un name ya
+        # asignado (podría abrir un hueco en la secuencia); se resetea a "/"
+        # primero, igual que exige ese guard.
+        inv.name = "/"
+        inv.journal_id = journal.id
+
+        name = self.env['tfhka.document.service']._get_document_name(inv, 59)
+
+        current_year = fields.Datetime.now().strftime('%Y')
+        self.assertEqual(name, f"FCON/{current_year}/0059")
+        self.assertNotIn("%(", name)
+
+    def test_get_document_name_out_refund_uses_refund_sequence(self):
+        refund_sequence = self.env['ir.sequence'].create({
+            'name': 'FCON Refund Test',
+            'code': '',
+            'prefix': 'FCON-NC/',
+            'padding': 4,
+            'number_next_actual': 1,
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'Facturas de Conductores Test 2',
+            'code': 'FCONT2',
+            'type': 'sale',
+            'sequence_id': self.journal.sequence_id.id,
+            'refund_sequence_id': refund_sequence.id,
+            'company_id': self.company.id,
+        })
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            do_post=False,
+        )
+        # account.move.write() bloquea cambiar journal_id con un name ya
+        # asignado (podría abrir un hueco en la secuencia); se resetea a "/"
+        # primero, igual que exige ese guard.
+        inv.name = "/"
+        inv.journal_id = journal.id
+
+        name = self.env['tfhka.document.service']._get_document_name(inv, 5)
+
+        self.assertEqual(name, "FCON-NC/0005")
+
+    # ------------------------------------------------------------------
+    # _check_name_has_no_unresolved_placeholder: red de seguridad contra
+    # nombres armados a mano en vez de vía la secuencia (ticket #15324).
+    # ------------------------------------------------------------------
+
+    def test_name_with_unresolved_placeholder_is_rejected(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            do_post=False,
+        )
+        with self.assertRaises(ValidationError):
+            inv.name = "FCON/%(range_year)s/00000059"
+
+    def test_normal_name_is_not_rejected(self):
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            do_post=False,
+        )
+        inv.name = "FCON/2026/0059"
+        self.assertEqual(inv.name, "FCON/2026/0059")
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "tfhka_sequence_validation")
 class TestAccountMoveSequenceValidation(TransactionCase):
