@@ -198,6 +198,28 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
         with self.assertRaises(UserError):
             journal.with_user(other_user).write({"type": "sale"})
 
+    def test_write_journal_type_to_allowed_type_without_support_group_does_not_raise(self):
+        """_validate_support_user_group: a user without the support group must
+        still be allowed to write an allowed type (bank/general/cash) -- the
+        UserError only fires for types outside that list.
+
+        Needs account.group_account_manager for the base ACL write access on
+        account.journal (separate from l10n_ve_accountant's own support
+        group, which this test deliberately withholds).
+        """
+        other_user = self._create_support_less_user()
+        other_user.group_ids = [Command.link(self.env.ref("account.group_account_manager").id)]
+        journal = self.env["account.journal"].sudo().create({
+            "name": "General Journal No Perm",
+            "code": "GNNPM",
+            "type": "general",
+            "company_id": self.company.id,
+        })
+
+        journal.with_user(other_user).write({"type": "cash"})
+
+        self.assertEqual(journal.type, "cash")
+
     def test_payment_method_line_on_non_bank_journal_has_no_default_account(self):
         """_default_payment_account_id must fall back to False for any
         journal that is not of type 'bank' (e.g. 'cash')."""
@@ -245,4 +267,22 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
             journal, payment.available_journal_ids,
             "A bank journal without an outbound payment_account_id must be "
             "excluded from available_journal_ids for outbound payments.",
+        )
+
+    def test_inbound_payment_excludes_journal_without_inbound_account(self):
+        """_compute_available_journal_ids (inbound branch): a bank journal
+        whose inbound payment method line has no payment_account_id must be
+        excluded from available_journal_ids on an inbound payment."""
+        journal = self._get_foreign_bank_journal(self.currency_eur)
+        inbound_line = journal.inbound_payment_method_line_ids
+        inbound_line.payment_account_id = False
+
+        payment = self.env["account.payment"].new({
+            "payment_type": "inbound",
+        })
+
+        self.assertNotIn(
+            journal, payment.available_journal_ids,
+            "A bank journal without an inbound payment_account_id must be "
+            "excluded from available_journal_ids for inbound payments.",
         )
