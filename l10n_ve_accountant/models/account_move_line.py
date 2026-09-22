@@ -107,13 +107,24 @@ class AccountMoveLine(models.Model):
                 line.price_unit_ves = line.price_unit
                 continue
             # Convertir con _convert() y no dividiendo entre currency_id.rate:
-            # aplica el redondeo de la moneda destino y no revienta si la tasa
-            # del dia no esta cargada (rate = 0).
-            line.price_unit_ves = line.currency_id._convert(
-                line.price_unit,
-                company_currency,
-                line.company_id,
-                line._get_foreign_rate_date(),
+            # no revienta si la tasa del dia no esta cargada (rate = 0).
+            # round=False + redondeo a la precision del campo (igual que
+            # _compute_foreign_price): _convert() redondea por defecto a los
+            # decimales de la moneda destino (VEF = 2), pero "Product Price"
+            # tiene mas digitos (6) - sin round=False esa precision extra se
+            # pierde antes de que el float_round de abajo pueda hacer nada.
+            precision = self.env["decimal.precision"].precision_get(
+                "Product Price"
+            )
+            line.price_unit_ves = float_round(
+                line.currency_id._convert(
+                    line.price_unit,
+                    company_currency,
+                    line.company_id,
+                    line._get_foreign_rate_date(),
+                    round=False,
+                ),
+                precision_digits=precision
             )
 
     def _compute_ves_currency_id(self):
@@ -247,12 +258,21 @@ class AccountMoveLine(models.Model):
         """Return the foreign value (signed) for this line, or None."""
         self.ensure_one()
 
-        # 1 — PT / Tax: use foreign_balance directly
+        # 1 — PT / Tax: use foreign_balance directly. `_sync_tax_lines`
+        # (account_move.py, `_round_mode`) ahora resincroniza y escribe
+        # `foreign_balance` de la linea de impuesto directamente cuando
+        # cambia `move_currency_to_company_currency_rate` -- esa escritura
+        # dispara `_inverse_foreign_balance`, que fija foreign_debit/credit.
+        # Ya no hace falta re-derivar el valor aca con `_convert()`.
         if self.display_type in ("payment_term", "tax"):
             return self.foreign_balance
 
-        # 2 — Section / Note: zero
-        if self.display_type in ("line_section", "line_note"):
+        # 2 — Section / Subsection / Note: zero. `line_subsection` is the
+        # display_type Odoo 19 added to this family; without it a
+        # subsection fell through to the branches below and could be
+        # handed a non-zero alternate-currency balance, unbalancing the
+        # entry in the foreign currency.
+        if self.display_type in ("line_section", "line_subsection", "line_note"):
             return 0.0
 
         # 3 — Manual debit adjustment

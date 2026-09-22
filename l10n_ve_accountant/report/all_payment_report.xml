@@ -38,7 +38,7 @@
                                             <br/>
                                         </t>
                                         <t t-if="res_company.vat">Rif:&amp;nbsp;
-                                            <span t-esc="res_company.vat"/>
+                                            <span t-esc="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
                                             <br/>
                                         </t>
                                     </div>

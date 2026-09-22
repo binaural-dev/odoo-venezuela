@@ -17,12 +17,17 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) depende únicamente de `invoice_date`, y en la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
 
 #### Scenario: Factura de venta
 
 - **WHEN** se establece o cambia la fecha de factura de un documento de venta sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a esa fecha
+
+#### Scenario: Factura de compra con solo la fecha contable editada
+
+- **WHEN** se edita únicamente `date` (sin tocar `invoice_date`) en un documento que no es de venta (por ejemplo `in_invoice`), sin tasa manual
+- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`, en vez de quedar congelados con la tasa de la fecha anterior
 
 #### Scenario: Factura de proveedor recién creada
 
@@ -156,12 +161,24 @@ Al sincronizar las líneas dinámicas de una factura **en borrador** (`_distribu
 
 ### Requirement: Corrección de redondeo multi-moneda (porción real)
 
-Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) corregir las diferencias de redondeo entre la suma de balances redondeados línea a línea y la conversión del total a la tasa cruda: distribuye la diferencia entre las líneas de producto proporcionalmente a su balance (`_apply_product_real_portion`), corrige los balances de las líneas de impuesto (`amount_currency / rate` redondeado) y ajusta las líneas de término de pago para que el asiento cierre, acumulando el ajuste en `real_portion_amount` e incrementando `real_portion_count`.
+Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) corregir las diferencias de redondeo introducidas por el redondeo línea a línea, en dos pasos independientes que corren en etapas distintas del ciclo de sincronización:
+
+1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa cruda del documento (`currency_id._convert` a la fecha de factura), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
+2. Durante `_sync_tax_lines` (bloque "Fix multi-currency rounding" de `account.move`), tras calcular `tax_results` con el motor estándar de impuestos: el balance de cada línea de impuesto cuyo repartition line pertenece a un impuesto `amount_type = 'percent'` se recalcula NATIVAMENTE en VEF, sumando el `balance` fresco (ya calculado en este mismo ciclo, NO el campo `record.balance` desactualizado) de las líneas de producto que usan ese impuesto y aplicando `% del impuesto x factor_percent de la línea de reparto`; `amount_currency` se deriva multiplicando ese balance por `move.invoice_currency_rate` y redondeando con `move.currency_id` (la moneda del documento, NO la de la compañía -- VEF es el monto "maestro" para `balance`, pero `amount_currency` debe respetar la precisión de la moneda en la que está la factura). El match de las líneas de producto que usan el impuesto considera tanto el impuesto directo (`tax in record.tax_ids`) como su `group_tax_id`: `record.tax_ids` trae el impuesto tal como lo eligió el usuario, que para un `percent` hijo de un `amount_type = 'group'` es el grupo, no el hijo -- sin este segundo criterio la base salía en 0 para esos hijos, sin romper el cuadre del asiento (ver "Requirement" de este mismo bloque, punto 3, que ancla la contrapartida al resto). Para impuestos `fixed`/`division`/`group`, y para las líneas base, se mantiene `amount_currency / rate` como antes. Esto evita que el % del impuesto visible en el asiento diverja de la base real de las líneas de producto (ver `l10n_ve_accountant/tests/test_multi_currency_rounding.py`, tests 15-22, 26 y 27).
+3. Durante `_sync_dynamic_lines`, ya con el recompute del core aplicado (`account.move._distribute_invoice_real_portion`): recorre las líneas de impuesto y, para las de un impuesto `fixed`/`division`/`group`, fija `balance = amount_currency / rate` redondeado (ruta real de cálculo para esos tipos). Para impuestos `amount_type = 'percent'` este paso hace `continue` explícito y NO toca el balance -- **no son idempotentes** entre sí: `amount_currency / rate` divide por una tasa pequeña (VEF hacia la moneda del documento), lo que amplifica el redondeo de 2 decimales de `amount_currency` a un error de varios bolívares en VEF (confirmado empíricamente con precios a 6 decimales y cantidades no enteras, `l10n_ve_accountant/tests/test_multi_currency_rounding.py::test_24_distribute_invoice_real_portion_would_diverge_without_the_skip`); si este paso recalculara el balance de esas líneas, revertiría el cálculo VEF-nativo del paso 2. Luego ancla la contrapartida (las líneas de término de pago si existen; si no, el resto de líneas sin `tax_repartition_line_id`) a `-actual_non_pt`, donde `actual_non_pt` es la suma REAL de los balances de todas las líneas que no son de término de pago, COGS, ni sección/subsección/nota (`line_section`/`line_subsection`/`line_note`, excluidas para no violar el `CHECK` de líneas no contables) tal como quedaron después del recompute — NO una conversión directa del total del documento. El ajuste se acumula en `real_portion_amount` e incrementa `real_portion_count`.
+
+Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_total`: toma como base fiscal la suma real de los balances de producto e impuesto ya corregidos por los pasos anteriores, para que la contrapartida siga siendo consistente aunque el core recompute las líneas de producto en un sync posterior (p. ej. al cambiar la fecha del documento).
 
 #### Scenario: Factura multi-línea en divisa
 
-- **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total en la unidad de redondeo
-- **THEN** la diferencia se reparte entre las líneas de producto y el asiento queda balanceado al valor esperado
+- **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total de esas líneas en la unidad de redondeo
+- **THEN** la diferencia se reparte entre las líneas de producto (`_apply_product_real_portion`) y, al sincronizar las líneas dinámicas, la contrapartida se ancla a la suma real de las líneas no-PT resultante
+
+#### Scenario: Cambio de fecha a una fecha con la misma tasa vigente no descuadra el asiento (ticket 15089)
+
+- **GIVEN** una factura en divisa ya distribuida, con su contrapartida anclada a `actual_non_pt`
+- **WHEN** se cambia la fecha del documento a otra fecha cuya tasa de cambio vigente es idéntica, y el core recompute las líneas de producto a sus valores originales
+- **THEN** `_distribute_invoice_real_portion` vuelve a calcular `actual_non_pt` a partir de los balances ya recomputados, y reancla la contrapartida a `-actual_non_pt`, dejando el asiento balanceado sin depender de un ajuste previo que el recompute pudo haber descartado
 
 ### Requirement: Totales de factura en moneda alterna
 
@@ -415,7 +432,7 @@ Una regla de registro (`account_move_unlink_draft_only`) DEBE (MUST) aplicar al 
 
 ### Requirement: Fecha de factura desacoplada de la fecha contable
 
-El campo `invoice_date_display` DEBE (MUST) ser la fuente de la fecha contable (`_get_accounting_date_source` devuelve `invoice_date_display` o `date`), permitiendo que `invoice_date` quede reservada al cálculo de tasa; en documentos de venta, cambiar `invoice_date_display` sincroniza `invoice_date` con el mismo valor.
+El campo `invoice_date_display` DEBE (MUST) ser la fuente de la fecha contable (`_get_accounting_date_source` devuelve `invoice_date_display` o `date`), permitiendo que `invoice_date` quede reservada al cálculo de tasa; en documentos de venta, cambiar `invoice_date_display` sincroniza `invoice_date` con el mismo valor. El recálculo de `date` (`_compute_date`) DEBE (MUST) depender de `invoice_date_display` **y** de `company_id`, `move_type` y `taxable_supply_date` — las mismas dependencias adicionales que ya declara `_compute_date` del core (`account`), que su cuerpo (heredado vía `super()`) sigue usando internamente (`_get_accounting_date`, `is_sale_document`, `_affect_tax_report`); omitir alguna de ellas al sobreescribir `@api.depends` (que reemplaza la lista del padre en vez de extenderla) dejaría `date` sin recalcularse ante un cambio de compañía, tipo de documento, o fecha de suministro imponible que no toque también `invoice_date_display`.
 
 #### Scenario: Cambio de fecha en factura de venta
 
