@@ -96,6 +96,23 @@ El campo `discount` NUNCA se escribe ni se lee para este cálculo: se queda en s
 
 Un `discount_fixed` que alcance o supere el subtotal bruto de la línea (`price_unit * quantity`) DEBE (MUST) bloquear el guardado con un error en términos de monto fijo (no de porcentaje).
 
+`discount` y `discount_fixed` son mutuamente excluyentes, decidido enteramente por `discount_type` de la compañía (no por comparación de valores anteriores): cualquier `create()`/`write()`/onchange del formulario que toque alguno de los dos campos fuerza el que NO corresponde al `discount_type` vigente a 0.0, en la misma operación. Con `discount_type = 'amount'`, `discount` siempre queda en 0.0 sin importar qué se intente escribir en él. Con `discount_type = 'percent'`, `discount_fixed` siempre queda en 0.0 sin importar qué se intente escribir en él.
+
+#### Scenario: Modo amount fuerza discount a 0 sin importar qué se escriba
+
+- **WHEN** la compañía tiene `discount_type = 'amount'` y una escritura toca `discount` o `discount_fixed` (por cualquier vía)
+- **THEN** `discount` queda en 0.0 en esa misma operación, tenga o no un valor previo
+
+#### Scenario: Modo percent fuerza discount_fixed a 0 sin importar qué se escriba
+
+- **WHEN** la compañía tiene `discount_type = 'percent'` y una escritura toca `discount` o `discount_fixed` (por cualquier vía)
+- **THEN** `discount_fixed` queda en 0.0 en esa misma operación, tenga o no un valor previo
+
+#### Scenario: Ambos campos en la misma escritura
+
+- **WHEN** se crea o escribe una línea fijando `discount` y `discount_fixed` distintos de cero en la misma operación, con la compañía en modo `amount`
+- **THEN** `discount_fixed` conserva su valor y `discount` queda en 0.0 (el config decide, no el orden ni los valores dados)
+
 #### Scenario: Escritura por cualquier vía aplica el descuento
 
 - **WHEN** se crea o escribe una línea con `discount_fixed` distinto de cero, ya sea desde el formulario, `create()`/`write()` por código, o una importación

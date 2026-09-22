@@ -160,6 +160,83 @@ class TestAccountMoveLineFixedDiscount(TransactionCase):
         self.assertEqual(line.discount, 0.0)
         self.assertEqual(line.price_subtotal, 80.0)
 
+    # ── discount and discount_fixed are mutually exclusive, per config ──
+    # setUp leaves discount_type='amount'; switched to 'percent' where noted.
+
+    def test_amount_mode_writing_discount_fixed_zeroes_out_discount(self):
+        move, line = self._create_invoice(price_unit=100.0)
+        line.write({"discount_fixed": 30.0})
+
+        self.assertEqual(line.discount_fixed, 30.0)
+        self.assertEqual(line.discount, 0.0)
+
+    def test_amount_mode_writing_discount_directly_is_forced_to_zero(self):
+        """discount_type='amount' means discount (%) is never the active
+        field -- writing it directly gets forced back to 0 regardless."""
+        move, line = self._create_invoice(price_unit=100.0)
+        line.write({"discount": 20.0})
+
+        self.assertEqual(line.discount, 0.0)
+
+    def test_percent_mode_writing_discount_zeroes_out_discount_fixed(self):
+        """Seed discount_fixed while still in 'amount' mode (as it would
+        happen before the company switches configuration), then switch to
+        'percent' and write discount -- discount_fixed must be cleared."""
+        move, line = self._create_invoice(price_unit=100.0, discount_fixed=30.0)
+        self.assertEqual(line.discount_fixed, 30.0)
+
+        self.company.discount_type = "percent"
+        line.write({"discount": 20.0})
+
+        self.assertEqual(line.discount, 20.0)
+        self.assertEqual(line.discount_fixed, 0.0)
+
+    def test_percent_mode_writing_discount_fixed_directly_is_forced_to_zero(self):
+        self.company.discount_type = "percent"
+        move, line = self._create_invoice(price_unit=100.0)
+        line.write({"discount_fixed": 30.0})
+
+        self.assertEqual(line.discount_fixed, 0.0)
+
+    def test_creating_line_in_amount_mode_ignores_discount_given_at_create(self):
+        """If both are given together on create() while in 'amount' mode,
+        discount is forced to 0 -- the config alone decides, not priority
+        between the two values given."""
+        move, _ = self._create_invoice(price_unit=50.0)
+        line2 = self.env["account.move.line"].create(
+            {
+                "move_id": move.id,
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 100.0,
+                "discount": 15.0,
+                "discount_fixed": 40.0,
+                "tax_ids": [Command.set([self.tax_iva16.id])],
+            }
+        )
+        self.assertEqual(line2.discount_fixed, 40.0)
+        self.assertEqual(line2.discount, 0.0)
+
+    def test_onchange_in_amount_mode_always_zeroes_discount(self):
+        """Same exclusivity, simulated through the form's onchange (before
+        save) so the UI reflects it immediately."""
+        move, line = self._create_invoice(price_unit=100.0, discount_fixed=25.0)
+
+        line_new = line.new(origin=line)
+        line_new._onchange_discount_exclusivity()
+
+        self.assertEqual(line_new.discount, 0.0)
+
+    def test_onchange_in_percent_mode_always_zeroes_discount_fixed(self):
+        self.company.discount_type = "percent"
+        move, line = self._create_invoice(price_unit=100.0)
+        line.discount = 20.0
+
+        line_new = line.new(origin=line)
+        line_new._onchange_discount_exclusivity()
+
+        self.assertEqual(line_new.discount_fixed, 0.0)
+
     # ── native totals (price_subtotal / price_total) ────────────────────
 
     def test_price_subtotal_matches_native_percentage_discount(self):
@@ -170,6 +247,10 @@ class TestAccountMoveLineFixedDiscount(TransactionCase):
             price_unit=100.0, discount_fixed=20.0
         )
 
+        # Native discount (%) is only writable while the company is in
+        # 'percent' mode -- switching here doesn't touch line_fixed, whose
+        # totals were already computed above.
+        self.company.discount_type = "percent"
         move_percent = self.env["account.move"].create(
             {
                 "move_type": "out_invoice",
@@ -285,6 +366,7 @@ class TestAccountMoveLineFixedDiscount(TransactionCase):
             foreign_rate=40.0, foreign_inverse_rate=40.0,
         )
 
+        self.company.discount_type = "percent"
         move_percent = self.env["account.move"].create(
             {
                 "move_type": "out_invoice",

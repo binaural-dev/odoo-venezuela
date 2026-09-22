@@ -126,8 +126,9 @@
 
             <!-- Fixed-amount discount on invoice lines: shown instead of the
                  native percentage discount when the company setting is on.
-                 discount_fixed only feeds the native discount (%) field, so
-                 taxes/totals/foreign amounts keep using the native field. -->
+                 discount_fixed drives price_subtotal/price_total/foreign
+                 amounts directly (see account_move_line.py); discount (%)
+                 is never read nor written while this mode is active. -->
             <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="attributes">
                 <attribute name="column_invisible">parent.discount_type == 'amount'</attribute>
                 <attribute name="invisible">parent.discount_type == 'amount'</attribute>
