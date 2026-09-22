@@ -63,7 +63,11 @@
       automatizable desde este repo) Confirmar en el cliente reportante
       (TI-15211) que, tras `-u l10n_ve_base`, las facturas nocturnas dejan
       de desfasarse. El repro automatizado equivalente ya vive en
-      `l10n_ve_accountant/tests/test_ti_15211_invoice_date_timezone.py`.
+      `l10n_ve_invoice/tests/test_ti_15211_invoice_date_timezone.py`.
+- [ ] 5.4 Correr `-u l10n_ve_base --test-enable --test-tags /l10n_ve_base`
+      contra una DB con el módulo ya instalado en `19.0.1.0` (no solo
+      `-i`) y pegar en el PR el `_logger.info` del backfill — debe listar
+      a OdooBot y al Public user por compañía.
 - [ ] 5.3 Revisar si algún otro flujo (vencimientos, reportes, cron) se
       vio afectado por el mismo `tz` vacío en el mismo ambiente
 
@@ -93,3 +97,21 @@
       por `post-migrate.py`
 - [x] 7.8 Newline final agregado en `l10n_ve_base/__init__.py` y
       `l10n_ve_base/models/__init__.py`
+
+## 8. Correcciones del review (PR #1346, christopherBinaural, ronda 2)
+
+- [x] 8.1 Migración: dominio corregido para alcanzar al Public user por
+      compañía (`base.group_public`) sin tocar portales de clientes —
+      `share = False` por sí solo excluía al Public user, que es
+      `share = True` igual que un portal. Tests nuevos:
+      `test_backfills_public_user_with_empty_tz` y
+      `test_does_not_touch_portal_users`
+      (`l10n_ve_base/tests/test_migration_backfill_tz.py`).
+- [x] 8.2 DoD: aserción agregada sobre `account.move.line.date` en
+      `l10n_ve_invoice/tests/test_ti_15211_invoice_date_timezone.py`
+      (antes solo se validaban los campos del `account.move`).
+- [x] 8.3 `proposal.md` § Impact: declarada la columna nueva
+      `ir_module_module.binaural` (data-model change en rama estable) y
+      el criterio de alcance del Public user en la migración.
+- [ ] 8.4 Evidencia de `-u l10n_ve_base` real (ver 5.4) — pendiente de
+      correr contra una DB con el módulo ya instalado en `19.0.1.0`.

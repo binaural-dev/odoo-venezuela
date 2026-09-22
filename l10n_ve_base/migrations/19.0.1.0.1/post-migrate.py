@@ -25,21 +25,34 @@ def migrate(cr, version):
 
     Scope of the search:
     - `active_test=False`: without it, `res.users.search()` silently skips
-      archived users -- notably OdooBot (uid=1) and the Public user, which
-      are exactly the accounts that run crons, background jobs and portal
-      requests without an interactive session (and therefore without a
-      `tz` in context). These are the accounts most likely to trigger the
-      original bug, so excluding them would defeat the purpose of the
-      backfill.
-    - `share = False`: excludes portal/public users. Those are customer
-      partners, not internal/system users -- their timezone is not this
-      migration's concern, and touching them would be an unwanted side
-      effect on customer data.
+      archived users -- notably OdooBot (uid=1) and the Public user(s),
+      which are exactly the accounts that run crons, background jobs and
+      public/portal requests without an interactive session (and
+      therefore without a `tz` in context). These are the accounts most
+      likely to trigger the original bug, so excluding them would defeat
+      the purpose of the backfill.
+    - `share = False` OR member of `base.group_public`: `share = True`
+      covers both customer portal users and the Public user(s) (one per
+      company), but only the portal users are actual customer partners --
+      the Public user is a system account, not a customer's identity.
+      Filtering solely by `share = False` (an earlier version of this
+      migration did) excluded the Public user too, which is exactly the
+      actor reported in TI-15211 (documents created through the public/
+      digitization flow). Matching `base.group_public` on top of
+      `share = False` reaches the Public user(s) without touching portal
+      users, whose timezone is customer data and not this migration's
+      concern.
     """
     env = api.Environment(cr, SUPERUSER_ID, {})
-    users = env["res.users"].with_context(active_test=False).search(
-        [("tz", "=", False), ("share", "=", False)]
-    )
+    group_public = env.ref("base.group_public", raise_if_not_found=False)
+    if group_public:
+        domain = [
+            "&", ("tz", "=", False),
+            "|", ("group_ids", "in", group_public.id), ("share", "=", False),
+        ]
+    else:
+        domain = [("tz", "=", False), ("share", "=", False)]
+    users = env["res.users"].with_context(active_test=False).search(domain)
     if not users:
         return
 

@@ -142,3 +142,10 @@ class TestTi15211InvoiceDateTimezone(TransactionCase):
         self.assertEqual(invoice.date, _EXPECTED_CARACAS_DATE)
         self.assertEqual(invoice.invoice_date, invoice.invoice_date_display)
         self.assertEqual(invoice.invoice_date_display, invoice.date)
+
+        # DoD item 2 (TI-15211): the accounting entries (`account.move.line`)
+        # must also settle on the correct local date, not just the move's
+        # own `date`/`invoice_date_display` fields.
+        self.assertTrue(invoice.line_ids)
+        for line in invoice.line_ids:
+            self.assertEqual(line.date, _EXPECTED_CARACAS_DATE)

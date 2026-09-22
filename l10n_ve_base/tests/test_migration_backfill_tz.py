@@ -84,6 +84,44 @@ class TestMigrationBackfillTz(TransactionCase):
             user.with_context(active_test=False).tz, "America/Caracas"
         )
 
+    def test_backfills_public_user_with_empty_tz(self):
+        """`share = True` covers both customer portal users and the Public
+        user (one per company) -- filtering solely by `share = False`
+        excludes the Public user too, which is exactly the actor reported
+        in TI-15211 (documents created through the public/digitization
+        flow, running without an interactive session). The migration must
+        reach the Public user via `base.group_public` without touching
+        real customer portal users (see
+        `test_does_not_touch_portal_users`)."""
+        group_public = self.env.ref("base.group_public")
+        user = self._create_user("test_l10n_ve_base_migrate_public", tz=False)
+        user.write({"group_ids": [(6, 0, [group_public.id])]})
+        user.active = False
+        self.assertTrue(user.share)
+        self.assertFalse(user.tz)
+
+        self.migration.migrate(self.env.cr, "19.0.1.0.1")
+
+        self.assertEqual(
+            user.with_context(active_test=False).tz, "America/Caracas"
+        )
+
+    def test_does_not_touch_portal_users(self):
+        """Portal users are customer partners, not system/internal
+        accounts -- their timezone is customer data and not this
+        migration's concern, unlike the Public user (see
+        `test_backfills_public_user_with_empty_tz`)."""
+        user = self._create_user("test_l10n_ve_base_migrate_portal", tz=False)
+        user.write({
+            "group_ids": [(6, 0, [self.env.ref("base.group_portal").id])]
+        })
+        self.assertTrue(user.share)
+        self.assertFalse(user.tz)
+
+        self.migration.migrate(self.env.cr, "19.0.1.0.1")
+
+        self.assertFalse(user.tz)
+
     def test_noop_when_no_user_has_empty_tz(self):
         """Guard against the early-return path raising or misbehaving when
         there's nothing to backfill. The migration's domain now always
@@ -93,8 +131,10 @@ class TestMigrationBackfillTz(TransactionCase):
         OdooBot) with an empty `tz` would make this test backfill something
         anyway."""
         self._create_user("test_l10n_ve_base_migrate_noop", tz="UTC")
-        self.env["res.users"].with_context(active_test=False).search(
-            [("tz", "=", False), ("share", "=", False)]
-        ).partner_id.write({"tz": "UTC"})
+        group_public = self.env.ref("base.group_public")
+        self.env["res.users"].with_context(active_test=False).search([
+            "&", ("tz", "=", False),
+            "|", ("group_ids", "in", group_public.id), ("share", "=", False),
+        ]).partner_id.write({"tz": "UTC"})
 
         self.migration.migrate(self.env.cr, "19.0.1.0.1")

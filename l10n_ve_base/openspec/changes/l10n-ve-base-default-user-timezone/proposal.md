@@ -141,7 +141,20 @@ creación queda permanentemente en `False`.
   compañía sin tz).
 - **Datos existentes**: requiere `-u l10n_ve_base` para que la migración
   corra. Usuarios con `tz` ya seteado (aunque sea distinto de
-  `America/Caracas`, p. ej. un usuario remoto) no se tocan.
+  `America/Caracas`, p. ej. un usuario remoto) no se tocan. La búsqueda
+  de la migración alcanza a usuarios internos (`share = False`) y,
+  explícitamente, al Public user por compañía (`base.group_public`) sin
+  tocar portales de clientes (`share = True` sin ese grupo) — el Public
+  user es el actor reportado en TI-15211 (flujo de digitalización sin
+  sesión interactiva).
+- **Columna nueva en `ir.module.module` (rama estable)**: `l10n_ve_base`
+  tenía `__init__.py` vacío, así que `models/` (incluido `ir_module.py`,
+  que declara el campo `binaural`) nunca cargaba. Al corregirlo para que
+  el nuevo default de `tz` funcione, `-u l10n_ve_base` crea **por primera
+  vez** la columna `ir_module_module.binaural` en todos los clientes. Es
+  un efecto colateral necesario (no se puede activar `models/` de forma
+  parcial), y requiere el visto bueno del líder técnico por tratarse de
+  un cambio de data-model en rama estable.
 - **Riesgo**: bajo. El fallback solo actúa cuando no hay ninguna señal de
   tz (ni contexto ni usuario), y es el mismo valor regional que ya se usa
   como default de facto en el resto de la localización venezolana.
