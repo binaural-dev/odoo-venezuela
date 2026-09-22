@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from collections import defaultdict, deque
 from threading import Lock
@@ -33,6 +34,15 @@ _rate_buckets = defaultdict(deque)
 # Cédula (V/E) y RIF (J/G) son numéricos; P (pasaporte)/C se dejan libres.
 _NUMERIC_PREFIXES = ("V", "E", "J", "G")
 
+# Códigos de operadora móvil venezolana. Espeja la validación del cliente
+# (identification_page.js, PHONE_OPERATOR_CODES) — mantener ambas listas
+# sincronizadas.
+_PHONE_OPERATOR_CODES = ("0412", "0414", "0416", "0422", "0424", "0426")
+# Formato de negocio: "<código>-<7 dígitos>", p. ej. "0414-1234567". El
+# Kiosko compone y envía este único string; el servidor revalida el string
+# completo en vez de confiar en el split que hizo el cliente.
+_PHONE_RE = re.compile(r"^(%s)-\d{7}$" % "|".join(_PHONE_OPERATOR_CODES))
+
 
 def _ve_within_rate_limit(access_token):
     """True si la petición cabe dentro del rate-limit; False si hay que frenar.
@@ -65,6 +75,26 @@ def _ve_vat_format_error(prefix_vat, vat):
         return _("Enter the ID number.")
     if prefix_vat in _NUMERIC_PREFIXES and not vat.isdigit():
         return _("The ID number must contain only digits.")
+    return None
+
+
+def _ve_phone_format_error(phone):
+    """Devuelve el mensaje de error de formato, o ``None`` si es válido.
+
+    Valida en el servidor lo mismo que el cliente (``identification_page.js``):
+    el teléfono debe ser ``"<código de operadora>-<7 dígitos>"``, p. ej.
+    ``"0414-1234567"``. El teléfono es obligatorio en el Kiosko (creación de
+    contacto y completar teléfono faltante), así que un valor vacío también
+    es un error de formato.
+    """
+    phone = (phone or "").strip()
+    if not phone:
+        return _("Enter the phone number.")
+    if not _PHONE_RE.match(phone):
+        return _(
+            "Enter a valid Venezuelan mobile phone number "
+            "(operator code + 7 digits, e.g. 0414-1234567)."
+        )
     return None
 
 
@@ -151,13 +181,21 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         if format_error:
             return {"res.partner": [], "error": format_error}
 
+        # El teléfono es obligatorio (y con formato validado) tanto para un
+        # cliente nuevo como para rellenar uno existente que no lo tenía —
+        # mismo criterio que set_phone.
+        phone_error = _ve_phone_format_error(phone)
+        if phone_error:
+            return {"res.partner": [], "error": phone_error}
+        phone = phone.strip()
+
         # Dedup: si la cédula ya existe, NO crear un duplicado. Devolver el
         # existente y —solo si le falta— rellenarle el teléfono (fill-only,
         # nunca sobrescribe uno que ya tenía).
         partner_model = pos_config.env["res.partner"].sudo()
         partner = self._ve_find_partner(pos_config, prefix_vat, vat)
         if partner:
-            if phone and not partner.phone:
+            if not partner.phone:
                 partner.phone = phone
             return {
                 "res.partner": partner.read(["id", "name", "vat", "prefix_vat"], load=False),
@@ -207,12 +245,16 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         if not _ve_within_rate_limit(access_token):
             return {"res.partner": [], "error": _("Too many attempts. Please wait a moment.")}
 
-        phone = (phone or "").strip()
+        phone_error = _ve_phone_format_error(phone)
+        if phone_error:
+            return {"res.partner": [], "error": phone_error}
+        phone = phone.strip()
+
         partner = self._ve_find_partner(pos_config, prefix_vat, vat)
         if not partner:
             return {"res.partner": [], "error": _("Customer not found.")}
         # Fill-only: nunca sobrescribir un teléfono ya existente.
-        if phone and not partner.phone:
+        if not partner.phone:
             partner.phone = phone
         return {
             "res.partner": partner.read(["id", "name", "vat", "prefix_vat"], load=False),

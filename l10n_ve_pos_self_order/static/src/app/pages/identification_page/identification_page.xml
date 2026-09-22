@@ -46,11 +46,20 @@
                         </p>
                         <div class="mx-auto" style="max-width: 32rem;">
                             <p class="text-center text-muted small mb-3" t-esc="requiredFieldsLegend"/>
-                            <input type="tel" inputmode="tel" autocomplete="off"
-                                   class="form-control form-control-lg mb-3"
-                                   t-att-placeholder="phonePlaceholder"
-                                   t-model="state.phone"
-                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onSavePhone()"/>
+                            <div class="d-flex gap-2 mb-3">
+                                <select class="form-select form-select-lg flex-shrink-0 o_ve_phone_code_select"
+                                        t-model="state.phoneCode">
+                                    <option value="" t-esc="phoneCodePlaceholder"/>
+                                    <option t-foreach="phoneCodeOptions" t-as="code" t-key="code"
+                                            t-att-value="code" t-esc="code"/>
+                                </select>
+                                <input type="tel" inputmode="numeric" autocomplete="off"
+                                       class="form-control form-control-lg"
+                                       t-att-placeholder="phoneNumberPlaceholder"
+                                       t-att-value="state.phoneNumber"
+                                       t-on-input="(ev) => this.onPhoneNumberInput(ev)"
+                                       t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onSavePhone()"/>
+                            </div>
                             <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
                         </div>
                     </t>
@@ -71,10 +80,19 @@
                                    class="form-control form-control-lg mb-3"
                                    t-att-placeholder="lastNamePlaceholder"
                                    t-model="state.lastName"/>
-                            <input type="tel" inputmode="tel" autocomplete="off"
-                                   class="form-control form-control-lg mb-3"
-                                   t-att-placeholder="phonePlaceholder"
-                                   t-model="state.phone"/>
+                            <div class="d-flex gap-2 mb-3">
+                                <select class="form-select form-select-lg flex-shrink-0 o_ve_phone_code_select"
+                                        t-model="state.phoneCode">
+                                    <option value="" t-esc="phoneCodePlaceholder"/>
+                                    <option t-foreach="phoneCodeOptions" t-as="code" t-key="code"
+                                            t-att-value="code" t-esc="code"/>
+                                </select>
+                                <input type="tel" inputmode="numeric" autocomplete="off"
+                                       class="form-control form-control-lg"
+                                       t-att-placeholder="phoneNumberPlaceholder"
+                                       t-att-value="state.phoneNumber"
+                                       t-on-input="(ev) => this.onPhoneNumberInput(ev)"/>
+                            </div>
                             <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
                         </div>
                     </t>
@@ -99,13 +117,13 @@
                     </button>
                     <button t-elif="state.step === 'phone'"
                             class="btn btn-lg btn-primary px-5"
-                            t-att-disabled="state.loading || !state.phone.trim()"
+                            t-att-disabled="phoneStepDisabled"
                             t-on-click="() => this.onSavePhone()">
                         Save and continue
                     </button>
                     <button t-else=""
                             class="btn btn-lg btn-primary px-5"
-                            t-att-disabled="state.loading || !state.firstName.trim() || !state.lastName.trim() || !state.phone.trim()"
+                            t-att-disabled="createDisabled"
                             t-on-click="() => this.onCreate()">
                         Create and continue
                     </button>

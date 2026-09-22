@@ -16,15 +16,15 @@
 
 ## 3. Teléfono obligatorio y validado (punto 1)
 
-- [ ] 3.1 `identification_page.js`: selector de operadora (0412/0414/0416/
+- [x] 3.1 `identification_page.js`: selector de operadora (0412/0414/0416/
       0422/0424/0426) + número de 7 dígitos, formato `"0414-1234567"`
-- [ ] 3.2 `identification_page.xml`: reemplazar el input libre de teléfono por
+- [x] 3.2 `identification_page.xml`: reemplazar el input libre de teléfono por
       el selector + número, en los pasos de teléfono y creación de contacto
-- [ ] 3.3 `identification_page.scss`: estilo del selector de operadora
-- [ ] 3.4 `controllers/orders.py`: `_ve_phone_format_error` — mismo patrón que
+- [x] 3.3 `identification_page.scss`: estilo del selector de operadora
+- [x] 3.4 `controllers/orders.py`: `_ve_phone_format_error` — mismo patrón que
       `_ve_vat_format_error`; aplicado en `identify_create` y `set_phone`
-- [ ] 3.5 `i18n/es_VE.po`: cadenas nuevas (JS + Python)
-- [ ] 3.6 `tests/test_kiosk_public_routes.py`: tests de formato de teléfono
+- [x] 3.5 `i18n/es_VE.po`: cadenas nuevas (JS + Python)
+- [x] 3.6 `tests/test_kiosk_public_routes.py`: tests de formato de teléfono
 
 ## 4. Dirección opcional/obligatoria (punto 2)
 

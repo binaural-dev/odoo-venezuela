@@ -25,6 +25,7 @@ from odoo.tests import TransactionCase, tagged
 from odoo.addons.pos_self_order.controllers.orders import PosSelfOrderController
 from odoo.addons.l10n_ve_pos_self_order.controllers.orders import (
     L10nVePosSelfOrderController,
+    _ve_phone_format_error,
     _ve_vat_format_error,
     _ve_within_rate_limit,
     _RATE_LIMIT_MAX,
@@ -50,6 +51,27 @@ class TestKioskIdentifyHelpers(TransactionCase):
         """P (pasaporte) y C admiten alfanumérico (no numérico estricto)."""
         self.assertIsNone(_ve_vat_format_error("P", "AB123456"))
         self.assertIsNone(_ve_vat_format_error("C", "X-99"))
+
+    def test_phone_format_valid_operator_codes(self):
+        """Los 6 códigos de operadora + 7 dígitos son válidos."""
+        for code in ("0412", "0414", "0416", "0422", "0424", "0426"):
+            self.assertIsNone(_ve_phone_format_error(f"{code}-1234567"))
+
+    def test_phone_format_empty_is_rejected(self):
+        self.assertTrue(_ve_phone_format_error(""))
+        self.assertTrue(_ve_phone_format_error("   "))
+        self.assertTrue(_ve_phone_format_error(False))
+
+    def test_phone_format_unknown_operator_rejected(self):
+        self.assertTrue(_ve_phone_format_error("0499-1234567"))
+
+    def test_phone_format_wrong_digit_count_rejected(self):
+        self.assertTrue(_ve_phone_format_error("0414-123456"))
+        self.assertTrue(_ve_phone_format_error("0414-12345678"))
+
+    def test_phone_format_non_digits_rejected(self):
+        self.assertTrue(_ve_phone_format_error("0414-ABCDEFG"))
+        self.assertTrue(_ve_phone_format_error("04141234567"))
 
     def test_rate_limit_blocks_after_max_in_window(self):
         """Dentro de la ventana, la petición nº (MAX+1) para el MISMO token se
@@ -341,28 +363,75 @@ class TestKioskPublicRoutes(TransactionCase):
         )
         self.assertEqual(p_empty.phone, "0412-2222222")
 
-        p_full = self._make_partner("V", "55555555", phone="0412-ORIGINAL")
+        p_full = self._make_partner("V", "55555555", phone="0412-0000001")
         self._self_order(
             "l10n_ve_kiosk_identify_create",
             access_token=self.config.access_token,
             prefix_vat="V",
             vat="55555555",
             name="x",
-            phone="0412-NUEVO",
+            phone="0412-0000002",
         )
-        self.assertEqual(p_full.phone, "0412-ORIGINAL", "no debe sobrescribir")
+        self.assertEqual(p_full.phone, "0412-0000001", "no debe sobrescribir")
 
-    def test_identify_create_invalid_format_rejected(self):
+    def test_identify_create_invalid_vat_format_rejected(self):
         result = self._self_order(
             "l10n_ve_kiosk_identify_create",
             access_token=self.config.access_token,
             prefix_vat="V",
             vat="12AB34",
             name="x",
+            phone="0412-1111111",
+        )
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_phone_is_mandatory(self):
+        """Sin teléfono (o con formato inválido) no se crea el contacto."""
+        before = self.env["res.partner"].search_count(
+            [("prefix_vat", "=", "V"), ("vat", "=", "88888888")]
+        )
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="88888888",
+            name="x",
             phone="",
         )
         self.assertEqual(result["res.partner"], [])
         self.assertTrue(result["error"])
+        after = self.env["res.partner"].search_count(
+            [("prefix_vat", "=", "V"), ("vat", "=", "88888888")]
+        )
+        self.assertEqual(after, before)
+
+    def test_identify_create_invalid_phone_format_rejected(self):
+        """Operadora desconocida o largo distinto de 7 dígitos → rechazado."""
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="89898989",
+            name="x",
+            phone="0499-1234567",
+        )
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_valid_phone_is_saved_as_is(self):
+        """El teléfono llega ya compuesto por el cliente ("0414-1234567") y se
+        guarda tal cual, sin reformatear."""
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="90909090",
+            name="Cliente Nuevo",
+            phone="0414-1234567",
+        )
+        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        self.assertEqual(partner.phone, "0414-1234567")
 
     # -- set_phone -----------------------------------------------------------
 
@@ -377,15 +446,27 @@ class TestKioskPublicRoutes(TransactionCase):
         )
         self.assertEqual(p_empty.phone, "0412-3333333")
 
-        p_full = self._make_partner("V", "77777777", phone="0412-KEEP")
+        p_full = self._make_partner("V", "77777777", phone="0412-0000009")
         self._self_order(
             "l10n_ve_kiosk_identify_set_phone",
             access_token=self.config.access_token,
             prefix_vat="V",
             vat="77777777",
-            phone="0412-OTRO",
+            phone="0412-0000008",
         )
-        self.assertEqual(p_full.phone, "0412-KEEP")
+        self.assertEqual(p_full.phone, "0412-0000009", "no debe sobrescribir")
+
+    def test_set_phone_invalid_format_rejected(self):
+        p_empty = self._make_partner("V", "91919191")
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_set_phone",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="91919191",
+            phone="0499-1234567",
+        )
+        self.assertTrue(result["error"])
+        self.assertFalse(p_empty.phone)
 
     # -- session_orders ------------------------------------------------------
 

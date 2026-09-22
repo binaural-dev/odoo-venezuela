@@ -125,13 +125,6 @@ msgstr "Apellido"
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
 #, python-format
-msgid "Phone"
-msgstr "Teléfono"
-
-#. module: l10n_ve_pos_self_order
-#. odoo-javascript
-#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
-#, python-format
 msgid "Create and continue"
 msgstr "Crear y continuar"
 
@@ -522,8 +515,8 @@ msgid "Your order"
 msgstr "Tu pedido"
 
 #. module: l10n_ve_pos_self_order
-#. odoo-javascript
-#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
 #, python-format
 msgid "Enter the phone number."
 msgstr "Ingrese el número de teléfono."
@@ -568,6 +561,41 @@ msgstr "Necesitamos tu número de teléfono para continuar"
 #: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
 msgid "Save and continue"
 msgstr "Guardar y continuar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+msgid "Phone number"
+msgstr "Número de teléfono"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+msgid "Code"
+msgstr "Código"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+msgid "Select a valid phone operator code."
+msgstr "Seleccione un código de operadora válido."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+msgid "The phone number must contain exactly 7 digits."
+msgstr "El número de teléfono debe tener exactamente 7 dígitos."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid ""
+"Enter a valid Venezuelan mobile phone number (operator code + 7 digits, "
+"e.g. 0414-1234567)."
+msgstr ""
+"Ingrese un número de teléfono móvil venezolano válido (código de "
+"operadora + 7 dígitos, p. ej. 0414-1234567)."
 
 #. module: l10n_ve_pos_self_order
 #. odoo-javascript

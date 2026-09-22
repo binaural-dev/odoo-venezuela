@@ -10,6 +10,14 @@ const PREFIX_VAT_OPTIONS = ["V", "E", "J", "G", "P", "C"];
 // Mirrors the server validation in controllers/orders.py (_ve_vat_format_error).
 const NUMERIC_PREFIXES = ["V", "E", "J", "G"];
 
+// Venezuelan mobile operator prefixes. Mirrors the server validation in
+// controllers/orders.py (_ve_phone_format_error) — keep both lists in sync.
+const PHONE_OPERATOR_CODES = ["0412", "0414", "0416", "0422", "0424", "0426"];
+// Business format decided for the Kiosk: "<operator code>-<7 digits>", e.g.
+// "0414-1234567". Composed client-side and sent as a single string so the
+// server (and existing consumers of res.partner.phone) keep seeing one field.
+const PHONE_NUMBER_LENGTH = 7;
+
 export class IdentificationPage extends Component {
     static template = "l10n_ve_pos_self_order.IdentificationPage";
     static props = {};
@@ -26,7 +34,11 @@ export class IdentificationPage extends Component {
             vat: "",
             firstName: "",
             lastName: "",
-            phone: "",
+            // Phone is split as operator code (dropdown) + 7-digit number so it
+            // can be validated and composed into "0414-1234567" (see
+            // PHONE_OPERATOR_CODES above and phoneValue()).
+            phoneCode: "",
+            phoneNumber: "",
             loading: false,
             error: "",
         });
@@ -53,11 +65,45 @@ export class IdentificationPage extends Component {
         return _t("Fields marked with * are mandatory");
     }
 
-    get phonePlaceholder() {
+    get phoneNumberPlaceholder() {
         // Phone is required both for a new customer and when completing a
         // missing one on an existing customer (business rule: we register the
         // phone whenever it is not on file).
-        return _t("Phone") + " *";
+        return _t("Phone number") + " *";
+    }
+
+    get phoneCodeOptions() {
+        return PHONE_OPERATOR_CODES;
+    }
+
+    get phoneCodePlaceholder() {
+        return _t("Code");
+    }
+
+    // Composed "<operator code>-<7 digits>" phone, the format saved on
+    // res.partner.phone (e.g. "0414-1234567"). Built even with incomplete
+    // input so the caller can validate the whole string in one place.
+    get phoneValue() {
+        return `${this.state.phoneCode}-${this.state.phoneNumber}`;
+    }
+
+    // Soft (button-disabled) checks — the authoritative validation still runs
+    // in onSavePhone/onCreate (and again server-side).
+    get isPhoneValueComplete() {
+        return !this.phoneFormatError(this.state.phoneCode, this.state.phoneNumber);
+    }
+
+    get phoneStepDisabled() {
+        return this.state.loading || !this.isPhoneValueComplete;
+    }
+
+    get createDisabled() {
+        return (
+            this.state.loading ||
+            !this.state.firstName.trim() ||
+            !this.state.lastName.trim() ||
+            !this.isPhoneValueComplete
+        );
     }
 
     get numpadKeys() {
@@ -90,6 +136,26 @@ export class IdentificationPage extends Component {
             return _t("The ID number must contain only digits.");
         }
         return "";
+    }
+
+    // Client-side format check, mirrored server-side
+    // (controllers/orders.py::_ve_phone_format_error). Returns an error
+    // message (already translated) or "" when the phone is well formed.
+    phoneFormatError(code, number) {
+        if (!PHONE_OPERATOR_CODES.includes(code)) {
+            return _t("Select a valid phone operator code.");
+        }
+        if (!/^\d+$/.test(number) || number.length !== PHONE_NUMBER_LENGTH) {
+            return _t("The phone number must contain exactly 7 digits.");
+        }
+        return "";
+    }
+
+    // Digits-only, capped to 7 — keeps the on-screen/native keyboard from
+    // leaving stray characters in a field the kiosk always sends as "code-digits".
+    onPhoneNumberInput(ev) {
+        this.state.error = "";
+        this.state.phoneNumber = ev.target.value.replace(/\D/g, "").slice(0, PHONE_NUMBER_LENGTH);
     }
 
     onNumpadKey(value) {
@@ -148,7 +214,6 @@ export class IdentificationPage extends Component {
     async onCreate() {
         const firstName = this.state.firstName.trim();
         const lastName = this.state.lastName.trim();
-        const phone = this.state.phone.trim();
         const formatError = this.vatFormatError(this.state.prefixVat, this.state.vat.trim());
         if (formatError) {
             this.state.error = formatError;
@@ -162,8 +227,9 @@ export class IdentificationPage extends Component {
             this.state.error = _t("Enter the last name.");
             return;
         }
-        if (!phone) {
-            this.state.error = _t("Enter the phone number.");
+        const phoneError = this.phoneFormatError(this.state.phoneCode, this.state.phoneNumber);
+        if (phoneError) {
+            this.state.error = phoneError;
             return;
         }
         this.state.error = "";
@@ -177,7 +243,7 @@ export class IdentificationPage extends Component {
                 prefix_vat: this.state.prefixVat,
                 vat: this.state.vat.trim(),
                 name,
-                phone,
+                phone: this.phoneValue,
             });
             if (result?.error) {
                 this.state.error = result.error;
@@ -195,9 +261,9 @@ export class IdentificationPage extends Component {
     }
 
     async onSavePhone() {
-        const phone = this.state.phone.trim();
-        if (!phone) {
-            this.state.error = _t("Enter the phone number.");
+        const phoneError = this.phoneFormatError(this.state.phoneCode, this.state.phoneNumber);
+        if (phoneError) {
+            this.state.error = phoneError;
             return;
         }
         this.state.error = "";
@@ -207,7 +273,7 @@ export class IdentificationPage extends Component {
                 access_token: this.selfOrder.access_token,
                 prefix_vat: this.state.prefixVat,
                 vat: this.state.vat.trim(),
-                phone,
+                phone: this.phoneValue,
             });
             if (result?.error) {
                 this.state.error = result.error;
