@@ -47,6 +47,12 @@ export class IdentificationPage extends Component {
         return _t("Last name") + " *";
     }
 
+    // Legend shown above the required-fields steps (phone / new contact) so
+    // the customer knows which inputs are mandatory before submitting.
+    get requiredFieldsLegend() {
+        return _t("Fields marked with * are mandatory");
+    }
+
     get phonePlaceholder() {
         // Phone is required both for a new customer and when completing a
         // missing one on an existing customer (business rule: we register the

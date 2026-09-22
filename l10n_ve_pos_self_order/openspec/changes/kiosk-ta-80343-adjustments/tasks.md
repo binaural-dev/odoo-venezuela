@@ -9,10 +9,10 @@
 
 ## 2. Leyenda de campos obligatorios (punto 3)
 
-- [ ] 2.1 `identification_page.js`: getter `requiredFieldsLegend`
-- [ ] 2.2 `identification_page.xml`: mostrar la leyenda en los pasos de
+- [x] 2.1 `identification_page.js`: getter `requiredFieldsLegend`
+- [x] 2.2 `identification_page.xml`: mostrar la leyenda en los pasos de
       teléfono y creación de contacto
-- [ ] 2.3 `i18n/es_VE.po`: cadena nueva
+- [x] 2.3 `i18n/es_VE.po`: cadena nueva
 
 ## 3. Teléfono obligatorio y validado (punto 1)
 

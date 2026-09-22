@@ -45,6 +45,7 @@
                             We need your phone number to continue
                         </p>
                         <div class="mx-auto" style="max-width: 32rem;">
+                            <p class="text-center text-muted small mb-3" t-esc="requiredFieldsLegend"/>
                             <input type="tel" inputmode="tel" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
                                    t-att-placeholder="phonePlaceholder"
@@ -61,6 +62,7 @@
                             ID number (cédula/RIF): <b><t t-esc="state.prefixVat"/>-<t t-esc="state.vat"/></b>
                         </p>
                         <div class="mx-auto" style="max-width: 32rem;">
+                            <p class="text-center text-muted small mb-3" t-esc="requiredFieldsLegend"/>
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
                                    t-att-placeholder="firstNamePlaceholder"
