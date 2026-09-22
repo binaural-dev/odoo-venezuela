@@ -709,3 +709,21 @@ msgstr "No"
 #: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
 msgid "Fields marked with * are mandatory"
 msgstr "LOS CAMPOS MARCADOS CON * SON OBLIGATORIOS"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/payment_page.xml:0
+msgid "Subtotal"
+msgstr "Subtotal"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/payment_page.xml:0
+msgid "Total"
+msgstr "Total"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/payment_page.xml:0
+msgid "Total (foreign currency)"
+msgstr "Total (moneda extranjera)"

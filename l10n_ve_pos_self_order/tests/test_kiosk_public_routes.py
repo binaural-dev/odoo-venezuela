@@ -646,6 +646,15 @@ class TestKioskSelfDataExposure(TransactionCase):
         self.assertIn("self_ordering_hide_catalog", fields_list)
         self.assertIn("self_ordering_require_address", fields_list)
 
+    def test_pos_config_self_data_fields_expose_foreign_rate(self):
+        """Tasa operativa para el total en divisa de la pantalla de pago del
+        Kiosko (payment_page.js); debe ser la MISMA que usa
+        pos.order.recompute_prices server-side (models/pos_order.py)."""
+        config_model = self.env["pos.config"]
+        fields_list = config_model._load_pos_self_data_fields(config_model)
+        self.assertIn("foreign_rate", fields_list)
+        self.assertIn("foreign_inverse_rate", fields_list)
+
     def test_pos_config_self_data_models_include_municipality(self):
         config_model = self.env["pos.config"]
         self.assertIn("res.country.municipality", config_model._load_self_data_models())

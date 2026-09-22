@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!-- Ticket 80343 puntos 7+8: resumen de montos (base imponible, impuestos
+         por tasa, total en Bs. y total en moneda foránea) en la pantalla de
+         pago del Kiosko. t-inherit puro, sin reemplazar el template: sigue
+         siendo compatible con el patch (solo JS) de PaymentPage que hace
+         binaural_megasoft_self_order. -->
+    <t t-name="l10n_ve_pos_self_order.PaymentPage" t-inherit="pos_self_order.PaymentPage" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('grid')]" position="before">
+            <div class="o_ve_kiosk_payment_summary bg-white rounded-4 border border-light shadow-sm p-4 mb-4 mx-auto" style="max-width: 28rem;">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">Subtotal</span>
+                    <span t-esc="formatL10nVeAmount(l10nVeBaseAmount)"/>
+                </div>
+                <div t-foreach="l10nVeTaxGroups" t-as="taxGroup" t-key="taxGroup.id"
+                     class="d-flex justify-content-between mb-2 text-muted small">
+                    <span t-esc="formatL10nVeTaxGroupLabel(taxGroup)"/>
+                    <span t-esc="formatL10nVeAmount(taxGroup.tax_amount_currency)"/>
+                </div>
+                <div class="d-flex justify-content-between fw-bold fs-4 border-top pt-2 mt-2">
+                    <span>Total</span>
+                    <span t-esc="formatL10nVeAmount(l10nVeLocalTotal)"/>
+                </div>
+                <div t-if="l10nVeShowForeignTotal" class="d-flex justify-content-between text-muted mt-1">
+                    <span>Total (foreign currency)</span>
+                    <span t-esc="formatL10nVeForeignTotal()"/>
+                </div>
+            </div>
+        </xpath>
+    </t>
+</templates>

@@ -51,14 +51,16 @@
 
 ## 5. Resumen de montos en pago (puntos 7+8)
 
-- [ ] 5.1 `models/pos_config.py`: exponer `foreign_rate`/`foreign_inverse_rate`
+- [x] 5.1 `models/pos_config.py`: exponer `foreign_rate`/`foreign_inverse_rate`
       al Kiosko vía `_load_pos_self_data_fields`
-- [ ] 5.2 `static/src/overrides/payment_page.js` (nuevo): `patch()` con
+- [x] 5.2 `static/src/overrides/payment_page.js` (nuevo): `patch()` con
       base imponible, desglose de impuestos, total local y total foráneo
       (misma tasa operativa que `l10n_ve_pos._get_pos_conversion_rate`)
-- [ ] 5.3 `static/src/overrides/payment_page.xml` (nuevo): `t-inherit` que
+- [x] 5.3 `static/src/overrides/payment_page.xml` (nuevo): `t-inherit` que
       inserta el bloque de resumen sin reemplazar el template
-- [ ] 5.4 `i18n/es_VE.po`: cadenas nuevas
+- [x] 5.4 `i18n/es_VE.po`: cadenas nuevas
+- [x] 5.5 `tests/test_kiosk_public_routes.py`: `foreign_rate`/
+      `foreign_inverse_rate` expuestos en `pos.config` self-data
 
 ## 6. Teclado en pantalla (punto 6)
 
