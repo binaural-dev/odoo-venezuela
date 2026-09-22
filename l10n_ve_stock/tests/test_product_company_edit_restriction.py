@@ -117,6 +117,21 @@ class TestProductCompanyEditRestriction(TransactionCase):
         })
         self.assertTrue(template.id)
 
+    def test_create_with_explicit_false_company_id_is_allowed_without_group(self):
+        """company_id=False ("Visible for all companies") is the least
+        privileged state, not a company change - env.company.id is never
+        False, so comparing new_company straight against it made this
+        always raise for every non-privileged user, regardless of who
+        created the product (shared products, imports, other modules'
+        create())."""
+        Template = self.env["product.template"].with_user(self.user)
+        template = Template.create({
+            "name": "Shared across all companies",
+            "type": "consu",
+            "company_id": False,
+        })
+        self.assertFalse(template.company_id)
+
     def test_copy_without_group_is_allowed_when_company_unchanged(self):
         """copy() always sends company_id in the vals (the field has no
         copy=False), so create()'s guard must not treat "unchanged, just
@@ -139,6 +154,27 @@ class TestProductCompanyEditRestriction(TransactionCase):
         restricted."""
         template = self.template.with_user(self.user)
         template.write({"company_id": self.template.company_id.id})
+
+    def test_write_company_id_to_false_without_group_is_allowed(self):
+        """company_id=False ("Visible for all companies") is the least
+        privileged state, not a company change - clearing it via write()
+        must be allowed without the group too, same as create()."""
+        self.template.sudo().write({"company_id": self.env.company.id})
+        self.assertTrue(self.template.company_id)
+        template = self.template.with_user(self.user)
+        template.write({"company_id": False})
+        self.assertFalse(self.template.company_id)
+
+    def test_write_company_id_via_sudo_without_group_raises_access_error(self):
+        """sudo() does not change env.uid, only bypasses access rights - it
+        must not be usable as an implicit bypass of this business
+        restriction. A sudo() call still running as the unprivileged user
+        must be blocked from assigning a specific, different company just
+        like a non-sudo call would."""
+        other_company = self.env["res.company"].create({"name": "Other Company"})
+        template = self.template.with_user(self.user).sudo()
+        with self.assertRaises(AccessError):
+            template.write({"company_id": other_company.id})
 
     def test_write_company_id_on_variant_without_group_raises_access_error(self):
         """company_id on product.product is a writable related field
