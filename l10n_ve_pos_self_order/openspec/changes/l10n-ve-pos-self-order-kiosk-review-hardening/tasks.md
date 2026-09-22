@@ -177,6 +177,28 @@
 - [ ] 6.6 `l10n_ve_pos_self_order/static/src/overrides/product_list_page.xml:7,26`
       ancla el xpath en clases de presentación (`bg-view`/`border-bottom`); válido
       hoy, frágil en 19.x — preferir clases semánticas si el core las ofrece.
-- [ ] 6.7 🟢 (preexistente, no del PR) `l10n_ve_accountant/models/product_template.py:86`:
-      un `write` en lote sobre productos de compañías distintas lanza
-      `Expected singleton` en `company[comp_field]`; procesar por-compañía.
+- [x] 6.7 🟢 HECHO (y NO era solo preexistente: el filtro
+      `filtered(lambda t: t.company_id == company)` es de este PR, así que un
+      `write` en lote multi-compañía además de reventar con `Expected singleton`
+      podía forzar en silencio el impuesto por defecto de una compañía
+      arbitraria y descartar los válidos). `l10n_ve_accountant/models/
+      product_template.py`: `write` valida producto a producto cuando el
+      recordset trae más de uno (`record.write(dict(vals))`), de modo que
+      `_enforce_single_tax_vals` siempre recibe UN registro y resuelve contra SU
+      compañía y SU baseline (antes `records.taxes_id` era la UNIÓN de los
+      impuestos de todos, que parecía "más de un impuesto asignado"). Contrato
+      documentado en el docstring. Test `test_14_write_batch_multi_company_
+      resolves_per_product` en `l10n_ve_accountant/tests/test_product_template.py`.
+
+- [x] 6.8 🟢 HECHO. `l10n_ve_pos_self_order/controllers/orders.py`
+      (`session_orders`): el dominio pedía `state in ["paid","done","invoiced"]`
+      y en Odoo 19 `pos.order.state` es draft/cancel/paid/done — `invoiced` no
+      existe. No rompía (simplemente no casaba con nada) pero confundía al leer.
+
+- [x] 6.9 🟢 HECHO (FIX-008 de la review). Traducciones que faltaban en
+      `i18n/es_VE.po`: el `help` del act_window `action_kiosk_pending_invoice_orders`
+      (`model:ir.actions.act_window,help:…`, msgid = el HTML completo tal como lo
+      serializa `convert.py` para `type="html"`), y el botón de Debug de
+      `static/src/overrides/self_order_index.xml`, que además estaba escrito
+      directo en español contra la convención del repo (inglés en el fuente +
+      `es_VE.po`): ahora `🛠 Kiosk Debug` → `🛠 Debug Kiosko`.

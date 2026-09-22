@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Point of Sale",
-    "version": "1.2",
+    "version": "1.3",
     "depends": [
         "l10n_ve_pos",
         "pos_self_order",

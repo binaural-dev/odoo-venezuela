@@ -149,6 +149,28 @@ msgid "Kiosk: Orders Pending Invoice"
 msgstr "Kiosko: pendientes de facturar"
 
 #. module: l10n_ve_pos_self_order
+#: model:ir.actions.act_window,help:l10n_ve_pos_self_order.action_kiosk_pending_invoice_orders
+msgid ""
+"<p class=\"o_view_nocontent_smiley_face\">No Kiosk orders are pending invoice</p>\n"
+"            <p>\n"
+"                These are Kiosk orders that were paid (the card was already\n"
+"                charged) but whose invoice could not be created on finalization.\n"
+"                Fix the cause (SENIAT sequence, journal, tax, customer data), open\n"
+"                the order and press <b>Invoice</b> to generate the invoice.\n"
+"            </p>\n"
+"        "
+msgstr ""
+"<p class=\"o_view_nocontent_smiley_face\">No hay órdenes del Kiosko pendientes por facturar</p>\n"
+"            <p>\n"
+"                Estas son órdenes del Kiosko que se pagaron (la tarjeta ya\n"
+"                se cobró) pero cuya factura no se pudo crear al finalizar.\n"
+"                Corrija la causa (secuencia SENIAT, diario, impuesto, datos\n"
+"                del cliente), abra la orden y presione <b>Factura</b> para\n"
+"                generar la factura.\n"
+"            </p>\n"
+"        "
+
+#. module: l10n_ve_pos_self_order
 #. odoo-python
 #: code:addons/l10n_ve_pos_self_order/models/pos_order.py:0
 #, python-format
@@ -546,3 +568,9 @@ msgstr "Necesitamos tu número de teléfono para continuar"
 #: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.xml:0
 msgid "Save and continue"
 msgstr "Guardar y continuar"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/self_order_index.xml:0
+msgid "🛠 Kiosk Debug"
+msgstr "🛠 Debug Kiosko"

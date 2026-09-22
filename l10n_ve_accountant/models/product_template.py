@@ -19,14 +19,37 @@ class ProductTemplate(models.Model):
 
         # Enforce tax validation on any write operation to correct legacy records
         if 'taxes_id' in vals or 'supplier_taxes_id' in vals:
+            if len(self) > 1:
+                # `_enforce_single_tax_vals` resolves the policy against ONE
+                # company and ONE baseline of current taxes: it keeps only the
+                # taxes of that company and, when none is left, completes `vals`
+                # with the company's default tax. A single `write()` can span
+                # products of several companies (mass edit from the list view,
+                # import, a batch from another module): `self.company_id` is a
+                # multi-record recordset then, `t.company_id == company` is
+                # always False and the default tax of an arbitrary company would
+                # be forced on all of them, silently dropping the valid ones
+                # (and `company[comp_field]` raises "Expected singleton"). The
+                # baseline has the same flaw: `self.taxes_id` is the UNION of
+                # every product's taxes, which looks like "more than one tax
+                # assigned" for a perfectly valid batch.
+                #
+                # So validate product by product, each against its own company.
+                # The extra writes only happen when a batch actually touches the
+                # tax fields, which is rare next to ordinary product writes.
+                return all([record.write(dict(vals)) for record in self])
             self._enforce_single_tax_vals(vals, records=self)
-            
+
         return super(ProductTemplate, self).write(vals)
 
     def _enforce_single_tax_vals(self, vals, records=None):
-        """Validates and ensures exactly one tax is assigned by calculating 
+        """Validates and ensures exactly one tax is assigned by calculating
 
         the net final state of the Odoo M2M commands.
+
+        ``records`` is a SINGLE product (or ``None`` on create): the whole
+        method resolves the policy against one company and one baseline of
+        current taxes. ``write`` splits the batch before calling it.
         """
         errors = []
         if vals.get('company_id'):

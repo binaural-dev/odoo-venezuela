@@ -253,3 +253,64 @@ class TestProductTemplate(TransactionCase):
         })
         with self.assertRaises(UserError):
             product.write({"taxes_id": [(3, self.tax_sale_1.id)]})
+
+    def test_14_write_batch_multi_company_resolves_per_product(self):
+        """`write` en LOTE sobre productos de compañías distintas: cada uno se
+        valida y completa contra SU compañía.
+
+        Antes se llamaba a `_enforce_single_tax_vals` UNA sola vez con el
+        recordset entero: `records.company_id` era multi-registro, ninguna
+        comparación `t.company_id == company` daba True, y se acababa forzando
+        el impuesto por defecto de una compañía arbitraria sobre todos (o
+        reventando con "Expected singleton" al leer `company[comp_field]`).
+        El baseline tenía el mismo problema: `records.taxes_id` era la UNIÓN de
+        los impuestos de todos los productos.
+        """
+        self.company.write({
+            "account_sale_tax_id": self.tax_sale_1.id,
+            "account_purchase_tax_id": self.tax_purchase.id,
+        })
+        other_company = self.env["res.company"].create({"name": "Batch Other Company"})
+        other_tax_group = self.env["account.tax.group"].create({
+            "name": "Batch Other Tax Group", "company_id": other_company.id,
+        })
+        other_sale_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Batch Other Sale Tax", "amount": 12, "amount_type": "percent",
+            "type_tax_use": "sale", "company_id": other_company.id,
+            "tax_group_id": other_tax_group.id,
+        })
+        other_purchase_tax = self.env["account.tax"].with_company(other_company).create({
+            "name": "Batch Other Purchase Tax", "amount": 12, "amount_type": "percent",
+            "type_tax_use": "purchase", "company_id": other_company.id,
+            "tax_group_id": other_tax_group.id,
+        })
+        other_company.write({
+            "account_sale_tax_id": other_sale_tax.id,
+            "account_purchase_tax_id": other_purchase_tax.id,
+        })
+
+        mine = self.env["product.product"].create({
+            "name": "Batch Product Mine",
+            "type": "service",
+            "company_id": self.company.id,
+            "taxes_id": [(6, 0, [self.tax_sale_1.id])],
+            "supplier_taxes_id": [(6, 0, [self.tax_purchase.id])],
+        })
+        theirs = self.env["product.product"].with_company(other_company).create({
+            "name": "Batch Product Theirs",
+            "type": "service",
+            "company_id": other_company.id,
+            "taxes_id": [(6, 0, [other_sale_tax.id])],
+            "supplier_taxes_id": [(6, 0, [other_purchase_tax.id])],
+        })
+
+        # Un SOLO write sobre los dos: vacía el lado compra y deja el de venta
+        # fuera del vals (ahí es donde la unión de bases rompía).
+        (mine + theirs).write({"supplier_taxes_id": [(5, 0, 0)]})
+
+        # Cada producto conserva SU impuesto de venta...
+        self.assertEqual(mine.taxes_id.ids, [self.tax_sale_1.id])
+        self.assertEqual(theirs.taxes_id.ids, [other_sale_tax.id])
+        # ...y recibe el default de compra de SU compañía, no el de la otra.
+        self.assertEqual(mine.supplier_taxes_id.ids, [self.tax_purchase.id])
+        self.assertEqual(theirs.supplier_taxes_id.ids, [other_purchase_tax.id])

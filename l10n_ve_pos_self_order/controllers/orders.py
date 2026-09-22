@@ -313,7 +313,11 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
             .search(
                 [
                     ("config_id", "=", pos_config.id),
-                    ("state", "in", ["paid", "done", "invoiced"]),
+                    # `pos.order.state` en Odoo 19 es draft/cancel/paid/done
+                    # ("done" = "Posted"). No existe un estado `invoiced`: la
+                    # orden facturada queda en `done`. Pedirlo no rompía —
+                    # simplemente no casaba con nada—, pero confunde al leer.
+                    ("state", "in", ["paid", "done"]),
                 ],
                 order="id desc",
                 limit=limit,
