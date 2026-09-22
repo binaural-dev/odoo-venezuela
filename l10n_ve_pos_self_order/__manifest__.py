@@ -19,6 +19,9 @@
         "pos_self_order.assets": [
             "l10n_ve_pos_self_order/static/src/**/*",
         ],
+        "web.assets_unit_tests": [
+            "l10n_ve_pos_self_order/static/tests/**/*",
+        ],
     },
     "auto_install": True,
     "application": True,

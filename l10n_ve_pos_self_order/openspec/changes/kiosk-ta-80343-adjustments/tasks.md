@@ -64,16 +64,19 @@
 
 ## 6. Teclado en pantalla (punto 6)
 
-- [ ] 6.1 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.js`
+- [x] 6.1 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.js`
       (nuevo): componente OWL, QWERTY + Ñ + numérico, mayúsculas, borrar,
-      espacio
-- [ ] 6.2 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.xml`
+      espacio; `applyShift`/filas del layout exportadas como puras
+- [x] 6.2 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.xml`
       (nuevo)
-- [ ] 6.3 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.scss`
+- [x] 6.3 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.scss`
       (nuevo): reusa el estilo de `o_ve_numpad`
-- [ ] 6.4 `identification_page.js`/`.xml`: mostrar el teclado al enfocar
-      nombre/apellido/teléfono; modo numérico para teléfono
-- [ ] 6.5 `i18n/es_VE.po`: cadenas nuevas si aplica
+- [x] 6.4 `identification_page.js`/`.xml`: mostrar el teclado al enfocar
+      nombre/apellido/calle/teléfono; modo numérico para teléfono (cédula
+      queda con su numpad propio, sin tocar — ver nota en el reporte)
+- [x] 6.5 `i18n/es_VE.po`: cadena nueva ("Space")
+- [x] 6.6 `static/tests/unit/kiosk_keyboard.test.js` (nuevo, Hoot): shift y
+      layout; `__manifest__.py` registra `web.assets_unit_tests`
 
 ## 7. Verificación manual (navegador) — PENDIENTE
 
@@ -93,5 +96,5 @@
 
 ## 8. OpenSpec
 
-- [ ] 8.1 `openspec change validate kiosk-ta-80343-adjustments --strict` →
+- [x] 8.1 `openspec change validate kiosk-ta-80343-adjustments --strict` →
       válido

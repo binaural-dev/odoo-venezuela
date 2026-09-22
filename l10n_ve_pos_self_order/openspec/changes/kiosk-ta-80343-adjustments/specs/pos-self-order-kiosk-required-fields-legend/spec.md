@@ -4,8 +4,7 @@
 
 ### Requirement: Leyenda de campos obligatorios en los pasos de contacto
 
-Los pasos de "completar teléfono" y "nuevo cliente" de `IdentificationPage`
-SHALL mostrar la leyenda "LOS CAMPOS MARCADOS CON * SON OBLIGATORIOS" encima
+Los pasos de "completar teléfono" y "nuevo cliente" de `IdentificationPage` SHALL mostrar la leyenda "LOS CAMPOS MARCADOS CON * SON OBLIGATORIOS" encima
 de los campos del formulario. El texto fuente SHALL ser traducible vía
 `_t()`; el marcador "*" de cada campo individual (nombre, apellido, teléfono)
 SHALL seguir agregándose fuera del término traducible base (p. ej.

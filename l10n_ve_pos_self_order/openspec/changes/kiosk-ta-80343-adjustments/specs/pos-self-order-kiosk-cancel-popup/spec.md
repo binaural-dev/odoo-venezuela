@@ -4,8 +4,7 @@
 
 ### Requirement: Popup de cancelar orden en español
 
-El popup nativo de cancelar orden del Kiosko (`pos_self_order.CancelPopup`)
-SHALL mostrar el texto "¿Desea cancelar la orden?" y dos botones: "Sí" (confirma
+El popup nativo de cancelar orden del Kiosko (`pos_self_order.CancelPopup`) SHALL mostrar el texto "¿Desea cancelar la orden?" y dos botones: "Sí" (confirma
 la cancelación) y "No" (cierra el popup sin cancelar). La implementación SHALL
 heredar el template del core (`t-inherit-mode="extension"`) sin reemplazarlo
 por completo.

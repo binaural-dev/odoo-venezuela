@@ -3,6 +3,7 @@ import { useSelfOrder } from "@pos_self_order/app/services/self_order_service";
 import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
+import { KioskKeyboard } from "@l10n_ve_pos_self_order/app/components/kiosk_keyboard/kiosk_keyboard";
 
 // Same cédula/RIF prefixes as l10n_ve_contact's prefix_vat Selection.
 const PREFIX_VAT_OPTIONS = ["V", "E", "J", "G", "P", "C"];
@@ -20,6 +21,7 @@ const PHONE_NUMBER_LENGTH = 7;
 
 export class IdentificationPage extends Component {
     static template = "l10n_ve_pos_self_order.IdentificationPage";
+    static components = { KioskKeyboard };
     static props = {};
 
     setup() {
@@ -45,6 +47,10 @@ export class IdentificationPage extends Component {
             stateId: "",
             municipalityId: "",
             street: "",
+            // On-screen keyboard (KioskKeyboard): which state field it writes
+            // into ("" = hidden) and which layout to show.
+            activeField: "",
+            keyboardMode: "text",
             loading: false,
             error: "",
         });
@@ -247,6 +253,48 @@ export class IdentificationPage extends Component {
     onPhoneNumberInput(ev) {
         this.state.error = "";
         this.state.phoneNumber = ev.target.value.replace(/\D/g, "").slice(0, PHONE_NUMBER_LENGTH);
+    }
+
+    // --- On-screen keyboard (KioskKeyboard) -----------------------------
+    // The kiosk terminal has no reliable physical/native keyboard, so text
+    // fields on this page show KioskKeyboard on focus and write into
+    // whichever field is currently active. "field" is the name of a
+    // this.state.* string property (firstName/lastName/street/phoneNumber).
+
+    onFieldFocus(field, mode = "text") {
+        this.state.activeField = field;
+        this.state.keyboardMode = mode;
+    }
+
+    onKeyboardKey(key) {
+        const field = this.state.activeField;
+        if (!field) {
+            return;
+        }
+        this.state.error = "";
+        if (key === "backspace") {
+            this.state[field] = this.state[field].slice(0, -1);
+            return;
+        }
+        if (key === "space") {
+            // A space is meaningless in the phone number.
+            if (field !== "phoneNumber") {
+                this.state[field] += " ";
+            }
+            return;
+        }
+        if (field === "phoneNumber") {
+            // Numeric mode already limits the layout to digits, but guard
+            // here too and enforce the same 7-digit cap as onPhoneNumberInput.
+            if (/^\d$/.test(key)) {
+                this.state.phoneNumber = (this.state.phoneNumber + key).slice(
+                    0,
+                    PHONE_NUMBER_LENGTH
+                );
+            }
+            return;
+        }
+        this.state[field] += key;
     }
 
     onNumpadKey(value) {
