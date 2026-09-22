@@ -76,9 +76,9 @@ def migrate(cr, version):
             """
             WITH ordered AS (
                 SELECT id, create_date::date AS base_date,
-                       row_number() OVER (
+                       (row_number() OVER (
                            PARTITION BY create_date::date ORDER BY id
-                       ) - 1 AS offset_days
+                       ) - 1)::int AS offset_days
                 FROM tax_unit
                 WHERE available_date IS NULL
             )
