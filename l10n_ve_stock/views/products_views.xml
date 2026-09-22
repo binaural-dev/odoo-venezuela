@@ -66,6 +66,14 @@
                     <field name="physical_location_id" options="{'no_create': True}"
                         invisible="not show_physical_locations"/>
                 </group>
+                <field name="show_physical_relocation_reserved_warning" invisible="1"/>
+                <div class="alert alert-info mb-0" role="alert"
+                    invisible="not show_physical_relocation_reserved_warning">
+                    Some of the stock in the location(s) being replaced is reserved. The
+                    automatic internal transfer will only move the freely available
+                    quantity to the new location; if there is no available quantity, no
+                    transfer will be generated.
+                </div>
             </xpath>
             <xpath expr="//field[@name='categ_id']/following-sibling::field[@name='company_id']" position="before">
                 <field name="can_edit_company_id" invisible="1"/>
