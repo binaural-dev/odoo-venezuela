@@ -183,8 +183,14 @@ def _mark_modules_to_remove(cr, module_names):
         if not row:
             _logger.info("  Module %s not present in this database, skipping", module_name)
             continue
-        if row[0] != "installed":
-            _logger.info("  Module %s is in state '%s', not 'installed', skipping", module_name, row[0])
+        # 'to upgrade' cuenta como instalado: durante un `-u all` —que es el
+        # procedimiento documentado— TODO modulo instalado esta en ese estado,
+        # no en 'installed'. Con el guard original el retiro se saltaba en
+        # silencio justo los modulos que se estaban actualizando, y quedaban
+        # instalados con su dependencia ya desinstalada.
+        if row[0] not in ("installed", "to upgrade"):
+            _logger.info("  Module %s is in state '%s', no esta instalado, skipping",
+                         module_name, row[0])
             continue
         cr.execute(
             "UPDATE ir_module_module SET state = 'to remove' WHERE name = %s",
