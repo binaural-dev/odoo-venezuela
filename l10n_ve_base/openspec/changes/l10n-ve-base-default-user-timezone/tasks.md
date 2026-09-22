@@ -64,10 +64,15 @@
       (TI-15211) que, tras `-u l10n_ve_base`, las facturas nocturnas dejan
       de desfasarse. El repro automatizado equivalente ya vive en
       `l10n_ve_invoice/tests/test_ti_15211_invoice_date_timezone.py`.
-- [ ] 5.4 Correr `-u l10n_ve_base --test-enable --test-tags /l10n_ve_base`
-      contra una DB con el módulo ya instalado en `19.0.1.0` (no solo
-      `-i`) y pegar en el PR el `_logger.info` del backfill — debe listar
-      a OdooBot y al Public user por compañía.
+- [x] 5.4 Corrido `-u l10n_ve_base` contra una DB con el módulo instalado
+      en `19.0.1.0` (instalación previa real, no `-i` limpio):
+      `odoo.upgrade.l10n_ve_base.19.0.1.0.1.post-migrate: l10n_ve_base
+      19.0.1.0.1: backfilled tz='America/Caracas' for 5 user(s) with no
+      timezone set. User ids: [2, 1, 3, 5, 6]`. El id `3` es el Public
+      user real de la base (`login=public`, `share=True`, archivado);
+      confirmado por consulta directa que también se backfilleó, junto a
+      OdooBot (`id=1`) y un usuario portal simulado (`share=True`, sin
+      `group_public`) que **no** se tocó, como se esperaba.
 - [ ] 5.3 Revisar si algún otro flujo (vencimientos, reportes, cron) se
       vio afectado por el mismo `tz` vacío en el mismo ambiente
 
@@ -113,5 +118,7 @@
 - [x] 8.3 `proposal.md` § Impact: declarada la columna nueva
       `ir_module_module.binaural` (data-model change en rama estable) y
       el criterio de alcance del Public user en la migración.
-- [ ] 8.4 Evidencia de `-u l10n_ve_base` real (ver 5.4) — pendiente de
-      correr contra una DB con el módulo ya instalado en `19.0.1.0`.
+- [x] 8.4 Evidencia de `-u l10n_ve_base` real (ver 5.4): corrido contra
+      una DB con el módulo previamente instalado en `19.0.1.0`. El
+      Public user real de la base (`id=3, login=public`) quedó
+      backfilleado junto a OdooBot; un portal simulado no se tocó.
