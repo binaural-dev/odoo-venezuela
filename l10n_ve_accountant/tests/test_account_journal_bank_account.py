@@ -2,6 +2,7 @@ import logging
 
 from odoo.tests import tagged
 from odoo.exceptions import UserError
+from odoo import Command
 
 from .test_indexed_payments import TestIndexedPayments
 
@@ -122,3 +123,126 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
                 "journal_id": journal.id,
                 "payment_method_id": self.manual_in.id,
             })
+
+    def _create_valid_bank_journal(self, code):
+        return self.env["account.journal"].sudo().create({
+            "name": f"Bank Constrains Test {code}",
+            "code": code,
+            "type": "bank",
+            "company_id": self.company.id,
+            "default_account_id": self.account_bank.id,
+        })
+
+    def test_bank_journal_without_inbound_lines_raises_user_error(self):
+        journal = self._create_valid_bank_journal("BKIN0")
+
+        with self.assertRaises(UserError):
+            journal.write({"inbound_payment_method_line_ids": [Command.clear()]})
+
+    def test_bank_journal_without_outbound_lines_raises_user_error(self):
+        journal = self._create_valid_bank_journal("BKOU0")
+
+        with self.assertRaises(UserError):
+            journal.write({"outbound_payment_method_line_ids": [Command.clear()]})
+
+    def test_bank_journal_with_lines_but_no_account_raises_user_error(self):
+        """Both collections keep at least one line each (only payment_account_id
+        is cleared via Command.update on the existing line ids), so this
+        isolates the "no line has an account" branch from the "missing
+        inbound/outbound lines" branches above."""
+        journal = self._create_valid_bank_journal("BKNAC")
+        inbound_ids = journal.inbound_payment_method_line_ids.ids
+        outbound_ids = journal.outbound_payment_method_line_ids.ids
+        self.assertTrue(inbound_ids)
+        self.assertTrue(outbound_ids)
+
+        with self.assertRaises(UserError):
+            journal.write({
+                "inbound_payment_method_line_ids": [
+                    Command.update(line_id, {"payment_account_id": False}) for line_id in inbound_ids
+                ],
+                "outbound_payment_method_line_ids": [
+                    Command.update(line_id, {"payment_account_id": False}) for line_id in outbound_ids
+                ],
+            })
+
+    def _create_support_less_user(self):
+        return self.env["res.users"].create({
+            "name": "No Support User",
+            "login": "no_support_user_l10n_ve_accountant",
+            "email": "no_support_user_l10n_ve_accountant@example.com",
+            "group_ids": [Command.set([self.env.ref("base.group_user").id])],
+        })
+
+    def test_create_journal_with_prohibited_type_without_support_group_raises(self):
+        other_user = self._create_support_less_user()
+
+        with self.assertRaises(UserError):
+            self.env["account.journal"].with_user(other_user).create({
+                "name": "Sale Journal No Perm",
+                "code": "SLNPM",
+                "type": "sale",
+                "company_id": self.company.id,
+            })
+
+    def test_write_journal_type_to_prohibited_type_without_support_group_raises(self):
+        other_user = self._create_support_less_user()
+        journal = self.env["account.journal"].sudo().create({
+            "name": "Cash Journal No Perm",
+            "code": "CSNPM",
+            "type": "cash",
+            "company_id": self.company.id,
+            "default_account_id": self.account_bank.id,
+        })
+
+        with self.assertRaises(UserError):
+            journal.with_user(other_user).write({"type": "sale"})
+
+    def test_payment_method_line_on_non_bank_journal_has_no_default_account(self):
+        """_default_payment_account_id must fall back to False for any
+        journal that is not of type 'bank' (e.g. 'cash')."""
+        journal = self.env["account.journal"].sudo().create({
+            "name": "Cash Journal Default Account Test",
+            "code": "CSDEF",
+            "type": "cash",
+            "company_id": self.company.id,
+            "default_account_id": self.account_bank.id,
+        })
+
+        extra_method = self.env.ref("account.account_payment_method_manual_in")
+        new_line = self.env["account.payment.method.line"].with_context(
+            default_journal_id=journal.id,
+        ).create({
+            "name": "Cash Manual Inbound",
+            "payment_method_id": extra_method.id,
+            "payment_type": "inbound",
+            "journal_id": journal.id,
+        })
+
+        self.assertFalse(
+            new_line.payment_account_id,
+            "A payment method line for a non-bank journal must not default "
+            "payment_account_id to anything.",
+        )
+
+    def test_outbound_payment_excludes_journal_without_outbound_account(self):
+        """_compute_available_journal_ids (outbound branch): a bank journal
+        whose outbound payment method line has no payment_account_id must be
+        excluded from available_journal_ids on an outbound payment."""
+        journal = self._get_foreign_bank_journal(self.currency_eur)
+        # Writing directly on the line (not on the journal's o2m field) does
+        # not re-trigger the journal's own _check_payment_method_line_accounts
+        # constrains, so this leaves the journal itself in a persistable
+        # (if inconsistent) state for the purpose of this test.
+        outbound_line = journal.outbound_payment_method_line_ids
+        outbound_line.payment_account_id = False
+
+        payment = self.env["account.payment"].new({
+            "payment_type": "outbound",
+        })
+
+        self.assertNotIn(
+            journal, payment.available_journal_ids,
+            "A bank journal without an outbound payment_account_id must be "
+            "excluded from available_journal_ids for outbound payments.",
+        )
