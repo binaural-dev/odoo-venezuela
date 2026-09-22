@@ -80,7 +80,6 @@ class TestGapCoverage(TransactionCase):
         )
         # Sesion activa en company_b; el cierre sigue siendo de company_a.
         config = config.with_context(allowed_company_ids=[self.company_b.id])
-        config.env.company.id  # no-op, deja explicito el contexto de sesion
         config.l_map = True
         config.with_user(self.env.user).with_context(
             company_id=self.company_b.id
