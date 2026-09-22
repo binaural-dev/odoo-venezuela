@@ -384,6 +384,7 @@ msgstr "Cliente:"
 #. module: l10n_ve_pos_self_order
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_self_order/static/src/app/debug/kiosk_orders_dialog.xml:0
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/payment_page.xml:0
 msgid "Total"
 msgstr "Total"
 
@@ -715,12 +716,6 @@ msgstr "LOS CAMPOS MARCADOS CON * SON OBLIGATORIOS"
 #: code:addons/l10n_ve_pos_self_order/static/src/overrides/payment_page.xml:0
 msgid "Subtotal"
 msgstr "Subtotal"
-
-#. module: l10n_ve_pos_self_order
-#. odoo-javascript
-#: code:addons/l10n_ve_pos_self_order/static/src/overrides/payment_page.xml:0
-msgid "Total"
-msgstr "Total"
 
 #. module: l10n_ve_pos_self_order
 #. odoo-javascript
