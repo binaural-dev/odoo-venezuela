@@ -188,8 +188,10 @@ class TfhkaDocumentService(models.AbstractModel):
             if invoice.move_type == "out_refund" and journal.refund_sequence_id
             else journal.sequence_id
         )
-        prefix = sequence.prefix or ""
-        return f"{prefix}{str(number).zfill(8)}"
+        # get_next_char interpola prefijo y sufijo (p. ej. %(range_year)s) y
+        # aplica el padding real de la secuencia -- no avanza el contador, solo
+        # formatea el número que ya se decidió adoptar de The Factory.
+        return sequence.get_next_char(number)
 
     def _prepare_extra_payload_values(self, invoice):
         """Hook de extensión: valores extra del payload. Por defecto vacío."""

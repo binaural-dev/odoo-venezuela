@@ -366,6 +366,30 @@ class AccountMove(models.Model):
                     }
                 )
 
+    @api.constrains('name')
+    def _check_name_has_no_unresolved_placeholder(self):
+        """Red de seguridad: un ``name`` con un marcador de secuencia sin
+        interpolar (p. ej. ``FCON/%(range_year)s/00000059``) significa que
+        alguna ruta de código armó el nombre a mano en vez de pedirle el
+        siguiente valor a ``ir.sequence`` (``get_next_char``/``next_by_id``,
+        que sí interpolan). Se valida acá, en vez de solo en ``action_post``,
+        porque esta corrupción puede ocurrir después de postear (p. ej. la
+        sincronización de secuencia de TFHKA en
+        ``tfhka.document.service._register_success``, que corre post-post).
+        """
+        for move in self:
+            if move.name and "%(" in move.name:
+                raise ValidationError(
+                    _(
+                        "Cannot set '%(name)s' as the document number: it still contains "
+                        "an unresolved sequence placeholder. This usually means the name "
+                        "was built by hand instead of asking the journal's sequence for "
+                        "the next value -- use ir.sequence.get_next_char() instead of "
+                        "concatenating the raw prefix."
+                    )
+                    % {"name": move.name}
+                )
+
     def copy_data(self, default=None):
         """Propaga la configuración multi-moneda a notas de crédito y débito.
 
