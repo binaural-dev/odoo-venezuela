@@ -10,8 +10,12 @@ at all -- the data was already in place.
 import logging
 
 from psycopg2 import sql
-from odoo import api, SUPERUSER_ID
+from odoo.upgrade import util
+
 _logger = logging.getLogger(__name__)
+
+# Los cuatro campos que en v19 pasaron a compute+store con compute_bi_igtf.
+IGTF_COMPUTED_FIELDS = ["bi_igtf", "igtf_top_aply", "alter_bi_igtf", "foreign_bi_igtf"]
 
 EXCLUSIVE_COLUMNS = {
     "account_payment": ["amount_residual_from_payment"],
@@ -38,33 +42,28 @@ def _views_referencing_field(cr, column):
 
 
 def _recompute_bi_igtf(cr):
-    """account_move.bi_igtf/igtf_top_aply/alter_bi_igtf/foreign_bi_igtf were
-    directly-assigned fields in v17; in v19 they are compute+store with a
-    rewritten formula (compute_bi_igtf). Whatever raw values carried over
-    from v17 aren't trustworthy under the new formula -- recompute via the
-    module's own recalculate_bi_igtf(), the same method wired to the "Fix
-    Venezuela BI IGTF Invoices" server action. This applies to every move
-    regardless of currency setup -- it's the formula that changed between
-    versions, not a currency-swap concern.
+    """account_move.bi_igtf/igtf_top_aply/alter_bi_igtf/foreign_bi_igtf eran
+    campos de asignacion directa en v17; en v19 son compute+store con una
+    formula reescrita (compute_bi_igtf). Los valores crudos que vienen de v17
+    no son confiables bajo la formula nueva, asi que hay que recomputarlos.
+
+    Esta version llamaba a recalculate_bi_igtf(), que **no existe en v19** --
+    ni en l10n_ve_igtf ni en ningun otro addon del arbol. El resultado era que
+    las 303 tandas fallaban con AttributeError, el guion lo tragaba con un
+    try/except y la migracion terminaba "bien" **sin haber recomputado nada**:
+
+        AttributeError: 'account.move' object has no attribute 'recalculate_bi_igtf'
+
+    Se recomputa con util.recompute_fields, que es el metodo del proyecto
+    (ADR-001): trocea solo, decide entre flush y commit segun el volumen, y
+    reporta progreso. Y si un campo no existe, falla en vez de tragarselo.
+
+    Ojo: el server action "Fix Venezuela BI IGTF Invoices"
+    (l10n_ve_igtf/data/ir_actions_server.xml) llama a ese mismo metodo
+    inexistente, igual que binaural_advance_payment_igtf/models/account_move.py.
+    Los dos siguen rotos en runtime; eso es del vertical, no de esta migracion.
     """
-  
-
-    env = api.Environment(cr, SUPERUSER_ID, {})
-    moves = env["account.move"].search([])
-    if not moves:
-        _logger.info("  No account.move records found, nothing to recompute")
-        return
-
-    batch_size = 500
-    total = len(moves)
-    for offset in range(0, total, batch_size):
-        batch = moves[offset:offset + batch_size]
-        try:
-            batch.recalculate_bi_igtf()
-        except Exception:
-            _logger.exception("  Failed to recalculate_bi_igtf for batch at offset %s", offset)
-        else:
-            _logger.info("  Recomputed IGTF fields for %s/%s moves", offset + len(batch), total)
+    util.recompute_fields(cr, "account.move", IGTF_COMPUTED_FIELDS, logger=_logger)
 
 
 def migrate(cr, version):
