@@ -509,6 +509,30 @@ msgstr ""
 "productos solo escaneando un código de barras o usando el buscador."
 
 #. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/models/pos_config.py:0
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_self_order.res_config_settings_view_form_hide_catalog
+msgid "Kiosk: require customer address"
+msgstr "Kiosko: exigir dirección del cliente"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/models/pos_config.py:0
+msgid ""
+"In Kiosk mode, require the state, municipality and street when creating a "
+"new contact."
+msgstr ""
+"En modo Kiosko, exige estado, municipio y calle al crear un contacto "
+"nuevo."
+
+#. module: l10n_ve_pos_self_order
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos_self_order.res_config_settings_view_form_hide_catalog
+msgid "Require the state, municipality and street when creating a new contact in Kiosk mode."
+msgstr ""
+"Exige estado, municipio y calle al crear un contacto nuevo en modo "
+"Kiosko."
+
+#. module: l10n_ve_pos_self_order
 #. odoo-javascript
 #: code:addons/l10n_ve_pos_self_order/static/src/overrides/product_list_page.js:0
 msgid "Your order"
@@ -585,6 +609,65 @@ msgstr "Seleccione un código de operadora válido."
 #: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
 msgid "The phone number must contain exactly 7 digits."
 msgstr "El número de teléfono debe tener exactamente 7 dígitos."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+msgid "State"
+msgstr "Estado"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+msgid "Municipality"
+msgstr "Municipio"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+msgid "Street"
+msgstr "Calle"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "Select the state."
+msgstr "Seleccione el estado."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "Select the municipality."
+msgstr "Seleccione el municipio."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/static/src/app/pages/identification_page/identification_page.js:0
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "Enter the street address."
+msgstr "Ingrese la dirección (calle)."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "Select a valid state and municipality."
+msgstr "Seleccione un estado y municipio válidos."
+
+#. module: l10n_ve_pos_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_self_order/controllers/orders.py:0
+#, python-format
+msgid "The municipality does not belong to the selected state."
+msgstr "El municipio no pertenece al estado seleccionado."
 
 #. module: l10n_ve_pos_self_order
 #. odoo-python

@@ -39,6 +39,12 @@ export class IdentificationPage extends Component {
             // PHONE_OPERATOR_CODES above and phoneValue()).
             phoneCode: "",
             phoneNumber: "",
+            // Address (state/municipality dropdowns + street text), only
+            // required when the box turns on self_ordering_require_address
+            // (models/pos_config.py); always collected on the "create" step.
+            stateId: "",
+            municipalityId: "",
+            street: "",
             loading: false,
             error: "",
         });
@@ -87,6 +93,90 @@ export class IdentificationPage extends Component {
         return `${this.state.phoneCode}-${this.state.phoneNumber}`;
     }
 
+    // --- Address (state/municipality/street) ---------------------------
+    // Optional unless the box turns on self_ordering_require_address.
+
+    get addressRequired() {
+        return Boolean(this.selfOrder.config.self_ordering_require_address);
+    }
+
+    get statePlaceholder() {
+        return this.addressRequired ? _t("State") + " *" : _t("State");
+    }
+
+    get municipalityPlaceholder() {
+        return this.addressRequired ? _t("Municipality") + " *" : _t("Municipality");
+    }
+
+    get streetPlaceholder() {
+        return this.addressRequired ? _t("Street") + " *" : _t("Street");
+    }
+
+    // res.country.state is loaded for every Self Order mode by the core
+    // (pos_self_order._load_self_data_models); restrict to Venezuela since
+    // l10n_ve_location's municipalities only make sense for VE states.
+    get stateOptions() {
+        return (this.selfOrder.models["res.country.state"].getAll() || [])
+            .filter((state) => state.country_id?.code === "VE")
+            .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
+
+    // res.country.municipality is exposed to the Kiosk by this module
+    // (models/pos_config.py::_load_self_data_models +
+    // models/res_country_municipality.py). Its state_id is a Many2many
+    // (l10n_ve_location): a municipality can list more than one state.
+    get municipalityOptions() {
+        const stateId = this.state.stateId;
+        if (!stateId) {
+            return [];
+        }
+        return (this.selfOrder.models["res.country.municipality"].getAll() || [])
+            .filter((municipality) =>
+                (municipality.state_id || []).some((state) => state.id === stateId)
+            )
+            .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
+
+    // Client-side format check, mirrored server-side
+    // (controllers/orders.py::_ve_address_format_error). Returns an error
+    // message (already translated) or "" when the address is valid (or the
+    // box does not require one).
+    addressFormatError(stateId, municipalityId, street) {
+        if (!this.addressRequired) {
+            return "";
+        }
+        if (!stateId) {
+            return _t("Select the state.");
+        }
+        if (!municipalityId) {
+            return _t("Select the municipality.");
+        }
+        if (!(street || "").trim()) {
+            return _t("Enter the street address.");
+        }
+        return "";
+    }
+
+    get isAddressComplete() {
+        return !this.addressFormatError(
+            this.state.stateId,
+            this.state.municipalityId,
+            this.state.street
+        );
+    }
+
+    onStateChange(ev) {
+        this.state.error = "";
+        this.state.stateId = ev.target.value ? Number(ev.target.value) : "";
+        // The previously picked municipality may not belong to the new state.
+        this.state.municipalityId = "";
+    }
+
+    onMunicipalityChange(ev) {
+        this.state.error = "";
+        this.state.municipalityId = ev.target.value ? Number(ev.target.value) : "";
+    }
+
     // Soft (button-disabled) checks — the authoritative validation still runs
     // in onSavePhone/onCreate (and again server-side).
     get isPhoneValueComplete() {
@@ -102,7 +192,8 @@ export class IdentificationPage extends Component {
             this.state.loading ||
             !this.state.firstName.trim() ||
             !this.state.lastName.trim() ||
-            !this.isPhoneValueComplete
+            !this.isPhoneValueComplete ||
+            !this.isAddressComplete
         );
     }
 
@@ -232,6 +323,15 @@ export class IdentificationPage extends Component {
             this.state.error = phoneError;
             return;
         }
+        const addressError = this.addressFormatError(
+            this.state.stateId,
+            this.state.municipalityId,
+            this.state.street
+        );
+        if (addressError) {
+            this.state.error = addressError;
+            return;
+        }
         this.state.error = "";
         this.state.loading = true;
         try {
@@ -244,6 +344,9 @@ export class IdentificationPage extends Component {
                 vat: this.state.vat.trim(),
                 name,
                 phone: this.phoneValue,
+                state_id: this.state.stateId || false,
+                municipality_id: this.state.municipalityId || false,
+                street: this.state.street.trim() || false,
             });
             if (result?.error) {
                 this.state.error = result.error;

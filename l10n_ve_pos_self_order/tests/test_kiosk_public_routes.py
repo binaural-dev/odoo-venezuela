@@ -433,6 +433,96 @@ class TestKioskPublicRoutes(TransactionCase):
         partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
         self.assertEqual(partner.phone, "0414-1234567")
 
+    # -- identify_create: dirección ------------------------------------------
+
+    def test_identify_create_address_optional_by_default(self):
+        """Sin self_ordering_require_address, se puede crear sin dirección."""
+        self.assertFalse(self.config.self_ordering_require_address)
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="92929292",
+            name="Sin Dirección",
+            phone="0412-9990001",
+        )
+        self.assertFalse(result["error"])
+        self.assertTrue(result["res.partner"])
+
+    def test_identify_create_address_required_rejects_missing(self):
+        self.config.self_ordering_require_address = True
+        try:
+            result = self._self_order(
+                "l10n_ve_kiosk_identify_create",
+                access_token=self.config.access_token,
+                prefix_vat="V",
+                vat="93939393",
+                name="Con Flag",
+                phone="0412-9990002",
+            )
+        finally:
+            self.config.self_ordering_require_address = False
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_address_required_accepts_full_address(self):
+        municipality = self.env["res.country.municipality"].search([], limit=1)
+        if not municipality:
+            self.skipTest("l10n_ve_location sin municipios seed en esta BD de test")
+        state = municipality.state_id[:1]
+        self.config.self_ordering_require_address = True
+        try:
+            result = self._self_order(
+                "l10n_ve_kiosk_identify_create",
+                access_token=self.config.access_token,
+                prefix_vat="V",
+                vat="94949494",
+                name="Con Dirección",
+                phone="0412-9990003",
+                state_id=state.id,
+                municipality_id=municipality.id,
+                street="Av. Siempre Viva",
+            )
+        finally:
+            self.config.self_ordering_require_address = False
+        self.assertFalse(result["error"])
+        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        self.assertEqual(partner.state_id, state)
+        self.assertEqual(partner.municipality, municipality)
+        self.assertEqual(partner.street, "Av. Siempre Viva")
+
+    def test_identify_create_address_mismatched_state_rejected(self):
+        """El servidor no confía en el pareo estado/municipio del cliente."""
+        municipality = self.env["res.country.municipality"].search([], limit=1)
+        if not municipality:
+            self.skipTest("l10n_ve_location sin municipios seed en esta BD de test")
+        other_state = self.env["res.country.state"].search(
+            [
+                ("id", "not in", municipality.state_id.ids),
+                ("country_id", "=", self.env.ref("base.ve").id),
+            ],
+            limit=1,
+        )
+        if not other_state:
+            self.skipTest("no hay otro estado VE para probar el cruce estado/municipio")
+        self.config.self_ordering_require_address = True
+        try:
+            result = self._self_order(
+                "l10n_ve_kiosk_identify_create",
+                access_token=self.config.access_token,
+                prefix_vat="V",
+                vat="95959595",
+                name="Cruce Inválido",
+                phone="0412-9990004",
+                state_id=other_state.id,
+                municipality_id=municipality.id,
+                street="Calle X",
+            )
+        finally:
+            self.config.self_ordering_require_address = False
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
     # -- set_phone -----------------------------------------------------------
 
     def test_set_phone_fill_only(self):
@@ -541,3 +631,28 @@ class TestKioskPublicRoutes(TransactionCase):
             fiscal_machine="TFHKA",
         )
         self.assertFalse(result["success"])
+
+
+@tagged("post_install", "-at_install", "l10n_ve_pos_self_order")
+class TestKioskSelfDataExposure(TransactionCase):
+    """Lo que el mecanismo de datos del Kiosko (``pos.config``'s
+    ``_load_pos_self_data_fields``/``_load_self_data_models``) expone al
+    frontend. No usa sesión/HTTP: son overrides que solo devuelven listas de
+    nombres de campo/modelo, así que se llaman directo sobre el modelo."""
+
+    def test_pos_config_self_data_fields_expose_kiosk_flags(self):
+        config_model = self.env["pos.config"]
+        fields_list = config_model._load_pos_self_data_fields(config_model)
+        self.assertIn("self_ordering_hide_catalog", fields_list)
+        self.assertIn("self_ordering_require_address", fields_list)
+
+    def test_pos_config_self_data_models_include_municipality(self):
+        config_model = self.env["pos.config"]
+        self.assertIn("res.country.municipality", config_model._load_self_data_models())
+
+    def test_municipality_self_data_fields(self):
+        municipality_model = self.env["res.country.municipality"]
+        fields_list = municipality_model._load_pos_self_data_fields(municipality_model)
+        self.assertEqual(
+            set(fields_list), {"id", "name", "code", "state_id", "country_id"}
+        )

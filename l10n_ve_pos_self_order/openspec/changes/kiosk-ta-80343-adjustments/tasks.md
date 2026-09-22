@@ -28,25 +28,26 @@
 
 ## 4. Dirección opcional/obligatoria (punto 2)
 
-- [ ] 4.1 `models/res_country_municipality.py` (nuevo): `pos.load.mixin` sobre
+- [x] 4.1 `models/res_country_municipality.py` (nuevo): `pos.load.mixin` sobre
       `res.country.municipality` para exponerlo al Kiosko
-- [ ] 4.2 `models/pos_config.py`: `self_ordering_require_address` (Boolean) +
+- [x] 4.2 `models/pos_config.py`: `self_ordering_require_address` (Boolean) +
       `_load_self_data_models` (agrega `res.country.municipality`) +
       `_load_pos_self_data_fields` (expone el flag)
-- [ ] 4.3 `models/res_config_settings.py`: related
+- [x] 4.3 `models/res_config_settings.py`: related
       `pos_self_ordering_require_address`
-- [ ] 4.4 `views/res_config_settings_views.xml`: `<setting>` nuevo
-- [ ] 4.5 `controllers/orders.py`: `_ve_address_format_error`; nuevos
+- [x] 4.4 `views/res_config_settings_views.xml`: `<setting>` nuevo
+- [x] 4.5 `controllers/orders.py`: `_ve_address_format_error`; nuevos
       parámetros `state_id`/`municipality_id`/`street` en `identify_create`
-- [ ] 4.6 `identification_page.js`: estado + validación de estado/municipio/
+      (incluye cruce estado↔municipio server-side)
+- [x] 4.6 `identification_page.js`: estado + validación de estado/municipio/
       calle; municipios filtrados por estado elegido
-- [ ] 4.7 `identification_page.xml`: desplegables de Estado/Municipio + campo
+- [x] 4.7 `identification_page.xml`: desplegables de Estado/Municipio + campo
       Calle en el paso de creación de contacto
-- [ ] 4.8 `__manifest__.py`: dependencia explícita de `l10n_ve_location`
-- [ ] 4.9 `i18n/es_VE.po`: cadenas nuevas
-- [ ] 4.10 `tests/test_kiosk_public_routes.py`: tests de dirección obligatoria/
-      opcional y de datos expuestos (`res.country.municipality`,
-      `foreign_rate`/`foreign_inverse_rate`)
+- [x] 4.8 `__manifest__.py`: dependencia explícita de `l10n_ve_location`
+- [x] 4.9 `i18n/es_VE.po`: cadenas nuevas
+- [x] 4.10 `tests/test_kiosk_public_routes.py`: tests de dirección obligatoria/
+      opcional, cruce estado↔municipio y de datos expuestos
+      (`res.country.municipality`, flags de `pos.config`)
 
 ## 5. Resumen de montos en pago (puntos 7+8)
 

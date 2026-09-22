@@ -8,6 +8,7 @@
     "version": "1.4",
     "depends": [
         "l10n_ve_pos",
+        "l10n_ve_location",
         "pos_self_order",
     ],
     "data": [

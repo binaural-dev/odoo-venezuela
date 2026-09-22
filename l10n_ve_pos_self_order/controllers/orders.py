@@ -98,6 +98,49 @@ def _ve_phone_format_error(phone):
     return None
 
 
+def _ve_safe_int(value):
+    """``int(value)`` que nunca lanza — ``False``/``None``/basura → ``False``.
+
+    Usado con los ids que llegan de una ruta pública (``state_id``/
+    ``municipality_id``): nunca hay que confiar en que el cliente mandó un
+    entero real.
+    """
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return False
+
+
+def _ve_address_format_error(pos_config, state_id, municipality_id, street):
+    """Devuelve el mensaje de error, o ``None`` si es válida (u opcional).
+
+    La dirección solo es obligatoria cuando
+    ``pos.config.self_ordering_require_address`` está activo (ver
+    ``models/pos_config.py``); con el flag apagado cualquier valor —incluso
+    vacío— es válido. Aplica solo a la CREACIÓN de un contacto nuevo desde el
+    Kiosko (``identify_create``), no a clientes ya existentes.
+    """
+    if not pos_config.self_ordering_require_address:
+        return None
+    if not state_id:
+        return _("Select the state.")
+    if not municipality_id:
+        return _("Select the municipality.")
+    if not (street or "").strip():
+        return _("Enter the street address.")
+    state_id = _ve_safe_int(state_id)
+    municipality_id = _ve_safe_int(municipality_id)
+    if not state_id or not municipality_id:
+        return _("Select a valid state and municipality.")
+    # Cross-check: don't trust the client's pairing blindly — a municipality
+    # (res.country.municipality) belongs to one or more states via its own
+    # state_id (Many2many, l10n_ve_location).
+    municipality = pos_config.env["res.country.municipality"].sudo().browse(municipality_id)
+    if not municipality.exists() or state_id not in municipality.state_id.ids:
+        return _("The municipality does not belong to the selected state.")
+    return None
+
+
 class L10nVePosSelfOrderController(PosSelfOrderController):
     """Kiosk customer identification by cédula/RIF for the Venezuelan Self
     Order flow.
@@ -172,7 +215,17 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         type="jsonrpc",
         website=True,
     )
-    def l10n_ve_kiosk_identify_create(self, access_token, prefix_vat, vat, name, phone):
+    def l10n_ve_kiosk_identify_create(
+        self,
+        access_token,
+        prefix_vat,
+        vat,
+        name,
+        phone,
+        state_id=False,
+        municipality_id=False,
+        street=False,
+    ):
         pos_config = self._verify_pos_config(access_token)
         if not _ve_within_rate_limit(access_token):
             return {"res.partner": [], "error": _("Too many attempts. Please wait a moment.")}
@@ -202,6 +255,13 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
                 "error": False,
             }
 
+        # Dirección: opcional salvo que la caja la exija
+        # (self_ordering_require_address). Solo aplica a la creación de un
+        # contacto nuevo (no toca clientes ya existentes).
+        address_error = _ve_address_format_error(pos_config, state_id, municipality_id, street)
+        if address_error:
+            return {"res.partner": [], "error": address_error}
+
         vals = {
             "name": name,
             "phone": phone,
@@ -210,12 +270,25 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         }
         # Preload the company address defaults exactly like the reduced partner
         # form of the regular POS box does, via l10n_ve_pos's default_get gated
-        # by the l10n_ve_pos_partner_defaults context flag. No new address logic.
+        # by the l10n_ve_pos_partner_defaults context flag.
         default_fields = list(partner_model._POS_COMPANY_DEFAULT_FIELDS)
         address_defaults = partner_model.with_context(
             l10n_ve_pos_partner_defaults=True
         ).default_get(default_fields)
         vals.update(address_defaults)
+        # The address the customer just typed on the Kiosk overrides the
+        # company fallback above — it is more specific than the box's default.
+        # Address is optional unless self_ordering_require_address (already
+        # enforced above); _ve_safe_int guards against a malformed id when it
+        # is not required, instead of raising.
+        safe_state_id = _ve_safe_int(state_id)
+        safe_municipality_id = _ve_safe_int(municipality_id)
+        if safe_state_id:
+            vals["state_id"] = safe_state_id
+        if safe_municipality_id:
+            vals["municipality"] = safe_municipality_id
+        if street:
+            vals["street"] = street.strip()
 
         # Create under the pos.config's company context (same env as the
         # lookup) so res.partner's default company_id resolves to the box's
