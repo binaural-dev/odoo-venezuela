@@ -898,6 +898,8 @@ msgstr "Importe Fijo"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
 msgid "Discount field shown on invoice lines: percentage or fixed amount."
 msgstr "Campo de descuento mostrado en las líneas de factura: porcentaje o importe fijo."
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
 msgid "Free Form"
 msgstr "Forma Libre"
