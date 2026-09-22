@@ -16,6 +16,50 @@ class AccountMoveLine(models.Model):
         "Amount. Applies on create/write, not only through the form.",
     )
 
+    @api.model
+    def _enforce_discount_exclusivity(self, vals, company=None):
+        """Only one of discount (%) / discount_fixed is ever meaningful on a
+        line: the company's discount_type says which. Whenever a write
+        touches either field, the OTHER one is forced to 0 right there --
+        no comparison against prior values needed, the config alone decides.
+        """
+        if "discount" not in vals and "discount_fixed" not in vals:
+            return
+        company = company or (
+            self.env["res.company"].browse(vals["company_id"])
+            if vals.get("company_id")
+            else (self.company_id or self.env.company)
+        )
+        if company.discount_type == "amount":
+            vals["discount"] = 0.0
+        else:
+            vals["discount_fixed"] = 0.0
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._enforce_discount_exclusivity(vals)
+        return super().create(vals_list)
+
+    def write(self, vals):
+        if "discount" in vals or "discount_fixed" in vals:
+            for line in self:
+                line_vals = dict(vals)
+                self._enforce_discount_exclusivity(line_vals, company=line.company_id)
+                super(AccountMoveLine, line).write(line_vals)
+            return True
+        return super().write(vals)
+
+    @api.onchange("discount", "discount_fixed")
+    def _onchange_discount_exclusivity(self):
+        """Form-side mirror of _enforce_discount_exclusivity: the field the
+        company's discount_type doesn't use is always zero, on the spot."""
+        for line in self:
+            if line.company_id.discount_type == "amount":
+                line.discount = 0.0
+            else:
+                line.discount_fixed = 0.0
+
     def _uses_discount_fixed(self):
         """Whether this line's totals must be derived from discount_fixed
         instead of the native discount (%)."""
