@@ -29,5 +29,12 @@ class ResCurrency(models.Model):
         currency records, so callers that mean "the local Bolívar" must not
         hardcode either one alone or they'll misbehave for companies still on
         the other record.
+
+        Compared by xmlid instead of ``name``: the currency name is editable
+        from Settings, so relying on it would silently break again for any
+        company whose VEF/VES currency has been renamed.
         """
-        return self.name in ("VEF", "VES")
+        return self.id in (
+            self.env.ref("base.VEF").id,
+            self.env.ref("base.VES").id,
+        )
