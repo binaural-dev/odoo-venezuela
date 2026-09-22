@@ -1,0 +1,15 @@
+
+<odoo>
+    <record id="account_journal_form" model="ir.ui.view">
+        <field name="name">account.journal.form</field>
+        <field name="model">account.journal</field>
+        <field name="inherit_id" ref="account.view_account_journal_form"/>
+        <field name="arch" type="xml">
+            <field name="type" position="after">
+                <field name="digital_invoice_lock" invisible="1"/>
+                <field name="digital_invoice" readonly="digital_invoice_lock" invisible="type not in ['sale', 'purchase', 'cash', 'bank']"/>
+                <field name="payment_method_code" invisible="not digital_invoice or type not in ['bank', 'cash']"/>
+            </field>
+        </field>
+    </record>
+</odoo>
