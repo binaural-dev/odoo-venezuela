@@ -115,6 +115,19 @@ class WizardAccountingReports(models.TransientModel):
 
         return fields_purchase_book_line
     
+    def _fields_sale_book_line(self, move, taxes):
+        fields_sale_book_line = super()._fields_sale_book_line(move, taxes)
+
+        fields_sale_book_line.update(
+            {
+                "retention_date": "--",
+                "retention_number": "--",
+                "iva_withheld": 0,
+            }
+        )
+
+        return fields_sale_book_line
+
     def _fields_retention_book_line(self, move, retention_line):
         taxes = self._determinate_amount_taxeds(move)
         fields_retention_book_line = self._fields_sale_book_line(move, taxes)
