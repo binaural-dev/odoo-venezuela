@@ -13,6 +13,34 @@ class PosOrder(models.Model):
     foreign_currency_rate = fields.Float(readonly=True, required=False)
 
     @api.model
+    def _complete_values_from_session(self, session, values):
+        """Guarantee ``foreign_amount_total`` (required=True) is never NULL
+        at INSERT time, regardless of which channel creates the order.
+
+        Normally the POS frontend computes it client-side
+        (``static/src/overrides/models/pos_order.js::serializeForORM``), but
+        that patch only loads in the cashier app's asset bundle
+        (``point_of_sale._assets_pos``). Any other channel that builds a
+        ``pos.order`` without going through that bundle — e.g. the native
+        Kiosk/Self-Order app, which ships its own separate bundle — never
+        sends the field and the NOT NULL constraint used to raise a raw SQL
+        error. ``setdefault`` makes this a no-op for the normal cashier flow
+        (the value is already present), so it only fills the gap for
+        channels that don't have it.
+        """
+        values = super()._complete_values_from_session(session, values)
+        config = session.config_id
+        values.setdefault(
+            "foreign_amount_total",
+            config._convert(values.get("amount_total") or 0.0, config.currency_id, config.foreign_currency_id),
+        )
+        values.setdefault(
+            "foreign_currency_rate",
+            config._get_pos_conversion_rate(config.currency_id, config.foreign_currency_id),
+        )
+        return values
+
+    @api.model
     def _load_pos_data_read(self, records, config):
         """Inject only the Venezuelan foreign-currency values on top of
         whatever core Odoo 19 already returned. We do NOT touch the
