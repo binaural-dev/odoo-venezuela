@@ -2,6 +2,7 @@ from odoo.tests import TransactionCase, tagged, Form
 from datetime import date
 from odoo.exceptions import UserError, ValidationError
 from odoo import Command, fields
+from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaSequenceMismatchError
 from unittest.mock import patch, MagicMock
 import logging
 
@@ -763,16 +764,62 @@ class TestAccumulatedRate(TransactionCase):
         self.assertIsInstance(result, type(None))
 
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
-    def test_29_send_retention_sequence_mismatch_opens_wizard(self, mock_call):
+    def test_29_send_retention_sequence_mismatch_raises_data_error(self, mock_call):
         account_move = self._create_invoice()
         account_move.action_post()
         retention = self._create_retention("iva", account_move)
         retention.action_post()
         # Sin account_retention_alert en el contexto: si la secuencia de Odoo
-        # no coincide con la de The Factory, se abre el wizard de alerta.
-        result = retention.generate_document_digital()
-        self.assertIsInstance(result, dict)
-        self.assertEqual(result.get('res_model'), 'account.retention.alert.wizard')
+        # no coincide con la de The Factory, ya no se abre un wizard inline
+        # (nadie está ahí para contestarlo, esto corre fuera del cron) --
+        # se levanta TfhkaSequenceMismatchError, que el mixin clasifica como
+        # data_error.
+        with self.assertRaises(TfhkaSequenceMismatchError):
+            retention.generate_document_digital()
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_manual_retry_with_sequence_mismatch_ends_in_data_error_not_success(self, mock_call):
+        """Regression test for the real bug: before the fix, send_retention()
+        returned the wizard action dict without raising, so
+        _tfhka_process_digitalization() (which only looks at exceptions)
+        wrote tfhka_digitalization_state='success' and is_digitalized=True
+        without the document ever having been sent to TFHKA."""
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+
+        retention._tfhka_enqueue_digitalization()
+        retention._tfhka_process_digitalization()
+
+        self.assertEqual(retention.tfhka_digitalization_state, "data_error")
+        self.assertFalse(retention.is_digitalized)
+        self.assertIn("does not match", retention.tfhka_digitalization_error)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_confirming_sequence_mismatch_wizard_requeues_and_next_tick_digitalizes(self, mock_call):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+
+        retention._tfhka_enqueue_digitalization()
+        retention._tfhka_process_digitalization()
+        self.assertEqual(retention.tfhka_digitalization_state, "data_error")
+
+        action = retention.action_tfhka_review_sequence_mismatch()
+        self.assertEqual(action.get('res_model'), 'account.retention.alert.wizard')
+        wizard = self.env['account.retention.alert.wizard'].create({
+            'move_id': action['context']['default_move_id'],
+            'message': action['context']['default_message'],
+        })
+        wizard.action_confirm()
+        self.assertEqual(retention.tfhka_digitalization_state, "queued")
+        self.assertTrue(retention.tfhka_auto_accept_sequence_mismatch)
+
+        retention._tfhka_process_digitalization()
+        self.assertEqual(retention.tfhka_digitalization_state, "success")
+        self.assertTrue(retention.is_digitalized)
 
     def test_30_annul_retention_not_digitalized_raises(self):
         account_move = self._create_invoice()

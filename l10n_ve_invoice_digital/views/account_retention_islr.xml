@@ -13,6 +13,8 @@
                     <button name="action_tfhka_retry_digitalization" string="Retry Digitalization" type="object"
                             invisible="tfhka_digitalization_state not in ('error', 'data_error')"
                             class="btn-danger"/>
+                    <button name="action_tfhka_review_sequence_mismatch" string="Review Sequence Mismatch" type="object"
+                            invisible="tfhka_digitalization_state != 'data_error'"/>
                     <field name="annulled_tfhka" invisible="1"/>
                 </xpath>
                 <xpath expr="//button[@name='action_cancel']" position="attributes">

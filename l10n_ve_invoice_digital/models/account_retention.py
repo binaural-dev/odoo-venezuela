@@ -1,6 +1,6 @@
 import json
 
-from odoo import models, api, fields
+from odoo import _, models, api, fields
 
 
 class AccountRetention(models.Model):
@@ -40,6 +40,36 @@ class AccountRetention(models.Model):
         return self.env["tfhka.retention.service"].send_retention(
             self.with_context(**context)
         )
+
+    def action_tfhka_review_sequence_mismatch(self):
+        """Manual button shown when tfhka_digitalization_state == 'data_error'.
+        Recomputes the Odoo-vs-The-Factory sequence gap synchronously (a
+        read-only call: query_numbering + get_last_document_number, nothing
+        is emitted) and opens the same account.retention.alert.wizard the
+        old inline flow used -- its action_confirm() already sets
+        tfhka_auto_accept_sequence_mismatch=True and re-enqueues, so nothing
+        changes there."""
+        self.ensure_one()
+        document_type = "05" if self.type_retention == "iva" else "06"
+        current_number, factory_number = self.env["tfhka.retention.service"]._tfhka_check_retention_sequence_gap(
+            self, document_type
+        )
+        message = _(
+            "The document sequence in Odoo (%(odoo_seq)s) does not match the "
+            "sequence in The Factory (%(factory_seq)s). Do you want to "
+            "continue anyway?"
+        ) % {"odoo_seq": current_number, "factory_seq": factory_number}
+        return {
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.retention.alert.wizard',
+            'view_mode': 'form',
+            'view_id': self.env.ref('l10n_ve_invoice_digital.account_retention_alert_wizard').id,
+            'target': 'new',
+            'context': {
+                'default_move_id': self.id,
+                'default_message': message,
+            }
+        }
 
     def _tfhka_reconcile_success_from_log(self, log_entry):
         """See ``tfhka.digitalization.mixin._tfhka_recover_stuck_processing``.

@@ -19,6 +19,20 @@ class TfhkaDataError(UserError):
     """
 
 
+class TfhkaSequenceMismatchError(TfhkaDataError):
+    """El correlativo de Odoo no coincide con el de The Factory y nadie
+    confirmó seguir de todas formas (``tfhka_auto_accept_sequence_mismatch``).
+
+    Antes de la cola, este caso se resolvía sincrónicamente: el usuario que
+    disparaba la digitalización veía en el acto un wizard de confirmación
+    (``account.retention.alert.wizard``). Con el cron como único emisor real
+    no hay nadie ahí para contestarlo, así que se levanta esta excepción en
+    su lugar -- al heredar de ``TfhkaDataError`` el mixin ya la clasifica
+    como ``data_error`` sin cambios adicionales, dejando la retención en un
+    estado revisable en vez de marcarla ``success`` sin haber emitido nada.
+    """
+
+
 class TfhkaServiceBase(models.AbstractModel):
     """Base compartida de los servicios de TFHKA.
 
