@@ -199,6 +199,29 @@
       ambos modos por el mismo mecanismo -- ya cubierto por `test_33`
       (ambos modos, USD/EUR), no fue necesario un test nuevo. Suite
       completa re-verificada tras el cleanup: 205/205, 0 fallos.
+- [x] 2.18 (code review del PR #1362) Dos hallazgos sobre la cobertura de tests de 2.14/2.15:
+      (1) bloqueante -- `test_30`/`test_31` solo comparaban contra `inv.amount_tax`, que el
+      core computa directo de las líneas reales vía `_compute_amount`, sin pasar nunca por
+      `_get_tax_totals_summary` (donde vive `_fix_tax_amount_for_round_per_line`); y toda la
+      suite corría en `out_invoice` con `abs()` en todos lados, sin ejercitar `direction_sign`
+      en compras ni refunds. Agregados `test_43` (ejercita el campo real del widget/PDF,
+      `inv.tax_totals`, en ambos modos de redondeo), `test_44` (factura de compra,
+      `in_invoice`, `direction_sign == 1`) y `test_45` (nota de crédito, `out_refund`, usa
+      `refund_repartition_line_ids`, también `direction_sign == 1`) -- las dos últimas
+      revelaron que el signo de `direction_sign` es el opuesto al asumido inicialmente
+      (`out_invoice`/`in_refund` = `-1`; `in_invoice`/`out_refund` = `1`, los tipos
+      `is_outbound()` del core), corregido en los propios tests. (2) mejorable -- `test_32` y
+      `test_34` (SCOPE CHECK de la factura VEF-only) solo logueaban, sin ninguna aserción que
+      fallara ante una regresión. Convertidos a aserciones reales sobre valores fijados
+      (`test_32`: `round_per_line`/`round_globally` dan 2.868,88/2.868,89 respectivamente, sin
+      necesitar el fix multi-moneda porque el core ya redondea bien por línea en VEF puro;
+      `test_34`: Tax A no encadenado se predice con el mismo oráculo de `test_33` en
+      `round_per_line`, y se fija el valor observado en `round_globally` porque ahí Odoo
+      redistribuye un céntimo entre las dos líneas de producto, lo que vuelve frágil una
+      predicción "sumar y redondear una vez" en ese modo específico). Verificado corriendo
+      los 45 tests de `l10n_ve_accountant_rounding` con `--addons-path` explícito contra el
+      contenedor `odoo-binaural-19` (`docker-odoo`), en una base de datos descartable: 45/45,
+      0 fallos.
 
 ## 3. `l10n_ve_sale`
 
