@@ -237,7 +237,7 @@ msgstr "Una factura no puede tener una linea con precio en cero"
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__auto_select_debit_note_journal
 msgid "Auto Select Debit Note Journal"
-msgstr ""
+msgstr "Selección automática del diario de notas de débito"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
@@ -372,7 +372,7 @@ msgstr "Editar impuestos en las líneas de factura"
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__entry_in_period
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__entry_in_period
 msgid "Entry In Period"
-msgstr ""
+msgstr "Asiento del periodo"
 
 #. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.tax_groups_totals
@@ -388,7 +388,7 @@ msgstr ""
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_debit_note__filter_enabled
 msgid "Filter Enabled"
-msgstr ""
+msgstr "Filtro activado"
 
 #. module: l10n_ve_invoice
 #: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__auto_select_debit_note_journal
@@ -834,3 +834,8 @@ msgstr ""
 "El monto total acreditado en esta nota de crédito (%(amount)s, incluyendo "
 "%(already)s ya acreditado por otras notas de crédito) supera el monto "
 "facturado en el documento original '%(origin)s' (%(max)s)."
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
+msgid "Free Form"
+msgstr "Forma Libre"
