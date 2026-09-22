@@ -10,6 +10,11 @@ _logger = logging.getLogger(__name__)
 
 
 class AccountFiscalyearClosingMappingIdSrc(models.Model):
+    # _name explicito obligatorio: con _inherit como lista (agregando
+    # mail.thread/mail.activity.mixin), sin _name Odoo no extiende
+    # account.fiscalyear.closing.mapping -- crea un modelo nuevo aparte
+    # (nombrado a partir de la clase), y src_account_id queda huerfano ahi.
+    _name = "account.fiscalyear.closing.mapping"
     _inherit = ["account.fiscalyear.closing.mapping", "mail.thread", "mail.activity.mixin"]
 
     # src_accounts (Char) matchea por codigo, ambiguo si hay cuentas
@@ -34,8 +39,17 @@ class AccountFiscalyearClosingConfig(models.Model):
         # puede no ser la del cierre que se esta configurando, y companias
         # distintas suelen repetir el mismo codigo de cuenta.
         company = self.fyc_id.company_id or self.env.company
+        # account.account.code es un campo COMPUTADO (ver
+        # account/models/account_account.py _compute_code): resuelve
+        # code_store (company_dependent) siempre bajo self.env.company, sin
+        # importar de que compania(s) sea el registro (company_ids). Sin
+        # with_company(company) aqui, a.code sale False para cualquier
+        # cuenta de una compania distinta a la activa de sesion, aunque el
+        # dominio de busqueda de arriba ya la haya encontrado bien -- esto
+        # rompia el fix de "usar la compania del cierre" a medias.
         accounts = (
             self.env["account.account"]
+            .with_company(company)
             .search(
                 [
                     (
@@ -56,6 +70,7 @@ class AccountFiscalyearClosingConfig(models.Model):
 
         config_a = (
             self.env["account.account"]
+            .with_company(company)
             .search(
                 [
                     ("account_type", "=", "equity_unaffected"),
@@ -69,7 +84,7 @@ class AccountFiscalyearClosingConfig(models.Model):
         if self.l_map:
             # sync
             for a in accounts:
-                if len(a.code):
+                if a.code:
                     vals = {
                         "name": a.name,
                         "src_accounts": a.code,

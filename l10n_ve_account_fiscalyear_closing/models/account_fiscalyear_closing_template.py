@@ -59,7 +59,7 @@ class AccountFiscalyearClosingConfigTemplate(models.Model):
             for a in accounts:
                 # en este caso el campo dest_account es string no one2many
                 # validar que sean auxiliares
-                if len(a.code):
+                if a.code:
                     vals = {
                         "name": a.name,
                         "src_accounts": a.code,
