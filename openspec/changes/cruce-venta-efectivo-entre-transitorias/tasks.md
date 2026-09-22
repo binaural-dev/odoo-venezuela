@@ -10,9 +10,11 @@
 - [x] 2.1 Venta en efectivo divisa: el asiento debita `journal_id.suspense_account_id` y acredita `cross_journal.suspense_account_id`, y NO toca `journal_id.default_account_id` ni la `payment_account_id` del `cross_journal`
 - [x] 2.2 Neto negativo en efectivo: asiento espejo (debita la transitoria del `cross_journal`, acredita la del método)
 - [x] 2.3 Regresión banco: el método `bank` sigue cruzando `outstanding_account_id` → cuenta real del `cross_journal`
-- [ ] 2.4 Regresión diferencias de cierre (vive en `binaural_pos_close`, fuera de este repo): `_post_foreign_statement_difference` (sin `use_suspense`) sigue aterrizando en la cuenta real de liquidez
+- [x] 2.4 Regresión diferencias de cierre: ya cubierta fuera de este repo por `binaural_pos_close/tests/test_pos_close_migration.py`, que sigue afirmando `default_account_id` para `_post_foreign_statement_difference`
 - [x] 2.5 Método en efectivo cuyo diario no tiene Cuenta transitoria → no se crea asiento y el cierre no falla
 - [x] 2.6 Montos alternos, tasa, `ref`, diario y estado borrador del asiento sin cambios
+- [x] 2.7 Destino sin Cuenta transitoria → se omite y NO revienta el cierre (hallazgo de code review)
+- [x] 2.8 Las dos transitorias en la misma cuenta → el asiento se emite igual (decisión del ticket)
 
 ## 3. Verificación en `vzla19_lebrum` (instancia electricos-lebrum, puerto 8083)
 

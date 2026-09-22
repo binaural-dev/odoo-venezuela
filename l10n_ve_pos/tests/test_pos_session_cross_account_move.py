@@ -475,6 +475,18 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         cross_leg = moves.line_ids.filtered(lambda l: l.account_id == suspense_cross)
         self.assertAlmostEqual(origin_leg.credit, 60.0, places=2, msg="|40 - 100|")
         self.assertAlmostEqual(cross_leg.debit, 60.0, places=2)
+        self.assertAlmostEqual(origin_leg.debit, 0.0, places=2)
+        self.assertAlmostEqual(cross_leg.credit, 0.0, places=2)
+        self.assertGreater(
+            origin_leg.foreign_credit, 0.0, "el alterno tambien se invierte"
+        )
+        self.assertGreater(cross_leg.foreign_debit, 0.0)
+        self.assertFalse(
+            moves.line_ids.filtered(
+                lambda l: l.account_id in (self.account_cash, self.account_real_bank)
+            ),
+            "tampoco en el espejo entran la cuenta del diario ni la liquidez real",
+        )
 
     def test_cash_sale_skipped_when_journal_has_no_suspense_account(self):
         """Sin Cuenta transitoria en el diario, el metodo cash se omite en silencio.
@@ -500,6 +512,83 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         session._validate_cross_move()
 
         self.assertEqual(len(self._cross_moves()), 0)
+
+    def test_cash_sale_skipped_when_cross_journal_has_no_suspense_account(self):
+        """Falta la transitoria del DESTINO: se omite, no revienta el cierre.
+
+        Es el lado que no cubria el guard original. Sin el, la pata destino
+        sale con ``account_id = False`` y el insert viola
+        ``account_move_line_check_accountable_required_fields`` dentro de
+        ``action_pos_session_close``, tumbando el cierre de la sesion.
+        """
+        self._configure_cross(self.split_cash_method)
+        suspense_origin = self.env["account.account"].create(
+            {
+                "name": "C Only Origin Suspense",
+                "code": "197777C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        self.split_cash_method.journal_id.suspense_account_id = suspense_origin.id
+        self.assertFalse(
+            self.real_bank_journal.suspense_account_id,
+            "fixture: el diario afectado se queda sin transitoria a proposito",
+        )
+        session = self._new_session().with_company(self.company)
+        self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            name="OL/CROSS/CASH-NO-DEST-SUSPENSE",
+        )
+
+        session._validate_cross_move()
+
+        self.assertEqual(len(self._cross_moves()), 0)
+
+    def test_cash_sale_emits_the_move_even_when_both_suspense_accounts_match(self):
+        """Las dos transitorias en la misma cuenta: el asiento se emite igual.
+
+        Es la configuracion POR DEFECTO de Odoo --
+        ``account_journal._compute_suspense_account_id`` cae en
+        ``company.account_journal_suspense_account_id`` y el plan contable se
+        la asigna a todo diario cash/bank. El asiento queda sin efecto
+        contable, y eso es lo buscado: delata la configuracion incompleta en
+        vez de esconderla, igual que ya hace el cruce del cash in/out.
+        Decision del ticket 15219.
+        """
+        self._configure_cross(self.split_cash_method)
+        shared_suspense = self.env["account.account"].create(
+            {
+                "name": "C Shared Suspense",
+                "code": "196666C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        self.split_cash_method.journal_id.suspense_account_id = shared_suspense.id
+        self.real_bank_journal.suspense_account_id = shared_suspense.id
+        session = self._new_session().with_company(self.company)
+        order = self._create_paid_order(
+            session,
+            method=self.split_cash_method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/CASH-SHARED-SUSPENSE",
+        )
+        payment = order.payment_ids[0]
+
+        session._validate_cross_move()
+
+        moves = self._cross_moves()
+        self.assertEqual(len(moves), 1, "el asiento se crea aunque no mueva nada")
+        legs = moves.line_ids.filtered(lambda l: l.account_id == shared_suspense)
+        self.assertEqual(len(legs), 2, "las dos patas caen en la misma cuenta")
+        self.assertAlmostEqual(sum(legs.mapped("debit")), payment.amount, places=2)
+        self.assertAlmostEqual(sum(legs.mapped("credit")), payment.amount, places=2)
 
     # ------------------------------------------------------------------
     # Modo use_suspense (llamadores fuera de ventas -- ver binaural_pos_close)
@@ -582,11 +671,12 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertAlmostEqual(transitory_leg.credit, 25.0, places=2)
         self.assertAlmostEqual(real_leg.debit, 25.0, places=2)
 
-    def test_use_suspense_eligibility_requires_journal_suspense_account(self):
-        """``_is_cross_move_eligible(..., use_suspense=True)`` exige que el
-        diario tenga ``suspense_account_id`` propio -- no le basta con que
-        ``default_account_id`` este resuelto, que es lo unico que exige
-        ``use_suspense=False`` (ventas con metodo de banco)."""
+    def test_use_suspense_eligibility_requires_both_suspense_accounts(self):
+        """``_is_cross_move_eligible(..., use_suspense=True)`` exige la
+        ``suspense_account_id`` de LOS DOS diarios -- el del metodo y el
+        ``cross_journal`` --, mientras que a ``use_suspense=False`` (cruce de
+        banco, diferencias de cierre) le basta con ``default_account_id``
+        resuelto."""
         self._configure_cross(self.split_cash_method)
         session = self._new_session().with_company(self.company)
 
@@ -596,7 +686,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
         self.assertTrue(
             session._is_cross_move_eligible(self.split_cash_method),
-            "use_suspense=False (ventas con metodo de banco) ya es elegible "
+            "use_suspense=False (cruce de banco, diferencias) ya es elegible "
             "con default_account_id resuelto",
         )
         self.assertFalse(
@@ -613,9 +703,25 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             }
         )
         self.split_cash_method.journal_id.suspense_account_id = suspense_origin.id
+        self.assertFalse(
+            session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
+            "con el origen configurado pero el destino vacio sigue sin ser "
+            "elegible: esa pata saldria con account_id = False y tumbaria el "
+            "cierre de la sesion",
+        )
+
+        suspense_destination = self.env["account.account"].create(
+            {
+                "name": "C Eligibility Suspense Destination",
+                "code": "198888C",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        self.real_bank_journal.suspense_account_id = suspense_destination.id
         self.assertTrue(
             session._is_cross_move_eligible(self.split_cash_method, use_suspense=True),
-            "una vez configurado el suspense del diario, si es elegible",
+            "con las dos transitorias configuradas si es elegible",
         )
 
     # ------------------------------------------------------------------

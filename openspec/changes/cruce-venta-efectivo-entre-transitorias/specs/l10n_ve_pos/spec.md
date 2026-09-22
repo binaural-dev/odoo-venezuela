@@ -2,7 +2,7 @@
 
 ### Requirement: Cross moves de compensación para métodos en divisa
 
-Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago que pase `_is_cross_move_eligible` —`is_foreign_currency`, tipo distinto de `pay_later`, `cross_account_journal` y `cross_journal` presentes Y una cuenta transitoria resoluble— el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR (`state="draft"`) con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate = True`, la tasa del pago (`foreign_rate`, también en el encabezado junto con `foreign_currency_id`) y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios, o sin la cuenta que le corresponde, se omite en silencio.
+Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago que pase `_is_cross_move_eligible` —`is_foreign_currency`, tipo distinto de `pay_later`, `cross_account_journal` y `cross_journal` presentes Y una cuenta transitoria resoluble— el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR (`state="draft"`) con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate = True`, la tasa del pago (`foreign_rate`, también en el encabezado junto con `foreign_currency_id`) y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios, o sin la cuenta que le corresponde, se omite en silencio. Bajo `use_suspense=True` la elegibilidad DEBE (MUST) exigir la cuenta transitoria de LOS DOS diarios —el del método y el `cross_journal`—, porque ambas patas salen de un `suspense_account_id`: con el destino vacío la línea se construiría con `account_id = False` y el insert violaría `account_move_line_check_accountable_required_fields` dentro de `action_pos_session_close`, tumbando el cierre de la sesión.
 
 Las cuentas del asiento dependen del **tipo del método** y de **qué originó el saldo**:
 
@@ -21,7 +21,7 @@ Las cuentas del asiento dependen del **tipo del método** y de **qué originó e
 
 - **Llamadores externos**: la variante `use_suspense=True` (cash in/out de `binaural_pos_close`) sigue drenando `journal_id.suspense_account_id` hacia `cross_journal.suspense_account_id` invirtiendo el sentido del asiento, y las diferencias de apertura/cierre (`_post_foreign_statement_difference`, que llama sin `use_suspense`) siguen apuntando a la cuenta real de liquidez.
 
-Que las dos cuentas transitorias de un método sean la misma cuenta es una configuración incompleta, no un error del sistema: el asiento se crea igualmente con DEBE y HABER en esa cuenta.
+Que las dos cuentas transitorias de un método sean la misma cuenta es una configuración incompleta, no un error del sistema: el asiento DEBE (MUST) crearse igualmente con DEBE y HABER en esa cuenta, sin efecto contable, para que la configuración incompleta quede visible en vez de esconderse —el mismo criterio que ya aplica el cruce del cash in/out. Es además la configuración por defecto de Odoo, donde `account.journal.suspense_account_id` se computa desde `company.account_journal_suspense_account_id`.
 
 #### Scenario: Venta en efectivo en divisa
 
@@ -41,5 +41,10 @@ Que las dos cuentas transitorias de un método sean la misma cuenta es una confi
 
 #### Scenario: Diario sin cuenta transitoria
 
-- **WHEN** al método en efectivo le falta `cross_account_journal`, `cross_journal`, o alguno de esos diarios no tiene Cuenta transitoria
+- **WHEN** al método en efectivo le falta `cross_account_journal`, `cross_journal`, o alguno de esos dos diarios no tiene Cuenta transitoria —incluido el caso de que solo falte la del `cross_journal`—
 - **THEN** no se crea ningún cross move para ese método y el cierre de sesión no falla
+
+#### Scenario: Las dos transitorias son la misma cuenta
+
+- **WHEN** el diario del método y el `cross_journal` apuntan a la misma Cuenta transitoria (el defecto de Odoo)
+- **THEN** el asiento se crea igual, con sus dos patas sobre esa cuenta y sin efecto contable

@@ -35,11 +35,34 @@ Consecuencias medidas en esa base: `1.7.1.38 POS EFECTIVO DOLAR C.A.` acumula sa
 
 El cierre correcto de la operación es: la cuenta POS del diario del método cierra
 contra la salida de efectivo, y el cruce de la venta mueve el importe **entre las
-dos cuentas transitorias**, de modo que el dinero de la venta que queda en la
-transitoria del diario afectado se compense contra lo que la salida dejó en la
-transitoria del diario del método y ambas terminen en cero. La conciliación de los
-movimientos del diario del método contra la cuenta del diario principal se hace
-antes, por contabilidad.
+dos cuentas transitorias**, para compensar contra lo que la salida dejó en la
+transitoria del diario del método. La conciliación de los movimientos del diario
+del método contra la cuenta del diario principal se hace antes, por contabilidad.
+
+**Nota para contabilidad — el cruce del cash in/out va en sentido contrario.**
+`binaural_pos_close` ya emite, para la salida de efectivo, un cruce
+`use_suspense=True` que es el reverso exacto del que introduce este cambio (DEBE
+transitoria del diario afectado / HABER transitoria del diario del método). Hoy no
+se nota porque en las cajas afectadas ambas transitorias son la misma cuenta y los
+dos asientos salen nulos; en cuanto cada diario tenga la suya, los cuatro asientos
+de una sesión con venta y salida por el mismo importe X quedan así:
+
+```
+venta (cierre nativo)   DEBE  cuenta POS      X
+salida de efectivo      HABER cuenta POS      X   -> cuenta POS = 0
+                        DEBE  transitoria_m   X
+cruce de la salida      DEBE  transitoria_a   X
+                        HABER transitoria_m   X   -> transitoria_a = X
+cruce de la venta       DEBE  transitoria_m   X
+(este cambio)           HABER transitoria_a   X   -> transitoria_a = 0
+                                                     transitoria_m = X (deudora)
+```
+
+Es decir: la transitoria del diario del método queda deudora por el importe de la
+venta y la liquidez real no recibe nada. Decisión tomada (ticket 15219): se deja
+así y contabilidad define al validar si el cruce del cash out debe seguir
+existiendo cuando las dos transitorias sean distintas. Cambiarlo tocaría
+`binaural_pos_close`, otro repo y otro PR.
 
 ## What Changes
 
@@ -90,12 +113,21 @@ antes, por contabilidad.
   diario del método quedará con saldo deudor acumulado hasta que se registre.
 - **Requisito de configuración**: tanto el diario del método como el `cross_journal`
   deben tener su propia Cuenta transitoria (`suspense_account_id`):
-  - Si a alguno le falta, el método se omite en silencio (comportamiento ya existente
-    de `_is_cross_move_eligible`) y no se crea cruce.
-  - Si ambos apuntan a la **misma** cuenta, el asiento sale con DEBE y HABER en esa
-    cuenta (nulo). En `vzla19_lebrum` es el caso del diario 371 `POS EFECTIVO DOLARES
-    C1 C.A.` y el 359 `EFECTIVO DOLARES C.A.` (ambos `1.7.1.06`), que ya produce hoy
-    asientos nulos en el cash in/out (move 915). Su gemelo de CAJA 2 (diario 372) sí
-    tiene la suya (`1.7.1.32`). Es configuración, no código.
+  - Si a alguno le falta, el método se omite en silencio y no se crea cruce.
+    `_is_cross_move_eligible` comprueba **las dos** cuentas cuando
+    `use_suspense=True`: sin el chequeo del destino, esa pata saldría con
+    `account_id = False` y el insert violaría
+    `account_move_line_check_accountable_required_fields` dentro de
+    `action_pos_session_close`, tumbando el cierre de la sesión.
+  - Si ambos apuntan a la **misma** cuenta, el asiento se emite igual, con DEBE y
+    HABER en esa cuenta y sin efecto contable. Es deliberado: deja visible la
+    configuración incompleta en vez de esconderla, igual que ya hace el cruce del
+    cash in/out. Ojo con que esa es la configuración **por defecto de Odoo**:
+    `account.journal._compute_suspense_account_id` cae en
+    `company.account_journal_suspense_account_id` y `chart_template._post_load_data`
+    se la asigna a todo diario cash/bank al instalar el plan. En `vzla19_lebrum` es
+    el caso del diario 371 `POS EFECTIVO DOLARES C1 C.A.` y el 359 `EFECTIVO DOLARES
+    C.A.` (ambos `1.7.1.06`), que ya produce hoy asientos nulos en el cash in/out
+    (move 915); su gemelo de CAJA 2 (diario 372) sí tiene la suya (`1.7.1.32`).
 - La cuenta de efectivo real en divisa (`1.1.1.05.04` / `1.1.1.05.03`) deja de recibir
   la venta por la vía del cruce.

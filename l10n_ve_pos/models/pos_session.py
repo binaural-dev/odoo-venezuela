@@ -234,6 +234,17 @@ class PosSession(models.Model):
         configuration is incomplete, not wrong. ``use_suspense`` must match
         whatever will be passed to ``_create_cross_move_for`` — see
         ``_get_cross_transitory_account``.
+
+        Under ``use_suspense=True`` BOTH legs come from a journal's
+        ``suspense_account_id``, and either can be empty. An empty destination
+        is not a harmless skip: ``_get_cross_real_account`` returns an empty
+        recordset, the line is built with ``account_id = False`` and the
+        insert violates ``account_move_line_check_accountable_required_fields``
+        — inside ``action_pos_session_close``, so it would take the session
+        close down with it. Hence the explicit check on the destination too.
+        (The ``use_suspense=False`` branch has the same latent hole on
+        ``cross_journal``'s payment method lines; left as is, out of the scope
+        of this change.)
         """
         return bool(
             payment_method.is_foreign_currency
@@ -241,6 +252,12 @@ class PosSession(models.Model):
             and payment_method.cross_account_journal
             and payment_method.cross_journal
             and self._get_cross_transitory_account(payment_method, use_suspense=use_suspense)
+            and (
+                not use_suspense
+                or self._get_cross_real_account(
+                    payment_method, outbound=False, use_suspense=True
+                )
+            )
         )
 
     def _get_cross_transitory_account(self, payment_method, use_suspense=False):
@@ -383,7 +400,7 @@ class PosSession(models.Model):
                     "account_id": transitory_account,
                     "partner_id": partner.id,
                     "amount_currency": -foreign_amount
-                    if self.env.company.currency_id == self.foreign_currency_id
+                    if self.company_id.currency_id == self.foreign_currency_id
                     else -amount,
                     "debit": 0.0,
                     "foreign_debit": 0.0,
@@ -391,7 +408,7 @@ class PosSession(models.Model):
                     "foreign_credit": foreign_amount,
                     "not_foreign_recalculate": True,
                     "foreign_rate": foreign_rate,
-                    "currency_id": self.env.company.currency_id.id,
+                    "currency_id": self.company_id.currency_id.id,
                 }
             ),
         ]
@@ -423,7 +440,7 @@ class PosSession(models.Model):
                     "account_id": transitory_account,
                     "partner_id": partner.id,
                     "amount_currency": abs(foreign_amount)
-                    if self.env.company.currency_id == self.foreign_currency_id
+                    if self.company_id.currency_id == self.foreign_currency_id
                     else abs(amount),
                     "credit": 0.0,
                     "foreign_credit": 0.0,
@@ -431,7 +448,7 @@ class PosSession(models.Model):
                     "foreign_debit": abs(foreign_amount),
                     "not_foreign_recalculate": True,
                     "foreign_rate": foreign_rate,
-                    "currency_id": self.env.company.currency_id.id,
+                    "currency_id": self.company_id.currency_id.id,
                 }
             ),
             Command.create(
