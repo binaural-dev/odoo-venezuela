@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_self_order.IdentificationPage">
+        <div class="o_self_identification_box d-flex flex-column vh-100 overflow-hidden o_self_background o_self_fade"
+             t-attf-style="background-image:#{selfOrder.kioskBackgroundImageUrl};background-size: cover; background-position: center;">
+            <div class="d-flex flex-column flex-grow-1 overflow-y-auto">
+                <div class="container o_self_container my-auto">
+
+                    <!-- Step A: cédula -->
+                    <t t-if="state.step === 'identify'">
+                        <h1 class="text-center mt-4">Identify yourself to start</h1>
+                        <p class="text-center text-muted mb-4">Enter your ID number (cédula/RIF)</p>
+                        <div class="mx-auto" style="max-width: 32rem;">
+                            <div class="d-flex gap-2 mb-3">
+                                <select class="form-select form-select-lg flex-shrink-0 o_ve_prefix_select"
+                                        t-model="state.prefixVat">
+                                    <option t-foreach="prefixOptions" t-as="opt" t-key="opt"
+                                            t-att-value="opt" t-esc="opt"/>
+                                </select>
+                                <input type="text" inputmode="numeric" autocomplete="off"
+                                       class="form-control form-control-lg"
+                                       placeholder="ID number (cédula/RIF)"
+                                       t-model="state.vat"
+                                       t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onIdentify()"/>
+                            </div>
+                            <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
+                            <!-- On-screen numeric keypad for the cédula/RIF -->
+                            <div class="o_ve_numpad mt-2">
+                                <button t-foreach="numpadKeys" t-as="key" t-key="key.value"
+                                        type="button"
+                                        class="btn btn-lg o_ve_numpad_key"
+                                        t-att-class="{ 'o_ve_numpad_action': key.action }"
+                                        t-att-disabled="state.loading"
+                                        t-on-click="() => this.onNumpadKey(key.value)">
+                                    <t t-esc="key.label"/>
+                                </button>
+                            </div>
+                        </div>
+                    </t>
+
+                    <!-- Step B: completar teléfono (cédula encontrada, sin teléfono) -->
+                    <t t-elif="state.step === 'phone'">
+                        <h1 class="text-center mt-4">Complete your phone</h1>
+                        <p class="text-center text-muted mb-4">
+                            We need your phone number to continue
+                        </p>
+                        <div class="mx-auto" style="max-width: 32rem;">
+                            <input type="tel" inputmode="tel" autocomplete="off"
+                                   class="form-control form-control-lg mb-3"
+                                   t-att-placeholder="phonePlaceholder"
+                                   t-model="state.phone"
+                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onSavePhone()"/>
+                            <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
+                        </div>
+                    </t>
+
+                    <!-- Step C: nuevo contacto (cédula no encontrada) -->
+                    <t t-else="">
+                        <h1 class="text-center mt-4">New customer</h1>
+                        <p class="text-center text-muted mb-4">
+                            ID number (cédula/RIF): <b><t t-esc="state.prefixVat"/>-<t t-esc="state.vat"/></b>
+                        </p>
+                        <div class="mx-auto" style="max-width: 32rem;">
+                            <input type="text" autocomplete="off"
+                                   class="form-control form-control-lg mb-3"
+                                   t-att-placeholder="firstNamePlaceholder"
+                                   t-model="state.firstName"/>
+                            <input type="text" autocomplete="off"
+                                   class="form-control form-control-lg mb-3"
+                                   t-att-placeholder="lastNamePlaceholder"
+                                   t-model="state.lastName"/>
+                            <input type="tel" inputmode="tel" autocomplete="off"
+                                   class="form-control form-control-lg mb-3"
+                                   t-att-placeholder="phonePlaceholder"
+                                   t-model="state.phone"/>
+                            <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
+                        </div>
+                    </t>
+
+                </div>
+            </div>
+
+            <div class="o_self_footer py-3">
+                <div class="container o_self_container d-flex justify-content-between align-items-center position-relative">
+                    <button class="btn btn-lg btn-light btn-back border-light"
+                            t-on-click="() => this.onClickBack()">
+                        <i class="oi oi-chevron-left d-md-none"/>
+                        <span class="d-none d-md-inline">Back</span>
+                    </button>
+                    <!-- Primary action lives in the footer, right side, at the
+                         same height as Back. Its label/handler switch by step. -->
+                    <button t-if="state.step === 'identify'"
+                            class="btn btn-lg btn-primary px-5"
+                            t-att-disabled="state.loading"
+                            t-on-click="() => this.onIdentify()">
+                        Continue
+                    </button>
+                    <button t-elif="state.step === 'phone'"
+                            class="btn btn-lg btn-primary px-5"
+                            t-att-disabled="state.loading || !state.phone.trim()"
+                            t-on-click="() => this.onSavePhone()">
+                        Save and continue
+                    </button>
+                    <button t-else=""
+                            class="btn btn-lg btn-primary px-5"
+                            t-att-disabled="state.loading || !state.firstName.trim() || !state.lastName.trim() || !state.phone.trim()"
+                            t-on-click="() => this.onCreate()">
+                        Create and continue
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </t>
+</templates>

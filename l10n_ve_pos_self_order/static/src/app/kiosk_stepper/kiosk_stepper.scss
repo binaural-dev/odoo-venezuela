@@ -1,0 +1,49 @@
+.o_kiosk_stepper {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    flex-shrink: 0;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background-color: rgba(255, 255, 255, 0.95);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+
+    .o_kiosk_stepper_circle {
+        width: 2rem;
+        height: 2rem;
+        font-weight: 600;
+        background-color: $o-gray-200;
+        color: $o-gray-600;
+    }
+
+    .o_kiosk_stepper_label {
+        font-weight: 500;
+        color: $o-gray-600;
+    }
+
+    .o_kiosk_stepper_line {
+        height: 2px;
+        width: 2.5rem;
+        background-color: $o-gray-200;
+
+        &.done {
+            background-color: var(--primary, #{$o-action});
+        }
+    }
+
+    .o_kiosk_stepper_step.active,
+    .o_kiosk_stepper_step.done {
+        .o_kiosk_stepper_circle {
+            background-color: var(--primary, #{$o-action});
+            color: #fff;
+        }
+    }
+
+    .o_kiosk_stepper_step.active .o_kiosk_stepper_label {
+        color: var(--primary, #{$o-action});
+    }
+
+    .o_kiosk_stepper_step.done .o_kiosk_stepper_label {
+        color: $o-gray-700;
+    }
+}
