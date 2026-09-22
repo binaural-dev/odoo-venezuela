@@ -1,4 +1,4 @@
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo import api, models, _, fields
 
 
@@ -38,8 +38,8 @@ class AccountJournal(models.Model):
     def _check_default_account_id_required_for_bank(self):
         for journal in self:
             if journal.type == 'bank' and not journal.default_account_id:
-                raise ValidationError(
-                    _("Los diarios de tipo Banco requieren una cuenta contable por defecto (Cuenta Bancaria).")
+                raise UserError(
+                    _("Bank journals require a default account (Bank Account).")
                 )
 
     @api.model_create_multi
@@ -85,7 +85,7 @@ class AccountJournal(models.Model):
                 ]
 
                 if self.search_count(domain) > 0:
-                    raise ValidationError(
+                    raise UserError(
                         _("An International Purchase Journal is already enabled. Only one is allowed.")
                     )
 

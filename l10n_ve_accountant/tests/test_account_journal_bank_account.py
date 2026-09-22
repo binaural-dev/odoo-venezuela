@@ -1,7 +1,7 @@
 import logging
 
 from odoo.tests import tagged
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 
 from .test_indexed_payments import TestIndexedPayments
 
@@ -39,14 +39,14 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
                 "journal's default_account_id, even without going through any onchange.",
             )
 
-    def test_bank_journal_without_default_account_raises_validation_error(self):
+    def test_bank_journal_without_default_account_raises_user_error(self):
         # Odoo's own create() (_fill_missing_values -> _create_default_account)
         # auto-generates a placeholder liquidity account whenever default_account_id
         # is missing on a bank/cash journal, so it never actually reaches our
         # constrains empty. skip_default_account_autofill disables only that
         # auto-creation so the constrains can be exercised against a genuinely
         # empty default_account_id.
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(UserError):
             self.env["account.journal"].sudo().with_context(
                 skip_default_account_autofill=True,
             ).create({
