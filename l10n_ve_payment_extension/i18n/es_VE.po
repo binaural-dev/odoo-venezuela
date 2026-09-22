@@ -1198,6 +1198,63 @@ msgid "ISLR Account"
 msgstr "Cuenta de Retención de ISLR"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__islr_prioritize_product_subtotal_base
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__islr_prioritize_product_subtotal_base
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension_tax_block
+msgid "ISLR: prioritize product subtotal as automatic base (suppliers)"
+msgstr "ISLR: priorizar subtotal del producto como base automática (proveedores)"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_company__islr_prioritize_product_subtotal_base
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_config_settings__islr_prioritize_product_subtotal_base
+msgid ""
+"For SUPPLIER invoices only (task #82491): when an invoice mixes goods with"
+" a single service that carries an ISLR withholding concept: by default"
+" (disabled) the automatic calculation uses the whole invoice subtotal as"
+" the withholding base (the goods are deemed necessary for the service, per"
+" the regulation). If enabled, the automatic calculation uses only that"
+" product/service's own subtotal instead. Either way, the taxable base can"
+" always be edited by hand line by line to use whichever criterion is"
+" needed, regardless of this setting - it only decides what gets proposed"
+" automatically. Client ISLR retentions are never affected by this setting."
+" When 2 or more products/services carry an ISLR concept on the same"
+" invoice, each one always uses its own subtotal, regardless of this"
+" setting."
+msgstr ""
+"Solo para facturas de PROVEEDOR (tarea #82491): cuando una factura mezcla"
+" bienes con un único servicio que lleva un concepto de retención ISLR: por"
+" defecto (desactivado) el cálculo automático usa el subtotal completo de"
+" la factura como base de retención (el bien se entiende necesario para la"
+" prestación del servicio, según la norma). Si se activa, el cálculo"
+" automático usa solo el subtotal de ese producto/servicio en su lugar. En"
+" ambos casos, la base imponible siempre puede editarse manualmente línea"
+" por línea para usar cualquiera de los dos criterios, sin importar este"
+" ajuste - este solo define qué se propone automáticamente. Las retenciones"
+" ISLR de cliente nunca se ven afectadas por este ajuste. Cuando hay 2 o"
+" más productos/servicios con concepto ISLR en la misma factura, cada uno"
+" siempre usa su propio subtotal, sin importar este ajuste."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension_tax_block
+msgid ""
+"For SUPPLIER invoices only: when the invoice mixes goods with a single"
+" service that carries an ISLR concept, defines what the automatic"
+" calculation uses as the base: the whole invoice subtotal (disabled,"
+" default behavior) or just that product/service's own subtotal (enabled)."
+" The taxable base can always be edited by hand with either criterion,"
+" regardless of this setting. Client ISLR retentions are never affected by"
+" this setting."
+msgstr ""
+"Solo para facturas de PROVEEDOR: cuando la factura mezcla bienes con un"
+" único servicio con concepto ISLR, define qué usa el cálculo automático"
+" como base: el subtotal completo de la factura (desactivado,"
+" comportamiento por defecto) o solo el subtotal de ese producto/servicio"
+" (activado). La base imponible siempre puede editarse manualmente con"
+" cualquiera de los dos criterios, sin importar este ajuste. Las"
+" retenciones ISLR de cliente nunca se ven afectadas por este ajuste."
+" este ajuste."
+
+#. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
@@ -2587,6 +2644,52 @@ msgstr "La Rama Económica ya existe."
 #. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s is duplicated in this retention at the"
+" same tax rate (%(aliquot)s%%). Each invoice/rate combination"
+" can only appear once."
+msgstr ""
+"La factura %(invoice)s está duplicada en esta retención a la"
+" misma alícuota (%(aliquot)s%%). Cada combinación de factura/alícuota"
+" solo puede aparecer una vez."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s is duplicated in this retention for the"
+" same economic activity (%(activity)s). Each invoice/activity"
+" combination can only appear once."
+msgstr ""
+"La factura %(invoice)s está duplicada en esta retención para la"
+" misma actividad económica (%(activity)s). Cada combinación de"
+" factura/actividad solo puede aparecer una vez."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s was already retained at the same tax"
+" rate (%(aliquot)s%%) by retention %(retention)s. Each"
+" invoice/rate combination can only appear once."
+msgstr ""
+"La factura %(invoice)s ya fue retenida a la misma alícuota"
+" (%(aliquot)s%%) por la retención %(retention)s. Cada"
+" combinación de factura/alícuota solo puede aparecer una vez."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The invoice %(invoice)s was already retained for the same"
+" economic activity (%(activity)s) by retention %(retention)s."
+msgstr ""
+"La factura %(invoice)s ya fue retenida para la misma"
+" actividad económica (%(activity)s) por la retención %(retention)s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
 msgid "The invoice %s has no tax."
 msgstr "La factura %s no tiene impuesto"
 
@@ -2617,6 +2720,18 @@ msgstr "El partner debe tener tipo de persona"
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The payment concept (%(concept)s) of the line for"
+" invoice %(invoice)s does not match any product on"
+" that invoice."
+msgstr ""
+"El concepto de pago (%(concept)s) de la línea para la"
+" factura %(invoice)s no coincide con ningún producto de"
+" esa factura."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/fees_retention.py:0
 msgid "The percentage of fees cannot be greater than 100%.\n"
 msgstr "El porcentaje de las tarifas no puede ser mayor que 100%"
@@ -2632,6 +2747,46 @@ msgstr "El porcentaje de retención no puede ser negativo."
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
 msgid "The tariff does not have a valid tax unit."
 msgstr "La tarifa no tiene una unidad tributaria válida."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The tax rate (%(aliquot)s%%) of the line for invoice"
+" %(invoice)s does not match any tax applied on that"
+" invoice."
+msgstr ""
+"La tasa (%(aliquot)s%%) de la línea para la factura"
+" %(invoice)s no coincide con ningún impuesto aplicado en"
+" esa factura."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The taxable base declared across the lines of invoice"
+" %(invoice)s for payment concept %(concept)s exceeds"
+" the actual base billed under that concept on the"
+" invoice."
+msgstr ""
+"La base imponible declarada en las líneas de la factura"
+" %(invoice)s para el concepto de pago %(concept)s excede"
+" la base real facturada bajo ese concepto en la"
+" factura."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The taxable base declared for invoice %(invoice)s and payment"
+" concept %(concept)s exceeds the actual base billed under that"
+" concept, once what retention %(retention)s already retained"
+" for it is taken into account."
+msgstr ""
+"La base imponible declarada para la factura %(invoice)s y el"
+" concepto de pago %(concept)s excede la base real facturada bajo"
+" ese concepto, una vez que se toma en cuenta lo que ya retuvo"
+" la retención %(retention)s por ese mismo concepto."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -2651,6 +2806,17 @@ msgid ""
 " invoice."
 msgstr ""
 "El monto total de la retención es mayor que el monto residual de la factura."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
+msgid ""
+"There are no more products with payment concept"
+" '%(concept)s' on invoice %(invoice)s to retain."
+msgstr ""
+"No hay más productos con el concepto de pago"
+" '%(concept)s' en la factura %(invoice)s para"
+" aplicarles retención."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -3293,6 +3459,41 @@ msgstr "No se encontraron pagos para la conciliación."
 #: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
 msgid "The invoice has no tax."
 msgstr "La factura no tiene impuestos."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The accounting date (%(accounting_date)s) cannot be earlier than the "
+"invoice date (%(invoice_date)s) for invoice %(invoice_name)s."
+msgstr ""
+"La fecha contable (%(accounting_date)s) no puede ser anterior a la fecha "
+"de factura (%(invoice_date)s) de la factura %(invoice_name)s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The voucher date (%(voucher_date)s) cannot be earlier than the invoice "
+"date (%(invoice_date)s) for invoice %(invoice_name)s."
+msgstr ""
+"La fecha de comprobante (%(voucher_date)s) no puede ser anterior a la "
+"fecha de factura (%(invoice_date)s) de la factura %(invoice_name)s."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "The accounting date (%(date)s) cannot be later than today (%(today)s)."
+msgstr ""
+"La fecha contable (%(date)s) no puede ser posterior a hoy (%(today)s)."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "The voucher date (%(date)s) cannot be later than today (%(today)s)."
+msgstr ""
+"La fecha del comprobante (%(date)s) no puede ser posterior a hoy"
+" (%(today)s)."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python

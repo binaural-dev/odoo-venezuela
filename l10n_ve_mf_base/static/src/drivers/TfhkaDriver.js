@@ -54,6 +54,9 @@ export class TfhkaDriver {
         this.lastStatus = null;
         this.retryAttempts = 3;
         this.retryDelay = 500; // ms
+        // Promesa de conexión en curso (mutex): serializa a los múltiples
+        // llamadores de connect() (montaje, listener USB, click, reclaim).
+        this._connecting = null;
     }
 
     _isWaitingState(sts1) {
@@ -105,29 +108,78 @@ export class TfhkaDriver {
      * Conecta con la impresora fiscal
      * @returns {Promise<boolean>}
      */
-    async connect({ requestPermission = false } = {}) {
+    async connect(opts = {}) {
+        // Mutex: varias rutas (montaje, listener USB "connect", click del botón,
+        // reclaim del hand-off) pueden llamar connect() casi a la vez. Sin
+        // serializar, dos autoConnect() se interleavean en
+        // SerialConnection._openPort (uno abre, el otro cierra+reabre) y
+        // corrompen el estado. Reusar la promesa en curso evita la carrera.
+        if (this._connecting) {
+            return this._connecting;
+        }
+        this._connecting = this._doConnect(opts).finally(() => {
+            this._connecting = null;
+        });
+        return this._connecting;
+    }
+
+    async _doConnect({ requestPermission = false } = {}) {
         try {
-            // Intentar reconexión automática primero
+            // 1) Reconexión silenciosa a un puerto ya autorizado (por VID/PID).
             let connected = await this.connection.autoConnect();
-            
-            // Solo solicitar permiso si se indica explícitamente
-            // (requestPort() requiere un gesto del usuario)
+            if (connected) {
+                if (await this._verifyAndPersist()) {
+                    return true;
+                }
+                // El puerto abrió pero no responde como máquina fiscal (p.ej.
+                // autoConnect adoptó otro serial, como la balanza). Soltarlo
+                // para no retener el COM ni ensuciar nada, y seguir al prompt.
+                // Nota: connection.disconnect() (nivel bajo), NO this.disconnect(),
+                // que esperaría a este mismo _connecting y haría deadlock.
+                await this.connection.disconnect();
+                this.isConnected = false;
+                connected = false;
+            }
+
+            // 2) Prompt de selección de puerto (requiere gesto del usuario).
             if (!connected && requestPermission) {
                 connected = await this.connection.requestPort();
+                if (connected) {
+                    if (await this._verifyAndPersist()) {
+                        return true;
+                    }
+                    // connection.disconnect() (nivel bajo): ver nota arriba.
+                    await this.connection.disconnect();
+                    this.isConnected = false;
+                }
             }
-            
-            if (connected) {
-                // Verificar que la impresora responda
-                const status = await this.getStatus();
-                this.isConnected = status !== null;
-                return this.isConnected;
-            }
-            
+
+            this.isConnected = false;
             return false;
         } catch (error) {
             console.error("TfhkaDriver:: Error al conectar", error);
+            this.isConnected = false;
             return false;
         }
+    }
+
+    /**
+     * Verifica que el puerto abierto responda como máquina fiscal (getStatus)
+     * y SOLO entonces marca conectado y persiste la identidad USB (VID/PID).
+     * Persistir únicamente tras verificar evita guardar la balanza (u otro
+     * serial que autoConnect pudo adoptar) como identidad de la MF.
+     * @private
+     * @returns {Promise<boolean>}
+     */
+    async _verifyAndPersist() {
+        const status = await this.getStatus();
+        if (status !== null) {
+            this.isConnected = true;
+            this.connection._saveDeviceInfo();
+            return true;
+        }
+        this.isConnected = false;
+        return false;
     }
 
     /**
@@ -135,6 +187,15 @@ export class TfhkaDriver {
      * @returns {Promise<void>}
      */
     async disconnect() {
+        // Si hay una conexión en curso, esperarla para no cerrar el puerto
+        // mientras otra ruta lo está abriendo (corrompería los streams/locks).
+        if (this._connecting) {
+            try {
+                await this._connecting;
+            } catch (e) {
+                // da igual el resultado del connect; igual vamos a cerrar
+            }
+        }
         await this.connection.disconnect();
         this.isConnected = false;
     }

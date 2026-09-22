@@ -177,18 +177,18 @@
 - [ ] 6.6 `l10n_ve_pos_self_order/static/src/overrides/product_list_page.xml:7,26`
       ancla el xpath en clases de presentación (`bg-view`/`border-bottom`); válido
       hoy, frágil en 19.x — preferir clases semánticas si el core las ofrece.
-- [x] 6.7 🟢 HECHO (y NO era solo preexistente: el filtro
-      `filtered(lambda t: t.company_id == company)` es de este PR, así que un
-      `write` en lote multi-compañía además de reventar con `Expected singleton`
-      podía forzar en silencio el impuesto por defecto de una compañía
-      arbitraria y descartar los válidos). `l10n_ve_accountant/models/
-      product_template.py`: `write` valida producto a producto cuando el
-      recordset trae más de uno (`record.write(dict(vals))`), de modo que
-      `_enforce_single_tax_vals` siempre recibe UN registro y resuelve contra SU
-      compañía y SU baseline (antes `records.taxes_id` era la UNIÓN de los
-      impuestos de todos, que parecía "más de un impuesto asignado"). Contrato
-      documentado en el docstring. Test `test_14_write_batch_multi_company_
-      resolves_per_product` en `l10n_ve_accountant/tests/test_product_template.py`.
+- [x] 6.7 🟢 RESUELTO EN `19.0`, no en esta rama. Se había arreglado aquí
+      validando producto a producto, pero al traer `19.0` resultó que la rama
+      base ya había reimplementado `_enforce_single_tax_vals` entero (TI-15065 /
+      FIX-060..062) y lo resuelve mejor: `_enforce_single_tax_vals_create` /
+      `_enforce_single_tax_vals_write`, compañía y baseline POR REGISTRO,
+      inyección del default acumulada por `(campo, impuesto)` —así dos productos
+      de compañías distintas no se pisan el default—, `_relevant_tax_ids`
+      consciente de la jerarquía de sucursales (`company.parent_ids`), un solo
+      query para el mapa impuesto→compañía, y exención de los productos `combo`.
+      En el merge se tomó la versión de `19.0` y se descartó la de la rama
+      (incluido su test, redundante con `test_28_write_batch_two_companies_each_
+      gets_own_default`). Se conservan `test_04b`/`test_04c` de la rama.
 
 - [x] 6.8 🟢 HECHO. `l10n_ve_pos_self_order/controllers/orders.py`
       (`session_orders`): el dominio pedía `state in ["paid","done","invoiced"]`
