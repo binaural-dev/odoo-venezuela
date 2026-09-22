@@ -250,9 +250,11 @@ class TfhkaDocumentService(models.AbstractModel):
         Devuelve:
 
         * ``document_currency``: moneda del encabezado (``moneda``) y de
-          ``detallesItems``. Es la moneda en la que se emitió la factura: la
-          ``line_currency_id`` elegida en las bimoneda, la divisa de la tarifa
-          en las facturas en divisa, y el bolívar en las facturas en bolívares.
+          ``detallesItems``. With ``multi_currency_invoice`` enabled it's the
+          chosen ``line_currency_id``; without the flag it's ALWAYS the
+          bolívar, regardless of the invoice's or the pricelist's currency --
+          ``multi_currency_invoice`` is the sole switch for whether the
+          document reports more than one currency.
         * ``totals_currency``: moneda del bloque ``totales``. SIEMPRE el bolívar
           (la moneda base de la compañía), porque el SENIAT exige los totales
           del documento en moneda nacional independientemente de la moneda de
@@ -291,10 +293,13 @@ class TfhkaDocumentService(models.AbstractModel):
                 )
             document_currency = invoice.line_currency_id
         else:
-            # Factura en divisa: el encabezado va en la divisa de emisión aunque
-            # no esté marcada como bimoneda. Sin divisa el documento es en
-            # bolívares y las tres monedas colapsan en la base.
-            document_currency = foreign_currency or base_currency
+            # Without multi-currency, the document is digitalized entirely
+            # in the base currency (VES), regardless of the invoice's or the
+            # pricelist's currency -- same criterion as
+            # unidigital.document_service (the design precedent TFHKA
+            # replicated): multi_currency_invoice is the sole switch for
+            # whether the document reports more than one currency.
+            document_currency = base_currency
 
         # totales -> bolívares; totalesOtraMoneda -> la divisa. No depende de
         # cuál sea la moneda del encabezado.
@@ -612,15 +617,15 @@ class TfhkaDocumentService(models.AbstractModel):
         )
 
     def _should_report_foreign_totals(self, invoice, foreign_currency=None):
-        """Criterio ÚNICO para adjuntar el bloque ``totalesOtraMoneda``.
-
-        Es la presencia de una divisa en el documento, no el flag
-        ``multi_currency_invoice``: ``totales`` viaja siempre en bolívares, así
-        que en cuanto hay una moneda distinta del bolívar hay que reportarla en
-        ``totalesOtraMoneda``, tanto en las bimoneda como en las facturas
-        emitidas en divisa. Solo la factura íntegramente en bolívares queda sin
-        el bloque.
+        """Criterion for attaching the ``totalesOtraMoneda`` block: requires
+        ``multi_currency_invoice`` enabled (the document must explicitly ask
+        for multi-currency) AND a currency other than the base one to be
+        associated with the invoice. It used to be enough to have just the
+        latter -- that's why the block was sent even with the check
+        disabled, with no way to suppress it.
         """
+        if not invoice.multi_currency_invoice:
+            return False
         if foreign_currency is None:
             foreign_currency = self._get_document_foreign_currency(invoice)
         return bool(foreign_currency) and foreign_currency != invoice.company_id.currency_id

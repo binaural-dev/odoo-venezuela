@@ -1625,6 +1625,85 @@ class TestAccountMoveApiCalls(TransactionCase):
         # con que la factura tuviera foreign_rate.
         self.assertFalse(foreign)
 
+    # ------------------------------------------------------------------
+    # _get_currency_context / _should_report_foreign_totals: without
+    # multi_currency_invoice the document is always digitalized in the
+    # base currency, and totalesOtraMoneda only shows up with the flag
+    # enabled (ticket #15323).
+    # ------------------------------------------------------------------
+
+    def test_get_currency_context_no_multi_currency_collapses_to_base(self):
+        """Defect B: without multi_currency_invoice, even though the
+        invoice is literally in USD, the document is digitalized in the
+        base currency (VEF) with no other-currency block."""
+        vef = self.env.ref("base.VEF")
+        self._force_company_currency(self.company, vef)
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 10, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_usd.id,
+        )
+        inv.multi_currency_invoice = False
+        ctx = self.env['tfhka.document.service']._get_currency_context(inv)
+        self.assertEqual(ctx["document_currency"], vef)
+        self.assertFalse(ctx["alt_currency"])
+
+    def test_get_currency_context_multi_currency_vef_still_reports_alt_currency(self):
+        """The multi-currency case with VEF as the primary currency still
+        shows totalesOtraMoneda in USD -- that's the payload the ticket
+        itself labels coherent, not a defect to suppress."""
+        vef = self.env.ref("base.VEF")
+        self._force_company_currency(self.company, vef)
+        # multi_currency_available requires the company's foreign currency
+        # to differ from the base one; _force_company_currency only touches
+        # currency_id, so foreign_currency_id needs realigning too (it was
+        # left at VEF, same as the new base, from the original USD-based
+        # setUp).
+        self.company.foreign_currency_id = self.currency_usd.id
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 10, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_usd.id,
+        )
+        inv.multi_currency_invoice = True
+        inv.line_currency_id = vef.id
+        ctx = self.env['tfhka.document.service']._get_currency_context(inv)
+        self.assertEqual(ctx["document_currency"], vef)
+        self.assertEqual(ctx["alt_currency"], self.currency_usd)
+
+    def test_get_currency_context_no_multi_currency_no_real_foreign_currency(self):
+        """Without multi_currency_invoice and with no real foreign currency
+        associated (an already single-currency invoice): still no
+        totalesOtraMoneda -- no regression of the case covered by
+        test_168."""
+        vef = self.env.ref("base.VEF")
+        self._force_company_currency(self.company, vef)
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 10, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=vef.id,
+            foreign_currency_id=vef.id,
+        )
+        inv.multi_currency_invoice = False
+        ctx = self.env['tfhka.document.service']._get_currency_context(inv)
+        self.assertFalse(ctx["alt_currency"])
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
+    def test_generate_document_data_no_multi_currency_is_ves_only(self, mock_call):
+        """End-to-end (the ticket's expected Scenario 3): without
+        multi_currency_invoice, the full payload declares VES in the
+        header and carries no totalesOtraMoneda."""
+        mock_call.return_value = {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
+        vef = self.env.ref("base.VEF")
+        self._force_company_currency(self.company, vef)
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 10, "tax_ids": [self.tax_iva16.id]}],
+            currency_id=self.currency_usd.id,
+        )
+        inv.multi_currency_invoice = False
+        self.env['tfhka.document.service'].generate_document_data(inv, "144", "01", "")
+        payload = mock_call.call_args[0][2]
+        encabezado = payload["documentoElectronico"]["encabezado"]
+        self.assertEqual(encabezado["identificacionDocumento"]["moneda"], vef.code_tfhka)
+        self.assertNotIn("totalesOtraMoneda", encabezado)
+
     def test_70_get_tax_subtotals_vef(self):
         vef = self.env.ref("base.VEF")
         self._force_company_currency(self.company, vef)
