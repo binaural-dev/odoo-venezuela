@@ -1,0 +1,94 @@
+# Tasks
+
+## 1. Popup de cancelar orden (punto 5)
+
+- [x] 1.1 `static/src/overrides/cancel_popup.xml`: `t-inherit` de
+      `pos_self_order.CancelPopup` — "¿Desea cancelar la orden?" / "Sí" / "No"
+- [x] 1.2 `i18n/es_VE.po`: cadenas nuevas
+- [x] 1.3 `__manifest__.py`: bump de versión (1.3 → 1.4)
+
+## 2. Leyenda de campos obligatorios (punto 3)
+
+- [ ] 2.1 `identification_page.js`: getter `requiredFieldsLegend`
+- [ ] 2.2 `identification_page.xml`: mostrar la leyenda en los pasos de
+      teléfono y creación de contacto
+- [ ] 2.3 `i18n/es_VE.po`: cadena nueva
+
+## 3. Teléfono obligatorio y validado (punto 1)
+
+- [ ] 3.1 `identification_page.js`: selector de operadora (0412/0414/0416/
+      0422/0424/0426) + número de 7 dígitos, formato `"0414-1234567"`
+- [ ] 3.2 `identification_page.xml`: reemplazar el input libre de teléfono por
+      el selector + número, en los pasos de teléfono y creación de contacto
+- [ ] 3.3 `identification_page.scss`: estilo del selector de operadora
+- [ ] 3.4 `controllers/orders.py`: `_ve_phone_format_error` — mismo patrón que
+      `_ve_vat_format_error`; aplicado en `identify_create` y `set_phone`
+- [ ] 3.5 `i18n/es_VE.po`: cadenas nuevas (JS + Python)
+- [ ] 3.6 `tests/test_kiosk_public_routes.py`: tests de formato de teléfono
+
+## 4. Dirección opcional/obligatoria (punto 2)
+
+- [ ] 4.1 `models/res_country_municipality.py` (nuevo): `pos.load.mixin` sobre
+      `res.country.municipality` para exponerlo al Kiosko
+- [ ] 4.2 `models/pos_config.py`: `self_ordering_require_address` (Boolean) +
+      `_load_self_data_models` (agrega `res.country.municipality`) +
+      `_load_pos_self_data_fields` (expone el flag)
+- [ ] 4.3 `models/res_config_settings.py`: related
+      `pos_self_ordering_require_address`
+- [ ] 4.4 `views/res_config_settings_views.xml`: `<setting>` nuevo
+- [ ] 4.5 `controllers/orders.py`: `_ve_address_format_error`; nuevos
+      parámetros `state_id`/`municipality_id`/`street` en `identify_create`
+- [ ] 4.6 `identification_page.js`: estado + validación de estado/municipio/
+      calle; municipios filtrados por estado elegido
+- [ ] 4.7 `identification_page.xml`: desplegables de Estado/Municipio + campo
+      Calle en el paso de creación de contacto
+- [ ] 4.8 `__manifest__.py`: dependencia explícita de `l10n_ve_location`
+- [ ] 4.9 `i18n/es_VE.po`: cadenas nuevas
+- [ ] 4.10 `tests/test_kiosk_public_routes.py`: tests de dirección obligatoria/
+      opcional y de datos expuestos (`res.country.municipality`,
+      `foreign_rate`/`foreign_inverse_rate`)
+
+## 5. Resumen de montos en pago (puntos 7+8)
+
+- [ ] 5.1 `models/pos_config.py`: exponer `foreign_rate`/`foreign_inverse_rate`
+      al Kiosko vía `_load_pos_self_data_fields`
+- [ ] 5.2 `static/src/overrides/payment_page.js` (nuevo): `patch()` con
+      base imponible, desglose de impuestos, total local y total foráneo
+      (misma tasa operativa que `l10n_ve_pos._get_pos_conversion_rate`)
+- [ ] 5.3 `static/src/overrides/payment_page.xml` (nuevo): `t-inherit` que
+      inserta el bloque de resumen sin reemplazar el template
+- [ ] 5.4 `i18n/es_VE.po`: cadenas nuevas
+
+## 6. Teclado en pantalla (punto 6)
+
+- [ ] 6.1 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.js`
+      (nuevo): componente OWL, QWERTY + Ñ + numérico, mayúsculas, borrar,
+      espacio
+- [ ] 6.2 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.xml`
+      (nuevo)
+- [ ] 6.3 `static/src/app/components/kiosk_keyboard/kiosk_keyboard.scss`
+      (nuevo): reusa el estilo de `o_ve_numpad`
+- [ ] 6.4 `identification_page.js`/`.xml`: mostrar el teclado al enfocar
+      nombre/apellido/teléfono; modo numérico para teléfono
+- [ ] 6.5 `i18n/es_VE.po`: cadenas nuevas si aplica
+
+## 7. Verificación manual (navegador) — PENDIENTE
+
+- [ ] 7.1 Upgrade del módulo (`-u l10n_ve_pos_self_order`)
+- [ ] 7.2 Cancelar una orden → popup en español, "Sí"/"No"
+- [ ] 7.3 Crear contacto nuevo → leyenda de obligatorios visible
+- [ ] 7.4 Teléfono: operadora inválida / menos de 7 dígitos → rechazado;
+      formato válido → se guarda como `0414-1234567`
+- [ ] 7.5 Dirección: con el flag activo, crear sin estado/municipio/calle →
+      rechazado; con el flag inactivo, se puede omitir
+- [ ] 7.6 Pantalla de pago: base, impuestos por tasa, total Bs. y total
+      foráneo visibles y correctos (coinciden con la factura)
+- [ ] 7.7 Teclado en pantalla aparece al enfocar nombre/apellido/teléfono y
+      escribe en el campo activo; modo numérico en teléfono
+- [ ] 7.8 `binaural_megasoft_self_order` sigue pagando con Megasoft sin
+      romperse (compatibilidad del patch de `PaymentPage`)
+
+## 8. OpenSpec
+
+- [ ] 8.1 `openspec change validate kiosk-ta-80343-adjustments --strict` →
+      válido

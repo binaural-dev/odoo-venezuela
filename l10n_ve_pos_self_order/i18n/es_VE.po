@@ -574,3 +574,21 @@ msgstr "Guardar y continuar"
 #: code:addons/l10n_ve_pos_self_order/static/src/overrides/self_order_index.xml:0
 msgid "🛠 Kiosk Debug"
 msgstr "🛠 Debug Kiosko"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/cancel_popup.xml:0
+msgid "Do you want to cancel the order?"
+msgstr "¿Desea cancelar la orden?"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/cancel_popup.xml:0
+msgid "Yes"
+msgstr "Sí"
+
+#. module: l10n_ve_pos_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_self_order/static/src/overrides/cancel_popup.xml:0
+msgid "No"
+msgstr "No"
