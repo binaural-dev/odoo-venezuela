@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "1.0",
+    "version": "19.0.1.0.0",
     "data": [
         "views/auditlog_lines_views.xml",
         "views/auditlogs_views.xml",
