@@ -185,9 +185,24 @@ class TestAccountingReports(TransactionCase):
         )
 
     def _create_closed_session(self, report_z, serial_machine=False, stop_at="2023-01-05 18:00:00"):
-        config = self.env["pos.config"].create({"name": f"Test POS Z{report_z}"})
+        config_vals = {"name": f"Test POS Z{report_z}"}
         if serial_machine:
-            config.serial_machine = serial_machine
+            # pos_config.serial_machine es related, vía iface_fiscal_data_module
+            # (iot.device) -- no se puede asignar directo como antes.
+            box = self.env["iot.box"].create(
+                {"name": f"Test Box {serial_machine}", "identifier": f"BOX-{serial_machine}"}
+            )
+            device = self.env["iot.device"].create(
+                {
+                    "name": f"Test Fiscal Device {serial_machine}",
+                    "identifier": f"DEV-{serial_machine}",
+                    "type": "fiscal_data_module",
+                    "iot_id": box.id,
+                    "serial_machine": serial_machine,
+                }
+            )
+            config_vals["iface_fiscal_data_module"] = device.id
+        config = self.env["pos.config"].create(config_vals)
         session = self.env["pos.session"].create({"config_id": config.id})
         session.write({"state": "closed", "report_z": report_z, "stop_at": stop_at})
         return session
@@ -382,4 +397,75 @@ class TestAccountingReports(TransactionCase):
         self.assertEqual(resumen_lines[0]["document_number"], "Desde 0500 Hasta 0501")
         _logger.info(
             "Test 10: test_parse_sale_book_data_groups_by_invoice_date_not_create_date Passed"
+        )
+
+    def test_parse_sale_book_data_all_documents_fills_zero_report_z(self):
+        """Test 11: con all_documents=True, un cierre POS sin facturas también genera su línea en cero."""
+        if not self._pos_mf_installed():
+            self.skipTest("l10n_ve_pos_mf no está instalado en este entorno de test")
+
+        self._create_move(mf_reportz="1", mf_invoice_number="0001", mf_serial="S001")
+        self._create_closed_session("2", serial_machine="S001")
+
+        wizard = self.wizard_model.create(
+            {
+                "with_fiscal_machine": False,
+                "all_documents": True,
+                "date_from": "2023-01-01",
+                "date_to": "2023-01-31",
+                "report": "sale",
+                "company_id": self.company.id,
+            }
+        )
+        data = wizard.parse_sale_book_data()
+
+        zero_line = next((line for line in data if line.get("mf_reportz") == "2"), None)
+        self.assertTrue(
+            zero_line,
+            "El modo 'Incluir todos los documentos emitidos' también debe rellenar los Reportes Z en cero",
+        )
+        self.assertEqual(zero_line["document_number"], "Desde 0001 Hasta 0001")
+
+        free_form_line = next(
+            (line for line in data if line.get("document_number") == self.move_free_form.name),
+            None,
+        )
+        self.assertTrue(
+            free_form_line,
+            "Un documento libre (sin máquina fiscal) debe seguir apareciendo como línea individual",
+        )
+        _logger.info(
+            "Test 11: test_parse_sale_book_data_all_documents_fills_zero_report_z Passed"
+        )
+
+    def test_pos_zero_report_z_not_deduplicated_across_machines(self):
+        """Test 12: un Z en cero de una máquina no debe descartarse porque el mismo número ya es real en otra."""
+        if not self._pos_mf_installed():
+            self.skipTest("l10n_ve_pos_mf no está instalado en este entorno de test")
+
+        self._create_move(mf_reportz="5", mf_invoice_number="0050", mf_serial="S001")
+        self._create_move(mf_reportz="3", mf_invoice_number="0030", mf_serial="S002")
+        self._create_closed_session("5", serial_machine="S002")
+
+        wizard = self._fiscal_wizard()
+        zero_lines = wizard._get_pos_zero_report_z_lines(wizard.search_moves())
+
+        zero_line = next(
+            (
+                line for line in zero_lines
+                if line.get("mf_reportz") == "5" and line.get("mf_serial") == "S002"
+            ),
+            None,
+        )
+        self.assertTrue(
+            zero_line,
+            "El Z=5 en cero de S002 no debe descartarse solo porque S001 ya tiene un Z=5 real",
+        )
+        self.assertEqual(
+            zero_line["document_number"],
+            "Desde 0030 Hasta 0030",
+            "Debe heredar el rango del último Z real de S002 (Z=3), no de S001",
+        )
+        _logger.info(
+            "Test 12: test_pos_zero_report_z_not_deduplicated_across_machines Passed"
         )

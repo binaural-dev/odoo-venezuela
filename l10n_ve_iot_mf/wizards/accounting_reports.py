@@ -231,7 +231,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         zero_lines = []
         for session in sessions:
             z_int = int(session.report_z)
-            if z_int in known_z_ints:
+            if session.serial_machine:
+                if (session.serial_machine, z_int) in known_z:
+                    continue
+            elif z_int in known_z_ints:
                 continue
 
             if session.serial_machine:
@@ -266,8 +269,22 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return zero_lines
 
     def parse_sale_book_data(self):
-        if not self.with_fiscal_machine or self.all_documents:
+        if not self.with_fiscal_machine and not self.all_documents:
             return super().parse_sale_book_data()
+
+        if self.all_documents:
+            sale_book_lines = super().parse_sale_book_data()
+            moves = self.search_moves()
+            sale_book_lines.extend(self._get_pos_zero_report_z_lines(moves))
+            return sorted(
+                sale_book_lines,
+                key=lambda row: (
+                    datetime.strptime(row['document_date'], "%d/%m/%Y"),
+                    int(row['mf_reportz'])
+                    if str(row.get('mf_reportz', '')).lstrip('-').isdigit()
+                    else 0,
+                ),
+            )
 
         sale_book_lines = []
         moves = self.search_moves()
