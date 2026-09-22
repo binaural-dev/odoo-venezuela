@@ -1,0 +1,263 @@
+from odoo import api, fields, models, _
+from odoo.exceptions import ValidationError
+
+
+class ResCompany(models.Model):
+    _inherit = 'res.company'
+
+    l10n_ve_exchange_use_nd_nc = fields.Boolean(
+        string='Use Debit/Credit Notes for Customer Invoice Exchange Difference',
+        default=False,
+        help="Applies only to CUSTOMER invoices and credit notes. When "
+             "enabled, the exchange difference left open when reconciling "
+             "a foreign-currency customer invoice is NOT absorbed by "
+             "Odoo's automatic entry -- instead, it is documented with a "
+             "real Debit Note (gain) or Credit Note (loss), issued "
+             "against the original invoice and reconciled against the "
+             "remaining residual.",
+    )
+
+    l10n_ve_exchange_note_product_id = fields.Many2one(
+        'product.product',
+        string='Customer Invoice Exchange Difference Note Product',
+        domain=[('type', '=', 'service')],
+        help="Product used as the line of exchange difference Debit/Credit "
+             "Notes for CUSTOMER invoices. Must be a service, its income "
+             "and expense accounts must be the company's exchange "
+             "gain/loss accounts, and its sale tax must be the default "
+             "sale Exempt tax (l10n_ve_accountant: exent_aliquot_sale) -- "
+             "the exchange difference is not a VAT base, but "
+             "l10n_ve_accountant requires a tax on every line.",
+    )
+
+    l10n_ve_exchange_note_pricelist_id = fields.Many2one(
+        'product.pricelist',
+        string='Customer Invoice Exchange Difference Note Pricelist',
+        help="Pricelist used on exchange difference Debit/Credit Notes for "
+             "CUSTOMER invoices (`account_invoice_pricelist` requires "
+             "every invoice/note to have one whose currency matches the "
+             "document's own currency). Must be in the company's own "
+             "currency -- these notes are always issued in company "
+             "currency, never in the partner's foreign pricelist.",
+    )
+
+    l10n_ve_exchange_validate_partner_note = fields.Boolean(
+        string='Validate Customer Allows Exchange Difference Note',
+        default=False,
+        help="With 'Use Debit/Credit Notes for Customer Invoice Exchange "
+             "Difference' enabled, also require the CUSTOMER of the "
+             "invoice being settled to have 'Allow Exchange Difference "
+             "Note' enabled on its own contact record before issuing a "
+             "Debit/Credit Note for it. A customer without that option "
+             "still gets the exchange difference reconciled -- just with "
+             "Odoo's native generic entry instead of a fiscal "
+             "Debit/Credit Note. Disabled (default): every customer gets "
+             "a Debit/Credit Note, same as before this option existed.",
+    )
+
+    def _l10n_ve_exchange_note_allowed_for_partner(self, partner):
+        """True if `partner` (the CUSTOMER of the invoice being settled)
+        may receive an exchange difference Debit/Credit Note issued by
+        this company -- used by `_prepare_exchange_difference_move_vals`
+        (`account_move_line.py`) to decide, per invoice, whether to queue
+        the note or let the line fall through to Odoo's native generic
+        entry instead.
+
+        With `l10n_ve_exchange_validate_partner_note` disabled (the
+        default), always `True`: the per-customer check does not apply,
+        every customer gets the note, exactly as before this option
+        existed. Enabled, defers entirely to the customer's own
+        `l10n_ve_exchange_allow_note` (`res.partner`) -- this company-level
+        toggle only decides WHETHER the customer's flag is consulted at
+        all, never overrides it."""
+        self.ensure_one()
+        if not self.l10n_ve_exchange_validate_partner_note:
+            return True
+        return bool(partner.with_company(self).l10n_ve_exchange_allow_note)
+
+
+
+    @api.constrains('l10n_ve_exchange_use_nd_nc', 'l10n_ve_exchange_note_product_id', 'l10n_ve_exchange_note_pricelist_id')
+    def _check_l10n_ve_exchange_use_nd_nc_requires_config(self):
+        """With the ND/NC toggle enabled, both the note product and the
+        note pricelist are mandatory -- catches an inconsistent
+        configuration at SAVE time (this constraint), regardless of how
+        it was written (settings screen, direct ORM write, API), instead
+        of only surfacing as a `UserError` the next time a customer
+        foreign-currency invoice gets paid (`_create_exchange_difference_note`),
+        which would fail mid-reconciliation instead of at configuration
+        time.
+
+        Deferred to `cr.precommit` instead of checked in place: the
+        three fields it depends on are `related=..., readonly=False` on
+        `res.config.settings` (`models/res_config_settings.py`), and the
+        ORM's automatic related-field inverse (`_inverse_related`,
+        `odoo/orm/fields.py`) writes each one to `res.company` in its
+        OWN separate `write()` call -- never atomically together, even
+        though the settings form submits all of them in a single
+        `web_save`. Since `l10n_ve_exchange_use_nd_nc` is declared
+        before the product/pricelist fields, its `write()` lands on the
+        company FIRST; checking right here, in place, would see that
+        intermediate state (toggle already `True`, product/pricelist
+        still empty) and raise a false positive. Queuing the actual
+        check on `cr.precommit` runs it once, after every pending
+        `write()` in the transaction (including the other two related
+        fields' own inverse writes) has already landed -- so it only
+        ever evaluates the FINAL state the user actually submitted."""
+        for company in self:
+            checked = self.env.cr.precommit.data.setdefault(
+                '_l10n_ve_exchange_use_nd_nc_requires_config_checked', set())
+            if company.id in checked:
+                continue
+            checked.add(company.id)
+            self.env.cr.precommit.add(
+                lambda company_id=company.id:
+                    self.env['res.company'].browse(company_id)
+                    ._check_l10n_ve_exchange_use_nd_nc_requires_config_final()
+            )
+
+    def _check_l10n_ve_exchange_use_nd_nc_requires_config_final(self):
+        """Actual check, run once via `cr.precommit` -- see docstring
+        on `_check_l10n_ve_exchange_use_nd_nc_requires_config` above
+        for why it can't run in place."""
+        self.ensure_one()
+        if not self.l10n_ve_exchange_use_nd_nc:
+            return
+        missing = []
+        if not self.l10n_ve_exchange_note_product_id:
+            missing.append(_("Exchange Difference Note Product"))
+        if not self.l10n_ve_exchange_note_pricelist_id:
+            missing.append(_("Exchange Difference Note Pricelist"))
+        if missing:
+            raise ValidationError(_(
+                "With 'Use Debit/Credit Notes for Customer Invoice Exchange "
+                "Difference' enabled, the following must also be configured: "
+                "%(missing)s.",
+                missing=", ".join(missing),
+            ))
+
+    @api.constrains('l10n_ve_exchange_use_nd_nc')
+    def _check_l10n_ve_exchange_debit_journal_sequences(self):
+        """Con el toggle activado, valida en el momento de GUARDAR la
+        compañía que exista un diario dedicado de ND (`is_debit=True`,
+        `type='sale'`) con AMBAS secuencias configuradas -- la propia de
+        ND (`l10n_ve_exchange_debit_note_sequence_id`, exigida al emitir
+        una ND) y la de NC (`refund_sequence_id`, exigida recién al
+        REVERTIR una ND -- ver `_reverse_moves`, `models/account_move.py`).
+
+        Sin este constraint, la falta de `refund_sequence_id` solo se
+        descubre cuando alguien rompe una conciliación días o meses
+        después de emitida la ND -- con el documento fiscal ya posteado
+        y la desconciliación a medio camino, en vez de al configurar.
+        Quien rompe una conciliación rara vez es quien puede configurar
+        diarios; el momento en que se entera es el peor posible.
+
+        No es a prueba de balas -- si el diario cambia DESPUÉS de esta
+        validación (alguien le quita la secuencia, o el toggle ya estaba
+        activo cuando se creó el diario), este constraint no se re-dispara
+        (solo depende de `l10n_ve_exchange_use_nd_nc`, no de campos de
+        `account.journal`). La defensa en profundidad en tiempo real
+        (`_reverse_moves`) sigue siendo la última línea, no se retira."""
+        for company in self:
+            if not company.l10n_ve_exchange_use_nd_nc:
+                continue
+            debit_journal = self.env['account.journal'].sudo().search([
+                ('company_id', '=', company.id),
+                ('is_debit', '=', True),
+                ('type', '=', 'sale'),
+            ], order='id', limit=1)
+            if not debit_journal or not debit_journal.l10n_ve_exchange_debit_note_sequence_id:
+                # Ya cubierto, con el mismo mensaje, por la defensa en
+                # profundidad de `_create_exchange_difference_note`
+                # (`account_move_line.py`) -- se repite acá para que
+                # aparezca AL GUARDAR, no recién al conciliar la primera
+                # factura.
+                raise ValidationError(_(
+                    "With 'Use Debit/Credit Notes for Customer Invoice "
+                    "Exchange Difference' enabled, configure a sale "
+                    "journal with 'Is Debit' enabled and its dedicated "
+                    "Exchange Difference Debit Note sequence assigned."
+                ))
+            if not debit_journal.refund_sequence_id:
+                raise ValidationError(_(
+                    "The dedicated Exchange Difference Debit Note journal "
+                    "('%(journal)s') also needs its own 'Refund Sequence' "
+                    "(Credit Note sequence) configured -- required to "
+                    "reverse a Debit Note if its reconciliation is ever "
+                    "broken.",
+                    journal=debit_journal.display_name,
+                ))
+
+    @api.constrains('l10n_ve_exchange_note_pricelist_id')
+    def _check_l10n_ve_exchange_note_pricelist_id(self):
+        """The exchange difference note pricelist must be denominated in
+        the company's own currency -- exchange difference Debit/Credit
+        Notes are always created in company currency
+        (`_create_exchange_difference_note`), so a pricelist in any other
+        currency would violate `account_invoice_pricelist`'s own
+        constraint (`pricelist_id.currency_id == move.currency_id`) the
+        moment a note tried to use it."""
+        for company in self:
+            pricelist = company.l10n_ve_exchange_note_pricelist_id
+            if not pricelist:
+                continue
+            if pricelist.currency_id != company.currency_id:
+                raise ValidationError(_(
+                    "The Customer Invoice Exchange Difference Note "
+                    "Pricelist ('%(pricelist)s') must be in the company's "
+                    "own currency (%(currency)s) -- these notes are always "
+                    "issued in company currency.",
+                    pricelist=pricelist.display_name,
+                    currency=company.currency_id.name,
+                ))
+
+    @api.constrains(
+        'l10n_ve_exchange_note_product_id',
+        'income_currency_exchange_account_id',
+        'expense_currency_exchange_account_id',
+        'exent_aliquot_sale',
+    )
+    def _check_l10n_ve_exchange_note_product_id(self):
+        """The exchange difference note product must be a service whose
+        income AND expense accounts are the company's own exchange
+        gain/loss accounts, and whose sale tax is the default sale Exempt
+        tax -- this is what lets its Debit/Credit Note lines land on the
+        same accounts Odoo natively uses for currency exchange
+        differences, regardless of which account a given posting ends up
+        using."""
+        for company in self:
+            product = company.l10n_ve_exchange_note_product_id
+            if not product:
+                continue
+
+            if product.type != 'service':
+                raise ValidationError(_(
+                    "The Customer Invoice Exchange Difference Note Product "
+                    "('%(product)s') must be a service.",
+                    product=product.display_name,
+                ))
+
+            accounts = product.with_company(company)._get_product_accounts()
+            if accounts.get('income') != company.income_currency_exchange_account_id:
+                raise ValidationError(_(
+                    "The Customer Invoice Exchange Difference Note Product "
+                    "('%(product)s') must have the company's exchange gain "
+                    "account as its income account.",
+                    product=product.display_name,
+                ))
+            if accounts.get('expense') != company.expense_currency_exchange_account_id:
+                raise ValidationError(_(
+                    "The Customer Invoice Exchange Difference Note Product "
+                    "('%(product)s') must have the company's exchange loss "
+                    "account as its expense account.",
+                    product=product.display_name,
+                ))
+
+            if not company.exent_aliquot_sale or product.taxes_id != company.exent_aliquot_sale:
+                raise ValidationError(_(
+                    "The Customer Invoice Exchange Difference Note Product "
+                    "('%(product)s') must have the default sale Exempt tax "
+                    "assigned (Settings > Binaural Settings > Exempt "
+                    "Aliquot).",
+                    product=product.display_name,
+                ))

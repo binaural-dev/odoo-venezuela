@@ -241,6 +241,12 @@ class TestCrmLeadForeignCurrency(TransactionCase):
         })
         result = (lead | existing_opportunity).merge_opportunity()
         self.assertEqual(result.type, "opportunity")
+        # Tarea 80707: no basta con que el merge no explote — el monto debe
+        # aterrizar en el campo correcto (expected_revenue_foreign /
+        # recurring_revenue_foreign), no perderse en el campo de solo
+        # lectura que _merge_get_fields() sustituye.
+        self.assertEqual(result.expected_revenue_foreign, 200.0)
+        self.assertEqual(result.recurring_revenue_foreign, 50.0)
 
     # ------------------------------------------------------------------
     # recurring_revenue_foreign: 0 permitido sin recurring_plan, negativo
@@ -341,8 +347,12 @@ class TestCrmLeadForeignCurrency(TransactionCase):
     # Exenciones del constraint de monto > 0 (E1)
     # ------------------------------------------------------------------
 
-    def test_16_lead_type_is_exempt_from_amount_check(self):
-        """Un lead (type='lead', no oportunidad) no requiere monto > 0."""
+    def test_16_lead_type_zero_allowed_but_negative_still_rejected(self):
+        """
+        Tarea 80707: el rechazo de monto negativo es universal, sin
+        excepción por tipo. Un lead (type='lead') acepta 0 pero sigue
+        rechazando un monto negativo.
+        """
         lead = self.env["crm.lead"].create({
             "name": "Lead sin monto",
             "company_id": self.company.id,
@@ -350,11 +360,16 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "expected_revenue_foreign": 0.0,
         })
         self.assertEqual(lead.type, "lead")
+        with self.assertRaises(ValidationError):
+            lead.expected_revenue_foreign = -50.0
 
-    def test_17_mail_gateway_context_is_exempt_from_amount_check(self):
-        """Un registro creado desde la pasarela de correo/formulario web
-        (contexto mail_create_nosubscribe/mail_create_nolog) no requiere
-        monto > 0, aunque resuelva a type='opportunity'."""
+    def test_17_mail_gateway_context_zero_allowed_but_negative_still_rejected(self):
+        """
+        Tarea 80707: el rechazo de monto negativo es universal, sin
+        excepción por contexto. Un registro creado desde la pasarela de
+        correo/formulario web (mail_create_nosubscribe/mail_create_nolog)
+        acepta 0 pero sigue rechazando un monto negativo.
+        """
         lead = self.env["crm.lead"].with_context(mail_create_nosubscribe=True).create({
             "name": "Oportunidad desde el gateway",
             "company_id": self.company.id,
@@ -362,6 +377,8 @@ class TestCrmLeadForeignCurrency(TransactionCase):
             "expected_revenue_foreign": 0.0,
         })
         self.assertEqual(lead.expected_revenue_foreign, 0.0)
+        with self.assertRaises(ValidationError):
+            lead.with_context(mail_create_nosubscribe=True).expected_revenue_foreign = -50.0
 
     # ------------------------------------------------------------------
     # Constraints: se saltan (continue) cuando no hay moneda comercial,

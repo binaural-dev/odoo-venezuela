@@ -241,6 +241,25 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        # TI-15065: l10n_ve_accountant rejects products created without a
+        # single sale AND purchase tax unless the company carries default
+        # fiscal configuration. Give this isolated test company its defaults
+        # so the scaffolding products stay fiscally consistent.
+        cls.purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "C Purchase Tax",
+                "amount": 16.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": cls.tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
+        cls.company.write(
+            {
+                "account_sale_tax_id": cls.tax.id,
+                "account_purchase_tax_id": cls.purchase_tax.id,
+            }
+        )
         cls.product_category = cls.env["product.category"].create(
             {
                 "name": "C Category",
@@ -257,6 +276,13 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "company_id": cls.company.id,
                 "categ_id": cls.product_category.id,
                 "taxes_id": [(6, 0, cls.tax.ids)],
+                # l10n_ve_accountant.ProductTemplate._enforce_single_tax_vals_create
+                # requires exactly one tax in BOTH taxes_id and
+                # supplier_taxes_id (this test company has no default
+                # purchase tax configured). This product is only ever sold
+                # via POS in these tests, never purchased, so reusing the
+                # same tax record here is enough to satisfy the constraint.
+                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
             }
         )
         cls.product.with_company(cls.company).write(

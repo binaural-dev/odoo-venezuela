@@ -70,7 +70,19 @@ patch(PosOrderline.prototype, {
       // "Foreign Product Price" is a Decimal Precision on the res.company
       // used for catalog-level foreign prices. Higher precision than a
       // monetary rounding (which is money-level).
-      const dp = this.pos?.dp?.["Foreign Product Price"];
+      //
+      // OJO Odoo 19: en la orderline las decimal.precision llegan en
+      // `this.models["decimal.precision"]` (así las lee el core, p. ej.
+      // pos_order_line.js busca "Product Unit"/"Product Price"). El
+      // `this.pos.dp[...]` de Odoo 17 NO existe en 19 —de hecho `this.pos` no
+      // existe en la línea—, así que leerlo devolvía undefined y caíamos SIEMPRE
+      // al fallback de 2 decimales: el precio unitario foráneo se redondeaba a 2
+      // dp y, al multiplicarlo por la cantidad, la suma de líneas se desviaba del
+      // total que el PdV cobró (ticket #15106).
+      const dpRecord = this.models?.["decimal.precision"]?.find?.(
+        (dp) => dp.name === "Foreign Product Price"
+      );
+      const dp = Number(dpRecord?.digits);
       if (Number.isInteger(dp) && dp >= 0) {
         return dp;
       }
@@ -90,20 +102,54 @@ patch(PosOrderline.prototype, {
       if (this._is_order_in_foreign_currency()) {
         return baseUnitPrice;
       }
-      const frozenRate = this._refundOriginalRate();
-      if (frozenRate != null) {
-        return baseUnitPrice * frozenRate;
-      }
       const order = this.order_id;
       if (!order || typeof order.localToForeign !== "function") {
         return 0;
+      }
+      const frozenRate = this._refundOriginalRate();
+      if (frozenRate != null) {
+        // Raw (no money rounding) main→foreign at the frozen sale rate; the
+        // caller rounds with the catalog dp. Same engine primitive as the
+        // live path, just with doRound = false.
+        return order.localToForeignAtRate(baseUnitPrice, frozenRate, false);
       }
       // Raw (no rounding) — caller decides how to round.
       return order.localToForeign(baseUnitPrice, false);
     },
 
+    // Ticket 14352: una línea de descuento no puede volverse positiva.
+    // El botón "+/-" del numpad (SWITCHSIGN, en modo precio) invierte el
+    // signo del precio; sobre la línea de descuento (precio negativo) la
+    // volvería positiva, convirtiéndola en un RECARGO sobre la factura.
+    // En reembolsos no aplica (ahí los signos ya van invertidos).
+    _isDiscountProductLine() {
+      const discountProductId = this.config?.discount_product_id?.id;
+      return !!discountProductId && this.product_id?.id === discountProductId;
+    },
+
     setUnitPrice(price) {
-      super.setUnitPrice(...arguments);
+      // Si el precio de la línea de descuento llega en positivo (por "+/-" o
+      // al teclear el monto en modo precio), se fuerza a negativo en vez de
+      // bloquear. Así el cajero SÍ puede cambiar el monto del descuento, pero
+      // nunca se convierte en recargo.
+      //
+      // `price` no siempre es un número: cuando el cajero teclea el monto en
+      // modo precio, `OrderSummary._setValue` pasa el buffer crudo del
+      // number_buffer, que usa el separador decimal del locale (coma en
+      // es_VE). `Number(price)` con ese string da NaN y el guard nunca
+      // dispara, así que se parsea con `_numberFromInput` (mismo parser
+      // sensible al locale que ya usa `setQuantity`).
+      let unitPrice = price;
+      const parsed = this._numberFromInput(price);
+      if (
+        this._isDiscountProductLine() &&
+        !this._isRefundLine() &&
+        Number.isFinite(parsed) &&
+        parsed > 0
+      ) {
+        unitPrice = -Math.abs(parsed);
+      }
+      super.setUnitPrice(unitPrice);
       const dp = this._foreignUnitPriceDp();
 
       if (this._is_order_in_foreign_currency()) {
@@ -145,7 +191,20 @@ patch(PosOrderline.prototype, {
       }
       const frozenRate = this._refundOriginalRate();
       if (frozenRate != null) {
-        return order.roundForeignMoney(localAmount * frozenRate);
+        // main→foreign at the ORIGINAL sale's frozen rate, via the shared
+        // engine primitive (same rounding as the live localToForeign).
+        return order.localToForeignAtRate(localAmount, frozenRate);
+      }
+      // Reopened (synced) order — e.g. shown in the ticket screen: value each
+      // line at the rate the order was SOLD at, not today's live rate, so the
+      // per-line foreign amount matches the order-level foreign totals
+      // (pos_order.js::_isFrozenRateOrder). The live in-progress order is
+      // excluded, so counter sales keep converting at the live rate.
+      if (
+        typeof order._isFrozenRateOrder === "function" &&
+        order._isFrozenRateOrder()
+      ) {
+        return order._frozenLocalToForeign(localAmount);
       }
       return order.localToForeign(localAmount);
     },
@@ -251,19 +310,35 @@ patch(PosOrderline.prototype, {
     // un objeto `{title, body}` que `OrderSummary._setValue` muestra como
     // `AlertDialog` y seguido resetea el `number_buffer`.
     _isRefundLine() {
-      return Boolean(this.refunded_orderline_id) || Boolean(this.order_id?.preset_id?.is_return);
+      return (
+        Boolean(this.refunded_orderline_id) ||
+        Boolean(this.order_id?.preset_id?.is_return) ||
+        Boolean(this.order_id?.isRefund)
+      );
     },
 
-    _quantityAsNumber(quantity) {
-      // Mismo parseo que el core (pos_order_line.js `setQuantity`), pero sin
-      // dejar escapar una excepción del parser sensible al locale: si no se
-      // puede interpretar, se devuelve NaN y el guard delega en el core para
-      // que falle exactamente igual que en Odoo estándar.
-      if (typeof quantity === "number") {
-        return quantity;
+    _numberFromInput(value) {
+      // Mismo criterio que el core (pos_order_line.js `setUnitPrice`): probar
+      // primero `Number()` nativo (sin locale) y solo caer al parser sensible
+      // al locale si eso falla. Esto importa porque `value` no siempre viene
+      // tecleado por el cajero: el "+/-" del numpad con buffer vacío arma el
+      // nuevo monto con `String(numero)` (SIEMPRE con punto decimal, sea cual
+      // sea el locale — ver `OrderSummary.updateSelectedOrderline`), y ese
+      // string vuelve a pasar por acá en la siguiente pulsación. Si se
+      // parseara directo con `parseFloatLocale` (coma decimal en es_VE), el
+      // punto se leería como separador de miles y el monto se multiplicaría
+      // por 100 (p. ej. "-4842.69" → -484269). `Number()` sí interpreta bien
+      // ese string (independiente del locale), y solo se delega al parser de
+      // locale para lo que el cajero tecleó de verdad (p. ej. "500,50").
+      if (typeof value === "number") {
+        return value;
+      }
+      const native = Number(value);
+      if (Number.isFinite(native)) {
+        return native;
       }
       try {
-        return parseFloatLocale("" + (quantity ? quantity : 0));
+        return parseFloatLocale("" + (value ? value : 0));
       } catch {
         return NaN;
       }
@@ -271,7 +346,7 @@ patch(PosOrderline.prototype, {
 
     setQuantity(quantity, keep_price) {
       if (!this._isRefundLine()) {
-        const quant = this._quantityAsNumber(quantity);
+        const quant = this._numberFromInput(quantity);
         // `-0 < 0` es false, así que poner una línea en cero sigue permitido
         // (es como el cajero borra una línea desde el numpad).
         if (Number.isFinite(quant) && quant < 0) {

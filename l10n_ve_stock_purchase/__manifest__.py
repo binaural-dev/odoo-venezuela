@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Inventario/Compras",
-    "version": "1.1",
+    "version": "19.0.1.2.0",
     "license": "LGPL-3",
     "summary": "Módulo para gestionar inventario/compras en Venezuela",
     "description": """
@@ -11,9 +11,11 @@
     "category": "Purchase",
     "depends": [
         "purchase_stock",
+        "l10n_ve_stock",
     ],
     "data": [
         "security/ir.model.access.csv",
+        "views/purchase_order_views.xml",
     ],
     "application": True,
     "images": ["static/description/icon.png"],
