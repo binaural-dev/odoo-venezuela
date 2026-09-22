@@ -30,8 +30,9 @@ compatible con el `patch()` (solo JS, sin plantilla) que
 
 - **GIVEN** una compañía con `foreign_currency_id` configurada
 - **WHEN** el cliente llega a la pantalla de pago del Kiosko
-- **THEN** ve también el total en esa moneda, calculado con la tasa operativa
-  de `pos.config` (`foreign_inverse_rate`), y ese monto coincide con el
+- **THEN** ve también el total en esa moneda, calculado con los mismos
+  helpers de `l10n_ve_pos` que usa la caja (`get_foreign_total_with_tax`,
+  tasa operativa de `pos.config` y redondeo de la moneda), y ese monto coincide con el
   `foreign_amount_total` que termina en la factura de la orden
 
 #### Scenario: Sin moneda foránea configurada

@@ -16,8 +16,9 @@ cliente necesita en Venezuela:
    Kiosko, aunque el negocio a veces la necesita para delivery/facturación.
 5. La pantalla de pago no muestra ningún monto (base imponible, impuestos,
    total) — el cliente paga a ciegas.
-6. El total en moneda foránea (Bs. estable / USD) tampoco se muestra: la
-   lógica que lo calcula en caja vive en un bundle JS que el Kiosko no carga.
+6. El total en moneda foránea (Bs. estable / USD) tampoco se muestra: los
+   helpers que lo calculan en caja (patches de modelo de `l10n_ve_pos`) no
+   están incluidos en el bundle del Kiosko.
 7. No hay teclado en pantalla para los campos de texto (nombre, apellido,
    teléfono); el Kiosko depende del teclado nativo del sistema operativo, que
    en muchos terminales no aparece.
@@ -48,9 +49,10 @@ tocan el flujo QR/móvil salvo que se indique lo contrario.
    `pos_self_order`): base imponible, desglose de impuestos por tasa y total
    en Bs., más el total en moneda foránea (misma tasa operativa que usa
    `l10n_ve_pos` en caja) cuando la compañía tiene moneda foránea
-   configurada. Portado al bundle del Kiosko (`pos_self_order.assets`), que
-   NO carga las overrides de `l10n_ve_pos` (esas viven en
-   `point_of_sale._assets_pos`, exclusivo de caja). Compatible con el patch
+   configurada. El total foráneo NO se reimplementa: el manifest agrega
+   `l10n_ve_pos/static/src/overrides/models/*` (patches puros de modelo) a
+   `pos_self_order.assets` y la pantalla usa `get_foreign_total_with_tax()`,
+   con la misma conversión y redondeo que la caja. Compatible con el patch
    de `PaymentPage` de `binaural_megasoft_self_order` (mismo mecanismo
    `patch()`, sin reemplazar el template).
 6. **Teclado en pantalla** (`KioskKeyboard`, componente OWL propio, sin
