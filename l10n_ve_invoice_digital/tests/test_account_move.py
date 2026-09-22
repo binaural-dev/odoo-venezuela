@@ -532,12 +532,18 @@ class TestAccountMoveApiCalls(TransactionCase):
             currency_id=self.currency_usd.id,
             foreign_currency_id=self.currency_usd.id,
         )
-        # No hace falta marcar multi_currency_invoice: la factura ya está
-        # "en divisa" (currency_id=USD bajo compañía VEF), y eso alcanza
-        # para que _get_currency_context reporte totalesOtraMoneda. Forzar
-        # el flag aquí solo dispararía el constraint de multi_currency_available,
-        # que exige una tarifa realmente distinta de la moneda de la
-        # compañía (ver test_171/test_179).
+        # Ticket 15323: totalesOtraMoneda ahora requiere multi_currency_invoice
+        # explícito (antes bastaba con que la factura estuviera "en divisa").
+        # Igual que test_171/test_179, hace falta una tarifa realmente en USD:
+        # _force_company_currency realinea a VEF la moneda de todas las
+        # tarifas existentes.
+        usd_pricelist = self.env['product.pricelist'].create({
+            'name': 'Tarifa USD test (tipo_cambio_4_decimals)',
+            'currency_id': self.currency_usd.id,
+        })
+        invoice.pricelist_id = usd_pricelist.id
+        invoice.multi_currency_invoice = True
+        invoice.line_currency_id = self.currency_vef.id
         _totals, foreign_totals = self.env['tfhka.document.service']._prepare_totals(invoice)
         self.assertTrue(foreign_totals, "La factura en USD debe generar TotalesOtraMoneda")
         self.assertEqual(foreign_totals["tipoCambio"], "38.0000")
@@ -1638,6 +1644,11 @@ class TestAccountMoveApiCalls(TransactionCase):
         base currency (VEF) with no other-currency block."""
         vef = self.env.ref("base.VEF")
         self._force_company_currency(self.company, vef)
+        # _resolve_foreign_rate still needs a rate to convert the invoice's
+        # USD amounts into VEF (document_currency), even though alt_currency
+        # ends up empty: without this, it falls through to a res.currency.rate
+        # lookup that isn't seeded in this test and raises TfhkaDataError.
+        self.company.foreign_currency_id = self.currency_usd.id
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 10, "tax_ids": [self.tax_iva16.id]}],
             currency_id=self.currency_usd.id,
@@ -1663,6 +1674,16 @@ class TestAccountMoveApiCalls(TransactionCase):
             products=[{"product_id": self.product.id, "price_unit": 10, "tax_ids": [self.tax_iva16.id]}],
             currency_id=self.currency_usd.id,
         )
+        # multi_currency_available requires the PRICELIST currency to differ
+        # from the base one, not just company.foreign_currency_id:
+        # _force_company_currency realigns every existing pricelist's
+        # currency to the new base (VEF) too, so a fresh USD pricelist is
+        # needed here -- same pattern as test_171/test_179.
+        usd_pricelist = self.env['product.pricelist'].create({
+            'name': 'Tarifa USD test (multi_currency_vef_alt_currency)',
+            'currency_id': self.currency_usd.id,
+        })
+        inv.pricelist_id = usd_pricelist.id
         inv.multi_currency_invoice = True
         inv.line_currency_id = vef.id
         ctx = self.env['tfhka.document.service']._get_currency_context(inv)
@@ -1693,6 +1714,9 @@ class TestAccountMoveApiCalls(TransactionCase):
         mock_call.return_value = {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
         vef = self.env.ref("base.VEF")
         self._force_company_currency(self.company, vef)
+        # Same reason as test_get_currency_context_no_multi_currency_collapses_to_base:
+        # a rate is still needed to convert the USD invoice into VEF.
+        self.company.foreign_currency_id = self.currency_usd.id
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 10, "tax_ids": [self.tax_iva16.id]}],
             currency_id=self.currency_usd.id,
@@ -1727,7 +1751,11 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         details = self.env['tfhka.document.service']._prepare_detail_lines(inv)
         self.assertTrue(len(details) > 0)
-        self.assertEqual(details[0]["indicadorBienoServicio"], "2")
+        # binaural_third_party_invoice_digital overrides indicadorBienoServicio
+        # on every line, unconditionally, once installed: it's always based on
+        # product.is_third_party_product, not product.type -- self.product is
+        # a service but isn't a third-party product, so it's now "1".
+        self.assertEqual(details[0]["indicadorBienoServicio"], "1")
 
     def test_72_get_document_identification_no_affected_invoice(self):
         inv = self._create_invoice(
