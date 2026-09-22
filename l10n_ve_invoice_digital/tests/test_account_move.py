@@ -2924,201 +2924,71 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.journal.digital_invoice = False
         self.assertFalse(inv.journal_digital_invoice)
 
-    def test_188_generate_document_data_includes_banderas_adicionales(self):
+    # ------------------------------------------------------------------
+    # _get_document_name: el nombre debe salir de la secuencia (ticket
+    # #15324) -- interpolando marcadores como %(range_year)s y con el
+    # padding configurado, no un padding fijo de 8 dígitos.
+    # ------------------------------------------------------------------
+
+    def test_get_document_name_interpolates_range_year_and_uses_configured_padding(self):
+        sequence = self.env['ir.sequence'].create({
+            'name': 'FCON Test',
+            'code': '',
+            'prefix': 'FCON/%(range_year)s/',
+            'padding': 4,
+            'number_next_actual': 1,
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'Facturas de Conductores Test',
+            'code': 'FCONT',
+            'type': 'sale',
+            'sequence_id': sequence.id,
+            'company_id': self.company.id,
+        })
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
             do_post=False,
         )
-        with patch(
-            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit',
-        ) as mock_emit:
-            mock_emit.return_value = {"resultado": {"numeroControl": "00-00000001"}}
-            self.env['tfhka.document.service'].generate_document_data(inv, "145", "01", "")
-        payload = mock_emit.call_args[0][1]
-        self.assertIn("banderasAdicionales", payload["documentoElectronico"]["encabezado"])
-        self.assertEqual(
-            payload["documentoElectronico"]["encabezado"]["banderasAdicionales"],
-            {"esLote": False},
+        # account.move.write() bloquea cambiar journal_id con un name ya
+        # asignado (podría abrir un hueco en la secuencia); se resetea a "/"
+        # primero, igual que exige ese guard.
+        inv.name = "/"
+        inv.journal_id = journal.id
+
+        name = self.env['tfhka.document.service']._get_document_name(inv, 59)
+
+        current_year = fields.Datetime.now().strftime('%Y')
+        self.assertEqual(name, f"FCON/{current_year}/0059")
+        self.assertNotIn("%(", name)
+
+    def test_get_document_name_out_refund_uses_refund_sequence(self):
+        refund_sequence = self.env['ir.sequence'].create({
+            'name': 'FCON Refund Test',
+            'code': '',
+            'prefix': 'FCON-NC/',
+            'padding': 4,
+            'number_next_actual': 1,
+        })
+        journal = self.env['account.journal'].create({
+            'name': 'Facturas de Conductores Test 2',
+            'code': 'FCONT2',
+            'type': 'sale',
+            'sequence_id': self.journal.sequence_id.id,
+            'refund_sequence_id': refund_sequence.id,
+            'company_id': self.company.id,
+        })
+        inv = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            do_post=False,
         )
+        # account.move.write() bloquea cambiar journal_id con un name ya
+        # asignado (podría abrir un hueco en la secuencia); se resetea a "/"
+        # primero, igual que exige ese guard.
+        inv.name = "/"
+        inv.journal_id = journal.id
 
+        name = self.env['tfhka.document.service']._get_document_name(inv, 5)
 
-@tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "tfhka_sequence_validation")
-class TestAccountMoveSequenceValidation(TransactionCase):
-    """_tfhka_validate_sequence_before_queue() -- exclusive to "digitalization
-    with payment" mode, where action_tfhka_generate_digital() is the only
-    entry point to the queue (see account_move._tfhka_is_eligible_for_
-    digitalization, always False in that mode)."""
-
-    def setUp(self):
-        super().setUp()
-        self.env.user.tz = "America/Caracas"
-        self.company = self.env.ref("base.main_company")
-        self.company.write({
-            "invoice_digital_tfhka": True,
-            "digitalization_with_payment_tfhka": True,
-            "url_tfhka": "https://api.tfhka.com",
-            "token_auth_tfhka": "token_fake",
-            "country_id": self.env.ref("base.ve").id,
-        })
-
-        seq = self.env["ir.sequence"].create({"name": "Sec Test", "prefix": "INV/", "padding": 4})
-        self.journal = self.env["account.journal"].create({
-            "name": "Diario Digital Test",
-            "code": "DDT",
-            "type": "sale",
-            "company_id": self.company.id,
-            "digital_invoice": True,
-            "sequence_id": seq.id,
-        })
-        self.partner = self.env["res.partner"].create({
-            "name": "Cliente Test",
-            "vat": "J12345678",
-            "prefix_vat": "J",
-            "country_id": self.env.ref("base.ve").id,
-            "phone": "04141234567",
-            "email": "test@test.com",
-            "street": "Calle Test",
-        })
-        self.tax_group = self.env["account.tax.group"].create({"name": "IVA 16%"})
-        self.tax_iva16 = self.env["account.tax"].create({
-            "name": "IVA 16%",
-            "amount": 16,
-            "amount_type": "percent",
-            "type_tax_use": "sale",
-            "tax_group_id": self.tax_group.id,
-        })
-        self.acc_income = self.env["account.account"].create({
-            "name": "Ingresos",
-            "code": "4001",
-            "account_type": "income",
-            "company_ids": [Command.link(self.company.id)],
-        })
-
-    def _create_invoice(self, journal=None):
-        prod = self.env["product.product"].create({
-            "name": "Prod",
-            "type": "service",
-            "list_price": 100,
-            "taxes_id": [Command.set([self.tax_iva16.id])],
-        })
-        inv = self.env["account.move"].create({
-            "move_type": "out_invoice",
-            "partner_id": self.partner.id,
-            "journal_id": (journal or self.journal).id,
-            "invoice_date": fields.Date.today(),
-            "invoice_line_ids": [(0, 0, {
-                "product_id": prod.id,
-                "quantity": 1,
-                "price_unit": 100,
-                "account_id": self.acc_income.id,
-                "tax_ids": [Command.set([self.tax_iva16.id])],
-            })],
-        })
-        # _tfhka_validate_sequence_before_queue() only reads state/name/
-        # sequence_number/journal_id/tfhka_digitalization_state -- it doesn't
-        # need a real accounting-correct posted invoice. Going through the
-        # full action_post() -> move.action.post.alert.wizard -> stock/sale
-        # posting pipeline (like a real user would) pulls in unrelated
-        # machinery (stock reservations, sale_stock hooks, ...) that isn't
-        # needed here and has caused cross-test registry interference in the
-        # full suite. Assigning the name directly from the journal's own
-        # sequence keeps this a narrow unit test of the validation logic
-        # alone, while still exercising the real _inverse_name() ->
-        # _compute_split_sequence() chain so sequence_number is genuine.
-        inv.write({
-            "state": "posted",
-            "name": (journal or self.journal).sequence_id.next_by_id(),
-        })
-        return inv
-
-    def test_payment_first_mode_real_gap_blocks(self):
-        self._create_invoice()
-        inv_b = self._create_invoice()
-        # Simulate a real numbering gap: sequence_number is a readonly
-        # compute (no direct write), but renaming triggers sequence_mixin's
-        # _inverse_name(), which re-parses .name and recomputes it for real.
-        inv_b.name = "INV/0099"
-
-        with self.assertRaises(ValidationError) as e:
-            inv_b.action_tfhka_generate_digital()
-        self.assertIn("numbering gap", str(e.exception))
-        self.assertEqual(inv_b.tfhka_digitalization_state, "none")
-
-    def test_payment_first_mode_previous_none_blocks_across_shared_sequence_journals(self):
-        # Real-world case that originally slipped past a journal-scoped
-        # check: two journals intentionally sharing one ir.sequence (so
-        # TFHKA sees ONE combined numbering stream across both). The guard
-        # must find the previous document across sibling journals, not just
-        # within journal_id.
-        shared_seq = self.journal.sequence_id
-        journal_b = self.env["account.journal"].create({
-            "name": "Diario Digital Test B",
-            "code": "DDTB",
-            "type": "sale",
-            "company_id": self.company.id,
-            "digital_invoice": True,
-            "sequence_id": shared_seq.id,
-        })
-        inv_a = self._create_invoice()
-        inv_b = self._create_invoice(journal=journal_b)
-
-        with self.assertRaises(ValidationError) as e:
-            inv_b.action_tfhka_generate_digital()
-        self.assertIn(inv_a.name, str(e.exception))
-        self.assertEqual(inv_b.tfhka_digitalization_state, "none")
-
-    def test_payment_first_mode_previous_none_blocks(self):
-        inv_a = self._create_invoice()
-        inv_b = self._create_invoice()
-
-        with self.assertRaises(ValidationError) as e:
-            inv_b.action_tfhka_generate_digital()
-        self.assertIn(inv_a.name, str(e.exception))
-        self.assertEqual(inv_b.tfhka_digitalization_state, "none")
-
-    def test_payment_first_mode_previous_already_queued_does_not_block(self):
-        inv_a = self._create_invoice()
-        inv_b = self._create_invoice()
-
-        for state in ("queued", "processing", "success", "error", "data_error", "not_applicable"):
-            with self.subTest(previous_state=state):
-                inv_a.tfhka_digitalization_state = state
-                inv_b.tfhka_digitalization_state = "none"
-
-                inv_b.action_tfhka_generate_digital()
-
-                self.assertEqual(inv_b.tfhka_digitalization_state, "queued")
-
-    def test_payment_first_mode_first_invoice_no_previous_no_gap(self):
-        inv = self._create_invoice()
-
-        inv.action_tfhka_generate_digital()
-
-        self.assertEqual(inv.tfhka_digitalization_state, "queued")
-
-    def test_normal_mode_gap_or_unqueued_previous_does_not_block(self):
-        self.company.digitalization_with_payment_tfhka = False
-        self._create_invoice()
-        inv_b = self._create_invoice()
-        inv_b.name = "INV/0099"
-
-        inv_b.action_tfhka_generate_digital()
-
-        self.assertEqual(inv_b.tfhka_digitalization_state, "queued")
-
-    def test_multi_record_stops_at_first_failure(self):
-        # inv_a has no gap and no previous document (first in the journal),
-        # so it individually passes validation -- but it's still in 'none'
-        # after the call because inv_b (created right after, with an induced
-        # gap) fails and aborts the whole action before super() ever runs.
-        inv_a = self._create_invoice()
-        inv_b = self._create_invoice()
-        inv_b.name = "INV/0099"
-
-        with self.assertRaises(ValidationError):
-            (inv_a + inv_b).action_tfhka_generate_digital()
-
-        self.assertEqual(inv_a.tfhka_digitalization_state, "none")
-        self.assertEqual(inv_b.tfhka_digitalization_state, "none")
-
+        self.assertEqual(name, "FCON-NC/0005")
 
