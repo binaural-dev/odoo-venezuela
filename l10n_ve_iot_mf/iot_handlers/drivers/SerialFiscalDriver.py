@@ -142,7 +142,6 @@ FiscalProtocol = SerialProtocol(
 
 def install_package(package_name):
     try:
-        # Intenta importar el paquete para verificar si ya está instalado
         __import__(package_name)
         _logger.info("'%s' ya está instalado.", package_name)
     except ImportError:

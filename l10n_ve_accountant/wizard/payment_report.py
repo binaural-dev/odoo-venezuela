@@ -7,14 +7,13 @@ class PaymentReport(models.TransientModel):
 
     payment_type = fields.Selection(
         [("outbound", "Outbound"), ("inbound", "Inbound")],
-        string="Payment Type",
         default="outbound",
     )
     journal_id = fields.Many2one(
         "account.journal", required=True, domain=[("type", "in", ("bank", "cash"))]
     )
-    start_date = fields.Date(string="Start Date", default=fields.Date.context_today, required=True)
-    end_date = fields.Date(string="End Date", default=fields.Date.context_today, required=True)
+    start_date = fields.Date(default=fields.Date.context_today, required=True)
+    end_date = fields.Date(default=fields.Date.context_today, required=True)
 
     def generate_report_payment(self):
         data = {
