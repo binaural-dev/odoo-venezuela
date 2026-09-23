@@ -35,3 +35,4 @@ from . import test_retention_sequence_no_gap
 from . import test_retention_ti14548_rules
 from . import test_retention_foreign_rate_ticket_15154
 from . import test_municipal_retention_xlsx_report
+from . import test_retention_islr_partner_change
