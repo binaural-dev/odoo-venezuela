@@ -7,6 +7,7 @@ import { _t } from "@web/core/l10n/translation";
 import { floatIsZero, roundPrecision as round_pr } from "@web/core/utils/numbers";
 import { LocalOrderBuffer } from "../utils/LocalOrderBuffer";
 import { LocalOrderHistory } from "../utils/LocalOrderHistory";
+import { composeDiscountPercent, computeLineDiscountAmount } from "@l10n_ve_mf_base/core/DiscountMath";
 
 /**
  * Override del PosStore para integrar la máquina fiscal vía Web Serial API
@@ -218,6 +219,16 @@ patch(PosStore.prototype, {
         return {
           price_unit: amount,
           discount: el.get_discount(),
+          // % PURO de la regla de campaña (categoría/temporada/antigüedad),
+          // ANTES de componerse con el descuento global del botón. Lo escribe
+          // binaural_pos_pricelist_line_discount en `campaignDiscountPercent`
+          // (su hermano `campaignDiscountAppliedPercent` es el ya compuesto, y
+          // por eso NO sirve aquí). `_convertOrderForDriver` lo usa para
+          // separar el descuento propio de la línea —que sale impreso con su
+          // `q-`— del descuento global agregado, que va al pie del ticket.
+          // Una línea sin campaña (o con descuento manual del cajero) llega
+          // con 0 y su descuento entero se contabiliza como global.
+          campaign_discount_percent: (el.campaignDiscountPercent != null ? Number(el.campaignDiscountPercent) : 0),
           quantity: Math.abs(el.quantity),
           name: this.normalizeProductName(el.product.display_name),
           code: el.product.default_code,
@@ -412,13 +423,63 @@ patch(PosStore.prototype, {
       // Aviso: descuento global POS excedió subtotal y fue clampeado a 100%
       if (response.global_clamped) {
         const amount = Number(response.global_discount_amount || 0);
+        // `amount` es un MONTO en la moneda de la orden: sus decimales deben
+        // salir de la moneda de Odoo, no de un `toFixed(2)` fijo (una moneda
+        // con más o menos de 2 decimales quedaría truncada/rellenada mal).
+        // `appliedRate` es una TASA (%), no un monto: sus 2 decimales fijos
+        // no cambian.
+        const decimalPlaces = this.currency?.decimal_places ?? 2;
         const appliedRate = Number(response.global_discount_rate || 0).toFixed(2);
         this.env.services.popup.add(ErrorPopup, {
           title: _t("Aviso de descuento"),
           body: _t(
-            `El descuento global (${amount.toFixed(2)} Bs) excede el subtotal de las líneas. ` +
+            `El descuento global (${amount.toFixed(decimalPlaces)} Bs) excede el subtotal de las líneas. ` +
             `Se aplicó el máximo permitido (${appliedRate}%) en el comprobante.`
           ),
+        });
+      }
+
+      // Aviso: el MONTO de descuento de una o más líneas no cabía en los
+      // dígitos enteros que el Flag 21 reserva para el comando `q-`. El driver
+      // imprimió esas líneas a su precio bruto SIN el renglón "DESC" para no
+      // construir una trama malformada. Mismo mecanismo que el aviso de
+      // `global_clamped` de arriba.
+      const overflowLines = response.line_discount_overflow_lines || [];
+      if (overflowLines.length) {
+        this.env.services.popup.add(ErrorPopup, {
+          title: _t("Aviso de descuento"),
+          body: _t(
+            "El monto de descuento de %s línea(s) (%s) excede lo que la máquina fiscal puede imprimir. Esas líneas se imprimieron sin el renglón de descuento.",
+            overflowLines.length,
+            overflowLines.join(", ")
+          ),
+        });
+      }
+
+      // Aviso: el PRECIO BRUTO de una o más líneas no cabía en los dígitos
+      // enteros que el Flag 21 reserva para el precio del ítem. Con el fix de
+      // C2 (revisión formal), esto ya NO degrada sólo esas líneas: el driver
+      // degrada TODO el documento a Estrategia A (precio neto, sin `q-` por
+      // línea, pie con los montos históricos) para evitar duplicar el
+      // descuento global en las líneas degradadas. El mensaje distingue ambos
+      // casos usando `line_discount_via_q_document_degraded`.
+      const grossOverflowLines = response.line_gross_price_overflow_lines || [];
+      if (grossOverflowLines.length) {
+        const body = response.line_discount_via_q_document_degraded
+          ? _t(
+              "El precio sin descuento de %s línea(s) (%s) excede lo que la máquina fiscal puede imprimir. " +
+              "TODA la factura se imprimió en su formato histórico (precio ya descontado, sin renglones de descuento por línea) para no duplicar el descuento.",
+              grossOverflowLines.length,
+              grossOverflowLines.join(", ")
+            )
+          : _t(
+              "El precio sin descuento de %s línea(s) (%s) excede lo que la máquina fiscal puede imprimir. Esas líneas se imprimieron a su precio ya descontado, sin el renglón de descuento.",
+              grossOverflowLines.length,
+              grossOverflowLines.join(", ")
+            );
+        this.env.services.popup.add(ErrorPopup, {
+          title: _t("Aviso de descuento"),
+          body,
         });
       }
 
@@ -477,10 +538,21 @@ patch(PosStore.prototype, {
    * (manual o de una asignación global anterior) en vez de componerse con
    * él. Esto evita que las líneas agregadas después de un descuento global
    * queden con una tasa distinta a las líneas originales.
+   *
+   * Excepción: las líneas con un descuento de campaña aplicado por un módulo
+   * externo NO se resetean, se componen (ver abajo).
    */
   _resetGlobalDiscountOnLines(order) {
     for (const line of [...(order.orderlines || [])]) {
       if (this._isGlobalDiscountProductLine(line)) {
+        continue;
+      }
+      if (line.campaignDiscountPercent != null) {
+        // Descuento de línea aplicado por un módulo de campaña externo
+        // (categoría/temporada/antigüedad, ej.
+        // binaural_pos_pricelist_line_discount). Se preserva y se compone
+        // con el % global en vez de resetear — ver el loop de aplicación
+        // más abajo en _applyGlobalDiscountBeforeValidation.
         continue;
       }
       if (typeof line.set_discount === "function") {
@@ -581,11 +653,33 @@ patch(PosStore.prototype, {
       return quantity > 0 && unitPrice >= 0;
     });
 
+    // El % inferido se calculó contra el subtotal YA neto de los descuentos
+    // de línea vigentes (incluido el de campaña), así que sobre una línea con
+    // campaña es la porción INCREMENTAL: hay que componerlo multiplicativamente
+    // con el de campaña, no sumarlo ni reemplazarlo.
     for (const line of positiveLines) {
+      // `!= null` y no truthy: una campaña de 0% es una marca válida (el
+      // módulo de campaña la serializa como tal). Con truthy, esa línea no
+      // actualizaría `campaignDiscountAppliedPercent` y quedaría con la marca
+      // desfasada respecto del descuento realmente escrito — la misma
+      // incoherencia que se corrigió del lado del módulo de campaña.
+      const hasCampaign = line.campaignDiscountPercent != null;
+      const campaignPct = Number(line.campaignDiscountPercent || 0);
+      const combinedPct = hasCampaign
+        ? composeDiscountPercent(campaignPct, inference.inferredPercent)
+        : inference.inferredPercent;
+      if (hasCampaign) {
+        // Dejar registrado el % que realmente queda escrito en la línea (el
+        // compuesto, no el puro de campaña). El módulo de campaña compara
+        // contra este valor para decidir si puede limpiar el descuento
+        // cuando su regla deja de aplicar; si aquí quedara el puro, nunca
+        // coincidiría y el descuento compuesto se quedaría pegado.
+        line.campaignDiscountAppliedPercent = combinedPct;
+      }
       if (typeof line.set_discount === "function") {
-        line.set_discount(inference.inferredPercent);
+        line.set_discount(combinedPct);
       } else {
-        line.discount = inference.inferredPercent;
+        line.discount = combinedPct;
       }
     }
 
@@ -593,16 +687,21 @@ patch(PosStore.prototype, {
       order.orderlines.remove(line);
     }
 
-    let rawTotal = 0;
+    // Monto total realmente descontado, sumando el efectivo por línea con el
+    // `discount` YA FINAL (campaña compuesta con global). No se puede usar
+    // `subtotalCrudo * inferredPercent`: eso subestimaría el total en las
+    // líneas con campaña, porque ignoraría la parte ya descontada por ella.
+    // Este monto alimenta el texto "DESC. GLOBAL = X" del ticket fiscal y el
+    // aviso de clamp.
+    let totalDiscountAmount = 0;
     for (const line of positiveLines) {
       const quantity = Math.abs(Number(line.get_quantity?.() ?? line.quantity ?? 0));
       const unitPrice = Number(line.get_unit_price?.() ?? line.price ?? 0);
-      rawTotal += Math.abs(unitPrice * quantity);
+      const lineDiscount = Number(line.get_discount?.() ?? line.discount ?? 0);
+      const discountedUnit = this._applyDiscount(unitPrice, lineDiscount);
+      totalDiscountAmount += Math.abs((unitPrice - discountedUnit) * quantity);
     }
-    const correctedAmount = round_pr(
-      (rawTotal * inference.inferredPercent) / 100,
-      this.currency?.rounding || 0.01
-    );
+    const correctedAmount = round_pr(totalDiscountAmount, this.currency?.rounding || 0.01);
 
     order._mf_global_discount_applied = true;
     order._mf_global_discount_meta = {
@@ -638,6 +737,69 @@ patch(PosStore.prototype, {
    * - Si la tasa global supera el 100%, se clampa a 100% y se marca
    *   `global_clamped` para que el driver emita una línea informativa de
    *   aviso y muestre un pop-up al usuario.
+   *
+   * Estrategia C (ver DISCOUNT_STRATEGY.md, sección "Evolución"): además del
+   * precio neto de arriba, cada línea lleva `gross_price_unit` (precio antes
+   * de descuento) y `discount_amount`. Si el interruptor
+   * `mf_line_discount_via_q_command` está en ON, `printInvoice` registra el
+   * ítem con el BRUTO y emite `q-` con ese monto para que el descuento salga
+   * impreso bajo cada producto. Con el interruptor en OFF (default) el driver
+   * ignora ambos campos y el comportamiento es exactamente el de la
+   * Estrategia A. `printCreditNote`/`printDebitNote` siempre usan `price_unit`
+   * (neto), sin cambio alguno de comportamiento.
+   *
+   * Estrategia C corregida — SEPARACIÓN campaña / global:
+   * Los dos descuentos son de naturaleza distinta y el ticket debe reflejarlo:
+   *
+   *  - El de CAMPAÑA se calcula sobre CADA producto (regla de lista de
+   *    precios). Es el único que viaja en `discount_amount`, y por lo tanto el
+   *    único que sale impreso como renglón "DESC" bajo su propio producto.
+   *  - El GLOBAL (botón "Descuento Global") se calcula sobre el TOTAL del
+   *    pedido. Viaja agregado en `global_only_discount_amount` y el driver lo
+   *    imprime como UNA línea al pie ("DESC. GLOBAL = X"), igual que en la
+   *    Estrategia A — pero ahora COEXISTIENDO con los `q-` por línea en vez de
+   *    reemplazarlos.
+   *
+   * Antes de esta corrección los dos se fusionaban en un solo % por línea y el
+   * `q-` salía con el monto ya combinado, mientras la línea agregada del pie
+   * quedaba suprimida. Era incorrecto conceptualmente: mezclaba un descuento
+   * por producto con uno sobre el total del pedido.
+   *
+   * `global_only_discount_amount` / `global_only_discount_rate` (C3, revisión
+   * formal, ticket físico 2026-09-23): en el camino ON, `global_only_discount_amount`
+   * es `globalDiscountAmount` DIRECTO (ya exacto, sin resta); en el camino OFF
+   * es `globalDiscountAmount − Σ lineCampaignDiscountAmount` (SÍ hace falta la
+   * resta ahí, porque en OFF ese monto es el descuento TOTAL combinado). El
+   * bug original medía SIEMPRE por diferencia de dos sumas por línea ya
+   * redondeadas (`Σ lineTotalDiscountAmount − Σ lineCampaignDiscountAmount`),
+   * y el problema estaba en que, en el camino ON, `lineTotalDiscountAmount` se
+   * recomputaba cascadeando una tasa (`globalRate`) YA redondeada por línea en
+   * vez de usar el monto exacto `globalDiscountAmount` que ya estaba en scope
+   * — eso fue lo que causó el desfase de 1 céntimo confirmado en hardware
+   * real. `globalOnlyRate` es la MISMA `globalRate` en ambos caminos, sin
+   * recalcular. Ver el comentario junto a `globalOnlyDiscountAmount` más abajo
+   * para el detalle numérico completo, incluida una variante alternativa que
+   * se descartó por no reproducir correctamente el camino OFF.
+   *
+   * Limitación conocida: un descuento MANUAL por línea (el cajero teclea un %
+   * directamente) no tiene marca de campaña, así que llega con
+   * `campaign_discount_percent = 0` y su descuento completo se contabiliza en
+   * el agregado del pie en vez de en su propio `q-`.
+   *
+   * C1 (revisión formal): si la marca de campaña de una línea (ver
+   * `binaural_pos_pricelist_line_discount/orderline_model.js`) quedó desfasada
+   * por un descuento MANUAL posterior distinto sobre esa misma línea,
+   * `campaign_discount_percent` podría venir mayor que el descuento real que
+   * Odoo cobra en esa línea. `lineCampaignDiscountAmount` se acota con
+   * `Math.min(..., lineTotalDiscountAmount)` para que el `q-` de campaña
+   * nunca exceda el descuento total real de la línea, sin depender de
+   * arreglar el desfase de la marca en origen.
+   *
+   * `global_discount_amount` / `global_discount_rate` / `global_clamped`
+   * conservan su semántica histórica SIN CAMBIOS: los consumen el pop-up de
+   * clamp, `printInvoice` con el interruptor en OFF y —de forma crítica— el
+   * `q-` fiscal agregado de `printCreditNote`/`printDebitNote`. Por eso la
+   * porción "solo global" viaja en campos NUEVOS y no pisando esos.
    *
    * @param {Object} order
    * @param {Object} invoiceData
@@ -685,22 +847,170 @@ patch(PosStore.prototype, {
       }
     }
 
+    const rounding = this.currency?.rounding || 0.01;
+    // Σ del descuento de campaña (ya acotado por C1) de cada línea. Hace falta
+    // a nivel de documento para aislar la porción "solo global" en el camino
+    // OFF (ver comentario junto a `globalOnlyDiscountAmount` más abajo).
+    let totalCampaignDiscountAmount = 0;
+
     const lines = POSITIVE_LINES.map((line) => {
       const priceUnit = Number(line.price_unit || 0);
+      const quantity = Math.abs(Number(line.quantity || 1));
       const lineDiscount = Number(line.discount || 0);
       const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);
       const finalUnitPrice = preAppliedMeta
         ? netAfterLineDiscount
         : this._applyDiscount(netAfterLineDiscount, globalRate);
+
+      // --- Descuento TOTAL real de la línea (campaña + global) ----------
+      // Es el que efectivamente cobra Odoo. NO se imprime por línea, pero
+      // (C1, ver más abajo) sirve de tope para el `q-` de campaña.
+      //
+      // `finalUnitPrice` ya contempla los dos caminos del flag
+      // `native_global_discount_line`:
+      // - Con `preAppliedMeta` (flag en OFF):
+      //   `_applyGlobalDiscountBeforeValidation` ya reescribió `line.discount`
+      //   con el % FINAL (campaña compuesta con global).
+      // - Sin `preAppliedMeta` (flag en ON): la línea de descuento nativa de
+      //   Odoo sigue presente como producto aparte, así que `globalRate` se
+      //   derivó aquí arriba y se aplica en cascada sobre el neto de campaña
+      //   (dos `_applyDiscount` sucesivos, aritméticamente equivalentes a la
+      //   composición multiplicativa de `composeDiscountPercent`).
+      // Así el ticket impreso es idéntico con el checkbox en ON o en OFF.
+      const lineTotalDiscountAmount = computeLineDiscountAmount({
+        grossUnitPrice: priceUnit,
+        netUnitPrice: finalUnitPrice,
+        quantity,
+        rounding,
+      });
+
+      // --- Descuento de CAMPAÑA, aislado del global ---------------------
+      // Precio neto considerando ÚNICAMENTE la regla de campaña de esta línea.
+      // No se puede partir de `line.discount`: con el flag
+      // `native_global_discount_line` en OFF ese campo ya fue reescrito con el
+      // % COMPUESTO por `_applyGlobalDiscountBeforeValidation`. El % puro sólo
+      // sobrevive en `campaign_discount_percent`, que propaga
+      // `get_data_invoice` desde `campaignDiscountPercent`.
+      const campaignPct = Number(line.campaign_discount_percent || 0);
+      const campaignOnlyNet = this._applyDiscount(priceUnit, campaignPct);
+
+      // MONTO exacto en Bs del descuento PROPIO de esta línea: el argumento
+      // del `q-` que sale impreso como renglón "DESC" bajo su producto. La
+      // impresora no rehace ninguna aritmética: sólo resta este número del
+      // total de la línea que acaba de registrar. Por eso no hay riesgo de que
+      // su redondeo difiera del de Odoo, ni límite de 99,99% (que sí tenía el
+      // porcentaje de `p-`).
+      //
+      // La fórmula vive en DiscountMath.computeLineDiscountAmount: redondea
+      // CADA total por separado antes de restar, para que
+      // `round(bruto × qty) − descuento === round(neto × qty)` se cumpla
+      // exacto incluso con cantidad fraccionaria (ver su docblock).
+      const lineCampaignDiscountAmountRaw = computeLineDiscountAmount({
+        grossUnitPrice: priceUnit,
+        netUnitPrice: campaignOnlyNet,
+        quantity,
+        rounding,
+      });
+
+      // C1 (revisión formal): `campaign_discount_percent` viene de la marca
+      // `campaignDiscountPercent` que pone `binaural_pos_pricelist_line_discount`.
+      // Esa marca sólo se limpia cuando el descuento vigente de la línea
+      // coincide EXACTO con el último que ella misma escribió
+      // (`campaignDiscountAppliedPercent`); si el cajero teclea a mano un %
+      // distinto sobre una línea que ya traía campaña, la marca queda
+      // desfasada — sigue apuntando al % de campaña original aunque
+      // `line.discount` ya no lo refleje. Sin este tope, `lineCampaignDiscountAmountRaw`
+      // podría superar `lineTotalDiscountAmount` (lo que la línea descuenta en
+      // TOTAL) y el `q-` de campaña saldría más grande que el descuento real
+      // que Odoo está cobrando en esa línea.
+      //
+      // El `Math.min` es defensivo y no depende de arreglar el desfase de la
+      // marca en `orderline_model.js`: garantiza el invariante "nunca se
+      // imprime por campaña más de lo que la línea descuenta en total" pase
+      // lo que pase con esa marca.
+      const lineCampaignDiscountAmount = Math.min(
+        lineCampaignDiscountAmountRaw,
+        lineTotalDiscountAmount
+      );
+      totalCampaignDiscountAmount += lineCampaignDiscountAmount;
+
       return {
         product_name: line.name,
         product_code: line.code || line.default_code,
+        // Precio YA NETO. Sigue siendo el que consumen printCreditNote /
+        // printDebitNote sin cambios; printInvoice usa `gross_price_unit`
+        // sólo cuando el interruptor `mf_line_discount_via_q_command` está ON.
         price_unit: finalUnitPrice,
+        // Precio BRUTO, antes de cualquier descuento. printInvoice registra el
+        // ítem con este precio y emite `q-<monto>` justo después.
+        gross_price_unit: priceUnit,
+        // SÓLO el descuento de campaña de esta línea (acotado, ver C1 arriba).
+        // El global agregado NO va aquí: viaja en `global_only_discount_amount`
+        // a nivel de orden.
+        discount_amount: lineCampaignDiscountAmount,
         quantity: line.quantity,
         fiscal_code: line.tax,  // 0=Exento, 1=General, 2=Reducido, 3=Adicional
         discount: 0,
       };
     });
+
+    // Porción del descuento total que NO viene de ninguna regla de campaña.
+    //
+    // C3 (revisión formal, ticket físico 2026-09-23) — fórmula corregida y
+    // VERIFICADA numéricamente (con las funciones reales de `DiscountMath` y
+    // el caso de referencia de `DISCOUNT_STRATEGY.md`) contra los dos caminos
+    // del flag `native_global_discount_line`:
+    //
+    // - Camino ON (`preAppliedMeta` es `null`): `globalDiscountAmount` (ya
+    //   calculado arriba) es la suma directa de los montos de las líneas
+    //   NEGATIVAS (la línea nativa "Descuento" de Odoo) — exacta y YA "sólo
+    //   global": en este camino la campaña vive enteramente en el % propio de
+    //   cada línea de producto, nunca mezclada en la línea negativa. No hace
+    //   falta restarle nada.
+    // - Camino OFF (`preAppliedMeta` presente): `preAppliedMeta.global_discount_amount`
+    //   es el descuento TOTAL COMBINADO (campaña + global, porque
+    //   `_applyGlobalDiscountBeforeValidation` compuso ambos en `line.discount`
+    //   y luego sumó el descuento real ya con el % final). Aquí SÍ hay que
+    //   restarle `totalCampaignDiscountAmount` para aislar la porción global.
+    //
+    // ⚠ Una versión anterior de este fix intentó usar, para el camino OFF, el
+    // monto CRUDO de la línea de descuento nativa ANTES de componerse
+    // (`inference.pendingDiscountAmount`, expuesto como
+    // `global_only_discount_amount` en `_mf_global_discount_meta`). Parecía
+    // "más exacto" porque no pasa por ninguna resta de sumas redondeadas, pero
+    // se verificó numéricamente (con el caso de referencia de 3 líneas de
+    // `DISCOUNT_STRATEGY.md`: 34.266,88 × 3, 90% campaña, global compuesto al
+    // 91,5%) que NO reproduce lo que Odoo realmente cobra: da 1.542,01 cuando
+    // el total real que resulta de aplicar el % COMPUESTO (91,5%, ya
+    // redondeado por `composeDiscountPercent`) y sumar los subtotales reales
+    // por línea es 1.542,03. La diferencia (2 céntimos en ese caso) es el
+    // redondeo que introduce `composeDiscountPercent` al fusionar campaña y
+    // global en un solo % antes de aplicarlo — un redondeo real que Odoo SÍ
+    // aplica al cobrar, y que el monto crudo pre-composición no puede conocer.
+    // Usar el monto crudo ahí habría hecho que el total registrado en la
+    // impresora (bruto − campaña − globalOnly) NO coincidiera con lo que Odoo
+    // realmente cobra, arriesgando un NAK en el cierre `199` — exactamente el
+    // tipo de descuadre que este documento existe para evitar. Se descartó esa
+    // variante; el campo `global_only_discount_amount` NO se agregó a
+    // `_mf_global_discount_meta`.
+    //
+    // La resta SÍ es segura en el camino OFF (a diferencia del camino ON,
+    // donde el bug original vivía) porque `totalCampaignDiscountAmount` y
+    // `preAppliedMeta.global_discount_amount` provienen ambos, en última
+    // instancia, del MISMO `line.discount` real que Odoo aplicó — no de una
+    // tasa re-derivada y cascada por línea (que sí introducía el desfase en el
+    // camino ON, ver `DISCOUNT_STRATEGY.md`).
+    const globalOnlyDiscountAmount = preAppliedMeta
+      ? Math.max(0, round_pr(globalDiscountAmount - totalCampaignDiscountAmount, rounding))
+      : globalDiscountAmount;
+
+    // La tasa "sólo global" es la MISMA `globalRate` de arriba en AMBOS
+    // caminos: en OFF es `inference.inferredPercent` (calculado contra la base
+    // YA neta de campaña, antes de componer); en ON se computa aquí mismo
+    // contra `positiveBaseSum` (también neta de campaña). Las dos son exactas
+    // y ya "sólo global" — no hace falta recalcular nada contra una base
+    // aparte.
+    const globalOnlyRate = globalRate;
 
     const payment_lines = (invoiceData.payment_lines || []).map(payment => ({
       payment_method_code: payment.payment_method,
@@ -717,11 +1027,35 @@ patch(PosStore.prototype, {
       has_cashbox: invoiceData.has_cashbox || false,
       additional_lines: invoiceData.info || [],
       invoice_affected: invoiceData.invoice_affected || null,
+      // Semántica HISTÓRICA intacta: el descuento global medido como siempre.
+      // Lo consumen el pop-up de clamp del PosStore, `printInvoice` con el
+      // interruptor en OFF y el `q-` FISCAL agregado de
+      // `printCreditNote`/`printDebitNote`. Tocarlo cambiaría el total de las
+      // NC/ND, por eso la porción "solo global" viaja aparte.
       global_discount_amount: globalDiscountAmount,
       global_discount_rate: globalRate,
       global_clamped: globalClamped,
+      // Porción del descuento NO atribuible a ninguna regla de campaña. SÓLO
+      // la consume `printInvoice` con el interruptor en ON: la aplica como
+      // `q-` agregado tras el subtotal y la imprime como "DESC. GLOBAL = X" al
+      // pie. Con el interruptor en OFF y en NC/ND se ignora por completo.
+      global_only_discount_amount: globalOnlyDiscountAmount,
+      global_only_discount_rate: globalOnlyRate,
+      // Interruptor de activación gradual del descuento visible por línea
+      // (comando `q-`). En OFF (default) el driver ignora `gross_price_unit` /
+      // `discount_amount` y la factura se imprime exactamente como en la
+      // Estrategia A: precio neto por ítem + línea agregada "DESC. GLOBAL".
+      line_discount_via_q: Boolean(this.config?.mf_line_discount_via_q_command),
       header_lines: this._extractReceiptLines("receipt_header"),
       footer_lines: this._extractReceiptLines("receipt_footer"),
+      // Decimales de la moneda de la orden. La consume
+      // `TfhkaDriver._formatDisplayAmount` para formatear MONTOS en las líneas
+      // informativas del pie (p. ej. "DESC. GLOBAL = X"), en vez de asumir
+      // 2 decimales fijos. No confundir con `disc_int`/`disc_decimal` o
+      // `max_amount_int`/`_decimal` (`FLAG21_CONFIGS`): esos son el ANCHO DE
+      // CAMPO fijo del protocolo TFHKA, un requisito de hardware independiente
+      // de la moneda.
+      currency_decimal_places: this.currency?.decimal_places ?? 2,
     };
   },
 
