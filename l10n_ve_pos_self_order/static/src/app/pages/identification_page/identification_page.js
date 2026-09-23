@@ -276,6 +276,10 @@ export class IdentificationPage extends Component {
             this.state[field] = this.state[field].slice(0, -1);
             return;
         }
+        if (key === "clear") {
+            this.state[field] = "";
+            return;
+        }
         if (key === "space") {
             // A space is meaningless in the phone number.
             if (field !== "phoneNumber") {

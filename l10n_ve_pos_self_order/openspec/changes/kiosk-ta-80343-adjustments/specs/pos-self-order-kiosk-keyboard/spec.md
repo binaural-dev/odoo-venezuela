@@ -44,3 +44,17 @@ el modo numérico.
 - **THEN** se borra el último carácter del campo activo
 - **WHEN** el cliente toca "espacio" (y el campo activo no es el teléfono)
 - **THEN** se inserta un espacio en el campo activo
+
+#### Scenario: Limpiar en modo numérico
+
+- **GIVEN** el teclado en modo numérico con el teléfono como campo activo
+- **WHEN** el cliente toca "C"
+- **THEN** se vacía el campo activo
+
+#### Scenario: El teclado queda completo en pantalla
+
+- **GIVEN** el formulario de cliente nuevo (nombre, apellido, teléfono,
+  dirección), donde el teclado se muestra al final del formulario
+- **WHEN** el teclado aparece o cambia de modo (texto ↔ numérico)
+- **THEN** se desplaza a la vista para que su última fila (borrar, 0,
+  limpiar) sea visible sin desplazar a mano

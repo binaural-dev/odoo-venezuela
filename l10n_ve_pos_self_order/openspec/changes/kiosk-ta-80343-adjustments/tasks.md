@@ -93,12 +93,29 @@
       formato válido → se guarda como `0414-1234567`
 - [ ] 7.5 Dirección: con el flag activo, crear sin estado/municipio/calle →
       rechazado; con el flag inactivo, se puede omitir
-- [ ] 7.6 Pantalla de pago: base, impuestos por tasa, total Bs. y total
+- [ ] 7.6 Carrito (o resumen del modo escaneo): base, impuestos por tasa, total Bs. y total
       foráneo visibles y correctos (coinciden con la factura)
 - [ ] 7.7 Teclado en pantalla aparece al enfocar nombre/apellido/teléfono y
       escribe en el campo activo; modo numérico en teléfono
 - [ ] 7.8 `binaural_megasoft_self_order` sigue pagando con Megasoft sin
       romperse (compatibilidad del patch de `PaymentPage`)
+
+## 7bis. Observaciones de prueba (23-sep)
+
+- [x] 7bis.1 Con un solo método de pago (lo recomendado: un único Megasoft)
+      el core lo auto-selecciona al montar `PaymentPage` y el VPOS abre sin
+      dar tiempo a ver el resumen. Se conserva ese salto directo y el resumen
+      se mueve ANTES de Pagar: componente `KioskAmountsSummary`
+      (`app/components/kiosk_amounts_summary/`, antes
+      `overrides/payment_page.{js,xml}`) en el pie del carrito (reemplaza el
+      Total/Taxes del core) y bajo el resumen de líneas del modo solo escaneo
+- [x] 7bis.2 Teclado numérico: la tecla "C" limpia el campo activo (antes no
+      hacía nada) y el teclado se desplaza a la vista al aparecer/cambiar de
+      modo (la fila ⌫/0/C quedaba bajo el pliegue en el formulario de cliente
+      nuevo)
+- [x] 7bis.3 Kiosko en inglés: no era el código — la caja Kiosko no tenía
+      idioma por defecto ni idiomas disponibles, y el core pone entonces
+      `frontend_lang=en_US`. Se configura en la caja (Autopedido → Idiomas)
 
 ## 8. OpenSpec
 

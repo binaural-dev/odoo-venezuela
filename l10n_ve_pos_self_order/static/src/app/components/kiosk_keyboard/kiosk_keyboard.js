@@ -1,4 +1,4 @@
-import { Component, useState } from "@odoo/owl";
+import { Component, useEffect, useRef, useState } from "@odoo/owl";
 
 // Spanish (LatAm) QWERTY letter rows, lowercase — Ñ included between L and
 // the row's end, same spot as a physical Spanish keyboard. Uppercase is a
@@ -45,6 +45,15 @@ export class KioskKeyboard extends Component {
 
     setup() {
         this.state = useState({ shift: false });
+        // The keyboard renders at the bottom of long forms (new customer:
+        // name, phone, address), so its last row (⌫ / 0 / C in numeric mode)
+        // can end up below the fold of the page's scroll container. Bring it
+        // fully into view whenever it appears or switches layout.
+        this.rootRef = useRef("root");
+        useEffect(
+            () => this.rootRef.el?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+            () => [this.props.mode]
+        );
     }
 
     get isNumeric() {
