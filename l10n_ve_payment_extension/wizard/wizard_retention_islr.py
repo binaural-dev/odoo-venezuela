@@ -56,7 +56,6 @@ class RetentionIslrReport(models.TransientModel):
 
     def print_report(self):
         current_company = self.env.company
-        current_company._check_prefix_vat_confirmed_for_fiscal_documents()
         report = self.report
         filecontent = "5"
 
