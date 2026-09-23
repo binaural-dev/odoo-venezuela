@@ -28,6 +28,16 @@ class TestStockPickingCoverage(TransactionCase):
             "foreign_currency_id": cls.currency_usd.id,
         })
 
+        # `l10n_ve_sale.action_confirm()` requires a currency rate for the
+        # confirmation date (via `res.currency.rate.compute_rate(...,
+        # raise_if_not_found=True)`) -- a minimal database has none.
+        cls.env["res.currency.rate"].create({
+            "currency_id": cls.currency_usd.id,
+            "company_id": cls.company.id,
+            "name": date.today(),
+            "rate": 1.0 / 380.0,
+        })
+
         # Journals
         cls.sale_journal = cls.env["account.journal"].create({
             "name": "Coverage Sale Journal",
@@ -50,6 +60,9 @@ class TestStockPickingCoverage(TransactionCase):
         # fiscal localization data loaded) -- pass one explicitly to avoid a
         # NOT NULL violation.
         cls.country_ve = cls.env.ref("base.ve")
+        # Aligned with the tax/tax-group country so invoices created below
+        # don't fail account.move's tax/fiscal-position compatibility check.
+        cls.company.account_fiscal_country_id = cls.country_ve.id
         cls.tax_group = cls.env["account.tax.group"].create({
             "name": "Coverage Tax Group",
             "country_id": cls.country_ve.id,
