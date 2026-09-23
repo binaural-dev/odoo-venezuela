@@ -54,11 +54,16 @@
 - [x] 5.1 `models/pos_config.py`: exponer `foreign_currency_id`/`foreign_rate`/
       `foreign_inverse_rate` al Kiosko vía `_load_pos_self_data_fields`, y
       cargar `l10n_ve_pos/static/src/overrides/models/*` en `pos_self_order.assets`
-- [x] 5.2 `static/src/overrides/payment_page.js` (nuevo): `patch()` con
-      base imponible, desglose de impuestos, total local y total foráneo
-      (reusa `get_foreign_total_with_tax()` de `l10n_ve_pos`, sin reimplementar)
-- [x] 5.3 `static/src/overrides/payment_page.xml` (nuevo): `t-inherit` que
-      inserta el bloque de resumen sin reemplazar el template
+- [x] 5.2 `static/src/app/components/kiosk_amounts_summary/kiosk_amounts_summary.js`
+      (nuevo): componente `KioskAmountsSummary` con base imponible, desglose
+      de impuestos, total local y total foráneo (reusa
+      `get_foreign_total_with_tax()` de `l10n_ve_pos`, sin reimplementar);
+      registrado en `CartPage` y `ProductListPage`. Primera versión como
+      `patch()` de `PaymentPage`, movido antes de Pagar (ver 7bis.1)
+- [x] 5.3 `kiosk_amounts_summary.xml` (nuevo): template del componente +
+      `t-inherit` de `CartPage` que reemplaza el Total/Taxes del pie;
+      `overrides/product_list_page.xml` lo inserta bajo el resumen de líneas
+      del modo solo escaneo
 - [x] 5.4 `i18n/es_VE.po`: cadenas nuevas
 - [x] 5.5 `tests/test_kiosk_public_routes.py`: `foreign_rate`/
       `foreign_inverse_rate` expuestos en `pos.config` self-data

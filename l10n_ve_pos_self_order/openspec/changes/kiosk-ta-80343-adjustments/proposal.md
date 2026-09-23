@@ -45,16 +45,17 @@ tocan el flujo QR/móvil salvo que se indique lo contrario.
    contacto exige Estado + Municipio (desplegables, `res.country.state` /
    `res.country.municipality` de `l10n_ve_location`) y Calle (texto), con
    la misma validación espejada en servidor.
-5. **Resumen de montos en la pantalla de pago** (`PaymentPage`, core
-   `pos_self_order`): base imponible, desglose de impuestos por tasa y total
-   en Bs., más el total en moneda foránea (misma tasa operativa que usa
-   `l10n_ve_pos` en caja) cuando la compañía tiene moneda foránea
-   configurada. El total foráneo NO se reimplementa: el manifest agrega
-   `l10n_ve_pos/static/src/overrides/models/*` (patches puros de modelo) a
-   `pos_self_order.assets` y la pantalla usa `get_foreign_total_with_tax()`,
-   con la misma conversión y redondeo que la caja. Compatible con el patch
-   de `PaymentPage` de `binaural_megasoft_self_order` (mismo mecanismo
-   `patch()`, sin reemplazar el template).
+5. **Resumen de montos antes de pagar** (pie de `CartPage`, o bajo el
+   resumen de líneas en modo solo escaneo): base imponible, desglose de
+   impuestos por tasa y total en Bs., más el total en moneda foránea (misma
+   tasa operativa que usa `l10n_ve_pos` en caja) cuando la compañía tiene
+   moneda foránea configurada. El total foráneo NO se reimplementa: el
+   manifest agrega `l10n_ve_pos/static/src/overrides/models/*` (patches puros
+   de modelo) a `pos_self_order.assets` y el componente usa
+   `get_foreign_total_with_tax()`, con la misma conversión y redondeo que la
+   caja. No va en `PaymentPage`: con un único método Megasoft (lo
+   recomendado) el core lo auto-selecciona y el VPOS abre de inmediato, y
+   ese salto directo se conserva.
 6. **Teclado en pantalla** (`KioskKeyboard`, componente OWL propio, sin
    librerías externas): QWERTY + Ñ + números + espacio + borrar + mayúsculas,
    con modo numérico para teléfono/cédula. Se muestra al enfocar los campos
@@ -74,7 +75,7 @@ tocan el flujo QR/móvil salvo que se indique lo contrario.
 - `pos-self-order-kiosk-address`: dirección opcional/obligatoria por
   configuración en la creación de contacto del Kiosko.
 - `pos-self-order-kiosk-payment-summary`: resumen de montos (base, impuestos,
-  total local y foráneo) en la pantalla de pago del Kiosko.
+  total local y foráneo) del Kiosko antes de pagar.
 - `pos-self-order-kiosk-keyboard`: teclado en pantalla para los campos de
   texto del Kiosko.
 
@@ -87,17 +88,17 @@ tocan el flujo QR/móvil salvo que se indique lo contrario.
   `views/res_config_settings_views.xml`.
 - **Frontend** (bundle `pos_self_order.assets`):
   `static/src/overrides/cancel_popup.xml` (nuevo),
-  `static/src/overrides/payment_page.{js,xml}` (nuevo),
+  `static/src/app/components/kiosk_amounts_summary/kiosk_amounts_summary.{js,xml}`
+  (nuevo), `static/src/overrides/product_list_page.xml`,
   `static/src/app/pages/identification_page/identification_page.{js,xml,scss}`,
   `static/src/app/components/kiosk_keyboard/kiosk_keyboard.{js,xml,scss}`
   (nuevo).
 - **i18n**: `i18n/es_VE.po` (todas las cadenas nuevas en inglés + traducción
   `es_VE`).
 - **Compatibilidad**: `binaural_megasoft_self_order` sigue funcionando sin
-  cambios (su `patch()` de `PaymentPage` no toca el template; nuestro
-  `t-inherit` no reemplaza nodos que ese módulo dependa).
+  cambios (este change ya no toca `PaymentPage`).
 - **Riesgo**: medio — toca la pantalla de identificación (ya usada en
-  producción) y la de pago; cambios detrás de validación explícita y, donde
+  producción) y el carrito; cambios detrás de validación explícita y, donde
   aplica, detrás de un flag de configuración.
 
 References:

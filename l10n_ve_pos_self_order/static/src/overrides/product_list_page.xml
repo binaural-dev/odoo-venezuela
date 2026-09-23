@@ -60,6 +60,11 @@
                         </div>
                     </t>
                 </div>
+                <!-- Desglose de montos (ticket 80343): en este modo review()
+                     salta el carrito, así que va aquí antes de Pagar. -->
+                <div class="bg-white px-3 px-kiosk-p-4 py-3 mt-3 rounded-4 border border-light shadow-sm">
+                    <KioskAmountsSummary/>
+                </div>
             </div>
 
             <!-- Empty state: nothing in the order and no search yet. -->
