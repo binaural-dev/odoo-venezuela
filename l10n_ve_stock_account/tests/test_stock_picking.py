@@ -46,11 +46,22 @@ class TestStockPickingCoverage(TransactionCase):
         cls.company.vendor_journal_id = cls.purchase_journal.id
 
         # Taxes
+        # `tax_group_id` has no usable default in a minimal database (no
+        # fiscal localization data loaded) -- pass one explicitly to avoid a
+        # NOT NULL violation.
+        cls.country_ve = cls.env.ref("base.ve")
+        cls.tax_group = cls.env["account.tax.group"].create({
+            "name": "Coverage Tax Group",
+            "country_id": cls.country_ve.id,
+        })
+
         cls.sale_tax = cls.env["account.tax"].create({
             "name": "Coverage Sale Tax 16%",
             "amount": 16,
             "type_tax_use": "sale",
             "company_id": cls.company.id,
+            "tax_group_id": cls.tax_group.id,
+            "country_id": cls.country_ve.id,
         })
         cls.company.account_sale_tax_id = cls.sale_tax.id
 
@@ -59,6 +70,8 @@ class TestStockPickingCoverage(TransactionCase):
             "amount": 16,
             "type_tax_use": "purchase",
             "company_id": cls.company.id,
+            "tax_group_id": cls.tax_group.id,
+            "country_id": cls.country_ve.id,
         })
         cls.company.account_purchase_tax_id = cls.purchase_tax.id
 
@@ -199,37 +212,17 @@ class TestStockPickingCoverage(TransactionCase):
         # (Hard to set up a real return without wizard; instead test partial)
         self.assertEqual(picking.type_of_return, "n/a")
 
-    # ── onchange / compute: is_donation ──
+    # ── compute: picking_type_domain ──
+    # NOTE: the donation-specific branch of this compute (and the
+    # `is_donation`/`_onchange_is_donation`/`_onchange_partner_id` bits that
+    # used to live here) moved to `l10n_ve_donation` -- see
+    # `test_stock_picking.py` in that module. Here we only cover the plain
+    # base behavior that stays in this module.
 
-    def test_onchange_is_donation_sets_partner_and_reason(self):
+    def test_compute_picking_type_domain_native(self):
         picking = self._create_outgoing_picking()
-        picking.is_donation = True
-        picking._onchange_is_donation()
-        self.assertEqual(picking.partner_id, self.env.company.partner_id)
-        self.assertEqual(picking.transfer_reason_id, self.reason_self_consumption)
-
-    def test_compute_picking_type_domain_donation(self):
-        picking = self._create_outgoing_picking()
-        picking.is_donation = True
-        picking._compute_picking_type_domain()
-        self.assertIn("is_donation_picking_type", picking.picking_type_domain)
-
-    def test_compute_picking_type_domain_non_donation(self):
-        picking = self._create_outgoing_picking()
-        picking.is_donation = False
         picking._compute_picking_type_domain()
         self.assertIn("internal", picking.picking_type_domain)
-
-    # ── onchange partner_id ──
-
-    def test_onchange_partner_id_donation_raises(self):
-        picking = self._create_outgoing_picking()
-        picking.is_donation = True
-        picking.partner_id = self.env.company.partner_id
-        picking._onchange_partner_id()  # should not raise
-        with self.assertRaises(UserError):
-            picking.partner_id = self.partner
-            picking._onchange_partner_id()
 
     # ── action_open_invoice_wizard ──
 

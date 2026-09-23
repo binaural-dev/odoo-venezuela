@@ -24,7 +24,7 @@ class AccountMove(models.Model):
     def _get_tax_grouped_lines(self):
         """
         Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
-        Retorna un diccionario: { tuple(ids_impuestos): {'base': suma_base, 'taxes': recordset_impuestos} }
+        Retorna un diccionario: { tuple(ids_impuestos): {'base_amount': suma_base, 'taxes': recordset_impuestos} }
         """
         self.ensure_one()
         tax_groups = {}

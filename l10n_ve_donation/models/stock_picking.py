@@ -30,14 +30,8 @@ class StockPicking(models.Model):
             if self.partner_id != self.env.company.partner_id:
                 raise UserError(_("The partner must be the company itself for a donation"))
 
-    @api.depends("is_donation")
-    def _compute_picking_type_domain(self):
-        super()._compute_picking_type_domain()
-        for picking in self:
-            if picking.is_donation:
-                picking.picking_type_domain = "[('is_donation_picking_type', '=', True)]"
-
     def create_invoice(self):
+        self.ensure_one()
         invoice = super().create_invoice()
         if invoice and self.is_donation:
             invoice.write({"is_donation": True})
@@ -48,10 +42,7 @@ class StockPicking(models.Model):
         super()._compute_allowed_reason_ids()
         for picking in self:
             if picking.is_donation:
-                reasons = self.env["transfer.reason"].search([
-                    ("id", "in", picking.allowed_reason_ids.ids)
-                ])
                 self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
                 if self_consumption_reason:
-                    picking.allowed_reason_ids = [(4, self_consumption_reason.id)]
+                    picking.allowed_reason_ids = [(6, 0, [self_consumption_reason.id])]
                     picking.transfer_reason_id = self_consumption_reason.id

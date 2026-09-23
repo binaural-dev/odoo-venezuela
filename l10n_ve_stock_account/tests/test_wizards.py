@@ -45,11 +45,21 @@ class TestPickingInvoiceWizard(TransactionCase):
         cls.company.vendor_journal_id = cls.purchase_journal.id
 
         # --- Taxes ---
+        # `tax_group_id` has no usable default in a minimal database (no
+        # fiscal localization data loaded) -- pass one explicitly to avoid a
+        # NOT NULL violation.
+        cls.country_ve = cls.env.ref("base.ve")
+        cls.tax_group = cls.env["account.tax.group"].create({
+            "name": "Wizards Test Tax Group",
+            "country_id": cls.country_ve.id,
+        })
         cls.sale_tax = cls.env["account.tax"].create({
             "name": "Sale Tax 16%",
             "amount": 16,
             "type_tax_use": "sale",
             "company_id": cls.company.id,
+            "tax_group_id": cls.tax_group.id,
+            "country_id": cls.country_ve.id,
         })
         cls.company.account_sale_tax_id = cls.sale_tax.id
 
@@ -58,6 +68,8 @@ class TestPickingInvoiceWizard(TransactionCase):
             "amount": 16,
             "type_tax_use": "purchase",
             "company_id": cls.company.id,
+            "tax_group_id": cls.tax_group.id,
+            "country_id": cls.country_ve.id,
         })
         cls.company.account_purchase_tax_id = cls.purchase_tax.id
 

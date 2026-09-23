@@ -1,4 +1,4 @@
-from odoo import models, api, fields
+from odoo import models
 
 class AccountAsset(models.Model):
     _inherit = "account.asset"
@@ -13,11 +13,6 @@ class AccountAsset(models.Model):
         message = self.env.context.get('disposal_message')
         if message and move_ids:
             moves = self.env['account.move'].browse(move_ids)
-            for move in moves:
-                move.write({
-                    'ref': message,
-                })
-                move.line_ids.write({
-                    'name': message,
-                })
+            moves.write({'ref': message})
+            moves.line_ids.write({'name': message})
         return move_ids
