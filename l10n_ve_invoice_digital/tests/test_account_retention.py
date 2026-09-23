@@ -212,7 +212,13 @@ class TestAccumulatedRate(TransactionCase):
         return invoice
 
     def _create_retention(self, type_retention, invoice):
-        today = fields.Date.today()
+        # context_today, not the UTC today(): _check_dates_not_in_future
+        # compares date_accounting against fields.Date.context_today too
+        # (self.env.user.tz is "America/Caracas", UTC-4, per setUp), and a
+        # UTC today can already be tomorrow while Caracas' calendar day
+        # hasn't rolled over yet -- same pitfall l10n_ve_payment_extension's
+        # own account_retention.py documents and avoids elsewhere.
+        today = fields.Date.context_today(self)
 
         with Form(self.env["account.retention"].with_context(default_type="in_invoice", default_type_retention=type_retention)) as retention_form:
             retention_form.partner_id = self.partner_a

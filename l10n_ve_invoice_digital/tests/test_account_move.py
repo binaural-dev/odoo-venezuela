@@ -968,7 +968,13 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]
         )
         
-        self.invoice.invoice_date_due = fields.Date.today() - timedelta(days=1)
+        # context_today, not the UTC today(): _prepare_identification compares
+        # invoice_date_due against the emission date in the user's local tz
+        # ("America/Caracas", UTC-4, per setUp). A UTC today can already be
+        # tomorrow while Caracas' calendar day hasn't rolled over yet, which
+        # would make "yesterday" here equal (not less than) the local
+        # emission date and this test's UserError never fire.
+        self.invoice.invoice_date_due = fields.Date.context_today(self) - timedelta(days=1)
 
         # El _logger.info iba DENTRO del with y detras de la llamada: si esta
         # levantaba, nunca se ejecutaba, y si no levantaba reventaba con
