@@ -69,3 +69,15 @@ class PosConfigInherit(models.Model):
              "ticket impreso sigue mostrando el descuento por línea igual "
              "que hoy."
     )
+
+    mf_line_discount_via_q_command = fields.Boolean(
+        string="Descuento por línea en el ticket fiscal (comando q-)",
+        default=False,
+        help="Si está activo, la factura impresa por la máquina fiscal muestra "
+             "el descuento de cada línea (manual, de campaña, o global) como "
+             "'DESC' con su monto exacto, justo debajo de ese producto — en vez "
+             "de solo reflejarlo en el precio neto sin mostrarlo. Usa el comando "
+             "'q-' del protocolo TFHKA. Por defecto está desactivado: actívalo "
+             "solo después de validar que la impresora fiscal de este cliente "
+             "acepta el comando correctamente (ver DISCOUNT_STRATEGY.md)."
+    )

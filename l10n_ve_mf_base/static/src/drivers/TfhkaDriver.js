@@ -990,8 +990,33 @@ export class TfhkaDriver {
     _formatAmount(num, intPart, decPart) {
         const fixed = Number(num).toFixed(decPart);
         const [integer, decimal] = fixed.split('.');
-        
+
         return integer.padStart(intPart, '0') + (decimal || '').padStart(decPart, '0');
+    }
+
+    /**
+     * ¿El número cabe en el campo de ancho fijo que el Flag 21 reserva?
+     *
+     * NO basta con comparar `num < 10 ** intPart`: `_formatAmount` redondea con
+     * `toFixed(decPart)` ANTES de partir el número, y ese redondeo puede subir
+     * un dígito entero justo en el borde. Ejemplo real:
+     *
+     *     9999999.996 < 1e7                       -> true  (la comparación deja pasar)
+     *     _formatAmount(9999999.996, 7, 2)        -> "1000000000" (10 chars, no 9)
+     *
+     * Es decir, la comparación cruda deja pasar un valor que luego produce una
+     * cadena MÁS LARGA de lo que el protocolo acepta, y la trama sale
+     * malformada — el escenario que puede trabar la impresora en el cierre
+     * `199`. La única guarda fiable es formatear primero y medir el resultado.
+     *
+     * @param {number} num
+     * @param {number} intPart - Dígitos de la parte entera que reserva el Flag 21
+     * @param {number} decPart - Dígitos de la parte decimal
+     * @returns {boolean} true si la cadena formateada tiene exactamente el
+     *                    ancho del campo (`intPart + decPart`)
+     */
+    _amountFitsField(num, intPart, decPart) {
+        return this._formatAmount(num, intPart, decPart).length === intPart + decPart;
     }
 
     /**
@@ -1042,6 +1067,23 @@ export class TfhkaDriver {
         return infoIndex;
     }
 
+    /**
+     * Pie de documento: línea informativa de descuento global (si aplica),
+     * líneas de pie configuradas en el POS y líneas adicionales.
+     *
+     * La línea de monto se emite SIEMPRE, en los tres documentos. (Hubo un
+     * parámetro `skipDiscountInfo` para suprimirla en la factura cuando el
+     * descuento salía por línea con `q-`: se eliminó al separar campaña de
+     * global, porque el agregado del pie dejó de ser redundante con los `q-`
+     * — ahora representa algo genuinamente distinto, el descuento sobre el
+     * TOTAL del pedido.)
+     *
+     * @param {Array} commands - Buffer de comandos fiscales
+     * @param {Object} orderData - Datos de la orden. `printInvoice` con el
+     *        interruptor en ON pasa aquí una copia con
+     *        `global_discount_amount`/`_rate` ya sustituidos por la porción
+     *        "solo global"; NC/ND pasan la orden tal cual.
+     */
     _appendFooterInfo(commands, orderData) {
         const counter = { value: 0 };
         this._appendDiscountInfoLine(commands, orderData, counter);
@@ -1058,66 +1100,99 @@ export class TfhkaDriver {
     }
 
     /**
-     * Emite UNA línea informativa sobre el descuento global aplicado.
+     * Formatea un monto para mostrar en líneas informativas del ticket
+     * (NO usar para comandos de protocolo tipo 2XX, esos usan _formatAmount
+     * con dígitos crudos). Formato venezolano: punto para miles, coma para
+     * decimales. Ej: 39290.94 -> "39.290,94"
      *
-     * Solo se invoca para facturas (no para NC ni ND). El cálculo de la
-     * tasa y del monto ya viene resuelto en el PosStore (`global_discount_rate`,
-     * `global_discount_amount`, `global_clamped`). Aquí se formatea y se
-     * infiere un índice `iXX` libre dentro del cupo de 10 líneas informativas.
-     * Avanza `counter.value` para que el resto del pie de factura continúe con
-     * índices consecutivos.
+     * `decimalPlaces` viene de la moneda de Odoo (`currency.decimal_places`,
+     * propagada por `_convertOrderForDriver` como `orderData.currency_decimal_places`),
+     * no de un literal fijo: es un MONTO, y una moneda con más o menos de 2
+     * decimales no debe truncarse/rellenarse a 2 por default. Default `2` sólo
+     * como último recurso si el llamador no lo provee.
+     * @param {number} value
+     * @param {number} [decimalPlaces=2]
+     * @returns {string}
+     */
+    _formatDisplayAmount(value, decimalPlaces = 2) {
+        const [intPart, decPart] = Number(value).toFixed(decimalPlaces).split(".");
+        const intWithThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return decPart ? `${intWithThousands},${decPart}` : intWithThousands;
+    }
+
+    /**
+     * Emite las líneas informativas sobre el descuento global aplicado: el
+     * MONTO ("DESC. GLOBAL = X") y, si el descuento se recortó, el AVISO
+     * ("DESC. GLOBAL EXCEDIO SUBTOTAL").
+     *
+     * Se invoca desde `_appendFooterInfo`, es decir desde los tres documentos
+     * (factura, NC y ND), y SIEMPRE emite las dos líneas que correspondan.
+     *
+     * (Nota histórica: este docstring afirmaba "Solo se invoca para facturas",
+     * lo cual nunca fue cierto — `_appendFooterInfo` siempre se llamó también
+     * desde printCreditNote/printDebitNote. Corregido al introducir el flag.
+     * Hubo además un parámetro `skipAmountLine` que suprimía la línea de monto
+     * en la factura cuando el descuento salía por línea vía `q-`; se eliminó
+     * al separar el descuento de campaña del global: el agregado del pie ya no
+     * duplica ningún `q-`, es el descuento sobre el TOTAL del pedido.)
+     *
+     * El cálculo de la tasa y del monto ya viene resuelto en el PosStore
+     * (`global_discount_rate`, `global_discount_amount`, `global_clamped`).
+     * Aquí se formatea y se infiere un índice `iXX` libre dentro del cupo de 10
+     * líneas informativas. Avanza `counter.value` para que el resto del pie
+     * continúe con índices consecutivos.
      *
      * @param {Array} commands - Buffer de comandos fiscales
      * @param {Object} orderData - Datos de la orden
      * @param {Object} counter - { value: number } mutable; índice actual
      * @returns {boolean} true si al menos una línea fue emitida
      */
-
-    /**
-     * Formatea un monto para mostrar en líneas informativas del ticket
-     * (NO usar para comandos de protocolo tipo 2XX, esos usan _formatAmount
-     * con dígitos crudos). Formato venezolano: punto para miles, coma para
-     * decimales. Ej: 39290.94 -> "39.290,94"
-     * @param {number} value
-     * @returns {string}
-     */
-    _formatDisplayAmount(value) {
-        const [intPart, decPart] = Number(value).toFixed(2).split(".");
-        const intWithThousands = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        return `${intWithThousands},${decPart}`;
-    }
-
     _appendDiscountInfoLine(commands, orderData, counter) {
         const rate = Number(orderData?.global_discount_rate || 0);
         const amount = Number(orderData?.global_discount_amount || 0);
         const clamped = Boolean(orderData?.global_clamped);
 
-        if (!(rate > 0) || amount <= 0) {
+        if (!(rate > 0) && !(amount > 0) && !clamped) {
             return false;
         }
 
         const MAX_INFO_LINES = 10;
-        const startIndex = counter.value;
-        if (startIndex >= MAX_INFO_LINES) {
-            console.warn(
-                `TfhkaDriver:: No hay slot libre para línea informativa de descuento global (slots usados: ${startIndex}/10)`
-            );
-            return false;
+        let emitted = false;
+
+        // El AVISO de clamp se evalúa aparte del monto, más abajo: es el único
+        // rastro impreso de que el descuento se recortó, y debe salir incluso
+        // si el monto agregado terminó en 0 (pedido cuyas líneas ya estaban
+        // todas al 100% de campaña). El pop-up del POS sólo lo ve el cajero;
+        // el ticket es lo que se lleva el cliente.
+        if (rate > 0 && amount > 0) {
+            if (counter.value >= MAX_INFO_LINES) {
+                console.warn(
+                    `TfhkaDriver:: No hay slot libre para línea informativa de descuento global (slots usados: ${counter.value}/10)`
+                );
+            } else {
+                const decimalPlaces = Number(orderData?.currency_decimal_places ?? 2);
+                const text = `DESC. GLOBAL = ${this._formatDisplayAmount(amount, decimalPlaces)}`;
+                commands.push(`i${String(counter.value).padStart(2, '0')}${text.substring(0, 127)}`);
+                counter.value++;
+                emitted = true;
+            }
         }
 
-        const amountStr = this._formatDisplayAmount(amount);
-        const text = `DESC. GLOBAL = ${amountStr}`;
-        commands.push(`i${String(startIndex).padStart(2, '0')}${text.substring(0, 127)}`);
-        counter.value++;
-
-        if (clamped && counter.value < MAX_INFO_LINES) {
-            commands.push(
-                `i${String(counter.value).padStart(2, '0')}DESC. GLOBAL EXCEDIO SUBTOTAL`
-            );
-            counter.value++;
+        if (clamped) {
+            if (counter.value >= MAX_INFO_LINES) {
+                console.warn(
+                    `TfhkaDriver:: No hay slot libre para el aviso de clamp del descuento global (slots usados: ${counter.value}/10)`
+                );
+            } else {
+                commands.push(
+                    `i${String(counter.value).padStart(2, '0')}DESC. GLOBAL EXCEDIO SUBTOTAL`
+                );
+                counter.value++;
+                emitted = true;
+            }
         }
 
-        return true;
+        return emitted;
     }
 
     /**
@@ -1331,8 +1406,115 @@ export class TfhkaDriver {
 
             // 5. Items de la orden (truncado simple — el protocolo no permite
             // continuar items en líneas informativas iNN)
+            //
+            // Con `line_discount_via_q` en ON se registra el precio BRUTO del
+            // ítem y, si la línea trae descuento PROPIO (el de su regla de
+            // campaña), se emite inmediatamente después el comando `q-` con el
+            // MONTO exacto. El protocolo aplica `q-` SOLO al ítem que lo
+            // precede y lo imprime como "DESC" bajo ese producto, con su misma
+            // tasa de impuesto (Manual V8.5.0, Tabla 29 pág. 34 y desglose por
+            // tasa de la pág. 35).
+            //
+            // `discount_amount` lleva ÚNICAMENTE el descuento de campaña de la
+            // línea. El descuento del botón "Descuento Global" NO se mezcla
+            // aquí: se aplica agregado sobre el subtotal, más abajo (paso 7.1).
+            //
+            // Con el interruptor en OFF (default) se ignoran por completo
+            // `gross_price_unit` y `discount_amount`: el ítem se registra con
+            // `price_unit` (ya neto, con campaña y global embebidos) y el pie
+            // emite la línea agregada "DESC. GLOBAL" con los montos
+            // históricos. Es decir, el comportamiento histórico (Estrategia A)
+            // byte por byte.
+            //
+            // ⚠ El camino `q-` por línea NO está validado contra impresora
+            // física — ver DISCOUNT_STRATEGY.md, sección "Riesgo abierto".
+            // Queda por confirmar contra hardware real que `q-` tras un ítem
+            // positivo devuelva ACK y no NAK, también en combinación con
+            // IGTF / pagos en divisa (Flag 50 = 01).
+            let lineDiscountViaQ = Boolean(orderData.line_discount_via_q);
+            const discountOverflowLines = [];
+            const grossPriceOverflowLines = [];
+
+            // C2 (revisión formal): pre-pasada de degradación de DOCUMENTO
+            // COMPLETO. Antes, cuando el precio BRUTO de una línea no cabía en
+            // los dígitos del Flag 21, esa línea SOLA se degradaba a precio
+            // NETO sin `q-` (guarda que sigue abajo, ahora como red de
+            // seguridad). El problema: `global_only_discount_amount` /
+            // `global_only_discount_rate` (calculados en PosStore ANTES de que
+            // el driver decida degradar nada) seguían incluyendo la porción
+            // global de ESA línea degradada — que ya había quedado embebida
+            // silenciosamente en su precio neto. El `q-` agregado del pie la
+            // restaba OTRA VEZ: descuento duplicado para esa línea.
+            //
+            // Fix: si CUALQUIER línea del documento desbordaría en precio
+            // BRUTO, se aborta el camino "q- por línea" para TODO el
+            // documento (se fuerza `lineDiscountViaQ = false`, como si
+            // `orderData.line_discount_via_q` hubiera venido en `false` desde
+            // el origen). El documento completo cae, byte por byte, al
+            // comportamiento histórico ya validado (Estrategia A: todos los
+            // ítems a precio neto, sin `q-` por línea; el pie usa
+            // `global_discount_amount`/`_rate` HISTÓRICOS, no los `_only`,
+            // porque más abajo la copia de `orderData` para el pie sólo se
+            // arma `if (lineDiscountViaQ)`).
+            let documentGrossOverflow = false;
+            if (lineDiscountViaQ) {
+                for (const line of orderData.lines || []) {
+                    if (line.gross_price_unit == null) {
+                        continue;
+                    }
+                    const grossPrice = Number(line.gross_price_unit);
+                    if (!this._amountFitsField(grossPrice, config.max_amount_int, config.max_amount_decimal)) {
+                        grossPriceOverflowLines.push(line.product_name || "PRODUCTO");
+                        documentGrossOverflow = true;
+                    }
+                }
+                if (documentGrossOverflow) {
+                    console.warn(
+                        "TfhkaDriver:: El precio BRUTO de una o más líneas excede los dígitos del " +
+                        `Flag 21 (${config.max_amount_int} enteros); TODO el documento se degrada a ` +
+                        "Estrategia A (precio neto, sin q- por línea):",
+                        grossPriceOverflowLines.join(", ")
+                    );
+                    lineDiscountViaQ = false;
+                }
+            }
+
             for (const line of orderData.lines || []) {
-                const linePrice = Number(line.price_unit || 0);
+                // `gross_price_unit` es el precio antes de descuento (lo pone
+                // _convertOrderForDriver). Fallback a `price_unit` (neto) para
+                // no romper si algún llamador no populó el campo nuevo.
+                const netPrice = Number(line.price_unit || 0);
+                const usesGrossPrice = lineDiscountViaQ && line.gross_price_unit != null;
+                let linePrice = Number(usesGrossPrice ? line.gross_price_unit : netPrice);
+                let emitLineDiscount = lineDiscountViaQ;
+
+                // Guarda de desbordamiento del PRECIO del ítem, por línea.
+                // Con la pre-pasada de arriba, este bloque es INALCANZABLE en
+                // la práctica: si CUALQUIER línea desbordaba, `lineDiscountViaQ`
+                // ya quedó forzado a `false` para todo el documento, así que
+                // `usesGrossPrice` nunca vuelve a ser `true` aquí. Se deja
+                // como red de seguridad silenciosa (no como código muerto: si
+                // algún día este loop iterara una colección distinta de la de
+                // la pre-pasada, o `_amountFitsField`/`config` cambiaran entre
+                // medio, esta guarda sigue evitando construir una trama
+                // malformada para esa línea puntual).
+                if (
+                    usesGrossPrice &&
+                    !this._amountFitsField(linePrice, config.max_amount_int, config.max_amount_decimal)
+                ) {
+                    console.warn(
+                        "TfhkaDriver:: (red de seguridad) Precio BRUTO excede los dígitos del Flag 21 " +
+                        `(${config.max_amount_int} enteros); la línea se degrada a precio neto sin q-:`,
+                        line.product_name || "PRODUCTO",
+                        linePrice
+                    );
+                    if (!grossPriceOverflowLines.includes(line.product_name || "PRODUCTO")) {
+                        grossPriceOverflowLines.push(line.product_name || "PRODUCTO");
+                    }
+                    linePrice = netPrice;
+                    emitLineDiscount = false;
+                }
+
                 if (linePrice <= 0) continue;
 
                 const taxChar = this._getTaxCharacter(line.fiscal_code || "1");
@@ -1351,10 +1533,82 @@ export class TfhkaDriver {
                 }
 
                 phase1Commands.push(`${taxChar}${price}${qty}${code}${desc}`);
+
+                // Descuento por MONTO sobre el ítem recién registrado. El
+                // formato de dígitos depende del Flag 21
+                // (`config.disc_int`/`disc_decimal`) — el MISMO que ya usa el
+                // descuento global agregado de NC/ND, documentado en la Tabla
+                // 22 págs. 27-28 del Manual V8.5.0 ("DESCUENTO Y RECARGO POR
+                // MONTO"). El monto viene ya calculado y redondeado por Odoo:
+                // la impresora sólo lo resta, no rehace ninguna cuenta.
+                const discountAmount = Number(line.discount_amount || 0);
+                if (emitLineDiscount && discountAmount > 0) {
+                    // Guarda: si el monto no cabe en los dígitos enteros que el
+                    // Flag 21 reserva, `_formatAmount` NO truncaría — devolvería
+                    // una cadena más larga y la trama saldría malformada, con
+                    // riesgo de trabar la impresora en el cierre `199`. En ese
+                    // caso extremo se omite el `q-` (el ítem queda impreso a su
+                    // precio bruto) y se reporta la línea al caller.
+                    //
+                    // La comprobación se hace sobre la cadena YA FORMATEADA
+                    // (`_amountFitsField`) y no contra `10 ** disc_int`: el
+                    // `toFixed()` interno de `_formatAmount` puede subir un
+                    // dígito entero en el borde y la comparación cruda lo
+                    // dejaría pasar (ver docblock de `_amountFitsField`).
+                    if (this._amountFitsField(discountAmount, config.disc_int, config.disc_decimal)) {
+                        phase1Commands.push(
+                            `q-${this._formatAmount(discountAmount, config.disc_int, config.disc_decimal)}`
+                        );
+                    } else {
+                        console.warn(
+                            "TfhkaDriver:: Monto de descuento excede los dígitos del Flag 21 " +
+                            `(${config.disc_int} enteros); se omite el q- de la línea:`,
+                            line.product_name || "PRODUCTO",
+                            discountAmount
+                        );
+                        discountOverflowLines.push(line.product_name || "PRODUCTO");
+                    }
+                }
             }
 
             // 7. Subtotal
             phase1Commands.push("3");
+
+            // 7.1 Descuento GLOBAL agregado (sólo en el camino `q-` por línea).
+            //
+            // Los `q-` de arriba llevan ÚNICAMENTE el descuento de campaña de
+            // cada producto. El descuento del botón "Descuento Global" se
+            // calcula sobre el TOTAL del pedido, así que se aplica aquí, sobre
+            // el subtotal — exactamente el mismo comando y la misma posición
+            // que ya usan `printCreditNote`/`printDebitNote` en producción.
+            //
+            // NO es decorativo: si sólo se imprimiera la línea informativa
+            // `iXX` del pie, la impresora cobraría el subtotal neto de campaña
+            // mientras los montos de pago `2XX` (calculados por Odoo) vendrían
+            // ya netos también del global, y el cierre `199` sería rechazado
+            // con NAK por descuadre.
+            let globalOnlyAmount = Math.abs(Number(
+                lineDiscountViaQ ? (orderData.global_only_discount_amount || 0) : 0
+            ));
+            if (globalOnlyAmount > 0) {
+                if (this._amountFitsField(globalOnlyAmount, config.disc_int, config.disc_decimal)) {
+                    phase1Commands.push(
+                        `q-${this._formatAmount(globalOnlyAmount, config.disc_int, config.disc_decimal)}`
+                    );
+                } else {
+                    // Mismo criterio que las guardas por línea: antes que
+                    // construir una trama malformada (que puede trabar la
+                    // impresora en el `199`), se omite el comando y se reporta.
+                    console.warn(
+                        "TfhkaDriver:: Monto de descuento global excede los dígitos del Flag 21 " +
+                        `(${config.disc_int} enteros); se omite el q- agregado:`,
+                        globalOnlyAmount
+                    );
+                    discountOverflowLines.push("DESCUENTO GLOBAL");
+                    globalOnlyAmount = 0;
+                }
+            }
+
             console.log("TfhkaDriver::printInvoice - FASE 1: items:", orderData.lines?.length, "comandos:", phase1Commands.length);
 
             // Enviar FASE 1 a la impresora
@@ -1373,7 +1627,27 @@ export class TfhkaDriver {
             const phase2Commands = [];
             console.log("TfhkaDriver::printInvoice - payment_lines a enviar:", JSON.stringify(orderData.payment_lines));
             this._appendPaymentCommands(phase2Commands, orderData, config);
-            this._appendFooterInfo(phase2Commands, orderData);
+            // La línea agregada "DESC. GLOBAL = X" se emite SIEMPRE: ya no es
+            // redundante con los `q-` por línea, porque esos llevan sólo el
+            // descuento de campaña de cada producto y ésta el descuento sobre
+            // el total del pedido.
+            //
+            // Con el interruptor en ON el monto y la tasa que se muestran son
+            // los de la porción "solo global" (la que realmente se aplicó
+            // arriba con el `q-` agregado); con el interruptor en OFF se
+            // muestran los históricos, que ya venían embebidos en los precios
+            // netos — Estrategia A, byte por byte. NC/ND llaman igual que
+            // siempre, con la orden tal cual.
+            this._appendFooterInfo(
+                phase2Commands,
+                lineDiscountViaQ
+                    ? {
+                        ...orderData,
+                        global_discount_amount: globalOnlyAmount,
+                        global_discount_rate: Number(orderData.global_only_discount_rate || 0),
+                    }
+                    : orderData
+            );
             phase2Commands.push("199");
 
             const payment2xxCommands = phase2Commands.filter(c => c.startsWith("2"));
@@ -1439,6 +1713,24 @@ export class TfhkaDriver {
             fiscalResponse.global_discount_amount = Number(orderData?.global_discount_amount || 0);
             fiscalResponse.global_discount_rate = Number(orderData?.global_discount_rate || 0);
             fiscalResponse.global_clamped = Boolean(orderData?.global_clamped);
+            // Líneas cuyo MONTO de descuento no cabía en los dígitos enteros
+            // del Flag 21 y por eso se imprimieron sin el renglón "DESC". El
+            // PosStore levanta un pop-up con esta lista (mismo patrón que
+            // `global_clamped`).
+            fiscalResponse.line_discount_overflow_lines = discountOverflowLines;
+            // Líneas cuyo PRECIO BRUTO no cabía en los dígitos del Flag 21 y
+            // por eso se degradaron al precio neto (comportamiento histórico) y
+            // sin renglón "DESC". Se reporta aparte de
+            // `line_discount_overflow_lines` porque la consecuencia visible es
+            // distinta: ahí el ítem sí sale a precio bruto, aquí sale a neto.
+            fiscalResponse.line_gross_price_overflow_lines = grossPriceOverflowLines;
+            // C2 (revisión formal): distingue la degradación de DOCUMENTO
+            // COMPLETO (esta bandera) de una degradación de una sola línea.
+            // Con el fix de arriba, `grossPriceOverflowLines` no vacío implica
+            // SIEMPRE `line_discount_via_q_document_degraded = true` (todo el
+            // documento cayó a Estrategia A) — no puede haber degradación
+            // parcial. El PosStore la usa para dar un mensaje más preciso.
+            fiscalResponse.line_discount_via_q_document_degraded = documentGrossOverflow;
             if (fiscalResponse.global_clamped) {
                 console.warn(
                     "TfhkaDriver:: Descuento global clampeado a 100%. Monto POS:",
