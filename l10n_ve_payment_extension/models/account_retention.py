@@ -64,6 +64,7 @@ class AccountRetention(models.Model):
         default="draft",
         help="Status of the withholding voucher",
         tracking=True,
+        copy=False,
     )
     type_retention = fields.Selection(
         [
@@ -96,8 +97,8 @@ class AccountRetention(models.Model):
         help="Social reason",
         tracking=True,
     )
-    number = fields.Char("Voucher Number")
-    correlative = fields.Char(readonly=True)
+    number = fields.Char("Voucher Number", copy=False)
+    correlative = fields.Char(readonly=True, copy=False)
     date = fields.Date(
         "Voucher Date",
         help="Date of issuance of the withholding voucher by the external party.",
@@ -125,6 +126,7 @@ class AccountRetention(models.Model):
         "retention_id",
         "retention line",
         help="Retentions",
+        copy=False,
     )
 
     code_visible = fields.Boolean(related="company_id.code_visible")
@@ -133,6 +135,7 @@ class AccountRetention(models.Model):
         "account.payment",
         "retention_id",
         help="Payments",
+        copy=False,
     )
 
     total_invoice_amount = fields.Monetary(
@@ -1244,6 +1247,28 @@ class AccountRetention(models.Model):
                     raise ValidationError(
                         _("The number must be exactly 14 numeric digits.")
                     )
+
+    @api.constrains("number", "company_id", "type_retention")
+    def _check_number_unique(self):
+        for record in self.filtered("number"):
+            duplicate = self.search([
+                ("id", "!=", record.id),
+                ("number", "=", record.number),
+                ("company_id", "=", record.company_id.id),
+                ("type_retention", "=", record.type_retention),
+            ], limit=1)
+            if duplicate:
+                raise ValidationError(
+                    _(
+                        "Voucher number %(number)s is already used by another %(type_retention)s "
+                        "retention (%(other)s) in this company."
+                    )
+                    % {
+                        "number": record.number,
+                        "type_retention": record.type_retention,
+                        "other": duplicate.display_name,
+                    }
+                )
 
     @api.constrains("partner_id", "retention_line_ids", "is_third_party_retention")
     def _check_lines_match_partner(self):
