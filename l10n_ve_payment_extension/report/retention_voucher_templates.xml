@@ -58,7 +58,7 @@
                         <span>Registro de Informacion Fiscal del Agente de Retención:</span>
                     </div>
                     <div>
-                        <span t-esc="res_company.vat"/>
+                        <span t-esc="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
                     </div>
                 </div>
 
@@ -470,7 +470,7 @@
                         <span>No. R.I.F.:</span>
                     </div>
                     <div class="col-12" style="text-transform:uppercase">
-                        <span t-esc="res_company.vat"/>
+                        <span t-esc="(res_company.partner_id.prefix_vat or '') + (res_company.vat or '')"/>
                     </div>
                 </div>
             </div>

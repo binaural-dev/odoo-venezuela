@@ -11,6 +11,7 @@ class ArcvReport(models.TransientModel):
     date_end = fields.Date(required=True)
 
     def print_arcv(self):
+        self.env.company._check_prefix_vat_confirmed_for_fiscal_documents()
         retentions_by_month_and_percentage_fees = (
             self._get_islr_retention_lines_grouped_by_year_month_and_percentage_fees()
         )

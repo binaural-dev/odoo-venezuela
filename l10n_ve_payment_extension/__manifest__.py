@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accountant/Accountant",
-    "version": "19.0.2.0.30",
+    "version": "19.0.2.0.33",
     "depends": [
         "base",
         "account",
@@ -18,7 +18,6 @@
         "l10n_ve_contact",
         "l10n_ve_tax_payer",
         "product",
-        "stock",
     ],
     "data": [
         "security/ir.model.access.csv",

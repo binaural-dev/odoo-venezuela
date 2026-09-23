@@ -1,7 +1,7 @@
 from odoo import api, models, fields, Command, _
-from datetime import datetime
 import re
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_is_zero, float_compare
 from odoo.addons.account.models.account_move import BYPASS_LOCK_CHECK
 from ..utils.utils_retention import load_retention_lines, search_invoices_with_taxes
 from collections import defaultdict
@@ -276,7 +276,12 @@ class AccountRetention(models.Model):
 
     def _load_retention_lines_for_iva_supplier_retention(self):
         self.ensure_one()
-        self.date_accounting = fields.Date.today()
+        # Use the user's local "today" (not UTC) - _check_dates_not_in_future
+        # compares date_accounting against fields.Date.context_today too,
+        # and a UTC "today" can already be tomorrow while the user's local
+        # calendar day hasn't rolled over yet (e.g. Caracas, UTC-4, from
+        # 20:00 local onward), which would falsely reject this same value.
+        self.date_accounting = fields.Date.context_today(self)
         search_domain = [
             ('iva_voucher_number', '=', False),
             ("company_id", "=", self.company_id.id),
@@ -479,10 +484,18 @@ class AccountRetention(models.Model):
         Post the retention, validate amounts per invoice, generate the
         corresponding payments in batch, and reconcile them.
         """
-        today = datetime.now()
+        # date_accounting/date are Date fields checked against the user's
+        # local "today" by _check_dates_not_in_future() - using UTC
+        # datetime.now() here could stamp tomorrow's date while the user's
+        # local calendar day hasn't rolled over yet (e.g. Caracas, UTC-4,
+        # from 20:00 local onward), making this fallback fail the very
+        # constraint it's about to trigger on write() a few lines below.
+        today = fields.Date.context_today(self)
         is_automated = self.env.context.get('automated_action') or self.env.context.get('cron_id')
 
         for retention in self:
+            retention._check_duplicate_retention_lines()
+
             retention_amounts_by_move = defaultdict(float)
             for line in retention.retention_line_ids:
                 retention_amounts_by_move[line.move_id] += line.retention_amount
@@ -508,6 +521,17 @@ class AccountRetention(models.Model):
                             'type': 'danger',
                         }
                     }
+            zero_retention_lines = retention.retention_line_ids.filtered(
+                lambda l: float_is_zero(l.retention_amount, precision_rounding=self.company_currency_id.rounding)
+            )
+            if zero_retention_lines:
+               
+                error_msg = _("You can not create a retention with 0 amount.")
+                if is_automated:
+                    retention.message_post(body=error_msg, category='exception')
+                    return False
+                raise ValidationError(error_msg)
+
             if retention.type in ["out_invoice", "out_refund", "out_debit"] and not retention.number:
                 raise UserError(_("Insert a number for the retention"))
 
@@ -516,6 +540,15 @@ class AccountRetention(models.Model):
 
             if retention.type_retention == "islr" and retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._validate_islr_retention()
+
+            try:
+                retention._check_accounting_date_vs_invoices()
+                retention._check_dates_not_in_future()
+            except ValidationError as e:
+                if is_automated:
+                    retention.message_post(body=str(e), category='exception')
+                    return False
+                raise
 
         for retention in self:
             vals = {}
@@ -534,6 +567,293 @@ class AccountRetention(models.Model):
 
         self._reconcile_all_payments()
         self.write({"state": "emitted"})
+
+    def _check_duplicate_retention_lines(self):
+        """
+        Prevent the same invoice from being retained twice with the exact
+        same differentiator - both within this retention (helpdesk #14548)
+        and across any OTHER already-emitted retention of the same type -
+        and reject lines whose declared differentiator does not actually
+        exist on the invoice they claim to retain from:
+
+        - ISLR: the invoice (move_id) can legitimately repeat across lines
+          both when each line is for a different payment_concept_id, and
+          when several products on the invoice share the SAME concept (the
+          standard auto-generation flow from an invoice creates one line per
+          invoice line, not one per concept - see
+          account_move._get_payment_concepts_from_invoice). So instead of
+          forbidding any repeat of (move_id, payment_concept_id), the sum of
+          invoice_amount declared across lines sharing that combination -
+          in this retention AND in any other emitted retention - must not
+          exceed the real taxable base of the invoice for that concept (sum
+          of price_subtotal of the invoice lines whose product has that
+          payment_concept). The declared payment_concept_id must also match
+          a product actually billed on that invoice.
+        - IVA: the invoice can legitimately repeat when each line has a
+          different real tax rate (aliquot). The same (move_id, aliquot)
+          combination must not repeat - in this retention or in any other
+          emitted retention - and the declared aliquot must match a tax
+          actually applied on that invoice.
+        - Municipal: the invoice can legitimately repeat when each line is
+          for a different economic activity of the partner. The same
+          (move_id, economic_activity_id) combination must not repeat - in
+          this retention or in any other emitted retention.
+
+        Only other retentions already in state 'emitted' are considered -
+        two drafts referencing the same invoice/differentiator can coexist
+        harmlessly as long as only one of them ever gets confirmed; the
+        conflict only matters once one side is already final.
+
+        Applies to any legal document/retention type - client
+        (out_invoice/out_refund/out_debit) and supplier
+        (in_invoice/in_refund/in_debit) - for IVA, ISLR and Municipal
+        retentions alike.
+        """
+        self.ensure_one()
+        precision = self.company_currency_id.rounding or self.env.company.currency_id.rounding
+        lines_with_move = self.retention_line_ids.filtered(lambda l: l.move_id)
+        other_lines = self._get_other_emitted_retention_lines(lines_with_move.mapped("move_id"))
+
+        if self.type_retention == "islr":
+            self._check_islr_concept_amounts(lines_with_move, precision, other_lines)
+        elif self.type_retention == "iva":
+            self._check_iva_duplicate_lines(lines_with_move, precision, other_lines)
+        elif self.type_retention == "municipal":
+            self._check_municipal_duplicate_lines(lines_with_move, other_lines)
+
+    def _get_other_emitted_retention_lines(self, moves):
+        """
+        Retention lines of other already-emitted retentions of the same
+        type_retention, restricted to the invoices this retention is about
+        to touch - used to seed the duplicate-detection accumulators so a
+        conflict against an already-confirmed retention is caught too, not
+        just conflicts within this retention.
+        """
+        self.ensure_one()
+        if not moves:
+            return self.env["account.retention.line"]
+        return self.env["account.retention.line"].search([
+            ("move_id", "in", moves.ids),
+            ("retention_id", "!=", self.id),
+            ("retention_id.state", "=", "emitted"),
+            ("retention_id.type_retention", "=", self.type_retention),
+        ])
+
+    def _check_islr_concept_amounts(self, client_lines, precision, other_lines=None):
+        """
+        ISLR: several invoice lines can legitimately share the same
+        payment_concept_id (that's how the module auto-generates retention
+        lines from an invoice - one line per product, not one per concept),
+        so the same (move_id, payment_concept_id) combination is allowed to
+        repeat. What must never happen is the declared invoice_amount summed
+        across those repeats - in this retention AND in any other emitted
+        retention already holding a line for the same (move, concept) -
+        exceeding the real taxable base the invoice actually has for that
+        concept (sum of balance - the company-currency amount, not raw
+        price_subtotal - of the invoice lines whose product carries that
+        payment_concept) - that's how someone re-declaring the same
+        product/amount to inflate the retention shows up.
+
+        Special case: when only ONE invoice line carries the concept (mixed
+        with unrelated goods), account.retention.line._get_islr_concept_base_amounts
+        legitimately proposes either the product's own subtotal OR the
+        whole invoice subtotal as the default base, depending on the
+        company's islr_prioritize_product_subtotal_base setting - and the
+        accountant can always edit invoice_amount by hand to use whichever
+        of the two criteria applies. So for that case the cap accepts the
+        larger of the two (max(whole invoice base, product subtotal)),
+        instead of only the product's own subtotal.
+        """
+        declared_by_key = {}
+        base_by_key = {}
+        retention_by_key = {}
+
+        for other_line in (other_lines or self.env["account.retention.line"]):
+            concept = other_line.payment_concept_id
+            if not concept:
+                continue
+            key = (other_line.move_id.id, concept.id)
+            declared_by_key[key] = declared_by_key.get(key, 0.0) + other_line.invoice_amount
+            retention_by_key.setdefault(key, other_line.retention_id)
+
+        for line in client_lines:
+            concept = line.payment_concept_id
+            if not concept:
+                continue
+            move = line.move_id
+            invoice_lines_for_concept = move.invoice_line_ids.filtered(
+                lambda l: l.product_id.product_tmpl_id.payment_concept == concept
+            )
+            if not invoice_lines_for_concept:
+                raise ValidationError(
+                    _(
+                        "The payment concept (%(concept)s) of the line for"
+                        " invoice %(invoice)s does not match any product on"
+                        " that invoice."
+                    )
+                    % {"concept": concept.display_name, "invoice": line.move_id.display_name}
+                )
+            key = (move.id, concept.id)
+            if key not in base_by_key:
+                # account.retention.line proposes the default base
+                # (_get_islr_concept_base_amounts) using either the whole
+                # invoice subtotal or just the product's own subtotal,
+                # depending on islr_prioritize_product_subtotal_base - but
+                # that flag only controls what gets auto-proposed on
+                # automatic creation. Once created, the accountant may
+                # deliberately edit invoice_amount to use whichever of the
+                # two legitimate criteria applies, so the tope here must
+                # accept either one explicitly, not just whichever the flag
+                # happens to favor.
+                concept_lines = move.invoice_line_ids.filtered(
+                    lambda l: l.product_id.product_tmpl_id.type == "service"
+                    and l.product_id.product_tmpl_id.payment_concept
+                )
+                if len(concept_lines) <= 1:
+                    whole_invoice_base = move.tax_totals["base_amount"]
+                    product_subtotal_base = sum(abs(l.balance) for l in concept_lines)
+                    base_by_key[key] = max(whole_invoice_base, product_subtotal_base)
+                else:
+                    base_by_key[key] = sum(abs(l.balance) for l in invoice_lines_for_concept)
+                declared_by_key.setdefault(key, 0.0)
+            declared_by_key[key] += line.invoice_amount
+            if float_compare(
+                declared_by_key[key], base_by_key[key], precision_rounding=precision
+            ) > 0:
+                other_retention = retention_by_key.get(key)
+                if other_retention:
+                    raise ValidationError(
+                        _(
+                            "The taxable base declared for invoice %(invoice)s and payment"
+                            " concept %(concept)s exceeds the actual base billed under that"
+                            " concept, once what retention %(retention)s already retained"
+                            " for it is taken into account."
+                        )
+                        % {
+                            "invoice": line.move_id.display_name,
+                            "concept": concept.display_name,
+                            "retention": other_retention.display_name,
+                        }
+                    )
+                raise ValidationError(
+                    _(
+                        "The taxable base declared across the lines of invoice"
+                        " %(invoice)s for payment concept %(concept)s exceeds"
+                        " the actual base billed under that concept on the"
+                        " invoice."
+                    )
+                    % {"invoice": line.move_id.display_name, "concept": concept.display_name}
+                )
+
+    def _check_iva_duplicate_lines(self, client_lines, precision, other_lines=None):
+        """
+        IVA: compute_retention_lines_data generates at most one line per
+        real tax_group on the invoice, so the same real tax must never
+        appear in more than one line, whether in this retention or in any
+        other already-emitted retention.
+        """
+        seen_keys = {}
+
+        for other_line in (other_lines or self.env["account.retention.line"]):
+            if float_is_zero(other_line.aliquot, precision_rounding=precision):
+                continue
+            taxes = other_line.move_id.invoice_line_ids.filtered(
+                lambda l: l.tax_ids and l.tax_ids[0].amount > 0
+            ).mapped("tax_ids").filtered(lambda t: t.amount == other_line.aliquot)
+            tax_key = taxes[0].id if len(taxes) == 1 else round(other_line.aliquot, 2)
+            seen_keys[(other_line.move_id.id, tax_key)] = other_line.retention_id
+
+        for line in client_lines:
+            if float_is_zero(line.aliquot, precision_rounding=precision):
+                continue
+            # Prefer the real account.tax id applied on the invoice for this
+            # aliquot (same matching pattern used in _onchange_move_id) so
+            # that two different taxes sharing a tax_group (or a rounded %)
+            # are not confused; fall back to the rounded aliquot only if a
+            # unique tax cannot be resolved from the invoice.
+            taxes = line.move_id.invoice_line_ids.filtered(
+                lambda l: l.tax_ids and l.tax_ids[0].amount > 0
+            ).mapped("tax_ids").filtered(
+                lambda t: t.amount == line.aliquot
+            )
+            if not taxes:
+                raise ValidationError(
+                    _(
+                        "The tax rate (%(aliquot)s%%) of the line for invoice"
+                        " %(invoice)s does not match any tax applied on that"
+                        " invoice."
+                    )
+                    % {"aliquot": line.aliquot, "invoice": line.move_id.display_name}
+                )
+            tax_key = taxes[0].id if len(taxes) == 1 else round(line.aliquot, 2)
+            key = (line.move_id.id, tax_key)
+            if key in seen_keys:
+                other_retention = seen_keys[key]
+                if other_retention and other_retention != self:
+                    raise ValidationError(
+                        _(
+                            "The invoice %(invoice)s was already retained at the same tax"
+                            " rate (%(aliquot)s%%) by retention %(retention)s. Each"
+                            " invoice/rate combination can only appear once."
+                        )
+                        % {
+                            "invoice": line.move_id.display_name,
+                            "aliquot": line.aliquot,
+                            "retention": other_retention.display_name,
+                        }
+                    )
+                raise ValidationError(
+                    _(
+                        "The invoice %(invoice)s is duplicated in this retention at the"
+                        " same tax rate (%(aliquot)s%%). Each invoice/rate combination"
+                        " can only appear once."
+                    )
+                    % {"invoice": line.move_id.display_name, "aliquot": line.aliquot}
+                )
+            seen_keys[key] = self
+
+    def _check_municipal_duplicate_lines(self, lines, other_lines=None):
+        """
+        Municipal: the invoice can legitimately repeat when each line is for
+        a different economic activity of the partner, so the same
+        (move_id, economic_activity_id) combination must never repeat,
+        whether in this retention or in any other already-emitted
+        retention.
+        """
+        seen_keys = {}
+
+        for other_line in (other_lines or self.env["account.retention.line"]):
+            if not other_line.economic_activity_id:
+                continue
+            seen_keys[(other_line.move_id.id, other_line.economic_activity_id.id)] = other_line.retention_id
+
+        for line in lines:
+            if not line.economic_activity_id:
+                continue
+            key = (line.move_id.id, line.economic_activity_id.id)
+            if key in seen_keys:
+                other_retention = seen_keys[key]
+                if other_retention and other_retention != self:
+                    raise ValidationError(
+                        _(
+                            "The invoice %(invoice)s was already retained for the same"
+                            " economic activity (%(activity)s) by retention %(retention)s."
+                        )
+                        % {
+                            "invoice": line.move_id.display_name,
+                            "activity": line.economic_activity_id.display_name,
+                            "retention": other_retention.display_name,
+                        }
+                    )
+                raise ValidationError(
+                    _(
+                        "The invoice %(invoice)s is duplicated in this retention for the"
+                        " same economic activity (%(activity)s). Each invoice/activity"
+                        " combination can only appear once."
+                    )
+                    % {"invoice": line.move_id.display_name, "activity": line.economic_activity_id.display_name}
+                )
+            seen_keys[key] = self
 
     def _validate_islr_retention(self):
         """
@@ -715,11 +1035,12 @@ class AccountRetention(models.Model):
         if not payments:
             raise UserError(_("No payments found for reconciliation."))
 
-        # The invoice this retention applies to can already sit in a closed
-        # fiscal period by the time the retention itself is processed --
-        # bypass_lock_check is the core's own escape hatch for that check,
-        # only triggered here by the state -> 'posted' transition (not by
-        # writing 'date', which never happens after creation).
+        # These payments are dated with the retention's own date_accounting
+        # (see _prepare_retention_payment_vals), which can already sit in a
+        # closed fiscal period by the time the retention itself is processed --
+        # bypass_lock_check is the core's own escape hatch for that check, only
+        # triggered here by the state -> 'posted' transition (not by writing
+        # 'date', which never happens after creation).
         payments.with_context(bypass_lock_check=BYPASS_LOCK_CHECK).action_post()
 
         account_type_map = {
@@ -742,9 +1063,22 @@ class AccountRetention(models.Model):
                 raise ValidationError(
                     _("No registered lines found in the move to reconcile.")
                 )
-
+            
+            # `l10n_ve_exchange_is_retention_reconcile` -- explicit,
+            # module-owned context key (as opposed to reusing the native
+            # `no_exchange_difference` alone) so that any OTHER module
+            # hooking into reconciliation can tell a retention payoff
+            # apart from any other legitimate reason a caller might set
+            # `no_exchange_difference` (e.g. `l10n_ve_exchange_difference`
+            # itself sets it when closing its own Debit/Credit Note,
+            # `account_move_line.py::_create_exchange_difference_note`).
+            # Coordinated purely via context, not a shared dependency:
+            # `l10n_ve_exchange_difference` reads this key without
+            # depending on this module.
             payment.retention_line_ids.move_id.with_context(
-                no_exchange_difference=True,group_in_single_partial=True
+                no_exchange_difference=True,
+                group_in_single_partial=True,
+                l10n_ve_exchange_is_retention_reconcile=True,
             ).js_assign_outstanding_line(lines[0].id)
 
     @api.model
@@ -819,6 +1153,95 @@ class AccountRetention(models.Model):
             return config.signature.decode()
         else:
             return False
+
+    def _get_max_invoice_date(self):
+        self.ensure_one()
+        invoice_dates = [
+            date
+            for date in (
+                move.invoice_date_display or move.invoice_date
+                for move in self.retention_line_ids.move_id
+            )
+            if date
+        ]
+        return max(invoice_dates) if invoice_dates else False
+
+    def _check_accounting_date_vs_invoices(self):
+        """
+        Neither a retention's accounting date nor its voucher date can
+        precede any of the invoices it withholds from: both are a
+        consequence of an invoice already issued. The accounting-date rule
+        was added for helpdesk #15019/#14984; helpdesk #15188 reported that
+        the voucher date (date) was left uncovered - editing it to a date
+        earlier than the invoice and approving the retention was silently
+        allowed - so the same rule is extended here to cover it too.
+        """
+        for retention in self:
+            max_invoice_date = retention._get_max_invoice_date()
+            if not max_invoice_date:
+                continue
+            invalid_moves = retention.retention_line_ids.move_id.filtered(
+                lambda move: (move.invoice_date_display or move.invoice_date) == max_invoice_date
+            )
+            invoice_name = ", ".join(
+                move.name or move.ref or str(move.id) for move in invalid_moves
+            )
+
+            accounting_date = retention.date_accounting or fields.Date.context_today(retention)
+            if accounting_date < max_invoice_date:
+                raise ValidationError(
+                    _(
+                        "The accounting date (%(accounting_date)s) cannot be earlier than the "
+                        "invoice date (%(invoice_date)s) for invoice %(invoice_name)s."
+                    )
+                    % {
+                        "accounting_date": accounting_date,
+                        "invoice_date": max_invoice_date,
+                        "invoice_name": invoice_name,
+                    }
+                )
+
+            voucher_date = retention.date
+            if voucher_date and voucher_date < max_invoice_date:
+                raise ValidationError(
+                    _(
+                        "The voucher date (%(voucher_date)s) cannot be earlier than the "
+                        "invoice date (%(invoice_date)s) for invoice %(invoice_name)s."
+                    )
+                    % {
+                        "voucher_date": voucher_date,
+                        "invoice_date": max_invoice_date,
+                        "invoice_name": invoice_name,
+                    }
+                )
+
+    def _check_dates_not_in_future(self):
+        """
+        Neither the accounting date nor the voucher date can be later than
+        today - a retention is issued for something already accrued, it
+        cannot be dated in the future.
+        """
+        for retention in self:
+            today = fields.Date.context_today(retention)
+            if retention.date_accounting and retention.date_accounting > today:
+                raise ValidationError(
+                    _(
+                        "The accounting date (%(date)s) cannot be later than today (%(today)s)."
+                    )
+                    % {"date": retention.date_accounting, "today": today}
+                )
+            if retention.date and retention.date > today:
+                raise ValidationError(
+                    _(
+                        "The voucher date (%(date)s) cannot be later than today (%(today)s)."
+                    )
+                    % {"date": retention.date, "today": today}
+                )
+
+    @api.constrains("date_accounting", "date", "retention_line_ids")
+    def _check_accounting_date(self):
+        self._check_accounting_date_vs_invoices()
+        self._check_dates_not_in_future()
 
     @api.constrains("number", "type")
     def _check_number(self):
