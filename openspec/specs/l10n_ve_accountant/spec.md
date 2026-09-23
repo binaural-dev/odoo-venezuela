@@ -169,6 +169,8 @@ Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) c
 
 Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_total`: toma como base fiscal la suma real de los balances de producto e impuesto ya corregidos por los pasos anteriores, para que la contrapartida siga siendo consistente aunque el core recompute las líneas de producto en un sync posterior (p. ej. al cambiar la fecha del documento).
 
+`_distribute_final_real_portion` cachea por move (`self.env.cr.cache[('_real_portion_distributed', move.id)]`) para no repetir el paso 3 dentro de la misma transacción. `_sync_tax_lines` borra y recrea la línea de impuesto (en vez de actualizarla in-place) cuando el `_prepare_tax_lines` del core no matchea la línea existente contra la nueva por su clave de agrupación -- típicamente al pasar a borrador un asiento posteado. Ese `unlink()` de `account.move.line` (core) envuelve su propio `_check_balanced()`/`_sync_dynamic_lines()` inmediato alrededor de sí mismo, y otros mecanismos internos del core (p. ej. el reset de banderas "dirty" de `_sync_dynamic_line`) también pueden reentrar `_sync_dynamic_lines` para el mismo move mientras el `write()` original sigue en curso. Si cualquiera de esas reentradas corre DESPUÉS de que la línea vieja se borró pero ANTES de que la nueva se cree, `_distribute_invoice_real_portion` ancla la contrapartida sin el impuesto -- y al marcar la caché como "ya hecho", bloquea que la llamada correcta y tardía (la de la escritura original, ya con la línea nueva creada) corrija el daño. Por eso, al final de `_sync_tax_lines`, se limpia esa marca de caché para los moves cuyas líneas de impuesto se tocaron (crearon o borraron) en este ciclo -- justo cuando se sabe con certeza que quedaron completas -- para que cualquier reentrada prematura deje de bloquear la corrección posterior. `_distribute_invoice_real_portion` es segura de invocar de más: es idempotente (no escribe nada si `remaining`/`actual_non_pt` ya da cero).
+
 #### Scenario: Factura multi-línea en divisa
 
 - **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total de esas líneas en la unidad de redondeo
@@ -179,6 +181,12 @@ Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_
 - **GIVEN** una factura en divisa ya distribuida, con su contrapartida anclada a `actual_non_pt`
 - **WHEN** se cambia la fecha del documento a otra fecha cuya tasa de cambio vigente es idéntica, y el core recompute las líneas de producto a sus valores originales
 - **THEN** `_distribute_invoice_real_portion` vuelve a calcular `actual_non_pt` a partir de los balances ya recomputados, y reancla la contrapartida a `-actual_non_pt`, dejando el asiento balanceado sin depender de un ajuste previo que el recompute pudo haber descartado
+
+#### Scenario: Cancelar una factura posteada en divisa con IVA no descuadra el asiento pese a resyncs anidados prematuros
+
+- **GIVEN** una factura posted en moneda distinta a la de la compañía con una línea de IVA cuyo `_prepare_tax_lines` decide borrarla y recrearla (no actualizarla in-place) al pasar a borrador
+- **WHEN** se ejecuta `button_draft()`/`button_cancel()` y el `unlink()` de la línea de IVA vieja dispara una reentrada prematura de `_sync_dynamic_lines` para ese move, con la línea vieja ya borrada pero la nueva todavía sin crear
+- **THEN** esa reentrada prematura no deja bloqueada la caché `_real_portion_distributed`: `_sync_tax_lines` la limpia al terminar de crear la línea nueva, así que la siguiente invocación de `_distribute_invoice_real_portion` recalcula sobre las líneas ya completas y el asiento queda balanceado
 
 ### Requirement: Totales de factura en moneda alterna
 

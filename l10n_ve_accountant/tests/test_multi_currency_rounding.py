@@ -1,4 +1,6 @@
 import logging
+from datetime import timedelta
+
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 
@@ -1703,9 +1705,15 @@ class TestMultiCurrencyRounding(TransactionCase):
                         "test_40 tax=%s mode=%s (balance, amount_currency)=%s",
                         tax.name, mode, results[mode],
                     )
+                same_balance = self.currency_vef.is_zero(
+                    results["round_per_line"][0] - results["round_globally"][0]
+                )
+                same_amount_currency = self.currency_usd.is_zero(
+                    results["round_per_line"][1] - results["round_globally"][1]
+                )
                 if expect_mode_independent:
-                    self.assertEqual(
-                        results["round_per_line"], results["round_globally"],
+                    self.assertTrue(
+                        same_balance and same_amount_currency,
                         msg=(
                             f"{tax.name}: expected mode-independent (fixed amount has no "
                             f"percentage/rounding math), but differs: "
@@ -1714,8 +1722,8 @@ class TestMultiCurrencyRounding(TransactionCase):
                         ),
                     )
                 else:
-                    self.assertNotEqual(
-                        results["round_per_line"], results["round_globally"],
+                    self.assertFalse(
+                        same_balance and same_amount_currency,
                         msg=(
                             f"{tax.name}: expected the mode to have an effect (via Odoo's own "
                             f"core, not this module's code) on a real percentage-based tax, but "
@@ -2012,4 +2020,327 @@ class TestMultiCurrencyRounding(TransactionCase):
                 f"{tg['tax_amount_currency']} != posted tax line amount_currency "
                 f"({posted_tax_usd})"
             ),
+        )
+
+    def _create_dated_invoice(self, currency, invoice_date, date, lines_data, move_type='in_invoice'):
+        """Como `_create_invoice`, pero permitiendo declarar `invoice_date`
+        (fecha de la tasa) y `date` (fecha contable) por separado, para
+        reproducir el escenario de dos tasas BCV distintas del helpdesk
+        MAXCAM. `_create_invoice` siempre usa `invoice_date = today`."""
+        is_purchase = move_type in ('in_invoice', 'in_refund')
+        partner = self.env['res.partner'].create({
+            'name': f'Partner dated {currency.name} {move_type}',
+            'company_id': self.company.id,
+            'property_account_receivable_id': self.acc_rec.id,
+            'property_account_payable_id': self.acc_pay.id,
+        })
+        line_account = self.acc_exp if is_purchase else self.acc_inc
+        inv = self.env['account.move'].with_context(
+            check_move_validity=False,
+        ).create([{
+            'move_type': move_type,
+            'partner_id': partner.id,
+            'currency_id': currency.id,
+            'journal_id': (self.purchase_journal if is_purchase else self.sale_journal).id,
+            'invoice_date': invoice_date,
+            'date': date,
+            'company_id': self.company.id,
+            'invoice_line_ids': [
+                (0, 0, {
+                    'product_id': self.product.id,
+                    'name': f'L{i}',
+                    'quantity': qty,
+                    'price_unit': pu,
+                    'account_id': line_account.id,
+                    'tax_ids': [(6, 0, [t.id for t in taxes])],
+                })
+                for i, (qty, pu, taxes) in enumerate(lines_data)
+            ],
+        }])[0]
+        inv.with_context(move_action_post_alert=True).action_post()
+        # `check_move_validity=False` (necesario para crear las lineas antes
+        # de que el asiento cuadre) se queda pegado a `inv` -- si se lo
+        # devolviera tal cual, cualquier button_cancel()/button_draft() que
+        # el caller haga despues heredaria ese context y correria con
+        # `_check_balanced` DESACTIVADO, dejando pasar el mismo descuadre
+        # que se quiere detectar. Se limpia antes de devolver el recordset,
+        # como corresponde a un request nuevo en produccion.
+        return inv.with_context(check_move_validity=True)
+
+    def test_46_cancel_vendor_bill_round_per_line_different_dates_stays_balanced(self):
+        """Helpdesk MAXCAM (factura de proveedor 0000186045 y similares):
+        con `tax_calculation_rounding_method = 'round_per_line'` (la
+        config real de MAXCAM, ejercitada por `test_44`), cancelar una
+        factura de PROVEEDOR posted en USD con IVA, cuya `invoice_date`
+        (tasa) y `date` (fecha contable) caen en dias con tasa BCV
+        distinta, no debe descuadrar el asiento.
+
+        Ver test_36/test_37 en test_real_portion.py para el equivalente
+        `out_invoice` de un solo renglon -- ese caso NO reproduce el bug;
+        este si, con `round_per_line` + `in_invoice` + varios renglones
+        con decimales, que es la config real del cliente.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, past_date, fields.Date.today(),
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_46_after_post: {td} != {tc}")
+
+        # En produccion, cancelar ocurre en un request/cursor NUEVO, asi
+        # que `_distribute_final_real_portion` (cacheada por
+        # `self.env.cr.cache[('_real_portion_distributed', move.id)]`
+        # para no repetirse dentro de la MISMA transaccion) corre fresca.
+        # Dentro de un TransactionCase, post y cancel comparten cursor, asi
+        # que sin esto la cancelacion ni siquiera ejercita esa logica.
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.button_cancel()
+
+        self.assertEqual(inv.state, 'cancel')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_46_after_cancel: entry unbalanced after button_cancel "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
+    def test_46b_direct_state_write_to_draft_bypassing_button_draft(self):
+        """MAXCAM no usa el boton Cancelar/Restablecer a borrador: tiene
+        una Accion de servidor ("restablecer factura a borrador") que
+        hace `write({'state': 'draft'})` DIRECTO sobre account.move,
+        saltandose todo lo que `button_draft()` hace ANTES de escribir el
+        estado (`_check_draftable()`, unlink de `analytic_line_ids`,
+        `_detach_attachments()`). Reproduce ese camino exacto para
+        confirmar si el bypass en si mismo -- no solo el write de
+        `state` que ya prueba test_46 via `button_cancel()` -- es lo que
+        dispara el descuadre.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, past_date, fields.Date.today(),
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_46b_after_post: {td} != {tc}")
+
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        # Exactamente lo que hace la Accion de servidor de MAXCAM: un
+        # `write({'state': 'draft'})` crudo, sin pasar por button_draft().
+        inv.write({'state': 'draft'})
+
+        self.assertEqual(inv.state, 'draft')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_46b_after_direct_write: entry unbalanced after a raw "
+                f"write({{'state': 'draft'}}) bypassing button_draft() "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
+    def test_48_cancel_vendor_bill_rate_backfilled_after_posting(self):
+        """Variante de test_46: en VE la tasa BCV del dia exacto de la
+        factura a veces se carga en el sistema DESPUES de haberla
+        contabilizado (se publica con retraso). Al momento de POSTEAR,
+        `invoice_currency_rate` cae al fallback de la tasa vigente MAS
+        RECIENTE anterior a `invoice_date`. Si luego, antes de cancelar,
+        alguien carga la tasa exacta de `invoice_date`, el recompute
+        forzado en cada `button_draft()` (ver test_46) usa una tasa
+        DISTINTA a la que se uso para contabilizar originalmente -- ahi
+        es donde debe manifestarse el descuadre, no con una tasa que se
+        mantiene estable entre post y cancel.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+
+        invoice_date = fields.Date.today() - timedelta(days=26)
+        accounting_date = fields.Date.today()
+        stale_rate_date = invoice_date - timedelta(days=5)
+
+        # Unica tasa disponible AL MOMENTO DE POSTEAR: la de 5 dias antes
+        # de invoice_date (fallback por tasa faltante ese dia).
+        self.env["res.currency.rate"].create({
+            "name": stale_rate_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 170.1122,
+            "company_id": self.company.id,
+        })
+        self.env["res.currency.rate"].create({
+            "name": accounting_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, invoice_date, accounting_date,
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        self.assertAlmostEqual(
+            inv.invoice_currency_rate, 1 / 170.1122, places=6,
+            msg="Sanity check: al postear debia usar el fallback de la tasa "
+                "de 5 dias antes (170.1122), no la de hoy",
+        )
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_48_after_post: {td} != {tc}")
+
+        # Llega la tasa BCV real de invoice_date, publicada con retraso.
+        self.env["res.currency.rate"].create({
+            "name": invoice_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+        # `invoice_currency_rate` es `store=True` y su metodo de computo LEE
+        # `expected_currency_rate` (no-store, pero su valor viejo puede
+        # seguir cacheado en env de la lectura durante el post) -- hay que
+        # invalidar esa cache Y marcar `invoice_currency_rate` a recomputar.
+        inv.invalidate_recordset(['expected_currency_rate'])
+        self.env.add_to_compute(inv._fields['invoice_currency_rate'], inv)
+        self.assertAlmostEqual(
+            inv.invoice_currency_rate, 1 / 187.9401, places=6,
+            msg="Sanity check: ahora que existe la tasa exacta de "
+                "invoice_date, debe usar esa (187.9401), no el fallback",
+        )
+
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.button_cancel()
+
+        self.assertEqual(inv.state, 'cancel')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_48_after_cancel: entry unbalanced after button_cancel "
+                f"with a backfilled invoice_date rate "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
+    def test_47_draft_and_repost_vendor_bill_round_per_line_different_dates(self):
+        """Companion de test_46: mismo escenario pero con `button_draft()`
+        + `action_post()` (sin cancelar), para confirmar que el ciclo
+        completo de reapertura/reconfirmacion tampoco descuadra ni
+        modifica los montos de las lineas.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, past_date, fields.Date.today(),
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        before = {
+            line.id: (line.display_type, round(line.balance, 2))
+            for line in inv.line_ids
+        }
+
+        # Ver comentario equivalente en test_46: simula que button_draft()
+        # corre en un cursor/request nuevo, no en el mismo del post.
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.button_draft()
+
+        self.assertEqual(inv.state, 'draft')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_47_after_draft: entry unbalanced after button_draft "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.with_context(move_action_post_alert=True).action_post()
+
+        self.assertEqual(inv.state, 'posted')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_47_after_repost: entry unbalanced after re-posting "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+        after = {
+            line.id: (line.display_type, round(line.balance, 2))
+            for line in inv.line_ids
+        }
+        self.assertEqual(
+            sorted(before.values()), sorted(after.values()),
+            msg="El ciclo draft->post cambio los balances de las lineas "
+                f"sin motivo. Antes: {before}. Despues: {after}",
         )
