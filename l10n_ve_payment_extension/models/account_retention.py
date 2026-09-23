@@ -52,12 +52,10 @@ class AccountRetention(models.Model):
         "Description",
         size=64,
         default="/",
-        states={"draft": [("readonly", False)]},
         help="Description of the withholding voucher",
     )
     code = fields.Char(
         size=32,
-        states={"draft": [("readonly", False)]},
         help="Code of the withholding voucher",
     )
     state = fields.Selection(
@@ -95,7 +93,6 @@ class AccountRetention(models.Model):
         "res.partner",
         "Social reason",
         required=True,
-        states={"draft": [("readonly", False)]},
         help="Social reason",
         tracking=True,
     )
@@ -103,13 +100,11 @@ class AccountRetention(models.Model):
     correlative = fields.Char(readonly=True)
     date = fields.Date(
         "Voucher Date",
-        states={"draft": [("readonly", False)]},
         help="Date of issuance of the withholding voucher by the external party.",
         default=fields.Date.context_today,
     )
     date_accounting = fields.Date(
         "Accounting Date",
-        states={"draft": [("readonly", False)]},
         default=fields.Date.context_today,
         help=(
             "Date of arrival of the document and date to be used to make the accounting record."
@@ -129,7 +124,6 @@ class AccountRetention(models.Model):
         "account.retention.line",
         "retention_id",
         "retention line",
-        states={"draft": [("readonly", False)]},
         help="Retentions",
     )
 
@@ -251,28 +245,23 @@ class AccountRetention(models.Model):
     def onchange_partner_id(self):
         """
         Load retention lines from invoices with taxes when the partner changes for IVA retentions
-        that are not posted.
+        that are not posted. For ISLR/municipal retentions, existing lines are cleared instead,
+        since they were picked from the previous partner's invoices and no longer apply.
         """
-        # For third-party billing, just re-compute existing line amounts
-        # using the new partner's withholding, without replacing lines
         self._validate_retention_journals()
-        for retention in self.filtered(
-            lambda r: r.state == "draft" and r.partner_id and r.retention_line_ids and r.is_third_party_retention
-        ):
-            retention.retention_line_ids._onchange_move_id()
 
-        standard_retentions = self.filtered(lambda r: not r.is_third_party_retention)
-        if not standard_retentions:
-            return
-
-        for retention in standard_retentions.filtered(
-            lambda r: (r.state, r.type_retention) == ("draft", "iva") and r.partner_id
-        ):
-            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
-                result = retention._load_retention_lines_for_iva_supplier_retention()
-            else:
-                result = retention._load_retention_lines_for_iva_customer_retention()
-            return result
+        for retention in self.filtered(lambda r: r.state == "draft" and r.partner_id):
+            if retention.is_third_party_retention:
+                # For third-party billing, just re-compute existing line amounts
+                # using the new partner's withholding, without replacing lines
+                if retention.retention_line_ids:
+                    retention.retention_line_ids._onchange_move_id()
+            elif retention.type_retention == "iva":
+                if retention.type in ["in_invoice", "in_refund", "in_debit"]:
+                    return retention._load_retention_lines_for_iva_supplier_retention()
+                return retention._load_retention_lines_for_iva_customer_retention()
+            elif retention.retention_line_ids:
+                retention.clear_retention()
 
     def _load_retention_lines_for_iva_supplier_retention(self):
         self.ensure_one()
@@ -1255,6 +1244,24 @@ class AccountRetention(models.Model):
                     raise ValidationError(
                         _("The number must be exactly 14 numeric digits.")
                     )
+
+    @api.constrains("partner_id", "retention_line_ids", "is_third_party_retention")
+    def _check_lines_match_partner(self):
+        for retention in self.filtered(lambda r: not r.is_third_party_retention):
+            mismatched = retention.retention_line_ids.filtered(
+                lambda l: l.move_id and l.move_id.partner_id != retention.partner_id
+            )
+            if mismatched:
+                raise ValidationError(
+                    _(
+                        "All retention lines must belong to invoices of %(partner)s. "
+                        "Invoice(s) %(moves)s belong to a different partner."
+                    )
+                    % {
+                        "partner": retention.partner_id.display_name,
+                        "moves": ", ".join(mismatched.mapped("move_id.name")),
+                    }
+                )
 
     @api.model
     def default_get(self, fields_list):
