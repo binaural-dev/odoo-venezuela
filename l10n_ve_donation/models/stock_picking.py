@@ -37,12 +37,19 @@ class StockPicking(models.Model):
             invoice.write({"is_donation": True})
         return invoice
 
+    def create_multi_invoice(self, pickings):
+        invoice = super().create_multi_invoice(pickings)
+        if invoice and pickings and all(pickings.mapped("is_donation")):
+            invoice.write({"is_donation": True})
+        return invoice
+
     @api.depends("is_donation", "is_dispatch_guide", "operation_code", "location_dest_id")
     def _compute_allowed_reason_ids(self):
         super()._compute_allowed_reason_ids()
+        self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
+        if not self_consumption_reason:
+            return
         for picking in self:
             if picking.is_donation:
-                self_consumption_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_self_consumption", raise_if_not_found=False)
-                if self_consumption_reason:
-                    picking.allowed_reason_ids = [(6, 0, [self_consumption_reason.id])]
-                    picking.transfer_reason_id = self_consumption_reason.id
+                picking.allowed_reason_ids = [(6, 0, [self_consumption_reason.id])]
+                picking.transfer_reason_id = self_consumption_reason.id

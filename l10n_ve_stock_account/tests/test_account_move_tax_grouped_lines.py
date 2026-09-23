@@ -1,30 +1,20 @@
 # -*- coding: utf-8 -*-
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo import Command
+
+from .common import StockAccountTestCommon
 
 
 @tagged("post_install", "-at_install", "test_account_move_tax_grouped_lines")
-class TestAccountMoveTaxGroupedLines(TransactionCase):
+class TestAccountMoveTaxGroupedLines(StockAccountTestCommon):
     """Coverage for `account.move._get_tax_grouped_lines()`."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.company
 
-        # `tax_group_id` has no usable default in a minimal database (no
-        # fiscal localization data loaded), and its compute leaves it empty
-        # in that case -- pass one explicitly to avoid a NOT NULL violation.
-        # Aligned with the company's own fiscal country so the invoice
-        # created below doesn't fail account.move's tax/fiscal-position
-        # compatibility check.
-        cls.country_ve = cls.env.ref("base.ve")
-        cls.company.account_fiscal_country_id = cls.country_ve.id
-        cls.tax_group = cls.env["account.tax.group"].create({
-            "name": "Tax Grouped Lines Test Group",
-            "country_id": cls.country_ve.id,
-        })
-
+        # Two distinct sale taxes (beyond the common `sale_tax`) so lines
+        # can be grouped by different tax sets.
         cls.tax_a = cls.env["account.tax"].create({
             "name": "Tax Group A 16%",
             "amount": 16,

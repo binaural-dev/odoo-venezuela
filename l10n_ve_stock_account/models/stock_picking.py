@@ -1055,7 +1055,6 @@ class StockPicking(models.Model):
             allowed_reason_ids = []
 
             reason_refs = {
-                "donation": "l10n_ve_stock_account.transfer_reason_donation",
                 "sale": "l10n_ve_stock_account.transfer_reason_sale",
                 "transfer_between_warehouses": "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses",
                 "export": "l10n_ve_stock_account.transfer_reason_export",

@@ -2,41 +2,22 @@
 import logging
 from datetime import date, datetime, timedelta
 from unittest.mock import patch
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo.exceptions import UserError, ValidationError
 from odoo import Command
+
+from .common import StockAccountTestCommon
 
 _logger = logging.getLogger(__name__)
 
 
 @tagged("post_install", "-at_install", "test_stock_picking_coverage")
-class TestStockPickingCoverage(TransactionCase):
+class TestStockPickingCoverage(StockAccountTestCommon):
     """Tests to cover previously uncovered branches in stock.picking."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        cls.currency_usd = cls.env.ref("base.USD")
-        cls.currency_usd.active = True
-        cls.currency_vef = cls.env.ref("base.VEF")
-        cls.currency_vef.active = True
-
-        cls.company = cls.env.company
-        cls.company.write({
-            "currency_id": cls.currency_vef.id,
-            "foreign_currency_id": cls.currency_usd.id,
-        })
-
-        # `l10n_ve_sale.action_confirm()` requires a currency rate for the
-        # confirmation date (via `res.currency.rate.compute_rate(...,
-        # raise_if_not_found=True)`) -- a minimal database has none.
-        cls.env["res.currency.rate"].create({
-            "currency_id": cls.currency_usd.id,
-            "company_id": cls.company.id,
-            "name": date.today(),
-            "rate": 1.0 / 380.0,
-        })
 
         # Journals
         cls.sale_journal = cls.env["account.journal"].create({
@@ -54,39 +35,6 @@ class TestStockPickingCoverage(TransactionCase):
             "company_id": cls.company.id,
         })
         cls.company.vendor_journal_id = cls.purchase_journal.id
-
-        # Taxes
-        # `tax_group_id` has no usable default in a minimal database (no
-        # fiscal localization data loaded) -- pass one explicitly to avoid a
-        # NOT NULL violation.
-        cls.country_ve = cls.env.ref("base.ve")
-        # Aligned with the tax/tax-group country so invoices created below
-        # don't fail account.move's tax/fiscal-position compatibility check.
-        cls.company.account_fiscal_country_id = cls.country_ve.id
-        cls.tax_group = cls.env["account.tax.group"].create({
-            "name": "Coverage Tax Group",
-            "country_id": cls.country_ve.id,
-        })
-
-        cls.sale_tax = cls.env["account.tax"].create({
-            "name": "Coverage Sale Tax 16%",
-            "amount": 16,
-            "type_tax_use": "sale",
-            "company_id": cls.company.id,
-            "tax_group_id": cls.tax_group.id,
-            "country_id": cls.country_ve.id,
-        })
-        cls.company.account_sale_tax_id = cls.sale_tax.id
-
-        cls.purchase_tax = cls.env["account.tax"].create({
-            "name": "Coverage Purchase Tax 16%",
-            "amount": 16,
-            "type_tax_use": "purchase",
-            "company_id": cls.company.id,
-            "tax_group_id": cls.tax_group.id,
-            "country_id": cls.country_ve.id,
-        })
-        cls.company.account_purchase_tax_id = cls.purchase_tax.id
 
         # Accounts
         cls.income_account = cls.env["account.account"].create({

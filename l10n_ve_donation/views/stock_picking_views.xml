@@ -10,9 +10,11 @@
                 <field name="is_donation" readonly="1" invisible="not is_donation" force_save="1"/>
             </xpath>
 
-            <!-- Make partner_id readonly when is_donation -->
+            <!-- Make partner_id readonly when is_donation (keeps the base's
+                 state == 'done' guard: position="attributes" replaces the
+                 whole value, it doesn't merge with the base condition) -->
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
-                <attribute name="readonly">order_is_consignment or partner_required or is_donation</attribute>
+                <attribute name="readonly">state == 'done' or order_is_consignment or partner_required or is_donation</attribute>
             </xpath>
 
             <!-- Make outgoing transfer_reason_id readonly when is_donation -->
@@ -20,9 +22,10 @@
                 <attribute name="readonly">is_donation or state == 'done'</attribute>
             </xpath>
 
-            <!-- Hide guide_number when is_donation and no dispatch controls -->
+            <!-- Hide guide_number when there are no dispatch controls (base
+                 condition, preserved) or when it's a donation -->
             <xpath expr="//field[@name='guide_number']" position="attributes">
-                <attribute name="invisible">not dispatch_guide_controls and is_donation</attribute>
+                <attribute name="invisible">not dispatch_guide_controls or is_donation</attribute>
             </xpath>
         </field>
     </record>

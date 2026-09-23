@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 import logging
 from unittest.mock import patch
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo.exceptions import UserError
-from odoo import Command, fields
+from odoo import Command
+
+from .common import StockAccountTestCommon
 
 _logger = logging.getLogger(__name__)
 
 
 @tagged("post_install", "-at_install", "test_create_invoice")
-class TestCreateInvoiceFromPicking(TransactionCase):
+class TestCreateInvoiceFromPicking(StockAccountTestCommon):
     """
     Tests for create_invoice and create_multi_invoice methods
     on stock.picking.
@@ -18,30 +20,6 @@ class TestCreateInvoiceFromPicking(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        # --- Currencies ---
-        cls.currency_usd = cls.env.ref("base.USD")
-        cls.currency_usd.active = True
-
-        cls.currency_vef = cls.env.ref("base.VEF")
-        cls.currency_vef.active = True
-
-        # --- Company ---
-        cls.company = cls.env.company
-        cls.company.write({
-            "currency_id": cls.currency_vef.id,
-            "foreign_currency_id": cls.currency_usd.id,
-        })
-
-        # `l10n_ve_sale.action_confirm()` requires a currency rate for the
-        # confirmation date (via `res.currency.rate.compute_rate(...,
-        # raise_if_not_found=True)`) -- a minimal database has none.
-        cls.env["res.currency.rate"].create({
-            "currency_id": cls.currency_usd.id,
-            "company_id": cls.company.id,
-            "name": fields.Date.today(),
-            "rate": 1.0 / 380.0,
-        })
 
         # --- Journal (required by create_invoice / create_multi_invoice) ---
         cls.sale_journal = cls.env["account.journal"].search(
@@ -55,28 +33,6 @@ class TestCreateInvoiceFromPicking(TransactionCase):
                 "company_id": cls.company.id,
             })
         cls.company.customer_journal_id = cls.sale_journal.id
-
-        # --- Tax ---
-        # `tax_group_id` has no usable default in a minimal database (no
-        # fiscal localization data loaded) -- pass one explicitly to avoid a
-        # NOT NULL violation.
-        cls.country_ve = cls.env.ref("base.ve")
-        # Aligned with the tax/tax-group country so invoices created below
-        # don't fail account.move's tax/fiscal-position compatibility check.
-        cls.company.account_fiscal_country_id = cls.country_ve.id
-        cls.tax_group = cls.env["account.tax.group"].create({
-            "name": "Create Invoice Test Tax Group",
-            "country_id": cls.country_ve.id,
-        })
-        cls.sale_tax = cls.env["account.tax"].create({
-            "name": "Tax 16%",
-            "amount": 16,
-            "type_tax_use": "sale",
-            "company_id": cls.company.id,
-            "tax_group_id": cls.tax_group.id,
-            "country_id": cls.country_ve.id,
-        })
-        cls.company.account_sale_tax_id = cls.sale_tax.id
 
         # --- Income Account (required for invoice lines) ---
         cls.income_account = cls.env["account.account"].create({

@@ -1,10 +1,12 @@
 from odoo import Command, fields
 from odoo.exceptions import ValidationError
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
+
+from odoo.addons.l10n_ve_stock_account.tests.common import StockAccountTestCommon
 
 
 @tagged("post_install", "-at_install", "l10n_ve_donation")
-class TestDonationCreditNoteRegression(TransactionCase):
+class TestDonationCreditNoteRegression(StockAccountTestCommon):
     """Ticket #13965: `l10n_ve_invoice` added a constrains that blocks a
     credit note (out_refund) from using a product absent on the invoice it
     reverses. `l10n_ve_donation._reverse_moves()` builds exactly that kind
@@ -18,7 +20,6 @@ class TestDonationCreditNoteRegression(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.ref("base.main_company")
 
         cls.expense_account = cls.env["account.account"].search(
             [("account_type", "=", "expense"), ("company_ids", "in", cls.company.ids)],
@@ -29,38 +30,6 @@ class TestDonationCreditNoteRegression(TransactionCase):
             "account_type": "expense",
         })
         cls.company.donation_account_id = cls.expense_account.id
-
-        # `l10n_ve_accountant` requires every product to resolve exactly one
-        # sale/purchase tax, either explicitly or via the company's default
-        # fiscal configuration -- set the latter so the products below
-        # (created without taxes_id/supplier_taxes_id) don't raise a
-        # fiscal-inconsistency UserError. `tax_group_id` has no usable
-        # default in a minimal database (no fiscal localization data
-        # loaded), so pass one explicitly too.
-        if not cls.company.account_sale_tax_id or not cls.company.account_purchase_tax_id:
-            country_ve = cls.env.ref("base.ve")
-            tax_group = cls.env["account.tax.group"].create({
-                "name": "Donation Credit Note Test Tax Group",
-                "country_id": country_ve.id,
-            })
-        if not cls.company.account_sale_tax_id:
-            cls.company.account_sale_tax_id = cls.env["account.tax"].create({
-                "name": "Donation Credit Note Test Sale Tax",
-                "amount": 16,
-                "type_tax_use": "sale",
-                "company_id": cls.company.id,
-                "tax_group_id": tax_group.id,
-                "country_id": country_ve.id,
-            })
-        if not cls.company.account_purchase_tax_id:
-            cls.company.account_purchase_tax_id = cls.env["account.tax"].create({
-                "name": "Donation Credit Note Test Purchase Tax",
-                "amount": 16,
-                "type_tax_use": "purchase",
-                "company_id": cls.company.id,
-                "tax_group_id": tax_group.id,
-                "country_id": country_ve.id,
-            })
 
         # An income account is required on the invoice-line's product so
         # the generated `account.move.line` has a non-null `account_id`

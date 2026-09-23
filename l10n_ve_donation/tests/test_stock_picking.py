@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo.exceptions import UserError
 from odoo import Command
 
+from odoo.addons.l10n_ve_stock_account.tests.common import StockAccountTestCommon
+
 
 @tagged("post_install", "-at_install", "l10n_ve_donation")
-class TestDonationStockPicking(TransactionCase):
+class TestDonationStockPicking(StockAccountTestCommon):
     """Coverage for the `is_donation` field and related overrides that
     `l10n_ve_donation` adds to `stock.picking` (moved here from
     `l10n_ve_stock_account` -- see that module's `test_stock_picking.py`)."""
@@ -14,21 +16,7 @@ class TestDonationStockPicking(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
 
-        cls.company = cls.env.company
         cls.company_partner = cls.company.partner_id
-
-        # `l10n_ve_accountant`'s tax-totals computation needs a foreign
-        # currency configured on the company to resolve `currency_id` to a
-        # singleton -- without it, a sale order line write triggers a
-        # dual-currency compute that raises on an empty recordset.
-        currency_usd = cls.env.ref("base.USD")
-        currency_usd.active = True
-        currency_vef = cls.env.ref("base.VEF")
-        currency_vef.active = True
-        cls.company.write({
-            "currency_id": currency_vef.id,
-            "foreign_currency_id": currency_usd.id,
-        })
 
         cls.sale_journal = cls.env["account.journal"].search(
             [("type", "=", "sale"), ("company_id", "=", cls.company.id)], limit=1
@@ -41,39 +29,6 @@ class TestDonationStockPicking(TransactionCase):
                 "company_id": cls.company.id,
             })
         cls.company.customer_journal_id = cls.sale_journal.id
-
-        # `l10n_ve_accountant` requires every product to resolve exactly one
-        # sale/purchase tax, either explicitly or via the company's default
-        # fiscal configuration -- set the latter so the product below (with
-        # taxes_id/supplier_taxes_id cleared) doesn't raise a
-        # fiscal-inconsistency UserError.
-        # `tax_group_id` has no usable default in a minimal database (no
-        # fiscal localization data loaded) -- pass one explicitly to avoid a
-        # NOT NULL violation.
-        if not cls.company.account_sale_tax_id or not cls.company.account_purchase_tax_id:
-            country_ve = cls.env.ref("base.ve")
-            tax_group = cls.env["account.tax.group"].create({
-                "name": "Donation Picking Test Tax Group",
-                "country_id": country_ve.id,
-            })
-        if not cls.company.account_sale_tax_id:
-            cls.company.account_sale_tax_id = cls.env["account.tax"].create({
-                "name": "Donation Picking Test Sale Tax",
-                "amount": 16,
-                "type_tax_use": "sale",
-                "company_id": cls.company.id,
-                "tax_group_id": tax_group.id,
-                "country_id": country_ve.id,
-            })
-        if not cls.company.account_purchase_tax_id:
-            cls.company.account_purchase_tax_id = cls.env["account.tax"].create({
-                "name": "Donation Picking Test Purchase Tax",
-                "amount": 16,
-                "type_tax_use": "purchase",
-                "company_id": cls.company.id,
-                "tax_group_id": tax_group.id,
-                "country_id": country_ve.id,
-            })
 
         cls.income_account = cls.env["account.account"].search(
             [("account_type", "=", "income"), ("company_ids", "in", cls.company.ids)],
@@ -240,3 +195,42 @@ class TestDonationStockPicking(TransactionCase):
         picking_b = self._create_outgoing_donation_picking(validate=True)
         with self.assertRaises(ValueError):
             (picking_a | picking_b).create_invoice()
+
+    # ── create_multi_invoice ──
+
+    def test_create_multi_invoice_marks_invoice_as_donation(self):
+        picking_a = self._create_outgoing_donation_picking(validate=True)
+        picking_b = self._create_outgoing_donation_picking(validate=True)
+        pickings = picking_a | picking_b
+
+        invoice = picking_a.create_multi_invoice(pickings)
+
+        self.assertTrue(invoice)
+        self.assertTrue(invoice.is_donation)
+
+    def test_create_multi_invoice_does_not_mark_mixed_batch_as_donation(self):
+        donation_picking = self._create_outgoing_donation_picking(validate=True)
+        so = self._create_sale_order(is_donation=False, partner=self.partner)
+        picking_type_out = self.env.ref("stock.picking_type_out")
+        location_customers = self.env.ref("stock.stock_location_customers")
+        regular_picking = self.env["stock.picking"].create({
+            "partner_id": so.partner_id.id,
+            "picking_type_id": picking_type_out.id,
+            "location_id": self.location_stock.id,
+            "location_dest_id": location_customers.id,
+            "sale_id": so.id,
+            "move_ids": [Command.create({
+                "product_id": self.product.id,
+                "product_uom_qty": 1,
+                "location_id": self.location_stock.id,
+                "location_dest_id": location_customers.id,
+            })],
+        })
+        regular_picking.action_confirm()
+        regular_picking.move_ids.write({"quantity": 1, "picked": True})
+        regular_picking.button_validate()
+        pickings = donation_picking | regular_picking
+
+        invoice = donation_picking.create_multi_invoice(pickings)
+
+        self.assertFalse(invoice.is_donation)
