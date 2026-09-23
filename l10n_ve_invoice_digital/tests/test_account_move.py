@@ -1751,11 +1751,22 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         details = self.env['tfhka.document.service']._prepare_detail_lines(inv)
         self.assertTrue(len(details) > 0)
-        # binaural_third_party_invoice_digital overrides indicadorBienoServicio
-        # on every line, unconditionally, once installed: it's always based on
-        # product.is_third_party_product, not product.type -- self.product is
-        # a service but isn't a third-party product, so it's now "1".
-        self.assertEqual(details[0]["indicadorBienoServicio"], "1")
+        # binaural_third_party_invoice_digital (a separate, optional module)
+        # overrides indicadorBienoServicio on every line, unconditionally,
+        # once installed: it's always based on product.is_third_party_product,
+        # not product.type. This test lives in the base module and must pass
+        # whether or not that addon happens to be installed alongside it, so
+        # the expectation is derived from the actual installed state instead
+        # of hardcoding either case: self.product is a service but isn't a
+        # third-party product, so with the addon it's "1", without it "2".
+        third_party_addon_installed = bool(
+            self.env["ir.module.module"].search([
+                ("name", "=", "binaural_third_party_invoice_digital"),
+                ("state", "=", "installed"),
+            ])
+        )
+        expected = "1" if third_party_addon_installed else "2"
+        self.assertEqual(details[0]["indicadorBienoServicio"], expected)
 
     def test_72_get_document_identification_no_affected_invoice(self):
         inv = self._create_invoice(
