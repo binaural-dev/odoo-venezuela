@@ -42,6 +42,23 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Campo: Descuento por línea en el ticket fiscal (comando q-) -->
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_pos_mf_line_discount_via_q_command">
+                    <div class="o_setting_left_pane">
+                        <field name="pos_mf_line_discount_via_q_command"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="pos_mf_line_discount_via_q_command"/>
+                        <div class="text-muted">
+                            Imprime el descuento de cada línea como "DESC" con su
+                            monto exacto debajo del producto, usando el comando
+                            'q-' del protocolo TFHKA. Actívalo solo después de
+                            validar que la impresora fiscal de este cliente acepta
+                            el comando.
+                        </div>
+                    </div>
+                </div>
             </xpath>
         </field>
     </record>
