@@ -216,7 +216,44 @@ class AccountMove(models.Model):
         queue) so a failure here never touches tfhka_digitalization_state."""
         for move in self:
             move._tfhka_validate_sequence_before_queue()
+        self._check_tfhka_payment_required()
         return super().action_tfhka_generate_digital()
+
+    def _check_tfhka_payment_required(self):
+        """In 'cash' mode, block digitalization until the invoice is paid.
+
+        Same criteria as binaural_unidigital.AccountMove.
+        _check_unidigital_payment_required: accepts ``paid``, ``in_payment``
+        and ``reversed`` as satisfying the "paid" requirement, excludes
+        credit notes (``out_refund``), and only applies in "digitalization
+        with payment" mode (``digitalization_with_payment_tfhka``) -- the
+        exact TFHKA analog of ``unidigital_invoice_payment_register``. All
+        invoices are validated together and reported in a single error
+        listing every offending invoice.
+
+        Only called from ``action_tfhka_generate_digital()``: in payment
+        mode that's the sole entry point to the queue (see the docstring
+        above), so gating it there is enough -- the normal/automatic flow
+        never enqueues while this mode is active (see
+        ``_tfhka_is_eligible_for_digitalization``).
+        """
+        unpaid = self.filtered(
+            lambda invoice: (
+                invoice.move_type != "out_refund"
+                and invoice.company_id.digitalization_with_payment_tfhka
+                and invoice.company_id.payment_mode_tfhka == "cash"
+                and invoice.payment_state not in ("paid", "in_payment", "reversed")
+            )
+        )
+        if unpaid:
+            raise ValidationError(
+                _(
+                    "The following invoices must have their payment in "
+                    "process, be fully paid, or be reversed before they can "
+                    "be digitalized:\n%s",
+                    "\n".join(unpaid.mapped("name")),
+                )
+            )
 
     def _tfhka_validate_sequence_before_queue(self):
         """Sequence guard exclusive to "digitalization with payment" mode
