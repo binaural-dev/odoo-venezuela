@@ -18,8 +18,9 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
             "out_invoice", self.sale_journal,
         )
         inv.invoice_date = invoice_date
+        inv.invoice_date_display = invoice_date
         inv.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
-        inv.action_post()
+        inv.with_context(move_action_post_alert=True).action_post()
         return inv
 
     def _make_sale_iva_retention(self, invoice, retention_date):
