@@ -11,4 +11,5 @@ from . import test_accounting_reports
 from . import test_refund_origin_validation
 from . import test_account_move_actions_merge
 from . import test_debit_note_fiscal_period_warning
+from . import test_ti_15211_invoice_date_timezone
 from . import test_account_move_line_fixed_discount
