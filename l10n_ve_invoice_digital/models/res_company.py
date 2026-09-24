@@ -18,6 +18,20 @@ class ResCompany(models.Model):
     dispatch_guide_digital_tfhka = fields.Boolean()
     sequence_validation_tfhka = fields.Boolean(default=True)
     digitalization_with_payment_tfhka = fields.Boolean(default=False)
+    payment_mode_tfhka = fields.Selection(
+        [
+            ("credit", "Credit Payment"),
+            ("cash", "Cash Payment"),
+        ],
+        string="TFHKA Payment Mode",
+        default="credit",
+        help="Only applies when 'Digital invoicing with payment "
+        "registration' is enabled. 'Credit Payment' keeps the current flow "
+        "(the invoice can be digitalized with or without a registered "
+        "payment). 'Cash Payment' blocks digitalization until the "
+        "invoice's payment is in process, fully paid, or the invoice has "
+        "been reversed.",
+    )
     # Habilita el flag multi-moneda a nivel compañía.
     # Cuando está activo, aparece el checkbox "Multi-Currency Invoice" en cada
     # factura, y dentro de este un selector VES/USD para elegir la moneda de
@@ -38,7 +52,19 @@ class ResCompany(models.Model):
         default="free_form",
     )
 
-    
+    @api.onchange("digitalization_with_payment_tfhka")
+    def _onchange_digitalization_with_payment_tfhka(self):
+        for company in self:
+            if not company.digitalization_with_payment_tfhka:
+                company.payment_mode_tfhka = "credit"
+
+    def write(self, vals):
+        if "digitalization_with_payment_tfhka" in vals and not vals[
+            "digitalization_with_payment_tfhka"
+        ]:
+            vals["payment_mode_tfhka"] = "credit"
+        return super().write(vals)
+
     def generate_token_tfhka(self):
         self.ensure_one()
         self._validate_tfhka_credentials()

@@ -2716,3 +2716,81 @@ class TestAccountMoveApiCalls(TransactionCase):
         igtf_line = next(t for t in local if t["codigoTotalImp"] == "IGTF")
         self.assertEqual(igtf_line["alicuotaImp"], "2.0")
 
+    # ------------------------------------------------------------------
+    # _check_tfhka_payment_required(): modo de pago contado/credito
+    # (port de binaural_unidigital._check_unidigital_payment_required)
+    # ------------------------------------------------------------------
+
+    def test_194_check_tfhka_payment_required_cash_blocks_unpaid(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            invoice._check_tfhka_payment_required()
+
+        # Las notas de credito quedan fuera de esta validacion: deben poder
+        # digitalizarse aunque la factura asociada no este pagada.
+        credit_note = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+        credit_note._check_tfhka_payment_required()
+
+    def test_195_check_tfhka_payment_required_cash_allows_paid(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "paid"
+        invoice._check_tfhka_payment_required()
+
+    def test_196_check_tfhka_payment_required_cash_allows_in_payment(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "in_payment"
+        invoice._check_tfhka_payment_required()
+
+    def test_197_check_tfhka_payment_required_cash_allows_reversed(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "reversed"
+        invoice._check_tfhka_payment_required()
+
+    def test_198_check_tfhka_payment_required_credit_mode_ignores_payment(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice._check_tfhka_payment_required()
+
+    def test_199_check_tfhka_payment_required_noop_without_payment_first_mode(self):
+        self.company.digitalization_with_payment_tfhka = False
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice._check_tfhka_payment_required()
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_200_generate_document_digital_cash_blocks_unpaid(self, mock_call):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            invoice.generate_document_digital()
+        mock_call.assert_not_called()
+        self.assertFalse(invoice.is_digitalized)
+
