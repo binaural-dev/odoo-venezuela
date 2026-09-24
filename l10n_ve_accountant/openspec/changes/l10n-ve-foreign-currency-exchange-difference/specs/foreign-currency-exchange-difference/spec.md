@@ -181,3 +181,102 @@ ningún asiento de diferencial alterno.
 - **WHEN** se concilian con `no_exchange_difference=True` en el contexto
 - **THEN** el sistema SHALL NOT crear ningún asiento de diferencial alterno,
   aunque exista una diferencia real de tasa
+
+## MODIFIED Requirements (ronda 2)
+
+### Requirement: El monto alterno se deriva del monto fijo de cada línea, no de una tasa
+
+El sistema SHALL calcular el diferencial alterno de cada parcial a partir
+de la proporción del residual en moneda de compañía consumido, aplicada al
+monto alterno FIJO (`foreign_debit`/`foreign_credit`) ya guardado en cada
+línea — nunca recalculando por multiplicación de tasa.
+
+#### Scenario: Liquidación completa 1 a 1 con tasas no limpias
+
+- **GIVEN** una factura con `foreign_debit` fijo y un pago con
+  `foreign_credit` fijo, ambos ya redondeados independientemente
+- **WHEN** el pago liquida el 100% del residual en un solo parcial
+- **THEN** el diferencial SHALL ser exactamente `foreign_debit − foreign_credit`,
+  sin ninguna aproximación por tasa
+
+#### Scenario: Varios parciales no divisibles limpio sobre la misma línea
+
+- **GIVEN** una línea liquidada en 3 o más parciales cuyos montos no dividen
+  limpio el residual
+- **WHEN** se suman los diferenciales alternos de todos los parciales
+- **THEN** la suma SHALL ser exactamente igual al `foreign_debit`/
+  `foreign_credit` fijo completo de la línea, sin residuo de redondeo
+
+### Requirement: La reversión invierte también el monto alterno
+
+El sistema SHALL invertir `foreign_debit`/`foreign_credit` en el asiento de
+reversión, exactamente igual a como Odoo invierte `balance`/`amount_currency`
+— core no tiene conocimiento de estos campos propios y por defecto no los
+toca, dejando la reversión sin cancelar el monto alterno original.
+
+#### Scenario: Revertir un asiento standalone o combinado
+
+- **GIVEN** un asiento de diferencial alterno con `foreign_debit`/
+  `foreign_credit` en sus líneas
+- **WHEN** se revierte (`_reverse_moves`, cualquier camino)
+- **THEN** el asiento de reversión SHALL tener esos campos exactamente
+  invertidos línea por línea, no en cero ni duplicados con el mismo signo
+
+### Requirement: La reversión tiene una red de seguridad propia
+
+Además del mecanismo nativo (`exchange_move_id`), el sistema SHALL verificar
+en `account.partial.reconcile.unlink()` que el asiento alterno efectivamente
+se revirtió, y forzarlo si no — porque un módulo de terceros puede romper la
+conciliación por un camino que no dispara la reversión nativa de forma
+confiable.
+
+#### Scenario: Un módulo de terceros rompe la conciliación por otro camino
+
+- **GIVEN** un asiento alterno enlazado a un partial vía `exchange_move_id`
+- **WHEN** ese partial se elimina por un camino que no es el botón estándar
+  "Unreconcile" (ej. `remove_move_reconcile()` invocado desde otro módulo)
+- **THEN** el sistema SHALL igual garantizar que el asiento alterno quede
+  revertido
+
+## ADDED Requirements (ronda 2)
+
+### Requirement: El standalone es visible en el widget "Pagos" de la factura
+
+El sistema SHALL agregar una fila sintética por cada asiento standalone
+activo en `invoice_payments_widget`, con el monto y la moneda alterna
+correctos — enganchado en `_get_all_reconciled_invoice_partials`, el único
+método que las variantes de `_compute_payments_widget_reconciled_info`
+(core, `l10n_ve_igtf`, `l10n_ve_payment_extension`) llaman en común.
+
+#### Scenario: Factura con standalone activo
+
+- **GIVEN** una factura con un asiento standalone posteado y no revertido
+- **WHEN** se abre la factura
+- **THEN** el widget "Pagos" SHALL mostrar una fila con el monto alterno
+  correcto
+
+### Requirement: El standalone es visible en "Reconciled Items"
+
+El sistema SHALL ampliar el dominio de `open_reconcile_view` para incluir
+la línea de cierre (cuenta cobrar/pagar) del asiento standalone — nunca la
+línea de pérdida/ganancia, que no es la cuenta del documento liquidado.
+
+#### Scenario: Abrir "Reconciled Items" desde la factura o desde el pago
+
+- **GIVEN** un asiento standalone ligado a una factura y a un pago
+- **WHEN** se abre "Reconciled Items" desde cualquiera de los dos documentos
+- **THEN** el sistema SHALL incluir la línea de cierre del standalone en el
+  dominio, sin importar desde qué lado se abrió
+
+### Requirement: Un asiento revertido deja de mostrarse
+
+El sistema SHALL excluir de ambas vías de visibilidad (widget de Pagos,
+"Reconciled Items") cualquier asiento alterno con `reversal_move_ids`
+seteado — un asiento revertido se queda `posted` por diseño, y sin este
+filtro sigue apareciendo como si la liquidación siguiera activa.
+
+#### Scenario: Factura desconciliada después de tener un standalone
+
+- **GIVEN** una factura con un asiento standalone ya revertido
+- **WHEN** se abre la factura o "Reconciled Items"
+- **THEN** el sistema SHALL NOT mostrar ninguna fila ni línea de ese asiento

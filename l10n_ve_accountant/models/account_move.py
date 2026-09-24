@@ -1904,6 +1904,66 @@ class AccountMove(models.Model):
             lines.browse(line_id).balance = new_balance
             remaining_units -= units
 
+    # `_get_all_reconciled_invoice_partials` is the one method every
+    # `_compute_payments_widget_reconciled_info` variant calls (core's,
+    # and `l10n_ve_igtf`'s from-scratch reimplementation that never calls
+    # `super()`) -- the only honest hook to surface the standalone entry.
+    def _get_all_reconciled_invoice_partials(self):
+        """Adds the standalone alt-diff entry as a synthetic partial (it
+        never reconciles by design, so core's own SQL never finds it).
+        `is_exchange=True` hides the dead "Unreconcile" button; accepted
+        cost is the row's currency getting hardcoded to VEF downstream
+        (see openspec for the full trade-off and the combined-case gap).
+        """
+        self.ensure_one()
+        res = super()._get_all_reconciled_invoice_partials()
+
+        standalone_entries = self.env['account.move'].sudo().search([
+            ('l10n_ve_exchange_foreign_source_move_id', '=', self.id),
+            ('state', '=', 'posted'),
+            # A reversed entry stays `posted` by design (see
+            # `account_partial_reconcile.py`, "reversed, not cancelled")
+            # -- it must stop showing here the moment it's reversed,
+            # since the settlement it was tracking is gone.
+            ('reversal_move_ids', '=', False),
+        ])
+        for entry in standalone_entries:
+            closing_line = entry.line_ids.filtered(
+                lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+            )[:1]
+            if not closing_line:
+                continue
+            alt_amount = abs(closing_line.foreign_debit - closing_line.foreign_credit)
+            if not alt_amount:
+                continue
+            res.append({
+                'aml_id': closing_line.id,
+                'partial_id': False,
+                'amount': alt_amount,
+                'currency': entry.foreign_currency_id,
+                'aml': closing_line,
+                'is_exchange': True,  # See docstring above: hides "Unreconcile".
+            })
+        return res
+
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        """EXTENDS core: core's reversal negates `balance`/`amount_currency`
+        but knows nothing about `foreign_debit`/`foreign_credit` (this
+        module's fields), so those either double up or zero out instead of
+        cancelling. Swaps them explicitly per line, matched positionally
+        against the original (see openspec for the full failure analysis).
+        """
+        reverse_moves = super()._reverse_moves(default_values_list=default_values_list, cancel=cancel)
+        for original, reversal in zip(self, reverse_moves):
+            for orig_line, rev_line in zip(original.line_ids, reversal.line_ids):
+                if orig_line.foreign_debit or orig_line.foreign_credit:
+                    rev_line.write({
+                        'foreign_debit': orig_line.foreign_credit,
+                        'foreign_credit': orig_line.foreign_debit,
+                        'not_foreign_recalculate': True,
+                    })
+        return reverse_moves
+
     @api.ondelete(at_uninstall=False)
     def _unlink_except_posted_or_was_posted(self):
         for move in self:
