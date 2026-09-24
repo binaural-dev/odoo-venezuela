@@ -222,6 +222,49 @@ nativo ya hizo el trabajo: la condición `move.state == 'posted' and not
 move.reversal_move_ids` es falsa en ese caso porque el asiento ya quedó
 revertido por el core.
 
+## § widget de Pagos — símbolo de moneda incorrecto en la fila standalone (fix JS)
+
+Bug visible: la fila sintética del asiento standalone en el widget "Pagos" de
+la factura mostraba "Bs.F 0,23" en vez de "$ 0,23". Causa raíz: el componente
+OWL de core (`account.AccountPaymentField`,
+`@account/components/account_payment_field/account_payment_field`) arma
+`value.amount_formatted = formatMonetary(value.amount, { currencyId:
+value.currency_id })`, y `value.currency_id` llega ya hardcodeado a la
+moneda de compañía para CUALQUIER fila `is_exchange=True`
+(`_compute_payments_widget_reconciled_info`, core -- ver § arriba). No se
+puede arreglar del lado de ese método: `l10n_ve_igtf` lo reimplementa desde
+cero sin llamar a `super()`, así que cualquier override ahí queda bloqueado.
+
+Solución: parche de `AccountPaymentField` en
+`static/src/components/payment_field/payment_field.js`. Detecta la fila
+propia por la combinación `partial_id === false && is_exchange === true`
+(única: toda fila `is_exchange` nativa de Odoo siempre trae un `partial_id`
+real, ver `account/models/account_move.py::_get_all_reconciled_invoice_partials`
+del core). No hicieron falta campos nuevos en `account.move`:
+`foreign_debit`/`foreign_credit`/`foreign_currency_id` ya son campos reales y
+`store=True` en `account.move.line` desde el commit original de esta
+feature -- el JS los lee directo por `orm.searchRead` sobre
+`account.move.line` (filtrando por `move_id` y `account_id.account_type in
+(asset_receivable, liability_payable)`, el mismo patrón de "línea de cierre"
+que ya usa `_get_all_reconciled_invoice_partials`), sin pasar por
+`account.move` para nada.
+
+Timing sin condición de carrera visible: `getInfo()` es síncrono y se llama
+inline desde el template (`t-value="this.getInfo()"`), así que no puede
+esperar el RPC. El resultado se guarda en un `useState` cacheado por
+`move_id`, poblado desde `onWillStart`/`onWillUpdateProps`. El primer render
+sale con el valor por defecto (moneda de compañía, el mismo bug de siempre);
+en cuanto el RPC resuelve, escribir en el `useState` reactivo dispara un
+re-render que corrige `amount_formatted` -- en la práctica, sin parpadeo
+perceptible para el usuario.
+
+**Verificado con datos reales** (DB temporal, factura VEF + pago USD que
+dispara el standalone, sin necesidad de navegador): la fila cruda del widget
+traía `{'amount': 0.5, 'currency_id': <VEF>}` (mostraría "0,50 Bs.F"); el
+`searchRead` que hace el JS sobre esa misma línea devuelve `{'foreign_debit':
+0.0, 'foreign_credit': 0.5, 'foreign_currency_id': <USD>}` -- mismo monto
+(0.5), moneda corregida a USD ("0,50 $"). DB temporal eliminada al terminar.
+
 ## § Bug de redondeo reportado en producción (motivó `_foreign_exposure_at_residual`)
 
 Caso real: factura de 133,00 VEF reservada a 8,65, liquidada en un solo

@@ -156,3 +156,29 @@
       del módulo, todos en verde
 - [x] 6.10 Comentarios extensos agregados durante esta ronda recortados a
       ≤4 líneas; detalle completo migrado a `design-notes.md`
+
+## 7. Símbolo de moneda incorrecto en el widget de Pagos (fix frontend)
+
+- [x] 7.1 Detectado: la fila sintética del standalone (6.4/6.5) mostraba
+      "Bs.F 0,23" en vez de "$ 0,23" — `is_exchange=True` hace que el
+      renderer (compartido, no tocable) etiquete el monto con la moneda de
+      compañía sin importar qué moneda le pasemos
+- [x] 7.2 Confirmado que no hay forma de resolverlo del lado Python: el
+      método que arma esa etiqueta (`_compute_payments_widget_reconciled_info`)
+      está bloqueado por la reimplementación de `l10n_ve_igtf` (ver § 6.4)
+- [x] 7.3 Resuelto con un parche de frontend (`patch()` de Odoo, mismo
+      patrón que ya usa este módulo en `tax_totals.js`, sin tocar ningún
+      archivo de core): `static/src/components/payment_field/payment_field.js`,
+      extiende `AccountPaymentField.getInfo()`
+- [x] 7.4 Sin campos nuevos en `account.move` — `foreign_debit`/
+      `foreign_credit`/`foreign_currency_id` ya son campos reales en
+      `account.move.line` desde el commit original; el JS los lee directo
+      por `orm.searchRead`
+- [x] 7.5 Verificado con datos reales en una DB temporal (sin necesidad de
+      navegador): misma consulta que hace el JS, confirmado que devuelve el
+      monto correcto (0,5) con la moneda alterna correcta (USD) en vez de
+      la de compañía (VEF) — ver `design-notes.md` para el detalle
+- [x] 7.6 Sin tests automatizados de JS (no hay infraestructura de tests
+      frontend en este módulo); validado con `node --check` (sintaxis) y la
+      suite Python completa (244 tests, sin cambios ya que no se tocó
+      ningún modelo)
