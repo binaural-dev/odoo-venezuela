@@ -3290,3 +3290,125 @@ class TestAccountMoveSequenceValidation(TransactionCase):
         self.assertEqual(inv_b.tfhka_digitalization_state, "none")
 
 
+@tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "tfhka_payment_mode")
+class TestAccountMovePaymentModeRequired(TransactionCase):
+    """_check_tfhka_payment_required() -- TFHKA analog of
+    binaural_unidigital.AccountMove._check_unidigital_payment_required.
+    Same fixture shape as TestAccountMoveSequenceValidation: a light,
+    directly-posted invoice (state/name assigned by hand) is enough, since
+    the check only reads move_type/company_id/payment_state/name."""
+
+    def setUp(self):
+        super().setUp()
+        self.env.user.tz = "America/Caracas"
+        self.company = self.env.ref("base.main_company")
+        self.company.write({
+            "invoice_digital_tfhka": True,
+            "digitalization_with_payment_tfhka": True,
+            "payment_mode_tfhka": "cash",
+            "url_tfhka": "https://api.tfhka.com",
+            "token_auth_tfhka": "token_fake",
+            "country_id": self.env.ref("base.ve").id,
+        })
+
+        seq = self.env["ir.sequence"].create({"name": "Sec Test", "prefix": "INV/", "padding": 4})
+        self.journal = self.env["account.journal"].create({
+            "name": "Diario Digital Test",
+            "code": "DDT",
+            "type": "sale",
+            "company_id": self.company.id,
+            "digital_invoice": True,
+            "sequence_id": seq.id,
+        })
+        self.partner = self.env["res.partner"].create({
+            "name": "Cliente Test",
+            "vat": "J12345678",
+            "prefix_vat": "J",
+            "country_id": self.env.ref("base.ve").id,
+            "phone": "04141234567",
+            "email": "test@test.com",
+            "street": "Calle Test",
+        })
+        self.tax_group = self.env["account.tax.group"].create({"name": "IVA 16%"})
+        self.tax_iva16 = self.env["account.tax"].create({
+            "name": "IVA 16%",
+            "amount": 16,
+            "amount_type": "percent",
+            "type_tax_use": "sale",
+            "tax_group_id": self.tax_group.id,
+        })
+        self.acc_income = self.env["account.account"].create({
+            "name": "Ingresos",
+            "code": "4001",
+            "account_type": "income",
+            "company_ids": [Command.link(self.company.id)],
+        })
+
+    def _create_invoice(self, move_type="out_invoice"):
+        prod = self.env["product.product"].create({
+            "name": "Prod",
+            "type": "service",
+            "list_price": 100,
+            "taxes_id": [Command.set([self.tax_iva16.id])],
+        })
+        inv = self.env["account.move"].create({
+            "move_type": move_type,
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [(0, 0, {
+                "product_id": prod.id,
+                "quantity": 1,
+                "price_unit": 100,
+                "account_id": self.acc_income.id,
+                "tax_ids": [Command.set([self.tax_iva16.id])],
+            })],
+        })
+        inv.write({
+            "state": "posted",
+            "name": self.journal.sequence_id.next_by_id(),
+        })
+        return inv
+
+    def test_cash_blocks_unpaid(self):
+        invoice = self._create_invoice()
+        with self.assertRaises(ValidationError):
+            invoice._check_tfhka_payment_required()
+
+        # Las notas de credito quedan fuera de esta validacion: deben poder
+        # digitalizarse aunque la factura asociada no este pagada.
+        credit = self._create_invoice(move_type="out_refund")
+        credit._check_tfhka_payment_required()
+
+    def test_cash_allows_paid(self):
+        invoice = self._create_invoice()
+        invoice.payment_state = "paid"
+        invoice._check_tfhka_payment_required()
+
+    def test_cash_allows_in_payment(self):
+        invoice = self._create_invoice()
+        invoice.payment_state = "in_payment"
+        invoice._check_tfhka_payment_required()
+
+    def test_cash_allows_reversed(self):
+        invoice = self._create_invoice()
+        invoice.payment_state = "reversed"
+        invoice._check_tfhka_payment_required()
+
+    def test_credit_mode_ignores_payment(self):
+        self.company.payment_mode_tfhka = "credit"
+        invoice = self._create_invoice()
+        invoice._check_tfhka_payment_required()
+
+    def test_noop_without_payment_first_mode(self):
+        self.company.digitalization_with_payment_tfhka = False
+        invoice = self._create_invoice()
+        invoice._check_tfhka_payment_required()
+
+    def test_action_tfhka_generate_digital_cash_blocks_unpaid(self):
+        invoice = self._create_invoice()
+        with self.assertRaises(ValidationError):
+            invoice.action_tfhka_generate_digital()
+        self.assertEqual(invoice.tfhka_digitalization_state, "none")
+
+
