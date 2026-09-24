@@ -20,6 +20,10 @@ class ProductTemplate(models.Model):
         compute="_compute_show_physical_locations",
     )
 
+    show_physical_relocation_reserved_warning = fields.Boolean(
+        compute="_compute_show_physical_relocation_reserved_warning",
+    )
+
     quantity = fields.Float(
         compute="_compute_available_quantity",
         help="The Availability of the product to sell.",
@@ -55,6 +59,37 @@ class ProductTemplate(models.Model):
     def _compute_show_physical_locations(self):
         for product in self:
             product.show_physical_locations = self.env.company.use_alternate_locations
+
+    @api.depends("physical_locations_ids")
+    def _compute_show_physical_relocation_reserved_warning(self):
+        for product in self:
+            product.show_physical_relocation_reserved_warning = (
+                product._has_reserved_stock_in_replaced_locations()
+            )
+
+    def _has_reserved_stock_in_replaced_locations(self):
+        """Whether the location(s) being replaced hold reserved stock.
+
+        Used to warn, while editing, that the automatic relocation transfer
+        (_relocate_physical_stock) only moves freely available quantity: it
+        never drags along stock already reserved for an order.
+        """
+        self.ensure_one()
+        company = self.company_id or self.env.company
+        if not company.physical_relocation_transfer:
+            return False
+        removed_locations = self._origin.physical_locations_ids - self.physical_locations_ids
+        if not removed_locations:
+            return False
+        quants = self.env["stock.quant"].sudo().search(
+            [
+                ("product_id", "in", self.product_variant_ids.ids),
+                ("location_id", "in", removed_locations.ids),
+                ("reserved_quantity", ">", 0),
+            ],
+            limit=1,
+        )
+        return bool(quants)
 
     price_with_tax = fields.Float(compute="_compute_prices_with_tax")
     price_without_tax = fields.Float(compute="_compute_prices_with_tax")
