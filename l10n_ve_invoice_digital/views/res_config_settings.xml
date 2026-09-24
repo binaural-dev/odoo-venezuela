@@ -60,6 +60,9 @@
                             <div class="o_setting_right_pane">
                                 <label for="digitalization_with_payment_tfhka"/>
                             </div>
+                            <div class="o_setting_box" invisible="not digitalization_with_payment_tfhka">
+                                <field name="payment_mode_tfhka" widget="radio" class="oe_inline"/>
+                            </div>
                             <!-- Multi-moneda: toggle maestro que habilita el checkbox
                                  por factura. Solo visible si invoice_digital_tfhka está activo. -->
                             <div class="o_setting_box" invisible="not invoice_digital_tfhka">
