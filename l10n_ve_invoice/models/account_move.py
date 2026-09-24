@@ -44,6 +44,8 @@ class AccountMove(models.Model):
     first_payment_date = fields.Date(compute="_compute_payment_dates", store=True)
     is_contingency = fields.Boolean(related="journal_id.is_contingency")
 
+    discount_type = fields.Selection(related="company_id.discount_type")
+
     next_installment_date = fields.Date(compute="_compute_next_installment_date")
 
     display_date_warning = fields.Boolean(compute="_compute_display_date_warning")
@@ -160,7 +162,7 @@ class AccountMove(models.Model):
         # _check_refund_against_origin() and action_post() -- keep them in
         # sync.
         for line in invoice_lines - discount_lines:
-            if line.price_unit <= 0 and line.display_type not in (
+            if line.price_subtotal <= 0 and line.display_type not in (
                 "line_section",
                 "line_subsection",
                 "line_note",
