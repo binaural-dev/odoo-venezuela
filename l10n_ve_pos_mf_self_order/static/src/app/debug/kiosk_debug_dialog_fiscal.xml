@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_mf_self_order.KioskDebugDialogFiscal"
+       t-inherit="l10n_ve_pos_self_order.KioskDebugDialog" t-inherit-mode="extension" owl="1">
+
+        <!-- Herramientas de la máquina fiscal, ANTES del botón "Ver órdenes" -->
+        <xpath expr="//button[hasclass('o_kiosk_debug_view_orders')]" position="before">
+            <div class="d-flex align-items-center gap-2">
+                <span>Fiscal machine status (last test):</span>
+                <span t-if="connected === null" class="badge text-bg-secondary">
+                    Not tested
+                </span>
+                <span t-else="" t-att-class="connected ? 'badge text-bg-success' : 'badge text-bg-danger'">
+                    <t t-if="connected">Connected</t>
+                    <t t-else="">Disconnected</t>
+                </span>
+            </div>
+            <button type="button" class="btn btn-outline-secondary text-start"
+                    t-on-click="onCheckStatus" t-att-disabled="state.busy">
+                Check connection status
+            </button>
+            <button type="button" class="btn btn-warning text-start"
+                    t-on-click="onPair" t-att-disabled="state.busy">
+                Pair fiscal machine (authorize port)
+            </button>
+        </xpath>
+    </t>
+</templates>

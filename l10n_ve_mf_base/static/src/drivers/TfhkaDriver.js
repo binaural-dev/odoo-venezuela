@@ -201,6 +201,17 @@ export class TfhkaDriver {
     }
 
     /**
+     * Verifica si hay un puerto pareado (autorizado en una sesión anterior)
+     * SIN abrirlo/reservarlo. Útil para chequeos de arranque que no deben
+     * competir por el puerto con otro consumidor (ver `isPaired` en
+     * `SerialConnection`).
+     * @returns {Promise<boolean>}
+     */
+    async isPaired() {
+        return await this.connection.isPaired();
+    }
+
+    /**
      * Envía un comando y espera respuesta (con reintentos en caso de NAK)
      * @param {string} command - Comando ASCII
      * @param {number} timeout - Timeout en ms
