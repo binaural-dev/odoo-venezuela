@@ -495,6 +495,68 @@ class TestAccountMoveExtended(TransactionCase):
                 }
             )
 
+    def _create_vendor_bill(self, partner, correlative, post=False):
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": partner.id,
+                "journal_id": self.journal_purchase.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
+                "correlative": correlative,
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 100,
+                            "tax_ids": [(6, 0, [self.tax_purchase.id])],
+                        },
+                    )
+                ],
+            }
+        )
+        if post:
+            invoice.action_post()
+        return invoice
+
+    def test_vendor_bill_duplicate_correlative_same_partner(self):
+        self._create_vendor_bill(self.partner, "00060", post=True)
+
+        with self.assertRaises(ValidationError):
+            self._create_vendor_bill(self.partner, "00060", post=True)
+
+    def test_vendor_bill_duplicate_correlative_different_partners(self):
+        other_partner = self.env["res.partner"].create(
+            {
+                "name": "Other Vendor",
+                "property_account_receivable_id": self.account_receivable.id,
+                "property_account_payable_id": self.account_payable.id,
+            }
+        )
+        self._create_vendor_bill(self.partner, "00061", post=True)
+
+        try:
+            self._create_vendor_bill(other_partner, "00061", post=True)
+        except ValidationError:
+            self.fail(
+                "_check_correlative() must not consider vendor bills from "
+                "a different vendor as duplicates"
+            )
+
+    def test_vendor_bill_duplicate_correlative_not_posted(self):
+        self._create_vendor_bill(self.partner, "00062", post=False)
+
+        try:
+            self._create_vendor_bill(self.partner, "00062", post=False)
+        except ValidationError:
+            self.fail(
+                "_check_correlative() must only compare against posted "
+                "vendor bills"
+            )
+
     # --- is_valid_to_sequence ---
 
     def test_is_valid_to_sequence_sale_no_correlative(self):
