@@ -95,6 +95,28 @@ msgstr "Anular en The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"Cannot queue %(name)s for digitalization: the previous document, "
+"%(previous_name)s, is not digitalized or queued yet."
+msgstr ""
+"No se puede colocar en cola de digitalización %(name)s: el documento "
+"anterior, %(previous_name)s, no se encuentra digitalizado ni en cola."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"Cannot queue %(name)s for digitalization: there is a numbering gap "
+"between it and the previous document, %(previous_name)s. Fix the "
+"sequence irregularity in Odoo first."
+msgstr ""
+"No se puede colocar en cola de digitalización %(name)s: hay un salto de "
+"numeración entre este documento y el anterior, %(previous_name)s. Corrija "
+"la irregularidad de secuencia en Odoo primero."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
 msgid ""
 "Cannot disable digital billing on a journal with existing digital invoices."
@@ -148,6 +170,15 @@ msgstr "Error de configuración: El token de autenticación está vacío."
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_partner
 msgid "Contact"
 msgstr "Contacto"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.tfhka_digitalization_alert
+msgid ""
+"<span> could not be digitalized in The Factory HKA -- click to "
+"review.</span>"
+msgstr ""
+"<span> no se pudo digitalizar en The Factory HKA -- click para "
+"revisar.</span>"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__control_number_tfhka
@@ -220,6 +251,22 @@ msgid "Digital invoicing with payment registration"
 msgstr "Facturación digital con registro de pagos"
 
 #. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_islr_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_form_l10n_ve_payment_extension_inherit
+msgid "Digitalization Error"
+msgstr "Error de Digitalización"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_invoice_tree_inherit_tfhka_digitalization
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_islr_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_list_inherit_tfhka_digitalization
+msgid "Digitalization Status"
+msgstr "Estado de Digitalización"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__digitalization_with_payment_active
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__digitalization_with_payment_active
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__digitalization_with_payment_tfhka
@@ -290,6 +337,31 @@ msgid "Endpoint '%(endpoint_key)s' is not defined."
 msgstr "El endpoint '%(endpoint_key)s' no está definido."
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_retention__tfhka_auto_accept_sequence_mismatch
+msgid ""
+"Equivalent to confirming the sequence-mismatch alert wizard automatically. "
+"Set before enqueueing from the automatic post-triggered flow (no human "
+"present to answer that wizard) or from the wizard itself once a human "
+"confirms it manually; read by generate_document_digital() at digitalization "
+"time, since that call is now deferred to the queue's cron and can't rely on "
+"the caller's context surviving that long."
+msgstr ""
+"Equivale a confirmar automáticamente el asistente de alerta de discrepancia "
+"de secuencia. Se activa antes de encolar desde el flujo automático "
+"disparado al postear (no hay un humano presente para responder ese "
+"asistente) o desde el propio asistente cuando un humano lo confirma "
+"manualmente; es leído por generate_document_digital() al momento de "
+"digitalizar, ya que esa llamada ahora se difiere al cron de la cola y no "
+"puede depender de que el contexto de quien la invocó siga vigente hasta "
+"entonces."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__error
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__error
+msgid "Error"
+msgstr "Error"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/services/tfhka_client.py:0
 msgid "Error connecting to the API: %(error)s"
@@ -316,6 +388,16 @@ msgstr ""
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
 msgid "Error in the TFHKA API: %(status_code)s"
 msgstr "Error en la API de TFHKA: %(status_code)s"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__tfhka_digitalization_error
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_retention__tfhka_digitalization_error
+msgid ""
+"Error message from the last failed digitalization attempt. Cleared once the "
+"document digitalizes successfully."
+msgstr ""
+"Mensaje de error del último intento fallido de digitalización. Se limpia "
+"una vez que el documento se digitaliza exitosamente."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -377,6 +459,11 @@ msgstr "Generar Token"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid "Generate Token for TFHKA."
 msgstr "Generar Token para TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_search_inherit_tfhka_digitalization
+msgid "Group by TFHKA Digitalization Status"
+msgstr "Agrupar por Estado de Digitalización TFHKA"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__http_method
@@ -551,6 +638,12 @@ msgid "No records in the The Factory HKA API log yet"
 msgstr "No hay registros en el historial de la API de The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__none
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__none
+msgid "Not Digitalized"
+msgstr "Sin Digitalizar"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/ir_module_module.py:0
 msgid ""
@@ -594,6 +687,23 @@ msgid "Payment Method Code"
 msgstr "Código de forma de pago"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__processing
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__processing
+msgid "Processing"
+msgstr "En Proceso"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__queued
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__queued
+msgid "Queued"
+msgstr "En Cola"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Queued At"
+msgstr "Encolado el"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__reason
 msgid "Reason for annulment"
 msgstr "Motivo de anulación"
@@ -631,6 +741,13 @@ msgstr ""
 #: code:addons/l10n_ve_invoice_digital/services/tfhka_retention_service.py:0
 msgid "Retention annulled in The Factory HKA. Reason: %s"
 msgstr "Retención anulada en The Factory HKA. Motivo: %s"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_islr_form_l10n_ve_payment_extension_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_form_l10n_ve_payment_extension_inherit
+msgid "Retry Digitalization"
+msgstr "Reintentar Digitalización"
 
 #. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_api_log_search
@@ -704,6 +821,41 @@ msgid "TFHKA Annul Wizard"
 msgstr "Asistente de Anulación TFHKA"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__tfhka_digitalization_error
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__tfhka_digitalization_error
+msgid "TFHKA Digitalization Error"
+msgstr "Error de Digitalización TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_digitalization_mixin
+msgid "TFHKA Digitalization Queue Fields"
+msgstr "Campos de Cola de Digitalización TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__tfhka_digitalization_state
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__tfhka_digitalization_state
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_account_invoice_filter_inherit_tfhka_digitalization
+msgid "TFHKA Digitalization Status"
+msgstr "Estado de Digitalización TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__success
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__success
+msgid "Digitalized"
+msgstr "Digitalizado"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__data_error
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__data_error
+msgid "Data Error"
+msgstr "Error de Datos"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__not_applicable
+msgid "Not Applicable"
+msgstr "No Aplica"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_document_service
 msgid "TFHKA Document Service"
 msgstr "Servicio de Documentos TFHKA"
@@ -713,6 +865,35 @@ msgstr "Servicio de Documentos TFHKA"
 #: model:ir.ui.menu,name:l10n_ve_invoice_digital.menu_payment_method_tfhka
 msgid "TFHKA Payment Methods"
 msgstr "Formas de Pago TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__tfhka_queued_at
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__tfhka_queued_at
+msgid "TFHKA Queued At"
+msgstr "Fecha de Encolado TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_account_invoice_filter_inherit_tfhka_digitalization
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_search_inherit_tfhka_digitalization
+msgid "TFHKA: Error"
+msgstr "TFHKA: Error"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_account_invoice_filter_inherit_tfhka_digitalization
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_search_inherit_tfhka_digitalization
+msgid "TFHKA: Data Error"
+msgstr "TFHKA: Error de Datos"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_account_invoice_filter_inherit_tfhka_digitalization
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_retention_iva_search_inherit_tfhka_digitalization
+msgid "TFHKA: Queued"
+msgstr "TFHKA: En Cola"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_account_invoice_filter_inherit_tfhka_digitalization
+msgid "TFHKA: Not Applicable"
+msgstr "TFHKA: No Aplica"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_retention_service
@@ -741,9 +922,66 @@ msgstr ""
 "actualizarlo. Por favor, verifique las credenciales."
 
 #. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
+msgid "TFHKA digitalization failed: %s"
+msgstr "Falló la digitalización TFHKA: %s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
+msgid ""
+"TFHKA digitalization was interrupted and no successful response was found "
+"in the API log after waiting %(minutes)s minute(s). There is no "
+"confirmation TFHKA received this document -- verify with TFHKA before "
+"retrying manually, or a retry may submit a duplicate."
+msgstr ""
+"La digitalización TFHKA se interrumpió y no se encontró una respuesta "
+"exitosa en el historial de API después de esperar %(minutes)s minuto(s). "
+"No hay confirmación de que TFHKA haya recibido este documento -- verifique "
+"con TFHKA antes de reintentar manualmente, o el reintento podría generar "
+"un duplicado."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
+msgid ""
+"TFHKA digitalization was interrupted before Odoo could record the result, "
+"and no matching successful call was found in the API log after waiting "
+"%(minutes)s minute(s). Marked as error instead of being requeued "
+"automatically, since a blind retry risks submitting a duplicate if TFHKA "
+"actually received the original request -- verify directly with TFHKA "
+"before retrying."
+msgstr ""
+"La digitalización TFHKA se interrumpió antes de que Odoo pudiera registrar "
+"el resultado, y no se encontró una llamada exitosa coincidente en el "
+"historial de API después de esperar %(minutes)s minuto(s). Se marcó como "
+"error en vez de reencolarse automáticamente, ya que un reintento a ciegas "
+"podría generar un duplicado si TFHKA sí recibió la solicitud original -- "
+"verifique directamente con TFHKA antes de reintentar."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
+msgid ""
+"TFHKA digitalization was interrupted before Odoo could record the result, "
+"but the API log shows it actually succeeded (see The Factory HKA API Log "
+"#%s). Recovered automatically -- the document was not resubmitted."
+msgstr ""
+"La digitalización TFHKA se interrumpió antes de que Odoo pudiera registrar "
+"el resultado, pero el historial de API muestra que sí se completó "
+"exitosamente (ver Historial de API de The Factory HKA #%s). Se recuperó "
+"automáticamente -- el documento no fue reenviado."
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_payment_method_tfhka
 msgid "TFHKA payment methods"
 msgstr "Formas de pago de TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__tfhka_auto_accept_sequence_mismatch
+msgid "Tfhka Auto Accept Sequence Mismatch"
+msgstr "Aceptar Automáticamente Discrepancia de Secuencia Tfhka"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -797,6 +1035,11 @@ msgstr "Administrador The Factory HKA"
 #: model:ir.actions.server,name:l10n_ve_invoice_digital.ir_cron_purge_tfhka_api_log_ir_actions_server
 msgid "The Factory HKA: Purge API Log History"
 msgstr "The Factory HKA: Purgar historial de log de API"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.actions.server,name:l10n_ve_invoice_digital.ir_cron_tfhka_digitalization_queue_ir_actions_server
+msgid "The Factory HKA: Process Digitalization Queue"
+msgstr "The Factory HKA: Procesar Cola de Digitalización"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -1123,6 +1366,17 @@ msgstr ""
 "(precios en Bolívares, totales en VES) o USD (precios en USD, totales en "
 "ambas monedas). Requiere 'Facturación digital multi-moneda' en los ajustes "
 "de la compañía."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__tfhka_queued_at
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_retention__tfhka_queued_at
+msgid ""
+"When this document entered the digitalization queue. Determines the order "
+"in which the cron digitalizes queued documents (oldest first)."
+msgstr ""
+"Momento en que el documento entró a la cola de digitalización. Determina el "
+"orden en que el cron digitaliza los documentos en cola (más antiguo "
+"primero)."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python

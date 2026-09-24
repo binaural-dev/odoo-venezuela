@@ -1,4 +1,4 @@
-from odoo import models, fields, api
+from odoo import models, fields
 
 class AccountRetentionAlertWizard(models.TransientModel):
     _name = 'account.retention.alert.wizard'
@@ -8,7 +8,8 @@ class AccountRetentionAlertWizard(models.TransientModel):
     message = fields.Char(readonly=True)
     
     def action_confirm(self):
-        self.move_id.with_context(account_retention_alert=True).generate_document_digital()
+        self.move_id.tfhka_auto_accept_sequence_mismatch = True
+        self.move_id._tfhka_enqueue_digitalization()
 
     def action_cancel(self):
         return {'type': 'ir.actions.act_window_close'}

@@ -92,7 +92,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(picking))
 
-        response = self.env["tfhka.api.client"].emit(picking.company_id, payload)
+        response = self.env["tfhka.api.client"].emit(picking.company_id, payload, origin=picking)
 
         if response:
             self._register_success(picking, response)
