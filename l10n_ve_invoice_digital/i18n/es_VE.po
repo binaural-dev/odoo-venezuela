@@ -70,6 +70,11 @@ msgid "Cancel at The Factory HKA"
 msgstr "Anular en The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__payment_mode_tfhka__cash
+msgid "Cash Payment"
+msgstr "Pago de contado"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/ir_sequence.py:0
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/ir_sequence.py:0
@@ -164,6 +169,11 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__create_date
 msgid "Created on"
 msgstr "Creado el"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__payment_mode_tfhka__credit
+msgid "Credit Payment"
+msgstr "Pago a crédito"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_currency
@@ -529,6 +539,21 @@ msgstr ""
 " y su trazabilidad fiscal."
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__payment_mode_tfhka
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_config_settings__payment_mode_tfhka
+msgid ""
+"Only applies when 'Digital invoicing with payment registration' is "
+"enabled. 'Credit Payment' keeps the current flow (the invoice can be "
+"digitalized with or without a registered payment). 'Cash Payment' blocks "
+"digitalization until the invoice's payment is in process, fully paid, or "
+"the invoice has been reversed."
+msgstr ""
+"Solo aplica con 'Facturación digital con registro de pagos' activo. 'Pago "
+"a crédito' mantiene el flujo actual (se puede digitalizar con o sin pago "
+"registrado). 'Pago de contado' bloquea la digitalización hasta que la "
+"factura tenga el pago en proceso, esté pagada, o haya sido revertida."
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__res_name
 msgid "Origin Document"
 msgstr "Documento de origen"
@@ -703,6 +728,12 @@ msgid "TFHKA Document Service"
 msgstr "Servicio de Documentos TFHKA"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__payment_mode_tfhka
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__payment_mode_tfhka
+msgid "TFHKA Payment Mode"
+msgstr "Modalidad de pago TFHKA"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_retention_service
 msgid "TFHKA Retention Service"
 msgstr "Servicio de Retenciones TFHKA"
@@ -832,6 +863,18 @@ msgstr "La Nota de Débito %(name)s no ha sido digitalizada"
 #, python-format
 msgid "The document has already been digitalized."
 msgstr "El documento ya ha sido digitalizado."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"The following invoices must have their payment in process, be fully paid, "
+"or be reversed before they can be digitalized:\n"
+"%s"
+msgstr ""
+"Las siguientes facturas deben tener el pago en proceso, estar pagadas, o "
+"haber sido revertidas antes de poder digitalizarse:\n"
+"%s"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
