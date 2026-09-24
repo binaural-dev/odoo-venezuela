@@ -140,3 +140,18 @@ primera entrega:
   con `reversal_move_ids` seteado — antes, un asiento ya revertido seguía
   apareciendo en la factura.
 - Tests: 16 → 34 en este archivo (244 en la suite completa del módulo).
+
+## Ronda 3: símbolo de moneda en el widget de Pagos (ver `design-notes.md`)
+
+La fila sintética del standalone (Ronda 2) mostraba el monto correcto pero
+con el símbolo de moneda equivocado ("Bs.F" en vez de "$"), porque
+`is_exchange=True` hace que el renderer del widget (compartido con
+`l10n_ve_igtf`, no tocable desde Python) etiquete cualquier fila `is_exchange`
+con la moneda de compañía sin importar cuál le pasemos.
+
+Resuelto con un parche de frontend (`static/src/components/payment_field/payment_field.js`,
+`patch()` sobre `AccountPaymentField`, mismo patrón que ya usa este módulo en
+`tax_totals.js`) — sin tocar ningún archivo de core y sin campos nuevos en el
+modelo (`foreign_debit`/`foreign_credit`/`foreign_currency_id` ya existían en
+`account.move.line`). Verificado con datos reales en una DB temporal
+(sin necesitar navegador): mismo monto, moneda corregida de VEF a USD.
