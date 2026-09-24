@@ -23,6 +23,7 @@ class SaleOrder(models.Model):
                         "The Contact/Customer cannot be changed when it is a donation."
                     )
                 )
+            self.document = "invoice"
 
     @api.constrains("is_donation", "state")
     def _check_is_donation(self):

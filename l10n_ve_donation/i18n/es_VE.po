@@ -421,6 +421,12 @@ msgstr ""
 
 #. module: l10n_ve_donation
 #. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_picking.py:0
+msgid "The partner must be the company itself for a donation"
+msgstr "El contacto debe ser la misma empresa para una donación"
+
+#. module: l10n_ve_donation
+#. odoo-python
 #: code:addons/l10n_ve_donation/models/product_template.py:0
 msgid ""
 "There is already a donation product. Please deactivate the previous one "
