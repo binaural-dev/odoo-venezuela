@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
@@ -55,11 +56,9 @@ class TestForeignExchangeDiff(TransactionCase):
             }).id
 
         self.company.l10n_ve_use_foreign_exchange_diff = True
-        # "Indexed" payment mode (the company default) re-rates the
-        # invoice to the PAYMENT date's rate at settlement time, which
-        # erases the very rate difference this feature is meant to
-        # detect. Use "not_indexed" so the invoice keeps its original
-        # booking rate through to settlement.
+        # "Indexed" mode re-rates the invoice to the payment date's rate,
+        # erasing the rate difference this feature must detect -- use
+        # "not_indexed" so the booking rate survives to settlement.
         self.company.index_payment_in_wizard = False
         self.company.indexaxion_payment_mode = "not_indexed"
 
@@ -141,14 +140,10 @@ class TestForeignExchangeDiff(TransactionCase):
         })
 
     def _create_invoice(self, amount=100.0, currency=None, booking_ves_per_usd=None):
-        # Deliberately does NOT force `foreign_inverse_rate`/`manually_set_rate`:
-        # `_compute_rate_for_documents` naturally looks up the rate at
-        # `invoice_date` (`rate_date = invoice_date` for sale documents),
-        # so as long as the booking-date rate exists BEFORE the invoice is
-        # created, the natural compute resolves it correctly on its own --
-        # forcing it manually turned out to be overwritten later anyway by
-        # this module's own `create()` override, which unconditionally
-        # re-triggers `_compute_rate()`.
+        # Doesn't force `foreign_inverse_rate` manually: as long as the
+        # booking-date rate exists before creation, `_compute_rate_for_documents`
+        # resolves it naturally (a manual value gets overwritten anyway by
+        # this module's `create()`, which re-triggers `_compute_rate()`).
         if booking_ves_per_usd is not None:
             self._set_usd_rate(self.booking_date, booking_ves_per_usd)
         move = self.env["account.move"].create({
@@ -192,44 +187,118 @@ class TestForeignExchangeDiff(TransactionCase):
 
     # ── Isolated unit tests: exact sign and magnitude ──
 
-    def test_ves_devaluation_on_receivable_is_a_loss(self):
-        """VES weakens (more VES per USD) between booking and settlement:
-        the alternate-currency value of a receivable's settled amount
-        FALLS -- must be booked as a LOSS (positive amount), matching the
-        sign convention `l10n_ve_exchange_difference` uses for `amount_residual`.
+    def test_foreign_exposure_at_residual_is_exact_at_both_extremes(self):
+        """At both extremes (residual 0 or the line's own original amount),
+        `_foreign_exposure_at_residual` must reproduce the stored value
+        EXACTLY, not a float approximation.
+        Ver openspec: design-notes.md § foreign_exposure_at_residual
         """
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
-
-        self._set_usd_rate(self.settlement_date, 50.0)  # 1 USD = 50 VEF at settlement
         line = move.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertAlmostEqual(line.foreign_debit, 2.5, places=6)  # 100 / 40
 
-        alt_diff = line._compute_foreign_exchange_amount(100.0, self.today)
-        # 100 VEF * (1/40 - 1/50) = 100 * 0.005 = 0.5
+        self.assertEqual(line._foreign_exposure_at_residual(100.0), line.foreign_debit)
+        self.assertEqual(line._foreign_exposure_at_residual(0.0), 0.0)
+        # Halfway through the residual, exactly half the fixed exposure.
+        self.assertAlmostEqual(line._foreign_exposure_at_residual(50.0), 1.25, places=6)
+
+    def test_settlement_diff_ves_devaluation_on_receivable_is_a_loss(self):
+        """VES weakens between booking and settlement: the alternate value
+        of a receivable's settled amount FALLS -- must be a LOSS (positive),
+        matching `l10n_ve_exchange_difference`'s sign convention.
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)  # 1 USD = 50 VEF at settlement
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+        self.assertAlmostEqual(receivable_line.foreign_debit, 2.5, places=6)   # 100 / 40
+        self.assertAlmostEqual(payment_line.foreign_credit, 2.0, places=6)    # 100 / 50
+
+        alt_diff = receivable_line._compute_alt_exchange_diff_from_settlement(
+            payment_line, 100.0, 0.0, -100.0, 0.0, receivable_line,
+        )
+        # invoice.foreign_debit - payment.foreign_credit = 2.5 - 2.0 = 0.5
         self.assertAlmostEqual(alt_diff, 0.5, places=6)
         self.assertGreater(alt_diff, 0.0, "A VES devaluation on a receivable must be a loss (positive)")
 
-    def test_ves_revaluation_on_receivable_is_a_gain(self):
+    def test_settlement_diff_ves_revaluation_on_receivable_is_a_gain(self):
         move = self._create_invoice(100.0, booking_ves_per_usd=50.0)
-
         self._set_usd_rate(self.settlement_date, 40.0)  # VES strengthens
-        line = move.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
 
-        alt_diff = line._compute_foreign_exchange_amount(100.0, self.today)
-        # 100 * (1/50 - 1/40) = 100 * (-0.005) = -0.5
+        alt_diff = receivable_line._compute_alt_exchange_diff_from_settlement(
+            payment_line, 100.0, 0.0, -100.0, 0.0, receivable_line,
+        )
+        # 100/50 - 100/40 = 2.0 - 2.5 = -0.5
         self.assertAlmostEqual(alt_diff, -0.5, places=6)
         self.assertLess(alt_diff, 0.0, "A VES revaluation on a receivable must be a gain (negative)")
 
     def test_zero_when_toggle_disabled(self):
-        self.company.l10n_ve_use_foreign_exchange_diff = False
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
         self._set_usd_rate(self.settlement_date, 50.0)
-        line = move.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
-        self.assertEqual(line._compute_foreign_exchange_amount(100.0, self.today), 0.0)
+        self.company.l10n_ve_use_foreign_exchange_diff = False
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+        alt_diff = receivable_line._compute_alt_exchange_diff_from_settlement(
+            payment_line, 100.0, 0.0, -100.0, 0.0, receivable_line,
+        )
+        self.assertEqual(alt_diff, 0.0)
 
     def test_zero_when_no_rate_change(self):
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+        alt_diff = receivable_line._compute_alt_exchange_diff_from_settlement(
+            payment_line, 100.0, 0.0, -100.0, 0.0, receivable_line,
+        )
+        self.assertEqual(alt_diff, 0.0)
+
+    def test_full_settlement_with_non_clean_rates_matches_real_reported_amounts_exactly(self):
+        """Reproduces the exact bug reported in production (1-cent rounding
+        drift from re-deriving the amount via a rate delta instead of the
+        two real fixed per-line amounts).
+        Ver openspec: design-notes.md § Bug de redondeo reportado en producción
+        """
+        move = self._create_invoice(133.0, booking_ves_per_usd=8.65)
+        self._set_usd_rate(self.settlement_date, 8.79)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+
+        self.assertAlmostEqual(receivable_line.foreign_debit, 15.38, places=2)
+        self.assertAlmostEqual(payment_line.foreign_credit, 15.13, places=2)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        self.assertEqual(len(entry), 1)
+        loss_line = entry.line_ids.filtered(lambda l: l.foreign_credit > 0.0)
+        expected = self.currency_usd.round(
+            receivable_line.foreign_debit - payment_line.foreign_credit
+        )
+        self.assertEqual(expected, 0.25, "Sanity: the real (non-buggy) expected difference is 0.25, not 0.24")
+        self.assertEqual(
+            loss_line.foreign_credit, expected,
+            "The posted alternate exchange difference must match the invoice/payment's own fixed "
+            "foreign amounts EXACTLY, not a rate-based re-derivation prone to 1-cent rounding drift",
+        )
+
+    def test_three_uneven_partials_sum_exactly_to_the_line_fixed_foreign_amount(self):
+        """Property test: 3 unevenly-sliced partials must sum EXACTLY to
+        the line's fixed foreign amount, zero rounding drift left over.
+        Ver openspec: design-notes.md § foreign_exposure_at_residual
+        """
+        move = self._create_invoice(133.0, booking_ves_per_usd=8.65)
         line = move.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
-        self.assertEqual(line._compute_foreign_exchange_amount(100.0, self.today), 0.0)
+        self.assertAlmostEqual(line.foreign_debit, 15.38, places=2)
+
+        # 3 uneven slices of the 133.00 original amount, none a clean
+        # divisor of it: 37.33 + 41.11 + 54.56 == 133.00.
+        residual_boundaries = [133.0, 95.67, 54.56, 0.0]
+        consumed = [
+            line._foreign_exposure_at_residual(residual_boundaries[i])
+            - line._foreign_exposure_at_residual(residual_boundaries[i + 1])
+            for i in range(3)
+        ]
+        self.assertEqual(
+            sum(consumed), line.foreign_debit,
+            "3 unevenly-sliced partials must sum EXACTLY to the line's fixed foreign amount",
+        )
 
     # ── Standalone case: amounts, state, and reversal ──
 
@@ -348,12 +417,9 @@ class TestForeignExchangeDiff(TransactionCase):
         self.assertFalse(still_intact.reversal_move_ids, "The other installment's entry must remain untouched")
 
     def test_multiple_partial_payments_in_different_currencies_get_independent_alt_diffs(self):
-        """One invoice settled through THREE installments -- VEF cash,
-        then straight USD, then VEF cash again -- each on its own date
-        with its own rate. Every installment must get its OWN alternate-
-        currency correction, computed from ITS OWN settled amount and
-        ITS OWN rate at ITS OWN date, always compared against the same
-        original booking rate -- never lumped together, never skipped.
+        """3 installments (VEF, USD, VEF), each its own date/rate: every
+        one must get its OWN correction vs. the SAME original booking
+        rate -- never lumped together, never skipped.
         """
         move = self._create_invoice(300.0, booking_ves_per_usd=40.0)
 
@@ -362,11 +428,9 @@ class TestForeignExchangeDiff(TransactionCase):
         self._set_usd_rate(settlement_1, 50.0)
         _p1, receivable_line, payment_line_1 = self._pay_invoice(move, amount=100.0)
 
-        # Installment 2: 100 VEF-equivalent paid straight in USD, on a
-        # LATER date with the rate moved again (to 60) -- different
-        # currency AND different date from installment 1. Rounded through
-        # each currency's OWN configured precision (`.round()`), never a
-        # hardcoded number of decimals -- VEF/USD may not both be 2.
+        # Installment 2: 100 VEF-equivalent paid straight in USD, later
+        # date, rate moved again (to 60). Rounded through each currency's
+        # OWN precision, never a hardcoded decimal count.
         settlement_2 = settlement_1 + timedelta(days=3)
         self._set_usd_rate(settlement_2, 60.0)
         usd_amount_2 = self.currency_usd.round(100.0 / 60.0)
@@ -413,38 +477,21 @@ class TestForeignExchangeDiff(TransactionCase):
         entry_2 = entries_by_payment[payment_line_2.move_id]
         entry_3 = entries_by_payment[payment_line_3.move_id]
 
-        # Always vs. the ORIGINAL booking rate (1/40), never against the
-        # previous installment's rate.
+        # Always vs. the ORIGINAL booking rate (1/40), never the previous
+        # installment's rate.
         self.assertAlmostEqual(diff_of(entry_1), 100.0 * (1 / 40.0 - 1 / 50.0), places=6)   # 0.5, loss
-        # Installment 2 is typed in USD and rounded through USD's OWN
-        # configured precision BEFORE Odoo ever converts it -- its VEF
-        # equivalent isn't exactly 100 (see `vef_equivalent_2` above, also
-        # rounded through VEF's own precision, never a hardcoded decimal
-        # count). A small `delta` absorbs Odoo's own internal conversion
-        # rounding chain (not worth hand-reproducing exactly) -- while
-        # still clearly proving it used ITS OWN rate (60), not
-        # installment 1's (which would read exactly 0.5, not ~0.84).
+        # `delta` absorbs Odoo's own conversion rounding chain (USD-typed
+        # amount, VEF equivalent not exactly 100) while still proving it
+        # used ITS OWN rate (60), not installment 1's (would read ~0.5).
         self.assertAlmostEqual(diff_of(entry_2), vef_equivalent_2 * (1 / 40.0 - 1 / 60.0), delta=0.01)
-        # 0.27777... itself rounds to 0.28 at USD's own 2-decimal
-        # precision (`foreign_currency.round()` in production) -- that
-        # rounding is correct behavior, not something to work around.
+        # Rounds to USD's own 2-decimal precision -- correct, not a bug.
         self.assertAlmostEqual(diff_of(entry_3), self.currency_usd.round(100.0 * (1 / 40.0 - 1 / 45.0)), places=6)
 
     def test_full_flow_foreign_invoice_multiple_partials_mixed_currencies_squares_natively_and_alternately(self):
-        """The complete flow in one test: an invoice booked in USD (not
-        VEF), closed through THREE partial payments -- USD, then VEF
-        cash, then USD again -- each at its own date and rate. A
-        foreign-currency invoice ALWAYS crosses company currency on
-        settlement regardless of which currency it's PAID in, so all
-        three installments fire the native entry (verified explicitly
-        below, ruling out any standalone one). But since the INVOICE
-        itself is denominated in the alternate currency, its USD exposure
-        is already fixed and exact for every installment (100 USD in
-        equals 100 USD out, regardless of what VEF or the settlement rate
-        did) -- so NONE of the three native entries may carry an injected
-        alternate amount, even though each one genuinely fixes a real VEF
-        difference. Both sides (VEF residual and the invoice's own USD
-        residual) must still square exactly at the end.
+        """USD invoice, 3 mixed-currency/date partials: all fire the native
+        VEF entry, but NONE may carry an injected alternate amount (the
+        invoice's own USD exposure is already fixed and exact).
+        Ver openspec: design-notes.md § Exclusión: factura en moneda alterna
         """
         move = self._create_invoice(300.0, currency=self.currency_usd, booking_ves_per_usd=40.0)
 
@@ -488,11 +535,9 @@ class TestForeignExchangeDiff(TransactionCase):
             self.assertEqual(len(loss) + len(gain), 2, "Exactly one credit and one debit VEF line")
             return loss.credit if loss else -gain.debit
 
-        # ── 2) Each installment fires its OWN native entry, anchored to
-        # its own payment line -- a real VEF fix every time -- but with NO
-        # alternate amount injected on any of them (the flag stays False
-        # and both foreign_debit/foreign_credit stay 0.0 on every line):
-        # the USD invoice's own exposure never needed revaluation. ──
+        # ── 2) Each installment fires its OWN native entry, but with NO
+        # alternate amount injected on any of them (flag False, both
+        # foreign_debit/foreign_credit 0.0 on every line). ──
         native_entries = self.env["account.move"].search([
             ("journal_id", "=", self.company.currency_exchange_journal_id.id),
         ])
@@ -538,13 +583,10 @@ class TestForeignExchangeDiff(TransactionCase):
     # ── Native + alternate case: same move, both amounts, native reversal ──
 
     def test_native_and_alternate_case_sets_both_amounts_on_same_move(self):
-        """USD invoice (native VEF diff fires) with the company-currency
-        rate also moved -- but the invoice itself is denominated IN the
-        alternate currency, so its USD exposure is already fixed and
-        exact (100 USD in, 100 USD out): no alternate-currency amount may
-        be injected here, even though the native VEF entry does fire.
-        Injecting one would be double-counting a difference that only
-        exists because VEF (not USD) moved.
+        """USD invoice, native VEF diff fires -- but no alternate amount
+        may be injected, since the invoice's own USD exposure is already
+        fixed and exact (double-counting a VEF-only difference).
+        Ver openspec: design-notes.md § Exclusión: factura en moneda alterna
         """
         move = self._create_invoice(100.0, currency=self.currency_usd, booking_ves_per_usd=40.0)
 
@@ -580,10 +622,8 @@ class TestForeignExchangeDiff(TransactionCase):
         )
 
     def test_no_exchange_difference_context_is_honored(self):
-        """Core suppresses its own exchange-diff logic under this context
-        (e.g. closing the diff entry's own receivable line) -- this
-        feature must never create a standalone entry in that window,
-        or it would fire exactly where core deliberately did not want any.
+        """This feature must never create a standalone entry while core's
+        own exchange-diff logic is suppressed under this context.
         """
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
         self._set_usd_rate(self.settlement_date, 50.0)
@@ -609,10 +649,9 @@ class TestForeignExchangeDiff(TransactionCase):
         )
 
     def test_amount_residual_currency_branch_is_covered(self):
-        """VES invoice paid from the USD-denominated journal: core fixes
-        this via the `amount_residual_currency` branch (`debit`/`credit`
-        both 0 on the closing line, the amount lives in `amount_currency`)
-        -- a real, previously-missed code path in `_inject_foreign_exchange_amounts`.
+        """VES invoice paid from a USD journal: core fixes this via the
+        `amount_residual_currency` branch (`debit`/`credit` both 0).
+        Ver openspec: design-notes.md § inject_foreign_exchange_amounts
         """
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
         self._set_usd_rate(self.settlement_date, 50.0)
@@ -632,15 +671,10 @@ class TestForeignExchangeDiff(TransactionCase):
         )
 
     def test_ves_invoice_paid_in_foreign_currency_natively_balances_but_alternate_still_differs(self):
-        """The exact business case: VEF is the company's base currency, so
-        Odoo's NATIVE exchange difference only ever balances VEF -- it has
-        no notion of the "alterno" (USD) valuation at all. A VEF invoice
-        paid with a FOREIGN-currency payment (here, from a USD journal) at
-        an amount that exactly covers the VEF total at the settlement
-        rate closes with ZERO native residual (no native diff entry at
-        all) -- yet the alternate-currency valuation of that same VEF
-        amount still moved between booking and settlement, and THAT is
-        what this feature must catch on its own.
+        """VEF invoice paid from a USD journal for an amount that exactly
+        covers the VEF total: native has nothing to fix, but the alternate
+        valuation of that VEF amount still moved -- this feature must
+        catch it on its own via the standalone entry.
         """
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
         self._set_usd_rate(self.settlement_date, 50.0)
@@ -699,3 +733,365 @@ class TestForeignExchangeDiff(TransactionCase):
         (receivable_line + payment_line).remove_move_reconcile()
 
         self.assertTrue(native_entry.reversal_move_ids, "Core must reverse its own exchange move automatically")
+
+    # ── `_reverse_moves`: foreign_debit/foreign_credit must be swapped per
+    # line on the reversal, not zeroed or duplicated (bug fixed this session) ──
+
+    def test_reverse_moves_swaps_foreign_debit_and_credit_for_standalone_entry(self):
+        """Without the fix, `foreign_debit`/`foreign_credit` on the reversal
+        stayed at 0/0 (or duplicated the original, unswapped) instead of
+        being exactly inverted per line.
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        self.assertEqual(entry.state, "posted")
+        original_lines = list(entry.line_ids)
+        original_amounts = [(line.foreign_debit, line.foreign_credit) for line in original_lines]
+        self.assertTrue(
+            any(debit or credit for debit, credit in original_amounts),
+            "Setup sanity: the original entry must carry a nonzero alternate amount",
+        )
+
+        (receivable_line + payment_line).remove_move_reconcile()
+
+        reversal = entry.reversal_move_ids
+        self.assertEqual(len(reversal), 1)
+        reversal_lines = list(reversal.line_ids)
+        self.assertEqual(len(reversal_lines), len(original_lines))
+        for (orig_debit, orig_credit), rev_line in zip(original_amounts, reversal_lines):
+            self.assertAlmostEqual(
+                rev_line.foreign_debit, orig_credit, places=6,
+                msg="The reversal's foreign_debit must equal the original line's foreign_credit",
+            )
+            self.assertAlmostEqual(
+                rev_line.foreign_credit, orig_debit, places=6,
+                msg="The reversal's foreign_credit must equal the original line's foreign_debit",
+            )
+        # At least one line must have actually flipped a nonzero amount --
+        # otherwise the assertions above would trivially pass on all-zeros.
+        self.assertTrue(any(rl.foreign_debit or rl.foreign_credit for rl in reversal_lines))
+
+    def test_reverse_moves_swaps_foreign_debit_and_credit_for_combined_entry(self):
+        """Same guarantee for the COMBINED case: core's own native entry,
+        with the alternate amount injected on the same two lines.
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+
+        before = self.env["account.move"].search([
+            ("journal_id", "=", self.company.currency_exchange_journal_id.id),
+        ])
+        _payment, receivable_line, payment_line = self._pay_invoice(
+            move, amount=100.0 / 50.0, currency=self.currency_usd,
+        )
+        entry = self.env["account.move"].search([
+            ("journal_id", "=", self.company.currency_exchange_journal_id.id),
+        ]) - before
+        self.assertEqual(len(entry), 1)
+        original_lines = list(entry.line_ids)
+        original_amounts = [(line.foreign_debit, line.foreign_credit) for line in original_lines]
+        self.assertTrue(any(debit or credit for debit, credit in original_amounts))
+
+        (receivable_line + payment_line).remove_move_reconcile()
+
+        reversal = entry.reversal_move_ids
+        self.assertEqual(len(reversal), 1)
+        reversal_lines = list(reversal.line_ids)
+        for (orig_debit, orig_credit), rev_line in zip(original_amounts, reversal_lines):
+            self.assertAlmostEqual(rev_line.foreign_debit, orig_credit, places=6)
+            self.assertAlmostEqual(rev_line.foreign_credit, orig_debit, places=6)
+
+    # ── `open_reconcile_view`: the standalone entry must surface in
+    # "Reconciled Items" even though it is never itself reconciled ──
+
+    @staticmethod
+    def _domain_ids(action):
+        """Extract the id list from the `[('id', 'in', ids)]` leaf core's
+        `open_reconcile_view` builds -- parsed the same defensive way the
+        override itself does, not by assuming a fixed index/shape.
+        """
+        for leaf in action['domain']:
+            if isinstance(leaf, (list, tuple)) and len(leaf) == 3 and leaf[0] == 'id' and leaf[1] == 'in':
+                return set(leaf[2])
+        return set()
+
+    def test_open_reconcile_view_includes_standalone_entry_lines(self):
+        """Only the standalone entry's CLOSING line belongs in this view --
+        its P&L counterpart line must be excluded.
+        Ver openspec: design-notes.md § open_reconcile_view (Reconciled Items)
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        self.assertTrue(entry, "Setup sanity: the standalone entry must exist")
+        closing_line = entry.line_ids.filtered(
+            lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+        )
+        pnl_line = entry.line_ids - closing_line
+        self.assertTrue(closing_line and pnl_line, "Setup sanity: both lines must exist")
+
+        action = move.open_reconcile_view()
+        self.assertEqual(action['res_model'], 'account.move.line')
+        ids = self._domain_ids(action)
+        self.assertTrue(
+            set(closing_line.ids) <= ids,
+            "The standalone entry's CLOSING line must be reachable from the invoice's Reconciled Items",
+        )
+        self.assertFalse(
+            set(pnl_line.ids) & ids,
+            "The standalone entry's P&L line must NOT appear -- it isn't the settled document's account",
+        )
+
+    def test_open_reconcile_view_without_standalone_matches_core(self):
+        """No rate change at all -- no standalone entry exists, so this
+        module's override must not add anything beyond core's own
+        `_all_reconciled_lines()` result.
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._pay_invoice(move)
+
+        self.assertFalse(self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ]))
+
+        action = move.open_reconcile_view()
+        core_ids = set(
+            move.line_ids._all_reconciled_lines()
+            .filtered(lambda l: l.matched_debit_ids or l.matched_credit_ids).ids
+        )
+        self.assertEqual(self._domain_ids(action), core_ids)
+
+    def test_open_reconcile_view_excludes_reversed_standalone_entry_lines(self):
+        """Once the standalone entry is reversed, its closing line must
+        stop appearing in "Reconciled Items" -- the settlement it tracked
+        is gone (bug fixed this session: it kept showing up after undoing
+        the reconciliation, even with the entry already reversed).
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        closing_line = entry.line_ids.filtered(
+            lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+        )
+        ids_before = self._domain_ids(move.open_reconcile_view())
+        self.assertTrue(set(closing_line.ids) <= ids_before, "Setup sanity: must be reachable before reversal")
+
+        (receivable_line + payment_line).remove_move_reconcile()
+        self.assertTrue(entry.reversal_move_ids, "Setup sanity: the entry must be reversed")
+
+        ids_after = self._domain_ids(move.open_reconcile_view())
+        self.assertFalse(
+            set(closing_line.ids) & ids_after,
+            "A reversed standalone entry's line must no longer appear in Reconciled Items",
+        )
+
+    # ── `_get_all_reconciled_invoice_partials`: surfaces the standalone
+    # entry in the "Pagos" widget. `is_exchange=True` hides the dead
+    # "Unreconcile" button (accepted cost: hardcoded row currency).
+    # Ver openspec: design-notes.md § _get_all_reconciled_invoice_partials
+
+    def test_get_all_reconciled_invoice_partials_adds_standalone_entry(self):
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        self.assertTrue(entry, "Setup sanity: the standalone entry must exist")
+
+        partials = move._get_all_reconciled_invoice_partials()
+        synthetic = [p for p in partials if p['aml'].move_id == entry]
+        self.assertEqual(len(synthetic), 1)
+        partial = synthetic[0]
+        self.assertFalse(partial['partial_id'], "No real partial backs this row -- must stay False")
+        self.assertEqual(partial['currency'], self.currency_usd)
+        self.assertAlmostEqual(partial['amount'], 0.5, places=6)
+        self.assertTrue(
+            partial['is_exchange'],
+            "Must be True so the popover hides the dead 'Unreconcile' button -- the accepted cost "
+            "is the row's currency getting hardcoded to the company currency downstream",
+        )
+
+    def test_get_all_reconciled_invoice_partials_unchanged_without_standalone_entry(self):
+        """No rate change at all -- no standalone entry exists, so this
+        override must return exactly what core's own method already
+        returns, nothing more.
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._pay_invoice(move)
+
+        self.assertFalse(self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ]))
+
+        partials = move._get_all_reconciled_invoice_partials()
+        self.assertTrue(partials, "The real payment reconciliation must still be there")
+        self.assertFalse(any(p['partial_id'] is False for p in partials))
+
+    def test_get_all_reconciled_invoice_partials_excludes_reversed_standalone_entry(self):
+        """Once the standalone entry is reversed, its synthetic row must
+        disappear from the "Pagos" widget data -- fixed this session
+        (it kept showing up after undoing the reconciliation).
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        self.assertTrue(
+            any(p['aml'].move_id == entry for p in move._get_all_reconciled_invoice_partials()),
+            "Setup sanity: must be present before reversal",
+        )
+
+        (receivable_line + payment_line).remove_move_reconcile()
+        self.assertTrue(entry.reversal_move_ids, "Setup sanity: the entry must be reversed")
+
+        partials_after = move._get_all_reconciled_invoice_partials()
+        self.assertFalse(
+            any(p['aml'].move_id == entry for p in partials_after),
+            "A reversed standalone entry must not produce a synthetic row anymore",
+        )
+
+    def test_payments_widget_standalone_case_shows_amount_and_hides_unreconcile(self):
+        """End-to-end via the real `invoice_payments_widget`: the row shows
+        the real 0.5 amount, no real partial, currency hardcoded to VEF.
+        Ver openspec: design-notes.md § _get_all_reconciled_invoice_partials
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        widget = move.invoice_payments_widget
+        self.assertTrue(widget)
+        rows = [r for r in widget['content'] if r.get('move_id') == entry.id]
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        self.assertEqual(row['currency_id'], self.currency_vef.id)
+        self.assertAlmostEqual(row['amount'], 0.5, places=6)
+        self.assertFalse(row['partial_id'])
+
+    def test_payments_widget_no_synthetic_row_when_no_standalone_entry(self):
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._pay_invoice(move)  # no rate change -> no standalone entry at all
+        widget = move.invoice_payments_widget
+        self.assertTrue(widget, "A plain reconciled payment must still produce core's own row")
+        self.assertFalse(any(r.get('partial_id') is False for r in widget['content']))
+
+    def test_payments_widget_hides_row_after_standalone_entry_reversed(self):
+        """End-to-end: after undoing the reconciliation, the widget must no
+        longer show the "Diferencial de cambio" row for the reversed entry.
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        rows_before = [r for r in move.invoice_payments_widget['content'] if r.get('move_id') == entry.id]
+        self.assertEqual(len(rows_before), 1, "Setup sanity: the row must be present before reversal")
+
+        (receivable_line + payment_line).remove_move_reconcile()
+        self.assertTrue(entry.reversal_move_ids, "Setup sanity: the entry must be reversed")
+        move.invalidate_recordset(['invoice_payments_widget'])
+
+        # Undoing the reconciliation entirely can collapse the widget to
+        # `False` (core's own behavior when there is nothing left to show
+        # at all) -- either way, the reversed entry's row must be gone.
+        widget_after = move.invoice_payments_widget
+        rows_after = [r for r in widget_after['content'] if r.get('move_id') == entry.id] if widget_after else []
+        self.assertFalse(rows_after, "A reversed standalone entry must not show up in the Pagos widget")
+
+    # ── `account.partial.reconcile.unlink()`: safety net for the reversal ──
+    # Ver openspec: design-notes.md § account_partial_reconcile.unlink()
+
+    def test_partial_reconcile_unlink_does_not_double_reverse(self):
+        """Normal path: core's own `unlink()` already reverses
+        `exchange_move_id` -- the safety net must stay a no-op and NOT
+        produce a second reversal of the same entry.
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        (receivable_line + payment_line).remove_move_reconcile()
+
+        self.assertEqual(
+            len(entry.reversal_move_ids), 1,
+            "The safety net must not create a second reversal on top of core's own",
+        )
+
+    def test_partial_reconcile_unlink_safety_net_reverses_when_core_did_not(self):
+        """Forces the exact scenario the safety net exists for: core's own
+        `unlink()` runs but (simulated here) fails to reverse
+        `exchange_move_id` -- the override must still reverse it itself.
+
+        `_reverse_moves` is patched to no-op on its FIRST call (standing in
+        for core's own internal reversal call, inside `super().unlink()`)
+        and to behave normally from the second call onward (this module's
+        own safety-net call, made explicitly after `super().unlink()`).
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        self.assertEqual(entry.state, "posted")
+        partial = self.env["account.partial.reconcile"].search([
+            ("debit_move_id", "in", (receivable_line.id, payment_line.id)),
+            ("credit_move_id", "in", (receivable_line.id, payment_line.id)),
+        ])
+        self.assertEqual(partial.exchange_move_id, entry)
+
+        move_model = type(entry)
+        original_reverse_moves = move_model._reverse_moves
+        # Only calls involving `entry` itself matter -- an unrelated
+        # `account_accountant` deferral-move `_reverse_moves()` call (on an
+        # empty recordset) is also triggered by this same `unlink()` and
+        # must be ignored here.
+        calls_on_entry = []
+
+        def fake_reverse_moves(self, *args, **kwargs):
+            if entry.id in self.ids:
+                calls_on_entry.append(self)
+                if len(calls_on_entry) == 1:
+                    # Simulate core's own reversal call silently doing nothing.
+                    return self.browse()
+            return original_reverse_moves(self, *args, **kwargs)
+
+        with patch.object(move_model, '_reverse_moves', fake_reverse_moves):
+            partial.unlink()
+
+        self.assertEqual(
+            len(calls_on_entry), 2,
+            "Both core's own call and the safety net's call on `entry` must have happened",
+        )
+        entry.invalidate_recordset()
+        self.assertTrue(
+            entry.reversal_move_ids,
+            "The safety net must reverse the entry itself when core's own path did not",
+        )

@@ -120,3 +120,39 @@
 - [x] 5.3 Validado cargando el `.po` actualizado en el sandbox (`-u
       l10n_ve_accountant` con el archivo copiado) sin errores, y
       reconfirmados los 16/16 tests tras el cambio
+
+## 6. Ronda 2 — visibilidad, redondeo y reversión (probado en vivo)
+
+- [x] 6.1 Detectado desfase de 1 centavo entre el diferencial calculado y
+      `factura.foreign_debit − pago.foreign_credit` real — causa raíz:
+      `_compute_foreign_exchange_amount` recalculaba por tasa en vez de leer
+      los montos alternos ya guardados
+- [x] 6.2 Reemplazado por `_foreign_exposure_at_residual` (función pura,
+      telescópica) + `_compute_alt_exchange_diff_from_settlement`/`_slice` —
+      ver `design-notes.md` para el detalle matemático
+- [x] 6.3 `open_reconcile_view` (`account_move_line.py`): dominio ampliado
+      sobre `account.action_account_moves_all_grouped_matching` para incluir
+      la línea de cierre del standalone (solo esa, no la de P&L), buscando
+      por `l10n_ve_exchange_foreign_source_move_id`/`payment_move_id`
+- [x] 6.4 `_get_all_reconciled_invoice_partials` (`account_move.py`): fila
+      sintética para el widget "Pagos", único hook común a core/`l10n_ve_igtf`/
+      `l10n_ve_payment_extension` (`_compute_payments_widget_reconciled_info`
+      está bloqueado porque `l10n_ve_igtf` lo reimplementa sin `super()`)
+- [x] 6.5 `is_exchange=True` en la fila sintética: oculta el botón
+      "Unreconcile" inútil, a costa de que el renderer (compartido, no
+      tocable) etiquete el monto en moneda de compañía en vez de alterna
+- [x] 6.6 `_reverse_moves` (`account_move.py`): invierte `foreign_debit`/
+      `foreign_credit` en la reversión — core no los tocaba, dejando la
+      reversión sin cancelar el monto alterno original
+- [x] 6.7 `account_partial_reconcile.unlink()`: red de seguridad que
+      revierte el asiento alterno si el mecanismo nativo no lo hizo (caso
+      real: `l10n_ve_igtf.js_remove_outstanding_partial` rompe la
+      conciliación por un camino que no siempre dispara la reversión nativa)
+- [x] 6.8 Ambas vías de visibilidad (6.3, 6.4) excluyen entradas con
+      `reversal_move_ids` seteado — un asiento revertido sigue `posted` por
+      diseño y sin este filtro seguía apareciendo en la factura
+- [x] 6.9 9 tests nuevos cubriendo 6.2, 6.6, 6.7, 6.8 con aserciones exactas
+      (no aproximadas) — 34 tests en este archivo, 244 en la suite completa
+      del módulo, todos en verde
+- [x] 6.10 Comentarios extensos agregados durante esta ronda recortados a
+      ≤4 líneas; detalle completo migrado a `design-notes.md`

@@ -111,7 +111,32 @@ reversión propio.
   alterna.
 - **Efecto en asientos existentes**: ninguno — el toggle nace desactivado;
   solo aplica a conciliaciones nuevas hechas con el toggle activo.
-- **Tradeoff aceptado**: los asientos standalone (caso "solo alterno")
-  aparecen con $0,00 en el widget nativo de "Pagos" de Odoo, porque no cierran
-  ningún residual en moneda de compañía — es el precio de reutilizar el
-  mecanismo nativo de reversión en vez de escribir uno propio.
+
+## Ronda 2: visibilidad, redondeo y reversión (ver `design-notes.md`)
+
+Encontrado y corregido probando en vivo con el usuario, después de la
+primera entrega:
+
+- **Redondeo**: el cálculo original re-derivaba el monto alterno por tasa
+  (`base_amount × delta_tasa`), lo que podía desfasarse por 1 centavo del
+  monto real (`factura.foreign_debit − pago.foreign_credit`). Reemplazado
+  por `_foreign_exposure_at_residual` — función pura que telescopía exacto
+  incluso con múltiples parciales, sin ninguna tasa de por medio.
+- **Visibilidad**: el standalone no aparecía ni en el widget "Pagos" de la
+  factura ni en "Reconciled Items" — se agregó `_get_all_reconciled_invoice_partials`
+  (widget) y se extendió `open_reconcile_view` (dominio ampliado, reutiliza
+  la acción nativa) para surfacear la línea de cierre del standalone.
+- **`is_exchange=True`**: decisión final para la fila sintética del widget —
+  oculta el botón "Unreconcile" (que sería inútil, no hay partial real),
+  a costa de que el renderer nativo (compartido con `l10n_ve_igtf`) etiquete
+  el monto con la moneda de compañía en vez de la alterna.
+- **Reversión rota**: `_reverse_moves` (core) nunca tocaba
+  `foreign_debit`/`foreign_credit` al revertir — la reversión duplicaba o
+  anulaba el monto alterno en vez de invertirlo. Corregido con un override
+  que invierte esos campos explícitamente, más una red de seguridad en
+  `account_partial_reconcile.unlink()` para cuando un módulo de terceros
+  (`l10n_ve_igtf`) rompe la conciliación por un camino no estándar.
+- **Filtro de estado**: ambas vías de visibilidad ahora excluyen entradas
+  con `reversal_move_ids` seteado — antes, un asiento ya revertido seguía
+  apareciendo en la factura.
+- Tests: 16 → 34 en este archivo (244 en la suite completa del módulo).
