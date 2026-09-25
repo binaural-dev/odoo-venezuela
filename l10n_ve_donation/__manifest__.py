@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "19.0.2.0.4",
+    "version": "19.0.2.0.5",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "",
