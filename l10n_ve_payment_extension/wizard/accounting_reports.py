@@ -213,7 +213,9 @@ class WizardAccountingReports(models.TransientModel):
         machine, otherwise its correlative. Falls back to 0 for non-numeric
         values so the sort never breaks."""
         move = self.env["account.move"].browse(move_data.get("_id"))
-        sequence = move.mf_invoice_number or move_data.get("correlative")
+        has_mf_invoice_number = "mf_invoice_number" in move._fields
+        mf_invoice_number = move.mf_invoice_number if has_mf_invoice_number else False
+        sequence = mf_invoice_number or move_data.get("correlative")
         try:
             return int(sequence)
         except (TypeError, ValueError):
