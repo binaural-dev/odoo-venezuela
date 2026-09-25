@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_form_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.form.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="show_digital_dispatch_guide" invisible="1"/>
+                <field name="is_digitalized" string="Digitized" invisible="show_digital_dispatch_guide" readonly="True"/>
+                <field name="control_number_tfhka" string="Control Number" invisible="show_digital_dispatch_guide" readonly="True"/>
+                <field name="tfhka_digitalization_state" string="Digitalization Status"
+                       invisible="show_digital_dispatch_guide or tfhka_digitalization_state == 'success'" readonly="True"
+                       widget="badge"
+                       decoration-success="tfhka_digitalization_state == 'success'"
+                       decoration-danger="tfhka_digitalization_state in ('error', 'data_error')"
+                       decoration-info="tfhka_digitalization_state == 'processing'"
+                       decoration-warning="tfhka_digitalization_state == 'queued'"
+                       decoration-primary="tfhka_digitalization_state == 'none'"/>
+                <field name="tfhka_digitalization_error" string="Digitalization Error"
+                       invisible="tfhka_digitalization_state not in ('error', 'data_error')" readonly="True"
+                       groups="l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin"/>
+            </xpath>
+            <xpath expr="//button[@name='print_dispatch_guide']" position="after">
+                <button name="action_tfhka_retry_digitalization" string="Retry Digitalization" type="object"
+                        invisible="tfhka_digitalization_state not in ('error', 'data_error')"
+                        class="btn-danger"/>
+            </xpath>
+            <xpath expr="//button[@name='print_dispatch_guide']" position="attributes">
+                <attribute name="invisible">not dispatch_guide_controls or is_digitalized</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_picking_tree_inherit_tfhka_digitalization" model="ir.ui.view">
+        <field name="name">stock.picking.list.inherit.tfhka.digitalization</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.vpicktree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="tfhka_digitalization_state"
+                       string="Digitalization Status"
+                       widget="badge"
+                       decoration-success="tfhka_digitalization_state == 'success'"
+                       decoration-danger="tfhka_digitalization_state in ('error', 'data_error')"
+                       decoration-info="tfhka_digitalization_state == 'processing'"
+                       decoration-warning="tfhka_digitalization_state == 'queued'"
+                       decoration-primary="tfhka_digitalization_state == 'none'"
+                       optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_picking_internal_search_inherit_tfhka_digitalization" model="ir.ui.view">
+        <field name="name">stock.picking.internal.search.inherit.tfhka.digitalization</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_internal_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='available']" position="after">
+                <separator/>
+                <filter name="tfhka_digitalization_error" string="TFHKA: Error"
+                        domain="[('tfhka_digitalization_state', '=', 'error')]"/>
+                <filter name="tfhka_digitalization_data_error" string="TFHKA: Data Error"
+                        domain="[('tfhka_digitalization_state', '=', 'data_error')]"/>
+                <filter name="tfhka_digitalization_queued" string="TFHKA: Queued"
+                        domain="[('tfhka_digitalization_state', '=', 'queued')]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_self_order.KioskOrdersDialog">
+        <Dialog title="dialogTitle" size="'lg'">
+            <div class="d-flex" style="gap: 12px; min-height: 320px;">
+                <!-- Lista de órdenes -->
+                <div class="d-flex flex-column" style="width: 42%; overflow-y: auto; max-height: 60vh;">
+                    <t t-if="state.loading">
+                        <div class="text-muted p-3">Loading orders…</div>
+                    </t>
+                    <t t-elif="!orders.length">
+                        <div class="text-muted p-3">No orders in this session.</div>
+                    </t>
+                    <t t-foreach="orders" t-as="order" t-key="order.uuid">
+                        <button type="button"
+                                class="btn text-start d-flex justify-content-between align-items-center mb-1"
+                                t-att-class="selected and selected.uuid === order.uuid ? 'btn-primary' : 'btn-outline-secondary'"
+                                t-on-click="() => this.selectOrder(order)">
+                            <span class="text-truncate" t-esc="orderLabel(order)"/>
+                            <t t-set="st" t-value="orderStatus(order)"/>
+                            <!-- Anclas de estado: el módulo fiscal inyecta aquí sus badges -->
+                            <span class="o_kiosk_order_badges d-inline-flex align-items-center">
+                                <span t-if="st === 'pending_invoice'" class="badge text-bg-danger ms-2">Pending invoice</span>
+                                <span t-if="st === 'invoiced'" class="badge text-bg-success ms-2">Invoiced</span>
+                            </span>
+                        </button>
+                    </t>
+                </div>
+
+                <!-- Detalle de la orden seleccionada -->
+                <div class="flex-grow-1 border-start ps-3" style="width: 58%;">
+                    <t t-if="!selected">
+                        <div class="text-muted p-3">Select an order to see the details.</div>
+                    </t>
+                    <t t-else="">
+                        <div class="fw-bold mb-1" t-esc="orderLabel(selected)"/>
+                        <div class="text-muted small mb-2">
+                            Customer: <t t-esc="selected.partner_id and selected.partner_id.name or '—'"/>
+                        </div>
+                        <div style="max-height: 32vh; overflow-y: auto;">
+                            <table class="table table-sm mb-2">
+                                <tbody>
+                                    <tr t-foreach="selected.lines" t-as="line" t-key="line.uuid || line.id">
+                                        <td class="text-nowrap"><t t-esc="line.qty"/> x</td>
+                                        <td t-esc="line.product_id and line.product_id.display_name or ''"/>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="d-flex justify-content-between fw-bold border-top pt-2">
+                            <span>Total</span>
+                            <span t-esc="money(selected.amount_total)"/>
+                        </div>
+                        <t t-set="st" t-value="orderStatus(selected)"/>
+                        <div class="mt-1 small o_kiosk_order_status">
+                            Status:
+                            <span t-if="st === 'pending_invoice'" class="text-danger">
+                                paid, pending invoice creation
+                            </span>
+                            <span t-if="st === 'invoiced'" class="text-success">
+                                invoiced
+                            </span>
+                        </div>
+
+                        <!-- Pago (genérico). El módulo fiscal inyecta aquí el detalle verificado (Megasoft) -->
+                        <t t-if="selectedPayment">
+                            <div class="border rounded p-2 mt-2 small bg-body-tertiary o_kiosk_order_payment">
+                                <div class="fw-bold mb-1">Payment</div>
+                                <div>Method:
+                                    <t t-esc="selectedPayment.payment_method_id and selectedPayment.payment_method_id.name or '—'"/>
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- Acción según el estado. El módulo fiscal inyecta aquí Imprimir/Reimprimir -->
+                        <div class="mt-3 d-flex gap-2 o_kiosk_order_actions">
+                            <button t-if="st === 'pending_invoice'" type="button" class="btn btn-primary"
+                                    t-on-click="onCreateInvoice" t-att-disabled="state.busy">
+                                Create invoice
+                            </button>
+                        </div>
+                        <div t-if="state.message" class="alert alert-info mt-2 mb-0 py-2"
+                             t-esc="state.message" role="status"/>
+                    </t>
+                </div>
+            </div>
+            <t t-set-slot="footer">
+                <button type="button" class="btn btn-outline-secondary"
+                        t-on-click="loadOrders" t-att-disabled="state.loading">
+                    Refresh
+                </button>
+                <button type="button" class="btn btn-secondary" t-on-click="() => props.close()">
+                    Close
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

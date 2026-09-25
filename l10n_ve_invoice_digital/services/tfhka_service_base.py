@@ -1,0 +1,156 @@
+from odoo import models, fields, _
+from odoo.exceptions import UserError
+from pytz import timezone, utc
+
+# Zona horaria por defecto cuando el usuario no tiene una configurada.
+TFHKA_DEFAULT_TZ = "America/Caracas"
+
+
+class TfhkaDataError(UserError):
+    """UserError levantado por una validación local -- de este lado, antes de
+    llamar siquiera a TFHKA -- que detecta un dato del documento faltante o
+    inválido (NIF/país/teléfono/correo del contacto, fecha, serie, moneda,
+    impuesto, forma de pago). Es el equivalente local a los códigos de
+    negocio 203/205 que TFHKA devolvería por el mismo tipo de problema si el
+    documento llegara a enviarse.
+
+    ``tfhka.digitalization.mixin`` clasifica cualquier excepción de este tipo
+    como ``data_error``, igual que un código de negocio 203/205.
+    """
+
+
+class TfhkaSequenceMismatchError(TfhkaDataError):
+    """El correlativo de Odoo no coincide con el de The Factory y nadie
+    confirmó seguir de todas formas (``tfhka_auto_accept_sequence_mismatch``).
+
+    Antes de la cola, este caso se resolvía sincrónicamente: el usuario que
+    disparaba la digitalización veía en el acto un wizard de confirmación
+    (``account.retention.alert.wizard``). Con el cron como único emisor real
+    no hay nadie ahí para contestarlo, así que se levanta esta excepción en
+    su lugar -- al heredar de ``TfhkaDataError`` el mixin ya la clasifica
+    como ``data_error`` sin cambios adicionales, dejando la retención en un
+    estado revisable en vez de marcarla ``success`` sin haber emitido nada.
+    """
+
+
+class TfhkaServiceBase(models.AbstractModel):
+    """Base compartida de los servicios de TFHKA.
+
+    Reúne la obtención de datos comunes a factura y retención (paralelo a los
+    helpers de ``unidigital.*.service``): la fecha/hora de emisión y el nodo de
+    identificación fiscal del sujeto (comprador / sujeto retenido). La heredan
+    ``tfhka.document.service`` y ``tfhka.retention.service``.
+
+    Puntos de extensión (para que ``l10n_ve_dispatch_guide_digital`` reutilice
+    esta base en el futuro):
+
+    * :meth:`_get_party_source` — de qué contacto se toman los datos fiscales.
+    * :meth:`_get_party_address` — qué campo de dirección se reporta.
+    """
+
+    _name = "tfhka.service.base"
+    _description = "TFHKA Service Base"
+
+    # ------------------------------------------------------------------
+    # Fecha/hora de emisión
+    # ------------------------------------------------------------------
+
+    def _get_emission_datetime(self, record):
+        """``now`` en la zona horaria del usuario, con fallback a Caracas.
+
+        ``fields.Datetime.now()`` devuelve un naive en UTC: hay que localizarlo
+        antes de convertir, o ``astimezone`` lo interpretaría como hora local
+        del servidor y la hora de emisión saldría desplazada.
+        """
+        tz = timezone(record.env.user.tz or TFHKA_DEFAULT_TZ)
+        return utc.localize(fields.Datetime.now()).astimezone(tz)
+
+    # ------------------------------------------------------------------
+    # Identificación del sujeto (comprador / sujeto retenido)
+    # ------------------------------------------------------------------
+
+    def _get_party_source(self, record):
+        """Contacto del que se toman los datos fiscales. Punto de extensión."""
+        record.ensure_one()
+        return record.partner_id
+
+    def _get_party_address(self, partner):
+        """Dirección a reportar para el sujeto. Punto de extensión.
+
+        Se arma localmente a partir de los campos de dirección estándar
+        (calle, calle 2, código postal + ciudad, estado, país), sin
+        depender de ``contact_address_complete`` (vive en ``web_map``,
+        Enterprise, no declarado como dependencia de este módulo LGPL-3 -
+        en Community el campo no existe) ni de ``contact_address`` (repite
+        el nombre del contacto, que ya va en ``razonSocial``, y separa con
+        saltos de línea literales).
+        """
+        zip_city = " ".join(filter(None, [partner.zip, partner.city]))
+        parts = [
+            partner.street,
+            partner.street2,
+            zip_city,
+            partner.state_id.name,
+            partner.country_id.name,
+        ]
+        return ", ".join(filter(None, parts)) or "no definida"
+
+    def _parse_partner_identification(self, partner):
+        """(tipo, número) de identificación fiscal a partir de ``vat``/``prefix_vat``.
+
+        Requiere que ``partner.vat`` ya esté validado como no vacío por el
+        llamador — cada punto de uso lanza su propio mensaje de negocio para
+        ese caso. Compartido entre ``_get_fiscal_party`` (comprador / sujeto
+        retenido) y cualquier otro sujeto fiscal que necesite el mismo
+        formato de RIF/cédula (p. ej. el tercero de facturación a terceros).
+        """
+        vat = partner.vat.upper()
+        if vat[0].isalpha():
+            identification_type = vat[0]
+            identification_number = vat[1:]
+        else:
+            identification_type = ""
+            identification_number = vat
+
+        if partner.prefix_vat:
+            identification_type = partner.prefix_vat
+
+        identification_number = identification_number.replace("-", "").replace(".", "")
+        return identification_type, identification_number
+
+    def _get_fiscal_party(self, record):
+        """Construye el nodo de identificación (comprador / sujeto retenido).
+
+        Parseo de RIF/cédula (tipo + número), limpieza y validaciones de
+        NIF/país/teléfono/correo comunes a factura y retención. Devuelve
+        ``None`` si el registro no tiene contacto.
+        """
+        record.ensure_one()
+        partner = self._get_party_source(record)
+        if not partner:
+            return None
+
+        if not partner.vat:
+            raise TfhkaDataError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
+
+        identification_type, identification_number = self._parse_partner_identification(partner)
+
+        if not partner.country_code:
+            raise TfhkaDataError(_("The 'Country' field of the Customer cannot be empty for digitalization."))
+
+        if not (partner.mobile or partner.phone):
+            raise TfhkaDataError(_("The 'Mobile' field of the Customer cannot be empty for digitalization."))
+
+        if not partner.email:
+            raise TfhkaDataError(_("The 'Email' field of the Customer cannot be empty for digitalization."))
+
+        return {
+            "tipoIdentificacion": identification_type,
+            "numeroIdentificacion": identification_number,
+            "razonSocial": partner.name,
+            "direccion": self._get_party_address(partner),
+            "pais": partner.country_code,
+            "telefono": [partner.mobile or partner.phone],
+            "notificar": "Si",
+            "correo": [partner.email],
+        }

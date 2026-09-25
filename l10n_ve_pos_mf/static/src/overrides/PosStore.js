@@ -8,6 +8,20 @@ import { floatIsZero, roundPrecision as round_pr } from "@web/core/utils/numbers
 import { LocalOrderHistory } from "../utils/LocalOrderHistory";
 
 /**
+ * Hand-off del puerto COM entre la máquina fiscal (Web Serial) y procesos
+ * externos que necesitan el mismo puerto (p.ej. el VPOS de Megasoft, un
+ * proceso Windows separado). Web Serial abre el puerto UNA vez y lo mantiene
+ * con lock exclusivo toda la sesión, así que mientras el navegador lo tenga
+ * abierto ningún otro proceso puede usarlo. Este módulo (dueño de la MF)
+ * expone `withFiscalPrinterReleased()`: cede el puerto (disconnect), corre la
+ * sección crítica externa y luego lo reclama con reintentos silenciosos.
+ * Antes esta lógica vivía duplicada en binaural_megasoft/PosState.js.
+ */
+const MF_PORT_HANDOFF_GRACE_MS = 1000;
+const MF_PORT_RECLAIM_MAX_ATTEMPTS = 3;
+const MF_PORT_RECLAIM_RETRY_DELAY_MS = 750;
+
+/**
  * Override del PosStore para integrar la máquina fiscal vía Web Serial API.
  *
  * Migración Odoo 17 → 19:
@@ -45,6 +59,24 @@ patch(PosStore.prototype, {
   },
 
   /**
+   * Antes de pasar a la pantalla de pago, sustituye por el mínimo fiscal
+   * (0,01) cualquier línea cuyo descuento (de línea o global) la haya dejado
+   * en 0, para que el total y el pago ya reflejen 0,01 y la MF pueda imprimir
+   * la línea (no acepta 0,00). El caso normal ya lo resuelve el override de
+   * `PosOrderline.setDiscount` al aplicar el descuento; este respaldo cubre
+   * órdenes cargadas/reanudadas cuyas líneas ya venían al 100%. Ticket #15105.
+   */
+  async pay() {
+    const order = this.getOrder();
+    if (order) {
+      for (const line of [...(order.lines || [])]) {
+        line.mfEnsureNonZeroFiscalPrice?.();
+      }
+    }
+    return super.pay(...arguments);
+  },
+
+  /**
    * Obtiene la instancia del driver de la máquina fiscal
    * @returns {TfhkaDriver|null}
    */
@@ -59,6 +91,123 @@ patch(PosStore.prototype, {
   useFiscalMachine() {
     const fiscalPrinter = this.getFiscalPrinter();
     return Boolean(fiscalPrinter && fiscalPrinter.isConnected);
+  },
+
+  _sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  },
+
+  /**
+   * Ejecuta `criticalSection` cediendo temporalmente el puerto de la máquina
+   * fiscal a un proceso externo (p.ej. el VPOS de Megasoft) que necesita el
+   * mismo COM. Si la MF está conectada: la desconecta antes, corre la
+   * sección, y la reclama después (reconexión silenciosa con reintentos). Si
+   * la MF no está instalada/conectada, simplemente corre la sección.
+   *
+   * El resultado devuelto y las excepciones lanzadas por `criticalSection`
+   * se propagan intactos; el reclamo del puerto ocurre siempre (finally).
+   *
+   * @param {() => Promise<any>} criticalSection
+   * @returns {Promise<any>}
+   */
+  async withFiscalPrinterReleased(criticalSection) {
+    const fiscalPrinter = this.getFiscalPrinter();
+    // Gestionar el puerto si el driver se dice conectado O si la conexión
+    // todavía retiene el puerto físico (caso: autoConnect abrió pero getStatus
+    // falló → driver.isConnected=false pero el COM sigue tomado con lock). Sin
+    // esto, el proceso externo (Megasoft) no podría abrir el COM ocupado.
+    const shouldManagePort = Boolean(
+      fiscalPrinter && (fiscalPrinter.isConnected || fiscalPrinter.connection?.port)
+    );
+
+    if (shouldManagePort) {
+      try {
+        await fiscalPrinter.disconnect();
+      } catch (e) {
+        // No abortar la sección crítica solo porque nuestra propia
+        // desconexión falló; el proceso externo puede necesitar el puerto
+        // igual y seguiremos intentando reclamarlo después.
+        console.warn(
+          "[l10n_ve_pos_mf] falló la desconexión de la máquina fiscal antes de ceder el puerto, se continúa igual",
+          e
+        );
+      }
+    }
+
+    try {
+      return await criticalSection();
+    } finally {
+      if (shouldManagePort) {
+        const reclaimed = await this._reclaimFiscalPrinterPort(fiscalPrinter);
+        if (!reclaimed) {
+          this._notifyFiscalPrinterReclaimFailed();
+        }
+        // Reflejar el estado real en el botón de la MF (que no observa el
+        // driver directamente): tras un reclaim fallido no debe seguir verde.
+        this._broadcastFiscalStatus(Boolean(fiscalPrinter.isConnected));
+      }
+    }
+  },
+
+  /**
+   * Notifica el estado de conexión de la máquina fiscal a componentes que no
+   * observan el driver directamente (p.ej. FiscalPrinterButton), vía evento
+   * de ventana.
+   * @param {boolean} connected
+   */
+  _broadcastFiscalStatus(connected) {
+    try {
+      window.dispatchEvent(
+        new CustomEvent("mf-fiscal-status", { detail: { connected: Boolean(connected) } })
+      );
+    } catch (_e) {
+      // dispatch no debe tirar por sí mismo
+    }
+  },
+
+  /**
+   * Espera el margen de gracia y reintenta reconectar la máquina fiscal
+   * (autoConnect silencioso, sin gesto de usuario) hasta
+   * MF_PORT_RECLAIM_MAX_ATTEMPTS veces.
+   * @param {Object} fiscalPrinter
+   * @returns {Promise<boolean>}
+   */
+  async _reclaimFiscalPrinterPort(fiscalPrinter) {
+    await this._sleep(MF_PORT_HANDOFF_GRACE_MS);
+    for (let attempt = 1; attempt <= MF_PORT_RECLAIM_MAX_ATTEMPTS; attempt++) {
+      try {
+        await fiscalPrinter.connect();
+        if (fiscalPrinter.isConnected) {
+          return true;
+        }
+      } catch (e) {
+        console.warn(
+          `[l10n_ve_pos_mf] intento ${attempt}/${MF_PORT_RECLAIM_MAX_ATTEMPTS} de reclamar la máquina fiscal falló`,
+          e
+        );
+      }
+      if (attempt < MF_PORT_RECLAIM_MAX_ATTEMPTS) {
+        await this._sleep(MF_PORT_RECLAIM_RETRY_DELAY_MS);
+      }
+    }
+    return false;
+  },
+
+  _notifyFiscalPrinterReclaimFailed() {
+    try {
+      this.env.services.notification.add(
+        _t(
+          "No se pudo reconectar automáticamente la máquina fiscal tras la operación externa. " +
+            "Verifique la conexión desde el botón de máquina fiscal antes de validar la próxima orden."
+        ),
+        { type: "warning", sticky: true }
+      );
+    } catch (_e) {
+      console.warn(
+        "[l10n_ve_pos_mf] no se pudo mostrar el aviso de reconexión de la máquina fiscal",
+        _e
+      );
+    }
   },
 
   async applyDiscount(percent, order = this.getOrder(), options = {}) {
@@ -304,6 +453,7 @@ patch(PosStore.prototype, {
           ? line.price_unit
           : line.get_foreign_unit_price?.() ?? line.price_unit;
 
+        const isFiscalMin = Boolean(line.mfIsFiscalMinLine?.());
         const taxes = line.tax_ids || [];
         const fiscalCode =
           taxes.length > 0
@@ -319,6 +469,17 @@ patch(PosStore.prototype, {
           ),
           code: line.product_id?.default_code,
           tax: fiscalCode,
+          // Línea facturada en el mínimo fiscal (descuento 100% → subtotal 0,01),
+          // reconocida por la marca o por sus datos, que sobreviven a recargar
+          // la caja y a reimprimir pedidos pendientes. Ver
+          // _convertOrderForDriver. #15105
+          _mf_fiscal_min: isFiscalMin,
+          // Unidad de los productos pesados, para imprimir la cantidad real en
+          // la descripción de las líneas de mínimo fiscal. #15105
+          _mf_uom_name:
+            isFiscalMin && line.product_id?.to_weight
+              ? this.normalizeProductName(line.product_id?.uom_id?.name || "")
+              : "",
         };
       });
 
@@ -558,6 +719,23 @@ patch(PosStore.prototype, {
     return round_pr(value, this.currency?.rounding || 0.01);
   },
 
+  /**
+   * Descripción para la MF de una línea de mínimo fiscal con cantidad
+   * fraccionaria. La MF la recibe como 1 × 0,01, así que la cantidad real de
+   * la orden se antepone al nombre para que quede impresa:
+   * "CANT 1,25 KG - PRODUCTO". Va al inicio para que, si el nombre es largo,
+   * se trunque el nombre y no la cantidad. Ticket #15105.
+   */
+  _mfFiscalMinProductName(line) {
+    const qty = Math.abs(Number(line.quantity || 0));
+    const qtyText = qty
+      .toFixed(3)
+      .replace(/\.?0+$/, "")
+      .replace(".", ",");
+    const uom = line._mf_uom_name ? ` ${String(line._mf_uom_name).toUpperCase()}` : "";
+    return `CANT ${qtyText}${uom} - ${line.name || ""}`.trim();
+  },
+
   _isGlobalDiscountProductLine(line) {
     const discountProduct = this.config?.discount_product_id;
     const discountProductId = Array.isArray(discountProduct)
@@ -658,11 +836,32 @@ patch(PosStore.prototype, {
       return order._mf_global_discount_meta || null;
     }
 
+    // En la aplicación manual se usa el % que tecleó el cajero. Inferirlo del
+    // monto de pos_discount falla si hay líneas en el mínimo fiscal: el monto
+    // se calcula sobre su subtotal de 0,01 y la base de la inferencia no
+    // coincide (p.ej. un 50% tras un global de 100% salía 0,01%). #15105
+    const appliedPercent =
+      expectedPercent != null
+        ? Math.min(Math.max(Number(expectedPercent) || 0, 0), 100)
+        : inference.inferredPercent;
+    const appliedClamped = expectedPercent != null ? false : inference.clamped;
+
     // Remover primero las líneas de descuento global para que
     // globalDiscountPc sea 0 antes de modificar líneas y evitar
     // re-disparos del debounce de pos_discount.
+    //
+    // Se usa `line.delete()` (borrado síncrono, igual que hace el propio
+    // `pos_discount` con sus líneas de descuento) y NO `order.removeOrderline()`:
+    // este último lo sobreescribe `binaural_pos_hr` como método ASYNC que, con
+    // `pos_remove_orderline_require_supervisor_key`, abre un popup de supervisor
+    // y sólo elimina la línea tras el PIN. Como aquí no se espera esa promesa,
+    // la línea de descuento nunca se eliminaba: `globalDiscountPc` seguía ≠ 0 y
+    // el `setDiscount()` de más abajo re-disparaba el debounce de `pos_discount`
+    // → re-entrada infinita en applyDiscount → popups de supervisor apilados que
+    // congelaban la caja (pantalla negra). Estas líneas son gestionadas por el
+    // sistema, no por el cajero, así que su borrado no debe pasar por el gate.
     for (const line of inference.discountLines) {
-      order.removeOrderline(line);
+      line.delete();
     }
 
     // Resetear todas las líneas a 0% para aplicar la tasa sobre precios crudos
@@ -674,33 +873,38 @@ patch(PosStore.prototype, {
       return quantity > 0 && unitPrice >= 0;
     });
 
-    for (const line of positiveLines) {
-      if (typeof line.setDiscount === "function") {
-        line.setDiscount(inference.inferredPercent);
-      } else {
-        line.discount = inference.inferredPercent;
-      }
-    }
-
+    // Base del descuento con el precio real, ANTES de aplicarlo: con un global
+    // del 100% `setDiscount` sustituye el precio por el mínimo fiscal (0,01) y
+    // el monto informativo (DESC. GLOBAL) saldría como Σ 0,01 × cantidad.
+    // Ticket #15105.
     let rawTotal = 0;
     for (const line of positiveLines) {
       const quantity = Math.abs(Number(line.getQuantity?.() ?? line.qty ?? 0));
       const unitPrice = Number(line.getUnitPrice?.() ?? line.price_unit ?? 0);
       rawTotal += Math.abs(unitPrice * quantity);
     }
+
+    for (const line of positiveLines) {
+      if (typeof line.setDiscount === "function") {
+        line.setDiscount(appliedPercent);
+      } else {
+        line.discount = appliedPercent;
+      }
+    }
+
     const correctedAmount = round_pr(
-      (rawTotal * inference.inferredPercent) / 100,
+      (rawTotal * appliedPercent) / 100,
       this.currency?.rounding || 0.01
     );
 
     order._mf_global_discount_applied = true;
     order._mf_global_discount_meta = {
       global_discount_amount: correctedAmount,
-      global_discount_rate: inference.inferredPercent,
-      global_clamped: inference.clamped,
+      global_discount_rate: appliedPercent,
+      global_clamped: appliedClamped,
     };
     order._mf_last_applied_discount_percent = Number(
-      expectedPercent ?? inference.inferredPercent ?? 0
+      appliedPercent ?? 0
     );
 
     return order._mf_global_discount_meta;
@@ -757,6 +961,39 @@ patch(PosStore.prototype, {
     }
 
     const lines = POSITIVE_LINES.map((line) => {
+      // Línea de mínimo fiscal (descuento 100% → subtotal de línea 0,01 en
+      // Odoo con la cantidad intacta): la MF arma cada línea como
+      // precio × cantidad con 2 decimales y no puede repartir 0,01 entre N
+      // unidades. Con cantidad entera se manda N × 0,01 más un descuento por
+      // monto sobre el ítem de (N − 1) × 0,01 (`q-` en el driver): la línea
+      // fiscal suma 0,01, el cierre 199 cuadra y la MF imprime la cantidad
+      // real. Ticket #15105.
+      if (line._mf_fiscal_min) {
+        const qty = Math.abs(Number(line.quantity || 0));
+        const wholeQty = Math.round(qty);
+        if (wholeQty >= 1 && Math.abs(qty - wholeQty) < 1e-9) {
+          return {
+            product_name: line.name,
+            product_code: line.code || line.default_code,
+            price_unit: 0.01,
+            quantity: wholeQty,
+            fiscal_code: line.tax,
+            discount: 0,
+            discount_amount: round_pr((wholeQty - 1) * 0.01, 0.01),
+          };
+        }
+        // Cantidad fraccionaria (productos pesados): no se sabe cómo redondea
+        // la MF 0,01 × cantidad, así que va como 1 × 0,01 con la cantidad
+        // real en la descripción.
+        return {
+          product_name: this._mfFiscalMinProductName(line),
+          product_code: line.code || line.default_code,
+          price_unit: 0.01,
+          quantity: 1,
+          fiscal_code: line.tax,
+          discount: 0,
+        };
+      }
       const priceUnit = Number(line.price_unit || 0);
       const lineDiscount = Number(line.discount || 0);
       const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);
