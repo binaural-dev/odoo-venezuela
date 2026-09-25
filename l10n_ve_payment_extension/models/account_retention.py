@@ -502,7 +502,14 @@ class AccountRetention(models.Model):
 
             for move, retention_amount in retention_amounts_by_move.items():
                 invoice_total = abs(move.amount_residual_signed)
-                if invoice_total < retention_amount:
+                # Un excedente que desaparece al reconvertirlo a la moneda de
+                # la factura (con la tasa de la propia factura) es redondeo
+                # entre monedas, no un exceso real - ver
+                # `account.move._retention_excess_within_currency_precision`.
+                if (
+                    invoice_total < retention_amount
+                    and move._retention_excess_within_currency_precision(retention_amount) is None
+                ):
                     error_msg = _(
                         "The retention amount (%s) cannot be greater than the invoice total signed amount (%s) for invoice %s."
                     ) % (retention_amount, invoice_total, move.name)
@@ -1386,6 +1393,75 @@ class AccountRetention(models.Model):
 
         if not is_refund and has_subsidiary and self.env.company.subsidiary:
             res["account_analytic_id"] = move.account_analytic_id.id
+
+        # Si lo retenido en esta factura excede el residual SOLO por
+        # redondeo entre monedas (ver
+        # `account.move._retention_excess_within_currency_precision`), el
+        # sobrante se declara aqui mismo, en los valores de creacion del
+        # pago -no despues de conciliarlo-: `write_off_line_vals` es el
+        # mecanismo nativo que usa el propio wizard "Registrar Pago" de
+        # Odoo (`account.payment.register`) para separar, dentro del MISMO
+        # asiento del pago, la porcion que va a la cuenta por
+        # cobrar/pagar de la que va a una cuenta de resultado. Con esto,
+        # cuando `_reconcile_all_payments` concilie mas adelante, el monto
+        # que realmente llega a la factura ya es el residual exacto -sin
+        # sobrante que absorber en un segundo paso ni asiento aparte.
+        retained_company_currency = sum(abs(a) for a in lines.mapped("retention_amount"))
+        writeoff = move._retention_excess_within_currency_precision(retained_company_currency)
+        if writeoff:
+            company_currency = self.company_currency_id
+            # El signo de la linea depende de la direccion del pago -y es
+            # el opuesto de lo que parece intuitivo-. Segun
+            # `account.payment._prepare_move_lines_per_type` del core:
+            #   contrapartida = -liquidez - writeoff
+            # Con `liquidez = +retenido` en un pago inbound (retencion de
+            # cliente), para que la contrapartida cierre en exactamente
+            # -adeudado (no en -(adeudado+sobrante)) hace falta
+            # `writeoff = -sobrante` (CREDITO). En un pago outbound
+            # (retencion de proveedor) `liquidez = -retenido`, y por el
+            # mismo despeje hace falta `writeoff = +sobrante` (DEBITO).
+            #
+            # La cuenta tiene que acompañar ese mismo signo, no quedarse
+            # fija en "ganancia": un CREDITO a la cuenta de ganancia
+            # aumenta el ingreso (correcto, cliente); un DEBITO a esa
+            # misma cuenta de ganancia lo reduciria -contablemente al
+            # reves de lo que significa. Del lado proveedor el debito
+            # tiene que caer en la cuenta de PERDIDA, donde un debito si
+            # aumenta el gasto/perdida como corresponde.
+            if p_type == "inbound":
+                signed_writeoff = -writeoff
+                exchange_account = self.env.company.income_currency_exchange_account_id
+            else:
+                signed_writeoff = writeoff
+                exchange_account = self.env.company.expense_currency_exchange_account_id
+            if exchange_account:
+                res["write_off_line_vals"] = [{
+                    "name": _("Currency precision rounding"),
+                    "account_id": exchange_account.id,
+                    "partner_id": move.partner_id.id,
+                    "currency_id": company_currency.id,
+                    "amount_currency": signed_writeoff,
+                    "balance": signed_writeoff,
+                }]
+            else:
+                # Sin la cuenta de ganancia por diferencial cambiario no hay
+                # donde declarar el writeoff: seguir adelante dejaria el
+                # sobrante abierto en la cuenta por cobrar/pagar sin que
+                # nadie se entere. Se detiene el proceso en vez de emitir
+                # una retencion con un residual silencioso.
+                raise UserError(
+                    _(
+                        "The company must have an 'Exchange Gain Account' "
+                        "configured to issue this retention: invoice %(invoice)s "
+                        "has a currency-precision surplus of %(amount)s %(currency)s "
+                        "that needs to be recorded there."
+                    )
+                    % {
+                        "invoice": move.display_name,
+                        "amount": writeoff,
+                        "currency": company_currency.name,
+                    }
+                )
 
         # l10n_ve_igtf's js_assign_outstanding_line picks conversion_date over
         # payment.date for the advance-crossing move's date/rate unless this is

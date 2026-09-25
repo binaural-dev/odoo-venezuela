@@ -861,18 +861,27 @@ class AccountRetentionLine(models.Model):
         for record in self:
             is_vef_the_base_currency = record.env.company.currency_id == record.env.ref("base.VEF")
             is_client_retention = record.retention_id and record.retention_id.type == "out_invoice"
-            if (
+            if not (
                 is_vef_the_base_currency
                 and is_client_retention
                 and record.move_id.payment_state not in ("in_payment", "paid")
                 and abs(record.retention_amount) > abs(record.move_id.amount_residual_signed)
             ):
-                raise ValidationError(
-                    _(
-                        "The total amount of the retention is greater than the residual amount of"
-                        " the invoice."
-                    )
+                continue
+            # Mismo criterio que `AccountRetention.action_post`: un exceso
+            # que desaparece al reconvertirlo a la moneda de la factura con
+            # su propia tasa es redondeo entre monedas, no un exceso real -
+            # ver `account.move._retention_excess_within_currency_precision`.
+            if record.move_id._retention_excess_within_currency_precision(
+                abs(record.retention_amount)
+            ) is not None:
+                continue
+            raise ValidationError(
+                _(
+                    "The total amount of the retention is greater than the residual amount of"
+                    " the invoice."
                 )
+            )
 
     def write(self, vals):
         res = super().write(vals)
