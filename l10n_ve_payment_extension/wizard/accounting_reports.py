@@ -199,7 +199,25 @@ class WizardAccountingReports(models.TransientModel):
             retention_data = self.get_retention_iva_values(move.get("_id"))
             move.update(retention_data)
 
-        return sorted(data, key=lambda x: datetime.strptime(x.get("document_date"), "%d/%m/%Y"))
+        return sorted(
+            data,
+            key=lambda x: (
+                datetime.strptime(x.get("document_date"), "%d/%m/%Y"),
+                self._sale_book_secondary_sort_key(x),
+            ),
+        )
+
+    def _sale_book_secondary_sort_key(self, move_data):
+        """Secondary sort key within the same document_date: the MF sequence
+        number (mf_invoice_number) when the move was printed by a fiscal
+        machine, otherwise its correlative. Falls back to 0 for non-numeric
+        values so the sort never breaks."""
+        move = self.env["account.move"].browse(move_data.get("_id"))
+        sequence = move.mf_invoice_number or move_data.get("correlative")
+        try:
+            return int(sequence)
+        except (TypeError, ValueError):
+            return 0
 
     def parse_purchase_book_data(self):
         data = super().parse_purchase_book_data()
