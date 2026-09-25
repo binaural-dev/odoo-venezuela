@@ -56,7 +56,10 @@ class AccountTax(models.Model):
             else:
                 subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + remaining_diff
                 subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + remaining_diff
-            # Sync tax groups' base_amount with corrected subtotal
+            # Sync each tax group's base_amount with the REAL balance of ITS
+            # OWN product lines, not a proportional split of the aggregate
+            # diff -- that only guarantees the subtotal matches, not each
+            # individual group (confirmed off-by-a-cent on a real invoice).
             tax_groups = subtotal.get('tax_groups', [])
             if not tax_groups:
                 continue
@@ -64,17 +67,31 @@ class AccountTax(models.Model):
             if cc.is_zero(tg_total):
                 continue
             n_tg = len(tax_groups)
+            assigned_so_far = 0.0
             for j, tg in enumerate(tax_groups):
+                involved_tax_ids = set(tg.get('involved_tax_ids', []))
+                # A 'group' tax puts the PARENT in `l.tax_ids`, but core
+                # expands `involved_tax_ids` to its CHILDREN -- check both.
+                tg_lines = product_lines.filtered(
+                    lambda l: (set(l.tax_ids.ids) & involved_tax_ids)
+                    or (set(l.tax_ids.children_tax_ids.ids) & involved_tax_ids)
+                )
                 if j < n_tg - 1:
-                    tg_ratio = tg.get('base_amount', 0.0) / tg_total
-                    tg_share = cc.round(tg_ratio * subtotal['base_amount'])
-                    tg['base_amount'] = tg_share
-                    tg['display_base_amount'] = tg_share
-                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg_share)
+                    if tg_lines:
+                        tg_base = cc.round(sum(tg_lines.mapped('balance')) * sign)
+                    else:
+                        # Fallback: couldn't identify this group's own lines
+                        # (exotic tax setup) -- keep the old proportional split.
+                        tg_ratio = tg.get('base_amount', 0.0) / tg_total
+                        tg_base = cc.round(tg_ratio * subtotal['base_amount'])
+                    tg['base_amount'] = tg_base
+                    tg['display_base_amount'] = tg_base
+                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg_base)
+                    assigned_so_far += tg_base
                 else:
-                    tg['base_amount'] = subtotal['base_amount'] - sum(
-                        tax_groups[k]['base_amount'] for k in range(j)
-                    )
+                    # Last group: takes the exact remainder so the groups'
+                    # sum still matches the corrected subtotal.
+                    tg['base_amount'] = subtotal['base_amount'] - assigned_so_far
                     tg['display_base_amount'] = tg['base_amount']
                     tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg['base_amount'])
 
