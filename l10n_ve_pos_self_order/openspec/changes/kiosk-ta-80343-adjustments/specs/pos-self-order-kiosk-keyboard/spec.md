@@ -15,7 +15,15 @@ librerías externas, con dos modos:
 El teclado SHALL mostrarse al enfocar un campo de texto de la pantalla de
 identificación/creación de contacto (nombre, apellido, calle, teléfono) y
 SHALL escribir en el campo que tiene el foco. El campo de teléfono SHALL usar
-el modo numérico.
+el modo numérico. El layout SHALL seguir al campo tocado cada vez (al enfocarlo
+y al tocarlo aunque ya tuviera el foco), y las teclas del teclado NO SHALL
+quitarle el foco al campo activo.
+
+#### Scenario: Volver de teléfono a un campo de texto
+
+- **GIVEN** el teclado en modo numérico tras tocar el teléfono
+- **WHEN** el cliente vuelve a tocar nombre, apellido o calle
+- **THEN** el teclado cambia de nuevo al modo QWERTY
 
 #### Scenario: Enfocar un campo de texto muestra el teclado
 

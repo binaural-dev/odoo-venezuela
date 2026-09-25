@@ -719,12 +719,6 @@ msgstr "Subtotal"
 
 #. module: l10n_ve_pos_self_order
 #. odoo-javascript
-#: code:addons/l10n_ve_pos_self_order/static/src/app/components/kiosk_amounts_summary/kiosk_amounts_summary.xml:0
-msgid "Total (foreign currency)"
-msgstr "Total (moneda extranjera)"
-
-#. module: l10n_ve_pos_self_order
-#. odoo-javascript
 #: code:addons/l10n_ve_pos_self_order/static/src/app/components/kiosk_keyboard/kiosk_keyboard.xml:0
 msgid "Space"
 msgstr "Espacio"

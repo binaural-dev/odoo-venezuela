@@ -30,8 +30,8 @@ Estado recibido, sin confiar en el pareo que mandó el cliente.
 - **GIVEN** un Kiosko con `self_ordering_require_address` activado
 - **WHEN** el cliente intenta crear un contacto sin Estado, sin Municipio o
   sin Calle
-- **THEN** se rechaza con un mensaje de error, tanto en cliente
-  (botón deshabilitado) como en servidor si se fuerza la llamada
+- **THEN** se rechaza con un mensaje de error, tanto en cliente (al pulsar
+  Crear se indica el campo que falta) como en servidor si se fuerza la llamada
 
 #### Scenario: Municipio depende del Estado
 

@@ -34,7 +34,9 @@ salto directo al VPOS SHALL conservarse.
 
 - **GIVEN** una compañía con `foreign_currency_id` configurada
 - **WHEN** el cliente revisa su orden antes de pagar
-- **THEN** ve también el total en esa moneda, calculado con los mismos
+- **THEN** ve también el total en esa moneda, rotulado "Total <código de la
+  moneda>" (p. ej. "Total USD", "Total EUR" según `foreign_currency_id`),
+  calculado con los mismos
   helpers de `l10n_ve_pos` que usa la caja (`get_foreign_total_with_tax`,
   tasa operativa de `pos.config` y redondeo de la moneda), y ese monto coincide con el
   `foreign_amount_total` que termina en la factura de la orden
