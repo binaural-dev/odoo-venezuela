@@ -10,6 +10,7 @@ MOVE_TYPES = (
     'out_receipt', 'in_receipt',
     'entry',
 )
+INVOICE_TYPES = tuple(t for t in MOVE_TYPES if t != 'entry')
 
 
 def _is_period_unlocked(move, company):
@@ -627,7 +628,7 @@ def migrate(cr, version):
         draft_domain = [
             ('company_id', '=', company.id),
             ('state', '=', 'draft'),
-            ('move_type', 'in', MOVE_TYPES),
+            ('move_type', 'in', INVOICE_TYPES),
             '|',
             ('currency_id', '!=', company.currency_id.id),
             ('foreign_inverse_rate', '>', 0),
@@ -640,8 +641,9 @@ def migrate(cr, version):
             try:
                 _fix_draft_real_portion(move)
             except Exception as e:
-                errors.append((move.name, str(e)))
-                _logger.error("    Draft %s: ORM ERROR: %s", move.name, e)
+                errors.append((move.id, move.display_name, str(e)))
+                _logger.error("    Draft id=%s (%s): ORM ERROR: %s",
+                              move.id, move.display_name, e)
         if draft_moves:
             _logger.info(
                 "    Drafts processed: %s (marked manually_set_rate for the "
@@ -657,11 +659,6 @@ def migrate(cr, version):
         # ---- POSTED SQL rounding (only VEF base) ----
         reconciled_ids = _reconciled_move_ids(cr, company, ('posted',))
         if process_posted:
-            posted_moves = env['account.move'].search([
-                ('company_id', '=', company.id),
-                ('state', '=', 'posted'),
-                ('move_type', 'in', MOVE_TYPES),
-            ])
             _logger.info(
                 "    Posted moves (skipping %s reconciled)",
                 len(reconciled_ids),
@@ -685,9 +682,10 @@ def migrate(cr, version):
             _recompute_residuals(cr, company)
 
     if all_errors:
-        raise RuntimeError(
-            "Migration 17.0.0.0.56: %d draft move(s) failed the ORM "
-            "real_portion chain: %s" % (len(all_errors), all_errors),
+        _logger.warning(
+            "Migration 17.0.0.0.56: %d draft move(s) skipped in the ORM "
+            "real_portion chain (rolled back via savepoint, review manually): %s",
+            len(all_errors), all_errors,
         )
 
     _logger.info("Monetary rounding migration complete")
