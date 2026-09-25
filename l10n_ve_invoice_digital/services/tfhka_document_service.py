@@ -90,10 +90,10 @@ class TfhkaDocumentService(models.AbstractModel):
 
         client.query_numbering(company, series, origin=invoice)
 
-        # Secuencia: en modo "pago primero" (o con la sincronización desactivada)
-        # se usa el correlativo local de Odoo; en el modo normal se ADOPTA el
-        # correlativo de The Factory (último + 1) y luego se sincroniza el diario.
-        if company.digitalization_with_payment_tfhka or not company.sequence_validation_tfhka:
+        # Secuencia: en modo "pago primero" se usa el correlativo local de
+        # Odoo; en el modo normal SIEMPRE se ADOPTA el correlativo de The
+        # Factory (último + 1) y luego se sincroniza el diario.
+        if company.digitalization_with_payment_tfhka:
             document_number = invoice.sequence_number
         else:
             last = client.get_last_document_number(company, document_type, series, origin=invoice)
@@ -169,7 +169,6 @@ class TfhkaDocumentService(models.AbstractModel):
         company = invoice.company_id
         if (
             not company.digitalization_with_payment_tfhka
-            and company.sequence_validation_tfhka
             and str(invoice.sequence_number) != str(document_number)
         ):
             try:
