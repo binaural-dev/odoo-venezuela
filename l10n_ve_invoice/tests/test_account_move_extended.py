@@ -538,13 +538,8 @@ class TestAccountMoveExtended(TransactionCase):
         )
         self._create_vendor_bill(self.partner, "00061", post=True)
 
-        try:
+        with self.assertRaises(ValidationError):
             self._create_vendor_bill(other_partner, "00061", post=True)
-        except ValidationError:
-            self.fail(
-                "_check_correlative() must not consider vendor bills from "
-                "a different vendor as duplicates"
-            )
 
     def test_vendor_bill_duplicate_correlative_not_posted(self):
         self._create_vendor_bill(self.partner, "00062", post=False)
