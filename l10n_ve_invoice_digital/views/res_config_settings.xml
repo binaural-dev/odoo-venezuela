@@ -46,15 +46,6 @@
                                 </div>
                             </div>
                             <div class="o_setting_left_pane">
-                                <field name="sequence_validation_tfhka"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="sequence_validation_tfhka"/>
-                                <div class="text-muted">
-                                    Validation of sequences between Odoo and The Factory
-                                </div>
-                            </div>
-                            <div class="o_setting_left_pane">
                                 <field name="digitalization_with_payment_tfhka"/>
                             </div>
                             <div class="o_setting_right_pane">

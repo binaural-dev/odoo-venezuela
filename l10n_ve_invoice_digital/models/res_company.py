@@ -16,7 +16,6 @@ class ResCompany(models.Model):
     token_auth_tfhka = fields.Char()
     invoice_digital_tfhka = fields.Boolean()
     dispatch_guide_digital_tfhka = fields.Boolean()
-    sequence_validation_tfhka = fields.Boolean(default=True)
     digitalization_with_payment_tfhka = fields.Boolean(default=False)
     payment_mode_tfhka = fields.Selection(
         [
