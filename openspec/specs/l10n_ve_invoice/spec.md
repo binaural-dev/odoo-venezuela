@@ -34,13 +34,13 @@ Cuando la compañía activa `group_sales_invoicing_series`, el número de contro
 - **WHEN** el diario tiene su secuencia de serie configurada
 - **THEN** el número de control se toma de esa secuencia
 
-### Requirement: Unicidad del número de control en ventas
+### Requirement: Unicidad del número de control en ventas y compras
 
-El sistema DEBE (MUST) impedir que un documento de venta (`out_invoice`/`out_refund`) de un diario no de contingencia lleve un `correlative` que ya use otro documento de venta **publicado** de la misma compañía (constraint `_check_correlative`). La validación se aplica cualquiera sea el estado del documento que se guarda: solo el documento con el que se compara debe estar en `posted`.
+El sistema DEBE (MUST) impedir que un documento de venta o compra (`out_invoice`/`out_refund`/`in_invoice`/`in_refund`) de un diario no de contingencia lleve un `correlative` que ya use otro documento **publicado** del mismo tipo de operación de la misma compañía (constraint `_check_correlative`). La validación se aplica cualquiera sea el estado del documento que se guarda: solo el documento con el que se compara debe estar en `posted`. La unicidad se valida a nivel de `company_id`, sin distinguir por proveedor/cliente.
 
 #### Scenario: Número de control repetido
 
-- **WHEN** se guarda una factura de venta cuyo `correlative` ya está en uso por otra factura publicada de la compañía
+- **WHEN** se guarda una factura cuyo `correlative` ya está en uso por otra factura publicada de la compañía
 - **THEN** se lanza un error de validación indicando el número y la factura que lo usa
 
 #### Scenario: Duplicado contra un borrador
