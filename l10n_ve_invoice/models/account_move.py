@@ -158,10 +158,30 @@ class AccountMove(models.Model):
                         _("An invoice cannot have a line with a price of zero")
                     )
 
-    @api.constrains("invoice_line_ids")
+    def _l10n_ve_skip_refund_origin_validation(self):
+        """Hook: whether this credit note is exempt from
+        `_check_refund_against_origin()`.
+
+        By default only the `l10n_ve_skip_refund_origin_validation`
+        context key exempts it. Modules whose credit notes carry a stored
+        marker of their own (e.g. `is_donation`) should override this and
+        rely on that field instead: the check now runs at posting time,
+        which may be a separate call (a manual post from the UI) where
+        the context key set at creation is long gone.
+        """
+        self.ensure_one()
+        return bool(self.env.context.get("l10n_ve_skip_refund_origin_validation"))
+
     def _check_refund_against_origin(self):
         """Restrict a credit note (out_refund/in_refund) to the products
         and amounts already present on the invoice it reverses.
+
+        Runs from `_post()`, not as an `@api.constrains`: the standard
+        "Credit Note > Reverse" wizard copies the whole origin invoice
+        into a draft the user is expected to edit (reduce quantities)
+        before posting. Validating at create time rejected that draft
+        outright as soon as a previous credit note existed, leaving no
+        way to issue a second partial credit note from the UI.
 
         Ticket #13965: a credit note must not introduce a product the
         original invoice never had, nor credit more than what was
@@ -175,14 +195,13 @@ class AccountMove(models.Model):
         the original invoice) must opt out explicitly with the
         `l10n_ve_skip_refund_origin_validation` context key -- this is
         NOT exposed in the UI, only meant for internal server-side use by
-        those modules.
+        those modules (see `_l10n_ve_skip_refund_origin_validation()`).
         """
-        if self.env.context.get("l10n_ve_skip_refund_origin_validation"):
-            return
-
         product_line_types = ("line_section", "line_subsection", "line_note")
         for move in self:
             if move.move_type not in ("out_refund", "in_refund"):
+                continue
+            if move._l10n_ve_skip_refund_origin_validation():
                 continue
             origin = move.reversed_entry_id
             if not origin:
@@ -196,18 +215,20 @@ class AccountMove(models.Model):
                     origin_totals.get(line.product_id.id, 0.0) + line.price_subtotal
                 )
 
-            # Other credit notes against this same origin (draft or
-            # posted, but not cancelled) -- their amounts count against
-            # the origin's total too. Counting drafts closes the gap
-            # where two never-posted credit notes could each individually
-            # fit under the cap and only exceed it once both are posted,
-            # at which point this constrains would no longer re-trigger.
+            # Other credit notes against this same origin that are
+            # already posted, or being posted in this same batch -- their
+            # amounts count against the origin's total too. Drafts left
+            # aside are ignored on purpose: a forgotten draft must not
+            # block posting a valid credit note, and it will be checked
+            # itself whenever it gets posted.
             sibling_refunds = self.env["account.move"].search(
                 [
                     ("reversed_entry_id", "=", origin.id),
                     ("move_type", "=", move.move_type),
-                    ("state", "!=", "cancel"),
                     ("id", "!=", move.id),
+                    "|",
+                    ("state", "=", "posted"),
+                    ("id", "in", self.ids),
                 ]
             )
             refund_totals = {}
@@ -525,6 +546,7 @@ class AccountMove(models.Model):
         if not draft_moves:
             return self
 
+        draft_moves._check_refund_against_origin()
         res = super(AccountMove, draft_moves)._post(soft)
 
         for move in res:
