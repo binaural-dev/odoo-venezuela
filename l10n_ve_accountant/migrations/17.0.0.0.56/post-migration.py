@@ -141,7 +141,43 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
     _logger.info("    SQL partial_reconcile: %s rows updated", cr.rowcount)
 
 
-def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_ids=(), tolerance=None):
+def _clear_opposite_side_foreign(cr, company, state_filter):
+    """Zero foreign amounts left on the opposite side of the native amount.
+
+    A line that is purely credit in company currency must not carry
+    foreign_debit (and vice versa). Such leftovers come from editing draft
+    lines and produce huge foreign drifts that are not rounding issues.
+    """
+    params = {
+        'company_id': company.id,
+        'states': state_filter,
+        'tax_lock': company.tax_lock_date or '1900-01-01',
+        'fy_lock': company.fiscalyear_lock_date or '1900-01-01',
+    }
+    fd = "CASE WHEN l.debit = 0 AND l.credit > 0 THEN 0 ELSE COALESCE(l.foreign_debit, 0) END"
+    fc = "CASE WHEN l.credit = 0 AND l.debit > 0 THEN 0 ELSE COALESCE(l.foreign_credit, 0) END"
+    cr.execute("""
+        UPDATE account_move_line l
+        SET foreign_debit = """ + fd + """,
+            foreign_credit = """ + fc + """,
+            foreign_balance = (""" + fd + """) - (""" + fc + """)
+        FROM account_move m
+        WHERE l.move_id = m.id
+          AND m.company_id = %(company_id)s
+          AND m.state IN %(states)s
+          AND """ + _lock_expr('m') + """
+          AND ((l.debit = 0 AND l.credit > 0 AND COALESCE(l.foreign_debit, 0) <> 0)
+            OR (l.credit = 0 AND l.debit > 0 AND COALESCE(l.foreign_credit, 0) <> 0))
+        RETURNING l.move_id
+    """, params)
+    moves = sorted({r[0] for r in cr.fetchall()})
+    if moves:
+        _logger.warning("    Cleared opposite-side foreign amounts in %s move(s): %s",
+                        len(moves), moves)
+
+
+def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_ids=(),
+                           tolerance=None, max_repair=1.0):
     """Detect foreign debit/credit drift introduced by independent rounding and
     repair it by adjusting the line with the largest debit (or credit).
 
@@ -149,6 +185,9 @@ def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_i
     this file. ``precision`` drives both the rounding and the drift
     tolerance instead of hardcoding 2 decimals (correct for USD/VEF, wrong
     for any future 4-decimal foreign currency).
+
+    Drifts larger than ``max_repair`` are not rounding artifacts (they come
+    from corrupted data), so they are only logged and never auto-repaired.
     """
     if tolerance is None:
         tolerance = 10 ** -precision
@@ -176,6 +215,12 @@ def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_i
     """, params)
     rows = cr.fetchall()
     for move_id, name, delta in rows:
+        if abs(delta) > max_repair:
+            _logger.warning(
+                "    Move %s (id=%s) drift %.2f exceeds rounding tolerance; "
+                "NOT repaired, review manually", name, move_id, delta,
+            )
+            continue
         _logger.warning(
             "    Move %s (id=%s) drifted %.2f after rounding; repairing",
             name, move_id, delta,
@@ -579,8 +624,9 @@ def migrate(cr, version):
 
     For every foreign-currency company:
       - draft moves: the real_portion ORM chain plus a company/lock/exclusion
-        aware SQL rounding, repairing any debit/credit drift introduced by
-        independent rounding;
+        aware SQL rounding, clearing foreign amounts left on the opposite side
+        of the native amount, and repairing any small debit/credit drift
+        introduced by independent rounding;
       - posted moves: same SQL rounding for the non-reconciled moves, then the
         reconciled lines are rounded and their partial reconciliations rebuilt
         and residuals recomputed, all respecting the company lock dates.
@@ -642,8 +688,9 @@ def migrate(cr, version):
                 _fix_draft_real_portion(move)
             except Exception as e:
                 errors.append((move.id, move.display_name, str(e)))
-                _logger.error("    Draft id=%s (%s): ORM ERROR: %s",
-                              move.id, move.display_name, e)
+                # WARNING (not ERROR): Odoo.sh fails the build on any ERROR log
+                _logger.warning("    Draft id=%s (%s): ORM ERROR: %s",
+                                move.id, move.display_name, e)
         if draft_moves:
             _logger.info(
                 "    Drafts processed: %s (marked manually_set_rate for the "
@@ -654,6 +701,7 @@ def migrate(cr, version):
         # ---- SQL rounding for draft (reliable) ----
         _logger.info("    Draft SQL rounding...")
         _do_sql_rounding(cr, company, fc_precision, ('draft',))
+        _clear_opposite_side_foreign(cr, company, ('draft',))
         _check_and_fix_balance(cr, company, fc_precision, ('draft',))
 
         # ---- POSTED SQL rounding (only VEF base) ----
