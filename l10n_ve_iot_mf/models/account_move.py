@@ -69,7 +69,7 @@ class AccountMoveInh(models.Model):
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
         )
 
-        return bool(account_moves)
+        return True
 
     def report_z(self, serial, response):
         # El driver del IoT puede resolver el listener con un evento valido
