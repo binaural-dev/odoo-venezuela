@@ -44,7 +44,7 @@ class TfhkaRetentionService(models.AbstractModel):
         current_number = int(retention.number[6:])
         validation_sequence = retention.env.context.get('account_retention_alert', False)
 
-        if document_number != current_number and not validation_sequence and retention.company_id.sequence_validation_tfhka:
+        if document_number != current_number and not validation_sequence:
             message = _("The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The Factory (%(factory_seq)s). Do you want to continue anyway?") % {"odoo_seq": current_number, "factory_seq": document_number}
             return {
                 'type': 'ir.actions.act_window',
