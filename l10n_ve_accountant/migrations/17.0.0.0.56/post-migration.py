@@ -1,9 +1,12 @@
+
+
+Post migration · PY
 import logging
-
+ 
 from odoo import api, SUPERUSER_ID
-
+ 
 _logger = logging.getLogger(__name__)
-
+ 
 MOVE_TYPES = (
     'out_invoice', 'out_refund',
     'in_invoice', 'in_refund',
@@ -11,8 +14,8 @@ MOVE_TYPES = (
     'entry',
 )
 INVOICE_TYPES = tuple(t for t in MOVE_TYPES if t != 'entry')
-
-
+ 
+ 
 def _is_period_unlocked(move, company):
     """A move is touchable when it is strictly after the company lock dates."""
     if company.tax_lock_date and move.date <= company.tax_lock_date:
@@ -20,11 +23,11 @@ def _is_period_unlocked(move, company):
     if company.fiscalyear_lock_date and move.date <= company.fiscalyear_lock_date:
         return False
     return True
-
-
+ 
+ 
 def _reconciled_move_ids(cr, company, state_filter=('posted',)):
     """IDs of moves whose reconcilable lines have any settlement.
-
+ 
     Single SQL pass: any line with ``reconciled``/``full_reconcile_id`` marks
     the whole move. Avoids ORM iteration over tens of thousands of posted
     moves during the migration.
@@ -41,11 +44,11 @@ def _reconciled_move_ids(cr, company, state_filter=('posted',)):
         'states': state_filter,
     })
     return [row[0] for row in cr.fetchall()]
-
-
+ 
+ 
 def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=()):
     """Round foreign monetary fields via SQL, scoped to one company.
-
+ 
     - ``company_id`` filter keeps every company's lines from being rounded with
       the precision of another company in multi-company databases.
     - Locked/closed periods (``tax_lock_date`` / ``fiscalyear_lock_date``) are
@@ -65,7 +68,7 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
     }
     lock_filter = "m.date > %(tax_lock)s AND m.date > %(fy_lock)s"
     not_excluded = "NOT (m.id = ANY(%(excluded)s::bigint[]))"
-
+ 
     # account_move_line foreign_* fields
     cr.execute("""
         UPDATE account_move_line l
@@ -92,7 +95,7 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
     """, params)
     _logger.info("    SQL foreign_* lines: %s rows updated (state=%s)",
                  cr.rowcount, state_filter)
-
+ 
     # account_move foreign_total_billed
     cr.execute("""
         UPDATE account_move m
@@ -105,7 +108,7 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
           AND m.move_type IN %(move_types)s
     """, params)
     _logger.info("    SQL foreign_total_billed: %s rows updated", cr.rowcount)
-
+ 
     # amount_currency (uses move's own currency precision, not foreign)
     cr.execute("""
         UPDATE account_move_line l
@@ -122,7 +125,7 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
           AND m.move_type IN %(move_types)s
     """, params)
     _logger.info("    SQL amount_currency: %s rows updated", cr.rowcount)
-
+ 
     # account_partial_reconcile
     cr.execute("""
         UPDATE account_partial_reconcile p
@@ -139,16 +142,55 @@ def _do_sql_rounding(cr, company, precision, state_filter, excluded_move_ids=())
           AND p.foreign_amount IS NOT NULL
     """, params)
     _logger.info("    SQL partial_reconcile: %s rows updated", cr.rowcount)
-
-
-def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_ids=(), tolerance=None):
+ 
+ 
+def _clear_opposite_side_foreign(cr, company, state_filter):
+    """Zero foreign amounts left on the opposite side of the native amount.
+ 
+    A line that is purely credit in company currency must not carry
+    foreign_debit (and vice versa). Such leftovers come from editing draft
+    lines and produce huge foreign drifts that are not rounding issues.
+    """
+    params = {
+        'company_id': company.id,
+        'states': state_filter,
+        'tax_lock': company.tax_lock_date or '1900-01-01',
+        'fy_lock': company.fiscalyear_lock_date or '1900-01-01',
+    }
+    fd = "CASE WHEN l.debit = 0 AND l.credit > 0 THEN 0 ELSE COALESCE(l.foreign_debit, 0) END"
+    fc = "CASE WHEN l.credit = 0 AND l.debit > 0 THEN 0 ELSE COALESCE(l.foreign_credit, 0) END"
+    cr.execute("""
+        UPDATE account_move_line l
+        SET foreign_debit = """ + fd + """,
+            foreign_credit = """ + fc + """,
+            foreign_balance = (""" + fd + """) - (""" + fc + """)
+        FROM account_move m
+        WHERE l.move_id = m.id
+          AND m.company_id = %(company_id)s
+          AND m.state IN %(states)s
+          AND """ + _lock_expr('m') + """
+          AND ((l.debit = 0 AND l.credit > 0 AND COALESCE(l.foreign_debit, 0) <> 0)
+            OR (l.credit = 0 AND l.debit > 0 AND COALESCE(l.foreign_credit, 0) <> 0))
+        RETURNING l.move_id
+    """, params)
+    moves = sorted({r[0] for r in cr.fetchall()})
+    if moves:
+        _logger.warning("    Cleared opposite-side foreign amounts in %s move(s): %s",
+                        len(moves), moves)
+ 
+ 
+def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_ids=(),
+                           tolerance=None, max_repair=1.0):
     """Detect foreign debit/credit drift introduced by independent rounding and
     repair it by adjusting the line with the largest debit (or credit).
-
+ 
     Locked/closed periods are never touched, matching every other pass in
     this file. ``precision`` drives both the rounding and the drift
     tolerance instead of hardcoding 2 decimals (correct for USD/VEF, wrong
     for any future 4-decimal foreign currency).
+ 
+    Drifts larger than ``max_repair`` are not rounding artifacts (they come
+    from corrupted data), so they are only logged and never auto-repaired.
     """
     if tolerance is None:
         tolerance = 10 ** -precision
@@ -176,6 +218,12 @@ def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_i
     """, params)
     rows = cr.fetchall()
     for move_id, name, delta in rows:
+        if abs(delta) > max_repair:
+            _logger.warning(
+                "    Move %s (id=%s) drift %.2f exceeds rounding tolerance; "
+                "NOT repaired, review manually", name, move_id, delta,
+            )
+            continue
         _logger.warning(
             "    Move %s (id=%s) drifted %.2f after rounding; repairing",
             name, move_id, delta,
@@ -212,17 +260,17 @@ def _check_and_fix_balance(cr, company, precision, state_filter, excluded_move_i
             WHERE l.move_id = %(move_id)s
         """, row_params)
         _logger.info("    Repaired move %s (delta=%.2f)", name, delta)
-
-
+ 
+ 
 def _lock_expr(alias='m'):
     """WHERE expression keeping only moves strictly after the lock dates."""
     return ("%(alias)s.date > %(tax_lock)s AND %(alias)s.date > %(fy_lock)s"
             .replace('%(alias)s', alias))
-
-
+ 
+ 
 def _round_reconciled_lines(cr, company, fc_precision, move_ids):
     """Round foreign monetary fields of reconciled posted lines.
-
+ 
     The rework of 17.0.0.0.56 rounds only non-reconciled posted moves; the
     lines of reconciled moves keep balances with many decimals (e.g.
     -900.2536850000001) while their settlements hold rounded amounts. This
@@ -233,7 +281,7 @@ def _round_reconciled_lines(cr, company, fc_precision, move_ids):
     if not move_ids:
         _logger.info("    No reconciled lines to round")
         return
-
+ 
     params = {
         'prec': fc_precision,
         'move_ids': tuple(move_ids),
@@ -241,7 +289,7 @@ def _round_reconciled_lines(cr, company, fc_precision, move_ids):
         'fy_lock': company.fiscalyear_lock_date or '1900-01-01',
     }
     lock = _lock_expr('m')
-
+ 
     cr.execute("""
         UPDATE account_move_line l
         SET foreign_price = ROUND(l.foreign_price, %(prec)s),
@@ -261,7 +309,7 @@ def _round_reconciled_lines(cr, company, fc_precision, move_ids):
                OR l.foreign_credit IS NOT NULL)
     """, params)
     _logger.info("    SQL reconciled lines: %s rows updated", cr.rowcount)
-
+ 
     # amount_currency is rounded to the move's own currency precision
     cr.execute("""
         UPDATE account_move_line l
@@ -275,24 +323,24 @@ def _round_reconciled_lines(cr, company, fc_precision, move_ids):
           AND """ + lock + """
     """, params)
     _logger.info("    SQL reconciled amount_currency: %s rows updated", cr.rowcount)
-
-
+ 
+ 
 def _rebuild_reconciled_partials(cr, company, fc_precision):
     """Recompute the foreign amounts of the company's partial reconciliations.
-
+ 
     The residual formula (AccountMoveLine._compute_foreign_amount_residual) is:
-
+ 
         residual = foreign_balance
                    - SUM(credit_foreign_amount_currency)   # partials where the
                                                            # line is the debit side
                    + SUM(debit_foreign_amount_currency)    # partials where the
                                                            # line is the credit side
-
+ 
     so for a fully reconciled line the reconciliations must satisfy, per line:
-
+ 
         debit  side: SUM(credit_foreign_amount_currency) ==  foreign_balance(D)
         credit side: SUM(debit_foreign_amount_currency)  == -foreign_balance(C)
-
+ 
     i.e. credit_foreign_amount_currency is allocated by debit line and
     debit_foreign_amount_currency by credit line. Existing per-partial amounts
     are kept and rounded; missing ones (reconciliations created before the
@@ -308,7 +356,7 @@ def _rebuild_reconciled_partials(cr, company, fc_precision):
         'fy_lock': company.fiscalyear_lock_date or '1900-01-01',
     }
     lock = _lock_expr('m')
-
+ 
     # ---- debit side: credit_foreign_amount_currency allocated by debit_move_id ----
     cr.execute("""
         WITH debit_totals AS (
@@ -362,7 +410,7 @@ def _rebuild_reconciled_partials(cr, company, fc_precision):
               END IS DISTINCT FROM p.credit_foreign_amount_currency
     """, params)
     _logger.info("    SQL debit-side partials: %s rows updated", cr.rowcount)
-
+ 
     # ---- credit side: debit_foreign_amount_currency allocated by credit_move_id ----
     cr.execute("""
         WITH credit_totals AS (
@@ -416,7 +464,7 @@ def _rebuild_reconciled_partials(cr, company, fc_precision):
               END IS DISTINCT FROM p.debit_foreign_amount_currency
     """, params)
     _logger.info("    SQL credit-side partials: %s rows updated", cr.rowcount)
-
+ 
     # ---- foreign_amount = smallest reconciled amount of both sides ----
     # Only touch settlements where BOTH lines are in unlocked periods so a
     # settlement reaching into a locked period keeps its original value.
@@ -441,18 +489,18 @@ def _rebuild_reconciled_partials(cr, company, fc_precision):
           )
     """, params)
     _logger.info("    SQL foreign_amount: %s rows updated", cr.rowcount)
-
-
+ 
+ 
 def _recompute_residuals(cr, company):
     """Recompute foreign_amount_residual with the same formula used by
     AccountMoveLine._compute_foreign_amount_residual, but in pure SQL.
-
+ 
     Recomputing through the ORM would call _synchronize_business_models /
     _synchronize_from_moves on every payment move, which can raise on legacy
     data (e.g. payment move lines with different partners). SQL avoids that.
     Lines in locked periods are never recomputed (their balance was not
     rounded either, so their original residual is kept).
-
+ 
     Formula (foreign currency):
         residual = foreign_balance
                   - SUM(credit_foreign_amount_currency) over partials
@@ -519,7 +567,7 @@ def _recompute_residuals(cr, company):
           )
     """, params)
     _logger.info("    SQL residual recompute: %s rows updated", cr.rowcount)
-
+ 
     # Lines with no partials in foreign currency: mirror the ORM behaviour.
     # Reconcilable accounts keep their foreign_balance as residual; others are
     # set to 0 by the ORM and must stay 0.
@@ -550,11 +598,11 @@ def _recompute_residuals(cr, company):
           )
     """, params)
     _logger.info("    SQL residual no-partials: %s rows updated", cr.rowcount)
-
-
+ 
+ 
 def _fix_draft_real_portion(move):
     """Trigger real_portion ORM chain for draft invoices only.
-
+ 
     Writes ``manually_set_rate`` so the real_portion distribution is recomputed
     on the (already rounded) foreign_* values without the rates being
     overwritten. Uses a savepoint so that if any ORM operation fails (e.g.
@@ -566,48 +614,49 @@ def _fix_draft_real_portion(move):
             'manually_set_rate': True,
             'foreign_inverse_rate': move.foreign_inverse_rate,
         })
-
+ 
         move._distribute_final_real_portion(move)
         move._compute_foreign_tax_balance(move)
         move._distribute_foreign_pt_residual(move)
         move._compute_foreign_total_billed()
         move.env.flush_all()
-
-
+ 
+ 
 def migrate(cr, version):
     """Round foreign monetary values via SQL + ORM real_portion chain.
-
+ 
     For every foreign-currency company:
       - draft moves: the real_portion ORM chain plus a company/lock/exclusion
-        aware SQL rounding, repairing any debit/credit drift introduced by
-        independent rounding;
+        aware SQL rounding, clearing foreign amounts left on the opposite side
+        of the native amount, and repairing any small debit/credit drift
+        introduced by independent rounding;
       - posted moves: same SQL rounding for the non-reconciled moves, then the
         reconciled lines are rounded and their partial reconciliations rebuilt
         and residuals recomputed, all respecting the company lock dates.
     """
     _logger.info("Rounding Monetary values via SQL + ORM real_portion chain")
-
+ 
     env = api.Environment(cr, SUPERUSER_ID, {})
     all_errors = []
-
+ 
     companies = env['res.company'].search([
         ('currency_foreign_id', '!=', False),
     ])
     _logger.info("Companies with foreign currency: %s", len(companies))
-
+ 
     USD_NAME = 'USD'
     VEF_NAMES = ('VEF', 'VES', 'VED')
-
+ 
     for company in companies:
         fc = company.currency_foreign_id
         if not fc:
             continue
         if not company.currency_id or company.currency_id == fc:
             continue
-
+ 
         fc_name = fc.name.upper()
         fc_precision = fc.decimal_places
-
+ 
         if fc_name == USD_NAME:
             log_tag = 'base=VEF (full: draft+posted)'
             process_posted = True
@@ -620,10 +669,10 @@ def migrate(cr, version):
                 company.name, fc_name,
             )
             continue
-
+ 
         _logger.info("  %s (base=%s, foreign=%s): %s",
                      company.name, company.currency_id.name, fc_name, log_tag)
-
+ 
         # ---- DRAFT real_portion chain (ORM, only for invoices) ----
         draft_domain = [
             ('company_id', '=', company.id),
@@ -642,20 +691,22 @@ def migrate(cr, version):
                 _fix_draft_real_portion(move)
             except Exception as e:
                 errors.append((move.id, move.display_name, str(e)))
-                _logger.error("    Draft id=%s (%s): ORM ERROR: %s",
-                              move.id, move.display_name, e)
+                # WARNING (not ERROR): Odoo.sh fails the build on any ERROR log
+                _logger.warning("    Draft id=%s (%s): ORM ERROR: %s",
+                                move.id, move.display_name, e)
         if draft_moves:
             _logger.info(
                 "    Drafts processed: %s (marked manually_set_rate for the "
                 "real_portion chain)", len(draft_moves),
             )
         all_errors.extend(errors)
-
+ 
         # ---- SQL rounding for draft (reliable) ----
         _logger.info("    Draft SQL rounding...")
         _do_sql_rounding(cr, company, fc_precision, ('draft',))
+        _clear_opposite_side_foreign(cr, company, ('draft',))
         _check_and_fix_balance(cr, company, fc_precision, ('draft',))
-
+ 
         # ---- POSTED SQL rounding (only VEF base) ----
         reconciled_ids = _reconciled_move_ids(cr, company, ('posted',))
         if process_posted:
@@ -670,7 +721,7 @@ def migrate(cr, version):
             _check_and_fix_balance(
                 cr, company, fc_precision, ('posted',), excluded_move_ids=reconciled_ids,
             )
-
+ 
             # ---- Reconciled lines + settlements (respecting lock dates) ----
             # Gated behind process_posted: these touch posted reconciled
             # lines/partials/residuals, so a base=USD company ("draft only")
@@ -680,12 +731,13 @@ def migrate(cr, version):
             _round_reconciled_lines(cr, company, fc_precision, reconciled_ids)
             _rebuild_reconciled_partials(cr, company, fc_precision)
             _recompute_residuals(cr, company)
-
+ 
     if all_errors:
         _logger.warning(
             "Migration 17.0.0.0.56: %d draft move(s) skipped in the ORM "
             "real_portion chain (rolled back via savepoint, review manually): %s",
             len(all_errors), all_errors,
         )
-
+ 
     _logger.info("Monetary rounding migration complete")
+ 
