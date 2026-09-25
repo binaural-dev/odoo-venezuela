@@ -169,6 +169,8 @@ Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) c
 
 Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_total`: toma como base fiscal la suma real de los balances de producto e impuesto ya corregidos por los pasos anteriores, para que la contrapartida siga siendo consistente aunque el core recompute las líneas de producto en un sync posterior (p. ej. al cambiar la fecha del documento).
 
+`_distribute_final_real_portion` cachea por move (`self.env.cr.cache[('_real_portion_distributed', move.id)]`) para no repetir el paso 3 dentro de la misma transacción. `_sync_tax_lines` borra y recrea la línea de impuesto (en vez de actualizarla in-place) cuando el `_prepare_tax_lines` del core no matchea la línea existente contra la nueva por su clave de agrupación -- típicamente al pasar a borrador un asiento posteado. Ese `unlink()` de `account.move.line` (core) envuelve su propio `_check_balanced()`/`_sync_dynamic_lines()` inmediato alrededor de sí mismo, y otros mecanismos internos del core (p. ej. el reset de banderas "dirty" de `_sync_dynamic_line`) también pueden reentrar `_sync_dynamic_lines` para el mismo move mientras el `write()` original sigue en curso. Si cualquiera de esas reentradas corre DESPUÉS de que la línea vieja se borró pero ANTES de que la nueva se cree, `_distribute_invoice_real_portion` ancla la contrapartida sin el impuesto -- y al marcar la caché como "ya hecho", bloquea que la llamada correcta y tardía (la de la escritura original, ya con la línea nueva creada) corrija el daño. Por eso, al final de `_sync_tax_lines`, se limpia esa marca de caché para los moves cuyas líneas de impuesto se tocaron (crearon o borraron) en este ciclo -- justo cuando se sabe con certeza que quedaron completas -- para que cualquier reentrada prematura deje de bloquear la corrección posterior. `_distribute_invoice_real_portion` es segura de invocar de más: es idempotente (no escribe nada si `remaining`/`actual_non_pt` ya da cero).
+
 #### Scenario: Factura multi-línea en divisa
 
 - **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total de esas líneas en la unidad de redondeo
@@ -179,6 +181,12 @@ Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_
 - **GIVEN** una factura en divisa ya distribuida, con su contrapartida anclada a `actual_non_pt`
 - **WHEN** se cambia la fecha del documento a otra fecha cuya tasa de cambio vigente es idéntica, y el core recompute las líneas de producto a sus valores originales
 - **THEN** `_distribute_invoice_real_portion` vuelve a calcular `actual_non_pt` a partir de los balances ya recomputados, y reancla la contrapartida a `-actual_non_pt`, dejando el asiento balanceado sin depender de un ajuste previo que el recompute pudo haber descartado
+
+#### Scenario: Cancelar una factura posteada en divisa con IVA no descuadra el asiento pese a resyncs anidados prematuros
+
+- **GIVEN** una factura posted en moneda distinta a la de la compañía con una línea de IVA cuyo `_prepare_tax_lines` decide borrarla y recrearla (no actualizarla in-place) al pasar a borrador
+- **WHEN** se ejecuta `button_draft()`/`button_cancel()` y el `unlink()` de la línea de IVA vieja dispara una reentrada prematura de `_sync_dynamic_lines` para ese move, con la línea vieja ya borrada pero la nueva todavía sin crear
+- **THEN** esa reentrada prematura no deja bloqueada la caché `_real_portion_distributed`: `_sync_tax_lines` la limpia al terminar de crear la línea nueva, así que la siguiente invocación de `_distribute_invoice_real_portion` recalcula sobre las líneas ya completas y el asiento queda balanceado
 
 ### Requirement: Totales de factura en moneda alterna
 
@@ -447,3 +455,65 @@ Cuando una línea de extracto (`account.bank.statement.line`) tiene `foreign_amo
 
 - **WHEN** se registra una línea de extracto con `foreign_amount` positivo
 - **THEN** la línea de liquidez recibe ese monto como `foreign_debit` y la contrapartida como `foreign_credit`, ambas sin recálculo posterior
+
+### Requirement: El redondeo por línea de la máquina fiscal agrupa por producto, no por impuesto
+
+Cuando `company.tax_calculation_rounding_method` es `round_per_line`, el sistema DEBE (MUST) calcular y redondear el impuesto de cada línea de producto individualmente -- en la moneda de la compañía (`_per_line_tax_sums`) y en la moneda del documento -- antes de sumar los montos ya redondeados en la línea de impuesto consolidada. NO DEBE (SHALL NOT) sumar las bases de todas las líneas que comparten un mismo impuesto y redondear una sola vez sobre esa suma, aunque Odoo agrupe esas líneas en una sola `tax_line` por impuesto. La máquina fiscal venezolana (Providencia de Máquinas Fiscales del SENIAT) calcula y redondea el impuesto de cada renglón antes de acumularlo por alícuota; el motor de impuestos de Odoo 19 agrupa por impuesto y calcula una sola vez sobre la base total sin importar el modo configurado -- `round_per_line` en Odoo controla en qué paso interno se redondea dentro de ese cálculo ya agrupado, no si se calcula por línea de factura.
+
+Esta misma corrección DEBE (MUST) aplicarse también al resumen que alimenta el widget de totales y el reporte impreso: `account.tax._get_tax_totals_summary` (vía `_fix_tax_amount_for_round_per_line`) DEBE (MUST) sobrescribir `tax_amount`/`tax_amount_currency` (y los de cada subtotal/grupo de impuesto) desde las líneas de impuesto reales ya posteadas cuando el modo es `round_per_line`, en lugar de dejar el cálculo independiente que hace el motor del core sobre `base_lines` (que sigue sumando bases y redondeando una sola vez, sin importar el modo) -- de lo contrario la factura mostrada al cliente y el asiento contable divergirían en el mismo caso que este requirement corrige. Esto aplica en cualquier dirección de documento (`out_invoice`, `in_invoice`, `out_refund`, `in_refund`), independientemente del signo de `direction_sign`.
+
+Las líneas de signo mixto bajo un mismo impuesto (un ajuste o descuento global negativo junto a líneas positivas) DEBEN (MUST) sumarse con su propio signo, no con su valor absoluto.
+
+#### Scenario: Dos líneas con el mismo impuesto, método de la máquina fiscal
+
+- **GIVEN** una compañía VEF con alterna USD, `round_per_line`, y una tasa de 803,34 VEF por USD
+- **AND** una factura en USD con dos líneas de 11,16 USD cada una, ambas con IVA 16%
+- **WHEN** se calcula la línea de impuesto consolidada
+- **THEN** el impuesto total es 2.868,88 VEF (1.434,44 + 1.434,44, cada uno redondeado por línea), y no 2.868,89 VEF (bases sumadas y redondeadas una sola vez)
+
+#### Scenario: El widget de totales y el PDF coinciden con lo posteado, en cualquier dirección de documento
+
+- **GIVEN** una factura con `round_per_line`
+- **WHEN** se lee `amount_tax`/`tax_totals` (lo que muestra el formulario y el reporte impreso) de una factura de venta (`out_invoice`), una de compra (`in_invoice`) o una nota de crédito (`out_refund`)
+- **THEN** el monto coincide con la suma de `balance`/`amount_currency` de las líneas de impuesto reales ya posteadas, en las tres direcciones (`test_43`/`test_44`/`test_45` de `test_multi_currency_rounding.py`)
+
+#### Scenario: Líneas de signo mixto bajo el mismo impuesto
+
+- **GIVEN** una factura con una línea positiva y una negativa (ajuste o descuento global) bajo el mismo impuesto, en `round_per_line`
+- **WHEN** se calcula el impuesto por línea antes de sumar
+- **THEN** la contribución de cada línea se suma con su propio signo, sin tomar el valor absoluto de la línea negativa
+
+### Requirement: Un impuesto encadenado (`include_base_amount`) suma su propio monto a la base del siguiente impuesto de la misma línea
+
+Cuando un impuesto tiene `include_base_amount=True`, el sistema DEBE (MUST) sumar el monto de ese impuesto -- ya calculado para esa misma línea de producto -- a la base de los impuestos siguientes de la misma línea antes de calcularlos, tanto en `round_per_line` como en `round_globally`. Ese monto DEBE (MUST) derivarse exclusivamente de valores ya calculados en el mismo ciclo (`extra_base_by_line_id`, alimentado con montos frescos por línea), y NO DEBE (SHALL NOT) leerse de `base_line['tax_details']` del motor de impuestos del core: esa estructura usa una tasa interna que puede estar tan desactualizada como `record.balance` en este mismo ciclo -- leer de ahí se probó durante el desarrollo y produjo una regresión verificable en la suite de tests. Los repartition lines se procesan ordenados por `tax.sequence`, para que el impuesto que encadena se calcule antes que su dependiente.
+
+#### Scenario: Impuesto A (10%, encadenado) seguido de Impuesto B (5%)
+
+- **GIVEN** una factura con dos líneas de producto, cada una con el Impuesto A (10%, `include_base_amount=True`) y el Impuesto B (5%)
+- **WHEN** se calcula el Impuesto B en `round_per_line`
+- **THEN** la base de cada línea para el Impuesto B incluye el monto del Impuesto A ya calculado para esa misma línea, y el total del Impuesto B difiere del que resultaría de calcularlo sobre la base sin el Impuesto A sumado
+
+### Requirement: El alcance del redondeo por línea se limita a impuestos `percent`
+
+El sistema DEBE (MUST) corregir el redondeo por línea (`round_per_line`) únicamente para impuestos con `amount_type == 'percent'`, incluidos los impuestos hijos `percent` de un impuesto `group` (el motor de Odoo los expande a cálculos individuales antes de generar las líneas contables, así que cada hijo ya pasa por el mismo camino que un `percent` suelto). El sistema NO DEBE (SHALL NOT) extender esta corrección a otros `amount_type` (`fixed`, `division`, `code`), aunque `division` presente el mismo tipo de descuadre que tenía `percent` antes de este fix -- es una decisión de negocio/alcance: en la localización venezolana no se utiliza ningún tipo de impuesto fuera de porcentual. Verificado con `tax.compute_all()` como oráculo independiente: `fixed` no se ve afectado por el modo de redondeo (no hay base multiplicada por un porcentaje que pueda desalinearse); `division` sí tiene el mismo bug (nativo `round_per_line` dio 1.582,58 Bs cuando el método de la máquina fiscal exige 1.576,33 Bs) y queda sin corregir a propósito.
+
+#### Scenario: Impuesto tipo `division` en `round_per_line`
+
+- **GIVEN** una factura con un impuesto tipo `division` y `round_per_line`
+- **WHEN** se compara el monto posteado contra el método de la máquina fiscal (`tax.compute_all()` línea por línea)
+- **THEN** el sistema no garantiza que coincidan -- descuadre conocido y sin corregir, aceptado porque este tipo de impuesto no se usa en Venezuela
+
+#### Scenario: Impuesto tipo `fixed`
+
+- **GIVEN** una factura con un impuesto tipo `fixed` (monto plano por unidad)
+- **WHEN** se compara el resultado entre `round_per_line` y `round_globally`
+- **THEN** el resultado es idéntico en ambos modos
+
+### Requirement: `round_per_line` es la configuración esperada para compañías venezolanas (hallazgo de configuración, no implementado)
+
+La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El default de Odoo 19 es `round_globally`, y este módulo NO fuerza `round_per_line` en ningún dato de instalación (`data/res_company_data.xml` no toca `tax_calculation_rounding_method`). Esto queda documentado como hallazgo pendiente de decisión de negocio (forzarlo vía dato de instalación, o documentarlo como paso manual de configuración post-instalación), NO como un cambio de código de este cierre.
+
+#### Scenario: Compañía venezolana recién instalada
+
+- **WHEN** se crea o instala una compañía con la localización venezolana
+- **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente
