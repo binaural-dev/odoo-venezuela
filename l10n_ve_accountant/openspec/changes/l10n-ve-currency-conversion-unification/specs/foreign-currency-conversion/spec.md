@@ -236,3 +236,168 @@ el suyo—, por lo que el campo necesita un `default` propio.
 - **AND** una línea de 1.000 VEF
 - **WHEN** se calcula `foreign_price` de la línea
 - **THEN** SHALL ser 20,00 USD, es decir `price_unit / foreign_rate`
+
+### Requirement: El redondeo por línea agrupa por producto, no por impuesto
+
+Cuando `company.tax_calculation_rounding_method` sea `round_per_line`, el
+sistema SHALL calcular y redondear el impuesto de **cada línea de
+producto** individualmente (en la moneda de la compañía y en la del
+documento) antes de sumar los montos ya redondeados en la línea de
+impuesto consolidada. El sistema SHALL NOT sumar las bases de todas las
+líneas que comparten un mismo impuesto y redondear una sola vez sobre esa
+suma, aunque Odoo agrupe esas líneas en una sola `tax_line` por impuesto.
+
+Motivo: la máquina fiscal venezolana (Providencia de Máquinas Fiscales del
+SENIAT) calcula y redondea el impuesto de cada renglón antes de acumularlo
+por alícuota. El motor de impuestos de Odoo 19 agrupa por impuesto y
+calcula una sola vez sobre la base total, sin importar el modo
+configurado -- `round_per_line` en Odoo controla en qué paso interno se
+redondea dentro de ese cálculo ya agrupado, no si se calcula por línea de
+factura. Sin este tratamiento, el total de IVA no coincide con el que
+exige la ley, y `amount_currency` (columna nativa) queda desalineado de
+`foreign_debit`/`foreign_credit` (columna alterna), que sí calcula por
+línea de producto vía `_prepare_product_foreign_base_line_for_taxes_computation`.
+
+#### Scenario: Dos líneas con el mismo impuesto, método de la máquina fiscal
+
+- **GIVEN** una compañía VEF con alterna USD, `tax_calculation_rounding_method`
+  en `round_per_line`, y una tasa de 803,34 VEF por USD
+- **AND** una factura en USD con dos líneas de 11,16 USD cada una, ambas con
+  IVA 16%
+- **WHEN** se calcula la línea de impuesto consolidada
+- **THEN** el impuesto total SHALL ser 2.868,88 VEF (1.434,44 + 1.434,44,
+  cada uno redondeado por línea)
+- **AND** SHALL NOT ser 2.868,89 VEF (resultado de sumar las bases primero
+  y redondear una sola vez)
+
+#### Scenario: `amount_currency` coincide con `foreign_debit`/`foreign_credit`
+
+- **GIVEN** una factura cuya moneda de documento coincide con la moneda
+  alterna de la compañía (ambas USD)
+- **AND** `tax_calculation_rounding_method` en `round_per_line`
+- **WHEN** se compara `amount_currency` de una línea de impuesto contra
+  `foreign_debit - foreign_credit` de esa misma línea
+- **THEN** ambos valores SHALL coincidir, porque representan el mismo
+  monto en la misma moneda calculado por dos vías distintas
+
+#### Scenario: El widget de totales y el PDF coinciden con lo posteado
+
+- **GIVEN** una factura con `tax_calculation_rounding_method` en
+  `round_per_line`
+- **WHEN** se lee `amount_tax`/`tax_totals` (lo que muestra el formulario y
+  el reporte impreso)
+- **THEN** el monto SHALL coincidir con la suma de `balance`/`amount_currency`
+  de las líneas de impuesto reales ya posteadas, y SHALL NOT recalcularse
+  de forma independiente sumando las bases de `base_lines` y redondeando
+  una sola vez
+
+Motivo: `_get_tax_totals_summary` arma este resumen desde `base_lines` a
+través del motor del core, un cálculo separado del que produce las líneas
+de impuesto reales -- sin sincronizar ambos, la factura mostrada al
+cliente y el asiento contable pueden discrepar en el mismo caso que este
+requirement busca cerrar.
+
+#### Scenario: Líneas de signo mixto bajo el mismo impuesto
+
+- **GIVEN** una factura con dos líneas bajo el mismo impuesto, una positiva
+  y una negativa (ej. un ajuste o descuento global)
+- **AND** `tax_calculation_rounding_method` en `round_per_line`
+- **WHEN** se calcula el impuesto por línea antes de sumar
+- **THEN** la contribución de cada línea SHALL sumarse con su propio signo
+- **AND** SHALL NOT usar el valor absoluto de la línea negativa como si
+  fuera positivo
+
+### Requirement: Un impuesto encadenado (`include_base_amount`) suma su
+propio monto a la base del siguiente impuesto en la misma línea
+
+Cuando un impuesto tiene `include_base_amount=True`, el sistema SHALL
+sumar el monto de ESE impuesto (ya calculado para esa misma línea de
+producto) a la base de los impuestos siguientes de la misma línea, antes
+de calcularlos -- tanto en `round_per_line` como en `round_globally`.
+
+El sistema SHALL derivar ese monto exclusivamente de valores ya calculados
+en el mismo ciclo (`fresh_balance_by_line_id`, `amount_currency` recién
+calculado), y SHALL NOT leerlo de `base_line['tax_details']` del motor de
+impuestos del core, aunque esa estructura ya traiga el encadenado resuelto
+correctamente.
+
+Motivo: `base_line['tax_details']` se calcula con la tasa interna que
+maneja el propio motor de Odoo, la cual puede estar tan desactualizada
+como `record.balance` lo está en este mismo ciclo (ver el requirement de
+`fresh_balance_by_line_id` para el mismo problema). Se intentó leer desde
+ahí durante el desarrollo de este fix y produjo una regresión verificable
+en la suite de tests -- confirmando que ese camino no es seguro en este
+punto del ciclo, aunque el dato en sí sea "más completo".
+
+#### Scenario: Impuesto A (10%, encadenado) seguido de Impuesto B (5%)
+
+- **GIVEN** una factura con dos líneas de producto, cada una con el
+  Impuesto A (10%, `include_base_amount=True`) y el Impuesto B (5%)
+- **WHEN** se calcula el Impuesto B en modo `round_per_line`
+- **THEN** la base de cada línea para el Impuesto B SHALL incluir el monto
+  del Impuesto A ya calculado para esa misma línea
+- **AND** el total del Impuesto B SHALL diferir del que resultaría de
+  calcularlo sobre la base sin el Impuesto A sumado
+
+### Requirement: El alcance del redondeo por línea se limita a impuestos
+tipo `percent` (incluidos los hijos `percent` de un `group`)
+
+El sistema SHALL corregir el redondeo por línea (`round_per_line`)
+únicamente para impuestos con `amount_type == 'percent'`, incluidos los
+impuestos hijos de tipo `percent` dentro de un impuesto `group` (el motor
+de Odoo los expande a cálculos individuales antes de generar las líneas
+contables, así que cada hijo ya pasa por el mismo camino que un `percent`
+suelto sin necesitar código adicional).
+
+El sistema SHALL NOT extender esta corrección a otros `amount_type`
+(`fixed`, `division`, `code`/fórmula), aunque alguno de ellos presente el
+mismo tipo de descuadre entre `round_per_line` y `round_globally` que
+tenía `percent` antes de este fix.
+
+Motivo: en la localización venezolana no se utiliza ningún tipo de
+impuesto fuera de porcentual (`percent`, directo o como hijo de un
+`group`) -- es una decisión de negocio/alcance, no una limitación técnica.
+Verificado con `tax.compute_all()` como oráculo independiente:
+
+- `fixed` (monto plano por unidad): el modo de redondeo no le afecta en
+  absoluto -- no hay base multiplicada por un porcentaje que pueda
+  desalinearse entre `round_per_line` y `round_globally`.
+- `division` (impuesto expresado como % del total, no de la base): **sí
+  tiene el mismo bug que tenía `percent`**, confirmado sin corregir --
+  con datos reales, `round_per_line` nativo dio 1.582,58 Bs cuando el
+  método de la máquina fiscal exige 1.576,33 Bs (una divergencia de 6,25
+  Bs, mayor que el error de céntimos que tenía `percent`). Queda fuera de
+  alcance a propósito.
+
+#### Scenario: Impuesto tipo `division` en modo `round_per_line`
+
+- **GIVEN** una factura con impuesto tipo `division` y
+  `tax_calculation_rounding_method` en `round_per_line`
+- **WHEN** se compara el monto posteado contra el método de la máquina
+  fiscal (calculado con `tax.compute_all()` línea por línea)
+- **THEN** el sistema SHALL NOT garantizar que coincidan -- es un
+  descuadre conocido y sin corregir, aceptado porque este tipo de
+  impuesto no se usa en Venezuela
+
+#### Scenario: Impuesto tipo `fixed`
+
+- **GIVEN** una factura con impuesto tipo `fixed` (monto plano por unidad)
+- **WHEN** se compara el resultado entre `round_per_line` y
+  `round_globally`
+- **THEN** el resultado SHALL ser idéntico en ambos modos
+
+### Requirement: `round_per_line` SHALL ser la configuración esperada
+para compañías venezolanas (hallazgo de configuración, no implementado)
+
+La normativa de máquinas fiscales de Venezuela exige el método de
+redondeo por línea. El sistema SHALL documentar que
+`company.tax_calculation_rounding_method` debe estar en `round_per_line`
+para que el cálculo de impuestos coincida con ese método -- el default de
+Odoo 19 es `round_globally`, y este módulo NO lo fuerza a `round_per_line`
+en ningún dato de instalación (`data/res_company_data.xml` no toca este
+campo).
+
+Esto es un hallazgo, no un fix: no se implementó ningún dato de
+instalación ni migración que fuerce el valor. Queda pendiente decidir si
+se fuerza vía dato de instalación o se documenta como paso manual de
+configuración post-instalación.
