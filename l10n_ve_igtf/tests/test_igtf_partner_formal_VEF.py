@@ -890,8 +890,355 @@ class TestIGTFNEW(IGTFTestCommon):
 
         self.assertAlmostEqual(invoice.foreign_bi_igtf,2000.00, 2, "Bi_igtf DEbe ser 2000.00 usd")
 
+    def test13b_vef_invoice_usd_payment_rate_gap_desconciliation_reaplica_sin_residuo(self):
+        """Regression for a real case: VEF invoice paid in USD with a rate
+        gap between invoice and payment dates. Two bugs lived here: (1)
+        `is_payment()` didn't recognize the advance-cross move, using the
+        invoice date's rate instead of the cross's real rate; (2) the IGTF
+        guard never fired on a full reapply, leaving an IGTF-sized residual.
+        """
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        invoice_amount = 100000.00
+        invoice = self._create_invoice_vef(invoice_amount, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        self.assertAlmostEqual(
+            invoice.amount_residual, invoice_amount, 2,
+            "La factura recién posteada debe tener el residual completo."
+        )
+
+        # Wizard de pago: se deja que el propio wizard proponga el monto
+        # (deuda + IGTF a la tasa de HOY) -- no se hardcodea a mano para no
+        # depender de una réplica manual de `calculate_igtf_for_payment`.
+        action_data = invoice.action_register_payment()
+        with Form(
+            self.env['account.payment.register'].with_context(
+                action_data['context']
+            )
+        ) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+
+        payment_register_wiz = pay_form.record
+        action = payment_register_wiz.action_create_payments()
+
+        payment = self.env['account.payment'].browse(action.get('res_id'))
+        payment_move = payment.move_id
+
+        self.assertTrue(payment_move, "Debe haberse creado el asiento de pago asociado al payment.")
+        self.assertEqual(
+            invoice.payment_state, 'paid',
+            f"La factura debe quedar 'paid' tras el pago inicial, estado actual: {invoice.payment_state}"
+        )
+        self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
+
+        outstanding_line = payment_move.line_ids.filtered(
+            lambda l: l.account_id == self.acc_receivable and l.credit > 0
+        )
+        invoice = self.env['account.move'].browse(invoice.id)
+        invoice_receivable_line = invoice.line_ids.filtered(
+            lambda l: l.account_id == self.acc_receivable and l.debit > 0
+        )
+        partial_reconcile = outstanding_line.matched_debit_ids.filtered(
+            lambda p: p.debit_move_id == invoice_receivable_line
+        )
+        self.assertTrue(partial_reconcile, "Debe existir la conciliación factura<->pago a deshacer.")
+
+        # 1) Desconciliar: la factura debe volver a NO PAGADA por el
+        #    residual COMPLETO -- no debe quedar un "medio residuo".
+        invoice.with_context({}).js_remove_outstanding_partial(partial_reconcile.id)
+
+        self.assertEqual(
+            invoice.payment_state, 'not_paid',
+            f"Tras desconciliar debe volver a 'not_paid', estado actual: {invoice.payment_state}"
+        )
+        self.assertAlmostEqual(
+            invoice.amount_residual, invoice_amount, 2,
+            "Tras desconciliar el residual debe ser la deuda completa otra vez."
+        )
+
+        # 2) Reaplicar el mismo anticipo (ahora vive en la cuenta de
+        #    Anticipo/Clientes) -- ESTA es la aserción que fallaba antes
+        #    del fix: la factura debe cerrar 'paid' sin ningún residuo,
+        #    ni por el bug de tasa ni por el bug de reparto del IGTF.
+        outstanding_line = payment_move.line_ids.filtered(
+            lambda l: l.account_id == self.advance_cust_acc and l.credit > 0
+        )
+        self.assertTrue(outstanding_line, "El pago debe haber quedado disponible como anticipo.")
+        invoice.with_context({}).js_assign_outstanding_line(outstanding_line.id)
+
+        self.assertEqual(
+            invoice.payment_state, 'paid',
+            f"Tras reaplicar el anticipo la factura debe cerrar 'paid' sin residuo, "
+            f"estado actual: {invoice.payment_state} (residual: {invoice.amount_residual})"
+        )
+        self.assertAlmostEqual(
+            invoice.amount_residual, 0.0, 2,
+            msg=(
+                f"Quedó un residuo de {invoice.amount_residual} Bs.F tras reaplicar el "
+                f"anticipo -- volvió el bug de tasa (is_payment) y/o el de reparto del IGTF."
+            ),
+        )
+
+    def test13c_vef_invoice_usd_full_payment_does_not_create_spurious_exchange_difference(self):
+        """Paying a VEF invoice in full with USD shouldn't leave a spurious
+        "exchange difference" entry -- that gap is pure USD-cent rounding
+        from two conversions, not a real gain/loss. Fix: also compare in
+        the payment currency, not just VEF, before forcing the residual.
+        """
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        invoice_amount = 100000.00
+        invoice = self._create_invoice_vef(invoice_amount, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        action_data = invoice.action_register_payment()
+        with Form(
+            self.env['account.payment.register'].with_context(action_data['context'])
+        ) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+
+        payment = self.env['account.payment'].browse(
+            pay_form.record.action_create_payments().get('res_id')
+        )
+        payment_move = payment.move_id
+        invoice = self.env['account.move'].browse(invoice.id)
+
+        cxc_line = payment_move.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+        self.assertAlmostEqual(
+            cxc_line.balance, -invoice_amount, 2,
+            msg=(
+                f"El balance de la línea de CxC del pago ({cxc_line.balance}) debe calzar "
+                f"exacto con la deuda de la factura ({-invoice_amount}), no solo 'cerca'."
+            ),
+        )
+        self.assertEqual(invoice.payment_state, 'paid')
+        self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
+
+        exchange_moves = self.env['account.move'].search([
+            ('journal_id.name', '=', 'Exchange Difference'),
+            ('company_id', '=', self.company.id),
+        ])
+        self.assertFalse(
+            exchange_moves,
+            msg=(
+                f"Un pago que liquida la factura completa no debe generar asientos de "
+                f"diferencial cambiario -- se encontraron {len(exchange_moves)}: "
+                f"{exchange_moves.mapped('id')}."
+            ),
+        )
+
+    # ── Casos borde: la comparación en moneda de pago de test13c no debe
+    # "tragarse" una diferencia real -- solo debe absorber redondeo de
+    # centavos, nunca un pago genuinamente parcial, insuficiente o con
+    # sobrante grande. ──────────────────────────────────────────────────
+
+    def test13d_vef_invoice_usd_genuine_partial_payment_stays_partial(self):
+        """Caso borde: pagar deliberadamente ~50% de la deuda NO debe
+        forzarse a 'paid'. La comparación en moneda de pago (test13c) solo
+        puede disparar cuando la diferencia es de centavos de USD -- un
+        pago a mitad de camino está a miles de bolívares de distancia, muy
+        por fuera de esa tolerancia.
+        """
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        invoice_amount = 100000.00
+        invoice = self._create_invoice_vef(invoice_amount, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        action_data = invoice.action_register_payment()
+        with Form(
+            self.env['account.payment.register'].with_context(action_data['context'])
+        ) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+            full_amount = pay_form.amount
+            pay_form.amount = round(full_amount / 2, 2)
+            pay_form.save()
+
+        payment = self.env['account.payment'].browse(
+            pay_form.record.action_create_payments().get('res_id')
+        )
+        invoice = self.env['account.move'].browse(invoice.id)
+
+        self.assertEqual(
+            invoice.payment_state, 'partial',
+            f"Un pago de ~50% no debe promoverse a 'paid', estado actual: {invoice.payment_state}"
+        )
+        self.assertGreater(
+            invoice.amount_residual, invoice_amount * 0.3,
+            f"El residual tras pagar ~mitad debe seguir siendo grande (~50.000,00), "
+            f"no casi 0: {invoice.amount_residual} (pagado: {payment.amount} USD de {full_amount} USD)"
+        )
+
+    def test13e_vef_invoice_usd_meaningful_underpayment_keeps_correct_residual(self):
+        """Caso borde: subpagar por un monto claramente NO redondeo (aquí,
+        20 USD menos de lo que hacía falta -- unos 7.800 Bs a esta tasa,
+        muy por encima del centavo de tolerancia) debe dejar el residual
+        EXACTO de esa diferencia, no acercarlo a 0.
+        """
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        invoice_amount = 100000.00
+        invoice = self._create_invoice_vef(invoice_amount, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        action_data = invoice.action_register_payment()
+        with Form(
+            self.env['account.payment.register'].with_context(action_data['context'])
+        ) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+            full_amount = pay_form.amount
+            underpaid_amount = round(full_amount - 20.0, 2)
+            pay_form.amount = underpaid_amount
+            pay_form.save()
+
+        payment = self.env['account.payment'].browse(
+            pay_form.record.action_create_payments().get('res_id')
+        )
+        invoice = self.env['account.move'].browse(invoice.id)
+
+        self.assertEqual(
+            invoice.payment_state, 'partial',
+            f"Subpagar por 20 USD no debe promoverse a 'paid', estado actual: {invoice.payment_state}"
+        )
+        # A la tasa de la factura (yesterday), 20 USD son ~7.600-7.700 Bs --
+        # el residual debe rondar esa magnitud, no 0.
+        self.assertGreater(
+            invoice.amount_residual, 5000.0,
+            f"El residual tras subpagar 20 USD debe reflejar esa diferencia real "
+            f"(varios miles de Bs), no habérsele tragado como redondeo: {invoice.amount_residual}"
+        )
+
+    def test13f_vef_invoice_usd_overpayment_creates_change_not_silently_absorbed(self):
+        """Caso borde: pagar de MÁS (sobrepago claro, no centavos) debe
+        seguir generando el mecanismo normal de vuelto/anticipo -- no debe
+        "desaparecer" el sobrante ni marcarse como si calzara exacto.
+        """
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        invoice_amount = 100000.00
+        invoice = self._create_invoice_vef(invoice_amount, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        action_data = invoice.action_register_payment()
+        with Form(
+            self.env['account.payment.register'].with_context(action_data['context'])
+        ) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+            full_amount = pay_form.amount
+            pay_form.amount = round(full_amount + 30.0, 2)
+            pay_form.save()
+
+        payment = self.env['account.payment'].browse(
+            pay_form.record.action_create_payments().get('res_id')
+        )
+        invoice = self.env['account.move'].browse(invoice.id)
+
+        self.assertEqual(
+            invoice.payment_state, 'paid',
+            f"Con un sobrepago la factura sí debe cerrar 'paid', estado actual: {invoice.payment_state}"
+        )
+        self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
+
+        # El sobrante (~30 USD) debe seguir viviendo en alguna cuenta de
+        # anticipo/cambio -- no debe "esfumarse" silenciosamente.
+        advance_lines = payment.move_id.line_ids.filtered(
+            lambda l: l.account_id.is_advance_account
+        ) or self.env['account.move'].search([
+            ('partner_id', '=', invoice.partner_id.id),
+            ('ref', 'like', 'RESTANTE'),
+        ]).line_ids.filtered(lambda l: l.account_id.is_advance_account)
+        self.assertTrue(
+            advance_lines,
+            "El sobrepago (~30 USD) debe quedar registrado como anticipo/vuelto, "
+            "no absorbido silenciosamente por el ajuste de test13c."
+        )
+
+    def test13g_vef_invoice_decimal_quantity_and_high_precision_price(self):
+        """Caso borde: factura con CANTIDAD decimal (0,5248) y PRECIO
+        unitario con más de 2 decimales (precisión 6 -- como una factura
+        real cuyo precio viene de convertir a BCV). Los tres fixes (guard
+        de IGTF, is_payment del cruce, comparación en moneda de pago) se
+        probaron hasta ahora con montos "redondos" (100.000,00) -- este
+        caso confirma que también funcionan con montos "sucios" de punta a
+        punta, no solo cuando los números caen convenientemente exactos.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        sale_journal = self.Journal.search(
+            [("type", "=", "sale"), ("company_id", "=", self.company.id), ("is_debit", "=", False)],
+            limit=1,
+        )
+        with Form(self.env["account.move"].with_context(
+            default_move_type='out_invoice', default_journal_id=sale_journal,
+        )) as inv_form:
+            inv_form.partner_id = self.partner
+            inv_form.invoice_date = yesterday
+            inv_form.currency_id = self.currency_vef
+            inv_form.save()
+        inv = inv_form.save()
+        with Form(inv) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product
+                line.quantity = 0.5248
+                line.price_unit = 190905.223344
+        invoice = inv_form_edit.save()
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        invoice_amount = invoice.amount_total
+        self.assertGreater(invoice_amount, 0.0, "La factura con decimales debe postearse con un total > 0.")
+        _logger.info(f"test13g: invoice quantity=0.5248, price_unit=190905.223344 -> amount_total={invoice_amount}")
+
+        action_data = invoice.action_register_payment()
+        with Form(
+            self.env['account.payment.register'].with_context(action_data['context'])
+        ) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+
+        payment = self.env['account.payment'].browse(
+            pay_form.record.action_create_payments().get('res_id')
+        )
+        payment_move = payment.move_id
+        invoice = self.env['account.move'].browse(invoice.id)
+
+        cxc_line = payment_move.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+        self.assertAlmostEqual(
+            cxc_line.balance, -invoice_amount, 2,
+            msg=(
+                f"CxC del pago ({cxc_line.balance}) debe calzar exacto con la deuda "
+                f"({-invoice_amount}) aun con cantidad/precio decimales."
+            ),
+        )
+        self.assertEqual(
+            invoice.payment_state, 'paid',
+            f"La factura con decimales debe cerrar 'paid', estado actual: {invoice.payment_state}"
+        )
+        self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
+
+        exchange_moves = self.env['account.move'].search([
+            ('journal_id.name', '=', 'Exchange Difference'),
+            ('company_id', '=', self.company.id),
+        ])
+        self.assertFalse(
+            exchange_moves,
+            msg=(
+                f"No debe haber diferencial cambiario espurio con montos decimales de "
+                f"alta precisión: {exchange_moves.mapped('id')}"
+            ),
+        )
+
     def test14_payment_from_invoice_with_igtf_journal_paiment_multi_invoice(self):
-        
+
         invoice_amount = float(2691.20)
         expected_igtf = 80.736
 

@@ -424,10 +424,13 @@ class AccountMove(models.Model):
                  
             igtf_amount = abs(payment.calculate_igtf_for_payment(self, applied_payment_curr,  payment.currency_id ,conversion_date))
 
-        #raise UserError(igtf_amount)
         if is_igtf_journal:
             igtf_in_invoice_curr = payment.currency_id._convert(igtf_amount, self.currency_id, self.company_id, conversion_date)
-            if (base_amount_applied + igtf_in_invoice_curr) < advance_amount: ## include igtf in base
+            # Strict `<` never fires on a full reapply: both amounts come from
+            # rounded VEF<->USD conversions, so they end up EQUAL, not "less
+            # than" -- IGTF then got carved out of the CxC line instead of the
+            # advance's leftover. compare_amounts() uses rounding tolerance.
+            if self.currency_id.compare_amounts(base_amount_applied + igtf_in_invoice_curr, advance_amount) <= 0: ## include igtf in base
                 base_amount_applied = self.currency_id.round(base_amount_applied + igtf_in_invoice_curr)
                 if advance_amount > 0:
                     applied_payment_curr = payment.currency_id.round(
