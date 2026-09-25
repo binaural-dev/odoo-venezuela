@@ -136,7 +136,11 @@ class TestKioskPublicRoutes(TransactionCase):
                 "property_account_expense_categ_id": account.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # `l10n_ve_stock` only lets a product be created with the `company_id`
+        # of `env.company` (no superuser bypass on 19.0): without
+        # `with_company` the create raises AccessError and the whole
+        # setUpClass is skipped.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "Kiosk Routes Product",
                 "type": "service",
