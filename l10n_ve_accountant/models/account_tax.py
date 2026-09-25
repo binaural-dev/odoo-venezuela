@@ -12,6 +12,142 @@ class AccountTax(models.Model):
     _inherit = "account.tax"
 
     @api.model
+    def _fix_base_amount_for_multi_currency(self, res, record):
+        """Corrige `base_amount` cuando la moneda del documento difiere de la
+        de la compañía. El mecanismo de "real portion" corrige `line.balance`
+        pero no `line.currency_rate`, así que el cómputo del core para
+        `base_amount` difiere del balance real corregido por la unidad de
+        redondeo de la moneda. Redistribuye la diferencia proporcionalmente
+        entre subtotales y grupos de impuesto."""
+        if record._name != 'account.move' or not record.is_invoice(include_receipts=True):
+            return
+        if not record.currency_id or not record.company_id.currency_id:
+            return
+        if record.currency_id == record.company_id.currency_id:
+            return
+        product_lines = record.line_ids.filtered(
+            lambda l: l.display_type == 'product' and not l.tax_repartition_line_id
+        )
+        if not product_lines:
+            return
+        cc = record.company_id.currency_id
+        sign = record.direction_sign
+        correct_base = cc.round(sum(product_lines.mapped('balance')) * sign)
+        diff = cc.round(correct_base - res.get('base_amount', 0.0))
+        if cc.is_zero(diff):
+            return
+        res['base_amount'] = correct_base
+        res['total_amount'] = cc.round(res.get('total_amount', 0.0) + diff)
+        subtotals = res.get('subtotals', [])
+        if not subtotals:
+            return
+        total_sub_base = sum(s.get('base_amount', 0.0) for s in subtotals)
+        if cc.is_zero(total_sub_base):
+            return
+        remaining_diff = diff
+        n_sub = len(subtotals)
+        for i, subtotal in enumerate(subtotals):
+            if i < n_sub - 1:
+                ratio = subtotal.get('base_amount', 0.0) / total_sub_base
+                share = cc.round(ratio * diff)
+                subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + share
+                subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + share
+                remaining_diff -= share
+            else:
+                subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + remaining_diff
+                subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + remaining_diff
+            # Sync tax groups' base_amount with corrected subtotal
+            tax_groups = subtotal.get('tax_groups', [])
+            if not tax_groups:
+                continue
+            tg_total = sum(tg.get('base_amount', 0.0) for tg in tax_groups)
+            if cc.is_zero(tg_total):
+                continue
+            n_tg = len(tax_groups)
+            for j, tg in enumerate(tax_groups):
+                if j < n_tg - 1:
+                    tg_ratio = tg.get('base_amount', 0.0) / tg_total
+                    tg_share = cc.round(tg_ratio * subtotal['base_amount'])
+                    tg['base_amount'] = tg_share
+                    tg['display_base_amount'] = tg_share
+                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg_share)
+                else:
+                    tg['base_amount'] = subtotal['base_amount'] - sum(
+                        tax_groups[k]['base_amount'] for k in range(j)
+                    )
+                    tg['display_base_amount'] = tg['base_amount']
+                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg['base_amount'])
+
+    @api.model
+    def _fix_tax_amount_for_round_per_line(self, res, record, company):
+        """Corrige `tax_amount` para `tax_calculation_rounding_method ==
+        'round_per_line'`. `account.move._sync_tax_lines` (`account_move.py`,
+        `_per_line_tax_sums`) ya redondea el impuesto de cada línea de
+        producto individualmente y suma los montos redondeados -- el método
+        de la máquina fiscal, que es lo que realmente se postea al libro
+        (`account.move.line.balance`/`amount_currency` de las líneas `tax`).
+        Pero este summary se calcula de forma independiente desde
+        `base_lines` a través del motor del core (`super()` en el llamador),
+        que sigue sumando las bases y redondeando una sola vez sin importar
+        el modo configurado. Sin esta corrección, el widget de la factura y
+        el PDF impreso mostrarían un IVA distinto al que realmente se
+        posteó -- las líneas de impuesto reales son la única fuente de
+        verdad, una vez que existen."""
+        if record._name != 'account.move' or not record.is_invoice(include_receipts=True):
+            return
+        if company.tax_calculation_rounding_method != 'round_per_line':
+            return
+        real_tax_lines = record.line_ids.filtered(lambda l: l.display_type == 'tax')
+        if not real_tax_lines:
+            return
+
+        cc = company.currency_id
+        doc_currency = record.currency_id
+        sign = record.direction_sign
+        by_group = {}
+        for line in real_tax_lines:
+            gid = line.tax_group_id.id
+            entry = by_group.setdefault(gid, {'balance': 0.0, 'amount_currency': 0.0})
+            entry['balance'] += line.balance
+            entry['amount_currency'] += line.amount_currency
+
+        total_tax_diff = 0.0
+        total_tax_diff_currency = 0.0
+        for subtotal in res.get('subtotals', []):
+            for tg in subtotal.get('tax_groups', []):
+                group_totals = by_group.get(tg.get('id'))
+                if group_totals is None:
+                    continue
+                correct_tax = cc.round(group_totals['balance'] * sign)
+                correct_tax_currency = doc_currency.round(group_totals['amount_currency'] * sign)
+                diff = cc.round(correct_tax - tg.get('tax_amount', 0.0))
+                diff_currency = doc_currency.round(correct_tax_currency - tg.get('tax_amount_currency', 0.0))
+                if cc.is_zero(diff) and doc_currency.is_zero(diff_currency):
+                    continue
+                tg['tax_amount'] = correct_tax
+                tg['tax_amount_currency'] = correct_tax_currency
+                total_tax_diff += diff
+                total_tax_diff_currency += diff_currency
+
+        if cc.is_zero(total_tax_diff) and doc_currency.is_zero(total_tax_diff_currency):
+            return
+
+        # Re-aggregate subtotal/top-level totals from the corrected
+        # tax_groups, mirroring the core's own aggregation
+        # (account_tax.py:2889-2893 upstream).
+        for subtotal in res.get('subtotals', []):
+            subtotal['tax_amount'] = sum(tg.get('tax_amount', 0.0) for tg in subtotal.get('tax_groups', []))
+            subtotal['tax_amount_currency'] = sum(
+                tg.get('tax_amount_currency', 0.0) for tg in subtotal.get('tax_groups', [])
+            )
+        res['tax_amount'] = cc.round(res.get('tax_amount', 0.0) + total_tax_diff)
+        res['tax_amount_currency'] = doc_currency.round(res.get('tax_amount_currency', 0.0) + total_tax_diff_currency)
+        res['total_amount'] = cc.round(res.get('total_amount', 0.0) + total_tax_diff)
+        res['total_amount_currency'] = doc_currency.round(
+            res.get('total_amount_currency', 0.0) + total_tax_diff_currency
+        )
+
+    @api.model
     def _get_tax_totals_summary(
         self, base_lines, currency, company, cash_rounding=None
     ):
@@ -69,58 +205,8 @@ class AccountTax(models.Model):
         if not record:
             return res
 
-        # Fix base_amount for multi-currency invoices. The real portion mechanism corrects
-        # line.balance but does not update line.currency_rate, causing the Odoo core computation
-        # of base_amount to differ from the actual corrected balance by the currency rounding unit.
-        if record._name == 'account.move' and record.is_invoice(include_receipts=True):
-            if record.currency_id and record.company_id.currency_id and record.currency_id != record.company_id.currency_id:
-                product_lines = record.line_ids.filtered(
-                    lambda l: l.display_type == 'product' and not l.tax_repartition_line_id
-                )
-                if product_lines:
-                    cc = record.company_id.currency_id
-                    sign = record.direction_sign
-                    correct_base = cc.round(sum(product_lines.mapped('balance')) * sign)
-                    current_base = res.get('base_amount', 0.0)
-                    diff = cc.round(correct_base - current_base)
-                    if not cc.is_zero(diff):
-                        res['base_amount'] = correct_base
-                        res['total_amount'] = cc.round(res.get('total_amount', 0.0) + diff)
-                        subtotals = res.get('subtotals', [])
-                        if subtotals:
-                            total_sub_base = sum(s.get('base_amount', 0.0) for s in subtotals)
-                            if not cc.is_zero(total_sub_base):
-                                remaining_diff = diff
-                                n_sub = len(subtotals)
-                                for i, subtotal in enumerate(subtotals):
-                                    if i < n_sub - 1:
-                                        ratio = subtotal.get('base_amount', 0.0) / total_sub_base
-                                        share = cc.round(ratio * diff)
-                                        subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + share
-                                        subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + share
-                                        remaining_diff -= share
-                                    else:
-                                        subtotal['base_amount'] = subtotal.get('base_amount', 0.0) + remaining_diff
-                                        subtotal['total_amount'] = subtotal.get('total_amount', 0.0) + remaining_diff
-                                    # Sync tax groups' base_amount with corrected subtotal
-                                    tax_groups = subtotal.get('tax_groups', [])
-                                    if tax_groups:
-                                        tg_total = sum(tg.get('base_amount', 0.0) for tg in tax_groups)
-                                        if not cc.is_zero(tg_total):
-                                            n_tg = len(tax_groups)
-                                            for j, tg in enumerate(tax_groups):
-                                                if j < n_tg - 1:
-                                                    tg_ratio = tg.get('base_amount', 0.0) / tg_total
-                                                    tg_share = cc.round(tg_ratio * subtotal['base_amount'])
-                                                    tg['base_amount'] = tg_share
-                                                    tg['display_base_amount'] = tg_share
-                                                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg_share)
-                                                else:
-                                                    tg['base_amount'] = subtotal['base_amount'] - sum(
-                                                        tax_groups[k]['base_amount'] for k in range(j)
-                                                    )
-                                                    tg['display_base_amount'] = tg['base_amount']
-                                                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg['base_amount'])
+        self._fix_base_amount_for_multi_currency(res, record)
+        self._fix_tax_amount_for_round_per_line(res, record, company)
 
         currency_id = company.currency_id or False
         foreign_currency_id = company.foreign_currency_id or False
