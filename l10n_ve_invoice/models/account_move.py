@@ -162,7 +162,7 @@ class AccountMove(models.Model):
         # _check_refund_against_origin() and action_post() -- keep them in
         # sync.
         for line in invoice_lines - discount_lines:
-            if line.price_unit <= 0 and line.display_type not in (
+            if line.price_subtotal <= 0 and line.display_type not in (
                 "line_section",
                 "line_subsection",
                 "line_note",
