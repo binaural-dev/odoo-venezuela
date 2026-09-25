@@ -802,6 +802,16 @@ class TfhkaDocumentService(models.AbstractModel):
             if needs_conversion:
                 base_amount = self._get_amount_in_currency(invoice, currency, ctx, base_amount)
                 tax_amount = self._get_amount_in_currency(invoice, currency, ctx, tax_amount)
+            # Un grupo de impuesto negativo solo puede venir de una línea de
+            # descuento global con un impuesto propio, distinto del de las
+            # líneas reales (ver _get_discount_amount/_prepare_detail_lines):
+            # ese descuento ya se reporta a nivel de documento, así que el
+            # grupo se omite aquí en vez de mandarle a TFHKA una base/valor
+            # negativo (rechazado con código 203). Los totales agregados
+            # (montoGravadoTotal/totalIVA) no se ven afectados: ya suman
+            # todos los grupos, incluido este, y quedan netos correctamente.
+            if base_amount < 0 or tax_amount < 0:
+                continue
             tax_subtotals.append({
                 "codigoTotalImp": TFHKA_TAX_CODE[group_name],
                 "alicuotaImp": TFHKA_TAX_RATE[group_name],
