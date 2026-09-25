@@ -166,6 +166,23 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
                 ],
             })
 
+    def test_bank_journal_with_one_line_missing_account_raises_user_error(self):
+        """Regression for _check_payment_method_line_accounts: a mix of one
+        line with an account and one without must still raise, since the
+        check must fail if ANY line lacks an account, not only when ALL of
+        them do."""
+        journal = self._create_valid_bank_journal("BKMIX")
+        outbound_ids = journal.outbound_payment_method_line_ids.ids
+        self.assertTrue(journal.inbound_payment_method_line_ids)
+        self.assertTrue(outbound_ids)
+
+        with self.assertRaises(UserError):
+            journal.write({
+                "outbound_payment_method_line_ids": [
+                    Command.update(line_id, {"payment_account_id": False}) for line_id in outbound_ids
+                ],
+            })
+
     def _create_support_less_user(self):
         return self.env["res.users"].create({
             "name": "No Support User",
