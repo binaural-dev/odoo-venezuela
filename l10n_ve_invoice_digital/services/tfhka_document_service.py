@@ -716,10 +716,13 @@ class TfhkaDocumentService(models.AbstractModel):
                 foreign_currency_code = None
 
             # nroItems debe cuadrar con detallesItems, que solo lleva líneas de
-            # producto: contar invoice_line_ids incluiría secciones y notas.
-            item_count = len(record.invoice_line_ids.filtered(
-                lambda l: l.display_type == "product"
-            ))
+            # producto (secciones/notas quedan fuera) y tampoco cuenta las
+            # líneas de descuento global, excluidas ahí por lo mismo que en
+            # _prepare_detail_lines.
+            item_count = len(
+                record.invoice_line_ids.filtered(lambda l: l.display_type == "product")
+                - record.invoice_line_ids._get_discount_lines()
+            )
 
             totals = {
                 "nroItems": str(item_count),
@@ -824,9 +827,16 @@ class TfhkaDocumentService(models.AbstractModel):
         item_details = []
         line_number = 1
         for record in invoice:
+            # Las líneas de descuento global (ver _get_discount_amount) son
+            # display_type == 'product' con precio negativo -- TFHKA rechaza
+            # cualquier monto negativo en detallesItems (código 203). Ese
+            # descuento ya se reporta a nivel de documento (totalDescuento/
+            # subtotalAntesDescuento), así que la línea se excluye aquí para
+            # no duplicarlo ni enviar un ítem con montos negativos.
+            discount_lines = record.invoice_line_ids._get_discount_lines()
             product_lines = record.invoice_line_ids.filtered(
                 lambda l: l.display_type == 'product'
-            )
+            ) - discount_lines
             for line in product_lines:
                 tax_mapping = {
                     0.0: "E",
