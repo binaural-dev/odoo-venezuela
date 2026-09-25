@@ -1527,6 +1527,7 @@ class AccountMove(models.Model):
 
         to_delete = []
         to_create = []
+        touched_move_ids = set()
         for move in container['records']:
             if move.state != 'draft':
                 continue
@@ -1736,6 +1737,7 @@ class AccountMove(models.Model):
             # ── Delete stale tax lines ───────────────────────────────
             for tax_line_vals in tax_results['tax_lines_to_delete']:
                 to_delete.append(tax_line_vals['record'].id)
+                touched_move_ids.add(move.id)
 
             # ── New tax lines ────────────────────────────────────────
             for tax_line_vals in tax_results['tax_lines_to_add']:
@@ -1750,6 +1752,7 @@ class AccountMove(models.Model):
                     **tax_line_vals, 'display_type': 'tax', 'move_id': move.id,
                     'foreign_balance': fb,
                 })
+                touched_move_ids.add(move.id)
 
             # ── Existing tax lines ───────────────────────────────────
             for tax_line_vals, grouping_key, to_update in tax_results['tax_lines_to_update']:
@@ -1770,6 +1773,14 @@ class AccountMove(models.Model):
             self.env['account.move.line'].browse(to_delete).with_context(dynamic_unlink=True).unlink()
         if to_create:
             self.env['account.move.line'].create(to_create)
+
+        # El unlink de arriba puede disparar un _check_balanced/
+        # _sync_dynamic_lines anidado prematuro (IVA ya borrada, nueva aun
+        # sin crear) que deja _real_portion_distributed marcado como
+        # "hecho" y bloquea la corrección posterior. Se limpia aquí mismo,
+        # con las líneas ya completas.
+        for move_id in touched_move_ids:
+            self.env.cr.cache.pop(('_real_portion_distributed', move_id), None)
 
     # ── Sync dynamic lines: distribute foreign in PT ─────────────────────
     @contextmanager

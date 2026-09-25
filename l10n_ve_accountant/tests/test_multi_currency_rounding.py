@@ -1,4 +1,6 @@
 import logging
+from datetime import timedelta
+
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 
@@ -49,7 +51,9 @@ class TestMultiCurrencyRounding(TransactionCase):
 
         # Accounts
         self.acc_rec = self._get_or_create('120000', 'Receivable', 'asset_receivable', reconcile=True)
+        self.acc_pay = self._get_or_create('220000', 'Payable', 'liability_payable', reconcile=True)
         self.acc_inc = self._get_or_create('400000', 'Income', 'income')
+        self.acc_exp = self._get_or_create('600000', 'Expense', 'expense')
         self.acc_tax = self._get_or_create('200000', 'Tax Payable', 'liability_current', reconcile=True)
         self.acc_bank_vef = self._get_or_create('100100', 'Bank VEF', 'asset_cash', reconcile=True)
         self.acc_bank_usd = self._get_or_create('100200', 'Bank USD', 'asset_cash', reconcile=True)
@@ -82,9 +86,12 @@ class TestMultiCurrencyRounding(TransactionCase):
             'supplier_taxes_id': [(5, 0, 0)],
         })
 
-        # Sale journal
+        # Sale / purchase journals
         self.sale_journal = self.env['account.journal'].search([
             ('type', '=', 'sale'), ('company_id', '=', self.company.id),
+        ], limit=1)
+        self.purchase_journal = self.env['account.journal'].search([
+            ('type', '=', 'purchase'), ('company_id', '=', self.company.id),
         ], limit=1)
 
     def _get_or_create(self, code, name, acc_type, reconcile=False):
@@ -169,10 +176,15 @@ class TestMultiCurrencyRounding(TransactionCase):
         return (abs(line.foreign_debit - exp_fd) < 0.01 and
                 abs(line.foreign_credit - exp_fc) < 0.01)
 
-    def _create_invoice(self, currency, pricelist, lines_data):
+    def _create_invoice(self, currency, pricelist, lines_data, move_type='out_invoice'):
         """Crea y publica una factura.
         lines_data: list of (qty, price_unit, [tax_records])
+        move_type: 'out_invoice' (default), 'in_invoice', 'out_refund' or 'in_refund' --
+        `in_invoice`/`out_refund` (Odoo's `is_outbound()` types) have `direction_sign == 1`,
+        the OPPOSITE of `out_invoice`/`in_refund`'s `-1`; refunds also use
+        `refund_repartition_line_ids` instead of `invoice_repartition_line_ids`.
         """
+        is_purchase = move_type in ('in_invoice', 'in_refund')
         # Buscar o crear lista de precios en la moneda adecuada
         pl = pricelist
         if not pl and currency != self.currency_vef:
@@ -186,18 +198,20 @@ class TestMultiCurrencyRounding(TransactionCase):
                     'company_id': self.company.id,
                 })
         partner = self.env['res.partner'].create({
-            'name': f'Partner {currency.name}',
+            'name': f'Partner {currency.name} {move_type}',
             'company_id': self.company.id,
             'property_account_receivable_id': self.acc_rec.id,
+            'property_account_payable_id': self.acc_pay.id,
             'property_product_pricelist': pl.id if pl else False,
         })
+        line_account = self.acc_exp if is_purchase else self.acc_inc
         inv = self.env['account.move'].with_context(
             check_move_validity=False,
         ).create([{
-            'move_type': 'out_invoice',
+            'move_type': move_type,
             'partner_id': partner.id,
             'currency_id': currency.id,
-            'journal_id': self.sale_journal.id,
+            'journal_id': (self.purchase_journal if is_purchase else self.sale_journal).id,
             'invoice_date': fields.Date.today(),
             'company_id': self.company.id,
             'pricelist_id': pl.id if pl else False,
@@ -207,6 +221,7 @@ class TestMultiCurrencyRounding(TransactionCase):
                     'name': f'L{i}',
                     'quantity': qty,
                     'price_unit': pu,
+                    'account_id': line_account.id,
                     'tax_ids': [(6, 0, [t.id for t in taxes])],
                 })
                 for i, (qty, pu, taxes) in enumerate(lines_data)
@@ -1086,26 +1101,43 @@ class TestMultiCurrencyRounding(TransactionCase):
                 )
 
     def test_32_SCOPE_CHECK_vef_only_invoice_round_per_line(self):
-        """SCOPE CHECK (not a real regression guard): the whole `_apply_vef_first` fix is gated
-        behind `move.currency_id != move.company_id.currency_id`. This checks whether a
-        single-currency VEF invoice (company currency == document currency, the most common
-        case for many VE businesses) also gets fiscal-machine-style per-line rounding, or
-        whether Odoo's original grouped-then-round-once behavior is still unpatched there."""
-        self.company.tax_calculation_rounding_method = 'round_per_line'
-        # Same shape as the real-world case, but priced directly in VEF so
-        # `currency_id == company_id.currency_id` and the whole multi-currency
-        # block (where the fix lives) never runs.
-        inv = self._create_invoice(self.currency_vef, None, [
-            (1, 8965.2744 / 1, [self.tax_16]),
-            (1, 8965.2744 / 1, [self.tax_16]),
-        ])
-        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
-        total_tax_vef = abs(sum(tax_line.mapped('balance')))
-        _logger.info(
-            "test_32 SCOPE CHECK: VEF-only invoice, round_per_line, total_tax_vef=%s "
-            "(fiscal-machine method expects 2868.88, grouped-then-round expects 2868.89)",
-            total_tax_vef,
-        )
+        """SCOPE CHECK: the whole fix (`_fix_base_amount_for_multi_currency` /
+        `_fix_tax_amount_for_round_per_line`'s multi-currency block in `account_move.py`) is
+        gated behind `move.currency_id != move.company_id.currency_id`, so a single-currency
+        VEF invoice never runs it. This DOCUMENTS -- and actually asserts, so it fails loudly
+        if the assumption stops holding -- what happens instead: verified empirically (not
+        assumed), Odoo's OWN native `round_per_line` handling, completely unpatched by this
+        fix, ALREADY gives the correct fiscal-machine value here (2868.88, matching test_30's
+        post-fix multi-currency case -- not a coincidence: the line price used here, 8965.2744
+        VEF, is exactly 11.16 USD * 803.34, test_30's rate). This confirms the currency-mismatch
+        gate is scoped correctly: the bug this PR fixes is specific to the multi-currency
+        real-portion interaction, not a general round_per_line problem that also needs fixing
+        for VEF-only invoices. If either pinned value changes, either Odoo's core rounding
+        behavior changed or the gate no longer covers what it should -- worth a second look
+        either way."""
+        expected_round_per_line = 2868.88
+        expected_round_globally = 2868.89
+        for mode, expected in (
+            ("round_per_line", expected_round_per_line),
+            ("round_globally", expected_round_globally),
+        ):
+            with self.subTest(mode=mode):
+                self.company.tax_calculation_rounding_method = mode
+                inv = self._create_invoice(self.currency_vef, None, [
+                    (1, 8965.2744, [self.tax_16]),
+                    (1, 8965.2744, [self.tax_16]),
+                ])
+                tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+                total_tax_vef = abs(sum(tax_line.mapped('balance')))
+                self.assertAlmostEqual(
+                    total_tax_vef, expected, places=2,
+                    msg=(
+                        f"SCOPE CHECK regression: VEF-only invoice, mode={mode}, "
+                        f"total_tax_vef={total_tax_vef} != expected {expected} -- either "
+                        f"Odoo's core rounding changed or the currency gate no longer covers "
+                        f"what it should"
+                    ),
+                )
 
     def _create_chained_taxes(self, suffix=""):
         """Tax A 10% (include_base_amount) followed by Tax B 5% computed on A's base + A's amount."""
@@ -1238,11 +1270,28 @@ class TestMultiCurrencyRounding(TransactionCase):
         own core does with `include_base_amount` unpatched -- confirms it stays balanced and
         cascades correctly on its own, same conclusion as test_32 for the non-chained case.
 
-        Unlike test_33, this does NOT independently predict Tax A's exact value -- that would
-        require replicating Odoo core's own (unaudited-by-us) internal rounding order, which
-        does not need to match `_expected_chained_vef` (that helper mirrors OUR algorithm, not
-        the core's). Instead it uses the ACTUAL posted Tax A as ground truth for what Tax B's
-        base must equal, which is exact and requires no assumption about the core's internals."""
+        Tax A (the first, non-chained tax of the pair) IS a plain percent tax, so in
+        `round_per_line` mode the SAME independent oracle test_32 relies on
+        (`_expected_chained_vef`'s formula) predicts it exactly (1793.06) -- both lines get
+        the identical per-line-rounded base here, so there is no cent to redistribute.
+        `round_globally` is deliberately NOT run through that same formula: empirically, Odoo
+        redistributes a 1-cent rounding difference across the two product lines in THIS mode
+        (-8965.28 / -8965.27, instead of an even -8965.27 / -8965.27) -- an Odoo core
+        implementation detail we do not control -- which lands base_vef's sum exactly on a
+        .055 rounding boundary and makes a naive "sum-then-round" prediction unreliable (it
+        would need `1793.06`; the actual engine gives `1793.05`). Per test_33's own docstring,
+        replicating core's real internal order for that case is out of scope, so -- following
+        this file's existing pattern (test_30/test_32 also pin the real-world/hand-verified
+        value directly instead of re-deriving it) -- round_globally's Tax A is pinned to the
+        value actually observed, verified by running this exact test against docker-odoo's
+        `odoo-binaural-19` container: SCOPE CHECK regression if it changes, same as test_32.
+
+        Tax B (chained onto Tax A) is, in both modes, NOT independently predicted either, for
+        the reason test_33's docstring gives -- that would require replicating Odoo core's own
+        (unaudited-by-us) internal rounding order for the cascading case specifically. Instead
+        it uses the ACTUAL posted Tax A as ground truth for what Tax B's base must equal,
+        which is exact and requires no assumption about the core's internals."""
+        pinned_tax_a = {"round_per_line": None, "round_globally": 1793.05}
         for mode in ("round_per_line", "round_globally"):
             with self.subTest(mode=mode):
                 self.company.tax_calculation_rounding_method = mode
@@ -1256,6 +1305,20 @@ class TestMultiCurrencyRounding(TransactionCase):
                 line_a = tax_lines.filtered(lambda l: l.tax_line_id == tax_a)
                 line_b = tax_lines.filtered(lambda l: l.tax_line_id == tax_b)
                 self.assertTrue(line_a and line_b, f"[{mode}] Expected one tax line per chained tax")
+
+                if mode == "round_per_line":
+                    expected_tax_a, _ = self._expected_chained_vef(product_lines, mode)
+                else:
+                    expected_tax_a = pinned_tax_a[mode]
+                self.assertAlmostEqual(
+                    abs(line_a.balance), expected_tax_a, places=2,
+                    msg=(
+                        f"SCOPE CHECK regression: [{mode}] VEF-only Tax A balance="
+                        f"{line_a.balance} != expected {expected_tax_a} -- either core's "
+                        f"native rounding changed or the currency gate no longer covers "
+                        f"what it should"
+                    ),
+                )
 
                 base_vef = abs(sum(product_lines.mapped('balance')))
                 naive_tax_b = self.currency_vef.round(base_vef * 0.05)
@@ -1642,9 +1705,15 @@ class TestMultiCurrencyRounding(TransactionCase):
                         "test_40 tax=%s mode=%s (balance, amount_currency)=%s",
                         tax.name, mode, results[mode],
                     )
+                same_balance = self.currency_vef.is_zero(
+                    results["round_per_line"][0] - results["round_globally"][0]
+                )
+                same_amount_currency = self.currency_usd.is_zero(
+                    results["round_per_line"][1] - results["round_globally"][1]
+                )
                 if expect_mode_independent:
-                    self.assertEqual(
-                        results["round_per_line"], results["round_globally"],
+                    self.assertTrue(
+                        same_balance and same_amount_currency,
                         msg=(
                             f"{tax.name}: expected mode-independent (fixed amount has no "
                             f"percentage/rounding math), but differs: "
@@ -1653,8 +1722,8 @@ class TestMultiCurrencyRounding(TransactionCase):
                         ),
                     )
                 else:
-                    self.assertNotEqual(
-                        results["round_per_line"], results["round_globally"],
+                    self.assertFalse(
+                        same_balance and same_amount_currency,
                         msg=(
                             f"{tax.name}: expected the mode to have an effect (via Odoo's own "
                             f"core, not this module's code) on a real percentage-based tax, but "
@@ -1783,3 +1852,495 @@ class TestMultiCurrencyRounding(TransactionCase):
         td = sum(inv.line_ids.mapped('debit'))
         tc = sum(inv.line_ids.mapped('credit'))
         self.assertAlmostEqual(td, tc, places=2, msg="Debit != Credit")
+
+    def _tax_totals_group(self, inv, tax_group):
+        """Ground-truth-adjacent helper: pulls the ONE tax_group entry for `tax_group` out of
+        the real widget/PDF field (`account.move.tax_totals`, computed by
+        `_get_tax_totals_summary`), as opposed to `inv.amount_tax` which the core computes
+        directly from the posted lines via `_compute_amount` and never touches this summary."""
+        groups = [
+            tg
+            for subtotal in inv.tax_totals.get('subtotals', [])
+            for tg in subtotal.get('tax_groups', [])
+            if tg.get('id') == tax_group.id
+        ]
+        self.assertEqual(
+            len(groups), 1,
+            msg=f"Expected exactly one tax_totals group for {tax_group.name}, found {len(groups)}",
+        )
+        return groups[0]
+
+    def test_43_tax_totals_widget_matches_posted_tax_line_round_per_line(self):
+        """Bloqueante de la revision del PR #1362: test_30/test_31 solo comparan contra
+        `inv.amount_tax`, que Odoo computa directo de las lineas reales via `_compute_amount`
+        -- NUNCA pasa por `_get_tax_totals_summary`, que es donde vive el fix del
+        widget/PDF (`_fix_tax_amount_for_round_per_line`, `account_tax.py`). Este test ejercita
+        el campo real que alimenta el widget y el PDF (`tax_totals`) y confirma que coincide
+        con lo efectivamente posteado en la linea de impuesto, en ambas monedas y en ambos
+        modos de redondeo (en `round_globally` el fix debe ser un no-op: el diff es cero)."""
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 803.34,
+            "company_id": self.company.id,
+        })
+        for mode in ("round_per_line", "round_globally"):
+            with self.subTest(mode=mode):
+                self.company.tax_calculation_rounding_method = mode
+                inv = self._create_invoice(self.currency_usd, None, [
+                    (1, 11.16, [self.tax_16]),
+                    (1, 11.16, [self.tax_16]),
+                ])
+                tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+                posted_tax_vef = abs(sum(tax_line.mapped('balance')))
+                posted_tax_usd = abs(sum(tax_line.mapped('amount_currency')))
+
+                tg = self._tax_totals_group(inv, self.tax_group)
+                self.assertAlmostEqual(
+                    abs(tg['tax_amount']), posted_tax_vef, places=2,
+                    msg=(
+                        f"[{mode}] tax_totals widget tax_amount (VEF)={tg['tax_amount']} != "
+                        f"posted tax line balance ({posted_tax_vef}) -- the PDF/widget would "
+                        f"show a different IVA than what actually posted to the ledger"
+                    ),
+                )
+                self.assertAlmostEqual(
+                    abs(tg['tax_amount_currency']), posted_tax_usd, places=2,
+                    msg=(
+                        f"[{mode}] tax_totals widget tax_amount_currency (USD)="
+                        f"{tg['tax_amount_currency']} != posted tax line amount_currency "
+                        f"({posted_tax_usd})"
+                    ),
+                )
+                self.assertAlmostEqual(
+                    abs(inv.tax_totals['tax_amount']), posted_tax_vef, places=2,
+                    msg=f"[{mode}] top-level tax_totals['tax_amount'] != posted tax line balance",
+                )
+                if mode == "round_per_line":
+                    # Pins the exact fiscal-machine value from test_30, but through the
+                    # widget field this time, not `inv.amount_tax`.
+                    self.assertAlmostEqual(abs(tg['tax_amount']), 2868.88, places=2)
+
+    def test_44_tax_totals_widget_round_per_line_purchase_invoice_direction_sign(self):
+        """El bloqueante tambien senala que toda la suite es `out_invoice` con `abs()` en
+        todos lados: el supuesto de `direction_sign` en compras (`in_invoice` tiene
+        `direction_sign == 1`, lo OPUESTO al `-1` de `out_invoice`, ya que `in_invoice` es
+        uno de los tipos `is_outbound()` de Odoo) nunca se prueba en ninguna direccion.
+        Ejercita `_fix_tax_amount_for_round_per_line` con una factura de compra y confirma
+        que el widget sigue coincidiendo con lo posteado."""
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 803.34,
+            "company_id": self.company.id,
+        })
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        inv = self._create_invoice(
+            self.currency_usd, None,
+            [(1, 11.16, [self.tax_16]), (1, 11.16, [self.tax_16])],
+            move_type='in_invoice',
+        )
+        self.assertEqual(
+            inv.direction_sign, 1,
+            msg="Sanity check: in_invoice must have direction_sign == 1 (opposite of out_invoice's -1)",
+        )
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        posted_tax_vef = abs(sum(tax_line.mapped('balance')))
+        posted_tax_usd = abs(sum(tax_line.mapped('amount_currency')))
+
+        tg = self._tax_totals_group(inv, self.tax_group)
+        self.assertAlmostEqual(
+            abs(tg['tax_amount']), posted_tax_vef, places=2,
+            msg=(
+                f"in_invoice: tax_totals widget tax_amount (VEF)={tg['tax_amount']} != "
+                f"posted tax line balance ({posted_tax_vef}) -- direction_sign==-1 not "
+                f"handled correctly by the widget fix"
+            ),
+        )
+        self.assertAlmostEqual(
+            abs(tg['tax_amount_currency']), posted_tax_usd, places=2,
+            msg=(
+                f"in_invoice: tax_totals widget tax_amount_currency (USD)="
+                f"{tg['tax_amount_currency']} != posted tax line amount_currency "
+                f"({posted_tax_usd})"
+            ),
+        )
+
+    def test_45_tax_totals_widget_round_per_line_credit_note_refund_repartition(self):
+        """Companion a test_44 para la otra mitad de la observacion del bloqueante
+        ('compras/refunds'): una nota de credito de venta (`out_refund`) usa
+        `refund_repartition_line_ids` en vez de `invoice_repartition_line_ids` y tiene
+        `direction_sign == 1` igual que una factura de compra (ambos son tipos
+        `is_outbound()` de Odoo), pero por una ruta de repartition distinta. Confirma que
+        el widget tambien coincide con lo posteado aqui."""
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 803.34,
+            "company_id": self.company.id,
+        })
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        inv = self._create_invoice(
+            self.currency_usd, None,
+            [(1, 11.16, [self.tax_16]), (1, 11.16, [self.tax_16])],
+            move_type='out_refund',
+        )
+        self.assertEqual(
+            inv.direction_sign, 1,
+            msg="Sanity check: out_refund must have direction_sign == 1 (opposite of out_invoice's -1)",
+        )
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        posted_tax_vef = abs(sum(tax_line.mapped('balance')))
+        posted_tax_usd = abs(sum(tax_line.mapped('amount_currency')))
+
+        tg = self._tax_totals_group(inv, self.tax_group)
+        self.assertAlmostEqual(
+            abs(tg['tax_amount']), posted_tax_vef, places=2,
+            msg=(
+                f"out_refund: tax_totals widget tax_amount (VEF)={tg['tax_amount']} != "
+                f"posted tax line balance ({posted_tax_vef})"
+            ),
+        )
+        self.assertAlmostEqual(
+            abs(tg['tax_amount_currency']), posted_tax_usd, places=2,
+            msg=(
+                f"out_refund: tax_totals widget tax_amount_currency (USD)="
+                f"{tg['tax_amount_currency']} != posted tax line amount_currency "
+                f"({posted_tax_usd})"
+            ),
+        )
+
+    def _create_dated_invoice(self, currency, invoice_date, date, lines_data, move_type='in_invoice'):
+        """Como `_create_invoice`, pero permitiendo declarar `invoice_date`
+        (fecha de la tasa) y `date` (fecha contable) por separado, para
+        reproducir el escenario de dos tasas BCV distintas del helpdesk
+        MAXCAM. `_create_invoice` siempre usa `invoice_date = today`."""
+        is_purchase = move_type in ('in_invoice', 'in_refund')
+        partner = self.env['res.partner'].create({
+            'name': f'Partner dated {currency.name} {move_type}',
+            'company_id': self.company.id,
+            'property_account_receivable_id': self.acc_rec.id,
+            'property_account_payable_id': self.acc_pay.id,
+        })
+        line_account = self.acc_exp if is_purchase else self.acc_inc
+        inv = self.env['account.move'].with_context(
+            check_move_validity=False,
+        ).create([{
+            'move_type': move_type,
+            'partner_id': partner.id,
+            'currency_id': currency.id,
+            'journal_id': (self.purchase_journal if is_purchase else self.sale_journal).id,
+            'invoice_date': invoice_date,
+            'date': date,
+            'company_id': self.company.id,
+            'invoice_line_ids': [
+                (0, 0, {
+                    'product_id': self.product.id,
+                    'name': f'L{i}',
+                    'quantity': qty,
+                    'price_unit': pu,
+                    'account_id': line_account.id,
+                    'tax_ids': [(6, 0, [t.id for t in taxes])],
+                })
+                for i, (qty, pu, taxes) in enumerate(lines_data)
+            ],
+        }])[0]
+        inv.with_context(move_action_post_alert=True).action_post()
+        # `check_move_validity=False` (necesario para crear las lineas antes
+        # de que el asiento cuadre) se queda pegado a `inv` -- si se lo
+        # devolviera tal cual, cualquier button_cancel()/button_draft() que
+        # el caller haga despues heredaria ese context y correria con
+        # `_check_balanced` DESACTIVADO, dejando pasar el mismo descuadre
+        # que se quiere detectar. Se limpia antes de devolver el recordset,
+        # como corresponde a un request nuevo en produccion.
+        return inv.with_context(check_move_validity=True)
+
+    def test_46_cancel_vendor_bill_round_per_line_different_dates_stays_balanced(self):
+        """Helpdesk MAXCAM (factura de proveedor 0000186045 y similares):
+        con `tax_calculation_rounding_method = 'round_per_line'` (la
+        config real de MAXCAM, ejercitada por `test_44`), cancelar una
+        factura de PROVEEDOR posted en USD con IVA, cuya `invoice_date`
+        (tasa) y `date` (fecha contable) caen en dias con tasa BCV
+        distinta, no debe descuadrar el asiento.
+
+        Ver test_36/test_37 en test_real_portion.py para el equivalente
+        `out_invoice` de un solo renglon -- ese caso NO reproduce el bug;
+        este si, con `round_per_line` + `in_invoice` + varios renglones
+        con decimales, que es la config real del cliente.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, past_date, fields.Date.today(),
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_46_after_post: {td} != {tc}")
+
+        # En produccion, cancelar ocurre en un request/cursor NUEVO, asi
+        # que `_distribute_final_real_portion` (cacheada por
+        # `self.env.cr.cache[('_real_portion_distributed', move.id)]`
+        # para no repetirse dentro de la MISMA transaccion) corre fresca.
+        # Dentro de un TransactionCase, post y cancel comparten cursor, asi
+        # que sin esto la cancelacion ni siquiera ejercita esa logica.
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.button_cancel()
+
+        self.assertEqual(inv.state, 'cancel')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_46_after_cancel: entry unbalanced after button_cancel "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
+    def test_46b_direct_state_write_to_draft_bypassing_button_draft(self):
+        """MAXCAM no usa el boton Cancelar/Restablecer a borrador: tiene
+        una Accion de servidor ("restablecer factura a borrador") que
+        hace `write({'state': 'draft'})` DIRECTO sobre account.move,
+        saltandose todo lo que `button_draft()` hace ANTES de escribir el
+        estado (`_check_draftable()`, unlink de `analytic_line_ids`,
+        `_detach_attachments()`). Reproduce ese camino exacto para
+        confirmar si el bypass en si mismo -- no solo el write de
+        `state` que ya prueba test_46 via `button_cancel()` -- es lo que
+        dispara el descuadre.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, past_date, fields.Date.today(),
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_46b_after_post: {td} != {tc}")
+
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        # Exactamente lo que hace la Accion de servidor de MAXCAM: un
+        # `write({'state': 'draft'})` crudo, sin pasar por button_draft().
+        inv.write({'state': 'draft'})
+
+        self.assertEqual(inv.state, 'draft')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_46b_after_direct_write: entry unbalanced after a raw "
+                f"write({{'state': 'draft'}}) bypassing button_draft() "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
+    def test_48_cancel_vendor_bill_rate_backfilled_after_posting(self):
+        """Variante de test_46: en VE la tasa BCV del dia exacto de la
+        factura a veces se carga en el sistema DESPUES de haberla
+        contabilizado (se publica con retraso). Al momento de POSTEAR,
+        `invoice_currency_rate` cae al fallback de la tasa vigente MAS
+        RECIENTE anterior a `invoice_date`. Si luego, antes de cancelar,
+        alguien carga la tasa exacta de `invoice_date`, el recompute
+        forzado en cada `button_draft()` (ver test_46) usa una tasa
+        DISTINTA a la que se uso para contabilizar originalmente -- ahi
+        es donde debe manifestarse el descuadre, no con una tasa que se
+        mantiene estable entre post y cancel.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+
+        invoice_date = fields.Date.today() - timedelta(days=26)
+        accounting_date = fields.Date.today()
+        stale_rate_date = invoice_date - timedelta(days=5)
+
+        # Unica tasa disponible AL MOMENTO DE POSTEAR: la de 5 dias antes
+        # de invoice_date (fallback por tasa faltante ese dia).
+        self.env["res.currency.rate"].create({
+            "name": stale_rate_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 170.1122,
+            "company_id": self.company.id,
+        })
+        self.env["res.currency.rate"].create({
+            "name": accounting_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, invoice_date, accounting_date,
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        self.assertAlmostEqual(
+            inv.invoice_currency_rate, 1 / 170.1122, places=6,
+            msg="Sanity check: al postear debia usar el fallback de la tasa "
+                "de 5 dias antes (170.1122), no la de hoy",
+        )
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_48_after_post: {td} != {tc}")
+
+        # Llega la tasa BCV real de invoice_date, publicada con retraso.
+        self.env["res.currency.rate"].create({
+            "name": invoice_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+        # `invoice_currency_rate` es `store=True` y su metodo de computo LEE
+        # `expected_currency_rate` (no-store, pero su valor viejo puede
+        # seguir cacheado en env de la lectura durante el post) -- hay que
+        # invalidar esa cache Y marcar `invoice_currency_rate` a recomputar.
+        inv.invalidate_recordset(['expected_currency_rate'])
+        self.env.add_to_compute(inv._fields['invoice_currency_rate'], inv)
+        self.assertAlmostEqual(
+            inv.invoice_currency_rate, 1 / 187.9401, places=6,
+            msg="Sanity check: ahora que existe la tasa exacta de "
+                "invoice_date, debe usar esa (187.9401), no el fallback",
+        )
+
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.button_cancel()
+
+        self.assertEqual(inv.state, 'cancel')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_48_after_cancel: entry unbalanced after button_cancel "
+                f"with a backfilled invoice_date rate "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
+    def test_47_draft_and_repost_vendor_bill_round_per_line_different_dates(self):
+        """Companion de test_46: mismo escenario pero con `button_draft()`
+        + `action_post()` (sin cancelar), para confirmar que el ciclo
+        completo de reapertura/reconfirmacion tampoco descuadra ni
+        modifica los montos de las lineas.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, past_date, fields.Date.today(),
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        before = {
+            line.id: (line.display_type, round(line.balance, 2))
+            for line in inv.line_ids
+        }
+
+        # Ver comentario equivalente en test_46: simula que button_draft()
+        # corre en un cursor/request nuevo, no en el mismo del post.
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.button_draft()
+
+        self.assertEqual(inv.state, 'draft')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_47_after_draft: entry unbalanced after button_draft "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.with_context(move_action_post_alert=True).action_post()
+
+        self.assertEqual(inv.state, 'posted')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_47_after_repost: entry unbalanced after re-posting "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+        after = {
+            line.id: (line.display_type, round(line.balance, 2))
+            for line in inv.line_ids
+        }
+        self.assertEqual(
+            sorted(before.values()), sorted(after.values()),
+            msg="El ciclo draft->post cambio los balances de las lineas "
+                f"sin motivo. Antes: {before}. Despues: {after}",
+        )

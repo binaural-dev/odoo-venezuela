@@ -1248,25 +1248,39 @@ class AccountRetention(models.Model):
                         _("The number must be exactly 14 numeric digits.")
                     )
 
-    @api.constrains("number", "company_id", "type_retention")
+    @api.constrains("number", "company_id", "type_retention", "partner_id", "type", "state")
     def _check_number_unique(self):
-        for record in self.filtered("number"):
+        # A duplicate voucher number is only a real collision when it's the
+        # same partner handing us (or being handed) the same document twice:
+        # customer (out_*) and supplier (in_*) retentions are numbered from
+        # independent series (the customer's own correlative vs. our
+        # internal no_gap sequence), so different partners - or the two
+        # directions for the same partner - can legitimately share a number.
+        # Cancelled retentions don't hold the number either.
+        in_types = ("in_invoice", "in_refund", "in_debit", "in_contingence")
+        out_types = ("out_invoice", "out_refund", "out_debit", "out_contingence")
+        for record in self.filtered(lambda r: r.number and r.state != "cancel"):
+            same_direction_types = in_types if record.type in in_types else out_types
             duplicate = self.search([
                 ("id", "!=", record.id),
                 ("number", "=", record.number),
                 ("company_id", "=", record.company_id.id),
                 ("type_retention", "=", record.type_retention),
+                ("partner_id", "=", record.partner_id.id),
+                ("type", "in", same_direction_types),
+                ("state", "!=", "cancel"),
             ], limit=1)
             if duplicate:
                 raise ValidationError(
                     _(
                         "Voucher number %(number)s is already used by another %(type_retention)s "
-                        "retention (%(other)s) in this company."
+                        "retention (%(other)s) for %(partner)s."
                     )
                     % {
                         "number": record.number,
                         "type_retention": record.type_retention,
                         "other": duplicate.display_name,
+                        "partner": record.partner_id.display_name,
                     }
                 )
 
