@@ -1754,8 +1754,26 @@ msgstr "Fecha de tasa"
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "Journal \"%(journal)s\" must have at least one inbound payment method."
+msgstr "El diario \"%(journal)s\" debe tener al menos un método de pago entrante."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "Journal \"%(journal)s\" must have at least one outbound payment method."
+msgstr "El diario \"%(journal)s\" debe tener al menos un método de pago saliente."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
 msgid "All payment methods must have an assigned account."
 msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "Bank journals require a default account (Bank Account)."
+msgstr "Los diarios de tipo Banco requieren una cuenta contable por defecto (Cuenta Bancaria)."
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_amount
