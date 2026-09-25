@@ -240,6 +240,30 @@ class TestIvaEligiblePartners(TransactionCase):
         eligible = self._get_iva_eligible_partners("iva", "in_invoice")
         self.assertNotIn(self.partner, eligible)
 
+    def test_supplier_pending_islr_retention_does_not_block_iva_eligibility(self):
+        # Regression for #15015 (real case: partner AVPHARMA, C.A.): the
+        # invoice already has a pending ISLR retention line (draft/emitted),
+        # unrelated to IVA. _compute_iva_type_eligible_partner_ids no longer
+        # checks retention_iva_line_ids at all in its search domain (Saul's
+        # change), so no retention of any type -- IVA or otherwise -- blocks
+        # eligibility here.
+        invoice = self._create_invoice("in_invoice", self.tax_purchase, self.purchase_journal)
+        islr_retention = self.env["account.retention"].create({
+            "type_retention": "islr",
+            "type": "in_invoice",
+            "company_id": self.company.id,
+            "partner_id": self.partner.id,
+            "date_accounting": fields.Date.today(),
+            "retention_line_ids": [Command.create({
+                "move_id": invoice.id,
+                "name": "ISLR Retention",
+            })],
+        })
+        self.assertIn(islr_retention.state, ("draft", "emitted"))
+        self.assertFalse(invoice.retention_iva_line_ids)
+        eligible = self._get_iva_eligible_partners("iva", "in_invoice")
+        self.assertIn(self.partner, eligible)
+
     def test_supplier_negative_residual_is_eligible(self):
         # Aligned with #1005: a credit note's residual is negative, so it must stay
         # eligible here or its lines become unreachable from this dropdown.
