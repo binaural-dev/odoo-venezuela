@@ -576,16 +576,19 @@ class TfhkaDocumentService(models.AbstractModel):
         return groups
 
     def _get_discount_amount(self, invoice, currency, ctx):
-        """Descuento total del documento, expresado en ``currency``.
+        """Descuento GLOBAL del documento, expresado en ``currency``.
 
-        O19 solo expone ``formatted_total_discount`` (cadena ya formateada por
-        ``formatLang``), no un numérico, así que se recalcula desde las líneas.
-        Las líneas están en la moneda de la factura, de ahí la conversión.
+        No es el % por línea (``line.discount``): eso es el descuento de cada
+        línea de producto, no un descuento global. Las líneas de descuento
+        global que reconoce Odoo (asistente "Discount" -> "Global
+        Discount"/"Fixed Amount", ``sale_discount_product_id``, POS, loyalty,
+        ``display_type == 'discount'``) llegan vía el hook
+        ``_get_discount_lines()`` -- el mismo que ya usa ``l10n_ve_invoice``
+        para reconocer líneas de precio negativo legítimas.
         """
-        total = 0.0
-        for line in invoice.invoice_line_ids.filtered(lambda l: l.display_type == "product"):
-            total += line.price_unit * line.quantity * (line.discount or 0.0) / 100.0
-        return self._get_amount_in_currency(invoice, currency, ctx, total)
+        discount_lines = invoice.invoice_line_ids._get_discount_lines()
+        total = sum(discount_lines.mapped("price_subtotal"))
+        return self._get_amount_in_currency(invoice, currency, ctx, -total)
 
     def _get_igtf_block(self, invoice, currency, ctx):
         """Base e importe de IGTF expresados en ``currency``.
@@ -667,16 +670,18 @@ class TfhkaDocumentService(models.AbstractModel):
 
         _igtf_base, igtf_amount = self._get_igtf_block(invoice, currency, ctx)
 
-        return {
+        result = {
             "montoGravadoTotal": str(round(taxed_base, 2)),
             "montoExentoTotal": str(round(exempt_base, 2)),
             "subtotal": str(round(untaxed, 2)),
-            "subtotalAntesDescuento": str(round(untaxed + discount, 2)),
             "totalAPagar": str(round(total_with_tax + igtf_amount, 2)),
             "totalIVA": str(round(total_tax, 2)),
             "montoTotalConIVA": str(round(total_with_tax, 2)),
-            "totalDescuento": str(abs(round(discount, 2))),
         }
+        if discount:
+            result["subtotalAntesDescuento"] = str(round(untaxed + discount, 2))
+            result["totalDescuento"] = str(abs(round(discount, 2)))
+        return result
 
     def _prepare_totals(self, invoice, ctx=None):
         ctx = ctx or self._get_currency_context(invoice)
@@ -721,15 +726,16 @@ class TfhkaDocumentService(models.AbstractModel):
                 "montoGravadoTotal": amounts["montoGravadoTotal"],
                 "montoExentoTotal": amounts["montoExentoTotal"],
                 "subtotal": amounts["subtotal"],
-                "subtotalAntesDescuento": amounts["subtotalAntesDescuento"],
                 "totalAPagar": amounts["totalAPagar"],
                 "totalIVA": amounts["totalIVA"],
                 "montoTotalConIVA": amounts["montoTotalConIVA"],
-                "totalDescuento": amounts["totalDescuento"],
                 "impuestosSubtotal": taxes_subtotal,
                 "totalIGTF": str(round(igtf_ves, 2)),
                 "totalIGTF_VES": str(round(igtf_ves, 2)),
             }
+            if "totalDescuento" in amounts:
+                totals["subtotalAntesDescuento"] = amounts["subtotalAntesDescuento"]
+                totals["totalDescuento"] = amounts["totalDescuento"]
             # Cuadro de pago: el bloque formasPago solo se adjunta cuando el
             # usuario activó "Mostrar cuadro de pago" en la factura.
             if record.show_payment_box:
@@ -749,15 +755,16 @@ class TfhkaDocumentService(models.AbstractModel):
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
                     "subtotal": amounts_foreign["subtotal"],
-                    "subtotalAntesDescuento": amounts_foreign["subtotalAntesDescuento"],
                     "totalAPagar": amounts_foreign["totalAPagar"],
                     "totalIVA": amounts_foreign["totalIVA"],
                     "montoTotalConIVA": amounts_foreign["montoTotalConIVA"],
-                    "totalDescuento": amounts_foreign["totalDescuento"],
                     "totalIGTF": str(round(igtf_alt, 2)),
                     "totalIGTF_VES": str(round(igtf_ves, 2)),
                     "impuestosSubtotal": taxes_subtotal_foreign,
                 }
+                if "totalDescuento" in amounts_foreign:
+                    foreign_totals["subtotalAntesDescuento"] = amounts_foreign["subtotalAntesDescuento"]
+                    foreign_totals["totalDescuento"] = amounts_foreign["totalDescuento"]
             else:
                 foreign_totals = False
         return totals, foreign_totals
