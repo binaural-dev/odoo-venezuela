@@ -19,6 +19,30 @@ TFHKA_ENDPOINTS = {
 # Timeout (segundos) para las llamadas HTTP a TFHKA.
 TFHKA_TIMEOUT = 10
 
+# Marcador del mensaje de negocio de TFHKA para "no repitas esta consulta
+# tan seguido" (ej. ConsultaNumeraciones llamado dos veces en <30s). Usado
+# por tfhka.digitalization.mixin para decidir si vale la pena un único
+# reintento con espera, en vez de tratarlo como cualquier otro error.
+RATE_LIMIT_MESSAGE_MARKER = "realizada previamente"
+
+
+def _is_rate_limit_message(message):
+    return bool(message) and RATE_LIMIT_MESSAGE_MARKER in message.lower()
+
+
+class TfhkaBusinessError(UserError):
+    """UserError levantado cuando TFHKA respondió HTTP 200 con un ``codigo``
+    de negocio distinto de éxito (200) o del caso especial 203+ultimo_documento.
+
+    Lleva el código original en ``tfhka_code`` para que
+    ``tfhka.digitalization.mixin`` pueda clasificar el fallo (error grave vs
+    error de datos) sin tener que parsear el mensaje de negocio.
+    """
+
+    def __init__(self, message, tfhka_code=None):
+        super().__init__(message)
+        self.tfhka_code = tfhka_code
+
 
 class TfhkaApiClient(models.AbstractModel):
     """Cliente HTTP de la API de The Factory HKA.
@@ -83,9 +107,13 @@ class TfhkaApiClient(models.AbstractModel):
 
         Preserva el protocolo actual: ``codigo == "200"`` ok, ``codigo == "203"``
         con validaciones en ``ultimo_documento`` -> 0, 401 -> regenera el token y
-        reintenta **una sola vez**, HTTP != 200 -> ``UserError``, y
-        ``RequestException`` -> ``UserError``. Cada intento (incluido el
-        reintento tras un 401) se registra en ``tfhka.api.log``.
+        reintenta **una sola vez**, HTTP != 200 -> ``TfhkaBusinessError`` (con el
+        ``codigo`` de negocio si el cuerpo lo trae -- TFHKA a veces devuelve el
+        mismo shape ``{"codigo", "mensaje", "validaciones"}`` bajo un status HTTP
+        distinto de 200, p. ej. 400 por un campo que excede su longitud), y
+        ``RequestException`` -> ``UserError`` (sin código, es un fallo de
+        transporte). Cada intento (incluido el reintento tras un 401) se
+        registra en ``tfhka.api.log``.
         """
         base_url = self._base_url(company)
         endpoint = TFHKA_ENDPOINTS.get(endpoint_key)
@@ -126,9 +154,10 @@ class TfhkaApiClient(models.AbstractModel):
                     self._log_call(
                         company, endpoint, payload, origin, response.status_code, response_json, False
                     )
-                    raise UserError(
+                    raise TfhkaBusinessError(
                         _("Error in the API response: %(message)s \n%(validation)s")
-                        % {"message": data.get('mensaje'), "validation": data.get('validaciones')}
+                        % {"message": data.get('mensaje'), "validation": data.get('validaciones')},
+                        tfhka_code=code,
                     )
             if response.status_code == 401:
                 if _retried:
@@ -148,9 +177,24 @@ class TfhkaApiClient(models.AbstractModel):
                 self._log_call(
                     company, endpoint, payload, origin, response.status_code, response.text, False
                 )
-                raise UserError(
+                # TFHKA doesn't always wrap a business error in HTTP 200 --
+                # some validation failures (e.g. a field exceeding its max
+                # length) come back as a non-200 HTTP status whose body is
+                # still the same {"codigo", "mensaje", "validaciones"} shape.
+                # Without this, those responses would raise a plain UserError
+                # with no .tfhka_code, so the mixin could never classify them
+                # as 'data_error' even for codes 203/205.
+                tfhka_code = None
+                try:
+                    error_data = response.json()
+                except ValueError:
+                    error_data = None
+                if isinstance(error_data, dict) and "codigo" in error_data:
+                    tfhka_code = str(error_data.get("codigo"))
+                raise TfhkaBusinessError(
                     _("HTTP error %(status_code)s: %(text)s")
-                    % {"status_code": response.status_code, "text": response.text}
+                    % {"status_code": response.status_code, "text": response.text},
+                    tfhka_code=tfhka_code,
                 )
         except requests.exceptions.RequestException as e:
             _logger.error("Error connecting to the API: %s", e)

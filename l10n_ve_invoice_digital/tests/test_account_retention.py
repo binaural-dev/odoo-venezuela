@@ -2,6 +2,7 @@ from odoo.tests import TransactionCase, tagged, Form
 from datetime import date
 from odoo.exceptions import UserError, ValidationError
 from odoo import Command, fields
+from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaSequenceMismatchError
 from unittest.mock import patch, MagicMock
 import logging
 
@@ -133,6 +134,14 @@ class TestAccumulatedRate(TransactionCase):
             'pay_from': 0.13,
         })
 
+        # _check_islr_concept_amounts (l10n_ve_payment_extension) requires the
+        # invoice's own product to advertise the same payment_concept as the
+        # retention line built from it (account_retention.py:684-690) --
+        # without this, every ISLR retention built from self.product fails
+        # action_post() with "the payment concept does not match any product
+        # on that invoice", regardless of anything else in the fixture.
+        self.product.payment_concept = self.payment_concept.id
+
         self.payment_concept.write({"line_payment_concept_ids": [(6, 0, [self.line_payment_concept.id])]})
 
         self.partner_a = self.env["res.partner"].create({
@@ -203,7 +212,13 @@ class TestAccumulatedRate(TransactionCase):
         return invoice
 
     def _create_retention(self, type_retention, invoice):
-        today = fields.Date.today()
+        # context_today, not the UTC today(): _check_dates_not_in_future
+        # compares date_accounting against fields.Date.context_today too
+        # (self.env.user.tz is "America/Caracas", UTC-4, per setUp), and a
+        # UTC today can already be tomorrow while Caracas' calendar day
+        # hasn't rolled over yet -- same pitfall l10n_ve_payment_extension's
+        # own account_retention.py documents and avoids elsewhere.
+        today = fields.Date.context_today(self)
 
         with Form(self.env["account.retention"].with_context(default_type="in_invoice", default_type_retention=type_retention)) as retention_form:
             retention_form.partner_id = self.partner_a
@@ -755,16 +770,62 @@ class TestAccumulatedRate(TransactionCase):
         self.assertIsInstance(result, type(None))
 
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
-    def test_29_send_retention_sequence_mismatch_opens_wizard(self, mock_call):
+    def test_29_send_retention_sequence_mismatch_raises_data_error(self, mock_call):
         account_move = self._create_invoice()
         account_move.action_post()
         retention = self._create_retention("iva", account_move)
         retention.action_post()
         # Sin account_retention_alert en el contexto: si la secuencia de Odoo
-        # no coincide con la de The Factory, se abre el wizard de alerta.
-        result = retention.generate_document_digital()
-        self.assertIsInstance(result, dict)
-        self.assertEqual(result.get('res_model'), 'account.retention.alert.wizard')
+        # no coincide con la de The Factory, ya no se abre un wizard inline
+        # (nadie está ahí para contestarlo, esto corre fuera del cron) --
+        # se levanta TfhkaSequenceMismatchError, que el mixin clasifica como
+        # data_error.
+        with self.assertRaises(TfhkaSequenceMismatchError):
+            retention.generate_document_digital()
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_manual_retry_with_sequence_mismatch_ends_in_data_error_not_success(self, mock_call):
+        """Regression test for the real bug: before the fix, send_retention()
+        returned the wizard action dict without raising, so
+        _tfhka_process_digitalization() (which only looks at exceptions)
+        wrote tfhka_digitalization_state='success' and is_digitalized=True
+        without the document ever having been sent to TFHKA."""
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+
+        retention._tfhka_enqueue_digitalization()
+        retention._tfhka_process_digitalization()
+
+        self.assertEqual(retention.tfhka_digitalization_state, "data_error")
+        self.assertFalse(retention.is_digitalized)
+        self.assertIn("does not match", retention.tfhka_digitalization_error)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_confirming_sequence_mismatch_wizard_requeues_and_next_tick_digitalizes(self, mock_call):
+        account_move = self._create_invoice()
+        account_move.action_post()
+        retention = self._create_retention("iva", account_move)
+        retention.action_post()
+
+        retention._tfhka_enqueue_digitalization()
+        retention._tfhka_process_digitalization()
+        self.assertEqual(retention.tfhka_digitalization_state, "data_error")
+
+        action = retention.action_tfhka_review_sequence_mismatch()
+        self.assertEqual(action.get('res_model'), 'account.retention.alert.wizard')
+        wizard = self.env['account.retention.alert.wizard'].create({
+            'move_id': action['context']['default_move_id'],
+            'message': action['context']['default_message'],
+        })
+        wizard.action_confirm()
+        self.assertEqual(retention.tfhka_digitalization_state, "queued")
+        self.assertTrue(retention.tfhka_auto_accept_sequence_mismatch)
+
+        retention._tfhka_process_digitalization()
+        self.assertEqual(retention.tfhka_digitalization_state, "success")
+        self.assertTrue(retention.is_digitalized)
 
     def test_30_annul_retention_not_digitalized_raises(self):
         account_move = self._create_invoice()
@@ -938,6 +999,10 @@ class TestAccumulatedRate(TransactionCase):
         account_move.action_post()
         retention = self._create_retention("iva", account_move)
         retention.with_context(l10n_ve_invoice_digital_auto_retention=True).action_post()
+        # action_post() ahora solo encola (ver tfhka.digitalization.mixin);
+        # el cron es el que efectivamente llama a TFHKA.
+        self.assertEqual(retention.tfhka_digitalization_state, "queued")
+        self.env["account.retention"]._tfhka_cron_process_queue()
         self.assertTrue(retention.is_digitalized)
 
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
@@ -946,6 +1011,8 @@ class TestAccumulatedRate(TransactionCase):
         account_move.action_post()
         retention = self._create_retention("islr", account_move)
         retention.with_context(l10n_ve_invoice_digital_auto_retention=True).action_post()
+        self.assertEqual(retention.tfhka_digitalization_state, "queued")
+        self.env["account.retention"]._tfhka_cron_process_queue()
         self.assertTrue(retention.is_digitalized)
 
     def test_44_action_post_without_invoice_context_stays_manual(self):
@@ -973,6 +1040,8 @@ class TestAccumulatedRate(TransactionCase):
         ], order="id desc", limit=1)
         self.assertTrue(retention, "La retencion IVA deberia haberse creado automaticamente al postear la factura")
         self.assertEqual(retention.state, "emitted")
+        self.assertEqual(retention.tfhka_digitalization_state, "queued")
+        self.env["account.retention"]._tfhka_cron_process_queue()
         self.assertTrue(retention.is_digitalized)
 
     def test_46_prepare_detail_lines_monto_exento(self):
