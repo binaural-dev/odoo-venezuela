@@ -60,9 +60,6 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
             "date_to": today + timedelta(days=10),
         })
         data = wizard.parse_sale_book_data()
-        _logger.info("=== DEBUG data: %s", data)
-        _logger.info("=== DEBUG inv state=%s date=%s invoice_date=%s", inv.state, inv.date, inv.invoice_date)
-        _logger.info("=== DEBUG retention state=%s date=%s date_accounting=%s", retention.state, retention.date, retention.date_accounting)
 
         fac_lines = [line for line in data if line.get("move_type") == "FAC"]
         ret_lines = [line for line in data if line.get("move_type") == "RET"]
@@ -114,7 +111,7 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
         self.assertEqual(actual_dates, expected_dates)
         _logger.info("========= test_02 passed =========")
 
-    def test_03_retention_period_uses_emission_date_not_accounting_date(self):
+    def test_03_retention_period_uses_accounting_date_not_emission_date(self):
         today = fields.Date.today()
         old_invoice_date = today - timedelta(days=40)
 
@@ -126,12 +123,12 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
 
         inv_in_range = self._make_sale_invoice(100, old_invoice_date)
         self._make_sale_iva_retention_with_dates(
-            inv_in_range, date=today, date_accounting=old_invoice_date,
+            inv_in_range, date=old_invoice_date, date_accounting=today,
         )
 
         inv_out_of_range = self._make_sale_invoice(100, old_invoice_date)
         self._make_sale_iva_retention_with_dates(
-            inv_out_of_range, date=old_invoice_date, date_accounting=today,
+            inv_out_of_range, date=today, date_accounting=old_invoice_date,
         )
 
         data = wizard.parse_sale_book_data()
