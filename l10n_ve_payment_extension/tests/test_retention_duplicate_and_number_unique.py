@@ -79,3 +79,40 @@ class TestRetentionDuplicateAndNumberUnique(RetentionTestCommon):
 
         self.assertEqual(islr_retention.number, iva_retention.number)
         _logger.info("========= test_same_number_different_type_retention_allowed passed =========")
+
+    def test_same_number_different_partner_allowed(self):
+        # Each partner issues (or receives) its own document numbering, so
+        # two different partners handing us the same voucher number is not
+        # a real collision.
+        self._create_islr_retention_with_line(number="PARTNER-DUP-TEST")
+
+        other_partner_retention = self.env["account.retention"].create({
+            "type_retention": "islr", "type": "in_invoice",
+            "company_id": self.company.id, "partner_id": self.partner_pnr_100.id,
+            "date": fields.Date.today(), "date_accounting": fields.Date.today(),
+            "number": "PARTNER-DUP-TEST",
+        })
+
+        self.assertEqual(other_partner_retention.number, "PARTNER-DUP-TEST")
+        _logger.info("========= test_same_number_different_partner_allowed passed =========")
+
+    def test_same_number_customer_and_supplier_retention_allowed(self):
+        # A supplier (in_*) retention is numbered from our own no_gap
+        # sequence, while a customer (out_*) retention carries the number
+        # the customer gave us - independent series for the same partner,
+        # so sharing a number is not a collision.
+        supplier_retention = self._create_islr_retention_with_line(
+            number="DIRECTION-DUP-TEST"
+        )
+
+        customer_retention = self.env["account.retention"].create({
+            "type_retention": "islr", "type": "out_invoice",
+            "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
+            "date": fields.Date.today(), "date_accounting": fields.Date.today(),
+            "number": "DIRECTION-DUP-TEST",
+        })
+
+        self.assertEqual(supplier_retention.number, customer_retention.number)
+        _logger.info(
+            "========= test_same_number_customer_and_supplier_retention_allowed passed ========="
+        )
