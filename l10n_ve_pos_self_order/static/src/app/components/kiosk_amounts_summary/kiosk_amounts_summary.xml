@@ -20,7 +20,7 @@
                 <span class="text-primary" t-esc="formatAmount(localTotal)"/>
             </div>
             <div t-if="showForeignTotal" class="d-flex justify-content-between fs-5 fw-semibold">
-                <span>Total (foreign currency)</span>
+                <span>Total <t t-esc="foreignCurrency.name"/></span>
                 <span t-esc="formatForeignTotal()"/>
             </div>
         </div>

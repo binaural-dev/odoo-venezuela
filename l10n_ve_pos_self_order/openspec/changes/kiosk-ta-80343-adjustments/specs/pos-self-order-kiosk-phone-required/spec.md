@@ -42,5 +42,17 @@ sin confiar en lo que el cliente ya validó.
 
 - **GIVEN** el paso de creación de contacto o de completar teléfono
 - **WHEN** el cliente no completa el teléfono
-- **THEN** no se puede continuar (botón deshabilitado en cliente; el
-  servidor también lo rechaza si se llama directamente)
+- **THEN** no se puede continuar: al pulsar el botón se muestra el motivo
+  (operadora sin elegir o número incompleto) y el servidor también lo rechaza
+  si se llama directamente. El botón NO se deshabilita por datos incompletos
+  (solo mientras hay una petición en curso), para que el cliente siempre vea
+  qué le falta
+
+#### Scenario: Caracteres no válidos o de más en el número
+
+- **GIVEN** el campo de número de teléfono
+- **WHEN** el cliente teclea una letra o un octavo dígito
+- **THEN** el carácter no aparece en el campo (el valor saneado se reescribe
+  también en el input, no solo en el estado)
+- **AND** mientras el número tenga menos de 7 dígitos se muestra bajo el campo
+  el aviso "El número de teléfono debe tener exactamente 7 dígitos."

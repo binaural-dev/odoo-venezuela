@@ -117,6 +117,22 @@
       idioma por defecto ni idiomas disponibles, y el core pone entonces
       `frontend_lang=en_US`. Se configura en la caja (Autopedido → Idiomas)
 
+## 7ter. Correcciones de QA (24-sep)
+
+- [x] 7ter.1 Teclado: el layout solo cambiaba en `focus`; ahora también en
+      `click` del campo, y el teclado hace `mousedown.prevent` para no robar el
+      foco del campo activo
+- [x] 7ter.2 Teléfono: letras u 8.º dígito seguían visibles (el estado no
+      cambiaba → Owl no re-renderizaba el `t-att-value`); el valor saneado se
+      reescribe en el input + aviso de 7 dígitos bajo el campo
+- [x] 7ter.3 "Crear y continuar" / "Guardar y continuar" ya no se deshabilitan
+      por datos incompletos (solo con petición en curso): al pulsarlos se
+      muestra qué falta (p. ej. la operadora, cuyo placeholder "Código"
+      parecía un valor) — el aviso de error se mueve encima del teclado en
+      pantalla (debajo quedaba fuera de la vista)
+- [x] 7ter.4 Total foráneo rotulado "Total <moneda>" según `foreign_currency_id`
+      (antes "Total (moneda extranjera)")
+
 ## 8. OpenSpec
 
 - [x] 8.1 `openspec change validate kiosk-ta-80343-adjustments --strict` →

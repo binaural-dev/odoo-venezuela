@@ -183,24 +183,28 @@ export class IdentificationPage extends Component {
         this.state.municipalityId = ev.target.value ? Number(ev.target.value) : "";
     }
 
-    // Soft (button-disabled) checks — the authoritative validation still runs
-    // in onSavePhone/onCreate (and again server-side).
-    get isPhoneValueComplete() {
-        return !this.phoneFormatError(this.state.phoneCode, this.state.phoneNumber);
-    }
-
+    // The primary buttons are only disabled while a request is in flight:
+    // disabling them until the form is valid left the customer with a dead
+    // "Create" button and no clue about which field was missing (e.g. the
+    // operator code dropdown, whose "Code" placeholder reads like a value).
+    // onSavePhone/onCreate validate and show the reason instead (and the
+    // server validates again).
     get phoneStepDisabled() {
-        return this.state.loading || !this.isPhoneValueComplete;
+        return this.state.loading;
     }
 
     get createDisabled() {
-        return (
-            this.state.loading ||
-            !this.state.firstName.trim() ||
-            !this.state.lastName.trim() ||
-            !this.isPhoneValueComplete ||
-            !this.isAddressComplete
-        );
+        return this.state.loading;
+    }
+
+    // Inline hint under the phone number while it is incomplete, so the
+    // 7-digit rule is visible before pressing the button.
+    get phoneNumberHint() {
+        const number = this.state.phoneNumber;
+        if (!number || number.length === PHONE_NUMBER_LENGTH) {
+            return "";
+        }
+        return _t("The phone number must contain exactly 7 digits.");
     }
 
     get numpadKeys() {
@@ -250,9 +254,14 @@ export class IdentificationPage extends Component {
 
     // Digits-only, capped to 7 — keeps the on-screen/native keyboard from
     // leaving stray characters in a field the kiosk always sends as "code-digits".
+    // The sanitized value is written back to the input too: when a keystroke
+    // is rejected (a letter, an 8th digit) the state does not change, Owl does
+    // not re-render, and the DOM would keep showing the rejected character.
     onPhoneNumberInput(ev) {
         this.state.error = "";
-        this.state.phoneNumber = ev.target.value.replace(/\D/g, "").slice(0, PHONE_NUMBER_LENGTH);
+        const value = ev.target.value.replace(/\D/g, "").slice(0, PHONE_NUMBER_LENGTH);
+        ev.target.value = value;
+        this.state.phoneNumber = value;
     }
 
     // --- On-screen keyboard (KioskKeyboard) -----------------------------
@@ -261,6 +270,10 @@ export class IdentificationPage extends Component {
     // whichever field is currently active. "field" is the name of a
     // this.state.* string property (firstName/lastName/street/phoneNumber).
 
+    // Bound to both focus and click on each input: focus alone does not fire
+    // when the tapped input already has the focus (the keyboard's buttons do
+    // not take it, see KioskKeyboard), so a tap on the field must also be
+    // enough to bring back its own layout.
     onFieldFocus(field, mode = "text") {
         this.state.activeField = field;
         this.state.keyboardMode = mode;
