@@ -1,10 +1,12 @@
 from odoo import Command, fields
 from odoo.exceptions import ValidationError
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
+
+from odoo.addons.l10n_ve_stock_account.tests.common import StockAccountTestCommon
 
 
 @tagged("post_install", "-at_install", "l10n_ve_donation")
-class TestDonationCreditNoteRegression(TransactionCase):
+class TestDonationCreditNoteRegression(StockAccountTestCommon):
     """Ticket #13965: `l10n_ve_invoice` added a constrains that blocks a
     credit note (out_refund) from using a product absent on the invoice it
     reverses. `l10n_ve_donation._reverse_moves()` builds exactly that kind
@@ -18,7 +20,6 @@ class TestDonationCreditNoteRegression(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.ref("base.main_company")
 
         cls.expense_account = cls.env["account.account"].search(
             [("account_type", "=", "expense"), ("company_ids", "in", cls.company.ids)],
@@ -30,20 +31,41 @@ class TestDonationCreditNoteRegression(TransactionCase):
         })
         cls.company.donation_account_id = cls.expense_account.id
 
+        # An income account is required on the invoice-line's product so
+        # the generated `account.move.line` has a non-null `account_id`
+        # (a minimal database has no default income account to fall back
+        # on via the product category).
+        cls.income_account = cls.env["account.account"].search(
+            [("account_type", "=", "income"), ("company_ids", "in", cls.company.ids)],
+            limit=1,
+        ) or cls.env["account.account"].create({
+            "name": "Donation Credit Note Test Income",
+            "code": "DONCNINC01",
+            "account_type": "income",
+            "company_ids": [Command.set([cls.company.id])],
+        })
+
         cls.donation_product = cls.env["product.template"].create({
             "name": "Producto de Donación",
             "type": "service",
             "is_donation_product": True,
+            "property_account_income_id": cls.income_account.id,
         })
 
         cls.regular_product = cls.env["product.product"].create({
             "name": "Producto Regular",
             "type": "service",
+            "property_account_income_id": cls.income_account.id,
         })
 
         cls.journal = cls.env["account.journal"].search(
             [("type", "=", "sale"), ("company_id", "=", cls.company.id)], limit=1
-        )
+        ) or cls.env["account.journal"].create({
+            "name": "Donation Credit Note Test Journal",
+            "type": "sale",
+            "code": "DONCNJ",
+            "company_id": cls.company.id,
+        })
 
     def _create_donation_invoice(self):
         company_partner = self.company.partner_id

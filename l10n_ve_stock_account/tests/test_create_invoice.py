@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 import logging
 from unittest.mock import patch
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import tagged
 from odoo.exceptions import UserError
 from odoo import Command
+
+from .common import StockAccountTestCommon
 
 _logger = logging.getLogger(__name__)
 
 
 @tagged("post_install", "-at_install", "test_create_invoice")
-class TestCreateInvoiceFromPicking(TransactionCase):
+class TestCreateInvoiceFromPicking(StockAccountTestCommon):
     """
     Tests for create_invoice and create_multi_invoice methods
     on stock.picking.
@@ -18,20 +20,6 @@ class TestCreateInvoiceFromPicking(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        # --- Currencies ---
-        cls.currency_usd = cls.env.ref("base.USD")
-        cls.currency_usd.active = True
-
-        cls.currency_vef = cls.env.ref("base.VEF")
-        cls.currency_vef.active = True
-
-        # --- Company ---
-        cls.company = cls.env.company
-        cls.company.write({
-            "currency_id": cls.currency_vef.id,
-            "foreign_currency_id": cls.currency_usd.id,
-        })
 
         # --- Journal (required by create_invoice / create_multi_invoice) ---
         cls.sale_journal = cls.env["account.journal"].search(
@@ -45,15 +33,6 @@ class TestCreateInvoiceFromPicking(TransactionCase):
                 "company_id": cls.company.id,
             })
         cls.company.customer_journal_id = cls.sale_journal.id
-
-        # --- Tax ---
-        cls.sale_tax = cls.env["account.tax"].create({
-            "name": "Tax 16%",
-            "amount": 16,
-            "type_tax_use": "sale",
-            "company_id": cls.company.id,
-        })
-        cls.company.account_sale_tax_id = cls.sale_tax.id
 
         # --- Income Account (required for invoice lines) ---
         cls.income_account = cls.env["account.account"].create({

@@ -1,4 +1,5 @@
-from odoo import models, tools
+from odoo import models
+from odoo.tools.image import image_process
 from datetime import date
 import xlsxwriter
 from io import BytesIO
@@ -137,7 +138,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         # Firma configurada (Imagen)
         signature_rec = self.env["signature.config"].search([("active", "=", True)], limit=1, order="id asc")
         if signature_rec and signature_rec.signature:
-            sig_img = tools.image_process(base64.b64decode(signature_rec.signature), (200, 200))
+            sig_img = image_process(base64.b64decode(signature_rec.signature), (200, 200))
             worksheet.insert_image("B" + str(last_row_index + 7), 
                                    "signature.png", 
                                    {"image_data": BytesIO(sig_img),
