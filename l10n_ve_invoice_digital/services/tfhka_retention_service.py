@@ -35,7 +35,7 @@ class TfhkaRetentionService(models.AbstractModel):
 
         current_number, factory_number = self._tfhka_check_retention_sequence_gap(retention, document_type)
 
-        if factory_number != current_number and not validation_sequence and retention.company_id.sequence_validation_tfhka:
+        if factory_number != current_number and not validation_sequence:
             # No human is present to answer a confirmation wizard here (this
             # runs off the queue's cron, not an interactive request), so the
             # mismatch is surfaced as a data_error instead -- see
@@ -72,25 +72,7 @@ class TfhkaRetentionService(models.AbstractModel):
             factory_number = int(document_number_str) + 1
 
         current_number = int(retention.number[6:])
-        validation_sequence = retention.env.context.get('account_retention_alert', False)
-
-        if document_number != current_number and not validation_sequence:
-            message = _("The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The Factory (%(factory_seq)s). Do you want to continue anyway?") % {"odoo_seq": current_number, "factory_seq": document_number}
-            return {
-                'type': 'ir.actions.act_window',
-                'res_model': 'account.retention.alert.wizard',
-                'view_mode': 'form',
-                'view_id': retention.env.ref('l10n_ve_invoice_digital.account_retention_alert_wizard').id,
-                'target': 'new',
-                'context': {
-                    'default_move_id': retention.id,
-                    'default_message': message,
-                }
-            }
-
-        document_number = str(retention.number)
-
-        return self.generate_document_data(retention, document_number, document_type, validation_sequence)
+        return current_number, factory_number
 
     def annul_retention(self, retention, reason):
         """Anula la retención digitalizada en TFHKA (endpoint /Anular).
