@@ -90,10 +90,10 @@ class TfhkaDocumentService(models.AbstractModel):
 
         client.query_numbering(company, series, origin=invoice)
 
-        # Secuencia: en modo "pago primero" (o con la sincronización desactivada)
-        # se usa el correlativo local de Odoo; en el modo normal se ADOPTA el
-        # correlativo de The Factory (último + 1) y luego se sincroniza el diario.
-        if company.digitalization_with_payment_tfhka or not company.sequence_validation_tfhka:
+        # Secuencia: en modo "pago primero" se usa el correlativo local de
+        # Odoo; en el modo normal SIEMPRE se ADOPTA el correlativo de The
+        # Factory (último + 1) y luego se sincroniza el diario.
+        if company.digitalization_with_payment_tfhka:
             document_number = invoice.sequence_number
         else:
             last = client.get_last_document_number(company, document_type, series, origin=invoice)
@@ -169,7 +169,6 @@ class TfhkaDocumentService(models.AbstractModel):
         company = invoice.company_id
         if (
             not company.digitalization_with_payment_tfhka
-            and company.sequence_validation_tfhka
             and str(invoice.sequence_number) != str(document_number)
         ):
             try:
@@ -577,16 +576,19 @@ class TfhkaDocumentService(models.AbstractModel):
         return groups
 
     def _get_discount_amount(self, invoice, currency, ctx):
-        """Descuento total del documento, expresado en ``currency``.
+        """Descuento GLOBAL del documento, expresado en ``currency``.
 
-        O19 solo expone ``formatted_total_discount`` (cadena ya formateada por
-        ``formatLang``), no un numérico, así que se recalcula desde las líneas.
-        Las líneas están en la moneda de la factura, de ahí la conversión.
+        No es el % por línea (``line.discount``): eso es el descuento de cada
+        línea de producto, no un descuento global. Las líneas de descuento
+        global que reconoce Odoo (asistente "Discount" -> "Global
+        Discount"/"Fixed Amount", ``sale_discount_product_id``, POS, loyalty,
+        ``display_type == 'discount'``) llegan vía el hook
+        ``_get_discount_lines()`` -- el mismo que ya usa ``l10n_ve_invoice``
+        para reconocer líneas de precio negativo legítimas.
         """
-        total = 0.0
-        for line in invoice.invoice_line_ids.filtered(lambda l: l.display_type == "product"):
-            total += line.price_unit * line.quantity * (line.discount or 0.0) / 100.0
-        return self._get_amount_in_currency(invoice, currency, ctx, total)
+        discount_lines = invoice.invoice_line_ids._get_discount_lines()
+        total = sum(discount_lines.mapped("price_subtotal"))
+        return self._get_amount_in_currency(invoice, currency, ctx, -total)
 
     def _get_igtf_block(self, invoice, currency, ctx):
         """Base e importe de IGTF expresados en ``currency``.
@@ -663,21 +665,43 @@ class TfhkaDocumentService(models.AbstractModel):
             total_tax = self._get_amount_in_currency(invoice, currency, ctx, total_tax)
             total_with_tax = self._get_amount_in_currency(invoice, currency, ctx, total_with_tax)
 
+        # untaxed ya queda neto del descuento global (su línea participa de
+        # estas sumas via `groups`, igual que en producción) -- se calcula
+        # ANTES de sanear montoGravadoTotal/montoExentoTotal para no
+        # alterarlo. Cuando el descuento cae en una clasificación (exento/
+        # gravado) sin suficiente monto propio para absorberlo, ese bucket
+        # queda negativo -- TFHKA rechaza cualquier campo negativo (código
+        # 203) aunque el neto sea correcto. Se traslada el sobrante al otro
+        # bucket (la suma sigue dando `untaxed`) y como último resort se
+        # pisa en 0 -- igual que el impuesto negativo aislado que ya se
+        # omite en _prepare_tax_subtotals.
         untaxed = taxed_base + exempt_base
+        if exempt_base < 0:
+            taxed_base += exempt_base
+            exempt_base = 0.0
+        elif taxed_base < 0:
+            exempt_base += taxed_base
+            taxed_base = 0.0
+        exempt_base = max(0.0, exempt_base)
+        taxed_base = max(0.0, taxed_base)
+        total_tax = max(0.0, total_tax)
+
         discount = self._get_discount_amount(invoice, currency, ctx)
 
         _igtf_base, igtf_amount = self._get_igtf_block(invoice, currency, ctx)
 
-        return {
+        result = {
             "montoGravadoTotal": str(round(taxed_base, 2)),
             "montoExentoTotal": str(round(exempt_base, 2)),
             "subtotal": str(round(untaxed, 2)),
-            "subtotalAntesDescuento": str(round(untaxed + discount, 2)),
             "totalAPagar": str(round(total_with_tax + igtf_amount, 2)),
             "totalIVA": str(round(total_tax, 2)),
             "montoTotalConIVA": str(round(total_with_tax, 2)),
-            "totalDescuento": str(abs(round(discount, 2))),
         }
+        if discount:
+            result["subtotalAntesDescuento"] = str(round(untaxed + discount, 2))
+            result["totalDescuento"] = str(abs(round(discount, 2)))
+        return result
 
     def _prepare_totals(self, invoice, ctx=None):
         ctx = ctx or self._get_currency_context(invoice)
@@ -712,25 +736,29 @@ class TfhkaDocumentService(models.AbstractModel):
                 foreign_currency_code = None
 
             # nroItems debe cuadrar con detallesItems, que solo lleva líneas de
-            # producto: contar invoice_line_ids incluiría secciones y notas.
-            item_count = len(record.invoice_line_ids.filtered(
-                lambda l: l.display_type == "product"
-            ))
+            # producto (secciones/notas quedan fuera) y tampoco cuenta las
+            # líneas de descuento global, excluidas ahí por lo mismo que en
+            # _prepare_detail_lines.
+            item_count = len(
+                record.invoice_line_ids.filtered(lambda l: l.display_type == "product")
+                - record.invoice_line_ids._get_discount_lines()
+            )
 
             totals = {
                 "nroItems": str(item_count),
                 "montoGravadoTotal": amounts["montoGravadoTotal"],
                 "montoExentoTotal": amounts["montoExentoTotal"],
                 "subtotal": amounts["subtotal"],
-                "subtotalAntesDescuento": amounts["subtotalAntesDescuento"],
                 "totalAPagar": amounts["totalAPagar"],
                 "totalIVA": amounts["totalIVA"],
                 "montoTotalConIVA": amounts["montoTotalConIVA"],
-                "totalDescuento": amounts["totalDescuento"],
                 "impuestosSubtotal": taxes_subtotal,
                 "totalIGTF": str(round(igtf_ves, 2)),
                 "totalIGTF_VES": str(round(igtf_ves, 2)),
             }
+            if "totalDescuento" in amounts:
+                totals["subtotalAntesDescuento"] = amounts["subtotalAntesDescuento"]
+                totals["totalDescuento"] = amounts["totalDescuento"]
             # Cuadro de pago: el bloque formasPago solo se adjunta cuando el
             # usuario activó "Mostrar cuadro de pago" en la factura.
             if record.show_payment_box:
@@ -750,15 +778,16 @@ class TfhkaDocumentService(models.AbstractModel):
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
                     "subtotal": amounts_foreign["subtotal"],
-                    "subtotalAntesDescuento": amounts_foreign["subtotalAntesDescuento"],
                     "totalAPagar": amounts_foreign["totalAPagar"],
                     "totalIVA": amounts_foreign["totalIVA"],
                     "montoTotalConIVA": amounts_foreign["montoTotalConIVA"],
-                    "totalDescuento": amounts_foreign["totalDescuento"],
                     "totalIGTF": str(round(igtf_alt, 2)),
                     "totalIGTF_VES": str(round(igtf_ves, 2)),
                     "impuestosSubtotal": taxes_subtotal_foreign,
                 }
+                if "totalDescuento" in amounts_foreign:
+                    foreign_totals["subtotalAntesDescuento"] = amounts_foreign["subtotalAntesDescuento"]
+                    foreign_totals["totalDescuento"] = amounts_foreign["totalDescuento"]
             else:
                 foreign_totals = False
         return totals, foreign_totals
@@ -793,6 +822,17 @@ class TfhkaDocumentService(models.AbstractModel):
             if needs_conversion:
                 base_amount = self._get_amount_in_currency(invoice, currency, ctx, base_amount)
                 tax_amount = self._get_amount_in_currency(invoice, currency, ctx, tax_amount)
+            # Un grupo de impuesto negativo solo puede venir de una línea de
+            # descuento global con un impuesto propio, distinto del de las
+            # líneas reales (ver _get_discount_amount/_prepare_detail_lines):
+            # ese descuento ya se reporta a nivel de documento, así que el
+            # grupo se omite aquí en vez de mandarle a TFHKA una base/valor
+            # negativo (rechazado con código 203). Los totales agregados
+            # (montoGravadoTotal/montoExentoTotal/totalIVA) se sanean aparte
+            # en _build_amounts, que traslada el mismo sobrante entre buckets
+            # para no alterar el neto (subtotal).
+            if base_amount < 0 or tax_amount < 0:
+                continue
             tax_subtotals.append({
                 "codigoTotalImp": TFHKA_TAX_CODE[group_name],
                 "alicuotaImp": TFHKA_TAX_RATE[group_name],
@@ -818,9 +858,16 @@ class TfhkaDocumentService(models.AbstractModel):
         item_details = []
         line_number = 1
         for record in invoice:
+            # Las líneas de descuento global (ver _get_discount_amount) son
+            # display_type == 'product' con precio negativo -- TFHKA rechaza
+            # cualquier monto negativo en detallesItems (código 203). Ese
+            # descuento ya se reporta a nivel de documento (totalDescuento/
+            # subtotalAntesDescuento), así que la línea se excluye aquí para
+            # no duplicarlo ni enviar un ítem con montos negativos.
+            discount_lines = record.invoice_line_ids._get_discount_lines()
             product_lines = record.invoice_line_ids.filtered(
                 lambda l: l.display_type == 'product'
-            )
+            ) - discount_lines
             for line in product_lines:
                 tax_mapping = {
                     0.0: "E",

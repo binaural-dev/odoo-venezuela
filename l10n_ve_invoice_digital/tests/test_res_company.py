@@ -26,7 +26,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "url_tfhka": "https://api.tfhka.com",
                 "token_auth_tfhka": "token_fake",
                 "invoice_digital_tfhka": True,
-                "sequence_validation_tfhka": True,
                 "currency_id": self.currency_usd.id,
                 "foreign_currency_id": self.currency_vef.id,
                 "country_id": self.env.ref('base.ve').id,

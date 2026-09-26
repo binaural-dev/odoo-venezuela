@@ -35,7 +35,7 @@ class TfhkaRetentionService(models.AbstractModel):
 
         current_number, factory_number = self._tfhka_check_retention_sequence_gap(retention, document_type)
 
-        if factory_number != current_number and not validation_sequence and retention.company_id.sequence_validation_tfhka:
+        if factory_number != current_number and not validation_sequence:
             # No human is present to answer a confirmation wizard here (this
             # runs off the queue's cron, not an interactive request), so the
             # mismatch is surfaced as a data_error instead -- see
