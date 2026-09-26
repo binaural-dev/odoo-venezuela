@@ -3,6 +3,7 @@ import { useSelfOrder } from "@pos_self_order/app/services/self_order_service";
 import { rpc } from "@web/core/network/rpc";
 import { useService } from "@web/core/utils/hooks";
 import { _t } from "@web/core/l10n/translation";
+import { KioskKeyboard } from "@l10n_ve_pos_self_order/app/components/kiosk_keyboard/kiosk_keyboard";
 
 // Same cédula/RIF prefixes as l10n_ve_contact's prefix_vat Selection.
 const PREFIX_VAT_OPTIONS = ["V", "E", "J", "G", "P", "C"];
@@ -10,8 +11,17 @@ const PREFIX_VAT_OPTIONS = ["V", "E", "J", "G", "P", "C"];
 // Mirrors the server validation in controllers/orders.py (_ve_vat_format_error).
 const NUMERIC_PREFIXES = ["V", "E", "J", "G"];
 
+// Venezuelan mobile operator prefixes. Mirrors the server validation in
+// controllers/orders.py (_ve_phone_format_error) — keep both lists in sync.
+const PHONE_OPERATOR_CODES = ["0412", "0414", "0416", "0422", "0424", "0426"];
+// Business format decided for the Kiosk: "<operator code>-<7 digits>", e.g.
+// "0414-1234567". Composed client-side and sent as a single string so the
+// server (and existing consumers of res.partner.phone) keep seeing one field.
+const PHONE_NUMBER_LENGTH = 7;
+
 export class IdentificationPage extends Component {
     static template = "l10n_ve_pos_self_order.IdentificationPage";
+    static components = { KioskKeyboard };
     static props = {};
 
     setup() {
@@ -26,7 +36,21 @@ export class IdentificationPage extends Component {
             vat: "",
             firstName: "",
             lastName: "",
-            phone: "",
+            // Phone is split as operator code (dropdown) + 7-digit number so it
+            // can be validated and composed into "0414-1234567" (see
+            // PHONE_OPERATOR_CODES above and phoneValue()).
+            phoneCode: "",
+            phoneNumber: "",
+            // Address (state/municipality dropdowns + street text), only
+            // required when the box turns on self_ordering_require_address
+            // (models/pos_config.py); always collected on the "create" step.
+            stateId: "",
+            municipalityId: "",
+            street: "",
+            // On-screen keyboard (KioskKeyboard): which state field it writes
+            // into ("" = hidden) and which layout to show.
+            activeField: "",
+            keyboardMode: "text",
             loading: false,
             error: "",
         });
@@ -47,11 +71,140 @@ export class IdentificationPage extends Component {
         return _t("Last name") + " *";
     }
 
-    get phonePlaceholder() {
+    // Legend shown above the required-fields steps (phone / new contact) so
+    // the customer knows which inputs are mandatory before submitting.
+    get requiredFieldsLegend() {
+        return _t("Fields marked with * are mandatory");
+    }
+
+    get phoneNumberPlaceholder() {
         // Phone is required both for a new customer and when completing a
         // missing one on an existing customer (business rule: we register the
         // phone whenever it is not on file).
-        return _t("Phone") + " *";
+        return _t("Phone number") + " *";
+    }
+
+    get phoneCodeOptions() {
+        return PHONE_OPERATOR_CODES;
+    }
+
+    get phoneCodePlaceholder() {
+        return _t("Code");
+    }
+
+    // Composed "<operator code>-<7 digits>" phone, the format saved on
+    // res.partner.phone (e.g. "0414-1234567"). Built even with incomplete
+    // input so the caller can validate the whole string in one place.
+    get phoneValue() {
+        return `${this.state.phoneCode}-${this.state.phoneNumber}`;
+    }
+
+    // --- Address (state/municipality/street) ---------------------------
+    // Optional unless the box turns on self_ordering_require_address.
+
+    get addressRequired() {
+        return Boolean(this.selfOrder.config.self_ordering_require_address);
+    }
+
+    get statePlaceholder() {
+        return this.addressRequired ? _t("State") + " *" : _t("State");
+    }
+
+    get municipalityPlaceholder() {
+        return this.addressRequired ? _t("Municipality") + " *" : _t("Municipality");
+    }
+
+    get streetPlaceholder() {
+        return this.addressRequired ? _t("Street") + " *" : _t("Street");
+    }
+
+    // res.country.state is loaded for every Self Order mode by the core
+    // (pos_self_order._load_self_data_models); restrict to Venezuela since
+    // l10n_ve_location's municipalities only make sense for VE states.
+    get stateOptions() {
+        return (this.selfOrder.models["res.country.state"].getAll() || [])
+            .filter((state) => state.country_id?.code === "VE")
+            .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
+
+    // res.country.municipality is exposed to the Kiosk by this module
+    // (models/pos_config.py::_load_self_data_models +
+    // models/res_country_municipality.py). Its state_id is a Many2many
+    // (l10n_ve_location): a municipality can list more than one state.
+    get municipalityOptions() {
+        const stateId = this.state.stateId;
+        if (!stateId) {
+            return [];
+        }
+        return (this.selfOrder.models["res.country.municipality"].getAll() || [])
+            .filter((municipality) =>
+                (municipality.state_id || []).some((state) => state.id === stateId)
+            )
+            .sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    }
+
+    // Client-side format check, mirrored server-side
+    // (controllers/orders.py::_ve_address_format_error). Returns an error
+    // message (already translated) or "" when the address is valid (or the
+    // box does not require one).
+    addressFormatError(stateId, municipalityId, street) {
+        if (!this.addressRequired) {
+            return "";
+        }
+        if (!stateId) {
+            return _t("Select the state.");
+        }
+        if (!municipalityId) {
+            return _t("Select the municipality.");
+        }
+        if (!(street || "").trim()) {
+            return _t("Enter the street address.");
+        }
+        return "";
+    }
+
+    get isAddressComplete() {
+        return !this.addressFormatError(
+            this.state.stateId,
+            this.state.municipalityId,
+            this.state.street
+        );
+    }
+
+    onStateChange(ev) {
+        this.state.error = "";
+        this.state.stateId = ev.target.value ? Number(ev.target.value) : "";
+        // The previously picked municipality may not belong to the new state.
+        this.state.municipalityId = "";
+    }
+
+    onMunicipalityChange(ev) {
+        this.state.error = "";
+        this.state.municipalityId = ev.target.value ? Number(ev.target.value) : "";
+    }
+
+    // The primary buttons are only disabled while a request is in flight:
+    // disabling them until the form is valid left the customer with a dead
+    // "Create" button and no clue about which field was missing (e.g. the
+    // operator code dropdown, whose "Code" placeholder reads like a value).
+    // onSavePhone/onCreate validate and show the reason instead (and the
+    // server validates again).
+    get phoneStepDisabled() {
+        return this.state.loading;
+    }
+
+    get createDisabled() {
+        return this.state.loading;
+    }
+
+    // Inline hint under the phone number while it is incomplete, so the
+    // 7-digit rule is visible before pressing the button.
+    get phoneNumberHint() {
+        const number = this.state.phoneNumber;
+        if (!number || number.length === PHONE_NUMBER_LENGTH) {
+            return "";
+        }
+        return _t("The phone number must contain exactly 7 digits.");
     }
 
     get numpadKeys() {
@@ -84,6 +237,81 @@ export class IdentificationPage extends Component {
             return _t("The ID number must contain only digits.");
         }
         return "";
+    }
+
+    // Client-side format check, mirrored server-side
+    // (controllers/orders.py::_ve_phone_format_error). Returns an error
+    // message (already translated) or "" when the phone is well formed.
+    phoneFormatError(code, number) {
+        if (!PHONE_OPERATOR_CODES.includes(code)) {
+            return _t("Select a valid phone operator code.");
+        }
+        if (!/^\d+$/.test(number) || number.length !== PHONE_NUMBER_LENGTH) {
+            return _t("The phone number must contain exactly 7 digits.");
+        }
+        return "";
+    }
+
+    // Digits-only, capped to 7 — keeps the on-screen/native keyboard from
+    // leaving stray characters in a field the kiosk always sends as "code-digits".
+    // The sanitized value is written back to the input too: when a keystroke
+    // is rejected (a letter, an 8th digit) the state does not change, Owl does
+    // not re-render, and the DOM would keep showing the rejected character.
+    onPhoneNumberInput(ev) {
+        this.state.error = "";
+        const value = ev.target.value.replace(/\D/g, "").slice(0, PHONE_NUMBER_LENGTH);
+        ev.target.value = value;
+        this.state.phoneNumber = value;
+    }
+
+    // --- On-screen keyboard (KioskKeyboard) -----------------------------
+    // The kiosk terminal has no reliable physical/native keyboard, so text
+    // fields on this page show KioskKeyboard on focus and write into
+    // whichever field is currently active. "field" is the name of a
+    // this.state.* string property (firstName/lastName/street/phoneNumber).
+
+    // Bound to both focus and click on each input: focus alone does not fire
+    // when the tapped input already has the focus (the keyboard's buttons do
+    // not take it, see KioskKeyboard), so a tap on the field must also be
+    // enough to bring back its own layout.
+    onFieldFocus(field, mode = "text") {
+        this.state.activeField = field;
+        this.state.keyboardMode = mode;
+    }
+
+    onKeyboardKey(key) {
+        const field = this.state.activeField;
+        if (!field) {
+            return;
+        }
+        this.state.error = "";
+        if (key === "backspace") {
+            this.state[field] = this.state[field].slice(0, -1);
+            return;
+        }
+        if (key === "clear") {
+            this.state[field] = "";
+            return;
+        }
+        if (key === "space") {
+            // A space is meaningless in the phone number.
+            if (field !== "phoneNumber") {
+                this.state[field] += " ";
+            }
+            return;
+        }
+        if (field === "phoneNumber") {
+            // Numeric mode already limits the layout to digits, but guard
+            // here too and enforce the same 7-digit cap as onPhoneNumberInput.
+            if (/^\d$/.test(key)) {
+                this.state.phoneNumber = (this.state.phoneNumber + key).slice(
+                    0,
+                    PHONE_NUMBER_LENGTH
+                );
+            }
+            return;
+        }
+        this.state[field] += key;
     }
 
     onNumpadKey(value) {
@@ -142,7 +370,6 @@ export class IdentificationPage extends Component {
     async onCreate() {
         const firstName = this.state.firstName.trim();
         const lastName = this.state.lastName.trim();
-        const phone = this.state.phone.trim();
         const formatError = this.vatFormatError(this.state.prefixVat, this.state.vat.trim());
         if (formatError) {
             this.state.error = formatError;
@@ -156,8 +383,18 @@ export class IdentificationPage extends Component {
             this.state.error = _t("Enter the last name.");
             return;
         }
-        if (!phone) {
-            this.state.error = _t("Enter the phone number.");
+        const phoneError = this.phoneFormatError(this.state.phoneCode, this.state.phoneNumber);
+        if (phoneError) {
+            this.state.error = phoneError;
+            return;
+        }
+        const addressError = this.addressFormatError(
+            this.state.stateId,
+            this.state.municipalityId,
+            this.state.street
+        );
+        if (addressError) {
+            this.state.error = addressError;
             return;
         }
         this.state.error = "";
@@ -171,7 +408,10 @@ export class IdentificationPage extends Component {
                 prefix_vat: this.state.prefixVat,
                 vat: this.state.vat.trim(),
                 name,
-                phone,
+                phone: this.phoneValue,
+                state_id: this.state.stateId || false,
+                municipality_id: this.state.municipalityId || false,
+                street: this.state.street.trim() || false,
             });
             if (result?.error) {
                 this.state.error = result.error;
@@ -189,9 +429,9 @@ export class IdentificationPage extends Component {
     }
 
     async onSavePhone() {
-        const phone = this.state.phone.trim();
-        if (!phone) {
-            this.state.error = _t("Enter the phone number.");
+        const phoneError = this.phoneFormatError(this.state.phoneCode, this.state.phoneNumber);
+        if (phoneError) {
+            this.state.error = phoneError;
             return;
         }
         this.state.error = "";
@@ -201,7 +441,7 @@ export class IdentificationPage extends Component {
                 access_token: this.selfOrder.access_token,
                 prefix_vat: this.state.prefixVat,
                 vat: this.state.vat.trim(),
-                phone,
+                phone: this.phoneValue,
             });
             if (result?.error) {
                 this.state.error = result.error;

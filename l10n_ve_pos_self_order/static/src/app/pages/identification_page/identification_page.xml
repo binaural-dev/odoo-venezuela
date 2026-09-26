@@ -45,12 +45,29 @@
                             We need your phone number to continue
                         </p>
                         <div class="mx-auto" style="max-width: 32rem;">
-                            <input type="tel" inputmode="tel" autocomplete="off"
-                                   class="form-control form-control-lg mb-3"
-                                   t-att-placeholder="phonePlaceholder"
-                                   t-model="state.phone"
-                                   t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onSavePhone()"/>
+                            <p class="text-center text-muted small mb-3" t-esc="requiredFieldsLegend"/>
+                            <div class="d-flex gap-2 mb-3">
+                                <select class="form-select form-select-lg flex-shrink-0 o_ve_phone_code_select"
+                                        t-model="state.phoneCode"
+                                        t-on-change="() => this.state.error = ''">
+                                    <option value="" t-esc="phoneCodePlaceholder"/>
+                                    <option t-foreach="phoneCodeOptions" t-as="code" t-key="code"
+                                            t-att-value="code" t-esc="code"/>
+                                </select>
+                                <input type="tel" inputmode="numeric" autocomplete="off"
+                                       class="form-control form-control-lg"
+                                       t-att-placeholder="phoneNumberPlaceholder"
+                                       t-att-value="state.phoneNumber"
+                                       t-on-input="(ev) => this.onPhoneNumberInput(ev)"
+                                       t-on-focus="() => this.onFieldFocus('phoneNumber', 'numeric')"
+                                       t-on-click="() => this.onFieldFocus('phoneNumber', 'numeric')"
+                                       t-on-keyup="(ev) => ev.key === 'Enter' &amp;&amp; this.onSavePhone()"/>
+                            </div>
+                            <div t-if="phoneNumberHint" class="form-text text-danger mt-n2 mb-3" t-esc="phoneNumberHint"/>
+                            <!-- Error above the keyboard: below it, it ends up out of view. -->
                             <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
+                            <KioskKeyboard t-if="state.activeField" mode="state.keyboardMode"
+                                           onKey="(key) => this.onKeyboardKey(key)"/>
                         </div>
                     </t>
 
@@ -61,19 +78,64 @@
                             ID number (cédula/RIF): <b><t t-esc="state.prefixVat"/>-<t t-esc="state.vat"/></b>
                         </p>
                         <div class="mx-auto" style="max-width: 32rem;">
+                            <p class="text-center text-muted small mb-3" t-esc="requiredFieldsLegend"/>
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
                                    t-att-placeholder="firstNamePlaceholder"
-                                   t-model="state.firstName"/>
+                                   t-model="state.firstName"
+                                   t-on-focus="() => this.onFieldFocus('firstName')"
+                                   t-on-click="() => this.onFieldFocus('firstName')"/>
                             <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
                                    t-att-placeholder="lastNamePlaceholder"
-                                   t-model="state.lastName"/>
-                            <input type="tel" inputmode="tel" autocomplete="off"
+                                   t-model="state.lastName"
+                                   t-on-focus="() => this.onFieldFocus('lastName')"
+                                   t-on-click="() => this.onFieldFocus('lastName')"/>
+                            <div class="d-flex gap-2 mb-3">
+                                <select class="form-select form-select-lg flex-shrink-0 o_ve_phone_code_select"
+                                        t-model="state.phoneCode"
+                                        t-on-change="() => this.state.error = ''">
+                                    <option value="" t-esc="phoneCodePlaceholder"/>
+                                    <option t-foreach="phoneCodeOptions" t-as="code" t-key="code"
+                                            t-att-value="code" t-esc="code"/>
+                                </select>
+                                <input type="tel" inputmode="numeric" autocomplete="off"
+                                       class="form-control form-control-lg"
+                                       t-att-placeholder="phoneNumberPlaceholder"
+                                       t-att-value="state.phoneNumber"
+                                       t-on-input="(ev) => this.onPhoneNumberInput(ev)"
+                                       t-on-focus="() => this.onFieldFocus('phoneNumber', 'numeric')"
+                                       t-on-click="() => this.onFieldFocus('phoneNumber', 'numeric')"/>
+                            </div>
+                            <div t-if="phoneNumberHint" class="form-text text-danger mt-n2 mb-3" t-esc="phoneNumberHint"/>
+                            <!-- Address: optional unless self_ordering_require_address is on. -->
+                            <div class="d-flex gap-2 mb-3">
+                                <select class="form-select form-select-lg o_ve_address_select"
+                                        t-on-change="(ev) => this.onStateChange(ev)">
+                                    <option value="" t-esc="statePlaceholder"/>
+                                    <option t-foreach="stateOptions" t-as="opt" t-key="opt.id"
+                                            t-att-value="opt.id" t-att-selected="opt.id === state.stateId"
+                                            t-esc="opt.name"/>
+                                </select>
+                                <select class="form-select form-select-lg o_ve_address_select"
+                                        t-att-disabled="!state.stateId"
+                                        t-on-change="(ev) => this.onMunicipalityChange(ev)">
+                                    <option value="" t-esc="municipalityPlaceholder"/>
+                                    <option t-foreach="municipalityOptions" t-as="opt" t-key="opt.id"
+                                            t-att-value="opt.id" t-att-selected="opt.id === state.municipalityId"
+                                            t-esc="opt.name"/>
+                                </select>
+                            </div>
+                            <input type="text" autocomplete="off"
                                    class="form-control form-control-lg mb-3"
-                                   t-att-placeholder="phonePlaceholder"
-                                   t-model="state.phone"/>
+                                   t-att-placeholder="streetPlaceholder"
+                                   t-model="state.street"
+                                   t-on-focus="() => this.onFieldFocus('street')"
+                                   t-on-click="() => this.onFieldFocus('street')"/>
+                            <!-- Error above the keyboard: below it, it ends up out of view. -->
                             <div t-if="state.error" class="alert alert-warning py-2" t-esc="state.error"/>
+                            <KioskKeyboard t-if="state.activeField" mode="state.keyboardMode"
+                                           onKey="(key) => this.onKeyboardKey(key)"/>
                         </div>
                     </t>
 
@@ -97,13 +159,13 @@
                     </button>
                     <button t-elif="state.step === 'phone'"
                             class="btn btn-lg btn-primary px-5"
-                            t-att-disabled="state.loading || !state.phone.trim()"
+                            t-att-disabled="phoneStepDisabled"
                             t-on-click="() => this.onSavePhone()">
                         Save and continue
                     </button>
                     <button t-else=""
                             class="btn btn-lg btn-primary px-5"
-                            t-att-disabled="state.loading || !state.firstName.trim() || !state.lastName.trim() || !state.phone.trim()"
+                            t-att-disabled="createDisabled"
                             t-on-click="() => this.onCreate()">
                         Create and continue
                     </button>
