@@ -2715,6 +2715,28 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(amounts["totalIVA"], "16.0")
         self.assertEqual(amounts["montoTotalConIVA"], "156.0")
 
+    def test_182b_build_amounts_absorbs_negative_bucket_from_discount_group(self):
+        # Caso real: la línea de descuento global cae en "Exento" (0%),
+        # distinto del IVA 16% de las líneas reales, y no hay ningún otro
+        # monto exento que la compense -- montoExentoTotal queda negativo y
+        # TFHKA lo rechaza (código 203, "no cumple con el formato correcto").
+        # El sobrante se traslada al otro bucket para no alterar el neto.
+        tax_totals = {
+            "subtotals": [{"tax_groups": [
+                {"group_name": "IVA 16%", "base_amount_currency": 1000.0, "tax_amount_currency": 160.0},
+                {"group_name": "Exento", "base_amount_currency": -300.0, "tax_amount_currency": 0.0},
+            ]}],
+            "total_amount_currency": 860.0,
+        }
+        record = self._fake_amounts_record(tax_totals)
+        amounts = self.env['tfhka.document.service']._build_amounts(
+            record, record.currency_id, {"rate": 1.0}
+        )
+        self.assertEqual(amounts["montoExentoTotal"], "0.0")
+        self.assertEqual(amounts["montoGravadoTotal"], "700.0")
+        # El neto (subtotal) no cambia: sigue reflejando el descuento.
+        self.assertEqual(amounts["subtotal"], "700.0")
+
     def test_183_build_amounts_recomputes_discount_from_lines(self):
         # Sin descuento: subtotalAntesDescuento == subtotal.
         record = self._fake_amounts_record(
