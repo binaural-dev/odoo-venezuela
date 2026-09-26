@@ -774,7 +774,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "url_tfhka": "",
                 "token_auth_tfhka": "token_fake",
                 "invoice_digital_tfhka": True,
-                "sequence_validation_tfhka": True,
             }
         )
 
@@ -809,7 +808,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "url_tfhka": "https://api.tfhka.com",
                 "token_auth_tfhka": "",
                 "invoice_digital_tfhka": True,
-                "sequence_validation_tfhka": True,
             }
         )
 
@@ -849,7 +847,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "url_tfhka": "https://api.tfhka.com",
                 "token_auth_tfhka": "token_fake",
                 "invoice_digital_tfhka": True,
-                "sequence_validation_tfhka": True,
             }
         )
 
@@ -899,7 +896,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "url_tfhka": "https://api.tfhka.com",
                 "token_auth_tfhka": "token_fake",
                 "invoice_digital_tfhka": True,
-                "sequence_validation_tfhka": True,
             }
         )
 
@@ -928,7 +924,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "url_tfhka": "https://api.tfhka.com",
                 "token_auth_tfhka": "token_fake",
                 "invoice_digital_tfhka": True,
-                "sequence_validation_tfhka": True,
             }
         )
 
@@ -1077,7 +1072,6 @@ class TestAccountMoveApiCalls(TransactionCase):
             "url_tfhka": "https://api.tfhka.com",
             "token_auth_tfhka": "token_fake",
             "invoice_digital_tfhka": True,
-            "sequence_validation_tfhka": True,
         })
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
@@ -1093,7 +1087,6 @@ class TestAccountMoveApiCalls(TransactionCase):
             "url_tfhka": "https://api.tfhka.com",
             "token_auth_tfhka": "old",
             "invoice_digital_tfhka": True,
-            "sequence_validation_tfhka": True,
         })
         def side_effect(url, *args, **kwargs):
             resp = MagicMock()
@@ -1587,9 +1580,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(series, "")
 
     def test_67_generate_document_digital_non_numeric_last_number(self):
-        # El foco es el manejo de un ultimo numero no numerico; se desactiva la
-        # validacion de secuencia para no mezclar ese chequeo con este caso.
-        self.company.sequence_validation_tfhka = False
+        # El foco es el manejo de un ultimo numero no numerico.
         with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.get_last_document_number', return_value="abc"):
             with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.query_numbering', return_value=None):
                 with patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request') as mock_call:
@@ -2352,7 +2343,6 @@ class TestAccountMoveApiCalls(TransactionCase):
             "url_tfhka": "https://api.tfhka.com",
             "token_auth_tfhka": "old",
             "invoice_digital_tfhka": True,
-            "sequence_validation_tfhka": True,
         })
 
         def side_effect(url, *args, **kwargs):
@@ -2645,20 +2635,31 @@ class TestAccountMoveApiCalls(TransactionCase):
         """Doble de prueba para ``_build_amounts``.
 
         Además de ``tax_totals`` y la compañía, necesita ``invoice_line_ids``
-        con ``filtered`` para recalcular el descuento (O19 solo lo expone ya
-        formateado como cadena).
+        con ``_get_discount_lines()``/``mapped()`` para recalcular el
+        descuento GLOBAL a partir de las líneas reconocidas como tales (ver
+        ``_get_discount_amount``) -- ya no del % por línea. Cada ``line`` de
+        ``lines`` es un dict de atributos; para representar una línea de
+        descuento global se le pasa ``display_type="discount"`` explícito.
         """
         record = self._fake_tax_record(
             tax_totals, igtf_percentage, currency_id, foreign_currency_id, company_currency_id
         )
         fake_lines = [
-            type("FakeLine", (), dict(display_type="product", **line))()
+            type("FakeLine", (), {"display_type": "product", **line})()
             for line in lines
         ]
 
         class FakeLines(list):
             def filtered(self, func):
-                return [item for item in self if func(item)]
+                return FakeLines(item for item in self if func(item))
+
+            def mapped(self, attr):
+                return [getattr(item, attr) for item in self]
+
+            def _get_discount_lines(self):
+                return FakeLines(
+                    item for item in self if getattr(item, "display_type", None) == "discount"
+                )
 
         record.invoice_line_ids = FakeLines(fake_lines)
         return record
@@ -2716,21 +2717,20 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(amounts["montoTotalConIVA"], "156.0")
 
     def test_183_build_amounts_recomputes_discount_from_lines(self):
-        # Sin descuento: subtotalAntesDescuento == subtotal.
-        record = self._fake_amounts_record(
-            self._amounts_tax_totals(),
-            lines=[{"price_unit": 100.0, "quantity": 1, "discount": 0.0, "foreign_price": 5.0}],
-        )
+        # Sin línea de descuento global: no se reportan esas claves.
+        record = self._fake_amounts_record(self._amounts_tax_totals(), lines=())
         amounts = self.env['tfhka.document.service']._build_amounts(
             record, record.currency_id, {"rate": 1.0}
         )
-        self.assertEqual(amounts["totalDescuento"], "0.0")
-        self.assertEqual(amounts["subtotalAntesDescuento"], amounts["subtotal"])
+        self.assertNotIn("totalDescuento", amounts)
+        self.assertNotIn("subtotalAntesDescuento", amounts)
 
-        # Con 10% sobre 100: el descuento se suma de vuelta al subtotal.
+        # Con una línea de descuento global (display_type="discount", el
+        # criterio de _get_discount_lines()) de -10: el descuento se suma de
+        # vuelta al subtotal.
         record = self._fake_amounts_record(
             self._amounts_tax_totals(),
-            lines=[{"price_unit": 100.0, "quantity": 1, "discount": 10.0, "foreign_price": 5.0}],
+            lines=[{"display_type": "discount", "price_subtotal": -10.0}],
         )
         amounts = self.env['tfhka.document.service']._build_amounts(
             record, record.currency_id, {"rate": 1.0}
@@ -2749,10 +2749,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             # Valor corrupto que l10n_ve_igtf publica; debe ignorarse.
             "foreign_igtf_amount": 999.0,
         }
-        record = self._fake_amounts_record(
-            tax_totals,
-            lines=[{"price_unit": 100.0, "quantity": 1, "discount": 0.0, "foreign_price": 5.0}],
-        )
+        record = self._fake_amounts_record(tax_totals, lines=())
         # Compañía == moneda de la factura (default), distinta de la alterna:
         # _get_igtf_block convierte igtf_base_amount/igtf_amount con la tasa
         # en vez de leer el foreign_igtf_amount corrupto (999.0).
@@ -2881,6 +2878,27 @@ class TestAccountMoveApiCalls(TransactionCase):
                 fake, fake.currency_id, {"rate": 1.0}
             )
 
+    def test_176c_prepare_tax_subtotals_skips_negative_group(self):
+        # Un grupo de impuesto negativo solo puede venir de una línea de
+        # descuento global con un impuesto propio, distinto del de las
+        # líneas reales (caso real: producto en IVA 16%, línea de descuento
+        # en IVA 31%). Ese descuento ya se reporta a nivel de documento, así
+        # que el grupo se omite en vez de mandarle a TFHKA una base/valor
+        # negativo (rechazado con código 203).
+        fake = self._fake_tax_record({
+            "subtotals": [{"tax_groups": [
+                {"group_name": "IVA 16%", "base_amount_currency": 100.0, "tax_amount_currency": 16.0},
+                {"group_name": "IVA 31%", "base_amount_currency": -20.0, "tax_amount_currency": -6.2},
+            ]}],
+        })
+        result = self.env['tfhka.document.service']._prepare_tax_subtotals(
+            fake, fake.currency_id, {"rate": 1.0}
+        )
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["codigoTotalImp"], "G")
+        self.assertEqual(result[0]["baseImponibleImp"], "100.0")
+        self.assertEqual(result[0]["valorTotalImp"], "16.0")
+
     def test_177_prepare_detail_lines_unsupported_tax_rate_raises(self):
         tax_group = self.env['account.tax.group'].create({'name': 'IVA Rara'})
         weird_tax = self.env['account.tax'].create({
@@ -2895,6 +2913,40 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         with self.assertRaises(UserError):
             self.env['tfhka.document.service']._prepare_detail_lines(inv)
+
+    def test_177b_prepare_detail_lines_excludes_recognized_discount_line(self):
+        # La línea de descuento global (ver _get_discount_amount) es
+        # display_type == 'product' con precio negativo -- se excluye de
+        # detallesItems para no duplicarla ni mandarle a TFHKA un ítem con
+        # monto negativo (código 203). _get_discount_lines() se parchea acá
+        # porque su reconocimiento real depende de mecanismos (asistente de
+        # descuento global, sale_discount_product_id, POS, loyalty) fuera
+        # del alcance de este test unitario.
+        discount_product = self.env['product.product'].create({
+            'name': 'Descuento Global',
+            'type': 'service',
+        })
+        is_discount_line = lambda line: line.product_id == discount_product
+        with patch(
+            "odoo.addons.account.models.account_move_line.AccountMoveLine._get_discount_lines",
+            lambda lines: lines.filtered(is_discount_line),
+        ):
+            invoice = self._create_invoice(
+                products=[
+                    {"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]},
+                    {"product_id": discount_product.id, "price_unit": -20, "tax_ids": [self.tax_iva16.id]},
+                ],
+            )
+            details = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
+            totals, _foreign = self.env['tfhka.document.service']._prepare_totals(invoice)
+
+        self.assertEqual(len(details), 1)
+        self.assertEqual(details[0]["descripcion"], self.product.name)
+        # nroItems debe cuadrar con detallesItems: tampoco cuenta la línea de
+        # descuento.
+        self.assertEqual(totals["nroItems"], "1")
+        # El descuento se reporta a nivel de documento, no como ítem.
+        self.assertEqual(totals["totalDescuento"], "20.0")
 
     def test_178_get_seller_empty_recordset(self):
         result = self.env['tfhka.document.service']._get_seller(self.env['account.move'].browse([]))
