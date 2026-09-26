@@ -665,7 +665,27 @@ class TfhkaDocumentService(models.AbstractModel):
             total_tax = self._get_amount_in_currency(invoice, currency, ctx, total_tax)
             total_with_tax = self._get_amount_in_currency(invoice, currency, ctx, total_with_tax)
 
+        # untaxed ya queda neto del descuento global (su línea participa de
+        # estas sumas via `groups`, igual que en producción) -- se calcula
+        # ANTES de sanear montoGravadoTotal/montoExentoTotal para no
+        # alterarlo. Cuando el descuento cae en una clasificación (exento/
+        # gravado) sin suficiente monto propio para absorberlo, ese bucket
+        # queda negativo -- TFHKA rechaza cualquier campo negativo (código
+        # 203) aunque el neto sea correcto. Se traslada el sobrante al otro
+        # bucket (la suma sigue dando `untaxed`) y como último resort se
+        # pisa en 0 -- igual que el impuesto negativo aislado que ya se
+        # omite en _prepare_tax_subtotals.
         untaxed = taxed_base + exempt_base
+        if exempt_base < 0:
+            taxed_base += exempt_base
+            exempt_base = 0.0
+        elif taxed_base < 0:
+            exempt_base += taxed_base
+            taxed_base = 0.0
+        exempt_base = max(0.0, exempt_base)
+        taxed_base = max(0.0, taxed_base)
+        total_tax = max(0.0, total_tax)
+
         discount = self._get_discount_amount(invoice, currency, ctx)
 
         _igtf_base, igtf_amount = self._get_igtf_block(invoice, currency, ctx)
@@ -808,8 +828,9 @@ class TfhkaDocumentService(models.AbstractModel):
             # ese descuento ya se reporta a nivel de documento, así que el
             # grupo se omite aquí en vez de mandarle a TFHKA una base/valor
             # negativo (rechazado con código 203). Los totales agregados
-            # (montoGravadoTotal/totalIVA) no se ven afectados: ya suman
-            # todos los grupos, incluido este, y quedan netos correctamente.
+            # (montoGravadoTotal/montoExentoTotal/totalIVA) se sanean aparte
+            # en _build_amounts, que traslada el mismo sobrante entre buckets
+            # para no alterar el neto (subtotal).
             if base_amount < 0 or tax_amount < 0:
                 continue
             tax_subtotals.append({
