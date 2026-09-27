@@ -973,12 +973,32 @@ class TfhkaDocumentService(models.AbstractModel):
                 content_data = record.invoice_payments_widget.get("content", [])
                 if content_data:
                     for item in content_data:
-                        payment = self._get_payment(item.get('account_payment_id'))
-
-                        if not payment:
+                        # La conciliación multi-moneda genera automáticamente
+                        # un asiento de diferencia de cambio (journal
+                        # "Diferencia de cambio", move_type='entry' también)
+                        # -- no es una forma de pago, es un ajuste contable
+                        # que el propio widget marca con is_exchange.
+                        if item.get('is_exchange'):
                             continue
 
-                        payment_info = self._build_payment_info(record, payment, ctx)
+                        payment = self._get_payment(item.get('account_payment_id'))
+
+                        if payment:
+                            payment_info = self._build_payment_info(record, payment, ctx)
+                        else:
+                            # Sin account.payment de por medio: puede ser un
+                            # asiento contable manual (move_type='entry')
+                            # conciliado directo contra la factura para
+                            # registrar el pago. Se excluyen otras
+                            # facturas/notas de crédito conciliadas por
+                            # netting -- esas no son una forma de pago.
+                            entry = self._get_payment_move(item.get('move_id'))
+                            if not entry:
+                                continue
+                            payment_info = self._build_payment_info_from_move(
+                                record, entry, item
+                            )
+
                         payment_data.append(payment_info)
                     return payment_data
             return False
@@ -989,10 +1009,19 @@ class TfhkaDocumentService(models.AbstractModel):
     def _get_payment(self, account_payment_id):
         return self.env['account.payment'].search([('id', '=', account_payment_id)])
 
-    def _build_payment_info(self, invoice, payment, ctx=None):
-        ctx = ctx or self._get_currency_context(invoice)
-        payment_currency = payment.currency_id or invoice.company_id.currency_id
-        payment_method = payment.journal_id.payment_method_code if payment.journal_id.payment_method_code else False
+    def _get_payment_move(self, move_id):
+        """Asiento contable manual (move_type='entry') conciliado contra la
+        factura, usado para registrar un pago sin pasar por account.payment.
+        Se excluyen otras facturas/notas de crédito conciliadas (netting
+        entre documentos) -- no son una forma de pago."""
+        if not move_id:
+            return self.env['account.move']
+        return self.env['account.move'].search([
+            ('id', '=', move_id), ('move_type', '=', 'entry'),
+        ])
+
+    def _build_payment_info_values(self, journal, payment_currency, date, amount, foreign_rate):
+        payment_method = journal.payment_method_code if journal.payment_method_code else False
 
         # La moneda del pago se reporta con su propio code_tfhka, igual que el
         # resto del payload: 17.0 mandaba aquí el nombre de la moneda de Odoo,
@@ -1004,13 +1033,13 @@ class TfhkaDocumentService(models.AbstractModel):
             exchange_rate = None
         else:
             # Pago en divisa: se incluye el tipo de cambio del propio pago.
-            exchange_rate = "{:.4f}".format(payment.foreign_rate)
+            exchange_rate = "{:.4f}".format(foreign_rate)
 
         payment_info = {
             "descripcion": payment_method.description if payment_method else "",
-            "fecha": payment.date.strftime("%d/%m/%Y") if payment.date else "",
+            "fecha": date.strftime("%d/%m/%Y") if date else "",
             "forma": payment_method.code if payment_method else "",
-            "monto": str(round(payment.amount, 2)),
+            "monto": str(round(amount, 2)),
             "moneda": currency_code,
         }
 
@@ -1018,6 +1047,23 @@ class TfhkaDocumentService(models.AbstractModel):
             payment_info["tipoCambio"] = exchange_rate
 
         return payment_info
+
+    def _build_payment_info(self, invoice, payment, ctx=None):
+        ctx = ctx or self._get_currency_context(invoice)
+        payment_currency = payment.currency_id or invoice.company_id.currency_id
+        return self._build_payment_info_values(
+            payment.journal_id, payment_currency, payment.date, payment.amount, payment.foreign_rate,
+        )
+
+    def _build_payment_info_from_move(self, invoice, entry, widget_item):
+        payment_currency = (
+            self.env['res.currency'].browse(widget_item.get('currency_id'))
+            or invoice.company_id.currency_id
+        )
+        amount = abs(widget_item.get('amount') or 0.0)
+        return self._build_payment_info_values(
+            entry.journal_id, payment_currency, entry.date, amount, entry.foreign_rate,
+        )
 
     def _prepare_additional_information(self, invoice):
         """Hook de extensión: información adicional del documento (sección
