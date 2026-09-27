@@ -56,10 +56,13 @@ patch(Order.prototype, {
     );
   },
   _paidAmount() {
+    // Solo suma pagos con el mismo signo del total: en un reembolso todos los
+    // pagos son negativos y no deben descartarse como si fueran vuelto.
+    const sign = this.get_total_without_igtf() < 0 ? -1 : 1;
     let paid = 0;
     for (const line of this.get_paymentlines()) {
-      if (!(line.amount < 0)) {
-        paid += line.amount || 0;
+      if (sign * (line.amount || 0) > 0) {
+        paid += line.amount;
       }
     }
     return paid;
