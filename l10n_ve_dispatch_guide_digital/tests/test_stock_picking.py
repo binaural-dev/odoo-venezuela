@@ -50,7 +50,6 @@ class TestStockPickingApiCalls(TransactionCase):
             {
                 "url_tfhka": "https://fake-api.com",
                 "token_auth_tfhka": "fake-token",
-                "sequence_validation_tfhka": True,
                 "invoice_digital_tfhka": True,
                 "dispatch_guide_digital_tfhka": True,
                 "country_id": self.env.ref("base.ve").id,
@@ -329,12 +328,13 @@ class TestStockPickingApiCalls(TransactionCase):
             self.DispatchGuideService.send_document(picking)
 
     @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
-    def test_send_document_sequence_mismatch_raises_when_validation_enabled(self, mock_call):
+    def test_send_document_sequence_mismatch_raises(self, mock_call):
+        # La validación de secuencia ya no es configurable: siempre está
+        # activa (ver eliminación de sequence_validation_tfhka).
         sequence = self.env["ir.sequence"].search(
             [("code", "=", "guide.number"), ("company_id", "=", self.company.id)]
         )
         sequence.write({"number_next_actual": 99})
-        self.company.sequence_validation_tfhka = True
 
         picking = self.create_picking()
         self.validate_picking(picking)
@@ -346,20 +346,6 @@ class TestStockPickingApiCalls(TransactionCase):
         self.env["stock.picking"]._tfhka_cron_process_queue()
         self.assertEqual(picking.tfhka_digitalization_state, "error")
         self.assertIn("does not match the sequence", picking.tfhka_digitalization_error)
-
-    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
-    def test_send_document_sequence_mismatch_ignored_when_validation_disabled(self, mock_call):
-        sequence = self.env["ir.sequence"].search(
-            [("code", "=", "guide.number"), ("company_id", "=", self.company.id)]
-        )
-        sequence.write({"number_next_actual": 99})
-        self.company.sequence_validation_tfhka = False
-
-        picking = self.create_picking()
-        self.validate_picking(picking)
-        self.env["stock.picking"]._tfhka_cron_process_queue()
-
-        self.assertTrue(picking.is_digitalized)
 
     # ==================================================================
     # generate_document_data / _register_success (flujo completo)
@@ -484,7 +470,6 @@ class TestStockPickingApiCalls(TransactionCase):
 
     @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
     def test_prepare_detail_lines_sale_with_tax_vef(self, mock_call):
-        self.company.sequence_validation_tfhka = False
         order, picking = self.create_sale_dispatch_guide(
             order_lines=[
                 {
@@ -508,7 +493,6 @@ class TestStockPickingApiCalls(TransactionCase):
 
     @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
     def test_prepare_detail_lines_sale_without_tax_foreign_currency(self, mock_call):
-        self.company.sequence_validation_tfhka = False
         order, picking = self.create_sale_dispatch_guide(
             order_lines=[
                 {
@@ -613,7 +597,6 @@ class TestStockPickingApiCalls(TransactionCase):
 
     @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
     def test_prepare_dispatch_guide_with_shipping_weight(self, mock_call):
-        self.company.sequence_validation_tfhka = False
         self.product_storable.weight = 5.0
         picking = self.create_picking(products=[(self.product_storable, 10)])
         self.validate_picking(picking)

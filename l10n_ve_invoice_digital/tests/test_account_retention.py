@@ -415,8 +415,6 @@ class TestAccumulatedRate(TransactionCase):
     # Validacion de secuencia entre la API y Odoo
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     def test_06_generate_document_digital_sequence_error(self, mock_call):
-        self.company.write({"sequence_validation_tfhka": True,})
-
         account_move = self._create_invoice()
         account_move.action_post()
         retention = self._create_retention("iva", account_move)
@@ -606,7 +604,6 @@ class TestAccumulatedRate(TransactionCase):
             "url_tfhka": "https://api.tfhka.com",
             "token_auth_tfhka": "old",
             "invoice_digital_tfhka": True,
-            "sequence_validation_tfhka": True,
         })
         def side_effect(url, *args, **kwargs):
             resp = MagicMock()
