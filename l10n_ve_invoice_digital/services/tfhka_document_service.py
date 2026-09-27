@@ -892,7 +892,18 @@ class TfhkaDocumentService(models.AbstractModel):
                     record, document_currency, ctx, line.price_subtotal
                 )
 
-                discount_factor = (line.discount or 0.0) / 100.0
+                # El % real de descuento puede venir de discount (%) o de
+                # discount_fixed (monto fijo, ver l10n_ve_invoice/models/
+                # account_move_line.py) -- ambas formas conviven, se decide
+                # por lo que la línea tenga cargado, no por la configuración
+                # de la compañía: _enforce_discount_exclusivity ya garantiza
+                # que una línea nunca tiene los dos a la vez.
+                discount_ratio = (
+                    line._get_exact_discount_percentage()
+                    if line.discount_fixed
+                    else (line.discount or 0.0)
+                )
+                discount_factor = discount_ratio / 100.0
                 unit_price = round(base_price, 2)
                 discount_unit = round(base_price * discount_factor, 2)
                 unit_price_discount = round(base_price - discount_unit, 2)
