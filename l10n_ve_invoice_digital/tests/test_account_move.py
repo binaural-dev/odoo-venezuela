@@ -1372,6 +1372,50 @@ class TestAccountMoveApiCalls(TransactionCase):
         details = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
         self.assertTrue(float(details[0]["descuentoMonto"]) > 0)
 
+    def test_49b_get_item_details_with_discount_fixed(self):
+        # discount_type='amount' es lo que permite escribir discount_fixed
+        # (_enforce_discount_exclusivity fuerza discount_fixed a 0 en modo
+        # 'percent'); la decisión de _prepare_detail_lines de cuál leer es
+        # por el valor de la línea, no por este ajuste de compañía.
+        self.company.discount_type = 'amount'
+        prod = self.env['product.product'].create({
+            'name': 'Prod Descuento Fijo',
+            'type': 'service',
+            'list_price': 100,
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": prod.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.invoice_line_ids[0].discount_fixed = 20
+        details = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
+        self.assertEqual(details[0]["descuentoMonto"], "20.0")
+        self.assertEqual(details[0]["precioUnitarioDescuento"], "80.0")
+        self.assertEqual(details[0]["precioAntesDescuento"], "100.0")
+        # precioItem sale de price_subtotal, que Odoo ya calcula neto del
+        # descuento fijo -- debe cuadrar con lo anterior.
+        self.assertEqual(details[0]["precioItem"], "80.0")
+
+    def test_49c_get_item_details_discount_fixed_ignores_company_config(self):
+        # Con discount_type='percent' (config normal) pero una línea que de
+        # todos modos trae discount_fixed cargado, _prepare_detail_lines
+        # debe usarlo igual -- la decisión es por el valor de la línea, no
+        # por la configuración de la compañía.
+        self.company.discount_type = 'amount'
+        prod = self.env['product.product'].create({
+            'name': 'Prod Descuento Fijo 2',
+            'type': 'service',
+            'list_price': 100,
+        })
+        invoice = self._create_invoice(
+            products=[{"product_id": prod.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.invoice_line_ids[0].discount_fixed = 20
+        # Cambiar el modo de la compañía DESPUÉS de cargar el descuento fijo
+        # en la línea -- _prepare_detail_lines no debe dejar de reconocerlo.
+        self.company.discount_type = 'percent'
+        details = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
+        self.assertEqual(details[0]["descuentoMonto"], "20.0")
+
     def test_50_compute_invisible_check_draft(self):
         inv = self.env["account.move"].create({
             "move_type": "out_invoice",
@@ -3062,6 +3106,113 @@ class TestAccountMoveApiCalls(TransactionCase):
         totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
         self.assertIn("formasPago", totals)
         self.assertEqual(totals["formasPago"][0]["forma"], code)
+
+    # ------------------------------------------------------------------
+    # formasPago: asiento manual (account.move) como forma de pago
+    # ------------------------------------------------------------------
+
+    def _create_manual_entry(self, amount=100.0, journal=None):
+        """Asiento contable manual balanceado (move_type='entry'), como el
+        que alguien usaría para registrar un pago sin pasar por
+        account.payment."""
+        journal = journal or self.cross_journal
+        entry = self.env['account.move'].create({
+            'move_type': 'entry',
+            'journal_id': journal.id,
+            'line_ids': [
+                Command.create({
+                    'account_id': self.acc_receivable.id,
+                    'debit': 0.0,
+                    'credit': amount,
+                }),
+                Command.create({
+                    'account_id': self.acc_income.id,
+                    'debit': amount,
+                    'credit': 0.0,
+                }),
+            ],
+        })
+        entry.action_post()
+        return entry
+
+    def test_182b_prepare_payments_with_manual_entry(self):
+        payment_method_tfhka = self.env['payment.method.tfhka'].create({
+            'code': 'MZ',
+            'description': 'Neteo Manual',
+        })
+        self.cross_journal.payment_method_code = payment_method_tfhka
+        entry = self._create_manual_entry(amount=50.0)
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.invoice_payments_widget = {"content": [{
+            "account_payment_id": False,
+            "move_id": entry.id,
+            "amount": 50.0,
+            "currency_id": self.currency_usd.id,
+        }]}
+        methods = self.env['tfhka.document.service']._prepare_payments(invoice)
+        self.assertEqual(len(methods), 1)
+        self.assertEqual(methods[0]["forma"], "MZ")
+        self.assertEqual(methods[0]["descripcion"], "Neteo Manual")
+        self.assertEqual(methods[0]["monto"], "50.0")
+
+    def test_182c_prepare_payments_excludes_other_invoice_netting(self):
+        # La contraparte conciliada es OTRA factura (netting entre
+        # documentos fiscales), no un asiento manual -- no debe reportarse
+        # como forma de pago.
+        other_invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 50, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.invoice_payments_widget = {"content": [{
+            "account_payment_id": False,
+            "move_id": other_invoice.id,
+            "amount": 50.0,
+            "currency_id": self.currency_usd.id,
+        }]}
+        methods = self.env['tfhka.document.service']._prepare_payments(invoice)
+        self.assertEqual(methods, [])
+
+    def test_182d_prepare_payments_excludes_exchange_difference(self):
+        # La conciliación multi-moneda genera automáticamente un asiento de
+        # diferencia de cambio (move_type='entry' también) -- el propio
+        # widget lo marca con is_exchange, y debe excluirse sin importar
+        # que sea un asiento manual válido en otros aspectos.
+        entry = self._create_manual_entry(amount=1.0)
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.invoice_payments_widget = {"content": [{
+            "account_payment_id": False,
+            "move_id": entry.id,
+            "amount": 1.0,
+            "currency_id": self.currency_usd.id,
+            "is_exchange": True,
+        }]}
+        methods = self.env['tfhka.document.service']._prepare_payments(invoice)
+        self.assertEqual(methods, [])
+
+    def test_182e_build_payment_info_from_move_foreign_currency(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        self.currency_vef.code_tfhka = "VES"
+        payment_method_tfhka = self.env['payment.method.tfhka'].create({
+            'code': 'MZ',
+            'description': 'Neteo Manual',
+        })
+        self.cross_journal.payment_method_code = payment_method_tfhka
+        entry = self._create_manual_entry(amount=50.0, journal=self.cross_journal)
+        entry.foreign_rate = 38.0
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        info = self.env['tfhka.document.service']._build_payment_info_from_move(
+            invoice, entry, {"amount": 50.0, "currency_id": self.currency_usd.id}
+        )
+        self.assertEqual(info["moneda"], "USD")
+        self.assertEqual(info["tipoCambio"], "38.0000")
 
     # ------------------------------------------------------------------
     # FacturaGuia: referencia a la guia de despacho de origen en el payload
