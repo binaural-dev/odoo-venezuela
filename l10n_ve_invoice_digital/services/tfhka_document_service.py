@@ -2,6 +2,7 @@ import logging
 import re
 
 from odoo import _, fields, models
+from odoo.tools import float_compare, float_is_zero
 
 from .tfhka_service_base import TfhkaDataError
 
@@ -676,15 +677,19 @@ class TfhkaDocumentService(models.AbstractModel):
         # pisa en 0 -- igual que el impuesto negativo aislado que ya se
         # omite en _prepare_tax_subtotals.
         untaxed = taxed_base + exempt_base
-        if exempt_base < 0:
+        precision = currency.rounding
+        if float_compare(exempt_base, 0.0, precision_rounding=precision) < 0:
             taxed_base += exempt_base
             exempt_base = 0.0
-        elif taxed_base < 0:
+        elif float_compare(taxed_base, 0.0, precision_rounding=precision) < 0:
             exempt_base += taxed_base
             taxed_base = 0.0
-        exempt_base = max(0.0, exempt_base)
-        taxed_base = max(0.0, taxed_base)
-        total_tax = max(0.0, total_tax)
+        if float_compare(exempt_base, 0.0, precision_rounding=precision) < 0:
+            exempt_base = 0.0
+        if float_compare(taxed_base, 0.0, precision_rounding=precision) < 0:
+            taxed_base = 0.0
+        if float_compare(total_tax, 0.0, precision_rounding=precision) < 0:
+            total_tax = 0.0
 
         discount = self._get_discount_amount(invoice, currency, ctx)
 
@@ -698,7 +703,7 @@ class TfhkaDocumentService(models.AbstractModel):
             "totalIVA": str(round(total_tax, 2)),
             "montoTotalConIVA": str(round(total_with_tax, 2)),
         }
-        if discount:
+        if not float_is_zero(discount, precision_rounding=precision):
             result["subtotalAntesDescuento"] = str(round(untaxed + discount, 2))
             result["totalDescuento"] = str(abs(round(discount, 2)))
         return result
@@ -831,7 +836,10 @@ class TfhkaDocumentService(models.AbstractModel):
             # (montoGravadoTotal/montoExentoTotal/totalIVA) se sanean aparte
             # en _build_amounts, que traslada el mismo sobrante entre buckets
             # para no alterar el neto (subtotal).
-            if base_amount < 0 or tax_amount < 0:
+            if (
+                float_compare(base_amount, 0.0, precision_rounding=currency.rounding) < 0
+                or float_compare(tax_amount, 0.0, precision_rounding=currency.rounding) < 0
+            ):
                 continue
             tax_subtotals.append({
                 "codigoTotalImp": TFHKA_TAX_CODE[group_name],
