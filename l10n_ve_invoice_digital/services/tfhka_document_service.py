@@ -981,7 +981,10 @@ class TfhkaDocumentService(models.AbstractModel):
         try:
             payment_data = []
             for record in invoice:
-                content_data = record.invoice_payments_widget.get("content", [])
+                # invoice_payments_widget es False cuando no hay nada
+                # conciliado (no un dict vacío) -- .get() directo sobre eso
+                # revienta.
+                content_data = (record.invoice_payments_widget or {}).get("content", [])
                 if content_data:
                     for item in content_data:
                         # La conciliación multi-moneda genera automáticamente
