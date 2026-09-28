@@ -132,21 +132,20 @@ class WizardAccountingReports(models.TransientModel):
         taxes = self._determinate_amount_taxeds(move)
         fields_retention_book_line = self._fields_sale_book_line(move, taxes)
 
+        for group in self._get_sale_book_field_groups():
+            for field in group.get("fields", []):
+                if (
+                    field.get("format") == "number"
+                    and field["field"] in fields_retention_book_line
+                ):
+                    fields_retention_book_line[field["field"]] = 0
+
         retention = retention_line.retention_id
         fields_retention_book_line.update(
             {
                 "document_date": self._format_date(retention.date),
                 "move_type": "RET",
                 "transaction_type": "04-REG",
-                "total_sales": 0,
-                "total_sales_iva": 0,
-                "total_sales_not_iva": 0,
-                "amount_reduced_aliquot": 0,
-                "amount_general_aliquot": 0,
-                "amount_extend_aliquot": 0,
-                "tax_base_reduced_aliquot": 0,
-                "tax_base_general_aliquot": 0,
-                "tax_base_extend_aliquot": 0,
                 "retention_date": self._format_date(retention.date),
                 "retention_number": retention.number or "--",
                 "iva_withheld": self._sum_retention_total(retention_line),
