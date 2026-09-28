@@ -4,6 +4,9 @@ from odoo import _, api, fields, models
 
 _logger = logging.getLogger(__name__)
 
+# Reasons that `stock.picking._compute_allowed_reason_ids` allows for internal transfers.
+INTERNAL_TRANSFER_REASON_CODES = ("consignment", "transfer", "other_causes")
+
 
 class ResCompany(models.Model):
     _inherit = "res.company"
@@ -44,5 +47,12 @@ class ResCompany(models.Model):
         string="Hide weight field in dispatch guide",
         default=False,
         help="If enabled, the weight field will be hidden in the dispatch guide.",
+    )
+
+    internal_transfer_reason_id = fields.Many2one(
+        "transfer.reason",
+        string="Default Internal Transfer Reason",
+        domain=[("code", "in", INTERNAL_TRANSFER_REASON_CODES)],
+        help="Reason prefilled on new internal transfers. It can be changed per transfer.",
     )
 
