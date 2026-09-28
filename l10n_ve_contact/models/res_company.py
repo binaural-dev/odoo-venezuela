@@ -1,5 +1,4 @@
 from odoo import models, fields, api, _
-from odoo.exceptions import UserError
 
 import logging
 
@@ -35,36 +34,6 @@ class ResCompany(models.Model):
         "SENIAT filings) show the correct literal instead of the Selection "
         "field's default.",
     )
-
-    prefix_vat_confirmed = fields.Boolean(
-        related="partner_id.prefix_vat_confirmed",
-        string="Prefix VAT confirmed",
-        readonly=False,
-        store=True,
-        help="Whether prefix_vat above was explicitly reviewed, as opposed "
-        "to sitting on the Selection field's untouched 'V' default. Fiscal "
-        "documents that print the company's RIF (retention voucher, "
-        "SENIAT/ISLR/municipal filings, ARCV) refuse to generate while "
-        "this is False.",
-    )
-
-    def _check_prefix_vat_confirmed_for_fiscal_documents(self):
-        """Raise if this company's RIF literal (prefix_vat) was never
-        confirmed. Called from every retention-document entry point
-        (comprobante, TXT SENIAT, XLSM ISLR, XLSX municipal, ARCV) instead
-        of silently emitting a document with an unconfirmed literal --
-        prefix_vat defaults to 'V', so an unconfirmed value looks like a
-        real RIF instead of a missing one."""
-        for company in self:
-            if not company.prefix_vat_confirmed:
-                raise UserError(_(
-                    "El literal del RIF (%(vat)s) de %(company)s no ha sido "
-                    "confirmado -- por defecto puede estar mostrando 'V' sin "
-                    "que nadie lo haya revisado. Vaya a Contabilidad > "
-                    "Configuración > Compañías, confirme el literal correcto "
-                    "(J/V/E/G/P/C) y marque 'Prefix VAT confirmed' antes de "
-                    "emitir este documento."
-                ) % {"vat": company.vat or "", "company": company.display_name})
 
 
     @api.model_create_multi
