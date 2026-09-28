@@ -28,11 +28,33 @@
       `l10n_ve_payment_extension`, escenario real de producción): 242
       tests, sin fallos
 
+## 3b. Corrección de code review (`test_31`)
+
+- [x] 3b.1 `test_31` restaurado a su versión con línea mixta
+      (positiva + descuento negativo bajo el mismo impuesto), usando un
+      producto de descuento (`company.sale_discount_product_id`) para
+      no chocar con `l10n_ve_invoice._check_price_in_zero`; la versión
+      de dos líneas positivas se conserva aparte como `test_31b`
+- [x] 3b.2 `_create_invoice` acepta un 4to elemento opcional por línea
+      (`product_id`) para permitir el producto de descuento
+- [x] 3b.3 Suite completa de `l10n_ve_accountant` corrida en contenedor
+      Docker (instancia `ti15412-test`, mount directo sobre este
+      checkout), base limpia, sin demo: 243 tests, sin fallos
+- [x] 3b.4 Misma suite corrida con `l10n_ve_invoice` instalado: 243
+      tests, sin fallos -- confirma que la línea de descuento no es
+      rechazada por `_check_price_in_zero`
+
 ## 4. OpenSpec
 
-- [x] 4.1 `proposal.md` + spec delta (`ADDED` - capability nueva)
+- [x] 4.1 `proposal.md` + spec delta (`MODIFIED` -- reemplaza el
+      requirement previo que documentaba esto como hallazgo sin
+      resolver)
 - [ ] 4.2 `openspec validate --changes` (no ejecutado: CLI `openspec`
       no disponible en este entorno)
+- [x] 4.3 Corrección de code review: change archivado en
+      `openspec/changes/archive/2026-09-28-<nombre>/` (convención de
+      #1383) en vez de `l10n_ve_accountant/openspec/changes/`, y
+      requirement fusionado en `openspec/specs/l10n_ve_accountant/spec.md`
 
 ## 5. Proceso
 
@@ -40,4 +62,4 @@
       redondeo por linea y bloqueo de retencion IVA proveedores` en la
       rama
       `maint-19.0-ti-15432-fix-block-iva-providers-view-and-raunding-taxes-method`
-- [ ] 5.2 Push a `origin` (pendiente de confirmación explícita)
+- [x] 5.2 Push a `origin` (PR #1390 abierto)

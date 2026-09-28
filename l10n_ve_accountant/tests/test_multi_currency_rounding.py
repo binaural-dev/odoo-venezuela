@@ -217,14 +217,14 @@ class TestMultiCurrencyRounding(TransactionCase):
             'pricelist_id': pl.id if pl else False,
             'invoice_line_ids': [
                 (0, 0, {
-                    'product_id': self.product.id,
+                    'product_id': (prod[0] if prod else self.product).id,
                     'name': f'L{i}',
                     'quantity': qty,
                     'price_unit': pu,
                     'account_id': line_account.id,
                     'tax_ids': [(6, 0, [t.id for t in taxes])],
                 })
-                for i, (qty, pu, taxes) in enumerate(lines_data)
+                for i, (qty, pu, taxes, *prod) in enumerate(lines_data)
             ],
         }])[0]
         inv.action_post()
@@ -1042,15 +1042,81 @@ class TestMultiCurrencyRounding(TransactionCase):
                     ),
                 )
 
-    def test_31_two_lines_same_tax_both_rounding_modes(self):
-        """Two lines sharing a tax must sum their per-line tax contributions correctly
-        in BOTH rounding modes. `round_per_line` sums per-line amounts via
-        `_per_line_tax_sums`; `round_globally` sums bases first via `_grouped_tax_sums` --
-        both must agree with the tax computed on the combined base.
+    def test_31_mixed_sign_lines_both_rounding_modes(self):
+        """A negative (discount) line sharing a tax with a positive line must NET OUT,
+        not add up as if both were positive -- in BOTH rounding modes. `round_per_line` had a
+        real `abs()` bug here (fixed via `_per_line_tax_sums` summing SIGNED per-line amounts);
+        `round_globally`'s `_vef_base_for_tax`/`_grouped_tax_sums` never used `abs()` so it was
+        never at risk, but is included for completeness/regression coverage.
 
-        No product/invoice line may ever carry a negative price -- not even to represent
-        a discount or adjustment (`l10n_ve_invoice._check_price_in_zero` enforces this for
-        real invoices), so this only exercises two ordinary positive lines."""
+        The negative line must be a recognized DISCOUNT line (`_get_discount_lines()`, keyed
+        off `company.sale_discount_product_id`) -- any OTHER negative-price line is rejected by
+        `l10n_ve_invoice._check_price_in_zero` when that module is installed (the real
+        production scenario, via `l10n_ve_payment_extension`), and `l10n_ve_accountant` already
+        depends on `sale`, so this discount product is always available."""
+        discount_product = self.env['product.product'].create({
+            'name': 'Descuento global',
+            'type': 'service',
+        })
+        self.company.sale_discount_product_id = discount_product
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 803.34,
+            "company_id": self.company.id,
+        })
+        for mode in ("round_per_line", "round_globally"):
+            with self.subTest(mode=mode):
+                self.company.tax_calculation_rounding_method = mode
+                # Line A: 11.16 USD (positive). Line B: a -4.16 USD
+                # discount on the SAME tax -- net base is 7.00 USD, net
+                # tax must reflect that, not `tax(11.16) + tax(-4.16)`
+                # miscomputed as `tax(11.16) + tax(4.16)`.
+                inv = self._create_invoice(self.currency_usd, None, [
+                    (1, 11.16, [self.tax_16]),
+                    (1, -4.16, [self.tax_16], discount_product),
+                ])
+                tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+                product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
+                net_base_usd = sum(product_lines.mapped('amount_currency'))
+                expected_tax_usd = self.currency_usd.round(abs(net_base_usd) * 0.16)
+                self.assertAlmostEqual(
+                    abs(tax_line.amount_currency), expected_tax_usd, places=2,
+                    msg=(
+                        f"[{mode}] With mixed-sign lines, "
+                        f"tax_line.amount_currency={tax_line.amount_currency} does not match "
+                        f"the netted base's tax ({expected_tax_usd}) -- looks like the negative "
+                        f"line's contribution was added instead of subtracted"
+                    ),
+                )
+                net_base_vef = sum(product_lines.mapped('balance'))
+                expected_tax_vef = self.currency_vef.round(abs(net_base_vef) * 0.16)
+                self.assertAlmostEqual(
+                    abs(tax_line.balance), expected_tax_vef, places=2,
+                    msg=(
+                        f"[{mode}] With mixed-sign lines, tax_line.balance={tax_line.balance} "
+                        f"(VEF) does not match the netted base's tax ({expected_tax_vef}) -- "
+                        f"looks like the negative line's contribution was added instead of "
+                        f"subtracted"
+                    ),
+                )
+                # `amount_tax` is in the document currency (USD), same as
+                # `amount_currency` -- NOT in VEF like `expected_tax_vef`.
+                self.assertAlmostEqual(
+                    abs(inv.amount_tax), abs(tax_line.amount_currency), places=2,
+                    msg=f"[{mode}] inv.amount_tax (widget total, USD) inconsistent with the posted tax line",
+                )
+
+    def test_31b_two_lines_same_tax_both_rounding_modes(self):
+        """Two ordinary positive lines sharing a tax must sum their per-line tax
+        contributions correctly in BOTH rounding modes. `round_per_line` sums per-line
+        amounts via `_per_line_tax_sums`; `round_globally` sums bases first via
+        `_grouped_tax_sums` -- both must agree with the tax computed on the combined base.
+        Complements `test_31`'s mixed-sign/discount-line coverage with the common case."""
         self.env["res.currency.rate"].search([
             ("currency_id", "=", self.currency_usd.id),
             ("company_id", "=", self.company.id),

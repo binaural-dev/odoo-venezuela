@@ -26,6 +26,11 @@
 - [x] 4.1 `proposal.md` + spec delta (`ADDED` - capability nueva)
 - [ ] 4.2 `openspec validate --changes` (no ejecutado: CLI `openspec`
       no disponible en este entorno)
+- [x] 4.3 Corrección de code review: change archivado en
+      `openspec/changes/archive/2026-09-28-<nombre>/` (convención de
+      #1383) en vez de `l10n_ve_payment_extension/openspec/changes/`, y
+      requirement fusionado en
+      `openspec/specs/l10n_ve_payment_extension/spec.md`
 
 ## 5. Proceso
 
@@ -33,4 +38,4 @@
       redondeo por linea y bloqueo de retencion IVA proveedores` en la
       rama
       `maint-19.0-ti-15432-fix-block-iva-providers-view-and-raunding-taxes-method`
-- [ ] 5.2 Push a `origin` (pendiente de confirmación explícita)
+- [x] 5.2 Push a `origin` (PR #1390 abierto)

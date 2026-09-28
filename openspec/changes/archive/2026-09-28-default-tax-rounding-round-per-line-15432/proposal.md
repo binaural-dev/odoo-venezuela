@@ -29,16 +29,31 @@ a mano en Configuración cada vez.
     una compañía nueva desde cero y verifica el default, sin depender
     de `self.company` (la compañía principal del fixture, que no
     refleja el nuevo default por la razón de alcance de arriba).
+  - `test_31`: restaurado a su versión original (línea negativa de
+    descuento mezclada con una positiva bajo el mismo impuesto), que se
+    había reemplazado por error en el primer commit de este cierre por
+    una versión de dos líneas positivas -- perdiendo la cobertura de
+    regresión del bug real de `abs()` en `_per_line_tax_sums`. La línea
+    negativa ahora usa un producto de descuento reconocido
+    (`company.sale_discount_product_id`, vía `_get_discount_lines()`),
+    para no chocar con `l10n_ve_invoice._check_price_in_zero` cuando ese
+    módulo está instalado (escenario real de producción). La versión de
+    dos líneas positivas se conserva como test aparte
+    (`test_31b_two_lines_same_tax_both_rounding_modes`).
 
 ## Impact
 
-- **Capability**: `default-tax-rounding-round-per-line` (nueva).
+- **Requirement**: reemplaza (`MODIFIED`) el requirement existente
+  `round_per_line` es la configuración esperada para compañías
+  venezolanas (hallazgo de configuración, no implementado)`, que
+  documentaba esto como un hallazgo pendiente -- con este cierre queda
+  implementado para compañías nuevas.
 - **Módulo**: `l10n_ve_accountant`.
 - **Riesgo**: bajo. Cambio de un solo `default=` en un campo
   `Selection` ya existente; no toca lógica de cálculo ni datos
   existentes.
-- **Verificado**: suite completa de `l10n_ve_accountant` (242 tests)
-  corrida en contenedor Docker sobre base limpia (`--without-demo=True`),
-  incluyendo con `l10n_ve_invoice` instalado (vía
-  `l10n_ve_payment_extension`, escenario real de producción) - sin
-  fallos.
+- **Verificado**: suite completa de `l10n_ve_accountant` (243 tests,
+  antes 242 -- neto +1 por el split de `test_31`/`test_31b`) corrida en
+  contenedor Docker sobre base limpia (`--without-demo=True`), tanto sin
+  como con `l10n_ve_invoice` instalado (vía `l10n_ve_payment_extension`,
+  escenario real de producción) - sin fallos en ningún caso.
