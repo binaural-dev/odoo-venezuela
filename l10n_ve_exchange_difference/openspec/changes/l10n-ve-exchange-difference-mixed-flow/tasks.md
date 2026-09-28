@@ -83,3 +83,17 @@
 - [x] 7.3 Test que ejercita el método real
       `_check_l10n_ve_exchange_debit_journal_sequences` (no solo su query
       interna) para justificar el `.sudo()` de 3.1
+
+## 8. Ajuste post-implementación (tarea 82677)
+
+- [x] 8.1 `domain` de `l10n_ve_exchange_note_product_id` (`res_company.py`)
+      ahora filtra por tipo Servicio + impuesto exento de venta
+      (`exent_aliquot_sale`) + impuesto exento de compra
+      (`exent_aliquot_purchase`) -- declarado como STRING para poder
+      referenciar esos dos campos de la propia compañía (Odoo solo evalúa
+      esa forma del lado del cliente)
+- [x] 8.2 Help de `res.partner.l10n_ve_exchange_allow_note` simplificado;
+      `i18n/es_VE.po` actualizado con el nuevo `msgid`/`msgstr`
+- [x] 8.3 Test nuevo `test_exchange_note_product_domain.py`: filtra
+      correctamente con ambos impuestos configurados, y no muestra ningún
+      producto si falta cualquiera de los dos (venta o compra)

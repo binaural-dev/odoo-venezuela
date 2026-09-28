@@ -383,6 +383,32 @@ contrario, para no exponer una opción sin efecto.
 - **THEN** se emite la ND/NC fiscal real, sin importar `l10n_ve_exchange_allow_note`
   del cliente
 
+### Requirement: El selector del Producto de Nota de Diferencial solo ofrece candidatos compatibles
+
+El `domain` de `res.company.l10n_ve_exchange_note_product_id` SHALL restringir
+el selector a productos de tipo Servicio cuyo impuesto de venta sea el exento
+por defecto (`exent_aliquot_sale`) Y cuyo impuesto de compra sea el exento
+por defecto (`exent_aliquot_purchase`), ambos de `l10n_ve_accountant`. Si
+cualquiera de los dos impuestos exentos no está configurado en la compañía,
+el selector SHALL NOT ofrecer ningún producto.
+
+Esta restricción es solo de UI (el `domain` está declarado como string,
+evaluado únicamente del lado del cliente web) -- no reemplaza la validación
+real de `_check_l10n_ve_exchange_note_product_id`, que sigue aplicando sobre
+cualquier valor asignado por otra vía (ORM directo, API).
+
+#### Scenario: Ambos impuestos exentos configurados
+
+- **GIVEN** la compañía tiene `exent_aliquot_sale` y `exent_aliquot_purchase` configurados
+- **WHEN** se abre el selector de `l10n_ve_exchange_note_product_id`
+- **THEN** solo aparecen productos de tipo Servicio con AMBOS impuestos asignados
+
+#### Scenario: Falta uno de los dos impuestos exentos
+
+- **GIVEN** la compañía NO tiene `exent_aliquot_purchase` configurado (o le falta `exent_aliquot_sale`)
+- **WHEN** se abre el selector de `l10n_ve_exchange_note_product_id`
+- **THEN** el selector no ofrece ningún producto, sin importar cuántos productos de tipo Servicio existan
+
 ### Requirement: El widget de Conciliación Bancaria de Enterprise queda fuera de alcance a propósito
 
 El sistema SHALL NOT generar ND/NC cuando la conciliación de una factura de
