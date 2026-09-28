@@ -34,19 +34,36 @@ Cuando la compañía activa `group_sales_invoicing_series`, el número de contro
 - **WHEN** el diario tiene su secuencia de serie configurada
 - **THEN** el número de control se toma de esa secuencia
 
-### Requirement: Unicidad del número de control en ventas y compras
+### Requirement: Unicidad del número de control en ventas
 
-El sistema DEBE (MUST) impedir que un documento de venta o compra (`out_invoice`/`out_refund`/`in_invoice`/`in_refund`) de un diario no de contingencia lleve un `correlative` que ya use otro documento **publicado** del mismo tipo de operación de la misma compañía (constraint `_check_correlative`). La validación se aplica cualquiera sea el estado del documento que se guarda: solo el documento con el que se compara debe estar en `posted`. La unicidad se valida a nivel de `company_id`, sin distinguir por proveedor/cliente.
+El sistema DEBE (MUST) impedir que un documento de venta (`out_invoice`/`out_refund`) de un diario no de contingencia lleve un `correlative` que ya use otro documento de venta **publicado** de la misma compañía (constraint `_check_correlative`). La validación se aplica cualquiera sea el estado del documento que se guarda: solo el documento con el que se compara debe estar en `posted`.
+
+La misma constraint también DEBE (MUST) impedir que un documento de compra (`in_invoice`/`in_refund`) lleve un `correlative` (número de control asignado por el proveedor) que ya use otro documento de compra **publicado** del mismo proveedor comercial (`commercial_partner_id`) de la misma compañía. A diferencia de ventas, donde el `correlative` es la numeración fiscal propia de la compañía y la unicidad se valida a nivel de `company_id`, en compras cada proveedor asigna su propia numeración, por lo que la unicidad se valida por `(company_id, commercial_partner_id, correlative)`. Ventas y compras se validan por separado: un mismo `correlative` puede coincidir entre una factura de venta y una de compra sin conflicto.
 
 #### Scenario: Número de control repetido
 
-- **WHEN** se guarda una factura cuyo `correlative` ya está en uso por otra factura publicada de la compañía
+- **WHEN** se guarda una factura de venta cuyo `correlative` ya está en uso por otra factura publicada de la compañía
 - **THEN** se lanza un error de validación indicando el número y la factura que lo usa
 
 #### Scenario: Duplicado contra un borrador
 
 - **WHEN** el `correlative` solo coincide con el de otro documento en borrador
 - **THEN** el guardado se permite
+
+#### Scenario: Número de control de proveedor repetido
+
+- **WHEN** se guarda una factura de proveedor cuyo `correlative` ya está en uso por otra factura publicada del mismo proveedor comercial
+- **THEN** se lanza un error de validación indicando el número y la factura que lo usa
+
+#### Scenario: Mismo número de control, proveedores distintos
+
+- **WHEN** dos facturas de proveedores distintos comparten el mismo `correlative`
+- **THEN** el guardado se permite, pues la unicidad se valida por proveedor
+
+#### Scenario: Mismo número de control entre venta y compra
+
+- **WHEN** una factura de venta y una factura de proveedor comparten el mismo `correlative`
+- **THEN** el guardado se permite en ambas, pues la validación de ventas y compras es independiente
 
 ### Requirement: Correlativo en diarios de contingencia
 
