@@ -212,15 +212,31 @@ línea — nunca recalculando por multiplicación de tasa.
 El sistema SHALL invertir `foreign_debit`/`foreign_credit` en el asiento de
 reversión, exactamente igual a como Odoo invierte `balance`/`amount_currency`
 — core no tiene conocimiento de estos campos propios y por defecto no los
-toca, dejando la reversión sin cancelar el monto alterno original.
+toca, dejando la reversión sin cancelar el monto alterno original. Esto
+SHALL aplicar únicamente a los asientos propios de esta funcionalidad
+(`l10n_ve_exchange_foreign_diff_entry=True`); la reversión de facturas,
+notas de crédito y asientos manuales SHALL seguir su cálculo `foreign_*`
+normal, sin intervención de este override.
 
 #### Scenario: Revertir un asiento standalone o combinado
 
-- **GIVEN** un asiento de diferencial alterno con `foreign_debit`/
-  `foreign_credit` en sus líneas
+- **GIVEN** un asiento de diferencial alterno (`l10n_ve_exchange_foreign_diff_entry=True`)
+  con `foreign_debit`/`foreign_credit` en sus líneas
 - **WHEN** se revierte (`_reverse_moves`, cualquier camino)
 - **THEN** el asiento de reversión SHALL tener esos campos exactamente
-  invertidos línea por línea, no en cero ni duplicados con el mismo signo
+  invertidos línea por línea (emparejados por `id`, no por posición), no en
+  cero ni duplicados con el mismo signo
+
+#### Scenario: Revertir una nota de crédito con impuesto no toca el monto alterno
+
+- **GIVEN** una factura en moneda de compañía con impuesto, publicada con
+  diferencial alterno activo
+- **WHEN** se revierte con el asistente de notas de crédito
+  (`account.move.reversal`)
+- **THEN** el override SHALL NOT modificar `foreign_debit`/`foreign_credit`
+  de la NC — el core regenera el orden de sus líneas de forma distinta a la
+  factura, así que emparejar por posición cruzaría línea de impuesto con
+  línea por cobrar/pagar y descuadraría el monto alterno
 
 ### Requirement: La reversión tiene una red de seguridad propia
 
@@ -280,3 +296,37 @@ filtro sigue apareciendo como si la liquidación siguiera activa.
 - **GIVEN** una factura con un asiento standalone ya revertido
 - **WHEN** se abre la factura o "Reconciled Items"
 - **THEN** el sistema SHALL NOT mostrar ninguna fila ni línea de ese asiento
+
+### Requirement: La simulación del wizard de conciliación no encola asientos
+
+Cuando `_prepare_reconciliation_single_partial` recibe `shadowed_aml_values`
+(usado por el asistente de conciliación de Enterprise para previsualizar
+residuales en cada recálculo de la pantalla, antes de confirmar nada), el
+sistema SHALL NOT encolar ningún asiento standalone ni mutar los valores del
+asiento nativo — esa llamada es una simulación descartable, no una
+conciliación real.
+
+#### Scenario: Recalcular el wizard de conciliación con diferencia de tasa
+
+- **GIVEN** dos líneas con diferencia de tasa en moneda alterna, evaluadas
+  por el wizard de conciliación de Enterprise con `shadowed_aml_values`
+- **WHEN** el wizard recalcula sus campos para pintar la pantalla
+- **THEN** el sistema SHALL NOT encolar ningún asiento standalone para esa
+  combinación
+
+### Requirement: Sin partial de liquidación real, no se crea el asiento standalone
+
+Si al momento de crear el asiento standalone encolado no existe un
+`account.partial.reconcile` real que lo respalde (por ejemplo, quedó
+encolado desde una previsualización que el usuario no confirmó tal cual),
+el sistema SHALL NOT crear ni postear ese asiento — sin un partial no hay
+forma de enganchar `exchange_move_id` para que se revierta solo, y postearlo
+igual dejaría un asiento contable huérfano y permanente.
+
+#### Scenario: El descriptor encolado no corresponde a ninguna liquidación real
+
+- **GIVEN** un descriptor en la cola de asientos standalone cuyas líneas ya
+  no forman parte de ningún `account.partial.reconcile`
+- **WHEN** `_create_exchange_difference_moves` vacía la cola
+- **THEN** el sistema SHALL NOT crear el asiento para ese descriptor
+- **AND** SHALL registrar un warning en el log

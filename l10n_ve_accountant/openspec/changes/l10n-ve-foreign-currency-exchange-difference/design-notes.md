@@ -107,6 +107,18 @@ Se engancha en `_prepare_reconciliation_single_partial` (corre en cada
 partial, a diferencia de `_prepare_exchange_difference_move_vals`, que corre
 una vez por asiento). Reglas:
 
+- Honra `shadowed_aml_values`: el asistente de conciliación de Enterprise
+  (`account_accountant`, `_compute_reco_wizard_data`) llama a este mismo
+  método con `shadowed_aml_values` para simular residuales en cada
+  recálculo de la pantalla (cada vez que el usuario cambia una selección),
+  ANTES de que se confirme nada. El camino real de conciliación
+  (`_reconcile_plan_with_sync`) nunca pasa ese parámetro, así que sirve
+  como señal confiable de "esto es un preview". Si viene seteado, se
+  devuelve `res` sin encolar el asiento standalone ni mutar
+  `exchange_values` — de lo contrario, una simulación que el usuario nunca
+  confirma tal cual puede terminar posteando igual un asiento real cuando
+  el flujo real vacía la cola (`_create_exchange_difference_moves`), sin
+  que corresponda a ninguna conciliación efectivamente hecha.
 - Honra `no_exchange_difference`/`no_exchange_difference_no_recursive`: si
   el propio core suprime su lógica bajo ese contexto (p. ej. al cerrar la
   línea receivable del propio asiento de diferencial), un `exchange_values`
@@ -143,6 +155,22 @@ una vez por asiento). Reglas:
   de residual antes/después: sin ninguna corrección de por medio, ambos
   lados liquidan el mismo principal exacto, sin asimetría que misatribuir.
 
+## § _create_standalone_foreign_exchange_difference_entry — sin partial, no se crea
+
+`_find_settlement_partial` puede no encontrar el `account.partial.reconcile`
+al que un descriptor encolado correspondía: por ejemplo, si quedó una
+entrada residual de un preview del wizard de Enterprise (ver guard de
+`shadowed_aml_values` arriba) que sobrevivió porque el usuario terminó
+confirmando una liquidación distinta a la simulada. Sin `partial`, no hay
+dónde enganchar `exchange_move_id` — el campo que le permite a core revertir
+este asiento automáticamente si la conciliación se deshace después.
+
+Postear el asiento de todos modos (como hacía antes, dejando solo un
+`_logger.warning`) deja un asiento contable real y permanente sin ninguna
+liquidación real detrás, y sin forma de limpiarse solo. El fix es no crear
+el asiento en ese caso: se loguea el warning y se devuelve un recordset
+vacío en vez de `move`.
+
 ## § open_reconcile_view (Reconciled Items)
 
 El `open_reconcile_view` del core solo incluye líneas con
@@ -172,15 +200,36 @@ Core revierte negando `balance`/`amount_currency`, pero no sabe nada de
 `foreign_debit`/`foreign_credit` (campos propios de este módulo) — sin este
 fix, esos campos quedaban en 0/0 (duplicados sin invertir, según el caso) en
 vez de invertidos. El fix intercambia `foreign_debit`↔`foreign_credit` línea
-por línea, emparejando posicionalmente contra el original (`zip(original.
-line_ids, reversal.line_ids)` — el orden de `line_ids` del asiento de
-reversión replica exactamente el del original, generado por
-`_reverse_moves` del core línea por línea).
+por línea.
 
 Sin este fix, revertir un asiento de diferencial alterno (standalone o
 combinado) dejaba su registro en moneda alterna desbalanceado
 permanentemente, aunque el asiento en VEF sí quedara correctamente revertido
 — un hueco silencioso, ya que nada en el asiento de VEF delata el problema.
+
+**Regresión encontrada en code review (post-QA) y corregida:** la primera
+versión emparejaba las líneas posicionalmente (`zip(original.line_ids,
+reversal.line_ids)`) y corría para CUALQUIER reversión, no solo la de los
+asientos de esta funcionalidad. Servía para el asiento de diferencial alterno
+(donde el core sí replica el orden 1:1), pero al ejecutarse también sobre
+facturas y notas de crédito rompía esas otras: `account.move.copy_data`
+(core) copia solo los comandos CREATE de las líneas de producto al invertir
+una factura en nota de crédito, y las líneas de impuesto/término de pago se
+regeneran en otro orden — la factura queda `['product', 'tax',
+'payment_term']` y la NC `['product', 'payment_term', 'tax']`. El
+emparejamiento posicional cruzaba línea de impuesto con línea por
+cobrar/pagar y descuadraba `foreign_debit`/`foreign_credit` en cualquier NC
+con impuesto, aunque el toggle `l10n_ve_use_foreign_exchange_diff` estuviera
+apagado. También alteraba la reversión de asientos manuales (tomaba la tasa
+alterna original en vez de recalcular a la tasa de la fecha de reversión).
+
+El fix definitivo restringe el override a los asientos propios de la
+funcionalidad (`l10n_ve_exchange_foreign_diff_entry=True` — viven en el
+diario de diferencial, el core los copia 1:1, y nada más en este módulo les
+recalcula `foreign_*`) y empareja por `id` (`sorted('id')`) en vez de por
+posición, para no depender de que el orden de `line_ids` sobreviva un cambio
+futuro del core. Test de regresión:
+`test_credit_note_with_tax_stays_balanced_in_alternate_currency`.
 
 ## § _get_all_reconciled_invoice_partials — fila sintética en el widget de Pagos
 
@@ -205,6 +254,14 @@ liquidación que rastreaba ya no existe — debe dejar de aparecer en el
 widget de Pagos en el momento en que se revierte (antes de este fix, la
 nota "Diferencial de cambio" seguía apareciendo en la factura después de
 desconciliar, aunque el asiento ya estuviera revertido).
+
+**Sin `sudo()`** en la búsqueda del asiento standalone: quien llega hasta
+acá ya tiene acceso de lectura a la factura (`self`), y las reglas propias
+del core (`account_move_comp_rule`, restringida a `company_id in
+company_ids`, más `account_move_rule_group_invoice`/`account_move_see_all`,
+que dan a cualquier usuario de Facturación/Contabilidad lectura total sobre
+los asientos de su compañía) ya cubren este caso — no hay un ACL más
+angosto que este `search()` estuviera saltándose.
 
 ## § account_partial_reconcile.unlink() — red de seguridad
 
