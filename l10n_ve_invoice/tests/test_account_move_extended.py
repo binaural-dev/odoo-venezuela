@@ -557,6 +557,38 @@ class TestAccountMoveExtended(TransactionCase):
                 "vendor bills"
             )
 
+    def test_correlative_not_duplicated_across_sale_and_purchase(self):
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": self.journal_sale.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
+                "correlative": "00063",
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 100,
+                        },
+                    )
+                ],
+            }
+        )
+        invoice.action_post()
+
+        try:
+            self._create_vendor_bill(self.partner, "00063", post=True)
+        except ValidationError:
+            self.fail(
+                "_check_correlative() must not consider a sale invoice and "
+                "a vendor bill sharing the same correlative as duplicates"
+            )
+
     # --- is_valid_to_sequence ---
 
     def test_is_valid_to_sequence_sale_no_correlative(self):

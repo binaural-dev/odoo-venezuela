@@ -1239,6 +1239,7 @@ class TestIGTFNEW(IGTFTestCommon):
 
     def test14_payment_from_invoice_with_igtf_journal_paiment_multi_invoice(self):
 
+
         invoice_amount = float(2691.20)
         expected_igtf = 80.736
 

@@ -93,7 +93,7 @@ class AccountMoveLine(models.Model):
 
 
     def action_register_payment(self):
-        """ 
+        """
         # 1. Validate Unique Partner
         # 2. Validate Unique Currency
         # 3. Optional: Validate Unique Company (Best practice for Multi-company)
@@ -104,16 +104,16 @@ class AccountMoveLine(models.Model):
             raise UserError(_("You cannot register payments for different partners at the same time. "
                               "Please select invoices belonging to a single contact."))
 
-       
+
         currencies = self.mapped('move_id.currency_id')
         if len(currencies) > 1:
             raise UserError(_("You cannot register payments with multiple currencies. "
                               "All selected invoices must have the same currency."))
-        
-        
+
+
         companies = self.mapped('move_id.company_id')
         if len(companies) > 1:
             raise UserError(_("You cannot register payments for different companies at the same time."))
 
-        
+
         return super(AccountMoveLine, self).action_register_payment()
