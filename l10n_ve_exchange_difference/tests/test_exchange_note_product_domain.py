@@ -110,6 +110,21 @@ class TestExchangeNoteProductDomain(TransactionCase):
         self.assertIn("taxes_id", field.domain)
         self.assertIn("supplier_taxes_id", field.domain)
 
+    def test_config_settings_domain_matches_company(self):
+        """El selector real que ve el usuario es
+        `res.config.settings.l10n_ve_exchange_note_product_id`, un
+        `related='company_id...'` -- Odoo NO propaga un domain string de
+        un related a menos que el propio campo lo declare explícito
+        (`_related_domain`, `odoo/orm/fields_relational.py`: descarta
+        cualquier domain de tipo string salvo que el campo sea
+        `inherited`). Si este test fallara, el selector de Ajustes
+        quedaría sin ningún filtro (regresión detectada en la revisión
+        de este PR)."""
+        company_field = self.env["res.company"]._fields["l10n_ve_exchange_note_product_id"]
+        settings_field = self.env["res.config.settings"]._fields["l10n_ve_exchange_note_product_id"]
+        self.assertIsInstance(settings_field.domain, str, "El related debe declarar su propio domain string")
+        self.assertEqual(settings_field.domain, company_field.domain)
+
     def test_domain_filters_correctly_when_taxes_configured(self):
         domain = self._eval_client_domain(self.company)
         expected = [

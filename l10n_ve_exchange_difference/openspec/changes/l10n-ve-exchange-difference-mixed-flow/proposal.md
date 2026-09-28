@@ -91,6 +91,19 @@ la tarea 81554 de este mismo change.
    simplificó -- ya no repite la mecánica del toggle de compañía (eso ya lo
    explica el propio ajuste de compañía), solo el efecto directo sobre las
    facturas del cliente.
+3. **Fix de revisión (mismo PR)**: el `domain` del punto 1 se había
+   declarado solo en `res.company.l10n_ve_exchange_note_product_id`. El
+   selector real que ve el usuario en Ajustes es
+   `res.config.settings.l10n_ve_exchange_note_product_id`, un
+   `related='company_id...'` sin `domain` propio -- y en Odoo 19 un related
+   NO hereda un `domain` de tipo string de su campo de origen
+   (`_related_domain`, `odoo/orm/fields_relational.py`: lo descarta salvo
+   que el campo sea `inherited`). El selector de Ajustes quedaba sin ningún
+   filtro (regresión detectada en la revisión de `pastor-binaural`). Fix:
+   se declaró el mismo `domain` string, explícito, en el related de
+   `res_config_settings.py`. Test nuevo que compara ambos domains
+   (`res.company` y `res.config.settings`) para que no vuelva a
+   desincronizarse en silencio.
 
 ## Impact
 
