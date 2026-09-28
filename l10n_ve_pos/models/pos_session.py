@@ -140,15 +140,25 @@ class PosSession(models.Model):
 
         Every move is created in ``state="draft"`` (see ``_create_cross_move``)
         — accounting reviews and posts it manually.
+
+        Cash methods go through ``use_suspense=True`` (see
+        ``_cross_move_uses_suspense``), which is what makes their move run
+        between the two journals' suspense accounts.
         """
         for session in self:
             payments = session.order_ids.payment_ids.filtered(
-                lambda p: session._is_cross_move_eligible(p.payment_method_id)
+                lambda p: session._is_cross_move_eligible(
+                    p.payment_method_id,
+                    use_suspense=session._cross_move_uses_suspense(
+                        p.payment_method_id
+                    ),
+                )
             )
             for payment_method in payments.payment_method_id:
                 method_payments = payments.filtered(
                     lambda p: p.payment_method_id == payment_method
                 )
+                use_suspense = session._cross_move_uses_suspense(payment_method)
                 if payment_method.split_transactions:
                     for payment in method_payments:
                         session._create_cross_move_for(
@@ -159,6 +169,7 @@ class PosSession(models.Model):
                             partner=payment.partner_id,
                             date=payment.create_date,
                             ref=session._cross_move_ref(payment),
+                            use_suspense=use_suspense,
                         )
                     continue
 
@@ -179,7 +190,35 @@ class PosSession(models.Model):
                     partner=session.env["res.partner"],
                     date=session.stop_at or fields.Datetime.now(),
                     ref=session._cross_move_ref(),
+                    use_suspense=use_suspense,
                 )
+
+    def _cross_move_uses_suspense(self, payment_method):
+        """Whether the SALE cross move of ``payment_method`` runs between the
+        two journals' suspense accounts ("Cuenta transitoria").
+
+        Cash methods do. The cash a session takes in leaves the POS journal's
+        own account through the **cash out the cashier registers when closing**
+        — native ``try_cash_in_out`` credits ``journal_id.default_account_id``
+        and parks the amount in ``journal_id.suspense_account_id``. So that
+        account is already balanced without the cross move; draining it here
+        as well credited it twice and left both suspense accounts loaded with
+        nothing to offset them. Routing the sale through ``use_suspense=True``
+        instead debits the method journal's suspense account and credits the
+        ``cross_journal``'s, which is what nets the sale against what the cash
+        out parked there.
+
+        Bank methods keep the previous behaviour (``outstanding_account_id``
+        → the ``cross_journal``'s real liquidity account): no cash out takes
+        their balance out of the outstanding account.
+
+        This only covers the sale path. Callers outside ``_validate_cross_move``
+        pass their own flag: cash in/out (``binaural_pos_close``) already used
+        ``use_suspense=True``, and opening/closing differences
+        (``_post_foreign_statement_difference``) still land on the real
+        liquidity account.
+        """
+        return payment_method.type == "cash"
 
     def _is_cross_move_eligible(self, payment_method, use_suspense=False):
         """Whether ``payment_method`` takes part in the automatic cross move.
@@ -195,6 +234,17 @@ class PosSession(models.Model):
         configuration is incomplete, not wrong. ``use_suspense`` must match
         whatever will be passed to ``_create_cross_move_for`` — see
         ``_get_cross_transitory_account``.
+
+        Under ``use_suspense=True`` BOTH legs come from a journal's
+        ``suspense_account_id``, and either can be empty. An empty destination
+        is not a harmless skip: ``_get_cross_real_account`` returns an empty
+        recordset, the line is built with ``account_id = False`` and the
+        insert violates ``account_move_line_check_accountable_required_fields``
+        — inside ``action_pos_session_close``, so it would take the session
+        close down with it. Hence the explicit check on the destination too.
+        (The ``use_suspense=False`` branch has the same latent hole on
+        ``cross_journal``'s payment method lines; left as is, out of the scope
+        of this change.)
         """
         return bool(
             payment_method.is_foreign_currency
@@ -202,6 +252,12 @@ class PosSession(models.Model):
             and payment_method.cross_account_journal
             and payment_method.cross_journal
             and self._get_cross_transitory_account(payment_method, use_suspense=use_suspense)
+            and (
+                not use_suspense
+                or self._get_cross_real_account(
+                    payment_method, outbound=False, use_suspense=True
+                )
+            )
         )
 
     def _get_cross_transitory_account(self, payment_method, use_suspense=False):
@@ -210,7 +266,7 @@ class PosSession(models.Model):
         Which account that is depends on *what created the balance being
         cleared*, not just the payment method type:
 
-        - ``use_suspense=False`` (sales, opening/closing differences): the
+        - ``use_suspense=False`` (bank sales, opening/closing differences): the
           account where native Odoo parked the money once the session
           closed / the difference was posted.
 
@@ -236,8 +292,9 @@ class PosSession(models.Model):
           than an ``account_move_line_check_accountable_required_fields``
           violation from a NULL ``account_id``.
 
-        - ``use_suspense=True`` (plain cash in/out, ``binaural_pos_close``'s
-          ``try_cash_in_out``): that flow never sets an explicit
+        - ``use_suspense=True`` (cash sales — see
+          ``_cross_move_uses_suspense`` — and plain cash in/out,
+          ``binaural_pos_close``'s ``try_cash_in_out``): that flow never sets an explicit
           ``counterpart_account_id``, so native
           ``_prepare_move_line_default_vals`` falls back to
           ``journal_id.suspense_account_id`` — Odoo's own "Cuenta
@@ -263,12 +320,12 @@ class PosSession(models.Model):
     def _get_cross_real_account(self, payment_method, outbound, use_suspense=False):
         """Return the ``cross_journal`` account that receives/gives the value.
 
-        ``use_suspense=False`` (sales, opening/closing differences): the
+        ``use_suspense=False`` (bank sales, opening/closing differences): the
         journal's own inbound/outbound payment method line account — the
         confirmed liquidity account, same as the native ``account.payment``/
         bank pipeline would use.
 
-        ``use_suspense=True`` (cash in/out, ``binaural_pos_close``): lands in
+        ``use_suspense=True`` (cash sales and cash in/out): lands in
         ``cross_journal.suspense_account_id`` instead — pending an actual
         bank statement to reconcile it, the same "not yet confirmed"
         treatment already applied to the origin leg (see
@@ -343,7 +400,7 @@ class PosSession(models.Model):
                     "account_id": transitory_account,
                     "partner_id": partner.id,
                     "amount_currency": -foreign_amount
-                    if self.env.company.currency_id == self.foreign_currency_id
+                    if self.company_id.currency_id == self.foreign_currency_id
                     else -amount,
                     "debit": 0.0,
                     "foreign_debit": 0.0,
@@ -351,7 +408,7 @@ class PosSession(models.Model):
                     "foreign_credit": foreign_amount,
                     "not_foreign_recalculate": True,
                     "foreign_rate": foreign_rate,
-                    "currency_id": self.env.company.currency_id.id,
+                    "currency_id": self.company_id.currency_id.id,
                 }
             ),
         ]
@@ -383,7 +440,7 @@ class PosSession(models.Model):
                     "account_id": transitory_account,
                     "partner_id": partner.id,
                     "amount_currency": abs(foreign_amount)
-                    if self.env.company.currency_id == self.foreign_currency_id
+                    if self.company_id.currency_id == self.foreign_currency_id
                     else abs(amount),
                     "credit": 0.0,
                     "foreign_credit": 0.0,
@@ -391,7 +448,7 @@ class PosSession(models.Model):
                     "foreign_debit": abs(foreign_amount),
                     "not_foreign_recalculate": True,
                     "foreign_rate": foreign_rate,
-                    "currency_id": self.env.company.currency_id.id,
+                    "currency_id": self.company_id.currency_id.id,
                 }
             ),
             Command.create(
@@ -476,8 +533,8 @@ class PosSession(models.Model):
         outweigh its sales yields a single outgoing move — the branch the
         legacy combine path never had.
 
-        ``use_suspense=True`` (only ``binaural_pos_close``'s plain cash
-        in/out) clears ``journal_id.suspense_account_id`` instead of
+        ``use_suspense=True`` (cash sales and ``binaural_pos_close``'s plain
+        cash in/out) clears ``journal_id.suspense_account_id`` instead of
         ``default_account_id`` — see ``_get_cross_transitory_account``. That
         account carries the OPPOSITE native polarity from
         ``default_account_id`` for the same movement (a balanced 2-line

@@ -79,6 +79,14 @@ desde la interfaz.
 - **`sale.order.foreign_rate_date`** (campo nuevo, oculto): guarda la fecha de
   la que salió la tasa de la orden y sobrevive a que el core reescriba
   `date_order` al confirmar.
+- **Redondeo por línea alineado con la máquina fiscal**: en modo
+  `round_per_line`, el impuesto se calcula y redondea por línea de producto
+  antes de sumar, en vez de sumar las bases de todas las líneas del mismo
+  impuesto y redondear una sola vez -- alinea el total nativo con el método
+  legal y con la columna alterna. Incluye impuestos encadenados
+  (`include_base_amount`) en ambos modos. Alcance: solo impuestos
+  `amount_type='percent'` (y sus hijos `percent` dentro de un `group`) --
+  ver Non-goals.
 
 ## Non-goals
 
@@ -97,6 +105,20 @@ desde la interfaz.
   hace la misma separación: motor nuevo para el flujo de asiento y totales,
   `compute_all` para cálculos de línea aislada
   (`sale/models/sale_order_line.py:1176`).
+- **No se corrige el redondeo por línea para `division` (ni otros
+  `amount_type` fuera de `percent`).** Verificado con `tax.compute_all()`
+  como oráculo: `division` tiene el mismo tipo de descuadre que tenía
+  `percent` (round_per_line nativo diverge del método de la máquina
+  fiscal, 1.582,58 Bs vs 1.576,33 Bs esperados en el caso probado) y
+  queda sin corregir a propósito -- en Venezuela no se usa ningún tipo de
+  impuesto fuera de porcentual, así que no aplica. `fixed` no necesita
+  corrección (el modo de redondeo no le afecta, no hay porcentaje que
+  desalinear). `group` con hijos `percent` ya queda cubierto de forma
+  automática.
+- **No se fuerza `tax_calculation_rounding_method = 'round_per_line'`**
+  en ningún dato de instalación, aunque es la configuración que Venezuela
+  requiere (el default de Odoo 19 es `round_globally`). Queda como
+  hallazgo documentado, no como cambio de código de este fix.
 
 ## Impact
 

@@ -6,6 +6,33 @@ from pytz import timezone, utc
 TFHKA_DEFAULT_TZ = "America/Caracas"
 
 
+class TfhkaDataError(UserError):
+    """UserError levantado por una validación local -- de este lado, antes de
+    llamar siquiera a TFHKA -- que detecta un dato del documento faltante o
+    inválido (NIF/país/teléfono/correo del contacto, fecha, serie, moneda,
+    impuesto, forma de pago). Es el equivalente local a los códigos de
+    negocio 203/205 que TFHKA devolvería por el mismo tipo de problema si el
+    documento llegara a enviarse.
+
+    ``tfhka.digitalization.mixin`` clasifica cualquier excepción de este tipo
+    como ``data_error``, igual que un código de negocio 203/205.
+    """
+
+
+class TfhkaSequenceMismatchError(TfhkaDataError):
+    """El correlativo de Odoo no coincide con el de The Factory y nadie
+    confirmó seguir de todas formas (``tfhka_auto_accept_sequence_mismatch``).
+
+    Antes de la cola, este caso se resolvía sincrónicamente: el usuario que
+    disparaba la digitalización veía en el acto un wizard de confirmación
+    (``account.retention.alert.wizard``). Con el cron como único emisor real
+    no hay nadie ahí para contestarlo, así que se levanta esta excepción en
+    su lugar -- al heredar de ``TfhkaDataError`` el mixin ya la clasifica
+    como ``data_error`` sin cambios adicionales, dejando la retención en un
+    estado revisable en vez de marcarla ``success`` sin haber emitido nada.
+    """
+
+
 class TfhkaServiceBase(models.AbstractModel):
     """Base compartida de los servicios de TFHKA.
 
@@ -104,18 +131,18 @@ class TfhkaServiceBase(models.AbstractModel):
             return None
 
         if not partner.vat:
-            raise UserError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
+            raise TfhkaDataError(_("The 'NIF' field of the Customer cannot be empty for digitalization."))
 
         identification_type, identification_number = self._parse_partner_identification(partner)
 
         if not partner.country_code:
-            raise UserError(_("The 'Country' field of the Customer cannot be empty for digitalization."))
+            raise TfhkaDataError(_("The 'Country' field of the Customer cannot be empty for digitalization."))
 
         if not (partner.mobile or partner.phone):
-            raise UserError(_("The 'Mobile' field of the Customer cannot be empty for digitalization."))
+            raise TfhkaDataError(_("The 'Mobile' field of the Customer cannot be empty for digitalization."))
 
         if not partner.email:
-            raise UserError(_("The 'Email' field of the Customer cannot be empty for digitalization."))
+            raise TfhkaDataError(_("The 'Email' field of the Customer cannot be empty for digitalization."))
 
         return {
             "tipoIdentificacion": identification_type,
