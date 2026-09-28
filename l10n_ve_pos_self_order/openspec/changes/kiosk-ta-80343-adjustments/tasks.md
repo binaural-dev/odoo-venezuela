@@ -133,6 +133,25 @@
 - [x] 7ter.4 Total foráneo rotulado "Total <moneda>" según `foreign_currency_id`
       (antes "Total (moneda extranjera)")
 
+## 7quater. Saludo en ambos modos del Kiosko (28-sep)
+
+- [x] 7quater.1 `overrides/product_list_page.{js,xml,scss}`: el saludo
+      "¡Hola {cliente}!" sale en todo Kiosko (getter `showGreeting`), no solo
+      en el modo solo escaneo/búsqueda; el buscador sigue siendo exclusivo de
+      ese modo
+
+## 7quinquies. Kiosko congelado en algunos equipos (28-sep)
+
+- [x] 7quinquies.1 `kiosk_keyboard.js`: el `useEffect` del `scrollIntoView`
+      devolvía su resultado; en Chrome/Edge recientes `scrollIntoView()`
+      devuelve una Promise, Owl la tomaba como cleanup y al cambiar el modo
+      del teclado (tocar el teléfono) lanzaba "cleanup is not a function" y
+      destruía la app (ni Crear ni Atrás respondían). Cuerpo en bloque, sin
+      retorno. Era la causa real de los puntos 1 y 3 de QA
+- [x] 7quinquies.2 `kiosk_stepper.scss`: alto fijo de la barra de pasos y las
+      páginas `vh-100` que la siguen restan ese alto (antes desbordaban la
+      ventana y el pie quedaba recortado en pantallas bajas)
+
 ## 8. OpenSpec
 
 - [x] 8.1 `openspec change validate kiosk-ta-80343-adjustments --strict` →
