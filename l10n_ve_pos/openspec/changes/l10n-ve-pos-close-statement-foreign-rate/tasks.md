@@ -16,4 +16,5 @@
 ## 3. Validación
 
 - [x] 3.1 Correr los tests de `l10n_ve_pos` en BD temporal: 0 fallos / 0 errores de 82 tests; el test nuevo falla sin el fix
-- [ ] 3.2 Repetir en navegador el caso de posv19 y comprobar que ambos extractos cuadran en alterno
+- [x] 3.2 Repetir en navegador el caso de posv19 y comprobar que ambos extractos cuadran en alterno (`Caja 1/00087`: CSH1 426,62/426,62, CSH2 2,78/2,78)
+- [x] 3.3 Documentar el emparejamiento por monto (origen, por qué lo obliga el core, riesgo y camino propuesto)

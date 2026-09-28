@@ -27,6 +27,48 @@ caja, pero **sin bloquearla**. `l10n_ve_accountant`
 (`_compute_foreign_debit_credit`) vuelve a calcular esa línea con la tasa de
 la fecha del asiento, que es la del cierre.
 
+### Emparejamiento por monto (preexistente, se mantiene)
+
+`_create_cash_statement_lines_and_cash_move_lines` recorre, por cada pago
+(split) o método (combine), las líneas de **todos** los pagos/métodos y
+`set_foreign_amount_in_line` elige la línea por `debit/credit == amount` (Bs).
+No es un descuido de este change: viene de 17.0 (9f93e9512, 2024-04-17, tarea
+[#24422](https://binaural.odoo.com/web#id=24422&model=project.task&view_type=form)),
+sin motivo documentado, y después solo se movió de sitio (52b588e1d,
+6e967a9c4, 6708d0ea2) o se tocó en
+`l10n-ve-pos-session-close-cash-foreign-amount-fix`, que ya lo anota como caso
+borde.
+
+Lo que obliga a emparejar por monto es el core
+(`point_of_sale/models/pos_session.py::_create_cash_statement_lines_and_cash_move_lines`):
+
+- `split/combine_cash_statement_lines` son las líneas por cobrar de los
+  extractos creados (`mapped('move_id.line_ids').filtered(receivable)`) y
+  `split/combine_cash_receivable_lines` las del asiento de sesión
+  (`MoveLine.create(vals)`), en recordsets planos: pese a los comentarios
+  ("maps journal -> lines"), la línea no trae ni el pago ni el método.
+- La línea por cobrar del asiento de sesión tampoco lleva el diario del
+  método. La única pista común entre el bucket (`amounts['amount']`) y la
+  línea es el monto.
+- Emparejar por índice sería posible (`create()` preserva el orden de los
+  vals y se arman recorriendo el mismo dict), pero depende de un detalle de
+  implementación del core y en combine hay que replicar el filtro
+  `if not float_is_zero(amounts['amount'])` para no desalinear.
+
+**Riesgo conocido**: dos pagos (split) o dos métodos (combine) con el mismo
+monto en Bs y distinto `foreign_amount` —posible si la sesión abarca un cambio
+de tasa— se quedan con el alterno del último que se escribe. Con este change,
+además, ese valor queda bloqueado en la línea de caja del extracto. Cada
+extracto sigue cuadrado (se copia el mismo valor a las dos patas), pero con el
+alterno de otro pago.
+
+No se corrige aquí (fuera del alcance del ticket). Camino propuesto para otro
+change: emparejar por identidad donde exista —extracto split por
+`payment_ref == payment.name`, extracto combine por
+`line.move_id.journal_id == payment_method.journal_id`— y dejar monto o
+índice solo para la línea por cobrar del asiento de sesión, que no tiene
+identidad.
+
 ## What Changes
 
 - `models/pos_session.py::set_foreign_amount_in_line`: cuando el asiento de la
@@ -56,3 +98,20 @@ contaría dos veces lo vendido.
     conversión de los Bs a la tasa del cierre (`_prepare_statement_line_amount_values`),
     no los dólares cobrados. Los diarios de efectivo del PdV de los clientes
     actuales no tienen moneda.
+  - Emparejamiento por monto entre pagos/métodos con el mismo monto en Bs
+    (ver "Emparejamiento por monto" arriba).
+
+## Validación en posv19
+
+Fix superpuesto (solo `pos_session.py`) en posv19. Venta `Caja 1 - 000006`
+(INV/2026/0063) a 870: 4.540 Bs en Efectivo + 2.420 Bs ($2,78) en Efectivo
+USD-1. Tasa del 28-09 subida a 880 y cierre de la sesión `Caja 1/00087` desde
+el PdV.
+
+| Asiento | Débito alterno | Crédito alterno | Sin el fix (caja a 880) |
+|---|---|---|---|
+| CSH1 `/2026/0004` (Efectivo Bs) | 426,62 | 426,62 | 421,77 |
+| CSH2 `CSH2/2026/0017` (Efectivo USD-1) | 2,78 | 2,78 | 2,75 |
+| POSS/2026/0098 (asiento de sesión) | 429,40 | 429,40 | — |
+
+Ambas patas de cada extracto quedan con `not_foreign_recalculate = True`.
