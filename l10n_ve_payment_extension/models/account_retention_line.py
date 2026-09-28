@@ -258,12 +258,18 @@ class AccountRetentionLine(models.Model):
 
             record._apply_iva_tax_group_values(invoice_id, tax_group, tax, withholding_amount)
 
-    @api.onchange("aliquot")
-    def _onchange_aliquot(self):
+    def _recalculate_iva_amounts(self):
         """
-        Recalcula los montos de la línea cuando el usuario cambia manualmente
-        la alícuota, buscando el tax_group real de la factura que corresponde
-        a esa alícuota.
+        Recomputes invoice_amount, iva_amount, retention_amount, aliquot and
+        their foreign_* counterparts of an IVA retention line against the
+        invoice's current tax groups, matching by the aliquot already set on
+        the line.
+
+        Extracted out of _onchange_aliquot (task #83486) so the same logic
+        can also run outside of a form onchange context - e.g. from
+        account.retention.action_recalculate() / account.move.
+        action_recalculate_retentions() - on a line whose invoice was edited
+        after the retention was emitted.
         """
         for record in self:
             if not record.move_id or not record.retention_id or record.retention_id.type_retention != "iva":
@@ -295,6 +301,49 @@ class AccountRetentionLine(models.Model):
 
             tax_group, tax = match
             record._apply_iva_tax_group_values(invoice_id, tax_group, tax, withholding_amount)
+
+    @api.onchange("aliquot")
+    def _onchange_aliquot(self):
+        """
+        Recalcula los montos de la línea cuando el usuario cambia manualmente
+        la alícuota, buscando el tax_group real de la factura que corresponde
+        a esa alícuota.
+        """
+        self._recalculate_iva_amounts()
+
+    def _recalculate_islr_base(self):
+        """
+        Recomputes the taxable base (invoice_amount/foreign_invoice_amount)
+        of an ISLR retention line against the invoice's current data,
+        reusing _get_islr_concept_base_amounts (task #83486). retention_amount
+        and foreign_retention_amount are store=True computed fields that
+        @api.depends on invoice_amount/foreign_invoice_amount, so they
+        recompute on their own once these are written - no need to touch
+        them by hand here.
+        """
+        for record in self:
+            if not record.move_id or not record.retention_id or record.retention_id.type_retention != "islr":
+                continue
+            base_amount, foreign_base_amount = record._get_islr_concept_base_amounts(record.move_id)
+            record.invoice_amount = base_amount
+            record.foreign_invoice_amount = foreign_base_amount
+
+    def recalculate_amounts(self):
+        """
+        Public entry point (task #83486) used by account.retention.
+        action_recalculate() to refresh this retention line's amounts
+        against its invoice's current data, on-the-fly and without
+        store=True changes to any field that isn't already store=True.
+
+        Municipal lines aren't in this task's scope (their recalculation
+        already happens on invoice_line_ids change via
+        onchange_economic_activity_id, called from account.move.write()).
+        """
+        for record in self:
+            if record.retention_id.type_retention == "iva":
+                record._recalculate_iva_amounts()
+            elif record.retention_id.type_retention == "islr":
+                record._recalculate_islr_base()
 
     @api.depends("retention_id.type_retention", "move_id")
     def _compute_name(self):

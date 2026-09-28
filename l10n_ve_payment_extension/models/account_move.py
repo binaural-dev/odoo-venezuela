@@ -165,6 +165,22 @@ class AccountMoveRetention(models.Model):
                 }
         
 
+    def action_recalculate_retentions(self):
+        """
+        Recalculates, on-the-fly, the emitted IVA/ISLR retentions linked to
+        this vendor invoice against its current invoice lines (task
+        #83486), without re-running action_post()'s sequence assignment,
+        payment creation/reconciliation or state transition - see
+        account.retention.action_recalculate() for why those must not be
+        repeated.
+        """
+        for move in self:
+            retentions = (
+                move.retention_iva_line_ids.retention_id
+                | move.retention_islr_line_ids.retention_id
+            ).filtered(lambda r: r.state == "emitted")
+            retentions.action_recalculate()
+
     @api.depends(
         "invoice_line_ids",
         "invoice_line_ids.product_id",
@@ -301,7 +317,14 @@ class AccountMoveRetention(models.Model):
 
     def write(self, vals):
         """
-        Override the write method to recalculate municipal retentions if the invoice lines change.
+        Override the write method to recalculate municipal retentions and to
+        warn the user when editing invoice lines of a draft vendor invoice
+        that already has an emitted IVA/ISLR retention (task #83486).
+
+        Extends this single existing write() override instead of adding a
+        second one on the model - Odoo already merges every write() in the
+        MRO into one call chain, so a second override would only add
+        indirection without changing behavior.
         """
         res = super(AccountMoveRetention, self).write(vals)
         if "invoice_line_ids" in vals:
@@ -312,6 +335,39 @@ class AccountMoveRetention(models.Model):
                 ):
                     for line in move.retention_municipal_line_ids:
                         line.onchange_economic_activity_id()
+
+                if (
+                    move.move_type == "in_invoice"
+                    and move.state == "draft"
+                    and (
+                        move.retention_iva_line_ids.filtered(
+                            lambda l: l.retention_id.state == "emitted"
+                        )
+                        or move.retention_islr_line_ids.filtered(
+                            lambda l: l.retention_id.state == "emitted"
+                        )
+                    )
+                ):
+                    # Non-blocking: the invoice must still save normally, we
+                    # only warn that its already-emitted retention is now
+                    # stale and should be recalculated. Sent server-side via
+                    # bus.bus (not a client action return) because write()
+                    # doesn't always run in a UI context that would display
+                    # a returned client action.
+                    self.env.user._bus_send(
+                        "simple_notification",
+                        {
+                            "type": "danger",
+                            "sticky": True,
+                            "title": _("Retención emitida desactualizada"),
+                            "message": _(
+                                "La factura %(invoice)s ya tiene una retención de IVA o"
+                                " ISLR emitida. Debe recalcular las retenciones para que"
+                                " reflejen los cambios en las líneas de la factura."
+                            )
+                            % {"invoice": move.display_name},
+                        },
+                    )
         return res
 
     def action_post(self):

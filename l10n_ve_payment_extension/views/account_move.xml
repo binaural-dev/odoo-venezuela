@@ -97,6 +97,15 @@
 
                 </xpath>
 
+                <xpath expr="//header" position="inside">
+                    <button
+                        name="action_recalculate_retentions"
+                        type="object"
+                        string="Recalcular retenciones"
+                        invisible="not has_emited_iva_retention and not has_emited_islr_retention"
+                    />
+                </xpath>
+
                 <xpath expr="//header" position="after">
                     <field name="count_islr_retention" invisible="1"/>
                     <field name="has_emited_islr_retention" invisible="1"/>

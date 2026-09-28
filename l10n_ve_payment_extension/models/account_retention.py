@@ -471,6 +471,35 @@ class AccountRetention(models.Model):
         if self.payment_ids:
             self.payment_ids.action_draft()
 
+    def action_recalculate(self):
+        """
+        Recalculates, on-the-fly, the amounts of this (already emitted)
+        retention's lines against their invoices' current data (task
+        #83486). total_invoice_amount/total_iva_amount/
+        total_retention_amount and their foreign_* counterparts are
+        store=True computed fields that @api.depends on these line amounts,
+        so they refresh on their own once the lines are written - they must
+        not be set by hand here.
+
+        Deliberately does NOT re-run the rest of action_post(): sequence
+        assignment, payment creation/reconciliation and the state
+        transition must only ever happen once, when the retention is first
+        emitted - repeating them here would create duplicate payments/
+        sequence numbers for a document that is already final.
+
+        _check_duplicate_retention_lines() and, for ISLR,
+        _validate_islr_retention() ARE re-run below, since they validate
+        the very amounts this recalculation just changed (e.g. a line's
+        invoice_amount now exceeding the invoice's real taxable base) and
+        would otherwise leave an inconsistent emitted retention silently in
+        place.
+        """
+        for retention in self:
+            retention.retention_line_ids.recalculate_amounts()
+            retention._check_duplicate_retention_lines()
+            if retention.type_retention == "islr" and retention.type in ("in_invoice", "in_refund", "in_debit"):
+                retention._validate_islr_retention()
+
     def action_post(self):
         """
         Post the retention, validate amounts per invoice, generate the
