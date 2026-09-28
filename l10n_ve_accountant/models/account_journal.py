@@ -9,6 +9,14 @@ class AccountJournal(models.Model):
 
     is_purchase_international = fields.Boolean(string="International purchase",default=False)
 
+    def _compute_inbound_payment_method_line_ids(self):
+        super()._compute_inbound_payment_method_line_ids()
+        self._fill_payment_account_id_from_default()
+
+    def _compute_outbound_payment_method_line_ids(self):
+        super()._compute_outbound_payment_method_line_ids()
+        self._fill_payment_account_id_from_default()
+
     @api.onchange('default_account_id')
     def _onchange_default_account_id_fill_payment_accounts(self):
         self._fill_payment_account_id_from_default()
@@ -16,20 +24,30 @@ class AccountJournal(models.Model):
     def _fill_payment_account_id_from_default(self):
         """Autofill payment_account_id on payment method lines using default_account_id.
 
-        Deliberately NOT wired via @api.depends on the native
-        _compute_inbound/outbound_payment_method_line_ids computes: those
-        computes do Command.clear() + recreate-defaults-only every time they
-        fire (see core account_journal.py), which is fine for their native
-        trigger (type/currency_id changing) but destructive if re-triggered
-        by editing default_account_id on an already-saved journal with extra
+        Deliberately NOT wired via an extra @api.depends('default_account_id')
+        on the two compute overrides above (which only keep the NATIVE
+        depends, type/currency_id, by not redeclaring @api.depends at all):
+        those native computes do Command.clear() + recreate-defaults-only
+        every time they fire (see core account_journal.py). That's fine for
+        the native trigger (type/currency_id changing on create, or a real
+        type change) but destructive if re-triggered by editing
+        default_account_id alone on an already-saved journal with extra
         manual payment method lines -- it would unlink/delete those extra
         lines and any account.payment already using them (confirmed: found
         by code review, PR #1344 / task 81735).
 
-        Called from create()/write() below (data correctness, any caller:
-        UI, API, imports) and from the onchange above (immediate UI
-        feedback before saving). Idempotent -- only fills lines that don't
-        already have an account -- so calling it from all three is safe.
+        The compute overrides above still call this synchronously right
+        after super() -- needed so a fresh create() with default_account_id
+        already in vals fills accounts before Odoo's nested flush validates
+        _check_payment_method_line_accounts below (that validation runs
+        mid-create, before create()'s own post-super() code would get a
+        chance to run otherwise).
+
+        Also called from create()/write() below (defensive, e.g. an o2m
+        write on the payment method lines outside of a type/currency_id
+        change) and from the onchange above (immediate UI feedback before
+        saving). Idempotent -- only fills lines that don't already have an
+        account -- so calling it from all these points is safe.
         """
         for journal in self:
             if journal.type != 'bank' or not journal.default_account_id:
