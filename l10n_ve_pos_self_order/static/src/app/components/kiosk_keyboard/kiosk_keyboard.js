@@ -49,9 +49,15 @@ export class KioskKeyboard extends Component {
         // name, phone, address), so its last row (⌫ / 0 / C in numeric mode)
         // can end up below the fold of the page's scroll container. Bring it
         // fully into view whenever it appears or switches layout.
+        // Block body on purpose: whatever the effect returns is taken by Owl as
+        // its cleanup, and recent Chrome/Edge versions make scrollIntoView()
+        // return a Promise -> "cleanup is not a function" on the next mode
+        // change, which destroys the whole Kiosk app (nothing responds).
         this.rootRef = useRef("root");
         useEffect(
-            () => this.rootRef.el?.scrollIntoView({ block: "nearest", behavior: "smooth" }),
+            () => {
+                this.rootRef.el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+            },
             () => [this.props.mode]
         );
     }
