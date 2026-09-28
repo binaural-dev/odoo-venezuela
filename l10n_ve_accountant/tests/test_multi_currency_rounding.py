@@ -2344,3 +2344,198 @@ class TestMultiCurrencyRounding(TransactionCase):
             msg="El ciclo draft->post cambio los balances de las lineas "
                 f"sin motivo. Antes: {before}. Despues: {after}",
         )
+
+    # ── tax_totals base_amount per group vs. real posted balance ────────
+    #
+    # `_fix_tax_amount_for_round_per_line` (account_tax.py) already fixes
+    # `tax_amount` per group against the real posted tax line (test_43-45),
+    # but `_fix_base_amount_for_multi_currency` still splits `base_amount`
+    # by PROPORTION across groups, not by each group's own real product
+    # lines -- confirmed off-by-a-cent on a real invoice (base_amount
+    # 217,994.27 in the widget vs. 217,994.28 actually posted).
+
+    def _set_usd_rate(self, rate):
+        """Replace today's USD rate -- a clean rate (like setUp's 40.0)
+        never triggers the rounding diff this bug depends on.
+        """
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": rate,
+            "company_id": self.company.id,
+        })
+
+    def _create_tax_with_own_group(self, name, amount):
+        """Like `_create_tax`, but in its OWN `account.tax.group` -- taxes
+        sharing `self.tax_group` would merge into one reported group.
+        """
+        group = self.env['account.tax.group'].create({
+            'name': name, 'company_id': self.company.id, 'country_id': self.country_ve.id,
+        })
+        tax = self._create_tax(name, amount)
+        tax.tax_group_id = group.id
+        return tax
+
+    def _assert_tax_group_base_matches_real_lines(self, inv, taxes_to_check):
+        """Each reported `tax_group.base_amount` must match the real
+        `balance` of the product lines paying that tax (direct or via a
+        'group' tax's `children_tax_ids`), not just the invoice total.
+        """
+        product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
+        sign = inv.direction_sign
+        cc = inv.company_currency_id
+        for tax in taxes_to_check:
+            lines = product_lines.filtered(
+                lambda l, t=tax: t in l.tax_ids
+                or any(t in parent.children_tax_ids for parent in l.tax_ids)
+            )
+            self.assertTrue(lines, f"fixture invalid: no line uses tax {tax.name!r}")
+            expected_base = cc.round(sum(lines.mapped('balance')) * sign)
+            tg = self._tax_totals_group(inv, tax.tax_group_id)
+            self.assertAlmostEqual(
+                tg.get('base_amount', 0.0), expected_base, places=2,
+                msg=(
+                    f"tax_totals group {tg.get('group_name')!r}: base_amount "
+                    f"({tg.get('base_amount')}) != real posted balance ({expected_base})"
+                ),
+            )
+
+    def test_49_tax_totals_base_per_group_matches_real_balance_vendor(self):
+        """Real case (vendor bill FPCCS/2026/0002): two distinct tax
+        groups (0%/exempt and 16%) on one USD invoice, VEF company.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+        self._set_usd_rate(807.386198)
+        tax_exempt = self._create_tax_with_own_group('IVA 0% (vendor)', 0.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [tax_exempt]),
+            (60.654321, 4.501234, [self.tax_16]),
+        ], move_type='in_invoice')
+        self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, self.tax_16])
+
+    def test_50_tax_totals_base_per_group_matches_real_balance_customer(self):
+        """Same as test_49, customer side (out_invoice) -- the proportional
+        split doesn't distinguish document direction.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+        self._set_usd_rate(807.386198)
+        tax_exempt = self._create_tax_with_own_group('IVA 0% (customer)', 0.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [tax_exempt]),
+            (60.654321, 4.501234, [self.tax_16]),
+        ], move_type='out_invoice')
+        self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, self.tax_16])
+
+    def test_51_tax_totals_base_three_distinct_groups_vendor(self):
+        """Edge case: THREE distinct groups, not two -- the middle one
+        must also land exact, not just the first/last.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+        self._set_usd_rate(807.386198)
+        tax_exempt = self._create_tax_with_own_group('IVA 0% (3 groups)', 0.0)
+        tax_8_own = self._create_tax_with_own_group('IVA 8% (own group)', 8.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [tax_exempt]),
+            (15.246813, 12.407531, [tax_8_own]),
+            (60.654321, 4.501234, [self.tax_16]),
+        ], move_type='in_invoice')
+        self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, tax_8_own, self.tax_16])
+
+    def test_52_tax_totals_base_group_tax_children_share_base_customer(self):
+        """Edge case: a 'group' tax (two children sharing one base, as in
+        test_26) plus an independent group -- the line holds the PARENT in
+        `tax_ids`, so matching must fall back to `children_tax_ids`.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+        self._set_usd_rate(807.386198)
+        tax_a = self._create_tax('Group child A 5%', 5.0)
+        tax_b = self._create_tax('Group child B 3%', 3.0)
+        group_tax = self._create_group_tax('Group AB', tax_a + tax_b)
+        tax_exempt = self._create_tax_with_own_group('IVA 0% (group-tax)', 0.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [tax_exempt]),
+            (60.654321, 4.501234, [group_tax]),
+        ], move_type='out_invoice')
+        self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, tax_a, tax_b])
+
+    # ── Code review (PR tax-totals-base-per-group): the LAST tax group
+    # always takes `subtotal['base_amount'] - assigned_so_far` (the
+    # remainder) instead of its own real lines' balance, unlike every
+    # other group. Two real failure modes:
+    #
+    # (a) An untaxed product line (`unique_tax` off allows this) still
+    #     contributes to `subtotal['base_amount']` (it's summed from ALL
+    #     product lines, tax or not) but is never matched by any group's
+    #     `tg_lines` -- that stray balance lands on whichever group happens
+    #     to be last. With only ONE tax group, that group IS the last one
+    #     by construction (`j < n_tg - 1` is never true for `n_tg == 1`),
+    #     so this isn't even a "2+ groups" edge case.
+    #
+    # (b) A single line carrying taxes from TWO distinct groups is valid
+    #     tax semantics (the same base pays two different taxes) -- both
+    #     groups must independently report that line's own balance. The
+    #     remainder-based last group instead computes `subtotal_base -
+    #     assigned_so_far`, where `assigned_so_far` already included that
+    #     same line's balance from the non-last group's own pass.
+
+    def test_53_tax_totals_base_excludes_untaxed_line_single_group(self):
+        """Fix: an untaxed line's balance must never leak into the (only,
+        hence 'last') tax group's reported base_amount.
+
+        Draft only, not posted: `l10n_ve_invoice`'s own posting constraint
+        ("Add a tax to each product line") blocks confirming a move with an
+        untaxed product line regardless of `unique_tax` -- but `tax_totals`
+        is a non-stored compute, read the same way on a draft. The bug this
+        reproduces lives in that compute, not in what happens after posting.
+        """
+        self._set_usd_rate(807.386198)
+        partner = self.env['res.partner'].create({
+            'name': 'Partner untaxed line', 'company_id': self.company.id,
+            'property_account_receivable_id': self.acc_rec.id,
+        })
+        inv = self.env['account.move'].with_context(check_move_validity=False).create([{
+            'move_type': 'out_invoice',
+            'partner_id': partner.id,
+            'currency_id': self.currency_usd.id,
+            'journal_id': self.sale_journal.id,
+            'invoice_date': fields.Date.today(),
+            'company_id': self.company.id,
+            'invoice_line_ids': [
+                (0, 0, {
+                    'product_id': self.product.id, 'name': 'L0',
+                    'quantity': 20.123456, 'price_unit': 6.309876,
+                    'account_id': self.acc_inc.id,
+                    'tax_ids': [(6, 0, [self.tax_16.id])],
+                }),
+                (0, 0, {
+                    'product_id': self.product.id, 'name': 'L1 (untaxed)',
+                    'quantity': 15.246813, 'price_unit': 12.407531,
+                    'account_id': self.acc_inc.id,
+                    'tax_ids': [(6, 0, [])],
+                }),
+            ],
+        }])[0]
+        self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16])
+
+    def test_54_tax_totals_base_line_with_two_tax_groups_both_correct(self):
+        """Fix: a line taxed by two distinct groups must report its own
+        real balance as the base for BOTH groups, not a double-counted/
+        remainder-derived value for whichever one is last."""
+        self._set_usd_rate(807.386198)
+        tax_8_own = self._create_tax_with_own_group('IVA 8% (linea dos grupos)', 8.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [self.tax_16, tax_8_own]),
+        ])
+        self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16, tax_8_own])

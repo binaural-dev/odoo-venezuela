@@ -164,7 +164,7 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "retention_line_ids": [Command.create(vals) for vals in lines_vals],
         })
 
-    def _make_islr_customer_retention(self, lines_vals):
+    def _make_islr_customer_retention(self, lines_vals, number="01234567891234"):
         today = fields.Date.today()
         return self.env["account.retention"].create({
             "type_retention": "islr",
@@ -173,7 +173,7 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "partner_id": self.partner_pnr_75.id,
             "date": today,
             "date_accounting": today,
-            "number": "01234567891234",
+            "number": number,
             "retention_line_ids": [Command.create(vals) for vals in lines_vals],
         })
 
@@ -261,13 +261,13 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "foreign_invoice_amount": 500.0,
             "foreign_retention_amount": 15.0,
         }
-        retention_1 = self._make_islr_customer_retention([line_1])
+        retention_1 = self._make_islr_customer_retention([line_1], number="01234567891234")
         retention_1.action_post()
         self.assertEqual(retention_1.state, "emitted")
 
         line_2 = dict(line_1, invoice_amount=1.0, retention_amount=0.03,
                       foreign_invoice_amount=1.0, foreign_retention_amount=0.03)
-        retention_2 = self._make_islr_customer_retention([line_2])
+        retention_2 = self._make_islr_customer_retention([line_2], number="01234567891235")
         with self.assertRaises(ValidationError) as e:
             retention_2.action_post()
         msg = str(e.exception)
