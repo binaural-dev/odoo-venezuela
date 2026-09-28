@@ -86,9 +86,29 @@ class AccountMoveLine(models.Model):
         localizacion es la fecha de la tasa (la fecha visible del documento es
         invoice_date_display). Asientos manuales y de pago: la fecha contable
         (date), que es la unica que tienen.
+
+        Reversos (NC/ND y reintegro/reembolso del asiento de un pago): se valoran
+        a la fecha de tasa del asiento ORIGINAL revertido, para que el reverso
+        devuelva EXACTAMENTE el monto en moneda alterna que quedo registrado,
+        aunque la tasa haya cambiado entre la fecha del original y la del
+        reverso. Sin esto, el reverso del asiento de un pago (move_type 'entry')
+        recalculaba el USD a la tasa del dia del reverso y descuadraba la moneda
+        alterna (ticket #15114). El caso NC/ND ya quedaba correcto porque su
+        invoice_date se hereda del original; aqui se unifica el criterio para
+        que el reverso del pago tambien lo herede.
         """
         self.ensure_one()
-        move = self.move_id
+        return self._foreign_rate_date_for_move(self.move_id)
+
+    def _foreign_rate_date_for_move(self, move):
+        """Fecha de tasa de un asiento, siguiendo la cadena de reversos.
+
+        Un reverso apunta con reversed_entry_id a su asiento original (siempre
+        hacia atras en el tiempo, sin ciclos), asi que hereda la fecha del
+        original recursivamente.
+        """
+        if move.reversed_entry_id:
+            return self._foreign_rate_date_for_move(move.reversed_entry_id)
         if move.is_invoice(include_receipts=True):
             return move.invoice_date or move.date or fields.Date.context_today(self)
         return move.date or fields.Date.context_today(self)

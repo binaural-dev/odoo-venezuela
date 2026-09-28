@@ -73,7 +73,7 @@ class TestPosIgtfPaymentMoves(TransactionCase):
         # Chart of accounts
         cls.account_receivable = cls.env["account.account"].search([
             ("account_type", "=", "asset_receivable"),
-            ("company_id", "=", cls.company.id),
+            ("company_ids", "in", cls.company.id),
         ], limit=1)
         if not cls.account_receivable:
             cls.skipTest(cls, "No receivable account found")

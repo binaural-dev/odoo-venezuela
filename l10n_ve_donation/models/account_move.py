@@ -70,6 +70,15 @@ class AccountMove(models.Model):
                 line.write({"partner_id": company_partner.id})
         return res
 
+    def _l10n_ve_skip_refund_origin_validation(self):
+        # La NC de donación nunca repite el producto de la factura original
+        # (usa el producto de donación dedicado). La validación de
+        # `l10n_ve_invoice` corre al publicar, y esta NC suele publicarse en
+        # una llamada aparte (a mano, tras el wizard de alerta) donde ya no
+        # existe la clave de contexto puesta en `_reverse_moves()` -- por
+        # eso se excluye por el campo guardado `is_donation`.
+        return self.is_donation or super()._l10n_ve_skip_refund_origin_validation()
+
     def _reverse_moves(self, default_values_list=None, cancel=False):
         """Reverse a recordset of account.move.
         If cancel parameter is true, the reconcilable or liquidity lines
@@ -96,12 +105,10 @@ class AccountMove(models.Model):
                     "is_donation": True,
                     "invoice_line_ids": invoice_line_vals,
                 }
-                # `l10n_ve_skip_refund_origin_validation` -- este NC nunca
-                # repite el producto de la factura original (usa el
-                # producto de donación dedicado, ver
-                # `product_line_donation()`), así que no debe pasar por
-                # la validación de `l10n_ve_invoice` que exige que los
-                # productos de la NC ya estén en la factura de origen.
+                # `l10n_ve_skip_refund_origin_validation` -- redundante
+                # desde que la exclusión se decide por `is_donation` (ver
+                # `_l10n_ve_skip_refund_origin_validation()`); se deja por
+                # si el `create()` llegara a validar algo en el futuro.
                 reverse_move = self.env['account.move'].with_context(
                     check_move_validity=False,
                     skip_invoice_sync=True,
