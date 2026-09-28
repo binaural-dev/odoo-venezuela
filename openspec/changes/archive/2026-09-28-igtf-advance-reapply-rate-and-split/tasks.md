@@ -21,4 +21,5 @@
 - [x] 4.1 Sin los fixes, el test de regresión falla con un residuo fantasma (reproducido: 2.636,40 Bs.F en un caso sintético, 569.766,95 Bs.F en el caso real)
 - [x] 4.2 Con los fixes, el mismo test pasa limpio
 - [x] 4.3 Regresión: las 96 pruebas de `l10n_ve_igtf` (tag `igtf_run`) siguen en verde
-- [x] 4.4 Regresión: las pruebas de `l10n_ve_accountant` (real_portion, rounding) siguen en verde
+- [x] 4.4 Regresión: las 241 pruebas de `l10n_ve_accountant` (real_portion, rounding, etc.) siguen en verde. Comando:
+  `odoo --test-tags /l10n_ve_accountant -d <db> -i l10n_ve_accountant --without-demo=True --stop-after-init --no-http`

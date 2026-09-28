@@ -1018,7 +1018,7 @@ class TestIGTFNEW(IGTFTestCommon):
         self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
 
         exchange_moves = self.env['account.move'].search([
-            ('journal_id.name', '=', 'Exchange Difference'),
+            ('journal_id', '=', self.company.currency_exchange_journal_id.id),
             ('company_id', '=', self.company.id),
         ])
         self.assertFalse(
@@ -1226,7 +1226,7 @@ class TestIGTFNEW(IGTFTestCommon):
         self.assertAlmostEqual(invoice.amount_residual, 0.0, 2)
 
         exchange_moves = self.env['account.move'].search([
-            ('journal_id.name', '=', 'Exchange Difference'),
+            ('journal_id', '=', self.company.currency_exchange_journal_id.id),
             ('company_id', '=', self.company.id),
         ])
         self.assertFalse(

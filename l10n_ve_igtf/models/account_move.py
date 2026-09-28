@@ -884,6 +884,17 @@ class AccountMove(models.Model):
                 rec.bi_igtf = total_bi_igtf
 
     def remove_igtf_from_account_move(self, partial_id):
+        """DISEÑO INTENCIONAL, no un bug: al desconciliar un pago con IGTF, esta
+        función borra la línea de IGTF, absorbe su monto en la línea de
+        CxC/CxP y reclasifica esa línea a la cuenta de anticipo
+        (`is_advance_payment=True`). No se puede "conservar" la línea de IGTF
+        tal cual porque todavía no se sabe contra qué factura ni a qué tasa
+        se va a reaplicar el anticipo -- el IGTF se recalcula desde cero
+        cuando eso ocurre (ver `l10n-ve-igtf-advance-reapply-rate-and-split`
+        openspec), ahora con la tasa real del cruce en vez de la tasa de
+        fecha de factura. Preservar la línea aquí rompería esa regeneración
+        y reintroduciría el IGTF con tasa vieja.
+        """
 
         partial_reconcile = self.env['account.partial.reconcile'].with_company(self.company_id).sudo().browse(partial_id).exists()
         
