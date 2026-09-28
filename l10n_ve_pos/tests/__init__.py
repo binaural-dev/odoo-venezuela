@@ -9,3 +9,4 @@ from . import test_self_order_foreign_amount
 from . import test_pos_config_convert_precision
 from . import test_pos_refund_foreign_price
 from . import test_pos_change_foreign_amount
+from . import test_pos_session_close_statement_foreign_rate

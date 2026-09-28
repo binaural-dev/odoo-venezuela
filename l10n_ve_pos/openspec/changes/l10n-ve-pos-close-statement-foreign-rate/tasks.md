@@ -1,0 +1,19 @@
+# Tasks
+
+## 1. Diagnóstico
+
+- [x] 1.1 Reproducir en posv19 (sesión `Caja 1/00054`, tasa del cierre 870 vs venta 854,4637): extractos CSH1 687,50 vs 700,00 y CSH2 98,21 vs 100,00
+- [x] 1.2 Confirmar en BD: la línea por cobrar tiene `not_foreign_recalculate = True` y la de caja no
+- [x] 1.3 Descartar `foreign_amount` en el extracto (doble conteo en `binaural_pos_close`)
+
+## 2. Implementación
+
+- [x] 2.1 `set_foreign_amount_in_line`: copiar y bloquear la contrapartida solo en extractos
+- [x] 2.2 Test `tests/test_pos_session_close_statement_foreign_rate.py` (extracto cuadra con tasa distinta el día del cierre; asiento de sesión no bloquea ventas)
+- [x] 2.3 Bump `l10n_ve_pos` 1.18 → 1.19
+- [x] 2.4 `tests/test_pos_session_accounting_common.py`: crear el producto con `with_company(cls.company)` — el guard de compañía de `l10n_ve_stock` (sin bypass de `su`) tumbaba el `setUpClass` de todas las clases que heredan de la base
+
+## 3. Validación
+
+- [x] 3.1 Correr los tests de `l10n_ve_pos` en BD temporal: el test nuevo pasa con el fix y falla sin él. Quedan 2 errores ajenos que ya hay en 19.0 (`TestPosDataLoading`, `TestPosSerialization`: mismo guard de `l10n_ve_stock` en su propio `setUpClass`)
+- [ ] 3.2 Repetir en navegador el caso de posv19 y comprobar que ambos extractos cuadran en alterno

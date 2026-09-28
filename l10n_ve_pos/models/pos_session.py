@@ -1003,6 +1003,18 @@ class PosSession(models.Model):
         was then never set, so the line fell back to the base compute, which
         ran once at creation time (before the move's ``foreign_inverse_rate``
         had been assigned) and got stuck at 0.
+
+        The counterpart is only mirrored and locked (``not_foreign_recalculate``)
+        on a bank-statement move — the cash statement the closing books per
+        cash method, whose only non-receivable line is the cash/liquidity
+        leg. Mirroring without locking let ``l10n_ve_accountant`` recompute
+        that leg at the rate of the move date (the closing day), while the
+        receivable leg kept the sale-time ``foreign_amount``: when the BCV
+        rate changed between the sale and the closing, the statement ended
+        up with foreign debit != foreign credit (ticket #15169). On any other
+        move (the session's own closing move) the first non-receivable line
+        is a sales or tax line of non-invoiced orders, not a counterpart:
+        it is left alone so the base compute keeps valuing it.
         """
         rounding = self.currency_id.rounding
         matched_credit = abs(line.credit) > 0 and float_compare(
@@ -1020,13 +1032,16 @@ class PosSession(models.Model):
         if matched_debit:
             line.foreign_debit = abs(foreign_amount)
 
+        if not line.move_id.statement_line_id:
+            return
         other_lines = line.move_id.line_ids.filtered(
             lambda x: x != line and x.account_id.account_type != "asset_receivable"
         )
         if not other_lines:
             return
         other_line = other_lines[0]
-        if matched_credit and other_line.foreign_debit != line.foreign_credit:
+        other_line.not_foreign_recalculate = True
+        if matched_credit:
             other_line.foreign_debit = abs(line.foreign_credit)
-        if matched_debit and other_line.foreign_credit != line.foreign_debit:
+        if matched_debit:
             other_line.foreign_credit = abs(line.foreign_debit)
