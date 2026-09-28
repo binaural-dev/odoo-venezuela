@@ -92,6 +92,12 @@ Receipt is still printed.
 
 Strategy A is **not** propagated to Notas de Crédito / Débito. NC/ND retain the legacy `q-` behavior because they are refund/charge documents that don't carry a "global POS discount" context in the same way. Information line and clamp warning are only emitted in Factura.
 
+> ⚠ **Corrección (2026-09-28):** la afirmación de arriba ("NC/ND retain the
+> legacy `q-` behavior") describía un `q-` real que **restaba el descuento
+> global dos veces** — un bug, no una decisión de diseño válida. Ver la
+> sección **"NC/ND: el descuento global se restaba dos veces"** al final de
+> este documento para el diagnóstico completo y el fix aplicado.
+
 ## What this affects
 
 - **Math**: Total printed by the fiscal printer matches what Odoo computes for an equivalent line-discount situation. Eliminates the "tax discrepancy" complaint.
@@ -856,3 +862,90 @@ En `l10n_ve_pos_mf/static/src/tests/tfhka_driver_tests.js`:
 > archivo de tests — reescribiendo sólo las rutas de import de Odoo, y que usa
 > la implementación literal de `roundPrecision` del Odoo del contenedor. Estado
 > actual: **47 tests, 259 aserciones, 0 fallos**.
+
+# NC/ND: el descuento global se restaba dos veces (2026-09-28)
+
+## El síntoma (hardware real)
+
+Pedido con 1 línea (90% descuento de campaña) + "Descuento Global" nativo de
+Bs 606,52. La factura imprimió correcto: Total 3.986,89 Bs, idéntico a Odoo.
+Al reembolsar ese mismo pedido completo, la Nota de Crédito impresa dio
+**Total 3.283,32 Bs** — Bs 703,57 de menos de lo que había cobrado la
+factura. Una NC de reembolso total debe devolver exactamente lo cobrado.
+
+## Causa raíz
+
+`price_unit` (el que arma `_convertOrderForDriver` y consumen los tres
+documentos) viene **siempre neto de todo descuento** (campaña + global, en
+cascada) — así se diseñó para que `printInvoice` con el interruptor de línea
+apagado imprima el total correcto usando sólo ese precio.
+
+`printCreditNote`/`printDebitNote` nunca se actualizaron para saber esto:
+registraban el ítem a `price_unit` (ya neto) y ADEMÁS restaban
+`orderData.global_discount_amount` con un `q-` real después del subtotal —
+el mismo descuento, dos veces. Con los números reales del caso:
+
+- Ítem registrado: Bs 3.436,97 (ya neto de 90% campaña + 606,52 de global)
+- `q-` agregado (bug): -606,52 (el mismo global, otra vez)
+- BI resultante: 2.830,45 → IVA: 452,87 → Total: **3.283,32** (❌)
+
+Sin el `q-` agregado: BI = 3.436,97 → IVA = 549,92 → Total = **3.986,89**
+(✅, idéntico a la factura original).
+
+**No es un bug del trabajo de descuentos por línea/campaña de esta sesión.**
+Es un defecto latente desde la Etapa 1 (`native_global_discount_line`),
+presente en AMBOS estados de ese checkbox, para cualquier reembolso de un
+pedido con descuento global — nadie lo había probado contra hardware real con
+un descuento presente hasta esta prueba.
+
+## Fix aplicado
+
+Se eliminó el `q-` real agregado ("9.1 Descuento global") de la fase de
+ítems en `printCreditNote` y `printDebitNote`. La línea informativa
+"DESC. GLOBAL = X" del pie (`_appendFooterInfo`) se conserva sin cambios: es
+un comando `iXX`, sólo texto, nunca movió el total — por eso ya mostraba el
+monto correcto (606,52) incluso en el ticket con el bug.
+
+No se tocó `_convertOrderForDriver`, `printInvoice`, el interruptor
+`mf_line_discount_via_q_command`, ni ningún campo del payload. El fix vive
+enteramente en las ~5 líneas que emitían ese `q-` en cada una de las dos
+funciones.
+
+## Tests
+
+`tfhka_driver_tests.js`:
+
+- Renombrado y reescrito el test que **fijaba el bug como comportamiento
+  esperado** ("NC/ND sin cambios... la NC emite exactamente un q-") a
+  **"NC (fix hardware real 2026-09-28): ya NO resta el descuento global dos
+  veces"**, ahora afirmando `ncDiscountCommands.length === 0`.
+- Agregado el primer test de `printDebitNote` (no existía ninguno):
+  **"ND (fix hardware real 2026-09-28)"**, mismo caso, mismas aserciones.
+- `buildS1Payload` ganó un parámetro opcional `lastDebtNoteNumber` (formato
+  largo de S1, `fields[4]`): el formato corto que ya usaban todos los tests
+  existentes nunca pobló ese campo (`_parseS1Data` lo deja en `null`), así
+  que `printDebitNote` no tenía forma de devolver éxito en un test hasta
+  ahora. 100% retrocompatible: sin ese parámetro, el formato es idéntico al
+  de antes.
+
+Verificado end-to-end contra el código real (driver + `DiscountMath.js`
+reales, no reimplementaciones) con un arnés en Node que usa la
+implementación literal de `roundPrecision` extraída del contenedor Odoo:
+**57 tests, 55 pasan.** Los 2 que fallan (`computeLineDiscountAmount` da
+`30840.190000000002` en vez de `30840.19` en un caso puntual) son
+**preexistentes, de una ronda anterior (revisión formal de C3), no
+relacionados con este fix** — un artefacto conocido de la propia
+`roundPrecision` de Odoo al aplicarse sobre un valor que ya era exacto; no
+afecta lo que se envía por cable porque `_formatAmount` trunca con
+`toFixed()` antes de construir la trama. No se tocaron para no salirse del
+alcance de este fix.
+
+## Pendiente (gate humano)
+
+Sin Docker/navegador en este entorno para correr QUnit real ni para
+reproducir el reembolso contra la impresora física. Antes de dar esto por
+cerrado: actualizar `l10n_ve_pos_mf`/`l10n_ve_mf_base` en una instancia con
+Docker, y repetir exactamente el caso de prueba que reportó el bug (reembolso
+total de un pedido con 90% de campaña + Descuento Global nativo) contra
+hardware real, verificando que el Total de la NC impresa coincide con el
+Total de la factura original.

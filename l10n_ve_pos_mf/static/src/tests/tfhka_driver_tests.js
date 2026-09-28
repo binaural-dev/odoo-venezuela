@@ -11,10 +11,38 @@ import { MockSerialConnection } from "./MockSerialConnection";
 function buildS1Payload({
     lastInvoiceNumber = 0,
     lastNCNumber = 0,
+    lastDebtNoteNumber = null,
     dailyClosureCounter = 0,
     serialMachine = "Z1F0000000",
     rif = "J123456789",
 }) {
+    // Formato LARGO (>15 campos): sólo cuando hace falta `lastDebtNoteNumber`
+    // (número de Nota de Débito). El formato corto de abajo (14 campos) nunca
+    // lo setea — `_parseS1` lo deja en `null` en ese camino (ver
+    // TfhkaDriver._parseS1) — así que los tests de ND deben pasar este
+    // parámetro para que `printDebitNote` reciba un número y no falle.
+    if (lastDebtNoteNumber != null) {
+        const fields = [
+            "01",
+            "000000000000",
+            String(lastInvoiceNumber).padStart(8, "0"),
+            "00000001",
+            String(lastDebtNoteNumber).padStart(8, "0"),
+            "00000000",
+            String(lastNCNumber).padStart(8, "0"),
+            "00000000",
+            "00000000",
+            "00000000",
+            "00000000",
+            String(dailyClosureCounter),
+            rif,
+            serialMachine,
+            "120000",
+            "200626",
+        ];
+        return `S1${fields.join("\n")}`;
+    }
+
     const fields = [
         "01",
         "000000000000",
@@ -1767,12 +1795,16 @@ QUnit.test("Separación: caso real de campo — 3 x 34.266,88 al 90% de campaña
     );
 });
 
-QUnit.test("NC/ND sin cambios: printCreditNote ignora gross_price_unit y discount_amount", async (assert) => {
+QUnit.test("NC (fix hardware real 2026-09-28): ya NO resta el descuento global dos veces", async (assert) => {
     const driver = await buildConnectedDriver();
 
     // La MISMA estructura de línea que produce _convertOrderForDriver (con los
     // campos nuevos) y con el interruptor incluso en ON: la NC debe seguir
-    // usando price_unit (neto) y su único q- debe ser el agregado del subtotal.
+    // usando price_unit (neto), que YA trae el descuento global embebido —
+    // por eso ya NO debe emitir NINGÚN q- agregado (antes de este fix emitía
+    // uno, restando el mismo descuento por segunda vez: ver
+    // DISCOUNT_STRATEGY.md, sección "NC/ND: el descuento global se restaba
+    // dos veces").
     const creditNoteOrder = {
         partner: { vat: "V17527041", name: "Cliente NC" },
         invoice_affected: { number: "863", serial_machine: "Z1F0022949", date: "20/06/2026" },
@@ -1823,30 +1855,91 @@ QUnit.test("NC/ND sin cambios: printCreditNote ignora gross_price_unit y discoun
         "La NC NO usa gross_price_unit (100,00)"
     );
     assert.notOk(history.some((cmd) => cmd.startsWith("<STX>p-")), "La NC no emite ningún comando p-");
-    // El pie de la NC no cambió: sigue emitiendo la línea agregada de descuento
-    // global a partir de `global_discount_amount` (el histórico), ignorando por
-    // completo `global_only_discount_amount`.
+    // El pie de la NC no cambió: sigue emitiendo la línea INFORMATIVA de
+    // descuento global a partir de `global_discount_amount` (el histórico,
+    // sin afectar el total: es un `iXX`), ignorando por completo
+    // `global_only_discount_amount`.
     assert.ok(
         history.some((cmd) => cmd.includes("i00DESC. GLOBAL = 15,00<ETX>")),
-        "La NC sigue emitiendo la línea agregada DESC. GLOBAL en el pie"
+        "La NC sigue emitiendo la línea informativa DESC. GLOBAL en el pie"
     );
-    // Un ÚNICO q-, el agregado del subtotal (15,00 Bs), emitido DESPUÉS del
-    // subtotal "3" — no el de la línea (100,00) ni pegado al ítem.
+    // CERO comandos q-: ni el de la línea (100,00, que nunca debió emitirse en
+    // NC) ni el agregado del subtotal (15,00) que esta función emitía ANTES
+    // de este fix — `price_unit` (50,00) ya viene neto de ese mismo 15,00, así
+    // que restarlo de nuevo devolvía menos de lo que cobró la factura
+    // original.
     const ncDiscountCommands = history.filter((cmd) => cmd.startsWith("<STX>q-"));
-    assert.strictEqual(ncDiscountCommands.length, 1, "La NC emite exactamente un q-");
-    assert.ok(
-        ncDiscountCommands[0].startsWith("<STX>q-000001500<ETX>"),
-        "El q- de la NC es el descuento global agregado (15,00), no el de la línea (100,00)"
+    assert.strictEqual(
+        ncDiscountCommands.length,
+        0,
+        "La NC no emite ningún q- real: el descuento global ya está embebido en price_unit"
     );
-    const ncSubtotalIndex = history.findIndex((cmd) => cmd.startsWith("<STX>3<ETX>"));
-    const ncItemIndex = history.findIndex((cmd) => cmd.includes("Producto Devue"));
+});
+
+QUnit.test("ND (fix hardware real 2026-09-28): ya NO resta el descuento global dos veces", async (assert) => {
+    const driver = await buildConnectedDriver();
+
+    // Mismo caso que la NC de arriba: price_unit (neto) ya trae el 15,00
+    // embebido, así que la ND tampoco debe emitir q- alguno. printDebitNote
+    // no tenía NINGÚN test antes de este fix — este es el primero.
+    const debitNoteOrder = {
+        partner: { vat: "V17527041", name: "Cliente ND" },
+        invoice_affected: { number: "863", serial_machine: "Z1F0022949", date: "20/06/2026" },
+        lines: [
+            {
+                product_name: "Producto Ajustado",
+                product_code: "P002",
+                fiscal_code: "1",
+                quantity: 2,
+                price_unit: 50,            // neto
+                gross_price_unit: 100,     // NO debe usarse en ND
+                discount_amount: 100,      // NO debe emitirse por línea en ND
+            },
+        ],
+        payment_lines: [{ payment_method_code: "01", amount: 100 }],
+        global_discount_amount: 15,
+        global_discount_rate: 15,
+        global_clamped: false,
+        global_only_discount_amount: 7,
+        global_only_discount_rate: 7,
+        additional_lines: ["OPERADOR: TEST"],
+        flag_21: "00",
+        has_cashbox: false,
+        line_discount_via_q: true,
+    };
+
+    driver.connection.setNextResponse("STATUS");
+    driver.connection.setResponseSequence(new Array(30).fill("ACK"));
+    driver.connection.setS1Payload(buildS1Payload({
+        lastInvoiceNumber: 863,
+        lastDebtNoteNumber: 77,
+        dailyClosureCounter: 18,
+        serialMachine: "Z1F0022949",
+    }));
+
+    const result = await driver.printDebitNote(debitNoteOrder);
+    assert.ok(result.success, "ND impresa exitosamente");
+    assert.strictEqual(result.invoiceNumber, "77", "Número de ND leído desde S1 (formato largo, fields[4])");
+
+    const history = fiscalAscii(driver);
     assert.ok(
-        history.indexOf(ncDiscountCommands[0]) === ncSubtotalIndex + 1,
-        "El q- de la NC va después del subtotal, no pegado al ítem"
+        history.some((cmd) => cmd.includes(`<STX>\`1000000500000002000|P002|Producto Ajust<ETX>`)),
+        "La ND registra el ítem con price_unit (50,00), prefijo backtick"
     );
     assert.notOk(
-        history[ncItemIndex + 1].startsWith("<STX>q-"),
-        "El ítem de la NC no es seguido inmediatamente por un q-"
+        history.some((cmd) => cmd.startsWith("<STX>`1000001000")),
+        "La ND NO usa gross_price_unit (100,00)"
+    );
+    assert.notOk(history.some((cmd) => cmd.startsWith("<STX>p-")), "La ND no emite ningún comando p-");
+    assert.ok(
+        history.some((cmd) => cmd.includes("i00DESC. GLOBAL = 15,00<ETX>")),
+        "La ND sigue emitiendo la línea informativa DESC. GLOBAL en el pie"
+    );
+    const ndDiscountCommands = history.filter((cmd) => cmd.startsWith("<STX>q-"));
+    assert.strictEqual(
+        ndDiscountCommands.length,
+        0,
+        "La ND no emite ningún q- real: el descuento global ya está embebido en price_unit"
     );
 });
 

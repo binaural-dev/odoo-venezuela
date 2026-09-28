@@ -1836,13 +1836,23 @@ export class TfhkaDriver {
             this._appendHeaderInfo(phase1Commands, orderData, nameInfoCount);
 
             // 8. Items de la devolución ("d" + código_fiscal + precio + qty + desc)
-            let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
+            //
+            // `line.price_unit` (el que arma `_convertOrderForDriver`) ya viene
+            // NETO de todo descuento (campaña + global, en cascada) — así es
+            // como se diseñó para que `printInvoice` con el interruptor de
+            // línea apagado imprima el total correcto usando solo ese precio.
+            // Por eso aquí NO se resta ningún `q-` agregado adicional: hacerlo
+            // (como hacía esta función antes) restaba el descuento global DOS
+            // VECES — una implícita en `price_unit`, otra explícita vía `q-` —
+            // y la nota de crédito/débito devolvía de menos. Confirmado con
+            // hardware real: una NC de un pedido con 90% de campaña + Bs
+            // 606,52 de descuento global daba Total = 3.283,32 en vez de los
+            // 3.986,89 que cobró la factura original (ver DISCOUNT_STRATEGY.md).
+            // La línea informativa "DESC. GLOBAL = X" del pie (`_appendFooterInfo`
+            // más abajo) sigue mostrando el monto para referencia visual: es un
+            // comando `iXX`, no mueve el total.
             for (const line of orderData.lines || []) {
                 const linePrice = Number(line.price_unit || 0);
-                if (linePrice < 0) {
-                    globalDiscountAmount += Math.abs(linePrice);
-                    continue;
-                }
                 if (linePrice <= 0) continue;
 
                 const fiscalCode = String(line.fiscal_code || "1");
@@ -1864,12 +1874,6 @@ export class TfhkaDriver {
 
             // 9. Subtotal
             phase1Commands.push("3");
-
-            // 9.1 Descuento global
-            if (globalDiscountAmount > 0) {
-                const discount = this._formatAmount(globalDiscountAmount, config.disc_int, config.disc_decimal);
-                phase1Commands.push(`q-${discount}`);
-            }
 
             // Enviar FASE 1
             for (let i = 0; i < phase1Commands.length; i++) {
@@ -2031,13 +2035,16 @@ export class TfhkaDriver {
             this._appendHeaderInfo(phase1Commands, orderData, nameInfoCount);
 
             // 8. Items de la nota de débito (backtick + código_fiscal + precio + qty + desc)
-            let globalDiscountAmount = Math.abs(Number(orderData.global_discount_amount || 0));
+            //
+            // `line.price_unit` ya viene NETO de todo descuento (campaña +
+            // global, en cascada) — ver el docblock equivalente en
+            // `printCreditNote` para el detalle completo. No se resta ningún
+            // `q-` agregado adicional aquí: hacerlo restaba el descuento
+            // global DOS VECES y la nota de débito quedaba mal calculada. La
+            // línea informativa "DESC. GLOBAL = X" del pie sigue mostrando el
+            // monto para referencia visual sin afectar el total.
             for (const line of orderData.lines || []) {
                 const linePrice = Number(line.price_unit || 0);
-                if (linePrice < 0) {
-                    globalDiscountAmount += Math.abs(linePrice);
-                    continue;
-                }
                 if (linePrice <= 0) continue;
 
                 const fiscalCode = String(line.fiscal_code || "1");
@@ -2059,12 +2066,6 @@ export class TfhkaDriver {
 
             // 9. Subtotal
             phase1Commands.push("3");
-
-            // 9.1 Descuento global
-            if (globalDiscountAmount > 0) {
-                const discount = this._formatAmount(globalDiscountAmount, config.disc_int, config.disc_decimal);
-                phase1Commands.push(`q-${discount}`);
-            }
 
             for (let i = 0; i < phase1Commands.length; i++) {
                 const result = await this.sendCommand(phase1Commands[i], null, false, i > 0);
