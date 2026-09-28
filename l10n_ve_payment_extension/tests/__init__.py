@@ -37,4 +37,3 @@ from . import test_retention_foreign_rate_ticket_15154
 from . import test_municipal_retention_xlsx_report
 from . import test_retention_islr_partner_change
 from . import test_retention_duplicate_and_number_unique
-from . import test_move_retention_pending_recalculation
