@@ -1,4 +1,5 @@
 from datetime import timedelta
+from unittest.mock import patch
 
 from odoo import Command, fields
 from odoo.tests import tagged, Form
@@ -156,109 +157,72 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
         self.assertEqual(len(ret_lines), 1)
         _logger.info("========= test_03 passed =========")
 
-    def _setup_igtf_fixtures(self):
-        """Fixtures mínimas de l10n_ve_igtf: cuenta IGTF y diario en USD
-        marcado como `is_igtf`, necesarios para que una factura acumule
-        `alter_bi_igtf` al pagarse parcialmente por ese diario."""
-        acc_igtf_cli = self.get_or_create_account(
-            "236IGTF", "liability_current", "IGTF Clientes",
-        )
-        self.company.write({
-            "igtf_percentage": 3.0,
-            "customer_account_igtf_id": acc_igtf_cli.id,
-        })
-
-        account_bank_usd = self.get_or_create_account(
-            "1002", "asset_cash", "Cuenta de Banco USD",
-        )
-        manual_in = self.env.ref("account.account_payment_method_manual_in")
-        pm_line_in_usd = self.env["account.payment.method.line"].create({
-            "name": "Manual Inbound USD",
-            "payment_method_id": manual_in.id,
-            "payment_type": "inbound",
-            "payment_account_id": account_bank_usd.id,
-        })
-        bank_journal_usd = self.Journal.create({
-            "name": "Banco USD IGTF",
-            "code": "BNKUSD",
-            "type": "bank",
-            "currency_id": self.currency_usd.id,
-            "company_id": self.company.id,
-            "is_igtf": True,
-            "default_account_id": account_bank_usd.id,
-            "inbound_payment_method_line_ids": [(6, 0, pm_line_in_usd.ids)],
-        })
-        pm_line_in_usd.journal_id = bank_journal_usd.id
-        return bank_journal_usd
-
-    def _make_sale_invoice_usd(self, amount, invoice_date):
-        with Form(self.env["account.move"].with_context(
-            default_move_type="out_invoice", default_journal_id=self.sale_journal.id,
-        )) as inv_form:
-            inv_form.partner_id = self.partner_pnr_75
-            inv_form.invoice_date = invoice_date
-            inv_form.currency_id = self.currency_usd
-
-        inv = inv_form.save()
-        with Form(inv) as inv_form_edit:
-            with inv_form_edit.invoice_line_ids.new() as line:
-                line.product_id = self.product_iva
-                line.quantity = 1
-                line.price_unit = amount
-        inv = inv_form_edit.save()
-
-        inv.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
-        inv.with_context(move_action_post_alert=True).action_post()
-        return inv
-
     def test_04_retention_row_zeroes_all_numeric_fields_including_igtf(self):
+        """Simula, vía mocks, que un módulo externo (p.ej. l10n_ve_igtf)
+        agrega una columna numérica `igtf` a la fila de venta, sin necesidad
+        de instalar ese módulo real. Verifica que el mecanismo genérico de
+        zereo de campos numéricos de `_fields_retention_book_line` también
+        limpie esa columna en la fila RET."""
         today = fields.Date.today()
-        bank_journal_usd = self._setup_igtf_fixtures()
-
-        inv = self._make_sale_invoice_usd(2681.20, today)
-
-        with Form.from_action(self.env, inv.action_register_payment()) as pay_form:
-            pay_form.journal_id = bank_journal_usd
-            pay_form.payment_date = today
-            pay_form.save()
-            pay_form.amount = 2000.00
-            pay_form.save()
-        pay_form.record.action_create_payments()
-
-        retention = self._make_sale_iva_retention(inv, today)
+        inv = self._make_sale_invoice(200, today)
+        self._make_sale_iva_retention(inv, today)
 
         wizard = self.env["wizard.accounting.reports"].create({
             "report": "sale",
             "date_from": today - timedelta(days=10),
             "date_to": today + timedelta(days=10),
         })
-        data = wizard.parse_sale_book_data()
 
-        fac_lines = [line for line in data if line.get("move_type") == "FAC"]
-        ret_lines = [line for line in data if line.get("move_type") == "RET"]
-        self.assertEqual(len(fac_lines), 1)
-        self.assertEqual(len(ret_lines), 1)
+        original_fields_sale_book_line = type(wizard)._fields_sale_book_line
+        original_get_sale_book_field_groups = type(wizard)._get_sale_book_field_groups
 
-        fac_line = fac_lines[0]
-        ret_line = ret_lines[0]
+        def _fields_sale_book_line_with_fake_module_field(self, move, taxes):
+            row_fields = original_fields_sale_book_line(self, move, taxes)
+            if row_fields:
+                row_fields["igtf"] = 123.45
+            return row_fields
 
-        self.assertNotEqual(fac_line.get("igtf"), 0)
-        self.assertEqual(ret_line.get("igtf"), 0)
+        def _get_sale_book_field_groups_with_fake_module_field(self):
+            groups = original_get_sale_book_field_groups(self)
+            return groups + [{
+                "header": "FAKE",
+                "fields": [{"name": "Fake IGTF", "field": "igtf", "format": "number"}],
+            }]
 
-        numeric_fields = {
-            field["field"]
-            for group in wizard._get_sale_book_field_groups()
-            for field in group.get("fields", [])
-            if field.get("format") == "number"
-        }
-        for field_name in numeric_fields:
-            if field_name == "iva_withheld" or field_name not in ret_line:
-                continue
-            self.assertEqual(
-                ret_line[field_name], 0,
-                f"Campo numérico '{field_name}' de la fila RET debería ser 0, "
-                f"encontrado: {ret_line[field_name]}",
-            )
+        with patch.object(
+            type(wizard), "_fields_sale_book_line",
+            autospec=True, side_effect=_fields_sale_book_line_with_fake_module_field,
+        ), patch.object(
+            type(wizard), "_get_sale_book_field_groups",
+            autospec=True, side_effect=_get_sale_book_field_groups_with_fake_module_field,
+        ):
+            data = wizard.parse_sale_book_data()
+
+            fac_lines = [line for line in data if line.get("move_type") == "FAC"]
+            ret_lines = [line for line in data if line.get("move_type") == "RET"]
+            self.assertEqual(len(fac_lines), 1)
+            self.assertEqual(len(ret_lines), 1)
+
+            fac_line = fac_lines[0]
+            ret_line = ret_lines[0]
+
+            self.assertEqual(fac_line.get("igtf"), 123.45)
+            self.assertEqual(ret_line.get("igtf"), 0)
+
+            numeric_fields = {
+                field["field"]
+                for group in wizard._get_sale_book_field_groups()
+                for field in group.get("fields", [])
+                if field.get("format") == "number"
+            }
+            for field_name in numeric_fields:
+                if field_name == "iva_withheld" or field_name not in ret_line:
+                    continue
+                self.assertEqual(
+                    ret_line[field_name], 0,
+                    f"Campo numérico '{field_name}' de la fila RET debería ser 0, "
+                    f"encontrado: {ret_line[field_name]}",
+                )
         _logger.info("========= test_04 passed =========")
 
     def test_05_resume_total_retenciones_matches_detail_sum_across_periods(self):
