@@ -11,9 +11,9 @@
 - [x] 2.1 `set_foreign_amount_in_line`: copiar y bloquear la contrapartida solo en extractos
 - [x] 2.2 Test `tests/test_pos_session_close_statement_foreign_rate.py` (extracto cuadra con tasa distinta el día del cierre; asiento de sesión no bloquea ventas)
 - [x] 2.3 Bump `l10n_ve_pos` 1.18 → 1.19
-- [x] 2.4 `tests/test_pos_session_accounting_common.py`: crear el producto con `with_company(cls.company)` — el guard de compañía de `l10n_ve_stock` (sin bypass de `su`) tumbaba el `setUpClass` de todas las clases que heredan de la base
+- [x] 2.4 `tests/test_pos_session_accounting_common.py`: crear el producto con `with_company(cls.company)` — el guard de compañía de `l10n_ve_stock` (sin bypass de `su`) tumbaba el `setUpClass` de todas las clases que heredan de la base. Mismo cambio en `test_pos_data_loading.py` y `test_pos_serialization.py`, que crean su propio producto
 
 ## 3. Validación
 
-- [x] 3.1 Correr los tests de `l10n_ve_pos` en BD temporal: el test nuevo pasa con el fix y falla sin él. Quedan 2 errores ajenos que ya hay en 19.0 (`TestPosDataLoading`, `TestPosSerialization`: mismo guard de `l10n_ve_stock` en su propio `setUpClass`)
+- [x] 3.1 Correr los tests de `l10n_ve_pos` en BD temporal: 0 fallos / 0 errores de 82 tests; el test nuevo falla sin el fix
 - [ ] 3.2 Repetir en navegador el caso de posv19 y comprobar que ambos extractos cuadran en alterno

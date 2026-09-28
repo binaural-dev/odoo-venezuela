@@ -87,7 +87,10 @@ class TestPosDataLoading(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # ``l10n_ve_stock`` rejects creating a product in a company other than
+        # ``env.company`` (no superuser bypass), so create it from the test
+        # company.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "Test Product VE",
                 "lst_price": 10.0,
