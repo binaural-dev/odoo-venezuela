@@ -62,6 +62,19 @@ class StockPicking(models.Model):
 
     document = fields.Selection(related="sale_id.document")
 
+    dispatch_note_invoice_names = fields.Char(
+        string="Sale Invoices",
+        compute="_compute_dispatch_note_invoice_names",
+        help="Invoice numbers of the related sale order, shown in the dispatch note.",
+    )
+
+    @api.depends("sale_id.invoice_ids.name")
+    def _compute_dispatch_note_invoice_names(self):
+        for picking in self:
+            picking.dispatch_note_invoice_names = ", ".join(
+                picking.sale_id.invoice_ids.filtered("name").mapped("name")
+            )
+
     transfer_reason_id = fields.Many2one(
         "transfer.reason",
         string="Reason for Transfer",

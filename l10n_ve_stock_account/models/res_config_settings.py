@@ -39,3 +39,8 @@ class ResConfigSettings(models.TransientModel):
         domain=[("code", "in", INTERNAL_TRANSFER_REASON_CODES)],
     )
 
+    group_dispatch_note_print = fields.Boolean(
+        related="company_id.group_dispatch_note_print",
+        readonly=False,
+        implied_group="l10n_ve_stock_account.group_dispatch_note_print",
+    )

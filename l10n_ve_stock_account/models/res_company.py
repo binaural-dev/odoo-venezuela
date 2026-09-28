@@ -56,3 +56,4 @@ class ResCompany(models.Model):
         help="Reason prefilled on new internal transfers. It can be changed per transfer.",
     )
 
+    group_dispatch_note_print = fields.Boolean(string="Print Dispatch Note")
