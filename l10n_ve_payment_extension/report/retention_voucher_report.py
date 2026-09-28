@@ -12,7 +12,6 @@ class PaymentExtensionRetentionIvaVoucher(models.AbstractModel):
             raise ValidationError(
                 _("Municipal retentions do not have PDF voucher. Please print the xslx")
             )
-
         return {
             "docids": docids,
             "doc_model": "account.retention",

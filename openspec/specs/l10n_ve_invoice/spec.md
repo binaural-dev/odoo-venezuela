@@ -85,6 +85,64 @@ El sistema DEBE (MUST) impedir guardar facturas con líneas de producto cuyo `pr
 - **WHEN** la línea a precio no positivo es una línea de descuento reconocida
 - **THEN** la factura se guarda sin error
 
+### Requirement: Descuento por monto fijo en líneas de factura
+
+La compañía DEBE (MUST) tener `discount_type` (Selection: `percent`/`amount`, default `percent`) que determina, de forma homogénea para todas las facturas y líneas del sistema (no por línea ni por documento), si `account.move.line` opera con el `discount` (%) nativo o con `discount_fixed` (monto fijo sobre el subtotal bruto de la línea, precisión "Product Price"). Cuando `discount_type = 'amount'` y la línea tiene `discount_fixed` distinto de cero (`account.move.line._uses_discount_fixed()`), la Base Imponible, los impuestos y el Total de la línea se calculan directamente a partir de `discount_fixed` — sin pasar por el campo `discount` (%) en ningún punto del cálculo:
+
+- `account.tax._prepare_base_line_for_taxes_computation` inyecta el porcentaje exacto (`account.move.line._get_exact_discount_percentage()`, sin redondear a la precisión "Discount" de 2 decimales) en el `base_line` que arma el motor de impuestos, así que `_compute_totals` (price_subtotal/price_total) usa esa razón exacta.
+- `l10n_ve_accountant._compute_foreign_subtotal` (foreign_subtotal/foreign_price_total) se sobreescribe con el mismo patrón, usando la misma razón exacta en vez de `discount`, para que el monto en moneda alterna no se desincronice del nativo.
+
+El campo `discount` NUNCA se escribe ni se lee para este cálculo: se queda en su valor por defecto (0.0) mientras `discount_fixed` esté activo. Esto aplica sin importar el origen de la escritura de `discount_fixed` — formulario, `create()`/`write()` por código, importación, RPC — porque no depende de ningún onchange, sino de los `@api.depends("discount_fixed")` agregados a los computes de totales. La vista de factura muestra `discount_fixed` en vez de `discount` (`column_invisible`/`invisible` sobre `parent.discount_type`) según ese ajuste.
+
+Un `discount_fixed` que alcance o supere el subtotal bruto de la línea (`price_unit * quantity`) DEBE (MUST) bloquear el guardado con un error en términos de monto fijo (no de porcentaje).
+
+`discount` y `discount_fixed` son mutuamente excluyentes, decidido enteramente por `discount_type` de la compañía (no por comparación de valores anteriores): cualquier `create()`/`write()`/onchange del formulario que toque alguno de los dos campos fuerza el que NO corresponde al `discount_type` vigente a 0.0, en la misma operación. Con `discount_type = 'amount'`, `discount` siempre queda en 0.0 sin importar qué se intente escribir en él. Con `discount_type = 'percent'`, `discount_fixed` siempre queda en 0.0 sin importar qué se intente escribir en él.
+
+#### Scenario: Modo amount fuerza discount a 0 sin importar qué se escriba
+
+- **WHEN** la compañía tiene `discount_type = 'amount'` y una escritura toca `discount` o `discount_fixed` (por cualquier vía)
+- **THEN** `discount` queda en 0.0 en esa misma operación, tenga o no un valor previo
+
+#### Scenario: Modo percent fuerza discount_fixed a 0 sin importar qué se escriba
+
+- **WHEN** la compañía tiene `discount_type = 'percent'` y una escritura toca `discount` o `discount_fixed` (por cualquier vía)
+- **THEN** `discount_fixed` queda en 0.0 en esa misma operación, tenga o no un valor previo
+
+#### Scenario: Ambos campos en la misma escritura
+
+- **WHEN** se crea o escribe una línea fijando `discount` y `discount_fixed` distintos de cero en la misma operación, con la compañía en modo `amount`
+- **THEN** `discount_fixed` conserva su valor y `discount` queda en 0.0 (el config decide, no el orden ni los valores dados)
+
+#### Scenario: Escritura por cualquier vía aplica el descuento
+
+- **WHEN** se crea o escribe una línea con `discount_fixed` distinto de cero, ya sea desde el formulario, `create()`/`write()` por código, o una importación
+- **THEN** `price_subtotal`, `price_total`, `foreign_subtotal` y `foreign_price_total` reflejan el descuento fijo, y `discount` permanece en 0.0
+
+#### Scenario: Base Imponible con descuento fijo y cantidad mayor a uno
+
+- **WHEN** una línea tiene cantidad 2, precio unitario $50,00 e IVA 16%, y se ingresa un descuento fijo de $20,00
+- **THEN** la Base Imponible queda en $80,00, el IVA en $12,80 y el Total en $92,80
+
+#### Scenario: Exactitud incluso cuando el porcentaje equivalente no es exacto en 2 decimales
+
+- **WHEN** una línea sin impuestos tiene precio unitario $333,33 y descuento fijo $25,55 (cuyo % equivalente, 7.6651...%, no es exacto a 2 decimales)
+- **THEN** la Base Imponible queda en $307,78 exactos, sin el arrastre de redondeo que produciría convertir primero a un `discount` (%) de 2 decimales
+
+#### Scenario: `price_unit * quantity` en cero
+
+- **WHEN** se calcula el porcentaje exacto con `price_unit * quantity` igual a cero
+- **THEN** el resultado es 0.0, sin división por cero
+
+#### Scenario: Descuento fijo igual o mayor al subtotal bruto de la línea
+
+- **WHEN** se guarda una línea con `discount_fixed` mayor o igual a `price_unit * quantity`
+- **THEN** se lanza un error de validación en términos de monto fijo, antes de intentar traducirlo a un porcentaje inválido
+
+#### Scenario: Modo porcentaje activo
+
+- **WHEN** la compañía tiene `discount_type = 'percent'`
+- **THEN** la grilla de líneas de factura muestra únicamente `discount` (%), el cálculo nativo de Odoo no se altera, y `discount_fixed` no tiene ningún efecto aunque tenga un valor distinto de cero
+
 ### Requirement: Impuesto obligatorio por línea para confirmar
 
 `action_post` DEBE (MUST) impedir confirmar facturas y notas (`out_invoice`, `in_invoice`, `out_refund`, `in_refund`) con alguna línea de producto sin impuestos (`tax_ids` vacío), excluyendo secciones y notas.
@@ -143,6 +201,45 @@ El campo `entry_in_period` DEBE (MUST) indicar si un documento entra en el perí
 
 - **WHEN** el documento está en estado `cancel`
 - **THEN** `entry_in_period` es falso
+
+### Requirement: Advertencia de Nota de Débito de proveedor fuera del período fiscal
+
+El wizard `account.debit.note` DEBE (MUST) exponer `l10n_ve_out_of_fiscal_period_warning` (booleano, solo advertencia -- nunca bloquea la creación), verdadero cuando entre las facturas de proveedor (`in_invoice`) seleccionadas (`move_ids`) alguna tiene su `invoice_date_display` en un mes/año distinto al de la fecha de la Nota de Débito elegida en el wizard (`date`). La comparación usa `invoice_date_display` de la factura origen -- su fecha fiscal real -- y no `date` (fecha contable, que solo se DERIVA de `invoice_date_display` vía `_get_accounting_date_source` de `l10n_ve_accountant` y puede quedar posterior si el documento se contabiliza después de emitido). Documentos de venta (`out_invoice`/`out_refund`) nunca disparan la advertencia.
+
+#### Scenario: Nota de Débito de proveedor en el mismo período que la factura
+
+- **WHEN** se abre el wizard de Nota de Débito sobre una factura de proveedor y la fecha elegida cae en el mismo mes/año que `invoice_date_display` de esa factura
+- **THEN** `l10n_ve_out_of_fiscal_period_warning` es falso
+
+#### Scenario: Nota de Débito de proveedor en un período distinto
+
+- **WHEN** la fecha elegida en el wizard cae en un mes/año distinto al de `invoice_date_display` de la factura de proveedor
+- **THEN** `l10n_ve_out_of_fiscal_period_warning` es verdadero y el formulario del wizard muestra un aviso, sin impedir crear la nota
+
+#### Scenario: La advertencia ignora la fecha contable de la factura, no su fecha fiscal
+
+- **WHEN** la factura de proveedor fue emitida (`invoice_date_display`) en un mes pero contabilizada (`date`) en otro, y la Nota de Débito se fecha en el mes de emisión
+- **THEN** `l10n_ve_out_of_fiscal_period_warning` es falso, porque la comparación usa `invoice_date_display`, no `date`
+
+### Requirement: Preservación de la tasa y de la fecha fiscal propia al crear una Nota de Débito
+
+Al crear una Nota de Débito (`account.debit.note.create_debit`, `_prepare_default_values`), el sistema DEBE (MUST) corregir el comportamiento por defecto del núcleo (`account_debit_note`), que asigna tanto `date` como `invoice_date` a la fecha elegida en el wizard y dependen de `copy()` para heredar `invoice_date_display` de la factura origen sin cambios:
+
+- `invoice_date` (la "Fecha de Tasa" redefinida por `l10n_ve_accountant`/`l10n_ve_invoice`, usada solo para el cálculo de tasa de cambio) DEBE quedar igual a `invoice_date` de la factura origen -- nunca a la fecha del wizard. Sin esta corrección, la nota cotiza a una tasa distinta a la de la factura que corrige/complementa, generando un diferencial cambiario espurio entre dos documentos que son la misma transacción.
+- `invoice_date_display` (la fecha fiscal propia del documento, de la que `date` se deriva vía `_get_accounting_date_source`) DEBE quedar igual a la fecha elegida en el wizard (`self.date` o `move.date` como resguardo) -- nunca heredada en silencio de la factura origen.
+- `date` (fecha contable) sigue como ya lo resuelve el núcleo: la fecha elegida en el wizard.
+
+Aplica a cualquier documento facturable (`is_invoice(include_receipts=True)`), no solo a facturas de proveedor.
+
+#### Scenario: La Nota de Débito conserva la tasa de la factura origen
+
+- **WHEN** se crea una Nota de Débito con una fecha de wizard distinta a la fecha de la factura origen
+- **THEN** `invoice_date` de la nota creada es igual a `invoice_date` de la factura origen, no a la fecha del wizard
+
+#### Scenario: La Nota de Débito declara su propia fecha fiscal
+
+- **WHEN** se crea una Nota de Débito con una fecha de wizard distinta a `invoice_date_display` de la factura origen
+- **THEN** `invoice_date_display` de la nota creada es igual a la fecha elegida en el wizard, y `date` también
 
 ### Requirement: Próxima cuota por vencer
 

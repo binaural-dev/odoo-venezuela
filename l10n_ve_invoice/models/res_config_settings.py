@@ -31,8 +31,12 @@ class ResConfigSettings(models.TransientModel):
     )
     
     block_invoice_display_date_upper_than_date = fields.Boolean(
-        related="company_id.block_invoice_display_date_upper_than_date", 
+        related="company_id.block_invoice_display_date_upper_than_date",
         readonly=False
+    )
+
+    discount_type = fields.Selection(
+        related="company_id.discount_type", readonly=False
     )
 
     @api.onchange("group_sales_invoicing_series")

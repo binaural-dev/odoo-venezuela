@@ -1,4 +1,5 @@
-from odoo import models, tools
+from odoo import models
+from odoo.tools.image import image_process
 from datetime import date
 import xlsxwriter
 from io import BytesIO
@@ -57,7 +58,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         worksheet.merge_range("G8:H8", retention.name, fmt_bold_border)
         
         worksheet.write_rich_string("A11", fmt_bold, "RAZÓN SOCIAL :", str(company.name))
-        worksheet.write_rich_string("A12", fmt_bold, "NUMERO DE REGISTRO ÚNICO DE INFORMACIÓN FISCAL: ", str(company.partner_id.vat))
+        worksheet.write_rich_string("A12", fmt_bold, "NUMERO DE REGISTRO ÚNICO DE INFORMACIÓN FISCAL: ", f"{company.partner_id.prefix_vat or ''}{company.partner_id.vat or ''}")
         worksheet.write_rich_string("E11", fmt_bold, "NUMERO DE LICENCIA DE ACTIVIDADES ECONOMICAS: ", str(tax_auth.economic_activity_number))
         worksheet.write_rich_string("A13", fmt_bold, "DIRECCIÓN FISCAL: ", company.street or "")
 
@@ -137,7 +138,7 @@ class MunicipalRetentionXlsx(models.AbstractModel):
         # Firma configurada (Imagen)
         signature_rec = self.env["signature.config"].search([("active", "=", True)], limit=1, order="id asc")
         if signature_rec and signature_rec.signature:
-            sig_img = tools.image_process(base64.b64decode(signature_rec.signature), (200, 200))
+            sig_img = image_process(base64.b64decode(signature_rec.signature), (200, 200))
             worksheet.insert_image("B" + str(last_row_index + 7), 
                                    "signature.png", 
                                    {"image_data": BytesIO(sig_img),

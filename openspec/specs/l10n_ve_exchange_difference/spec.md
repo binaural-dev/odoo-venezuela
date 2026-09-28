@@ -307,6 +307,82 @@ para esos documentos ajenos al módulo.
 - **WHEN** se concilia contra un pago con diferencial cambiario
 - **THEN** se genera la ND/NC de este módulo (es una factura de cliente válida)
 
+### Requirement: Los pagos de retención quedan excluidos del flujo de ND/NC
+
+El sistema SHALL NOT generar ND/NC cuando la conciliación de una factura de
+cliente contra un pago corresponde a una retención (ISLR/IVA/Municipal)
+gestionada por `l10n_ve_payment_extension`, SIN que este módulo declare
+ninguna dependencia (directa ni inversa) hacia ese módulo de retenciones.
+
+La exclusión SHALL coordinarse exclusivamente vía una clave de contexto
+explícita y propia (`l10n_ve_exchange_is_retention_reconcile`), NUNCA vía la
+clave nativa genérica `no_exchange_difference` -- esta última la reutilizan
+varios flujos con propósitos distintos, incluido este mismo módulo al cerrar
+la línea por cobrar de su propia ND/NC, así que leerla aquí para detectar
+retenciones confundiría cualquier otro llamador legítimo con una retención.
+
+#### Scenario: Pago de retención sobre factura de cliente en moneda extranjera
+
+- **GIVEN** una factura de cliente en moneda extranjera con el toggle
+  `l10n_ve_exchange_use_nd_nc` activado en la compañía
+- **WHEN** se concilia contra un pago de retención (`l10n_ve_payment_extension`,
+  `account.retention._reconcile_all_payments`)
+- **THEN** la reconciliación entra con el contexto
+  `l10n_ve_exchange_is_retention_reconcile=True`
+- **AND** el sistema NO genera ninguna ND/NC de este módulo para ese pago
+- **AND** el diferencial cambiario de esa conciliación, si lo hay, sigue el
+  comportamiento nativo de Odoo (asiento genérico)
+
+### Requirement: Un flujo mixto permite decidir por cliente si se emite ND/NC o el asiento nativo
+
+El sistema SHALL ofrecer un toggle de compañía adicional
+(`l10n_ve_exchange_validate_partner_note`, Binaural Settings) que, combinado
+con el toggle base `l10n_ve_exchange_use_nd_nc`, permite que la empresa
+decida el flujo de diferencial cambiario (ND/NC fiscal vs. asiento nativo) de
+forma individual por cliente, en vez de aplicar el mismo flujo a todos por
+igual.
+
+Con `l10n_ve_exchange_validate_partner_note` DESACTIVADO (default), el
+comportamiento SHALL ser idéntico al de antes de que este toggle existiera:
+todo cliente con el toggle base activado recibe ND/NC.
+
+Con `l10n_ve_exchange_validate_partner_note` ACTIVADO, el sistema SHALL
+consultar el campo `l10n_ve_exchange_allow_note` (booleano) en la ficha del
+cliente (`res.partner`, pestaña Contabilidad) para cada factura liquidada:
+- Si está marcado: se emite la ND/NC fiscal real, como siempre.
+- Si NO está marcado: la línea sigue el comportamiento nativo de Odoo
+  (asiento genérico interno), SIN generar ninguna ND/NC para esa factura.
+
+El campo `l10n_ve_exchange_allow_note` en el contacto SHALL mostrarse
+únicamente cuando la compañía activa tiene
+`l10n_ve_exchange_validate_partner_note` activado -- oculto en caso
+contrario, para no exponer una opción sin efecto.
+
+#### Scenario: Flujo mixto activado, cliente CON permiso de nota
+
+- **GIVEN** `l10n_ve_exchange_use_nd_nc` y `l10n_ve_exchange_validate_partner_note`
+  activados en la compañía
+- **AND** el cliente de la factura tiene `l10n_ve_exchange_allow_note = True`
+- **WHEN** se concilia la factura de ese cliente contra un pago con diferencial
+- **THEN** se emite la ND/NC fiscal real, como en el flujo estándar
+
+#### Scenario: Flujo mixto activado, cliente SIN permiso de nota
+
+- **GIVEN** `l10n_ve_exchange_use_nd_nc` y `l10n_ve_exchange_validate_partner_note`
+  activados en la compañía
+- **AND** el cliente de la factura tiene `l10n_ve_exchange_allow_note = False` (default)
+- **WHEN** se concilia la factura de ese cliente contra un pago con diferencial
+- **THEN** NO se emite ninguna ND/NC para esa factura
+- **AND** el diferencial cambiario se registra con el asiento genérico nativo de Odoo
+
+#### Scenario: Flujo mixto desactivado (comportamiento sin cambios)
+
+- **GIVEN** `l10n_ve_exchange_use_nd_nc` activado y
+  `l10n_ve_exchange_validate_partner_note` DESACTIVADO en la compañía
+- **WHEN** se concilia cualquier factura de cliente elegible contra un pago con diferencial
+- **THEN** se emite la ND/NC fiscal real, sin importar `l10n_ve_exchange_allow_note`
+  del cliente
+
 ### Requirement: El widget de Conciliación Bancaria de Enterprise queda fuera de alcance a propósito
 
 El sistema SHALL NOT generar ND/NC cuando la conciliación de una factura de

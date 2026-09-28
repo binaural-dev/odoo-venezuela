@@ -65,7 +65,10 @@
                 <field name="declaration_unique_of_customs" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
                 <field name="import_file_number_purchase_international" invisible="not is_purchase_international" readonly="state == 'posted'" required="is_purchase_international"/>
             </xpath>
-            <xpath expr="//field[@name='invoice_date']" position="after">
+            <!-- Placed before the customer label (not the field) so it lands
+                 right above the Rate Date row, matching the ticket's order:
+                 Invoice Date, Reception Date, Rate Date -->
+            <xpath expr="//label[@for='invoice_date'][@invisible=&quot;move_type not in ('out_invoice', 'out_refund', 'out_receipt')&quot;]" position="before">
                 <field name="invoice_reception_date"
                     options="{'datepicker': {'warn_future': true}}"
                     invisible="move_type not in ('out_invoice', 'out_refund', 'out_receipt', 'in_invoice', 'in_refund', 'in_receipt')"
@@ -119,6 +122,21 @@
                     invisible="not entry_in_period and (not id or state != 'draft') or move_type in ('out_invoice', 'out_refund', 'out_receipt', 'entry')"
                     groups="!l10n_ve_invoice.group_show_cancel_button"
                     data-hotkey="x"/>
+            </xpath>
+
+            <!-- Fixed-amount discount on invoice lines: shown instead of the
+                 native percentage discount when the company setting is on.
+                 discount_fixed drives price_subtotal/price_total/foreign
+                 amounts directly (see account_move_line.py); discount (%)
+                 is never read nor written while this mode is active. -->
+            <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="attributes">
+                <attribute name="column_invisible">parent.discount_type == 'amount'</attribute>
+                <attribute name="invisible">parent.discount_type == 'amount'</attribute>
+            </xpath>
+            <xpath expr="//field[@name='invoice_line_ids']//field[@name='discount']" position="after">
+                <field name="discount_fixed"
+                    column_invisible="parent.discount_type != 'amount'"
+                    invisible="parent.discount_type != 'amount'"/>
             </xpath>
 
         </field>

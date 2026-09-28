@@ -38,7 +38,18 @@ class ProductProduct(models.Model):
         # Variante del maldito Raiver e.e
         return True
 
+    def _check_company_id_edit_allowed(self, vals):
+        # company_id on product.product is a writable related field
+        # (_inherits materializes the parent's non-readonly fields that
+        # way), so a write() here reaches the same column without ever
+        # calling product.template.write() - delegate to the template's
+        # own guard instead of duplicating it. product_tmpl_id is empty
+        # on an empty product.product recordset (create()), which the
+        # template method already handles (compares against env.company).
+        self.product_tmpl_id._check_company_id_edit_allowed(vals)
+
     def write(self, vals):
+        self._check_company_id_edit_allowed(vals)
         if "default_code" in vals:
             for product in self:
                 lock_enabled = vals.get(
@@ -74,6 +85,8 @@ class ProductProduct(models.Model):
             "l10n_ve_stock.group_block_type_inventory_transfers_expeditions"
         ):
             raise UserError(_("You can't create products"))
+        for vals in vals_list:
+            self._check_company_id_edit_allowed(vals)
         records = super().create(vals_list)
         records._validate_list_price()
         return records

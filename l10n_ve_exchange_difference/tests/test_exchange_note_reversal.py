@@ -260,6 +260,23 @@ class TestExchangeNoteReversal(TransactionCase):
         })
         cls.company.l10n_ve_exchange_use_nd_nc = True
 
+        # `_check_l10n_ve_exchange_use_nd_nc_requires_config` (res_company.py)
+        # defiere su chequeo final a `cr.precommit` -- necesario para no dar
+        # un falso positivo mientras el toggle y el producto/pricelist se
+        # escriben en llamadas `write()` separadas (ver su propio docstring).
+        # Ese callback pendiente solo se descarga cuando algo llama
+        # `cr.flush()` (p.ej. `self.assertRaises` -- SÍ sobreescrito por Odoo
+        # para hacer flush; `assertRaisesRegex` NO). Sin este flush explícito
+        # acá, el callback queda dormido en `cr.precommit` durante TODA la
+        # clase -- hasta el primer test que use `assertRaises` plano, que
+        # puede ya haber corrompido a propósito el estado de la compañía por
+        # SQL directo (ej. `test_missing_note_pricelist_raises_user_error_defense_in_depth`)
+        # para ejercitar el guard en tiempo de conciliación. El chequeo
+        # dormido entonces lee ESE estado ajeno y revienta con
+        # `ValidationError` antes de que el bloque bajo prueba de ESE test
+        # siquiera se ejecute, enmascarando el `UserError` esperado.
+        cls.env.cr.flush()
+
         # Diario de venta EXPLÍCITO -- NO se busca "cualquier diario
         # `type='sale'`" (bug real confirmado: esa búsqueda, sin excluir
         # `is_debit`, podía encontrar el propio `debit_note_journal`
