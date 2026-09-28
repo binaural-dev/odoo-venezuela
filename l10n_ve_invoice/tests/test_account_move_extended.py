@@ -538,8 +538,13 @@ class TestAccountMoveExtended(TransactionCase):
         )
         self._create_vendor_bill(self.partner, "00061", post=True)
 
-        with self.assertRaises(ValidationError):
+        try:
             self._create_vendor_bill(other_partner, "00061", post=True)
+        except ValidationError:
+            self.fail(
+                "_check_correlative() must not consider vendor bills from "
+                "a different vendor as duplicates"
+            )
 
     def test_vendor_bill_duplicate_correlative_not_posted(self):
         self._create_vendor_bill(self.partner, "00062", post=False)
@@ -550,6 +555,38 @@ class TestAccountMoveExtended(TransactionCase):
             self.fail(
                 "_check_correlative() must only compare against posted "
                 "vendor bills"
+            )
+
+    def test_correlative_not_duplicated_across_sale_and_purchase(self):
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": self.journal_sale.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
+                "correlative": "00063",
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 100,
+                        },
+                    )
+                ],
+            }
+        )
+        invoice.action_post()
+
+        try:
+            self._create_vendor_bill(self.partner, "00063", post=True)
+        except ValidationError:
+            self.fail(
+                "_check_correlative() must not consider a sale invoice and "
+                "a vendor bill sharing the same correlative as duplicates"
             )
 
     # --- is_valid_to_sequence ---
