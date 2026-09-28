@@ -71,6 +71,27 @@ antes de esta feature.
   real en `cr.precommit` (una sola vez por compañía), que corre después de
   que todos los `write()` pendientes de la transacción ya se aplicaron.
 
+## Ajuste post-implementación (tarea 82677)
+
+Ref. tarea Binaural: https://binaural.odoo.com/odoo/action-341/82677
+("Ajuste a la Tarea de Flujo Mixto de Diferencia en Cambio"), relacionada con
+la tarea 81554 de este mismo change.
+
+1. El selector `l10n_ve_exchange_note_product_id` (Ajustes > Diferencial
+   Cambiario) listaba CUALQUIER producto de tipo Servicio -- ahora su
+   `domain` también exige que el producto tenga asignado el impuesto exento
+   de venta (`exent_aliquot_sale`) y el de compra (`exent_aliquot_purchase`)
+   configurados en la compañía (`l10n_ve_accountant`), igual que ya exigía el
+   texto de ayuda del campo. El `domain` está declarado como STRING (no como
+   lista) para poder referenciar esos dos campos de la propia compañía --
+   Odoo solo evalúa esa forma del lado del cliente, nunca la aplica en el
+   servidor (el `write()` directo sigue sin restricción; la validación real
+   la sigue haciendo `_check_l10n_ve_exchange_note_product_id`, sin cambios).
+2. El texto de ayuda de `res.partner.l10n_ve_exchange_allow_note` se
+   simplificó -- ya no repite la mecánica del toggle de compañía (eso ya lo
+   explica el propio ajuste de compañía), solo el efecto directo sobre las
+   facturas del cliente.
+
 ## Impact
 
 - **Capability**: `exchange-difference-note` (extendida, no nueva).

@@ -669,22 +669,13 @@ msgstr "Permitir Nota de Diferencial Cambiario"
 #: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_partner__l10n_ve_exchange_allow_note
 #: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_users__l10n_ve_exchange_allow_note
 msgid ""
-"Only consulted when the company's 'Validate Customer Allows Exchange "
-"Difference Note' setting is enabled -- with it disabled, every customer "
-"gets a Debit/Credit Note for its invoices' exchange difference regardless "
-"of this field. With it enabled: if checked, this customer's invoices settle "
-"their exchange difference with a real fiscal Debit/Credit Note; if "
-"unchecked, they settle it with Odoo's native generic exchange difference "
-"entry instead."
+"When checked, this customer's invoices settle their exchange difference "
+"through a Debit/Credit Note. When unchecked, Odoo's generic exchange "
+"difference entry is used instead."
 msgstr ""
-"Solo se consulta cuando el ajuste de compañía 'Validar que el Cliente "
-"Permita la Nota de Diferencial Cambiario' está activado -- con este "
-"desactivado, todo cliente recibe una Nota de Débito/Crédito por el "
-"diferencial cambiario de sus facturas sin importar este campo. Con este "
-"activado: si está marcado, las facturas de este cliente liquidan su "
-"diferencial cambiario con una Nota de Débito/Crédito fiscal real; si no "
-"está marcado, lo liquidan con el asiento genérico nativo de diferencial "
-"cambiario de Odoo."
+"Al estar tildado, las facturas de este cliente liquidan su diferencia en "
+"cambio a través de una Nota de Débito/Crédito. Si no está tildado se "
+"ejecutará el asiento genérico de diferencial en cambiario de Odoo."
 
 #. module: l10n_ve_exchange_difference
 #: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_partner__l10n_ve_exchange_show_allow_note

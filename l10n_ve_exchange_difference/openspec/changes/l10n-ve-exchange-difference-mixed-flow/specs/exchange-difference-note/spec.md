@@ -52,6 +52,32 @@ cambiario de forma individual por cliente, vía el campo
 - **WHEN** se concilia cualquier factura de cliente elegible
 - **THEN** se emite la ND/NC fiscal real, sin importar el cliente
 
+### Requirement: El selector del Producto de Nota de Diferencial solo ofrece candidatos compatibles
+
+El `domain` de `res.company.l10n_ve_exchange_note_product_id` SHALL restringir
+el selector a productos de tipo Servicio cuyo impuesto de venta sea el exento
+por defecto (`exent_aliquot_sale`) Y cuyo impuesto de compra sea el exento
+por defecto (`exent_aliquot_purchase`), ambos de `l10n_ve_accountant`. Si
+cualquiera de los dos impuestos exentos no está configurado en la compañía,
+el selector SHALL NOT ofrecer ningún producto.
+
+Esta restricción es solo de UI (el `domain` está declarado como string,
+evaluado únicamente del lado del cliente web) -- no reemplaza la validación
+real de `_check_l10n_ve_exchange_note_product_id`, que sigue aplicando sobre
+cualquier valor asignado por otra vía (ORM directo, API).
+
+#### Scenario: Ambos impuestos exentos configurados
+
+- **GIVEN** la compañía tiene `exent_aliquot_sale` y `exent_aliquot_purchase` configurados
+- **WHEN** se abre el selector de `l10n_ve_exchange_note_product_id`
+- **THEN** solo aparecen productos de tipo Servicio con AMBOS impuestos asignados
+
+#### Scenario: Falta uno de los dos impuestos exentos
+
+- **GIVEN** la compañía NO tiene `exent_aliquot_purchase` configurado (o le falta `exent_aliquot_sale`)
+- **WHEN** se abre el selector de `l10n_ve_exchange_note_product_id`
+- **THEN** el selector no ofrece ningún producto, sin importar cuántos productos de tipo Servicio existan
+
 ## MODIFIED Requirements
 
 ### Requirement: La configuración falta-parámetro falla RUIDOSO antes de crear nota
