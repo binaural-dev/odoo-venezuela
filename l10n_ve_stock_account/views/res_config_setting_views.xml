@@ -103,6 +103,10 @@
                     </div>
                 </div>
             </xpath>
+            <!-- Max product lines per dispatch guide (l10n_ve_stock) belongs to the dispatch guide section. -->
+            <xpath expr="//div[@id='l10n_ve_settings_internal_transfer_reason_id']" position="after">
+                <xpath expr="//div[hasclass('o_setting_box') and .//field[@name='limit_product_qty_out']]" position="move"/>
+            </xpath>
         </field>
     </record>
 </odoo>
