@@ -84,20 +84,27 @@ class ProductTemplate(models.Model):
                 raise ValidationError(_("Price cannot be negative or zero."))
 
     def _check_company_id_edit_allowed(self, vals):
-        if "company_id" not in vals or self.env.su:
+        if "company_id" not in vals:
             return
         if self.env.user.has_group("l10n_ve_stock.group_edit_product_company"):
             return
 
-        new_company = vals["company_id"] or False
+        new_company = vals["company_id"]
         if not self:
             # create(): no existing record to compare against. copy_data()
             # always sends company_id (field has no copy=False), so
             # duplicating a product must not be treated as an edit as long
             # as the copy lands in the user's own active company - only a
             # value that actually differs from that is a real attempt to
-            # set the company.
-            if new_company != self.env.company.id:
+            # set the company. False (no company / "Visible for all
+            # companies") is the least privileged state, not a change of
+            # company - env.company.id is never False, so comparing
+            # against it unconditionally made every explicit
+            # company_id=False create() fail for every non-privileged
+            # user (shared products, imports, other modules' create()).
+            # Only a truthy, different company is a real attempt to
+            # assign the product somewhere specific.
+            if new_company and new_company != self.env.company.id:
                 raise AccessError(
                     _("You don't have permission to change this product's company.")
                 )
@@ -107,8 +114,11 @@ class ProductTemplate(models.Model):
         # dict, so "did it change" has to be checked per product: a value
         # identical to one product's own company_id is a no-op for that
         # product even if it differs for another one in the same call.
+        # False is the same least-privileged state as in create() above, so
+        # clearing a product's company is allowed without the group too -
+        # only assigning a specific, different company is restricted.
         for product in self:
-            if new_company != product.company_id.id:
+            if new_company and new_company != product.company_id.id:
                 raise AccessError(
                     _("You don't have permission to change this product's company.")
                 )
