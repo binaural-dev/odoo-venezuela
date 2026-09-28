@@ -102,6 +102,17 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_dispatch_note_print">
+                    <div class="o_setting_left_pane">
+                        <field name="group_dispatch_note_print"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="group_dispatch_note_print"/>
+                        <div class="text-muted">
+                            Allows printing dispatch notes from transfers.
+                        </div>
+                    </div>
+                </div>
             </xpath>
             <!-- Max product lines per dispatch guide (l10n_ve_stock) belongs to the dispatch guide section. -->
             <xpath expr="//div[@id='l10n_ve_settings_internal_transfer_reason_id']" position="after">
