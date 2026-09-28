@@ -2469,3 +2469,73 @@ class TestMultiCurrencyRounding(TransactionCase):
             (60.654321, 4.501234, [group_tax]),
         ], move_type='out_invoice')
         self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, tax_a, tax_b])
+
+    # ── Code review (PR tax-totals-base-per-group): the LAST tax group
+    # always takes `subtotal['base_amount'] - assigned_so_far` (the
+    # remainder) instead of its own real lines' balance, unlike every
+    # other group. Two real failure modes:
+    #
+    # (a) An untaxed product line (`unique_tax` off allows this) still
+    #     contributes to `subtotal['base_amount']` (it's summed from ALL
+    #     product lines, tax or not) but is never matched by any group's
+    #     `tg_lines` -- that stray balance lands on whichever group happens
+    #     to be last. With only ONE tax group, that group IS the last one
+    #     by construction (`j < n_tg - 1` is never true for `n_tg == 1`),
+    #     so this isn't even a "2+ groups" edge case.
+    #
+    # (b) A single line carrying taxes from TWO distinct groups is valid
+    #     tax semantics (the same base pays two different taxes) -- both
+    #     groups must independently report that line's own balance. The
+    #     remainder-based last group instead computes `subtotal_base -
+    #     assigned_so_far`, where `assigned_so_far` already included that
+    #     same line's balance from the non-last group's own pass.
+
+    def test_53_tax_totals_base_excludes_untaxed_line_single_group(self):
+        """Fix: an untaxed line's balance must never leak into the (only,
+        hence 'last') tax group's reported base_amount.
+
+        Draft only, not posted: `l10n_ve_invoice`'s own posting constraint
+        ("Add a tax to each product line") blocks confirming a move with an
+        untaxed product line regardless of `unique_tax` -- but `tax_totals`
+        is a non-stored compute, read the same way on a draft. The bug this
+        reproduces lives in that compute, not in what happens after posting.
+        """
+        self._set_usd_rate(807.386198)
+        partner = self.env['res.partner'].create({
+            'name': 'Partner untaxed line', 'company_id': self.company.id,
+            'property_account_receivable_id': self.acc_rec.id,
+        })
+        inv = self.env['account.move'].with_context(check_move_validity=False).create([{
+            'move_type': 'out_invoice',
+            'partner_id': partner.id,
+            'currency_id': self.currency_usd.id,
+            'journal_id': self.sale_journal.id,
+            'invoice_date': fields.Date.today(),
+            'company_id': self.company.id,
+            'invoice_line_ids': [
+                (0, 0, {
+                    'product_id': self.product.id, 'name': 'L0',
+                    'quantity': 20.123456, 'price_unit': 6.309876,
+                    'account_id': self.acc_inc.id,
+                    'tax_ids': [(6, 0, [self.tax_16.id])],
+                }),
+                (0, 0, {
+                    'product_id': self.product.id, 'name': 'L1 (untaxed)',
+                    'quantity': 15.246813, 'price_unit': 12.407531,
+                    'account_id': self.acc_inc.id,
+                    'tax_ids': [(6, 0, [])],
+                }),
+            ],
+        }])[0]
+        self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16])
+
+    def test_54_tax_totals_base_line_with_two_tax_groups_both_correct(self):
+        """Fix: a line taxed by two distinct groups must report its own
+        real balance as the base for BOTH groups, not a double-counted/
+        remainder-derived value for whichever one is last."""
+        self._set_usd_rate(807.386198)
+        tax_8_own = self._create_tax_with_own_group('IVA 8% (linea dos grupos)', 8.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [self.tax_16, tax_8_own]),
+        ])
+        self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16, tax_8_own])

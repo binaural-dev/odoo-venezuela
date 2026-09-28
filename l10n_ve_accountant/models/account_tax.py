@@ -66,9 +66,22 @@ class AccountTax(models.Model):
             tg_total = sum(tg.get('base_amount', 0.0) for tg in tax_groups)
             if cc.is_zero(tg_total):
                 continue
-            n_tg = len(tax_groups)
-            assigned_so_far = 0.0
-            for j, tg in enumerate(tax_groups):
+            # Every group (including the last) is priced from its OWN
+            # `tg_lines`' real balance -- not a "last group takes the
+            # remainder" special case. That remainder was only valid
+            # under the assumption that `subtotal['base_amount']` equals
+            # the sum of every OTHER group's own-lines base, which breaks
+            # in two real scenarios (code review, PR tax-totals-base-per-
+            # group): an untaxed product line still contributes to
+            # `subtotal['base_amount']` (summed from ALL product lines)
+            # but is never matched by any group's `tg_lines` -- with a
+            # single tax group, that group IS "the last one" by
+            # construction and the stray balance leaked into it; and a
+            # line taxed by two distinct groups legitimately contributes
+            # its full balance to BOTH groups' `tg_lines` (same base,
+            # two different taxes), which the remainder math read as
+            # double-counted, landing the last group at 0 or negative.
+            for tg in tax_groups:
                 involved_tax_ids = set(tg.get('involved_tax_ids', []))
                 # A 'group' tax puts the PARENT in `l.tax_ids`, but core
                 # expands `involved_tax_ids` to its CHILDREN -- check both.
@@ -76,24 +89,16 @@ class AccountTax(models.Model):
                     lambda l: (set(l.tax_ids.ids) & involved_tax_ids)
                     or (set(l.tax_ids.children_tax_ids.ids) & involved_tax_ids)
                 )
-                if j < n_tg - 1:
-                    if tg_lines:
-                        tg_base = cc.round(sum(tg_lines.mapped('balance')) * sign)
-                    else:
-                        # Fallback: couldn't identify this group's own lines
-                        # (exotic tax setup) -- keep the old proportional split.
-                        tg_ratio = tg.get('base_amount', 0.0) / tg_total
-                        tg_base = cc.round(tg_ratio * subtotal['base_amount'])
-                    tg['base_amount'] = tg_base
-                    tg['display_base_amount'] = tg_base
-                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg_base)
-                    assigned_so_far += tg_base
+                if tg_lines:
+                    tg_base = cc.round(sum(tg_lines.mapped('balance')) * sign)
                 else:
-                    # Last group: takes the exact remainder so the groups'
-                    # sum still matches the corrected subtotal.
-                    tg['base_amount'] = subtotal['base_amount'] - assigned_so_far
-                    tg['display_base_amount'] = tg['base_amount']
-                    tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg['base_amount'])
+                    # Fallback: couldn't identify this group's own lines
+                    # (exotic tax setup) -- keep the old proportional split.
+                    tg_ratio = tg.get('base_amount', 0.0) / tg_total
+                    tg_base = cc.round(tg_ratio * subtotal['base_amount'])
+                tg['base_amount'] = tg_base
+                tg['display_base_amount'] = tg_base
+                tg['total_amount'] = cc.round(tg.get('tax_amount', 0.0) + tg_base)
 
     @api.model
     def _fix_tax_amount_for_round_per_line(self, res, record, company):
@@ -109,8 +114,20 @@ class AccountTax(models.Model):
         el modo configurado. Sin esta corrección, el widget de la factura y
         el PDF impreso mostrarían un IVA distinto al que realmente se
         posteó -- las líneas de impuesto reales son la única fuente de
-        verdad, una vez que existen."""
+        verdad, una vez que existen.
+
+        Precisamente por eso se sale temprano si `record` es un registro
+        virtual (`NewId`, típico de un onchange en vivo sobre un borrador
+        todavía no guardado): en ese momento no existe ningún asiento real
+        que igualar todavía, y `record.line_ids` puede traer líneas de
+        impuesto desactualizadas de un paso de onchange anterior (ej. el
+        usuario cambió la moneda y luego el precio en el mismo borrador,
+        sin guardar entre medio) -- corregir contra esas líneas pisaría el
+        `tax_amount` recién calculado por el core (ya correcto para el
+        precio actual) con un valor obsoleto."""
         if record._name != 'account.move' or not record.is_invoice(include_receipts=True):
+            return
+        if isinstance(record.id, api.NewId):
             return
         if company.tax_calculation_rounding_method != 'round_per_line':
             return
