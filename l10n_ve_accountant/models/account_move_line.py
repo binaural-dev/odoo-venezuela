@@ -345,34 +345,64 @@ class AccountMoveLine(models.Model):
 
 
     def _prepare_analytic_distribution_line(
-        self, distribution, account_id, distribution_on_each_plan
+        self, distribution, account_ids, distribution_on_each_plan
     ):
         """
         This method adds the foreign_amount in the foreign currency to the analytical account line
+
+        `account_ids` mirrors the native parameter: it is NOT necessarily a
+        single analytic account id, it is the raw `analytic_distribution`
+        dict key, which is a comma-joined list of ids whenever a line
+        distributes to more than one plan under the same percentage bucket
+        (e.g. "5,12": 100.0 - account 5 from one plan and account 12 from
+        another, both at 100%). Treating it as a single int (the previous
+        `int(account_id)` here) raised a ValueError for any move line
+        touching more than one analytic plan.
+
+        `distribution_on_each_plan` must be read BEFORE calling super():
+        super()'s own loop over these same accounts already mutates this
+        dict in place (accumulating `distribution` per plan) before
+        returning. Reading it afterwards double-counts `distribution` on
+        top of what super() already added, so the local `distribution_plan`
+        here never actually reaches 100 - permanently disabling the
+        "this account closes the plan to exactly 100%" branch below, which
+        exists specifically to avoid losing/gaining a cent to rounding drift
+        when percentages don't sum to an exact float (e.g. 33.33/33.33/33.34).
         """
         self.ensure_one()
+        plan_totals_before_this_key = dict(distribution_on_each_plan)
         res = super()._prepare_analytic_distribution_line(
-            distribution, account_id, distribution_on_each_plan
-        )
-        account_id = int(account_id)
-        account = self.env["account.analytic.account"].browse(account_id)
-        distribution_plan = (
-            distribution_on_each_plan.get(account.root_plan_id, 0) + distribution
+            distribution, account_ids, distribution_on_each_plan
         )
         decimal_precision = self.env["decimal.precision"].precision_get(
             "Percentage Analytic"
         )
-        if (
-            float_compare(distribution_plan, 100, precision_digits=decimal_precision)
-            == 0
+        foreign_amount = 0.0
+        for account in (
+            self.env["account.analytic.account"]
+            .browse(map(int, account_ids.split(",")))
+            .exists()
         ):
-            foreign_amount = (
-                -self.foreign_balance
-                * (100 - distribution_on_each_plan.get(account.root_plan_id, 0))
-                / 100.0
+            distribution_plan = (
+                plan_totals_before_this_key.get(account.root_plan_id, 0)
+                + distribution
             )
-        else:
-            foreign_amount = -self.foreign_balance * distribution / 100.0
+            if (
+                float_compare(
+                    distribution_plan, 100, precision_digits=decimal_precision
+                )
+                == 0
+            ):
+                foreign_amount = (
+                    -self.foreign_balance
+                    * (
+                        100
+                        - plan_totals_before_this_key.get(account.root_plan_id, 0)
+                    )
+                    / 100.0
+                )
+            else:
+                foreign_amount = -self.foreign_balance * distribution / 100.0
 
         res["foreign_amount"] = foreign_amount
         return res
