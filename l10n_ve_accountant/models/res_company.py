@@ -5,6 +5,8 @@ from odoo.exceptions import UserError, ValidationError
 class ResCompany(models.Model):
     _inherit = "res.company"
 
+    tax_calculation_rounding_method = fields.Selection(default="round_per_line")
+
     taxpayer_type = fields.Selection(
         [
             ("formal", "Formal"),
