@@ -107,6 +107,44 @@ class AccountMoveRetention(models.Model):
     has_emited_municipal_retention = fields.Boolean('has emited municipal retention', compute="compute_count_retentions")
     has_emited_iva_retention = fields.Boolean('has emited iva retention', compute="compute_count_retentions")
 
+    has_pending_retention_recalculation = fields.Boolean(
+        string="Has Pending Retention Recalculation?",
+        compute="_compute_has_pending_retention_recalculation",
+        help=(
+            "True when the invoice is in draft and at least one emitted "
+            "IVA/ISLR retention is stale with respect to the invoice "
+            "lines, i.e. the lines were modified after the retention was "
+            "emitted (task #83486)."
+        ),
+    )
+
+    @api.depends(
+        "state",
+        "invoice_line_ids.write_date",
+        "retention_iva_line_ids.retention_id.state",
+        "retention_iva_line_ids.retention_id.write_date",
+        "retention_islr_line_ids.retention_id.state",
+        "retention_islr_line_ids.retention_id.write_date",
+    )
+    def _compute_has_pending_retention_recalculation(self):
+        for move in self:
+            move.has_pending_retention_recalculation = False
+            if move.state != "draft":
+                continue
+            last_line_write = max(
+                move.invoice_line_ids.mapped("write_date"), default=False
+            )
+            if not last_line_write:
+                continue
+            emitted_retentions = (
+                move.retention_iva_line_ids.retention_id
+                | move.retention_islr_line_ids.retention_id
+            ).filtered(lambda r: r.state == "emitted")
+            move.has_pending_retention_recalculation = any(
+                retention.write_date < last_line_write
+                for retention in emitted_retentions
+            )
+
     def compute_count_retentions(self):
         
         for rec in self:
