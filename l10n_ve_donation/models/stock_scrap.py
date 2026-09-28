@@ -45,6 +45,11 @@ class StockScrap(models.Model):
                 )
                 scrap.scrap_location_id = scrap_location
 
+    def _creation_message(self):
+        if self.is_donation:
+            return _("Donation created")
+        return super()._creation_message()
+
     def do_scrap(self):
         self._check_company()
         donation_scraps = self.filtered('is_donation')
