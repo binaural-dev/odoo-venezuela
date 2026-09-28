@@ -101,22 +101,30 @@
                                             name="foreign_invoice_amount"
                                             widget="monetary"
                                             options="{'currency_field': 'foreign_currency_id'}"
-                                            column_invisible="parent.base_currency_is_vef"/>
+                                            column_invisible="parent.base_currency_is_vef"
+                                            readonly="parent.type in ('in_invoice', 'in_refund', 'in_debit')"
+                                            force_save="1"/>
                                         <field
                                             name="foreign_iva_amount"
                                             widget="monetary"
                                             options="{'currency_field': 'foreign_currency_id'}"
-                                            column_invisible="parent.base_currency_is_vef"/>
+                                            column_invisible="parent.base_currency_is_vef"
+                                            readonly="parent.type in ('in_invoice', 'in_refund', 'in_debit')"
+                                            force_save="1"/>
                                         <field
                                             name="foreign_invoice_total"
                                             widget="monetary"
                                             options="{'currency_field': 'foreign_currency_id'}"
-                                            column_invisible="parent.base_currency_is_vef"/>
+                                            column_invisible="parent.base_currency_is_vef"
+                                            readonly="parent.type in ('in_invoice', 'in_refund', 'in_debit')"
+                                            force_save="1"/>
                                         <field
                                             name="foreign_retention_amount"
                                             widget="monetary"
                                             options="{'currency_field': 'foreign_currency_id'}"
-                                            column_invisible="parent.base_currency_is_vef"/>
+                                            column_invisible="parent.base_currency_is_vef"
+                                            readonly="parent.type in ('in_invoice', 'in_refund', 'in_debit')"
+                                            force_save="1"/>
                                         <field name="foreign_currency_rate" optional="hide" />
                                     </list>
                                 </field>

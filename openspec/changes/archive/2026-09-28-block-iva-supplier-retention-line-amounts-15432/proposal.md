@@ -27,6 +27,14 @@ propio comprobante).
     viajando en el guardado) cuando la retención es de proveedor. Para
     retenciones de cliente siguen editables como antes, sujeto solo a
     la regla de `state` ya existente.
+  - Corrección de code review: mismo `readonly`/`force_save` agregado a
+    sus 4 contrapartes "alternas" (`foreign_invoice_amount`,
+    `foreign_iva_amount`, `foreign_invoice_total`,
+    `foreign_retention_amount`), que quedaron sin el tratamiento
+    inicialmente. Son los mismos montos en la moneda alterna, visibles
+    cuando `base_currency_is_vef` es falso -- un `Boolean` con
+    `default=` (no computed), por lo que una compañía secundaria en
+    multi-compañía cuya moneda no sea VEF sí puede caer en esa rama.
 
 ## Impact
 
@@ -38,4 +46,5 @@ propio comprobante).
   (`_apply_iva_tax_group_values` en `account_retention_line.py`).
 - **Verificado**: suite completa de `l10n_ve_payment_extension` (434
   tests) corrida en contenedor Docker sobre base limpia
-  (`--without-demo=True`) - sin fallos, antes y después del cambio.
+  (`--without-demo=True`) - sin fallos, antes y después del cambio
+  original, y de nuevo tras el fix de los campos `foreign_*`.

@@ -62,4 +62,7 @@
       redondeo por linea y bloqueo de retencion IVA proveedores` en la
       rama
       `maint-19.0-ti-15432-fix-block-iva-providers-view-and-raunding-taxes-method`
-- [x] 5.2 Push a `origin` (PR #1390 abierto)
+      -- pusheado, PR #1390 abierto
+- [ ] 5.2 Push del/los commit(s) de corrección de code review a `origin`
+      (pendiente -- CI de `binauralbot` en el PR corresponde solo al
+      commit `70482014d`, no a las correcciones posteriores)

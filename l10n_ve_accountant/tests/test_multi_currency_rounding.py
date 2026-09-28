@@ -178,7 +178,9 @@ class TestMultiCurrencyRounding(TransactionCase):
 
     def _create_invoice(self, currency, pricelist, lines_data, move_type='out_invoice'):
         """Crea y publica una factura.
-        lines_data: list of (qty, price_unit, [tax_records])
+        lines_data: list of (qty, price_unit, [tax_records]) or (qty, price_unit,
+        [tax_records], product) -- the optional 4th element overrides `self.product`
+        (e.g. a discount product, to exercise `_get_discount_lines()`).
         move_type: 'out_invoice' (default), 'in_invoice', 'out_refund' or 'in_refund' --
         `in_invoice`/`out_refund` (Odoo's `is_outbound()` types) have `direction_sign == 1`,
         the OPPOSITE of `out_invoice`/`in_refund`'s `-1`; refunds also use
