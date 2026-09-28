@@ -133,6 +133,50 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
             "default_account_id": self.account_bank.id,
         })
 
+    def test_editing_default_account_id_does_not_unlink_extra_payment_method_lines(self):
+        """Regression for pastor-binaural's finding (PR #1344 / task 81735):
+        editing default_account_id on an already-saved bank journal must not
+        re-trigger the native _compute_inbound/outbound_payment_method_line_ids
+        (Command.clear() + recreate-defaults-only), which would unlink/delete
+        any extra manual payment method line the user added -- and orphan any
+        account.payment already using it."""
+        journal = self.env["account.journal"].sudo().create({
+            "name": "Bank Edit Account Test",
+            "code": "BKEDT",
+            "type": "bank",
+            "company_id": self.company.id,
+            "default_account_id": self.account_bank.id,
+        })
+
+        extra_method = self.env.ref("account.account_payment_method_manual_in")
+        extra_line = self.env["account.payment.method.line"].with_context(
+            default_journal_id=journal.id,
+        ).create({
+            "name": "Transferencia Bancaria",
+            "payment_method_id": extra_method.id,
+            "payment_type": "inbound",
+            "journal_id": journal.id,
+            "payment_account_id": self.account_bank.id,
+        })
+
+        other_account = self.env["account.account"].create({
+            "name": "Second Bank Account",
+            "code": "100200",
+            "account_type": "asset_cash",
+            "company_ids": [(6, 0, [self.company.id])],
+            "reconcile": True,
+        })
+
+        journal.write({"default_account_id": other_account.id})
+
+        self.assertTrue(
+            extra_line.exists() and extra_line.journal_id == journal,
+            "Editing default_account_id must not unlink/delete extra payment "
+            "method lines added manually to the journal.",
+        )
+        self.assertIn(extra_line, journal.inbound_payment_method_line_ids)
+        self.assertEqual(extra_line.name, "Transferencia Bancaria")
+
     def test_bank_journal_without_inbound_lines_raises_user_error(self):
         journal = self._create_valid_bank_journal("BKIN0")
 
