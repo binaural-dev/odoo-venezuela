@@ -45,10 +45,7 @@ class TestMoveRetentionPendingRecalculation(RetentionTestCommon):
     def test_02_banner_when_lines_edited_after_emission(self):
         invoice, retention = self._create_draft_invoice_with_emitted_iva_retention()
         invoice.invoice_line_ids[0].write({"price_unit": 999.0})
-        # Postgres may assign the same timestamp to both writes when they
-        # happen fast within the same transaction, so "equal or later" is
-        # the real precondition here (matches the <= used in the compute).
-        self.assertGreaterEqual(
+        self.assertGreater(
             invoice.invoice_line_ids[0].write_date, retention.write_date
         )
         self.assertTrue(
