@@ -4,6 +4,7 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 from odoo.tools.safe_eval import safe_eval
+from .res_company import INTERNAL_TRANSFER_REASON_CODES
 from datetime import date, datetime, timedelta
 import calendar
 
@@ -1101,7 +1102,10 @@ class StockPicking(models.Model):
                 if external_storage:
                     allowed_reason_ids.append(external_storage.id)
                 
-            # Internal
+            # Internal. Mantener en sincronia con INTERNAL_TRANSFER_REASON_CODES
+            # (res_company.py): el motivo por defecto de la compania solo puede
+            # ser uno de los que se permiten aqui (test_field_domain_matches_
+            # allowed_reasons_for_internal lo verifica).
             elif picking.operation_code == "internal":
                 consignment_reason = reasons.get("consignment")
                 transfer_between_warehouses_reason = reasons.get(
@@ -1305,6 +1309,32 @@ class StockPicking(models.Model):
         for picking in self:
             picking._assign_partner_from_location()
 
+    def _get_default_internal_transfer_reason(self, picking_type, company, location_dest):
+        """Company default reason for a new internal picking, or an empty recordset.
+
+        Empty when the picking is not internal, when the configured reason is
+        not one of those allowed for internal pickings, or when the destination
+        is a consignation warehouse (which forces the consignment reason).
+        """
+        reason = self.env["transfer.reason"]
+        if picking_type.code != "internal":
+            return reason
+        candidate = (company or picking_type.company_id).internal_transfer_reason_id
+        warehouse = location_dest.warehouse_id
+        if candidate.code in INTERNAL_TRANSFER_REASON_CODES and not (
+            warehouse and warehouse.is_consignation_warehouse
+        ):
+            return candidate
+        return reason
+
+    @api.onchange("picking_type_id")
+    def _onchange_picking_type_id_default_internal_transfer_reason(self):
+        """Prefill the company's default reason for internal transfers (only if still empty)."""
+        if self.picking_type_id and not self.transfer_reason_id:
+            self.transfer_reason_id = self._get_default_internal_transfer_reason(
+                self.picking_type_id, self.company_id, self.location_dest_id
+            )
+
     def button_validate(self):
         '''Override to set the state_guide_dispatch to 'emited' when the transfer reason is 'transfer_between_warehouses' 
         and the operational_code is internal
@@ -1324,6 +1354,20 @@ class StockPicking(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        for vals in vals_list:
+            if vals.get("picking_type_id") and not vals.get("transfer_reason_id"):
+                picking_type = self.env["stock.picking.type"].browse(vals["picking_type_id"])
+                company = self.env["res.company"].browse(
+                    vals.get("company_id") or picking_type.company_id.id or self.env.company.id
+                )
+                location_dest = self.env["stock.location"].browse(
+                    vals.get("location_dest_id") or picking_type.default_location_dest_id.id
+                )
+                reason = self._get_default_internal_transfer_reason(
+                    picking_type, company, location_dest
+                )
+                if reason:
+                    vals["transfer_reason_id"] = reason.id
         records = super().create(vals_list)
         records._assign_partner_from_location()
         return records
