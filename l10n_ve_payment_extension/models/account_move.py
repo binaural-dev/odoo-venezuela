@@ -317,9 +317,13 @@ class AccountMoveRetention(models.Model):
 
     def write(self, vals):
         """
-        Override the write method to recalculate municipal retentions and to
-        warn the user when editing invoice lines of a draft vendor invoice
-        that already has an emitted IVA/ISLR retention (task #83486).
+        Override the write method to recalculate municipal retentions when
+        the invoice lines of a vendor invoice change (task #83486).
+
+        The warning about a stale emitted IVA/ISLR retention is now shown as
+        a persistent banner in the form view (see views/account_move.xml),
+        driven by has_emited_iva_retention/has_emited_islr_retention, instead
+        of a bus notification triggered from write().
 
         Extends this single existing write() override instead of adding a
         second one on the model - Odoo already merges every write() in the
@@ -335,39 +339,6 @@ class AccountMoveRetention(models.Model):
                 ):
                     for line in move.retention_municipal_line_ids:
                         line.onchange_economic_activity_id()
-
-                if (
-                    move.move_type == "in_invoice"
-                    and move.state == "draft"
-                    and (
-                        move.retention_iva_line_ids.filtered(
-                            lambda l: l.retention_id.state == "emitted"
-                        )
-                        or move.retention_islr_line_ids.filtered(
-                            lambda l: l.retention_id.state == "emitted"
-                        )
-                    )
-                ):
-                    # Non-blocking: the invoice must still save normally, we
-                    # only warn that its already-emitted retention is now
-                    # stale and should be recalculated. Sent server-side via
-                    # bus.bus (not a client action return) because write()
-                    # doesn't always run in a UI context that would display
-                    # a returned client action.
-                    self.env.user._bus_send(
-                        "simple_notification",
-                        {
-                            "type": "danger",
-                            "sticky": True,
-                            "title": _("Retención emitida desactualizada"),
-                            "message": _(
-                                "La factura %(invoice)s ya tiene una retención de IVA o"
-                                " ISLR emitida. Debe recalcular las retenciones para que"
-                                " reflejen los cambios en las líneas de la factura."
-                            )
-                            % {"invoice": move.display_name},
-                        },
-                    )
         return res
 
     def action_post(self):
