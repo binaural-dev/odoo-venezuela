@@ -141,7 +141,7 @@ class AccountMoveRetention(models.Model):
                 | move.retention_islr_line_ids.retention_id
             ).filtered(lambda r: r.state == "emitted")
             move.has_pending_retention_recalculation = any(
-                retention.write_date < last_line_write
+                retention.write_date <= last_line_write
                 for retention in emitted_retentions
             )
 
