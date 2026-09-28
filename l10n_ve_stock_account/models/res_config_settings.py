@@ -1,5 +1,7 @@
 from odoo import _, api, fields, models
 
+from .res_company import INTERNAL_TRANSFER_REASON_CODES
+
 
 class ResConfigSettings(models.TransientModel):
     _inherit = "res.config.settings"
@@ -29,4 +31,11 @@ class ResConfigSettings(models.TransientModel):
     hide_weight_field_dispatch_guide = fields.Boolean(
         related="company_id.hide_weight_field_dispatch_guide", readonly=False
     )
-    
+
+    internal_transfer_reason_id = fields.Many2one(
+        related="company_id.internal_transfer_reason_id",
+        readonly=False,
+        string="Default Internal Transfer Reason",
+        domain=[("code", "in", INTERNAL_TRANSFER_REASON_CODES)],
+    )
+

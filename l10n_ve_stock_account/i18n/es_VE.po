@@ -401,10 +401,21 @@ msgid "Default Document"
 msgstr "Documento predeterminado"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__internal_transfer_reason_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__internal_transfer_reason_id
+msgid "Default Internal Transfer Reason"
+msgstr "Motivo de traslado interno por defecto"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_partner__default_document
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_users__default_document
 msgid "Default document for importing documents."
 msgstr "Documento predeterminado para importar documentos."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "Default reason for internal transfers. Can be changed per transfer."
+msgstr "Motivo por defecto de los traslados internos. Se puede cambiar en cada traslado."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -427,6 +438,11 @@ msgstr "Guía de Despacho"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__dispatch_guide_controls
 msgid "Dispatch Guide Controls"
 msgstr "Controles de guía de despacho"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "Dispatch Guide Settings"
+msgstr "Ajustes de guía de despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.ui.menu,name:l10n_ve_stock_account.menuitem_stock_dispatch_guides
@@ -998,6 +1014,13 @@ msgstr "Motivo de traslado"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__other_causes_transfer_reason
 msgid "Reason for transfer for other reasons"
 msgstr "Motivo de traslado por otras causas"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__internal_transfer_reason_id
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__internal_transfer_reason_id
+msgid ""
+"Reason prefilled on new internal transfers. It can be changed per transfer."
+msgstr "Motivo precargado en los nuevos traslados internos. Se puede cambiar en cada traslado."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer

@@ -74,6 +74,7 @@
         <field name="inherit_id" ref="l10n_ve_base.l10n_ve_base_view_res_config_settings"/>
         <field name="arch" type="xml">
             <xpath expr="//block[@name='l10n_ve_stock_block']" position="inside">
+                <h2>Dispatch Guide Settings</h2>
                 <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_hide_weight_field_dispatch_guide">
                     <div class="o_setting_left_pane">
                         <field name="hide_weight_field_dispatch_guide"/>
@@ -82,6 +83,22 @@
                         <label for="hide_weight_field_dispatch_guide"/>
                         <div class="text-muted">
                             If checked, the weight field will be hidden in the dispatch guide.
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_internal_transfer_reason_id">
+                    <div class="o_setting_left_pane"/>
+                    <div class="o_setting_right_pane">
+                        <label for="internal_transfer_reason_id"/>
+                        <div class="text-muted">
+                            Default reason for internal transfers. Can be changed per transfer.
+                        </div>
+                        <div class="content-group">
+                            <div class="mt16">
+                                <field name="internal_transfer_reason_id"
+                                       class="o_light_label"
+                                       options="{'no_create': True}"/>
+                            </div>
                         </div>
                     </div>
                 </div>
