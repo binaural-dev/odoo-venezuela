@@ -24,7 +24,10 @@ class StockScrap(models.Model):
         native_domain = "[('usage', '=', 'inventory')]"
         for picking in self:
             if picking.is_donation:
-                picking.scrap_location_domain = "[('is_donation_warehouse', '=', True), ('company_id', '=', company_id)]"
+                picking.scrap_location_domain = str([
+                    ("is_donation_warehouse", "=", True),
+                    ("company_id", "=", picking.company_id.id),
+                ])
             else:
                 picking.scrap_location_domain = native_domain
 
