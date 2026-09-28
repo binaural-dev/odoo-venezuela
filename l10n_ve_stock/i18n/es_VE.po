@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260702\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-08-22 04:22+0000\n"
-"PO-Revision-Date: 2026-08-22 04:22+0000\n"
+"POT-Creation-Date: 2026-09-21 17:56+0000\n"
+"PO-Revision-Date: 2026-09-21 17:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -112,6 +112,14 @@ msgid "Add a Physical Location to the product."
 msgstr "Agregue una Ubicación Física al producto."
 
 #. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_normal_form_view
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_form_view
+msgid ""
+"Al activarlo, la referencia interna no podrá modificarse una vez que el "
+"producto tenga movimientos de inventario validados (estado 'Hecho')."
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.report_inventory_valuation_template
 msgid "All"
 msgstr "Todos"
@@ -197,6 +205,16 @@ msgid "Attachment Count"
 msgstr "Nº de archivos adjuntos"
 
 #. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
+msgid ""
+"Automatic transfer for physical location relocation: from %(source)s to "
+"%(destination)s."
+msgstr ""
+"Transferencia automática por reubicación de ubicación física: de "
+"%(source)s a %(destination)s."
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__available_qty
 msgid "Available Quantities"
 msgstr ""
@@ -231,6 +249,23 @@ msgid ""
 msgstr "Bloquear Transferencias De Inventario de Tipo Expediciones"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__lock_internal_reference_on_moves
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__lock_internal_reference_on_moves
+msgid "Bloquear referencia interna con movimientos"
+msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__can_edit_company_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__can_edit_company_id
+msgid "Can edit company"
+msgstr "Puede editar la compañía"
+
+#. module: l10n_ve_stock
+#: model:res.groups,name:l10n_ve_stock.group_edit_product_company
+msgid "Can edit product company"
+msgstr "Puede editar la compañía del producto"
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.move_alter_location_qtities_wizard_view_form
 msgid "Cancel"
 msgstr "Cancelar"
@@ -260,6 +295,8 @@ msgstr "Empresas"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_category__company_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__company_id
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__company_id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__company_id
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__company_id
 msgid "Company"
@@ -356,6 +393,11 @@ msgid "Download"
 msgstr "Descargar"
 
 #. module: l10n_ve_stock
+#: model:res.groups.privilege,name:l10n_ve_stock.edit_product_company_privilege
+msgid "Edit product company"
+msgstr "Editar compañía del producto"
+
+#. module: l10n_ve_stock
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
 msgid ""
 "Enable alternate locations tracking and transfers between physical and "
@@ -399,6 +441,12 @@ msgstr "Cantidad de uso libre"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_move_alter_location_qtities_wizard__from_location
 msgid "From"
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__physical_relocation_transfer
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_res_config_settings__physical_relocation_transfer
+msgid "Generate automatic internal transfer when physical location changes"
+msgstr "Generar transferencia interna automática al cambiar ubicación física"
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__group_product_available_quantity_on_sale
@@ -603,6 +651,15 @@ msgid "Main Warehouse"
 msgstr "Almacén Principal"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_stock_picking__is_physical_relocation
+msgid ""
+"Marks the transfers automatically generated when a product's physical "
+"location changes."
+msgstr ""
+"Marca las transferencias generadas automáticamente al cambiar la "
+"ubicación física de un producto."
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__max_quantity
 msgid "Maximum Quantity"
 msgstr ""
@@ -669,6 +726,14 @@ msgstr "Siguiente tipo de actividad"
 #: code:addons/l10n_ve_stock/models/stock_scrap.py:0
 msgid "No more than what is manufactured can be discarded in this operation."
 msgstr "En esta operación no se puede desechar más de lo fabricado."
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_product.py:0
+msgid ""
+"No se puede modificar la referencia interna del producto '%s' porque ya "
+"tiene movimientos de inventario confirmados."
+msgstr ""
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_res_company__not_allow_negative_inventory_adjustments
@@ -799,6 +864,11 @@ msgid "Physical Location"
 msgstr "Ubicación Física"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__is_physical_relocation
+msgid "Physical Location Relocation"
+msgstr "Reubicación de Ubicación Física"
+
+#. module: l10n_ve_stock
 #: model:ir.actions.act_window,name:l10n_ve_stock.action_stock_quant
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__physical_locations_ids
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__physical_locations_ids
@@ -811,6 +881,12 @@ msgstr "Ubicaciones Físicas"
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__pick_quantity
 msgid "Physical Quantities"
 msgstr ""
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
+msgid "Physical location relocation"
+msgstr "Reubicación de ubicación física"
 
 #. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_stock_picking_type
@@ -987,6 +1063,16 @@ msgid "Show standard price on the product form view"
 msgstr "Mostrar costo en la vista del producto"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_product__lock_internal_reference_on_moves
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_template__lock_internal_reference_on_moves
+msgid ""
+"Si está activo, la referencia interna (código) no podrá modificarse una vez "
+"que el producto (siendo almacenable) tenga movimientos de inventario ya "
+"validados (estado 'Hecho'). Un pedido de compra o venta confirmado, sin la "
+"transferencia asociada validada todavía, no cuenta como movimiento."
+msgstr ""
+
+#. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__source_physical_address
 msgid "Source Address"
 msgstr "Dirección de Origen"
@@ -1061,8 +1147,8 @@ msgid ""
 "The resulting quantity (%(qty)s) exceeds the maximum allowed quantity in the"
 " Physical Location (%(maximum)s)."
 msgstr ""
-"La cantidad resultante (%(qty)s) excede la cantidad máxima permitida en la"
-" Ubicación Física (%(maximum)s)."
+"La cantidad resultante (%(qty)s) excede la cantidad máxima permitida en la "
+"Ubicación Física (%(maximum)s)."
 
 #. module: l10n_ve_stock
 #. odoo-python
@@ -1196,6 +1282,35 @@ msgid "Website communication history"
 msgstr "Historial de comunicación de la web"
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_res_company__physical_relocation_transfer
+#: model:ir.model.fields,help:l10n_ve_stock.field_res_config_settings__physical_relocation_transfer
+msgid ""
+"When a physical location is replaced by another, generates and validates an "
+"internal transfer that carries the stock from the old location to the new "
+"one. Only applies to the inventory manager."
+msgstr ""
+"Cuando se sustituye una ubicación física por otra, genera y valida una "
+"transferencia interna que lleva las existencias de la ubicación vieja a la "
+"nueva. Solo aplica para el administrador de inventario."
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.res_config_settings_view_form_l10n_ve_stock
+msgid ""
+"When a product's physical location is replaced by another, generate and "
+"validate an internal transfer that moves the stock from the old location to "
+"the new one."
+msgstr ""
+"Cuando se sustituye la ubicación física de un producto por otra, genera y "
+"valida una transferencia interna que mueve las existencias de la ubicación "
+"vieja a la nueva."
+
+#. module: l10n_ve_stock
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_product__can_edit_company_id
+#: model:ir.model.fields,help:l10n_ve_stock.field_product_template__can_edit_company_id
+msgid "Whether the current user can modify the product's company."
+msgstr "Indica si el usuario actual puede modificar la compañía del producto."
+
+#. module: l10n_ve_stock
 #: model:ir.model,name:l10n_ve_stock.model_move_alter_location_qtities_wizard
 msgid "Wizard to move physical quantities to other product locations."
 msgstr ""
@@ -1251,6 +1366,12 @@ msgstr "No puede transferir más que la cantidad disponible en la ubicación."
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
 msgid "You do not have permission to make shipment-type transfers"
 msgstr "No tienes permiso para hacer transferencias de tipo envío"
+
+#. module: l10n_ve_stock
+#. odoo-python
+#: code:addons/l10n_ve_stock/models/product_template.py:0
+msgid "You don't have permission to change this product's company."
+msgstr "No tienes permiso para cambiar la compañía de este producto."
 
 #. module: l10n_ve_stock
 #: model:ir.actions.server,name:l10n_ve_stock.correction_quantity_product_template

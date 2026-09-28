@@ -1,4 +1,4 @@
-"""Change (vuelto) foreign-currency backfill tests (ticket #15126).
+"""Change (vuelto) foreign-currency backfill tests (ticket #15090).
 
 Odoo core creates the change payment line server-side
 (``pos.order._process_payment_lines`` -> ``is_change=True``) WITHOUT a

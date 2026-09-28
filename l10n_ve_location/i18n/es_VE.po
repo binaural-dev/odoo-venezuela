@@ -125,6 +125,7 @@ msgstr "Municipio"
 
 #. module: l10n_ve_location
 #: model:ir.model.fields,field_description:l10n_ve_location.field_res_country_parish__name
+#: model:ir.model.fields,field_description:l10n_ve_location.field_res_partner_zone__name
 msgid "Name"
 msgstr "Nombre"
 
@@ -170,3 +171,17 @@ msgid ""
 msgstr ""
 "No puede registrar una ciudad con el mismo nombre para el estado y país "
 "seleccionado"
+
+#. module: l10n_ve_location
+#: model:ir.actions.act_window,name:l10n_ve_location.action_res_partner_zone
+#: model:ir.model,name:l10n_ve_location.model_res_partner_zone
+#: model:ir.model.fields,field_description:l10n_ve_location.field_res_partner__zone_id
+#: model:ir.ui.menu,name:l10n_ve_location.menu_res_partner_zone
+#: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_res_partner_zone_form
+msgid "Zone"
+msgstr "Zona"
+
+#. module: l10n_ve_location
+#: model_terms:ir.ui.view,arch_db:l10n_ve_location.view_res_partner_zone_tree
+msgid "Zones"
+msgstr "Zonas"

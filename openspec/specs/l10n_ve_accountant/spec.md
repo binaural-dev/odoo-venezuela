@@ -164,9 +164,12 @@ Al sincronizar las líneas dinámicas de una factura **en borrador** (`_distribu
 Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) corregir las diferencias de redondeo introducidas por el redondeo línea a línea, en dos pasos independientes que corren en etapas distintas del ciclo de sincronización:
 
 1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa cruda del documento (`currency_id._convert` a la fecha de factura), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
-2. Durante `_sync_dynamic_lines`, ya con el recompute del core aplicado (`account.move._distribute_invoice_real_portion`): corrige el balance de cada línea de impuesto a `amount_currency / rate` redondeado, y luego ancla la contrapartida (las líneas de término de pago si existen; si no, el resto de líneas sin `tax_repartition_line_id`) a `-actual_non_pt`, donde `actual_non_pt` es la suma REAL de los balances de todas las líneas no-PT/no-COGS tal como quedaron después del recompute — NO una conversión directa del total del documento. El ajuste se acumula en `real_portion_amount` e incrementa `real_portion_count`.
+2. Durante `_sync_tax_lines` (bloque "Fix multi-currency rounding" de `account.move`), tras calcular `tax_results` con el motor estándar de impuestos: el balance de cada línea de impuesto cuyo repartition line pertenece a un impuesto `amount_type = 'percent'` se recalcula NATIVAMENTE en VEF, sumando el `balance` fresco (ya calculado en este mismo ciclo, NO el campo `record.balance` desactualizado) de las líneas de producto que usan ese impuesto y aplicando `% del impuesto x factor_percent de la línea de reparto`; `amount_currency` se deriva multiplicando ese balance por `move.invoice_currency_rate` y redondeando con `move.currency_id` (la moneda del documento, NO la de la compañía -- VEF es el monto "maestro" para `balance`, pero `amount_currency` debe respetar la precisión de la moneda en la que está la factura). El match de las líneas de producto que usan el impuesto considera tanto el impuesto directo (`tax in record.tax_ids`) como su `group_tax_id`: `record.tax_ids` trae el impuesto tal como lo eligió el usuario, que para un `percent` hijo de un `amount_type = 'group'` es el grupo, no el hijo -- sin este segundo criterio la base salía en 0 para esos hijos, sin romper el cuadre del asiento (ver "Requirement" de este mismo bloque, punto 3, que ancla la contrapartida al resto). Para impuestos `fixed`/`division`/`group`, y para las líneas base, se mantiene `amount_currency / rate` como antes. Esto evita que el % del impuesto visible en el asiento diverja de la base real de las líneas de producto (ver `l10n_ve_accountant/tests/test_multi_currency_rounding.py`, tests 15-22, 26 y 27).
+3. Durante `_sync_dynamic_lines`, ya con el recompute del core aplicado (`account.move._distribute_invoice_real_portion`): recorre las líneas de impuesto y, para las de un impuesto `fixed`/`division`/`group`, fija `balance = amount_currency / rate` redondeado (ruta real de cálculo para esos tipos). Para impuestos `amount_type = 'percent'` este paso hace `continue` explícito y NO toca el balance -- **no son idempotentes** entre sí: `amount_currency / rate` divide por una tasa pequeña (VEF hacia la moneda del documento), lo que amplifica el redondeo de 2 decimales de `amount_currency` a un error de varios bolívares en VEF (confirmado empíricamente con precios a 6 decimales y cantidades no enteras, `l10n_ve_accountant/tests/test_multi_currency_rounding.py::test_24_distribute_invoice_real_portion_would_diverge_without_the_skip`); si este paso recalculara el balance de esas líneas, revertiría el cálculo VEF-nativo del paso 2. Luego ancla la contrapartida (las líneas de término de pago si existen; si no, el resto de líneas sin `tax_repartition_line_id`) a `-actual_non_pt`, donde `actual_non_pt` es la suma REAL de los balances de todas las líneas que no son de término de pago, COGS, ni sección/subsección/nota (`line_section`/`line_subsection`/`line_note`, excluidas para no violar el `CHECK` de líneas no contables) tal como quedaron después del recompute — NO una conversión directa del total del documento. El ajuste se acumula en `real_portion_amount` e incrementa `real_portion_count`.
 
-Este segundo paso NO recalcula ni fuerza un total "esperado" a partir de `amount_total`: toma como base fiscal la suma real de los balances de producto e impuesto ya corregidos por el core, para que la contrapartida siga siendo consistente aunque el core recompute las líneas de producto en un sync posterior (p. ej. al cambiar la fecha del documento).
+Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_total`: toma como base fiscal la suma real de los balances de producto e impuesto ya corregidos por los pasos anteriores, para que la contrapartida siga siendo consistente aunque el core recompute las líneas de producto en un sync posterior (p. ej. al cambiar la fecha del documento).
+
+`_distribute_final_real_portion` cachea por move (`self.env.cr.cache[('_real_portion_distributed', move.id)]`) para no repetir el paso 3 dentro de la misma transacción. `_sync_tax_lines` borra y recrea la línea de impuesto (en vez de actualizarla in-place) cuando el `_prepare_tax_lines` del core no matchea la línea existente contra la nueva por su clave de agrupación -- típicamente al pasar a borrador un asiento posteado. Ese `unlink()` de `account.move.line` (core) envuelve su propio `_check_balanced()`/`_sync_dynamic_lines()` inmediato alrededor de sí mismo, y otros mecanismos internos del core (p. ej. el reset de banderas "dirty" de `_sync_dynamic_line`) también pueden reentrar `_sync_dynamic_lines` para el mismo move mientras el `write()` original sigue en curso. Si cualquiera de esas reentradas corre DESPUÉS de que la línea vieja se borró pero ANTES de que la nueva se cree, `_distribute_invoice_real_portion` ancla la contrapartida sin el impuesto -- y al marcar la caché como "ya hecho", bloquea que la llamada correcta y tardía (la de la escritura original, ya con la línea nueva creada) corrija el daño. Por eso, al final de `_sync_tax_lines`, se limpia esa marca de caché para los moves cuyas líneas de impuesto se tocaron (crearon o borraron) en este ciclo -- justo cuando se sabe con certeza que quedaron completas -- para que cualquier reentrada prematura deje de bloquear la corrección posterior. `_distribute_invoice_real_portion` es segura de invocar de más: es idempotente (no escribe nada si `remaining`/`actual_non_pt` ya da cero).
 
 #### Scenario: Factura multi-línea en divisa
 
@@ -178,6 +181,12 @@ Este segundo paso NO recalcula ni fuerza un total "esperado" a partir de `amount
 - **GIVEN** una factura en divisa ya distribuida, con su contrapartida anclada a `actual_non_pt`
 - **WHEN** se cambia la fecha del documento a otra fecha cuya tasa de cambio vigente es idéntica, y el core recompute las líneas de producto a sus valores originales
 - **THEN** `_distribute_invoice_real_portion` vuelve a calcular `actual_non_pt` a partir de los balances ya recomputados, y reancla la contrapartida a `-actual_non_pt`, dejando el asiento balanceado sin depender de un ajuste previo que el recompute pudo haber descartado
+
+#### Scenario: Cancelar una factura posteada en divisa con IVA no descuadra el asiento pese a resyncs anidados prematuros
+
+- **GIVEN** una factura posted en moneda distinta a la de la compañía con una línea de IVA cuyo `_prepare_tax_lines` decide borrarla y recrearla (no actualizarla in-place) al pasar a borrador
+- **WHEN** se ejecuta `button_draft()`/`button_cancel()` y el `unlink()` de la línea de IVA vieja dispara una reentrada prematura de `_sync_dynamic_lines` para ese move, con la línea vieja ya borrada pero la nueva todavía sin crear
+- **THEN** esa reentrada prematura no deja bloqueada la caché `_real_portion_distributed`: `_sync_tax_lines` la limpia al terminar de crear la línea nueva, así que la siguiente invocación de `_distribute_invoice_real_portion` recalcula sobre las líneas ya completas y el asiento queda balanceado
 
 ### Requirement: Totales de factura en moneda alterna
 
@@ -213,6 +222,46 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 - **AND** `formatted_total_discount` de A permanece el float `0.0` (sin descuento), no el string formateado que tendría si hubiera heredado el descuento de B
 
 (`_compute_tax_totals` de `account.move`, `l10n_ve_accountant/models/account_move.py`, delega directo a `super()` sin fijar `active_id`/`active_model` por registro -- ese `with_context()` por registro causaba un `RecursionError` real en cadenas de `super()` profundas al conciliar pagos; la prioridad de `base_lines` sobre el contexto de arriba es lo que hace seguro quitarlo. Cubierto por `l10n_ve_accountant/tests/test_coverage_gaps.py::test_39b_tax_totals_record_derived_from_base_lines_ignores_stale_active_id`.)
+
+### Requirement: base_amount por grupo de impuesto coincide con el balance real
+
+Cuando una factura (`account.move`, `out_invoice`/`in_invoice`/`out_refund`/`in_refund`) tiene dos o más grupos de impuesto (`account.tax.group`) distintos, `_fix_base_amount_for_multi_currency` DEBE (MUST) reportar en `tax_totals` un `base_amount` (moneda de la compañía) por cada `tax_group` que coincida, al céntimo, con la suma real del `balance` de las líneas de producto (`account.move.line`, `display_type='product'`) que pagan ese impuesto -- directamente o, para un impuesto tipo 'group', a través de sus `children_tax_ids`.
+
+Esto aplica a TODOS los grupos por igual, incluido el último: ningún grupo se calcula como "el remanente" del resto (`subtotal['base_amount']` menos la suma de los demás grupos). Esa resta, usada en una versión anterior de este fix, arrastra a un grupo cualquier balance que no pertenezca a NINGÚN grupo (una línea sin impuesto, posible con `unique_tax` desactivado) y descuenta dos veces el balance de una línea que sí pertenece a DOS grupos distintos (impuesto legítimo: la misma base paga dos impuestos, cada grupo debe reportarla completa, no repartida). Como respaldo defensivo, si no se pueden identificar las líneas propias de un grupo puntual (`tg_lines` vacío, setup de impuestos exótico), el sistema recurre al reparto proporcional del diferencial agregado solo para ese grupo.
+
+El total agregado de la factura y el reparto entre subtotales (cuando existe cash rounding) no cambian por esta corrección.
+
+#### Scenario: Dos grupos de impuesto distintos en una factura de proveedor
+
+- **WHEN** una factura de proveedor en USD (compañía en VEF) tiene una línea exenta (0%, grupo propio) y otra al 16% (otro grupo), con una tasa BCV de varios decimales
+- **THEN** el `base_amount` de cada `tax_group` en `tax_totals` coincide con el `balance` real posteado de su propia línea, no con un reparto proporcional del diferencial agregado
+
+#### Scenario: Mismo escenario en una factura de cliente
+
+- **WHEN** el mismo escenario ocurre en una factura de cliente (`out_invoice`)
+- **THEN** el `base_amount` de cada grupo también coincide con el balance real, sin distinción por dirección del documento
+
+#### Scenario: Tres o más grupos distintos
+
+- **WHEN** una factura tiene tres grupos de impuesto distintos (no solo dos)
+- **THEN** el grupo del medio (no solo el primero o el último) también coincide con su balance real
+
+#### Scenario: Impuesto tipo 'group' con hijos que comparten base
+
+- **WHEN** una línea usa un impuesto tipo 'group' (dos hijos porcentuales que comparten la misma base), combinado con un grupo de impuesto independiente en otra línea
+- **THEN** el sistema identifica las líneas de cada grupo también a través de `children_tax_ids`, y ambos grupos reportados coinciden con su balance real
+
+#### Scenario: Línea sin impuesto junto a una línea gravada (un solo grupo)
+
+- **GIVEN** una factura con una línea gravada al 16% y otra sin ningún impuesto (`unique_tax` desactivado)
+- **WHEN** solo existe un grupo de impuesto en la factura -- ese grupo ES "el último" por construcción, ya que ningún grupo se salta con el criterio de "no es el último"
+- **THEN** el `base_amount` del grupo 16% refleja únicamente el balance de su propia línea, sin arrastrar el balance de la línea sin impuesto
+
+#### Scenario: Una línea con impuestos de dos grupos distintos
+
+- **GIVEN** una única línea de producto con dos impuestos, cada uno en su propio `tax_group`
+- **WHEN** se calcula `tax_totals`
+- **THEN** ambos grupos reportan el balance completo de esa línea como su propia base -- la misma base pagando dos impuestos, no un reparto ni un remanente en cero para el segundo grupo
 
 ### Requirement: Unicidad del nombre del asiento por partner, compañía y diario
 
@@ -446,3 +495,73 @@ Cuando una línea de extracto (`account.bank.statement.line`) tiene `foreign_amo
 
 - **WHEN** se registra una línea de extracto con `foreign_amount` positivo
 - **THEN** la línea de liquidez recibe ese monto como `foreign_debit` y la contrapartida como `foreign_credit`, ambas sin recálculo posterior
+
+### Requirement: El redondeo por línea de la máquina fiscal agrupa por producto, no por impuesto
+
+Cuando `company.tax_calculation_rounding_method` es `round_per_line`, el sistema DEBE (MUST) calcular y redondear el impuesto de cada línea de producto individualmente -- en la moneda de la compañía (`_per_line_tax_sums`) y en la moneda del documento -- antes de sumar los montos ya redondeados en la línea de impuesto consolidada. NO DEBE (SHALL NOT) sumar las bases de todas las líneas que comparten un mismo impuesto y redondear una sola vez sobre esa suma, aunque Odoo agrupe esas líneas en una sola `tax_line` por impuesto. La máquina fiscal venezolana (Providencia de Máquinas Fiscales del SENIAT) calcula y redondea el impuesto de cada renglón antes de acumularlo por alícuota; el motor de impuestos de Odoo 19 agrupa por impuesto y calcula una sola vez sobre la base total sin importar el modo configurado -- `round_per_line` en Odoo controla en qué paso interno se redondea dentro de ese cálculo ya agrupado, no si se calcula por línea de factura.
+
+Esta misma corrección DEBE (MUST) aplicarse también al resumen que alimenta el widget de totales y el reporte impreso: `account.tax._get_tax_totals_summary` (vía `_fix_tax_amount_for_round_per_line`) DEBE (MUST) sobrescribir `tax_amount`/`tax_amount_currency` (y los de cada subtotal/grupo de impuesto) desde las líneas de impuesto reales ya posteadas cuando el modo es `round_per_line`, en lugar de dejar el cálculo independiente que hace el motor del core sobre `base_lines` (que sigue sumando bases y redondeando una sola vez, sin importar el modo) -- de lo contrario la factura mostrada al cliente y el asiento contable divergirían en el mismo caso que este requirement corrige. Esto aplica en cualquier dirección de documento (`out_invoice`, `in_invoice`, `out_refund`, `in_refund`), independientemente del signo de `direction_sign`.
+
+Las líneas de signo mixto bajo un mismo impuesto (un ajuste o descuento global negativo junto a líneas positivas) DEBEN (MUST) sumarse con su propio signo, no con su valor absoluto.
+
+Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo sobre un borrador todavía no guardado), el sistema NO DEBE (SHALL NOT) aplicar esta corrección: no existe ningún asiento real que igualar todavía, y `record.line_ids` puede reflejar el estado de un paso de onchange ANTERIOR (ej. el usuario cambió la moneda del documento y luego el precio de una línea, dentro del mismo borrador sin guardar entre medio) en vez del precio actual. Sin este resguardo, el `tax_amount` recién calculado por el core para el precio actual quedaría pisado por el monto obsoleto de esas líneas, congelando el widget de totales en un valor que no corresponde a lo que el usuario está viendo en pantalla.
+
+#### Scenario: Onchange en vivo sobre un borrador duplicado no pisa el monto fresco con líneas obsoletas
+
+- **GIVEN** una factura duplicada de otra ya posteada, con la moneda del documento cambiada y luego el precio de una línea editado, todo dentro del mismo borrador sin guardar
+- **WHEN** `_fix_tax_amount_for_round_per_line` se ejecuta sobre ese registro virtual (`NewId`), antes de cualquier guardado
+- **THEN** el método retorna sin modificar `res`, dejando el `tax_amount` que el core ya calculó para el precio actual
+
+#### Scenario: Dos líneas con el mismo impuesto, método de la máquina fiscal
+
+- **GIVEN** una compañía VEF con alterna USD, `round_per_line`, y una tasa de 803,34 VEF por USD
+- **AND** una factura en USD con dos líneas de 11,16 USD cada una, ambas con IVA 16%
+- **WHEN** se calcula la línea de impuesto consolidada
+- **THEN** el impuesto total es 2.868,88 VEF (1.434,44 + 1.434,44, cada uno redondeado por línea), y no 2.868,89 VEF (bases sumadas y redondeadas una sola vez)
+
+#### Scenario: El widget de totales y el PDF coinciden con lo posteado, en cualquier dirección de documento
+
+- **GIVEN** una factura con `round_per_line`
+- **WHEN** se lee `amount_tax`/`tax_totals` (lo que muestra el formulario y el reporte impreso) de una factura de venta (`out_invoice`), una de compra (`in_invoice`) o una nota de crédito (`out_refund`)
+- **THEN** el monto coincide con la suma de `balance`/`amount_currency` de las líneas de impuesto reales ya posteadas, en las tres direcciones (`test_43`/`test_44`/`test_45` de `test_multi_currency_rounding.py`)
+
+#### Scenario: Líneas de signo mixto bajo el mismo impuesto
+
+- **GIVEN** una factura con una línea positiva y una negativa (ajuste o descuento global) bajo el mismo impuesto, en `round_per_line`
+- **WHEN** se calcula el impuesto por línea antes de sumar
+- **THEN** la contribución de cada línea se suma con su propio signo, sin tomar el valor absoluto de la línea negativa
+
+### Requirement: Un impuesto encadenado (`include_base_amount`) suma su propio monto a la base del siguiente impuesto de la misma línea
+
+Cuando un impuesto tiene `include_base_amount=True`, el sistema DEBE (MUST) sumar el monto de ese impuesto -- ya calculado para esa misma línea de producto -- a la base de los impuestos siguientes de la misma línea antes de calcularlos, tanto en `round_per_line` como en `round_globally`. Ese monto DEBE (MUST) derivarse exclusivamente de valores ya calculados en el mismo ciclo (`extra_base_by_line_id`, alimentado con montos frescos por línea), y NO DEBE (SHALL NOT) leerse de `base_line['tax_details']` del motor de impuestos del core: esa estructura usa una tasa interna que puede estar tan desactualizada como `record.balance` en este mismo ciclo -- leer de ahí se probó durante el desarrollo y produjo una regresión verificable en la suite de tests. Los repartition lines se procesan ordenados por `tax.sequence`, para que el impuesto que encadena se calcule antes que su dependiente.
+
+#### Scenario: Impuesto A (10%, encadenado) seguido de Impuesto B (5%)
+
+- **GIVEN** una factura con dos líneas de producto, cada una con el Impuesto A (10%, `include_base_amount=True`) y el Impuesto B (5%)
+- **WHEN** se calcula el Impuesto B en `round_per_line`
+- **THEN** la base de cada línea para el Impuesto B incluye el monto del Impuesto A ya calculado para esa misma línea, y el total del Impuesto B difiere del que resultaría de calcularlo sobre la base sin el Impuesto A sumado
+
+### Requirement: El alcance del redondeo por línea se limita a impuestos `percent`
+
+El sistema DEBE (MUST) corregir el redondeo por línea (`round_per_line`) únicamente para impuestos con `amount_type == 'percent'`, incluidos los impuestos hijos `percent` de un impuesto `group` (el motor de Odoo los expande a cálculos individuales antes de generar las líneas contables, así que cada hijo ya pasa por el mismo camino que un `percent` suelto). El sistema NO DEBE (SHALL NOT) extender esta corrección a otros `amount_type` (`fixed`, `division`, `code`), aunque `division` presente el mismo tipo de descuadre que tenía `percent` antes de este fix -- es una decisión de negocio/alcance: en la localización venezolana no se utiliza ningún tipo de impuesto fuera de porcentual. Verificado con `tax.compute_all()` como oráculo independiente: `fixed` no se ve afectado por el modo de redondeo (no hay base multiplicada por un porcentaje que pueda desalinearse); `division` sí tiene el mismo bug (nativo `round_per_line` dio 1.582,58 Bs cuando el método de la máquina fiscal exige 1.576,33 Bs) y queda sin corregir a propósito.
+
+#### Scenario: Impuesto tipo `division` en `round_per_line`
+
+- **GIVEN** una factura con un impuesto tipo `division` y `round_per_line`
+- **WHEN** se compara el monto posteado contra el método de la máquina fiscal (`tax.compute_all()` línea por línea)
+- **THEN** el sistema no garantiza que coincidan -- descuadre conocido y sin corregir, aceptado porque este tipo de impuesto no se usa en Venezuela
+
+#### Scenario: Impuesto tipo `fixed`
+
+- **GIVEN** una factura con un impuesto tipo `fixed` (monto plano por unidad)
+- **WHEN** se compara el resultado entre `round_per_line` y `round_globally`
+- **THEN** el resultado es idéntico en ambos modos
+
+### Requirement: `round_per_line` es la configuración esperada para compañías venezolanas (hallazgo de configuración, no implementado)
+
+La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El default de Odoo 19 es `round_globally`, y este módulo NO fuerza `round_per_line` en ningún dato de instalación (`data/res_company_data.xml` no toca `tax_calculation_rounding_method`). Esto queda documentado como hallazgo pendiente de decisión de negocio (forzarlo vía dato de instalación, o documentarlo como paso manual de configuración post-instalación), NO como un cambio de código de este cierre.
+
+#### Scenario: Compañía venezolana recién instalada
+
+- **WHEN** se crea o instala una compañía con la localización venezolana
+- **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente

@@ -14,3 +14,5 @@ class ResCountryParishBinauralLocalizacion(models.Model):
     parish_id = fields.Many2one(
         "res.country.parish", domain="[('municipality_id', '=', municipality)]"
     )
+
+    zone_id = fields.Many2one("res.partner.zone", string="Zone")

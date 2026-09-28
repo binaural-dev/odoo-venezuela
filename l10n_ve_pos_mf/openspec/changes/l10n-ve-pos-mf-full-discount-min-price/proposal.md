@@ -21,38 +21,52 @@ Nota de diseño: con precios de **2 decimales** no se puede dejar el subtotal en
 entonces **precio unitario 0,01 + descuento = (1 − 1/qty) × 100**, de modo que
 subtotal = 0,01 × qty × (1/qty) = **0,01 exacto**, con el descuento por debajo
 de 100% (no lo bloquea `_check_max_discount`) y el precio > 0. La máquina fiscal
-(precio × cantidad, 2 decimales) no puede repartir 0,01 entre N unidades, así
-que esas líneas se le envían como **1 × 0,01** para que la línea fiscal sume
-0,01 y el cierre `199` cuadre con el pago.
+(precio × cantidad, 2 decimales) no puede repartir 0,01 entre N unidades con
+el precio, así que esas líneas se le envían como **N × 0,01 con un descuento
+por monto de (N − 1) × 0,01 sobre el ítem** para que la línea fiscal sume 0,01,
+el cierre `199` cuadre con el pago y la MF muestre la cantidad real.
 
 ## What Changes
 
-Todo dentro de `l10n_ve_pos_mf` (sólo PdV; no se toca `l10n_ve_account_mf` ni
-`l10n_ve_accountant`).
+`l10n_ve_pos_mf` (PdV) y el driver de `l10n_ve_mf_base`. No se toca
+`l10n_ve_account_mf` ni `l10n_ve_accountant`.
 
 - **`overrides/PosOrderline.js` (nuevo):** patch de `PosOrderline.setDiscount` y
   `setQuantity`. Cuando el descuento dejaría el neto de la línea en 0 (con
   precio base > 0), la línea se factura en el mínimo fiscal: precio 0,01 +
   descuento (1 − 1/qty) × 100 → subtotal 0,01 con la cantidad intacta, marcando
-  la línea con `_mf_fiscal_min`. Se guarda el precio original en
-  `_mf_zeroed_original_price` (revertible), se recalcula el descuento si cambia
-  la cantidad (`setQuantity`), y se fija `price_type = "manual"`. `setDiscount`
+  la línea con `_mf_fiscal_min`. Con cantidad < 0,5 (pesados) el precio sube
+  al céntimo siguiente de 0,01 / cantidad, sin descuento. Se guarda el precio
+  original en `_mf_zeroed_original_price` (revertible), se recalculan precio y
+  descuento si cambia la cantidad (`setQuantity`), y se fija
+  `price_type = "manual"`. `mfIsFiscalMinLine()` reconoce además la línea por
+  sus datos (sobrevive a recargar la caja y a reimprimir pedidos pendientes), y
+  `setUnitPrice` la desmarca si se cambia el precio a mano. `setDiscount`
   es el punto por el que pasan el descuento por línea (numpad →
   `pos.setDiscountFromUI` → `line.setDiscount`) y el global
   (`_applyGlobalDiscountBeforeValidation` → `line.setDiscount`).
 - **`overrides/PosStore.js`:**
   - `get_data_invoice`: propaga `_mf_fiscal_min` a las líneas del payload.
   - `_convertOrderForDriver`: las líneas `_mf_fiscal_min` se envían a la MF como
-    `1 × 0,01`.
-  - `_applyGlobalDiscountBeforeValidation`: antes de **inferir** el porcentaje
-    global, se restauran los precios reales de las líneas sustituidas en una
-    aplicación previa, para que la inferencia no use 0,01 como base.
+    `N × 0,01` con `discount_amount = (N − 1) × 0,01` (cantidad fraccionaria:
+    `1 × 0,01` con `CANT <cantidad> <unidad> -` en la descripción).
+  - `_applyGlobalDiscountBeforeValidation`: en la aplicación manual usa el
+    porcentaje tecleado (`expectedPercent`) en vez del inferido del monto de
+    `pos_discount`, que falla con líneas en el mínimo fiscal.
   - `pay()` (respaldo): antes de ir al pago se recorren las líneas y se aplica la
     sustitución a las que quedaron en neto 0 (órdenes cargadas/reanudadas).
+- **`overrides/PosOrderline.js`:** `mfIsRefundOfFiscalMin()` reconoce la
+  devolución de una línea de mínimo fiscal (original con precio 0,01 y
+  descuento) y la marca sin recalcular el descuento.
+- **`l10n_ve_mf_base` (`TfhkaDriver`):**
+  - `_appendItemDiscount`: si la línea trae `discount_amount > 0`, envía
+    `q-<monto>` justo después del ítem, en factura y nota de crédito.
+  - Tests unitarios y bump `19.0.1.1.1` → `19.0.1.1.2`.
 
 Resultado: el subtotal de la línea queda en **0,01** conservando la cantidad
 (el cajero ve N unidades y cobra 0,01), la factura lleva descuento < 100% (no la
-bloquea `_check_max_discount`) y la MF recibe la línea como 1 × 0,01. Fiscal y
+bloquea `_check_max_discount`) y la MF recibe la línea como N × 0,01 con
+descuento (N − 1) × 0,01, mostrando la cantidad real. Fiscal y
 contabilidad cuadran en 0,01.
 
 ## Capabilities

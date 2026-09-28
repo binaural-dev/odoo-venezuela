@@ -29,6 +29,12 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
     )
 
+    physical_relocation_transfer = fields.Boolean(
+        string="Generate automatic internal transfer when physical location changes",
+        related="company_id.physical_relocation_transfer",
+        readonly=False,
+    )
+
     use_free_qty_odoo = fields.Boolean(
         related="company_id.use_free_qty_odoo",
         readonly=False,

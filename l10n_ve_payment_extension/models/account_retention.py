@@ -52,12 +52,10 @@ class AccountRetention(models.Model):
         "Description",
         size=64,
         default="/",
-        states={"draft": [("readonly", False)]},
         help="Description of the withholding voucher",
     )
     code = fields.Char(
         size=32,
-        states={"draft": [("readonly", False)]},
         help="Code of the withholding voucher",
     )
     state = fields.Selection(
@@ -66,6 +64,7 @@ class AccountRetention(models.Model):
         default="draft",
         help="Status of the withholding voucher",
         tracking=True,
+        copy=False,
     )
     type_retention = fields.Selection(
         [
@@ -95,21 +94,18 @@ class AccountRetention(models.Model):
         "res.partner",
         "Social reason",
         required=True,
-        states={"draft": [("readonly", False)]},
         help="Social reason",
         tracking=True,
     )
-    number = fields.Char("Voucher Number")
-    correlative = fields.Char(readonly=True)
+    number = fields.Char("Voucher Number", copy=False)
+    correlative = fields.Char(readonly=True, copy=False)
     date = fields.Date(
         "Voucher Date",
-        states={"draft": [("readonly", False)]},
         help="Date of issuance of the withholding voucher by the external party.",
         default=fields.Date.context_today,
     )
     date_accounting = fields.Date(
         "Accounting Date",
-        states={"draft": [("readonly", False)]},
         default=fields.Date.context_today,
         help=(
             "Date of arrival of the document and date to be used to make the accounting record."
@@ -129,8 +125,8 @@ class AccountRetention(models.Model):
         "account.retention.line",
         "retention_id",
         "retention line",
-        states={"draft": [("readonly", False)]},
         help="Retentions",
+        copy=False,
     )
 
     code_visible = fields.Boolean(related="company_id.code_visible")
@@ -139,6 +135,7 @@ class AccountRetention(models.Model):
         "account.payment",
         "retention_id",
         help="Payments",
+        copy=False,
     )
 
     total_invoice_amount = fields.Monetary(
@@ -251,28 +248,23 @@ class AccountRetention(models.Model):
     def onchange_partner_id(self):
         """
         Load retention lines from invoices with taxes when the partner changes for IVA retentions
-        that are not posted.
+        that are not posted. For ISLR/municipal retentions, existing lines are cleared instead,
+        since they were picked from the previous partner's invoices and no longer apply.
         """
-        # For third-party billing, just re-compute existing line amounts
-        # using the new partner's withholding, without replacing lines
         self._validate_retention_journals()
-        for retention in self.filtered(
-            lambda r: r.state == "draft" and r.partner_id and r.retention_line_ids and r.is_third_party_retention
-        ):
-            retention.retention_line_ids._onchange_move_id()
 
-        standard_retentions = self.filtered(lambda r: not r.is_third_party_retention)
-        if not standard_retentions:
-            return
-
-        for retention in standard_retentions.filtered(
-            lambda r: (r.state, r.type_retention) == ("draft", "iva") and r.partner_id
-        ):
-            if retention.type in ["in_invoice", "in_refund", "in_debit"]:
-                result = retention._load_retention_lines_for_iva_supplier_retention()
-            else:
-                result = retention._load_retention_lines_for_iva_customer_retention()
-            return result
+        for retention in self.filtered(lambda r: r.state == "draft" and r.partner_id):
+            if retention.is_third_party_retention:
+                # For third-party billing, just re-compute existing line amounts
+                # using the new partner's withholding, without replacing lines
+                if retention.retention_line_ids:
+                    retention.retention_line_ids._onchange_move_id()
+            elif retention.type_retention == "iva":
+                if retention.type in ["in_invoice", "in_refund", "in_debit"]:
+                    return retention._load_retention_lines_for_iva_supplier_retention()
+                return retention._load_retention_lines_for_iva_customer_retention()
+            elif retention.retention_line_ids:
+                retention.clear_retention()
 
     def _load_retention_lines_for_iva_supplier_retention(self):
         self.ensure_one()
@@ -1035,11 +1027,12 @@ class AccountRetention(models.Model):
         if not payments:
             raise UserError(_("No payments found for reconciliation."))
 
-        # The invoice this retention applies to can already sit in a closed
-        # fiscal period by the time the retention itself is processed --
-        # bypass_lock_check is the core's own escape hatch for that check,
-        # only triggered here by the state -> 'posted' transition (not by
-        # writing 'date', which never happens after creation).
+        # These payments are dated with the retention's own date_accounting
+        # (see _prepare_retention_payment_vals), which can already sit in a
+        # closed fiscal period by the time the retention itself is processed --
+        # bypass_lock_check is the core's own escape hatch for that check, only
+        # triggered here by the state -> 'posted' transition (not by writing
+        # 'date', which never happens after creation).
         payments.with_context(bypass_lock_check=BYPASS_LOCK_CHECK).action_post()
 
         account_type_map = {
@@ -1062,9 +1055,22 @@ class AccountRetention(models.Model):
                 raise ValidationError(
                     _("No registered lines found in the move to reconcile.")
                 )
-
+            
+            # `l10n_ve_exchange_is_retention_reconcile` -- explicit,
+            # module-owned context key (as opposed to reusing the native
+            # `no_exchange_difference` alone) so that any OTHER module
+            # hooking into reconciliation can tell a retention payoff
+            # apart from any other legitimate reason a caller might set
+            # `no_exchange_difference` (e.g. `l10n_ve_exchange_difference`
+            # itself sets it when closing its own Debit/Credit Note,
+            # `account_move_line.py::_create_exchange_difference_note`).
+            # Coordinated purely via context, not a shared dependency:
+            # `l10n_ve_exchange_difference` reads this key without
+            # depending on this module.
             payment.retention_line_ids.move_id.with_context(
-                no_exchange_difference=True,group_in_single_partial=True
+                no_exchange_difference=True,
+                group_in_single_partial=True,
+                l10n_ve_exchange_is_retention_reconcile=True,
             ).js_assign_outstanding_line(lines[0].id)
 
     @api.model
@@ -1241,6 +1247,60 @@ class AccountRetention(models.Model):
                     raise ValidationError(
                         _("The number must be exactly 14 numeric digits.")
                     )
+
+    @api.constrains("number", "company_id", "type_retention", "partner_id", "type", "state")
+    def _check_number_unique(self):
+        # A duplicate voucher number is only a real collision when it's the
+        # same partner handing us (or being handed) the same document twice:
+        # customer (out_*) and supplier (in_*) retentions are numbered from
+        # independent series (the customer's own correlative vs. our
+        # internal no_gap sequence), so different partners - or the two
+        # directions for the same partner - can legitimately share a number.
+        # Cancelled retentions don't hold the number either.
+        in_types = ("in_invoice", "in_refund", "in_debit", "in_contingence")
+        out_types = ("out_invoice", "out_refund", "out_debit", "out_contingence")
+        for record in self.filtered(lambda r: r.number and r.state != "cancel"):
+            same_direction_types = in_types if record.type in in_types else out_types
+            duplicate = self.search([
+                ("id", "!=", record.id),
+                ("number", "=", record.number),
+                ("company_id", "=", record.company_id.id),
+                ("type_retention", "=", record.type_retention),
+                ("partner_id", "=", record.partner_id.id),
+                ("type", "in", same_direction_types),
+                ("state", "!=", "cancel"),
+            ], limit=1)
+            if duplicate:
+                raise ValidationError(
+                    _(
+                        "Voucher number %(number)s is already used by another %(type_retention)s "
+                        "retention (%(other)s) for %(partner)s."
+                    )
+                    % {
+                        "number": record.number,
+                        "type_retention": record.type_retention,
+                        "other": duplicate.display_name,
+                        "partner": record.partner_id.display_name,
+                    }
+                )
+
+    @api.constrains("partner_id", "retention_line_ids", "is_third_party_retention")
+    def _check_lines_match_partner(self):
+        for retention in self.filtered(lambda r: not r.is_third_party_retention):
+            mismatched = retention.retention_line_ids.filtered(
+                lambda l: l.move_id and l.move_id.partner_id != retention.partner_id
+            )
+            if mismatched:
+                raise ValidationError(
+                    _(
+                        "All retention lines must belong to invoices of %(partner)s. "
+                        "Invoice(s) %(moves)s belong to a different partner."
+                    )
+                    % {
+                        "partner": retention.partner_id.display_name,
+                        "moves": ", ".join(mismatched.mapped("move_id.name")),
+                    }
+                )
 
     @api.model
     def default_get(self, fields_list):
