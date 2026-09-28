@@ -15,6 +15,7 @@
     ],
     "data": [
         "data/donation_certificate_paperformat.xml",
+        "data/ir_sequence.xml",
         "security/res_groups.xml",
         "security/ir.model.access.csv",
         "report/donation_certificate_report.xml",
