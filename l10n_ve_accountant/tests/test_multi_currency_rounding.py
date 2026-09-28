@@ -1042,12 +1042,15 @@ class TestMultiCurrencyRounding(TransactionCase):
                     ),
                 )
 
-    def test_31_mixed_sign_lines_both_rounding_modes(self):
-        """A negative (discount/adjustment) line sharing a tax with positive lines must NET OUT,
-        not add up as if both were positive -- in BOTH rounding modes. `round_per_line` had a
-        real `abs()` bug here (fixed via `_per_line_tax_sums` summing SIGNED per-line amounts);
-        `round_globally`'s `_vef_base_for_tax`/`_grouped_tax_sums` never used `abs()` so it was
-        never at risk, but is included for completeness/regression coverage."""
+    def test_31_two_lines_same_tax_both_rounding_modes(self):
+        """Two lines sharing a tax must sum their per-line tax contributions correctly
+        in BOTH rounding modes. `round_per_line` sums per-line amounts via
+        `_per_line_tax_sums`; `round_globally` sums bases first via `_grouped_tax_sums` --
+        both must agree with the tax computed on the combined base.
+
+        No product/invoice line may ever carry a negative price -- not even to represent
+        a discount or adjustment (`l10n_ve_invoice._check_price_in_zero` enforces this for
+        real invoices), so this only exercises two ordinary positive lines."""
         self.env["res.currency.rate"].search([
             ("currency_id", "=", self.currency_usd.id),
             ("company_id", "=", self.company.id),
@@ -1058,39 +1061,49 @@ class TestMultiCurrencyRounding(TransactionCase):
             "inverse_company_rate": 803.34,
             "company_id": self.company.id,
         })
+        line_amounts_usd = [11.16, 4.16]
         for mode in ("round_per_line", "round_globally"):
             with self.subTest(mode=mode):
                 self.company.tax_calculation_rounding_method = mode
-                # Line A: 11.16 USD (positive). Line B: a -4.16 USD
-                # adjustment on the SAME tax -- net base is 7.00 USD, net
-                # tax must reflect that, not `tax(11.16) + tax(-4.16)`
-                # miscomputed as `tax(11.16) + tax(4.16)`.
                 inv = self._create_invoice(self.currency_usd, None, [
-                    (1, 11.16, [self.tax_16]),
-                    (1, -4.16, [self.tax_16]),
+                    (1, amt, [self.tax_16]) for amt in line_amounts_usd
                 ])
                 tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
                 product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
-                net_base_usd = sum(product_lines.mapped('amount_currency'))
-                expected_tax_usd = self.currency_usd.round(abs(net_base_usd) * 0.16)
+                # `round_per_line` rounds each line's tax before summing;
+                # `round_globally` sums the bases first and rounds once --
+                # the two legitimately land a cent apart, so the expected
+                # value must be computed the same way as the mode under test.
+                # `balance` follows the accounting debit/credit sign convention
+                # (negative for an `out_invoice` product line) -- take `abs()`
+                # per line before applying the tax rate, same as the `amount_tax`
+                # comparisons below.
+                line_balances_vef = [abs(b) for b in product_lines.mapped('balance')]
+                if mode == 'round_per_line':
+                    expected_tax_usd = sum(
+                        self.currency_usd.round(a * 0.16) for a in line_amounts_usd
+                    )
+                    expected_tax_vef = sum(
+                        self.currency_vef.round(b * 0.16) for b in line_balances_vef
+                    )
+                else:
+                    expected_tax_usd = self.currency_usd.round(sum(line_amounts_usd) * 0.16)
+                    expected_tax_vef = self.currency_vef.round(sum(line_balances_vef) * 0.16)
+                # `amount_currency`/`balance` follow the accounting debit/credit
+                # sign convention (negative for an `out_invoice` tax line) --
+                # unrelated to rounding mode, hence the `abs()`.
                 self.assertAlmostEqual(
                     abs(tax_line.amount_currency), expected_tax_usd, places=2,
                     msg=(
-                        f"[{mode}] With mixed-sign lines, "
-                        f"tax_line.amount_currency={tax_line.amount_currency} does not match "
-                        f"the netted base's tax ({expected_tax_usd}) -- looks like the negative "
-                        f"line's contribution was added instead of subtracted"
+                        f"[{mode}] tax_line.amount_currency={tax_line.amount_currency} does not "
+                        f"match the expected per-mode tax ({expected_tax_usd})"
                     ),
                 )
-                net_base_vef = sum(product_lines.mapped('balance'))
-                expected_tax_vef = self.currency_vef.round(abs(net_base_vef) * 0.16)
                 self.assertAlmostEqual(
                     abs(tax_line.balance), expected_tax_vef, places=2,
                     msg=(
-                        f"[{mode}] With mixed-sign lines, tax_line.balance={tax_line.balance} "
-                        f"(VEF) does not match the netted base's tax ({expected_tax_vef}) -- "
-                        f"looks like the negative line's contribution was added instead of "
-                        f"subtracted"
+                        f"[{mode}] tax_line.balance={tax_line.balance} (VEF) does not match "
+                        f"the expected per-mode tax ({expected_tax_vef})"
                     ),
                 )
                 # `amount_tax` is in the document currency (USD), same as
@@ -2539,3 +2552,21 @@ class TestMultiCurrencyRounding(TransactionCase):
             (20.123456, 6.309876, [self.tax_16, tax_8_own]),
         ])
         self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16, tax_8_own])
+
+    def test_55_new_company_defaults_to_round_per_line(self):
+        """`l10n_ve_accountant` overrides `res.company.tax_calculation_
+        rounding_method`'s default to 'round_per_line' ("por linea"),
+        since stock Odoo defaults new companies to 'round_globally'
+        ("por impuesto"). This only affects company records created from
+        here on -- it does not retroactively touch `self.company` (this
+        module's `base.main_company`, whose column was already populated
+        by `account` before this override existed), so create a brand
+        new company instead of asserting on `self.company`.
+        """
+        new_company = self.env['res.company'].create({'name': 'Rounding Default Co'})
+        self.assertEqual(
+            new_company.tax_calculation_rounding_method,
+            'round_per_line',
+            "New companies must default to round-per-line, not stock Odoo's"
+            " round-per-tax.",
+        )

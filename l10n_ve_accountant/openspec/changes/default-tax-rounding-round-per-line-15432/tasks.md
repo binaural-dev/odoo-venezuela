@@ -1,0 +1,43 @@
+# Tasks
+
+## 1. Diagnóstico
+
+- [x] 1.1 Confirmado que `tax_calculation_rounding_method` nace en
+      `account/models/company.py` con `default='round_globally'`
+- [x] 1.2 Confirmado que ningún módulo de `odoo-venezuela` sobreescribía
+      ese default
+
+## 2. Fix
+
+- [x] 2.1 Override del default a `'round_per_line'` en
+      `l10n_ve_accountant/models/res_company.py`
+- [x] 2.2 Verificado en base de prueba (consulta directa a
+      `res_company.tax_calculation_rounding_method`) que el override
+      solo aplica a compañías nuevas -- la compañía principal (creada
+      por `base`/`account` antes de que el override cargue en el
+      registro) mantiene su valor previo (`round_globally`); confirmado
+      con el usuario que ese alcance es el deseado (no se agrega
+      migración retroactiva)
+
+## 3. Verificación
+
+- [x] 3.1 Test nuevo `test_55_new_company_defaults_to_round_per_line`
+- [x] 3.2 Suite completa de `l10n_ve_accountant` corrida en contenedor
+      Docker, base limpia, sin demo: 242 tests, sin fallos
+- [x] 3.3 Misma suite corrida con `l10n_ve_invoice` instalado (vía
+      `l10n_ve_payment_extension`, escenario real de producción): 242
+      tests, sin fallos
+
+## 4. OpenSpec
+
+- [x] 4.1 `proposal.md` + spec delta (`ADDED` - capability nueva)
+- [ ] 4.2 `openspec validate --changes` (no ejecutado: CLI `openspec`
+      no disponible en este entorno)
+
+## 5. Proceso
+
+- [x] 5.1 Commit `[FIX] l10n_ve_accountant, l10n_ve_payment_extension:
+      redondeo por linea y bloqueo de retencion IVA proveedores` en la
+      rama
+      `maint-19.0-ti-15432-fix-block-iva-providers-view-and-raunding-taxes-method`
+- [ ] 5.2 Push a `origin` (pendiente de confirmación explícita)
