@@ -47,6 +47,25 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
             })],
         })
 
+    def _make_sale_credit_note(self, amount, invoice_date, reversed_entry_id):
+        with Form(self.env["account.move"].with_context(
+            default_move_type="out_refund", default_journal_id=self.sale_journal.id,
+        )) as inv_form:
+            inv_form.partner_id = self.partner_pnr_75
+            inv_form.invoice_date = invoice_date
+            inv_form.currency_id = self.currency_vef
+        inv = inv_form.save()
+        inv.reversed_entry_id = reversed_entry_id
+        with Form(inv) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product_iva
+                line.quantity = 1
+                line.price_unit = amount
+        inv = inv_form_edit.save()
+        inv.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
+        inv.with_context(move_action_post_alert=True).action_post()
+        return inv
+
     def test_01_retention_creates_independent_row_with_expected_fields(self):
         today = fields.Date.today()
         invoice_date = today - timedelta(days=5)
@@ -241,3 +260,53 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
                 f"encontrado: {ret_line[field_name]}",
             )
         _logger.info("========= test_04 passed =========")
+
+    def test_05_resume_total_retenciones_matches_detail_sum_across_periods(self):
+        today = fields.Date.today()
+        old_invoice_date = today - timedelta(days=40)
+
+        wizard = self.env["wizard.accounting.reports"].create({
+            "report": "sale",
+            "date_from": today - timedelta(days=10),
+            "date_to": today + timedelta(days=10),
+        })
+
+        # Factura de un período ANTERIOR al rango del wizard, pero con la
+        # retención "contabilizada" (date_accounting) dentro del rango: su
+        # RET debe aparecer en el detalle y, con el fix, también contarse
+        # en el resumen (antes no se contaba porque search_moves() de
+        # ventas no trae facturas de otro período).
+        inv_out_of_range = self._make_sale_invoice(100, old_invoice_date)
+        self._make_sale_iva_retention_with_dates(
+            inv_out_of_range, date=old_invoice_date, date_accounting=today,
+        )
+
+        # Factura normal dentro del rango, con su retención también dentro
+        # del rango.
+        inv_in_range = self._make_sale_invoice(200, today)
+        self._make_sale_iva_retention_with_dates(
+            inv_in_range, date=today, date_accounting=today,
+        )
+
+        # Nota de crédito dentro del rango, con su propia retención, para
+        # verificar que el signo no se invierte al separar por move_type.
+        credit_note = self._make_sale_credit_note(50, today, inv_in_range)
+        self._make_sale_iva_retention_with_dates(
+            credit_note, date=today, date_accounting=today,
+        )
+
+        data = wizard.parse_sale_book_data()
+        ret_lines = [line for line in data if line.get("move_type") == "RET"]
+        self.assertEqual(len(ret_lines), 3)
+        detail_total = sum(line["iva_withheld"] for line in ret_lines)
+
+        resume = wizard._resume_sale_book_fields(wizard.search_moves())
+        retention_resume = next(
+            r for r in resume if r.get("name") == "Total Retenciones"
+        )
+        resume_total = (
+            retention_resume["values"][1] + retention_resume["values"][3]
+        )
+
+        self.assertEqual(detail_total, resume_total)
+        _logger.info("========= test_05 passed =========")

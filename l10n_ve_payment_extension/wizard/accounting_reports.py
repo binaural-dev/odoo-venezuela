@@ -56,6 +56,31 @@ class WizardAccountingReports(models.TransientModel):
 
         return retention_resume_lines
 
+    def _determinate_resume_sale_retention_books(self):
+        # Se usa el mismo conjunto de líneas que genera las filas RET del
+        # detalle (_search_sale_retention_lines()), en lugar de derivar el
+        # total desde `moves`, porque una retención puede pertenecer a una
+        # factura de OTRO período (filtrada por date_accounting de la
+        # retención, no por la fecha de la factura). Si se sumara a partir
+        # de `moves` (que solo trae facturas del período), el total del
+        # resumen no cuadraría con el detalle presentado al SENIAT.
+        retention_lines = self._search_sale_retention_lines()
+        credit_note_lines = retention_lines.filtered(
+            lambda line: line.move_id.move_type in ["out_refund", "in_refund"]
+        )
+        invoice_lines = retention_lines - credit_note_lines
+
+        # No se repite aquí el filtro de state == "emitted" /
+        # _check_future_retention_dates que tenía el código de compras: ya
+        # está aplicado por _get_retention_domain() al construir
+        # retention_lines, por lo que volver a filtrar sería redundante.
+        return [
+            0.0,
+            self._sum_retention_total(invoice_lines),
+            0.0,
+            self._sum_retention_total(credit_note_lines),
+        ]
+
     def _resume_sale_book_fields(self, moves):
         res_book = super()._resume_sale_book_fields(moves)
         res_book.extend(
@@ -63,7 +88,7 @@ class WizardAccountingReports(models.TransientModel):
                 {
                     "name": "Total Retenciones",
                     "format": "number",
-                    "values": self._determinate_resume_retention_books(moves),
+                    "values": self._determinate_resume_sale_retention_books(),
                 }
             ]
         )
