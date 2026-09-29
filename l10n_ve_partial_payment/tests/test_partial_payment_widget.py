@@ -10,8 +10,14 @@ def _normalize_nbsp(text):
     plain space, so a ``formatLang`` string (raw ``\\xa0``) can be compared
     against a chatter message's ``body`` (HTML-sanitized on ``message_post``,
     which re-encodes ``\\xa0`` as the ``&nbsp;`` entity) without depending on
-    which of the two representations is currently in play."""
-    return text.replace("\xa0", " ").replace("&nbsp;", " ")
+    which of the two representations is currently in play.
+
+    ``str(text)`` first: ``body`` is a ``markupsafe.Markup`` instance, whose
+    ``.replace()`` HTML-escapes its ARGUMENTS before matching (so searching
+    for the literal ``"&nbsp;"`` pattern would actually search for
+    ``"&amp;nbsp;"`` and never match) -- coercing to a plain ``str`` first
+    sidesteps that escaping wrapper entirely."""
+    return str(text).replace("\xa0", " ").replace("&nbsp;", " ")
 
 
 @tagged("post_install", "-at_install", "l10n_ve_partial_payment")
