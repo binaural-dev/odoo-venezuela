@@ -20,7 +20,11 @@ patch(PosPayment.prototype, {
     serializeForORM(opts = {}) {
         const data = super.serializeForORM(opts);
         data["foreign_amount"] = this.foreign_amount || 0;
-        data["foreign_rate"] = Number(this.pos_order_id?.get_foreign_multiplier?.() ?? 0);
+        // Refund orders stamp the rate their foreign amounts were valued at
+        // (the frozen original-sale rate), not today's live rate, so the
+        // payment move frozen by pos_payment._create_payment_moves is
+        // internally consistent. Non-refund orders keep the live multiplier.
+        data["foreign_rate"] = Number(this.pos_order_id?.get_effective_foreign_multiplier?.() ?? 0);
         return data;
     },
 
@@ -43,7 +47,11 @@ patch(PosPayment.prototype, {
             this.foreign_amount = 0;
             return;
         }
-        this.foreign_amount = order.localToForeign(this.amount || 0);
+        // _convertOrderAmount uses the refund's original-sale rate when the
+        // order has refund lines, and the live rate otherwise. This keeps a
+        // refund paid in local currency (Bs) valued in USD at the SAME rate
+        // as the refund total, instead of today's rate.
+        this.foreign_amount = order._convertOrderAmount(this.amount || 0);
     },
 
     setAmount(value) {
@@ -105,9 +113,42 @@ patch(PosPayment.prototype, {
         }, 0);
         const localDueBefore = localTotal - localPaidOthers;
 
+        // Refund with a KNOWN original foreign rate (prefetched by the payment
+        // screen from the original order's foreign tender): mirror the tender
+        // exactly. Value the line as |foreign| * rate (direct), so refunding
+        // $45 gives back the SAME Bs the original $45 payment recorded
+        // (matches "ver pagos de origen" to the cent), instead of the
+        // sale-oriented due-snapping below. Only snap to the exact local due
+        // when the tender just covers it (within one foreign-rounding step),
+        // to kill the sub-cent drift of the rounded foreign due on a full
+        // refund. Refund lines are negative, so foreign_amount is negated too.
+        const exactRate = typeof order.getRefundForeignRate === "function"
+            ? order.getRefundForeignRate() : 0;
+        if (exactRate > 0) {
+            const sign = localTotal < 0 ? -1 : 1;
+            const mag = Math.abs(requested);
+            this.foreign_amount = sign * mag;
+            // foreign→local at the exact original rate, via the shared engine
+            // primitive (exactRate is already local-per-foreign).
+            const directLocal = order.foreignToLocalAtRate(mag, exactRate);
+            const absDue = Math.abs(localDueBefore);
+            const fRounding =
+                Number(order._getForeignCurrencyRecord?.()?.rounding) || 0.01;
+            const tol = exactRate * fRounding; // one foreign step, in local
+            this.amount = Math.abs(directLocal - absDue) <= tol
+                ? localDueBefore // full/exact refund: snap to due, no drift
+                : sign * directLocal; // overpay/partial: mirror the tender
+            return;
+        }
+
         // Convert local due to foreign ONCE (same rounding as
         // get_foreign_total_with_tax → foreign_currency.round).
-        const foreignDueBefore = order.localToForeign(localDueBefore);
+        //
+        // _convertOrderAmount (not the raw localToForeign) so a REFUND uses
+        // the frozen original-sale rate, not today's live rate: otherwise the
+        // foreign due shown/typed here diverges from the foreign amount the
+        // original payment actually had (visible via "ver pagos de origen").
+        const foreignDueBefore = order._convertOrderAmount(localDueBefore);
 
         // Resolve the real ResCurrency record (AbstractNumbers) when
         // possible; get_foreign_currency may return a bare id.
@@ -139,13 +180,15 @@ patch(PosPayment.prototype, {
                 ? fc.isPositive(overpaymentForeign)
                 : overpaymentForeign > 0;
             const overpaymentLocal = hasOverpay
-                ? order.foreignToLocal(overpaymentForeign)
+                ? order._convertForeignOrderAmount(overpaymentForeign)
                 : 0;
             this.amount = localDueBefore + overpaymentLocal;
             return;
         }
 
-        // Partial payment: strict mathematical conversion.
-        this.amount = order.foreignToLocal(requested);
+        // Partial payment: strict mathematical conversion. Refund-aware so a
+        // partial refund's local (main-currency) amount is proportional to
+        // the original sale's rate, not today's rate.
+        this.amount = order._convertForeignOrderAmount(requested);
     },
 });

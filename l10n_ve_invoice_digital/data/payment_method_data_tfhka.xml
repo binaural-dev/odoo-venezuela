@@ -1,0 +1,100 @@
+<odoo>
+    <data noupdate="1">
+
+        <record id="payment_method_01" model="payment.method.tfhka">
+            <field name="code">01</field>
+            <field name="description">Depósito en cuenta</field>
+        </record>
+
+        <record id="payment_method_02" model="payment.method.tfhka">
+            <field name="code">02</field>
+            <field name="description">Pago Móvil</field>
+        </record>
+
+        <record id="payment_method_03" model="payment.method.tfhka">
+            <field name="code">03</field>
+            <field name="description">Transferencia de fondos</field>
+        </record>
+
+        <record id="payment_method_04" model="payment.method.tfhka">
+            <field name="code">04</field>
+            <field name="description">Orden de Pago</field>
+        </record>
+
+        <record id="payment_method_05" model="payment.method.tfhka">
+            <field name="code">05</field>
+            <field name="description">Tarjeta de Débito</field>
+        </record>
+
+        <record id="payment_method_06" model="payment.method.tfhka">
+            <field name="code">06</field>
+            <field name="description">Tarjeta de crédito (Nacional o Internacional)</field>
+        </record>
+
+        <record id="payment_method_07" model="payment.method.tfhka">
+            <field name="code">07</field>
+            <field name="description">Cheques con cláusula "NO NEGOCIABLE", "INTRANSFERIBLES", etc. (art. 5°, inc. g) de la ley</field>
+        </record>
+
+        <record id="payment_method_08" model="payment.method.tfhka">
+            <field name="code">08</field>
+            <field name="description">Efectivo Moneda Curso Legal</field>
+        </record>
+
+        <record id="payment_method_09" model="payment.method.tfhka">
+            <field name="code">09</field>
+            <field name="description">Efectivo Divisas</field>
+        </record>
+
+        <record id="payment_method_10" model="payment.method.tfhka">
+            <field name="code">10</field>
+            <field name="description">Medios de pago usados en comercio Exterior</field>
+        </record>
+
+        <record id="payment_method_11" model="payment.method.tfhka">
+            <field name="code">11</field>
+            <field name="description">Transferencias – Comercio exterior</field>
+        </record>
+
+        <record id="payment_method_12" model="payment.method.tfhka">
+            <field name="code">12</field>
+            <field name="description">Cheques bancarios - Comercio exterior</field>
+        </record>
+
+        <record id="payment_method_13" model="payment.method.tfhka">
+            <field name="code">13</field>
+            <field name="description">Orden de pago simple - Comercio exterior</field>
+        </record>
+
+        <record id="payment_method_14" model="payment.method.tfhka">
+            <field name="code">14</field>
+            <field name="description">Orden de pago documentario - Comercio exterior</field>
+        </record>
+
+        <record id="payment_method_15" model="payment.method.tfhka">
+            <field name="code">15</field>
+            <field name="description">Remesa simple - Comercio exterior</field>
+        </record>
+
+        <record id="payment_method_16" model="payment.method.tfhka">
+            <field name="code">16</field>
+            <field name="description">Remesa documentaria - Comercio exterior</field>
+        </record>
+
+        <record id="payment_method_17" model="payment.method.tfhka">
+            <field name="code">17</field>
+            <field name="description">Carta de crédito simple - Comercio exterior</field>
+        </record>
+
+        <record id="payment_method_18" model="payment.method.tfhka">
+            <field name="code">18</field>
+            <field name="description">Carta de crédito documentario - Comercio exterior</field>
+        </record>
+
+        <record id="payment_method_99" model="payment.method.tfhka">
+            <field name="code">99</field>
+            <field name="description">Otros medios de pago</field>
+        </record>
+
+    </data>
+</odoo>

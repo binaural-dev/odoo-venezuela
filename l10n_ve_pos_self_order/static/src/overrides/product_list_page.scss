@@ -1,0 +1,25 @@
+// Kiosk "scan / search only" header: greeting + search box shown in place of
+// the hidden product catalog.
+.o_ve_kiosk_scan_header {
+    background-color: var(--o-so-view-bg, #fff);
+    border-bottom: 1px solid var(--o-so-border-color, rgba(0, 0, 0, 0.1));
+
+    .o_ve_kiosk_greeting {
+        font-size: clamp(1.75rem, 3vw, 2.5rem);
+    }
+
+    .o_ve_kiosk_search_input {
+        font-size: 1.25rem;
+    }
+
+    .o_ve_kiosk_search .fa-search {
+        font-size: 1.25rem;
+    }
+}
+
+// In-place order summary shown on the scan screen (scan/search-only mode).
+.o_ve_kiosk_summary {
+    .o_ve_kiosk_summary_title {
+        font-size: clamp(1.25rem, 2vw, 1.75rem);
+    }
+}
