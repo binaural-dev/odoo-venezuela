@@ -1885,3 +1885,147 @@ msgstr "Tipo de Indexación"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Enable this to indexation payment in wizard of payment not grouping"
 msgstr "Active esto para indexar los pagos individuales en el asistente de pago sin agrupar"
+
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__l10n_ve_use_foreign_exchange_diff
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_config_settings__l10n_ve_use_foreign_exchange_diff
+msgid ""
+"Adds the alternate currency amount to Odoo's own exchange difference entry, "
+"or creates one just for it if company currency matched exactly."
+msgstr ""
+"Agrega el monto en moneda alterna al propio asiento de diferencial "
+"cambiario de Odoo, o crea uno exclusivo para ello si la moneda de la "
+"compañía ya cuadró exactamente."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+msgid "Alternate currency exchange difference"
+msgstr "Diferencial cambiario en moneda alterna"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
+msgid "Alternate Currency Exchange Difference"
+msgstr "Diferencial Cambiario en Moneda Alterna"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move_line.py:0
+msgid ""
+"Configure the 'Exchange Gain or Loss Journal' and its Gain/Loss accounts in "
+"your company settings before reconciling documents with the alternate "
+"currency exchange difference enabled."
+msgstr ""
+"Configure el 'Diario de Ganancia o Pérdida Cambiaria' y sus cuentas de "
+"Ganancia/Pérdida en los ajustes de la compañía antes de conciliar "
+"documentos con el diferencial cambiario en moneda alterna activado."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__l10n_ve_exchange_foreign_payment_move_id
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__l10n_ve_exchange_foreign_payment_move_id
+msgid ""
+"Counterpart document (payment/settlement) whose reconciliation produced this"
+" standalone alternate-currency exchange difference entry -- informational "
+"only, human-readable."
+msgstr ""
+"Documento de contrapartida (pago/liquidación) cuya conciliación produjo "
+"este asiento independiente de diferencial cambiario en moneda alterna -- "
+"solo informativo, legible para humanos."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__l10n_ve_exchange_foreign_source_move_id
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__l10n_ve_exchange_foreign_source_move_id
+msgid ""
+"Document whose reconciliation produced a standalone alternate-currency "
+"exchange difference entry -- kept even after the underlying "
+"`account.partial.reconcile` is later deleted (e.g. the settlement gets "
+"undone), since that's the only place this information would otherwise "
+"survive."
+msgstr ""
+"Documento cuya conciliación produjo un asiento independiente de "
+"diferencial cambiario en moneda alterna -- se conserva incluso después de "
+"que el `account.partial.reconcile` subyacente sea eliminado (p. ej. al "
+"deshacer la liquidación), ya que es el único lugar donde esta información "
+"sobreviviría de otro modo."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid "Exchange Gain or Loss Journal"
+msgstr "Diario de Ganancia o Pérdida Cambiaria"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid "Gain Exchange Rate Account"
+msgstr "Cuenta de Ganancia Cambiaria"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__l10n_ve_exchange_foreign_diff_entry
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__l10n_ve_exchange_foreign_diff_entry
+msgid "Is Alternate Currency Exchange Difference Entry"
+msgstr "Es un Asiento de Diferencial Cambiario en Moneda Alterna"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid "Loss Exchange Rate Account"
+msgstr "Cuenta de Pérdida Cambiaria"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_bank_statement_line__l10n_ve_exchange_foreign_diff_entry
+#: model:ir.model.fields,help:l10n_ve_accountant.field_account_move__l10n_ve_exchange_foreign_diff_entry
+msgid ""
+"Set when this entry carries an alternate-currency exchange difference "
+"amount, native or standalone."
+msgstr ""
+"Se activa cuando este asiento lleva un monto de diferencial cambiario en "
+"moneda alterna, ya sea nativo o independiente."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__l10n_ve_exchange_foreign_payment_move_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__l10n_ve_exchange_foreign_payment_move_id
+msgid "Settling Document (Alternate Currency Exchange Difference)"
+msgstr "Documento de Liquidación (Diferencial Cambiario en Moneda Alterna)"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__l10n_ve_exchange_foreign_source_move_id
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__l10n_ve_exchange_foreign_source_move_id
+msgid "Source Document (Alternate Currency Exchange Difference)"
+msgstr "Documento de Origen (Diferencial Cambiario en Moneda Alterna)"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
+msgid ""
+"The exchange difference entry Odoo creates natively at
+"
+"                                    reconciliation time also carries the alternate currency amount
+"
+"                                    on its own lines. If only the alternate currency shows a
+"
+"                                    difference, the same kind of entry is still created for it."
+msgstr ""
+"El asiento de diferencial cambiario que Odoo crea de forma nativa al
+"
+"                                    conciliar también lleva el monto en moneda alterna
+"
+"                                    en sus propias líneas. Si solo la moneda alterna muestra una
+"
+"                                    diferencia, igual se crea este mismo tipo de asiento para ella."
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__l10n_ve_use_foreign_exchange_diff
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__l10n_ve_use_foreign_exchange_diff
+msgid "Use Alternate Currency Exchange Difference"
+msgstr "Usar Diferencial Cambiario en Moneda Alterna"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid ""
+"With 'Use Alternate Currency Exchange Difference' enabled, configure the "
+"following (Accounting Settings > Default Accounts): %(missing)s."
+msgstr ""
+"Con 'Usar Diferencial Cambiario en Moneda Alterna' activado, configure lo "
+"siguiente (Ajustes de Contabilidad > Cuentas por Defecto): %(missing)s."
