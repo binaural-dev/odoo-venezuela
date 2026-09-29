@@ -7,7 +7,7 @@ from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, index_exists
 from odoo.tools.sql import drop_index
-from odoo.tools.float_utils import float_round
+from odoo.tools.float_utils import float_round, float_is_zero
 from odoo.tools.misc import formatLang
 from odoo.tools.misc import clean_context
 
@@ -297,6 +297,15 @@ class AccountMove(models.Model):
         currency_field='company_currency_id'
     )
 
+    company_currency_line_totals = fields.Json(
+        string="Company Currency Line Totals",
+        compute="_compute_company_currency_line_totals",
+        store=True,
+        help="Per line, in company currency: price_unit, quantity, "
+        "subtotal, subtotal_taxed, tax_amount, discount_amount, "
+        "discount_type, taxes. Dict keyed by line id (str).",
+    )
+
     @api.depends(
         'line_ids.matched_debit_ids.debit_move_id.move_id.origin_payment_id.is_matched',
         'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
@@ -323,6 +332,118 @@ class AccountMove(models.Model):
                     total_residual_company += line.amount_residual
             sign = move.direction_sign
             move.amount_residual_company = -sign * total_residual_company
+
+    @api.model
+    def _prorate_company_currency_amount(self, lines, amount, currency):
+        """Split `amount` across `lines` by |balance| share, largest-remainder
+        rounded (same technique as _distribute_to_lines) so shares add up
+        exactly. Returns {line.id: share}.
+        """
+        shares = {line.id: 0.0 for line in lines}
+        if currency.is_zero(amount) or not lines:
+            return shares
+        weights = {line.id: abs(line.balance) for line in lines}
+        total_weight = sum(weights.values())
+        if currency.is_zero(total_weight):
+            return shares
+
+        sign = 1 if amount > 0 else -1
+        abs_amount = abs(amount)
+        remaining_units = round(abs_amount / currency.rounding)
+        sorted_ids = sorted(weights, key=lambda lid: -weights[lid])
+        n = len(sorted_ids)
+        for i, line_id in enumerate(sorted_ids):
+            if remaining_units <= 0:
+                break
+            if i < n - 1:
+                ratio = weights[line_id] / total_weight
+                units = round(currency.round(ratio * abs_amount) / currency.rounding)
+                units = min(units, remaining_units)
+            else:
+                units = remaining_units
+            shares[line_id] = sign * units * currency.rounding
+            remaining_units -= units
+        return shares
+
+    @api.depends(
+        "move_type",
+        "invoice_line_ids.quantity",
+        "invoice_line_ids.discount",
+        "invoice_line_ids.tax_ids",
+        "invoice_line_ids.tax_ids.price_include",
+        "invoice_line_ids.display_type",
+        "line_ids.display_type",
+        "line_ids.tax_repartition_line_id",
+        "line_ids.balance",
+    )
+    def _compute_company_currency_line_totals(self):
+        """subtotal = each product line's own balance (already exact, post
+        real-portion correction). tax_amount prorates each tax line's
+        balance across the lines carrying that tax, by |balance| share.
+        """
+        precision = self.env['decimal.precision'].precision_get('Product Price')
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                move.company_currency_line_totals = {}
+                continue
+
+            cc = move.company_currency_id
+            product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
+            tax_lines = move.line_ids.filtered('tax_repartition_line_id')
+
+            lines_by_tax = defaultdict(lambda: self.env['account.move.line'])
+            for line in product_lines:
+                for tax in line.tax_ids.flatten_taxes_hierarchy():
+                    lines_by_tax[tax] |= line
+
+            tax_balance_by_tax = defaultdict(float)
+            for tax_line in tax_lines:
+                tax_balance_by_tax[tax_line.tax_repartition_line_id.tax_id] += tax_line.balance
+
+            tax_amount_by_line_id = defaultdict(float)
+            for tax, tax_balance in tax_balance_by_tax.items():
+                shares = move._prorate_company_currency_amount(
+                    lines_by_tax.get(tax, self.env['account.move.line']), tax_balance, cc
+                )
+                for line_id, share in shares.items():
+                    tax_amount_by_line_id[line_id] += share
+
+            totals = {}
+            for line in product_lines:
+                line_sign = -1 if float_compare(
+                    line.price_subtotal, 0.0, precision_rounding=line.currency_id.rounding
+                ) < 0 else 1
+                subtotal = line_sign * abs(line.balance)
+                tax_amount = line_sign * abs(tax_amount_by_line_id.get(line.id, 0.0))
+
+                discount_percent = line.discount or 0.0
+                discount_type = 'percent'
+                denominator = line.quantity * (1 - discount_percent / 100.0)
+                price_unit = (
+                    float_round(subtotal / denominator, precision_digits=precision)
+                    if not float_is_zero(denominator, precision_digits=precision)
+                    else 0.0
+                )
+                discount_amount = cc.round(price_unit * line.quantity - subtotal)
+
+                totals[str(line.id)] = {
+                    'price_unit': price_unit,
+                    'quantity': line.quantity,
+                    'subtotal': subtotal,
+                    'subtotal_taxed': subtotal + tax_amount,
+                    'tax_amount': tax_amount,
+                    'discount_amount': discount_amount,
+                    'discount_type': discount_type,
+                    'taxes': [
+                        {
+                            'id': tax.id,
+                            'name': tax.name,
+                            'price_include': tax.price_include,
+                        }
+                        for tax in line.tax_ids
+                    ],
+                }
+            move.company_currency_line_totals = totals
 
     @api.onchange('invoice_date_display')
     def _onchange_invoice_date_display(self):
