@@ -876,6 +876,16 @@ class TfhkaDocumentService(models.AbstractModel):
             product_lines = record.invoice_line_ids.filtered(
                 lambda l: l.display_type == 'product'
             ) - discount_lines
+
+            document_currency = ctx["document_currency"]
+            # En bolívares (el caso sin multi_currency_invoice, el default),
+            # el precio/subtotal de línea sale de company_currency_line_totals
+            # -- ya reconciliado contra el balance posteado del asiento -- en
+            # vez de convertir price_unit/price_subtotal con la tasa del
+            # documento, que podía desviarse del monto contable real.
+            use_company_currency_totals = document_currency == record.company_id.currency_id
+            company_currency_totals = record.company_currency_line_totals or {}
+
             for line in product_lines:
                 tax_mapping = {
                     0.0: "E",
@@ -886,38 +896,47 @@ class TfhkaDocumentService(models.AbstractModel):
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
-                # Los montos de línea van en la moneda del documento. Se parte
-                # de price_unit/price_subtotal (que están en la moneda de la
-                # factura, o sea la de la tarifa) y se convierte con la tasa del
-                # contexto; NO se usa foreign_price, que siempre convierte a
-                # company.foreign_currency_id y rompería una tarifa en EUR con
-                # la compañía en USD.
-                document_currency = ctx["document_currency"]
-                base_price = self._get_amount_in_currency(
-                    record, document_currency, ctx, line.price_unit
-                )
-                base_subtotal = self._get_amount_in_currency(
-                    record, document_currency, ctx, line.price_subtotal
-                )
+                if use_company_currency_totals:
+                    line_totals = company_currency_totals.get(str(line.id)) or {}
+                    unit_price = round(line_totals.get("price_unit", 0.0), 2)
+                    item_price = round(line_totals.get("subtotal", 0.0), 2)
+                    discount_amount = round(line_totals.get("discount_amount", 0.0), 2)
+                    unit_price_discount = (
+                        round(item_price / line.quantity, 2) if line.quantity else unit_price
+                    )
+                    price_before_discount = round(unit_price * line.quantity, 2)
+                else:
+                    # Los montos de línea van en la moneda del documento. Se parte
+                    # de price_unit/price_subtotal (que están en la moneda de la
+                    # factura, o sea la de la tarifa) y se convierte con la tasa del
+                    # contexto; NO se usa foreign_price, que siempre convierte a
+                    # company.foreign_currency_id y rompería una tarifa en EUR con
+                    # la compañía en USD.
+                    base_price = self._get_amount_in_currency(
+                        record, document_currency, ctx, line.price_unit
+                    )
+                    base_subtotal = self._get_amount_in_currency(
+                        record, document_currency, ctx, line.price_subtotal
+                    )
 
-                # El % real de descuento puede venir de discount (%) o de
-                # discount_fixed (monto fijo, ver l10n_ve_invoice/models/
-                # account_move_line.py) -- ambas formas conviven, se decide
-                # por lo que la línea tenga cargado, no por la configuración
-                # de la compañía: _enforce_discount_exclusivity ya garantiza
-                # que una línea nunca tiene los dos a la vez.
-                discount_ratio = (
-                    line._get_exact_discount_percentage()
-                    if line.discount_fixed
-                    else (line.discount or 0.0)
-                )
-                discount_factor = discount_ratio / 100.0
-                unit_price = round(base_price, 2)
-                discount_unit = round(base_price * discount_factor, 2)
-                unit_price_discount = round(base_price - discount_unit, 2)
-                discount_amount = round(base_price * discount_factor * line.quantity, 2)
-                item_price = round(base_subtotal, 2)
-                price_before_discount = round(base_price * line.quantity, 2)
+                    # El % real de descuento puede venir de discount (%) o de
+                    # discount_fixed (monto fijo, ver l10n_ve_invoice/models/
+                    # account_move_line.py) -- ambas formas conviven, se decide
+                    # por lo que la línea tenga cargado, no por la configuración
+                    # de la compañía: _enforce_discount_exclusivity ya garantiza
+                    # que una línea nunca tiene los dos a la vez.
+                    discount_ratio = (
+                        line._get_exact_discount_percentage()
+                        if line.discount_fixed
+                        else (line.discount or 0.0)
+                    )
+                    discount_factor = discount_ratio / 100.0
+                    unit_price = round(base_price, 2)
+                    discount_unit = round(base_price * discount_factor, 2)
+                    unit_price_discount = round(base_price - discount_unit, 2)
+                    discount_amount = round(base_price * discount_factor * line.quantity, 2)
+                    item_price = round(base_subtotal, 2)
+                    price_before_discount = round(base_price * line.quantity, 2)
 
                 vat = round(item_price * tax_rate / 100.0, 2)
                 total_item_value = round(item_price + vat, 2)
