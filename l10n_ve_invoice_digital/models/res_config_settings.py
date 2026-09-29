@@ -12,7 +12,7 @@ class ResConfigSettings(models.TransientModel):
     payment_mode_tfhka = fields.Selection(related="company_id.payment_mode_tfhka", readonly=False)
     # Expone el campo multi-moneda de la compañía en la vista de ajustes.
     multi_currency_invoice_tfhka = fields.Boolean(related="company_id.multi_currency_invoice_tfhka", string="Multi-currency digital invoicing", readonly=False)
-    notify_email_tfhka = fields.Boolean(related="company_id.notify_email_tfhka", string="Notify customer by email", readonly=False)
+    notify_email_tfhka = fields.Boolean(related="company_id.notify_email_tfhka", string="Email sending from The Factory HKA", readonly=False)
     mix_invoicing_tfhka = fields.Boolean(related="company_id.mix_invoicing_tfhka", string="Allow Mixed Invoicing", readonly=False)
     mix_invoicing_type_tfhka = fields.Selection(
         related="company_id.mix_invoicing_type_tfhka",

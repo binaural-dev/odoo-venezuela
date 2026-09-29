@@ -59,11 +59,6 @@ msgstr "Monedas de Línea Permitidas"
 
 #. module: l10n_ve_invoice_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
-msgid "Allows The Factory HKA to email the digital document to the customer when digitalizing."
-msgstr "Permite que The Factory HKA envíe el documento digital al cliente por correo al digitalizar."
-
-#. module: l10n_ve_invoice_digital
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid ""
 "Allows marking individual invoices as multi-currency (mixed VES/USD) for "
 "digitalization."
@@ -667,8 +662,8 @@ msgstr "Sin Digitalizar"
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__notify_email_tfhka
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__notify_email_tfhka
-msgid "Notify customer by email"
-msgstr "Notificar al cliente por correo"
+msgid "Email sending from The Factory HKA"
+msgstr "Envío de correo desde The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
@@ -1404,14 +1399,15 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__notify_email_tfhka
 #: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_config_settings__notify_email_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
 msgid ""
-"When enabled, The Factory HKA sends the digital document by email to the "
-"customer when digitalizing (invoices, retentions and dispatch guides). "
-"When disabled, The Factory HKA does not send that email."
+"When enabled, The Factory HKA will send the digitalized document to the "
+"customer by email. When disabled, the email will be sent directly from "
+"Odoo."
 msgstr ""
-"Al activarse, The Factory HKA envía el documento digital por correo al "
-"cliente al digitalizar (facturas, retenciones y guías de despacho). Al "
-"desactivarse, The Factory HKA no envía ese correo."
+"Si está activo, The Factory HKA enviará el documento digitalizado por "
+"correo al cliente. Si está desactivado, el envío del correo se gestionará "
+"directamente desde Odoo."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__multi_currency_invoice_tfhka
