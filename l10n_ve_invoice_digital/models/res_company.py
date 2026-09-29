@@ -44,11 +44,10 @@ class ResCompany(models.Model):
     )
     notify_email_tfhka = fields.Boolean(
         default=True,
-        string="Notify customer by email",
-        help="When enabled, The Factory HKA sends the digital document by "
-        "email to the customer when digitalizing (invoices, retentions and "
-        "dispatch guides). When disabled, The Factory HKA does not send "
-        "that email.",
+        string="Email sending from The Factory HKA",
+        help="When enabled, The Factory HKA will send the digitalized "
+        "document to the customer by email. When disabled, the email will "
+        "be sent directly from Odoo.",
     )
     mix_invoicing_tfhka = fields.Boolean(default=True, string="Allow Mixed Invoicing")
     mix_invoicing_type_tfhka = fields.Selection(

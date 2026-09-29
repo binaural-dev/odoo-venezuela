@@ -74,7 +74,7 @@
                                 <div class="o_setting_right_pane">
                                     <label for="notify_email_tfhka"/>
                                     <div class="text-muted">
-                                        Allows The Factory HKA to email the digital document to the customer when digitalizing.
+                                        When enabled, The Factory HKA will send the digitalized document to the customer by email. When disabled, the email will be sent directly from Odoo.
                                     </div>
                                 </div>
                             </div>
