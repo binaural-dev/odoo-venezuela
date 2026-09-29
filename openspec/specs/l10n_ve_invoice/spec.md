@@ -666,4 +666,3 @@ Exención: la ND/NC de diferencial cambiario (`l10n_ve_exchange_difference`) tom
 
 - **WHEN** se edita la fecha contable (`date`) de una nota para que sea anterior a su `invoice_date_display` y se guarda
 - **THEN** se lanza un error de validación y no se guarda
-

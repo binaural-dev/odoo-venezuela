@@ -4,6 +4,7 @@ from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 from odoo.tools import float_round
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
