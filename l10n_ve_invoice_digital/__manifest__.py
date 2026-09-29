@@ -22,6 +22,7 @@
         "data/payment_method_data_tfhka.xml",
         "data/res_currency_data.xml",
         "data/ir_cron.xml",
+        "data/mail_template_data.xml",
         "security/ir.model.access.csv",
         "security/ir_rule.xml",
         "views/res_config_settings.xml",

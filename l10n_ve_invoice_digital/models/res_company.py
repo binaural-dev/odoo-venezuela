@@ -42,6 +42,14 @@ class ResCompany(models.Model):
              "(VES or USD line prices + dual totals if USD selected). An additional "
              "checkbox + currency selector will appear on each invoice."
     )
+    notify_email_tfhka = fields.Boolean(
+        default=True,
+        string="Notify customer by email",
+        help="When enabled, The Factory HKA sends the digital document by "
+        "email to the customer when digitalizing (invoices, retentions and "
+        "dispatch guides). When disabled, The Factory HKA does not send "
+        "that email.",
+    )
     mix_invoicing_tfhka = fields.Boolean(default=True, string="Allow Mixed Invoicing")
     mix_invoicing_type_tfhka = fields.Selection(
         [
