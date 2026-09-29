@@ -1,0 +1,24 @@
+.o_l10n_ve_partial_payment_popover {
+    min-width: 220px;
+
+    .popover-header {
+        font-size: 0.95rem;
+        font-weight: 600;
+    }
+
+    .o_l10n_ve_partial_payment_available {
+        font-size: 0.8rem;
+    }
+
+    // Hide the native number-input spinner: it doesn't match Odoo's own
+    // monetary inputs and just adds visual noise here.
+    .o_l10n_ve_partial_payment_input {
+        -moz-appearance: textfield;
+
+        &::-webkit-outer-spin-button,
+        &::-webkit-inner-spin-button {
+            appearance: none;
+            margin: 0;
+        }
+    }
+}
