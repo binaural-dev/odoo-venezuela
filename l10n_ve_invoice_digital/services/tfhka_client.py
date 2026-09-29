@@ -14,6 +14,7 @@ TFHKA_ENDPOINTS = {
     "ultimo_documento": "/UltimoDocumento",
     "consulta_numeraciones": "/ConsultaNumeraciones",
     "anular": "/Anular",
+    "descarga_archivo": "/DescargaArchivo",
 }
 
 # Timeout (segundos) para las llamadas HTTP a TFHKA.
@@ -212,6 +213,17 @@ class TfhkaApiClient(models.AbstractModel):
     def annul(self, company, payload, origin=None):
         """POST /Anular. Anula un documento digital (serie/tipo/numero + motivo)."""
         return self._request(company, "anular", payload, origin=origin)
+
+    def download_document(self, company, document_type, document_number, series="", origin=None):
+        """POST /DescargaArchivo. Devuelve el PDF ya digitalizado en base64
+        (campo ``archivo`` de la respuesta), para adjuntarlo a un correo sin
+        guardarlo en el documento de origen."""
+        payload = {
+            "serie": series,
+            "tipoDocumento": document_type,
+            "numeroDocumento": document_number,
+        }
+        return self._request(company, "descarga_archivo", payload, origin=origin)
 
     def get_last_document_number(self, company, document_type, series="", origin=None):
         """POST /UltimoDocumento. Devuelve el último número como entero (0 si no existe).

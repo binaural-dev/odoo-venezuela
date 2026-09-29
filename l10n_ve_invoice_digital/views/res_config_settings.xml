@@ -69,6 +69,17 @@
                             </div>
                             <div class="o_setting_box">
                                 <div class="o_setting_left_pane">
+                                    <field name="notify_email_tfhka"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="notify_email_tfhka"/>
+                                    <div class="text-muted">
+                                        Allows The Factory HKA to email the digital document to the customer when digitalizing.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_setting_box">
+                                <div class="o_setting_left_pane">
                                     <field name="mix_invoicing_tfhka"/>
                                 </div>
                                 <div class="o_setting_right_pane">

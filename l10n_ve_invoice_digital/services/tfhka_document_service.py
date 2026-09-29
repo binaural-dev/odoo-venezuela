@@ -180,6 +180,70 @@ class TfhkaDocumentService(models.AbstractModel):
             except Exception as error:
                 _logger.error("No se pudo sincronizar la secuencia del diario TFHKA: %s", error)
 
+        self._send_digitalization_email(invoice)
+
+    def _send_digitalization_email(self, invoice):
+        """Envía el aviso de documento digitalizado (plantilla propia de
+        Odoo, independiente del 'notificar' que le indicamos a The Factory
+        HKA en el payload), con el PDF ya digitalizado adjunto -- obtenido en
+        el momento, nunca guardado en el propio documento.
+
+        Se llama desde dentro del cron de la cola de digitalización (ver
+        ``tfhka.digitalization.mixin._tfhka_process_digitalization``): un
+        fallo aquí (SMTP no configurado, plantilla borrada, el PDF no se pudo
+        descargar, etc.) nunca debe hacer que ese método marque el documento
+        como 'error' -- la digitalización en sí ya fue exitosa en este punto,
+        así que cualquier problema de envío queda solo registrado en el
+        chatter, sin propagar la excepción.
+        """
+        template = self.env.ref(
+            "l10n_ve_invoice_digital.mail_template_tfhka_digitalization_notification",
+            raise_if_not_found=False,
+        )
+        if not template:
+            return
+
+        email_values = {}
+        attachment = self._fetch_digitalized_document(invoice)
+        if attachment:
+            email_values["attachments"] = [attachment]
+
+        try:
+            template.send_mail(invoice.id, force_send=True, email_values=email_values)
+        except Exception as error:
+            _logger.error(
+                "TFHKA: no se pudo enviar el correo de digitalización para %s #%s: %s",
+                invoice._name, invoice.id, error,
+            )
+            invoice.message_post(
+                body=_("Could not send the digitalization notification email: %s") % error,
+            )
+
+    def _fetch_digitalized_document(self, invoice):
+        """POST /DescargaArchivo -- trae el PDF ya digitalizado (campo
+        ``archivo``, base64) para adjuntarlo al correo de aviso. Devuelve
+        ``(nombre_archivo, contenido_base64)`` o ``None`` si falla: un fallo
+        aquí no debe impedir que el correo se mande (se manda sin adjunto),
+        ya que la digitalización en sí ya fue exitosa.
+        """
+        try:
+            document_type = self._get_document_type(invoice)
+            series = self._get_series(invoice)
+            document_number = str(invoice.sequence_number)
+            response = self.env["tfhka.api.client"].download_document(
+                invoice.company_id, document_type, document_number, series=series, origin=invoice,
+            )
+            archivo = response.get("archivo") if response else None
+            if not archivo:
+                return None
+            return (f"{document_number}.pdf", archivo.encode())
+        except Exception as error:
+            _logger.error(
+                "TFHKA: no se pudo descargar el documento digitalizado para %s #%s: %s",
+                invoice._name, invoice.id, error,
+            )
+            return None
+
     def _get_sequence_field(self, invoice):
         if invoice.move_type == "out_refund":
             return "refund_sequence_number_next"
