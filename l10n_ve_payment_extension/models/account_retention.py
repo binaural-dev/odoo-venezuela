@@ -785,7 +785,20 @@ class AccountRetention(models.Model):
             retention_amounts_by_move[line.move_id] += line.retention_amount
 
         for move, retention_amount in retention_amounts_by_move.items():
-            invoice_total = abs(move.amount_residual_signed)
+            # amount_residual_signed only reflects a real amount once the
+            # invoice is posted (it is built from the payment_term move
+            # line, which does not exist yet on a draft invoice) - it is
+            # 0.0 while state == 'draft', which would make ANY recalculation
+            # run on a draft invoice fail this check. The "Recalcular
+            # retenciones" button is restricted to draft invoices precisely
+            # for this use case (task #83486), so fall back to amount_total
+            # (the invoice's full total before any payment can exist) when
+            # the invoice has not been posted yet.
+            invoice_total = (
+                abs(move.amount_residual_signed)
+                if move.state == "posted"
+                else abs(move.amount_total)
+            )
             if invoice_total < retention_amount:
                 raise UserError(
                     _(
@@ -1425,7 +1438,7 @@ class AccountRetention(models.Model):
             lambda l: l.tax_ids and l.tax_ids[0].amount > 0
         ).mapped("tax_ids")
         if not any(tax_ids):
-            raise UserError(_("The invoice %s has no tax."), invoice_id.number)
+            raise UserError(_("The invoice %s has no tax.") % invoice_id.name)
 
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []
