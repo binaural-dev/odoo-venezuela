@@ -117,11 +117,21 @@ class AccountRetention(models.Model):
             }
         return self.action_cancel()
 
-    @api.depends('state', 'is_digitalized')
+    @api.depends('state', 'is_digitalized', 'type')
     def _compute_visibility_button(self):
+        # 'out_*' = retencion de cliente (el cliente nos retiene): TFHKA solo
+        # digitaliza retenciones de proveedor (ver action_post, que encola
+        # solo type == 'in_invoice'), asi que el boton nunca debe aparecer en
+        # una retencion de cliente, sin importar estado/config de la compania.
+        customer_retention_types = ('out_invoice', 'out_refund', 'out_debit')
         for record in self:
             record.show_digital_retention_iva = True
             record.show_digital_retention_islr = True
-            if record.state == 'emitted' and not record.is_digitalized and record.company_id.invoice_digital_tfhka:
+            if (
+                record.type not in customer_retention_types
+                and record.state == 'emitted'
+                and not record.is_digitalized
+                and record.company_id.invoice_digital_tfhka
+            ):
                 record.show_digital_retention_iva = False
                 record.show_digital_retention_islr = False
