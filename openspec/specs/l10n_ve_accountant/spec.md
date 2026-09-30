@@ -584,6 +584,8 @@ Cuando se elimina un `account.partial.reconcile` (desconciliar, cancelar un pago
 
 Esta marca DEBE (MUST) ser perezosa (`env.add_to_compute`), NUNCA un recompute inmediato dentro del mismo `unlink()`: un recompute inmediato captura el estado de la conciliación a mitad de camino en flujos que borran una pieza y crean su reemplazo en la MISMA operación (p. ej. el cruce de anticipo de `l10n_ve_igtf`), resolviendo `payment_state` a `'partial'` incluso cuando la factura termina totalmente pagada por el reemplazo.
 
+Esta marca perezosa cubre el lado de la BAJA (romper la conciliación vieja), pero NO alcanza por sí sola cuando el reemplazo se concilia a mano sobre `account.move` propios en vez de pasar por el camino estándar de pagos (exactamente el caso del cruce de anticipo de `l10n_ve_igtf`, `_reconcile_move_with_payment_difference`): ese flujo nunca dispara el recálculo natural de `payment_state` que un pago real sí dispara, así que DEBE (MUST) forzar su propio `env.add_to_compute` justo después de conciliar -- ver el requirement de `l10n_ve_igtf` ("Cruce de anticipo al aplicarlo a una factura"). Confirmado en producción: sin ese segundo recálculo explícito, `payment_state` quedaba en `'partial'` con `amount_residual` ya en 0.0 tras un cruce de anticipo.
+
 #### Scenario: Desconciliar 3 pagos reales, uno por uno, devuelve la factura a "no pagada"
 
 - **GIVEN** una factura pagada en 3 pagos separados vía el wizard de registro de pago, cada uno con su propia `payment_account_id` en el diario bancario
@@ -594,4 +596,4 @@ Esta marca DEBE (MUST) ser perezosa (`env.add_to_compute`), NUNCA un recompute i
 
 - **GIVEN** un flujo (p. ej. el cruce de anticipo) que borra una conciliación existente y crea su reemplazo en la misma operación
 - **WHEN** la conciliación de reemplazo deja la factura totalmente pagada
-- **THEN** `payment_state` termina en `'paid'`, no en `'partial'` por haber sido calculado antes de que el reemplazo existiera
+- **THEN** `payment_state` termina en `'paid'`, no en `'partial'` por haber sido calculado antes de que el reemplazo existiera -- siempre que el propio flujo de reemplazo también fuerce su recálculo (ver nota de arriba; el lazy recompute de esta baja por sí solo no es suficiente para reemplazos armados a mano)
