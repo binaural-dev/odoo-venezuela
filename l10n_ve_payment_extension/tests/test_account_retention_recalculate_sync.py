@@ -55,17 +55,34 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
         # concept's real name never contains, so the search returns an
         # empty recordset - see test_retention_ti14548_rules.py's own note
         # about this same issue).
-        # Clone concept_one (already has line_payment_concept_ids with a
-        # working tariff_id/type_person_id/percentage_tax_base) instead of
-        # creating an empty concept - an empty concept has no lines to
-        # resolve related_percentage_tax_base/related_percentage_fees for
-        # the partner's type_person_id, so
-        # _compute_retention_amount() computes retention_amount = 0 and
-        # action_post() rejects it with "You can not create a retention
-        # with 0 amount." line_payment_concept_ids has no copy=False, so
-        # .copy() also clones its lines.
-        self.concept_alt83486 = self.concept_one.copy({
+        # An empty concept has no line_payment_concept_ids to resolve
+        # related_percentage_tax_base/related_percentage_fees for the
+        # partner's type_person_id, so _compute_retention_amount() computes
+        # retention_amount = 0 and action_post() rejects it with "You can
+        # not create a retention with 0 amount." Cloning concept_one with
+        # .copy() (tried previously) does NOT work either:
+        # payment.concept.line.code has a global UNIQUE sql constraint
+        # (no copy=False), so cloning concept_one's lines with their same
+        # codes silently fails to produce usable lines on the copy. Instead,
+        # build concept_alt83486 from scratch with a single new line that
+        # reuses concept_one's tariff/percentage for partner_pnr_75's
+        # type_person_id (the same one every other test in this file
+        # already relies on via concept_one), but with a brand-new,
+        # non-colliding code.
+        self.concept_alt83486 = self.env["payment.concept"].create({
             "name": "Concepto Alterno 83486",
+            "status": True,
+        })
+        source_line = self.concept_one.line_payment_concept_ids.filtered(
+            lambda line: line.type_person_id == self.partner_pnr_75.type_person_id
+        )
+        self.env["payment.concept.line"].create({
+            "payment_concept_id": self.concept_alt83486.id,
+            "type_person_id": source_line.type_person_id.id,
+            "tariff_id": source_line.tariff_id.id,
+            "percentage_tax_base": source_line.percentage_tax_base,
+            "pay_from": source_line.pay_from,
+            "code": "83486-1",
         })
         self.product_islr_alt83486 = self.env["product.product"].create({
             "name": "Servicio Concepto Alterno 83486",
