@@ -48,6 +48,26 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
             "taxes_id": [(6, 0, [self.tax_iva_8_purchase.id])],
             "supplier_taxes_id": [(6, 0, [self.tax_iva_8_purchase.id])],
         })
+        # A second, self-contained ISLR concept for tests that need two
+        # DISTINCT concepts on the same invoice - the common fixture's
+        # concept_three/product_islr_three are unreliable (concept_three is
+        # resolved by searching for "Intereses", which the seeded "three"
+        # concept's real name never contains, so the search returns an
+        # empty recordset - see test_retention_ti14548_rules.py's own note
+        # about this same issue).
+        self.concept_alt83486 = self.env["payment.concept"].create({
+            "name": "Concepto Alterno 83486",
+            "status": True,
+        })
+        self.product_islr_alt83486 = self.env["product.product"].create({
+            "name": "Servicio Concepto Alterno 83486",
+            "list_price": 100,
+            "property_account_income_id": self.acc_income.id,
+            "taxes_id": [(6, 0, [self.tax_iva_exent.id])],
+            "supplier_taxes_id": [(6, 0, [self.tax_iva_exent_purchase.id])],
+            "type": "service",
+            "payment_concept": self.concept_alt83486.id,
+        })
 
     def _create_two_rate_iva_invoice(self):
         """Draft supplier invoice with one 16% line and one 8% line."""
@@ -123,7 +143,7 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
         )
         self.assertGreater(len(retention.message_ids), messages_before)
         self.assertTrue(retention.payment_ids)
-        self.assertTrue(all(p.state == "posted" for p in retention.payment_ids))
+        self.assertTrue(all(p.state == "paid" for p in retention.payment_ids))
         remaining_line = retention.retention_line_ids
         self.assertAlmostEqual(
             sum(retention.payment_ids.mapped("amount")),
@@ -167,10 +187,10 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
 
         self.env["account.move.line"].create({
             "move_id": invoice.id,
-            "product_id": self.product_islr_three.id,
+            "product_id": self.product_islr_alt83486.id,
             "quantity": 1,
             "price_unit": 100,
-            "name": self.product_islr_three.name,
+            "name": self.product_islr_alt83486.name,
         })
 
         retention.action_recalculate(moves=invoice)
@@ -178,7 +198,7 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
         self.assertEqual(len(retention.retention_line_ids), 2)
         self.assertTrue(
             retention.retention_line_ids.filtered(
-                lambda l: l.payment_concept_id == self.concept_three
+                lambda l: l.payment_concept_id == self.concept_alt83486
             )
         )
         _logger.info("========= test_03 passed =========")
@@ -218,10 +238,10 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
         invoice.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
         self.env["account.move.line"].create({
             "move_id": invoice.id,
-            "product_id": self.product_islr_three.id,
+            "product_id": self.product_islr_alt83486.id,
             "quantity": 1,
             "price_unit": 100,
-            "name": self.product_islr_three.name,
+            "name": self.product_islr_alt83486.name,
         })
         retention = self._make_islr_retention_for(invoice)
         self.assertEqual(len(retention.retention_line_ids), 2)
@@ -237,14 +257,14 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
             "amount": 1.0,
         })
         posted_payment.action_post()
-        line_three = retention.retention_line_ids.filtered(
-            lambda l: l.payment_concept_id == self.concept_three
+        line_alt83486 = retention.retention_line_ids.filtered(
+            lambda l: l.payment_concept_id == self.concept_alt83486
         )
-        line_three.payment_id = posted_payment.id
+        line_alt83486.payment_id = posted_payment.id
         retention.payment_ids = [Command.link(posted_payment.id)]
 
         invoice.invoice_line_ids.filtered(
-            lambda l: l.product_id == self.product_islr_three
+            lambda l: l.product_id == self.product_islr_alt83486
         ).unlink()
 
         retention.action_recalculate(moves=invoice)
@@ -252,11 +272,11 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
         self.assertEqual(retention.state, "emitted")
         self.assertFalse(
             retention.retention_line_ids.filtered(
-                lambda l: l.payment_concept_id == self.concept_three
+                lambda l: l.payment_concept_id == self.concept_alt83486
             )
         )
         self.assertTrue(retention.payment_ids)
-        self.assertTrue(all(p.state == "posted" for p in retention.payment_ids))
+        self.assertTrue(all(p.state == "paid" for p in retention.payment_ids))
         _logger.info("========= test_05 passed =========")
 
     def test_06_invoice_left_without_tax_raises(self):
