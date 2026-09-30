@@ -578,22 +578,23 @@ La normativa de máquinas fiscales de Venezuela exige el método de redondeo por
 - **WHEN** se crea o instala una compañía con la localización venezolana
 - **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente
 
-### Requirement: `payment_state` se recalcula al romper una conciliación, incluso para pagos con cuenta de pago propia
+### Requirement: Desglose por línea de factura en moneda de la compañía
 
-Cuando se elimina un `account.partial.reconcile` (desconciliar, cancelar un pago, o un flujo que reemplaza una conciliación existente por otra), el sistema DEBE (MUST) marcar `payment_state` de las facturas/pagos tocados como pendiente de recalcular, sin importar si el pago involucrado tiene su propia `payment_account_id` configurada en la línea de método de pago -- el caso NORMAL de cualquier diario bancario real, que el núcleo (`_get_to_update_payments`) excluye de su propio refresco de `payment.state` al desconciliar, dejando `payment_state` de la factura sin recomputar aunque `amount_residual` ya esté correcto.
+El sistema DEBE (MUST) exponer, por cada línea de producto de una factura, un desglose en la moneda de la compañía (`account.move.company_currency_line_totals`, JSON indexado por id de línea) con precio unitario, cantidad, subtotal sin impuesto, subtotal con impuesto, monto de impuesto, monto y tipo de descuento, e impuestos aplicados (id, nombre, si el impuesto está incluido en el precio). El subtotal y el monto de impuesto de cada línea DEBEN (MUST) reconciliar exactamente con el `balance` real posteado en el asiento -- nunca una conversión de moneda independiente que pueda diferir del asiento por redondeo.
 
-Esta marca DEBE (MUST) ser perezosa (`env.add_to_compute`), NUNCA un recompute inmediato dentro del mismo `unlink()`: un recompute inmediato captura el estado de la conciliación a mitad de camino en flujos que borran una pieza y crean su reemplazo en la MISMA operación (p. ej. el cruce de anticipo de `l10n_ve_igtf`), resolviendo `payment_state` a `'partial'` incluso cuando la factura termina totalmente pagada por el reemplazo.
+Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MUST) repartirse proporcionalmente al `balance` de cada línea, sin perder ni inventar ninguna unidad de la moneda. Los impuestos de tipo `group` DEBEN (MUST) resolverse por su jerarquía completa de impuestos hijos, no solo por coincidencia directa con `tax_ids` de la línea.
 
-Esta marca perezosa cubre el lado de la BAJA (romper la conciliación vieja), pero NO alcanza por sí sola cuando el reemplazo se concilia a mano sobre `account.move` propios en vez de pasar por el camino estándar de pagos (exactamente el caso del cruce de anticipo de `l10n_ve_igtf`, `_reconcile_move_with_payment_difference`): ese flujo nunca dispara el recálculo natural de `payment_state` que un pago real sí dispara, así que DEBE (MUST) forzar su propio `env.add_to_compute` justo después de conciliar -- ver el requirement de `l10n_ve_igtf` ("Cruce de anticipo al aplicarlo a una factura"). Confirmado en producción: sin ese segundo recálculo explícito, `payment_state` quedaba en `'partial'` con `amount_residual` ya en 0.0 tras un cruce de anticipo.
+#### Scenario: Factura en moneda distinta a la de la compañía
 
-#### Scenario: Desconciliar 3 pagos reales, uno por uno, devuelve la factura a "no pagada"
+- **WHEN** se crea una factura en USD o EUR con líneas de producto e impuestos
+- **THEN** `company_currency_line_totals` contiene, para cada línea, los montos equivalentes en la moneda de la compañía, y la suma de esos montos coincide exactamente con los `balance` de las líneas de producto e impuesto del asiento
 
-- **GIVEN** una factura pagada en 3 pagos separados vía el wizard de registro de pago, cada uno con su propia `payment_account_id` en el diario bancario
-- **WHEN** se desconcilian los 3 pagos, uno por uno, vía el widget de la factura
-- **THEN** `payment_state` de la factura queda en `'not_paid'`, sin quedar atascado en `'paid'`
+#### Scenario: Varias líneas bajo el mismo impuesto
 
-#### Scenario: Un cruce que reemplaza una conciliación existente no captura un estado intermedio
+- **WHEN** tres o más líneas de producto comparten la misma tasa de impuesto
+- **THEN** el monto de impuesto de cada línea es proporcional a su propio `balance`, y la suma de los montos por línea coincide exactamente con el `balance` de la línea de impuesto del asiento
 
-- **GIVEN** un flujo (p. ej. el cruce de anticipo) que borra una conciliación existente y crea su reemplazo en la misma operación
-- **WHEN** la conciliación de reemplazo deja la factura totalmente pagada
-- **THEN** `payment_state` termina en `'paid'`, no en `'partial'` por haber sido calculado antes de que el reemplazo existiera -- siempre que el propio flujo de reemplazo también fuerce su recálculo (ver nota de arriba; el lazy recompute de esta baja por sí solo no es suficiente para reemplazos armados a mano)
+#### Scenario: Impuesto de tipo grupo
+
+- **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
+- **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta
