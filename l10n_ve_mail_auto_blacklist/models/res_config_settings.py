@@ -14,7 +14,9 @@ class ResConfigSettings(models.TransientModel):
         help='Replaces the native rule (5 bounces within 13 weeks, spread over more than one week) '
              'and blocks every outgoing email, including transactional ones, to blacklisted addresses.')
     l10n_ve_auto_blacklist_threshold = fields.Integer(
-        'Failures Before Blacklist', config_parameter=PARAM_PREFIX + 'threshold', default=DEFAULT_THRESHOLD)
+        'Failures Before Blacklist', config_parameter=PARAM_PREFIX + 'threshold', default=DEFAULT_THRESHOLD,
+        help='Number of delivery failures (bounces or SMTP refusals) an address must reach before '
+             'being automatically blacklisted.')
     l10n_ve_auto_blacklist_window_days = fields.Integer(
         'Period (days)', config_parameter=PARAM_PREFIX + 'window_days', default=DEFAULT_WINDOW_DAYS,
         help='Only failures of the last X days are counted. 0 = no time limit.')
@@ -39,3 +41,15 @@ class ResConfigSettings(models.TransientModel):
             if (settings.l10n_ve_auto_blacklist_window_days
                     and settings.l10n_ve_auto_blacklist_min_spread_days >= settings.l10n_ve_auto_blacklist_window_days):
                 raise ValidationError(_('The minimum spread must be shorter than the counted period.'))
+
+    def set_values(self):
+        super().set_values()
+        # res.config.settings.set_values() (odoo/addons/base/models/res_config.py)
+        # turns any falsy integer field value, including 0, into `False` before
+        # calling ir.config_parameter.set_param(), which then deletes the
+        # parameter instead of storing "0" -- so these two fields snap back to
+        # their non-zero default ("no time limit"/"no constraint") right after
+        # saving 0. Force them back explicitly so 0 is actually persisted.
+        ICP = self.env['ir.config_parameter'].sudo()
+        ICP.set_param(PARAM_PREFIX + 'window_days', str(self.l10n_ve_auto_blacklist_window_days))
+        ICP.set_param(PARAM_PREFIX + 'min_spread_days', str(self.l10n_ve_auto_blacklist_min_spread_days))
