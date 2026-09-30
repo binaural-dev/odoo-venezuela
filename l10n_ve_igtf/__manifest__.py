@@ -47,4 +47,5 @@
         "web.assets_backend": ["l10n_ve_igtf/static/src/components/**"],
     },
     "application": True,
+    "pre_init_hook": "pre_init_hook",
 }
