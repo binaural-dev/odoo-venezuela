@@ -3,6 +3,7 @@ from datetime import timedelta
 
 from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -1043,11 +1044,15 @@ class TestMultiCurrencyRounding(TransactionCase):
                 )
 
     def test_31_mixed_sign_lines_both_rounding_modes(self):
-        """A negative (discount/adjustment) line sharing a tax with positive lines must NET OUT,
-        not add up as if both were positive -- in BOTH rounding modes. `round_per_line` had a
-        real `abs()` bug here (fixed via `_per_line_tax_sums` summing SIGNED per-line amounts);
-        `round_globally`'s `_vef_base_for_tax`/`_grouped_tax_sums` never used `abs()` so it was
-        never at risk, but is included for completeness/regression coverage."""
+        """Regression fixture for a real `abs()` bug in mixed-sign tax netting
+        (`round_per_line` used to sum `abs(line)` per line instead of the
+        signed amount). That bug is no longer reachable in practice: a bare
+        negative-subtotal product line (not routed through a recognized
+        discount mechanism) is now rejected outright by
+        `l10n_ve_invoice._check_price_in_zero` -- a validation that didn't
+        exist yet when this test was first written. Repurposed to document
+        that current behavior instead of the netting math it can no longer
+        exercise."""
         self.env["res.currency.rate"].search([
             ("currency_id", "=", self.currency_usd.id),
             ("company_id", "=", self.company.id),
@@ -1061,44 +1066,17 @@ class TestMultiCurrencyRounding(TransactionCase):
         for mode in ("round_per_line", "round_globally"):
             with self.subTest(mode=mode):
                 self.company.tax_calculation_rounding_method = mode
-                # Line A: 11.16 USD (positive). Line B: a -4.16 USD
-                # adjustment on the SAME tax -- net base is 7.00 USD, net
-                # tax must reflect that, not `tax(11.16) + tax(-4.16)`
-                # miscomputed as `tax(11.16) + tax(4.16)`.
-                inv = self._create_invoice(self.currency_usd, None, [
-                    (1, 11.16, [self.tax_16]),
-                    (1, -4.16, [self.tax_16]),
-                ])
-                tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
-                product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
-                net_base_usd = sum(product_lines.mapped('amount_currency'))
-                expected_tax_usd = self.currency_usd.round(abs(net_base_usd) * 0.16)
-                self.assertAlmostEqual(
-                    abs(tax_line.amount_currency), expected_tax_usd, places=2,
-                    msg=(
-                        f"[{mode}] With mixed-sign lines, "
-                        f"tax_line.amount_currency={tax_line.amount_currency} does not match "
-                        f"the netted base's tax ({expected_tax_usd}) -- looks like the negative "
-                        f"line's contribution was added instead of subtracted"
-                    ),
-                )
-                net_base_vef = sum(product_lines.mapped('balance'))
-                expected_tax_vef = self.currency_vef.round(abs(net_base_vef) * 0.16)
-                self.assertAlmostEqual(
-                    abs(tax_line.balance), expected_tax_vef, places=2,
-                    msg=(
-                        f"[{mode}] With mixed-sign lines, tax_line.balance={tax_line.balance} "
-                        f"(VEF) does not match the netted base's tax ({expected_tax_vef}) -- "
-                        f"looks like the negative line's contribution was added instead of "
-                        f"subtracted"
-                    ),
-                )
-                # `amount_tax` is in the document currency (USD), same as
-                # `amount_currency` -- NOT in VEF like `expected_tax_vef`.
-                self.assertAlmostEqual(
-                    abs(inv.amount_tax), abs(tax_line.amount_currency), places=2,
-                    msg=f"[{mode}] inv.amount_tax (widget total, USD) inconsistent with the posted tax line",
-                )
+                # Line A: 11.16 USD (positive). Line B: a bare -4.16 USD
+                # adjustment on the SAME tax -- not a recognized discount
+                # line, so its negative subtotal is rejected on creation.
+                with self.assertRaises(
+                    ValidationError,
+                    msg=f"[{mode}] A bare negative-subtotal product line must be rejected.",
+                ):
+                    self._create_invoice(self.currency_usd, None, [
+                        (1, 11.16, [self.tax_16]),
+                        (1, -4.16, [self.tax_16]),
+                    ])
 
     def test_32_SCOPE_CHECK_vef_only_invoice_round_per_line(self):
         """SCOPE CHECK: the whole fix (`_fix_base_amount_for_multi_currency` /
