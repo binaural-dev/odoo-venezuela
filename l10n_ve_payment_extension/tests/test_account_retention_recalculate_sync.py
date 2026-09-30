@@ -21,14 +21,24 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
     def setUp(self):
         super().setUp()
         # A second real IVA rate (8%), needed to test adding/removing an
-        # aliquot - the shared fixtures only define a 16% tax.
+        # aliquot - the shared fixtures only define a 16% tax. It needs its
+        # OWN tax_group: invoice_id.tax_totals["subtotals"][0]["tax_groups"]
+        # (what compute_retention_lines_data iterates over) is keyed by
+        # tax_group, not by tax - reusing self.tax_group_iva (the 16% tax's
+        # own group) here would merge both rates into a single tax_group
+        # entry and silently produce only 1 retention line instead of 2.
+        self.tax_group_iva_8 = self.env["account.tax.group"].create({
+            "name": "IVA l10n_ve 8%",
+            "company_id": self.company.id,
+            "country_id": self.company.country_id.id,
+        })
         self.tax_iva_8_purchase = self.env["account.tax"].create({
             "name": "IVA 8% Compras",
             "amount_type": "percent",
             "amount": 8.0,
             "type_tax_use": "purchase",
             "company_id": self.company.id,
-            "tax_group_id": self.tax_group_iva.id,
+            "tax_group_id": self.tax_group_iva_8.id,
             "country_id": self.company.country_id.id,
         })
         self.product_iva_8 = self.env["product.product"].create({
