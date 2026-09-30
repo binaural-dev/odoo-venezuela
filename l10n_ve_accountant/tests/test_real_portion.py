@@ -2233,3 +2233,262 @@ class TestRealPortion(TransactionCase):
         })
 
         self._assert_balances(invoice, "test_35_after")
+
+    def test_36_cancel_posted_invoice_iva_different_invoice_and_accounting_dates(self):
+        """Helpdesk MAXCAM (factura 0000186045 y similares): cancelar una
+        factura POSTED en USD, con IVA, cuya invoice_date (tasa) y date
+        (fecha contable) caen en dias con tasa BCV distinta, no debe
+        descuadrar el asiento.
+
+        `button_cancel()` llama primero a `button_draft()`, que solo
+        escribe `state`. Ese `write()` de todos modos dispara
+        `_sync_dynamic_lines`/`_sync_tax_lines` (se ejecuta en TODO write
+        de account.move, no solo cuando cambian campos de linea), y el
+        snapshot `moves_values_before` de `_sync_tax_lines` se toma con
+        `move.state` todavia en 'posted' (antes del write real) --
+        excluyendo siempre al move del filtro `if move.state == 'draft'`.
+        Eso hace que `_round_mode` trate currency_id/move_type como
+        "cambiados" y fuerce un resync completo de base+impuestos en cada
+        transicion posted->draft, sin importar si algo realmente cambio.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": past_date,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 137.4545,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        self._assert_balances(invoice, "test_36_after_post")
+
+        # `check_move_validity=False` (necesario para crear las lineas antes
+        # de que el asiento cuadre) sigue pegado a `invoice` -- sin quitarlo,
+        # button_cancel() heredaria `_check_balanced` DESACTIVADO y no
+        # detectaria el mismo descuadre que se quiere reproducir.
+        invoice = invoice.with_context(check_move_validity=True)
+
+        # Cancelar ocurre en un request/cursor nuevo en produccion, asi que
+        # `_distribute_final_real_portion` (cacheada por move.id dentro del
+        # cursor para no repetirse en la MISMA transaccion) corre fresca.
+        self.env.cr.cache.pop(('_real_portion_distributed', invoice.id), None)
+        invoice.button_cancel()
+
+        self.assertEqual(invoice.state, "cancel")
+        self._assert_balances(invoice, "test_36_after_cancel")
+
+    def test_37_draft_and_repost_invoice_iva_different_invoice_and_accounting_dates(self):
+        """Mismo escenario de test_36 pero pasando a borrador (sin
+        cancelar) y volviendo a confirmar: ni el `button_draft()` ni el
+        `action_post()` posterior deben descuadrar el asiento ni cambiar
+        los montos de base/IVA/pasivo.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": past_date,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 137.4545,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        invoice = invoice.with_context(check_move_validity=True)
+        before = {
+            line.id: (line.display_type, round(line.balance, 2))
+            for line in invoice.line_ids
+        }
+
+        self.env.cr.cache.pop(('_real_portion_distributed', invoice.id), None)
+        invoice.button_draft()
+
+        self.assertEqual(invoice.state, "draft")
+        self._assert_balances(invoice, "test_37_after_draft")
+
+        self.env.cr.cache.pop(('_real_portion_distributed', invoice.id), None)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        self.assertEqual(invoice.state, "posted")
+        self._assert_balances(invoice, "test_37_after_repost")
+        after = {
+            line.id: (line.display_type, round(line.balance, 2))
+            for line in invoice.line_ids
+        }
+        self.assertEqual(
+            sorted(before.values()), sorted(after.values()),
+            msg="El ciclo draft->post cambio los balances de las lineas "
+                f"sin motivo. Antes: {before}. Despues: {after}",
+        )
+
+    def test_38_cancel_usd_invoice_with_cogs_pair_different_dates(self):
+        """Hipotesis puntual sobre la traza real de MAXCAM: `stock_account`
+        inyecta un par COGS (display_type='cogs') en `_post()`, y su
+        `button_draft()` llama primero a `super().button_draft()` -- que
+        incluye el `self.state = 'draft'` del core, dentro del cual corre
+        TODO el ciclo `_sync_dynamic_lines`/`_check_balanced` de
+        `l10n_ve_accountant` -- y SOLO DESPUES, ya con el estado en
+        borrador, hace unlink() de las lineas COGS. O sea: en el momento
+        exacto en que `_check_balanced` corre, el par COGS TODAVIA esta
+        presente.
+
+        `get_base_lines()` en `_sync_tax_lines` incluye 'cogs' junto con
+        'product'/'epd'/'rounding'. El bloque "Fix multi-currency
+        rounding" (activo solo si la factura es en moneda distinta a la
+        de la compañia) recalcula CADA base line con
+        `balance = round(amount_currency / rate)`. Las lineas COGS de
+        `_stock_account_prepare_realtime_out_lines_vals` llevan
+        `amount_currency = 0` (son un concepto interno en moneda de
+        compañia, sin lado "documento"): si ese recompute las alcanza iguel
+        que a las lineas de producto, su balance quedaria forzado a 0 --
+        perdiendo el costo real que traian. Como el par es COGS
+        interim/expense con signos opuestos, poner ambos en 0 no rompe el
+        balance del PAR en si (0 == 0), pero si esto tambien afecta a
+        `_apply_vef_first` / `_vef_base_for_tax` (que suman
+        `fresh_balance_by_line_id` de TODAS las base lines, cogs incluidas,
+        para recalcular el IVA), el IVA recalculado podria quedar corrido
+        por el costo COGS que ya no esta en la base.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0,
+            "company_id": self.company.id,
+        })
+        acc_stock = self._get_or_create('110100', 'Stock Account', 'asset_current')
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": past_date,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 137.4545,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        # Par COGS igual al que
+        # stock_account._stock_account_prepare_realtime_out_lines_vals()
+        # realmente inyecta: `price_unit` viene de `_get_cogs_value()`
+        # (costo del producto, en moneda de COMPAÑIA -- standard_price/
+        # FIFO no se expresan en moneda documento), y ESE MISMO valor se
+        # pasa tal cual como `amount_currency` (con signo), sin convertir
+        # a la moneda del documento. O sea: `amount_currency` en una linea
+        # COGS real NO es un monto en USD -- es el costo en VEF puesto en
+        # el campo que, para el resto del asiento, se asume que SI esta en
+        # USD.
+        cogs_cost = 9000.00
+        invoice.write({
+            "line_ids": [
+                Command.create({
+                    "name": "COGS interim",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": cogs_cost,
+                    "amount_currency": -cogs_cost,
+                    "account_id": acc_stock.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+                Command.create({
+                    "name": "COGS expense",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": -cogs_cost,
+                    "amount_currency": cogs_cost,
+                    "account_id": self.acc_expense.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        cogs_lines = invoice.line_ids.filtered(lambda l: l.display_type == 'cogs')
+        self.assertEqual(len(cogs_lines), 2, "Debe haber 2 lineas COGS antes de cancelar")
+        self._assert_balances(invoice, "test_38_after_post")
+
+        invoice = invoice.with_context(check_move_validity=True)
+        self.env.cr.cache.pop(('_real_portion_distributed', invoice.id), None)
+
+        # button_draft() real (no el write directo): asi se ejercita el
+        # MISMO orden que stock_account -- super().button_draft() primero
+        # (incluye el state='draft' + _check_balanced), unlink de COGS
+        # despues. Aqui no hay stock_account instalado, asi que las COGS
+        # quedan -- pero eso es justo lo que se quiere: confirmar si SU
+        # PRESENCIA durante el resync ya alcanza para descuadrar, sin
+        # necesitar que stock_account las borre despues.
+        invoice.button_cancel()
+
+        self.assertEqual(invoice.state, "cancel")
+        self._assert_balances(invoice, "test_38_after_cancel")
+
+        # El par COGS no forma parte de `tax_results['base_lines_to_update']`
+        # en este escenario (sin tax_ids, el motor de impuestos no las marca
+        # para actualizar), asi que sobreviven el ciclo intactas -- no las
+        # pisa el bloque "Fix multi-currency rounding" pese a que
+        # `get_base_lines()` las incluye.
+        cogs_after = invoice.line_ids.filtered(lambda l: l.display_type == 'cogs')
+        self.assertAlmostEqual(
+            sum(cogs_after.mapped('balance')), 0.0, places=2,
+            msg="El par COGS dejo de autobalancearse tras cancelar",
+        )
+        for line in cogs_after:
+            self.assertAlmostEqual(
+                abs(line.balance), 9000.0, places=2,
+                msg=f"COGS '{line.name}' perdio su costo original al cancelar "
+                    f"(quedo en {line.balance})",
+            )

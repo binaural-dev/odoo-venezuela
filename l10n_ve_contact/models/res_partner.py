@@ -57,16 +57,6 @@ class ResPartner(models.Model):
         tracking=True,
     )
 
-    prefix_vat_confirmed = fields.Boolean(
-        string="Prefix VAT confirmed",
-        default=False,
-        tracking=True,
-        help="Whether prefix_vat was explicitly reviewed and set by someone, "
-        "as opposed to sitting on the field's untouched 'V' default. Used to "
-        "block issuing fiscal documents (retention voucher, SENIAT/ISLR/"
-        "municipal filings, ARCV) with a RIF literal nobody confirmed.",
-    )
-
     @api.constrains("name")
     def _check_name_immutable(self):
         if not self.env.company.validate_partner_name_immutable:
@@ -211,15 +201,6 @@ class ResPartner(models.Model):
             if record.vat:
                 if not re.match(pattern, record.vat):
                     raise MissingError(_("The vat field only accepts numbers"))
-
-    @api.onchange("prefix_vat")
-    def _onchange_prefix_vat_confirms_it(self):
-        """Editing prefix_vat from the form is the one signal we have that
-        someone actually looked at it (as opposed to it sitting on the
-        Selection field's untouched 'V' default since record creation) --
-        see prefix_vat_confirmed."""
-        for record in self:
-            record.prefix_vat_confirmed = True
 
     @api.onchange("vat", "prefix_vat")
     def _onchange_(self):

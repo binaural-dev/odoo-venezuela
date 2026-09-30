@@ -168,6 +168,14 @@ class StockPicking(models.Model):
         related="company_id.change_weight",
     )
 
+    is_physical_relocation = fields.Boolean(
+        string="Physical Location Relocation",
+        default=False,
+        copy=False,
+        help="Marks the transfers automatically generated when a product's "
+        "physical location changes.",
+    )
+
     # def _compute_is_out(self):
     #     for record in self:
     #         record.is_out = (

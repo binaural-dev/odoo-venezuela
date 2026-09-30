@@ -836,6 +836,70 @@ msgstr ""
 "facturado en el documento original '%(origin)s' (%(max)s)."
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move_line__discount_fixed
+msgid "Discount (Fixed)"
+msgstr "Descuento (Fijo)"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_account_move_line__discount_fixed
+msgid ""
+"Fixed amount discount on the line's gross subtotal (price_unit * "
+"quantity), subtracted before taxes. Used instead of Discount (%) when the "
+"company's Invoice Line Discount Type is set to Fixed Amount. Applies on "
+"create/write, not only through the form."
+msgstr ""
+"Descuento en monto fijo sobre el subtotal bruto de la línea (precio "
+"unitario * cantidad), restado antes de impuestos. Se usa en vez del "
+"Descuento (%) cuando el Tipo de Descuento en Línea de Factura de la "
+"compañía está en Importe Fijo. Aplica en create/write, no solo desde el "
+"formulario."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move_line.py:0
+msgid ""
+"Fixed discount (%(discount)s) on %(product)s must be less than its "
+"subtotal (%(subtotal)s)."
+msgstr ""
+"El descuento fijo (%(discount)s) en %(product)s debe ser menor a su "
+"subtotal (%(subtotal)s)."
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__discount_type
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__discount_type
+msgid "Invoice Line Discount Type"
+msgstr "Tipo de Descuento en Línea de Factura"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_res_company__discount_type
+#: model:ir.model.fields,help:l10n_ve_invoice.field_res_config_settings__discount_type
+msgid ""
+"Discount field shown on invoice lines, applied to all invoices and lines "
+"of this company: native percentage, or a fixed amount discount_fixed "
+"converted to its % equivalent."
+msgstr ""
+"Campo de descuento mostrado en las líneas de factura, aplicado a todas "
+"las facturas y líneas de esta compañía: porcentaje nativo, o un monto "
+"fijo discount_fixed convertido a su % equivalente."
+
+#. module: l10n_ve_invoice
+#: selection:res.company,discount_type:percent
+#: selection:res.config.settings,discount_type:percent
+msgid "Percentage"
+msgstr "Porcentaje"
+
+#. module: l10n_ve_invoice
+#: selection:res.company,discount_type:amount
+#: selection:res.config.settings,discount_type:amount
+msgid "Fixed Amount"
+msgstr "Importe Fijo"
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
+msgid "Discount field shown on invoice lines: percentage or fixed amount."
+msgstr "Campo de descuento mostrado en las líneas de factura: porcentaje o importe fijo."
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
 msgid "Free Form"
 msgstr "Forma Libre"

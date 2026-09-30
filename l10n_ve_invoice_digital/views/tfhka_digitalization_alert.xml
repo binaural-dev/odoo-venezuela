@@ -1,0 +1,25 @@
+<odoo>
+  <template id="tfhka_digitalization_alert" name="TFHKA Digitalization Alert Banner" inherit_id="web.layout" active="True">
+    <xpath expr="//body" position="inside">
+      <t t-set="tfhka_digitalization_alerts"
+         t-value="request.env['account.move']._tfhka_digitalization_alert_data(['account.move', 'account.retention', 'stock.picking'])"/>
+      <div id="tfhka_digitalization_alert_banner" t-if="tfhka_digitalization_alerts"
+           t-attf-style="
+                text-align: center;
+                color: #FFFFFF;
+                background-color: #D0442C;
+                position: relative;
+                display: block;
+                font-size: 14px;
+                padding: 4px 8px;">
+        <t t-foreach="tfhka_digitalization_alerts" t-as="tfhka_alert">
+          <a t-att-href="tfhka_alert['url']" style="color: #FFFFFF; font-weight: bold; text-decoration: underline;">
+            <t t-esc="tfhka_alert['name']"/>
+          </a>
+          <span> could not be digitalized in The Factory HKA -- click to review.</span>
+          <t t-if="not tfhka_alert_last"> | </t>
+        </t>
+      </div>
+    </xpath>
+  </template>
+</odoo>

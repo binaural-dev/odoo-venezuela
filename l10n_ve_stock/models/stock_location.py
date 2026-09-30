@@ -13,3 +13,18 @@ class StockLocation(models.Model):
         for location in self:
             if location.priority < 0:
                 raise ValidationError(_("The priority must be greater than 0."))
+
+    def get_warehouse(self):
+        """Return the warehouse associated with this stock location, or False if none found."""
+        if not self.id:
+            return False
+
+        warehouse = self.env["stock.warehouse"].search(
+            [
+                "|",
+                ("lot_stock_id", "=", self.id),
+                ("view_location_id", "parent_of", self.id),
+            ],
+            limit=1,
+        )
+        return warehouse

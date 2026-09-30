@@ -2,7 +2,9 @@ import logging
 import re
 
 from odoo import _, fields, models
-from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_compare, float_is_zero
+
+from .tfhka_service_base import TfhkaDataError
 
 _logger = logging.getLogger(__name__)
 
@@ -66,7 +68,7 @@ class TfhkaDocumentService(models.AbstractModel):
             if invoice.journal_id.sequence_id and invoice.journal_id.sequence_id.prefix:
                 series = re.sub(r'[^a-zA-Z0-9]', '', invoice.journal_id.sequence_id.prefix)
             else:
-                raise UserError(_("The selected series is not configured"))
+                raise TfhkaDataError(_("The selected series is not configured"))
         return series
 
     # ------------------------------------------------------------------
@@ -89,10 +91,10 @@ class TfhkaDocumentService(models.AbstractModel):
 
         client.query_numbering(company, series, origin=invoice)
 
-        # Secuencia: en modo "pago primero" (o con la sincronización desactivada)
-        # se usa el correlativo local de Odoo; en el modo normal se ADOPTA el
-        # correlativo de The Factory (último + 1) y luego se sincroniza el diario.
-        if company.digitalization_with_payment_tfhka or not company.sequence_validation_tfhka:
+        # Secuencia: en modo "pago primero" se usa el correlativo local de
+        # Odoo; en el modo normal SIEMPRE se ADOPTA el correlativo de The
+        # Factory (último + 1) y luego se sincroniza el diario.
+        if company.digitalization_with_payment_tfhka:
             document_number = invoice.sequence_number
         else:
             last = client.get_last_document_number(company, document_type, series, origin=invoice)
@@ -117,6 +119,7 @@ class TfhkaDocumentService(models.AbstractModel):
         details_items = self._prepare_detail_lines(invoice, currency_context)
         additional_information = self._prepare_additional_information(invoice)
         dispatch_guide_reference = self._get_dispatch_guide_reference(invoice)
+        additional_flags = self._prepare_additional_flags(invoice)
 
         payload = {
             "documentoElectronico": {
@@ -133,6 +136,8 @@ class TfhkaDocumentService(models.AbstractModel):
             payload["documentoElectronico"]["encabezado"]["vendedor"] = seller
         if foreign_totals:
             payload["documentoElectronico"]["encabezado"]["totalesOtraMoneda"] = foreign_totals
+        if additional_flags:
+            payload["documentoElectronico"]["encabezado"]["banderasAdicionales"] = additional_flags
         payload["documentoElectronico"]["encabezado"].update(
             self._prepare_extra_header_values(invoice, currency_context)
         )
@@ -165,7 +170,6 @@ class TfhkaDocumentService(models.AbstractModel):
         company = invoice.company_id
         if (
             not company.digitalization_with_payment_tfhka
-            and company.sequence_validation_tfhka
             and str(invoice.sequence_number) != str(document_number)
         ):
             try:
@@ -188,8 +192,10 @@ class TfhkaDocumentService(models.AbstractModel):
             if invoice.move_type == "out_refund" and journal.refund_sequence_id
             else journal.sequence_id
         )
-        prefix = sequence.prefix or ""
-        return f"{prefix}{str(number).zfill(8)}"
+        # get_next_char interpola prefijo y sufijo (p. ej. %(range_year)s) y
+        # aplica el padding real de la secuencia -- no avanza el contador, solo
+        # formatea el número que ya se decidió adoptar de The Factory.
+        return sequence.get_next_char(number)
 
     def _prepare_extra_payload_values(self, invoice):
         """Hook de extensión: valores extra del payload. Por defecto vacío."""
@@ -198,6 +204,16 @@ class TfhkaDocumentService(models.AbstractModel):
     def _prepare_extra_header_values(self, invoice, ctx):
         """Hook de extensión: valores extra para encabezado. Por defecto vacío."""
         return {}
+
+    def _prepare_additional_flags(self, invoice):
+        """Prepara la sección de banderas adicionales del encabezado (sección 5.1.8).
+
+        Devuelve un diccionario con las banderas adicionales del documento:
+        * ``esLote``: Boolean indicando si forma parte de una emisión por lotes.
+        """
+        return {
+            "esLote": False,
+        }
 
     # ------------------------------------------------------------------
     # Contexto de moneda
@@ -234,9 +250,11 @@ class TfhkaDocumentService(models.AbstractModel):
         Devuelve:
 
         * ``document_currency``: moneda del encabezado (``moneda``) y de
-          ``detallesItems``. Es la moneda en la que se emitió la factura: la
-          ``line_currency_id`` elegida en las bimoneda, la divisa de la tarifa
-          en las facturas en divisa, y el bolívar en las facturas en bolívares.
+          ``detallesItems``. With ``multi_currency_invoice`` enabled it's the
+          chosen ``line_currency_id``; without the flag it's ALWAYS the
+          bolívar, regardless of the invoice's or the pricelist's currency --
+          ``multi_currency_invoice`` is the sole switch for whether the
+          document reports more than one currency.
         * ``totals_currency``: moneda del bloque ``totales``. SIEMPRE el bolívar
           (la moneda base de la compañía), porque el SENIAT exige los totales
           del documento en moneda nacional independientemente de la moneda de
@@ -258,7 +276,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
         if invoice.multi_currency_invoice:
             if not foreign_currency:
-                raise UserError(
+                raise TfhkaDataError(
                     _(
                         "This invoice is flagged as multi-currency but its pricelist is "
                         "in the company base currency (%(currency)s), so there is no "
@@ -267,7 +285,7 @@ class TfhkaDocumentService(models.AbstractModel):
                     % {"currency": base_currency.name}
                 )
             if not invoice.line_currency_id:
-                raise UserError(
+                raise TfhkaDataError(
                     _(
                         "This invoice is flagged as multi-currency but no 'Line Currency' "
                         "has been selected."
@@ -275,10 +293,13 @@ class TfhkaDocumentService(models.AbstractModel):
                 )
             document_currency = invoice.line_currency_id
         else:
-            # Factura en divisa: el encabezado va en la divisa de emisión aunque
-            # no esté marcada como bimoneda. Sin divisa el documento es en
-            # bolívares y las tres monedas colapsan en la base.
-            document_currency = foreign_currency or base_currency
+            # Without multi-currency, the document is digitalized entirely
+            # in the base currency (VES), regardless of the invoice's or the
+            # pricelist's currency -- same criterion as
+            # unidigital.document_service (the design precedent TFHKA
+            # replicated): multi_currency_invoice is the sole switch for
+            # whether the document reports more than one currency.
+            document_currency = base_currency
 
         # totales -> bolívares; totalesOtraMoneda -> la divisa. No depende de
         # cuál sea la moneda del encabezado.
@@ -350,7 +371,7 @@ class TfhkaDocumentService(models.AbstractModel):
         )
         rate = rate_values.get("foreign_rate")
         if not rate:
-            raise UserError(
+            raise TfhkaDataError(
                 _(
                     "No %(currency)s exchange rate found for %(date)s. Please configure "
                     "the currency rate before digitalizing this document."
@@ -368,7 +389,7 @@ class TfhkaDocumentService(models.AbstractModel):
         """
         missing = currencies.filtered(lambda currency: not currency.code_tfhka)
         if missing:
-            raise UserError(
+            raise TfhkaDataError(
                 _(
                     "The currency %(currencies)s has no 'Code TFHKA' configured. Set it "
                     "in Accounting > Configuration > Currencies before digitalizing this "
@@ -440,7 +461,7 @@ class TfhkaDocumentService(models.AbstractModel):
                 if due_date_obj >= emission_date:
                     due_date = due_date_obj.strftime("%d/%m/%Y")
                 else:
-                    raise ValidationError(_("The expiration date cannot be less than the digitization date."))
+                    raise TfhkaDataError(_("The expiration date cannot be less than the digitization date."))
             else:
                 due_date = emission_date.strftime("%d/%m/%Y")
 
@@ -484,7 +505,7 @@ class TfhkaDocumentService(models.AbstractModel):
             # O19: invoice_date_display es la fecha fiscal del documento
             # (invoice_date quedó reservada al cálculo de la tasa de cambio).
             if not record.invoice_date_display:
-                raise UserError(_("The invoice date is not defined."))
+                raise TfhkaDataError(_("The invoice date is not defined."))
 
             # La moneda del encabezado es la del contexto, sin literales: cubre
             # VES, USD, EUR o cualquier otra moneda con code_tfhka cargado.
@@ -556,16 +577,19 @@ class TfhkaDocumentService(models.AbstractModel):
         return groups
 
     def _get_discount_amount(self, invoice, currency, ctx):
-        """Descuento total del documento, expresado en ``currency``.
+        """Descuento GLOBAL del documento, expresado en ``currency``.
 
-        O19 solo expone ``formatted_total_discount`` (cadena ya formateada por
-        ``formatLang``), no un numérico, así que se recalcula desde las líneas.
-        Las líneas están en la moneda de la factura, de ahí la conversión.
+        No es el % por línea (``line.discount``): eso es el descuento de cada
+        línea de producto, no un descuento global. Las líneas de descuento
+        global que reconoce Odoo (asistente "Discount" -> "Global
+        Discount"/"Fixed Amount", ``sale_discount_product_id``, POS, loyalty,
+        ``display_type == 'discount'``) llegan vía el hook
+        ``_get_discount_lines()`` -- el mismo que ya usa ``l10n_ve_invoice``
+        para reconocer líneas de precio negativo legítimas.
         """
-        total = 0.0
-        for line in invoice.invoice_line_ids.filtered(lambda l: l.display_type == "product"):
-            total += line.price_unit * line.quantity * (line.discount or 0.0) / 100.0
-        return self._get_amount_in_currency(invoice, currency, ctx, total)
+        discount_lines = invoice.invoice_line_ids._get_discount_lines()
+        total = sum(discount_lines.mapped("price_subtotal"))
+        return self._get_amount_in_currency(invoice, currency, ctx, -total)
 
     def _get_igtf_block(self, invoice, currency, ctx):
         """Base e importe de IGTF expresados en ``currency``.
@@ -596,15 +620,15 @@ class TfhkaDocumentService(models.AbstractModel):
         )
 
     def _should_report_foreign_totals(self, invoice, foreign_currency=None):
-        """Criterio ÚNICO para adjuntar el bloque ``totalesOtraMoneda``.
-
-        Es la presencia de una divisa en el documento, no el flag
-        ``multi_currency_invoice``: ``totales`` viaja siempre en bolívares, así
-        que en cuanto hay una moneda distinta del bolívar hay que reportarla en
-        ``totalesOtraMoneda``, tanto en las bimoneda como en las facturas
-        emitidas en divisa. Solo la factura íntegramente en bolívares queda sin
-        el bloque.
+        """Criterion for attaching the ``totalesOtraMoneda`` block: requires
+        ``multi_currency_invoice`` enabled (the document must explicitly ask
+        for multi-currency) AND a currency other than the base one to be
+        associated with the invoice. It used to be enough to have just the
+        latter -- that's why the block was sent even with the check
+        disabled, with no way to suppress it.
         """
+        if not invoice.multi_currency_invoice:
+            return False
         if foreign_currency is None:
             foreign_currency = self._get_document_foreign_currency(invoice)
         return bool(foreign_currency) and foreign_currency != invoice.company_id.currency_id
@@ -642,21 +666,47 @@ class TfhkaDocumentService(models.AbstractModel):
             total_tax = self._get_amount_in_currency(invoice, currency, ctx, total_tax)
             total_with_tax = self._get_amount_in_currency(invoice, currency, ctx, total_with_tax)
 
+        # untaxed ya queda neto del descuento global (su línea participa de
+        # estas sumas via `groups`, igual que en producción) -- se calcula
+        # ANTES de sanear montoGravadoTotal/montoExentoTotal para no
+        # alterarlo. Cuando el descuento cae en una clasificación (exento/
+        # gravado) sin suficiente monto propio para absorberlo, ese bucket
+        # queda negativo -- TFHKA rechaza cualquier campo negativo (código
+        # 203) aunque el neto sea correcto. Se traslada el sobrante al otro
+        # bucket (la suma sigue dando `untaxed`) y como último resort se
+        # pisa en 0 -- igual que el impuesto negativo aislado que ya se
+        # omite en _prepare_tax_subtotals.
         untaxed = taxed_base + exempt_base
+        precision = currency.rounding
+        if float_compare(exempt_base, 0.0, precision_rounding=precision) < 0:
+            taxed_base += exempt_base
+            exempt_base = 0.0
+        elif float_compare(taxed_base, 0.0, precision_rounding=precision) < 0:
+            exempt_base += taxed_base
+            taxed_base = 0.0
+        if float_compare(exempt_base, 0.0, precision_rounding=precision) < 0:
+            exempt_base = 0.0
+        if float_compare(taxed_base, 0.0, precision_rounding=precision) < 0:
+            taxed_base = 0.0
+        if float_compare(total_tax, 0.0, precision_rounding=precision) < 0:
+            total_tax = 0.0
+
         discount = self._get_discount_amount(invoice, currency, ctx)
 
         _igtf_base, igtf_amount = self._get_igtf_block(invoice, currency, ctx)
 
-        return {
+        result = {
             "montoGravadoTotal": str(round(taxed_base, 2)),
             "montoExentoTotal": str(round(exempt_base, 2)),
             "subtotal": str(round(untaxed, 2)),
-            "subtotalAntesDescuento": str(round(untaxed + discount, 2)),
             "totalAPagar": str(round(total_with_tax + igtf_amount, 2)),
             "totalIVA": str(round(total_tax, 2)),
             "montoTotalConIVA": str(round(total_with_tax, 2)),
-            "totalDescuento": str(abs(round(discount, 2))),
         }
+        if not float_is_zero(discount, precision_rounding=precision):
+            result["subtotalAntesDescuento"] = str(round(untaxed + discount, 2))
+            result["totalDescuento"] = str(abs(round(discount, 2)))
+        return result
 
     def _prepare_totals(self, invoice, ctx=None):
         ctx = ctx or self._get_currency_context(invoice)
@@ -691,25 +741,29 @@ class TfhkaDocumentService(models.AbstractModel):
                 foreign_currency_code = None
 
             # nroItems debe cuadrar con detallesItems, que solo lleva líneas de
-            # producto: contar invoice_line_ids incluiría secciones y notas.
-            item_count = len(record.invoice_line_ids.filtered(
-                lambda l: l.display_type == "product"
-            ))
+            # producto (secciones/notas quedan fuera) y tampoco cuenta las
+            # líneas de descuento global, excluidas ahí por lo mismo que en
+            # _prepare_detail_lines.
+            item_count = len(
+                record.invoice_line_ids.filtered(lambda l: l.display_type == "product")
+                - record.invoice_line_ids._get_discount_lines()
+            )
 
             totals = {
                 "nroItems": str(item_count),
                 "montoGravadoTotal": amounts["montoGravadoTotal"],
                 "montoExentoTotal": amounts["montoExentoTotal"],
                 "subtotal": amounts["subtotal"],
-                "subtotalAntesDescuento": amounts["subtotalAntesDescuento"],
                 "totalAPagar": amounts["totalAPagar"],
                 "totalIVA": amounts["totalIVA"],
                 "montoTotalConIVA": amounts["montoTotalConIVA"],
-                "totalDescuento": amounts["totalDescuento"],
                 "impuestosSubtotal": taxes_subtotal,
                 "totalIGTF": str(round(igtf_ves, 2)),
                 "totalIGTF_VES": str(round(igtf_ves, 2)),
             }
+            if "totalDescuento" in amounts:
+                totals["subtotalAntesDescuento"] = amounts["subtotalAntesDescuento"]
+                totals["totalDescuento"] = amounts["totalDescuento"]
             # Cuadro de pago: el bloque formasPago solo se adjunta cuando el
             # usuario activó "Mostrar cuadro de pago" en la factura.
             if record.show_payment_box:
@@ -717,9 +771,9 @@ class TfhkaDocumentService(models.AbstractModel):
 
                 if payment_forms:
                     if len(payment_forms) > 5:
-                        raise UserError(_("The maximum number of payment methods is 5. Please check your payment methods."))
+                        raise TfhkaDataError(_("The maximum number of payment methods is 5. Please check your payment methods."))
                     if any(not method.get('forma') for method in payment_forms):
-                        raise ValidationError(_("The payment method code is not configured in the journal."))
+                        raise TfhkaDataError(_("The payment method code is not configured in the journal."))
                     totals["formasPago"] = payment_forms
 
             if amounts_foreign:
@@ -729,15 +783,16 @@ class TfhkaDocumentService(models.AbstractModel):
                     "montoGravadoTotal": amounts_foreign["montoGravadoTotal"],
                     "montoExentoTotal": amounts_foreign["montoExentoTotal"],
                     "subtotal": amounts_foreign["subtotal"],
-                    "subtotalAntesDescuento": amounts_foreign["subtotalAntesDescuento"],
                     "totalAPagar": amounts_foreign["totalAPagar"],
                     "totalIVA": amounts_foreign["totalIVA"],
                     "montoTotalConIVA": amounts_foreign["montoTotalConIVA"],
-                    "totalDescuento": amounts_foreign["totalDescuento"],
                     "totalIGTF": str(round(igtf_alt, 2)),
                     "totalIGTF_VES": str(round(igtf_ves, 2)),
                     "impuestosSubtotal": taxes_subtotal_foreign,
                 }
+                if "totalDescuento" in amounts_foreign:
+                    foreign_totals["subtotalAntesDescuento"] = amounts_foreign["subtotalAntesDescuento"]
+                    foreign_totals["totalDescuento"] = amounts_foreign["totalDescuento"]
             else:
                 foreign_totals = False
         return totals, foreign_totals
@@ -760,7 +815,7 @@ class TfhkaDocumentService(models.AbstractModel):
         for group in self._get_tax_groups(invoice):
             group_name = group.get("group_name")
             if group_name not in TFHKA_TAX_CODE:
-                raise UserError(
+                raise TfhkaDataError(
                     _(
                         "The tax group '%(group)s' has no TFHKA equivalent configured. "
                         "Please review the taxes applied to this document."
@@ -772,6 +827,20 @@ class TfhkaDocumentService(models.AbstractModel):
             if needs_conversion:
                 base_amount = self._get_amount_in_currency(invoice, currency, ctx, base_amount)
                 tax_amount = self._get_amount_in_currency(invoice, currency, ctx, tax_amount)
+            # Un grupo de impuesto negativo solo puede venir de una línea de
+            # descuento global con un impuesto propio, distinto del de las
+            # líneas reales (ver _get_discount_amount/_prepare_detail_lines):
+            # ese descuento ya se reporta a nivel de documento, así que el
+            # grupo se omite aquí en vez de mandarle a TFHKA una base/valor
+            # negativo (rechazado con código 203). Los totales agregados
+            # (montoGravadoTotal/montoExentoTotal/totalIVA) se sanean aparte
+            # en _build_amounts, que traslada el mismo sobrante entre buckets
+            # para no alterar el neto (subtotal).
+            if (
+                float_compare(base_amount, 0.0, precision_rounding=currency.rounding) < 0
+                or float_compare(tax_amount, 0.0, precision_rounding=currency.rounding) < 0
+            ):
+                continue
             tax_subtotals.append({
                 "codigoTotalImp": TFHKA_TAX_CODE[group_name],
                 "alicuotaImp": TFHKA_TAX_RATE[group_name],
@@ -797,9 +866,16 @@ class TfhkaDocumentService(models.AbstractModel):
         item_details = []
         line_number = 1
         for record in invoice:
+            # Las líneas de descuento global (ver _get_discount_amount) son
+            # display_type == 'product' con precio negativo -- TFHKA rechaza
+            # cualquier monto negativo en detallesItems (código 203). Ese
+            # descuento ya se reporta a nivel de documento (totalDescuento/
+            # subtotalAntesDescuento), así que la línea se excluye aquí para
+            # no duplicarlo ni enviar un ítem con montos negativos.
+            discount_lines = record.invoice_line_ids._get_discount_lines()
             product_lines = record.invoice_line_ids.filtered(
                 lambda l: l.display_type == 'product'
-            )
+            ) - discount_lines
             for line in product_lines:
                 tax_mapping = {
                     0.0: "E",
@@ -824,7 +900,18 @@ class TfhkaDocumentService(models.AbstractModel):
                     record, document_currency, ctx, line.price_subtotal
                 )
 
-                discount_factor = (line.discount or 0.0) / 100.0
+                # El % real de descuento puede venir de discount (%) o de
+                # discount_fixed (monto fijo, ver l10n_ve_invoice/models/
+                # account_move_line.py) -- ambas formas conviven, se decide
+                # por lo que la línea tenga cargado, no por la configuración
+                # de la compañía: _enforce_discount_exclusivity ya garantiza
+                # que una línea nunca tiene los dos a la vez.
+                discount_ratio = (
+                    line._get_exact_discount_percentage()
+                    if line.discount_fixed
+                    else (line.discount or 0.0)
+                )
+                discount_factor = discount_ratio / 100.0
                 unit_price = round(base_price, 2)
                 discount_unit = round(base_price * discount_factor, 2)
                 unit_price_discount = round(base_price - discount_unit, 2)
@@ -837,7 +924,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
                 tax_code = tax_mapping.get(tax_rate)
                 if tax_code is None:
-                    raise UserError(
+                    raise TfhkaDataError(
                         _(
                             "The tax rate %(rate)s%% on product '%(product)s' is not supported "
                             "by TFHKA digitalization (allowed rates: 0, 8, 16, 31)."
@@ -902,15 +989,38 @@ class TfhkaDocumentService(models.AbstractModel):
         try:
             payment_data = []
             for record in invoice:
-                content_data = record.invoice_payments_widget.get("content", [])
+                # invoice_payments_widget es False cuando no hay nada
+                # conciliado (no un dict vacío) -- .get() directo sobre eso
+                # revienta.
+                content_data = (record.invoice_payments_widget or {}).get("content", [])
                 if content_data:
                     for item in content_data:
-                        payment = self._get_payment(item.get('account_payment_id'))
-
-                        if not payment:
+                        # La conciliación multi-moneda genera automáticamente
+                        # un asiento de diferencia de cambio (journal
+                        # "Diferencia de cambio", move_type='entry' también)
+                        # -- no es una forma de pago, es un ajuste contable
+                        # que el propio widget marca con is_exchange.
+                        if item.get('is_exchange'):
                             continue
 
-                        payment_info = self._build_payment_info(record, payment, ctx)
+                        payment = self._get_payment(item.get('account_payment_id'))
+
+                        if payment:
+                            payment_info = self._build_payment_info(record, payment, ctx)
+                        else:
+                            # Sin account.payment de por medio: puede ser un
+                            # asiento contable manual (move_type='entry')
+                            # conciliado directo contra la factura para
+                            # registrar el pago. Se excluyen otras
+                            # facturas/notas de crédito conciliadas por
+                            # netting -- esas no son una forma de pago.
+                            entry = self._get_payment_move(item.get('move_id'))
+                            if not entry:
+                                continue
+                            payment_info = self._build_payment_info_from_move(
+                                record, entry, item
+                            )
+
                         payment_data.append(payment_info)
                     return payment_data
             return False
@@ -921,11 +1031,19 @@ class TfhkaDocumentService(models.AbstractModel):
     def _get_payment(self, account_payment_id):
         return self.env['account.payment'].search([('id', '=', account_payment_id)])
 
-    def _build_payment_info(self, invoice, payment, ctx=None):
-        ctx = ctx or self._get_currency_context(invoice)
-        payment_id = self.env['account.payment'].search([('id', '=', payment.id)])
-        payment_currency = payment_id.currency_id or invoice.company_id.currency_id
-        payment_method = payment_id.journal_id.payment_method_code if payment_id.journal_id.payment_method_code else False
+    def _get_payment_move(self, move_id):
+        """Asiento contable manual (move_type='entry') conciliado contra la
+        factura, usado para registrar un pago sin pasar por account.payment.
+        Se excluyen otras facturas/notas de crédito conciliadas (netting
+        entre documentos) -- no son una forma de pago."""
+        if not move_id:
+            return self.env['account.move']
+        return self.env['account.move'].search([
+            ('id', '=', move_id), ('move_type', '=', 'entry'),
+        ])
+
+    def _build_payment_info_values(self, journal, payment_currency, date, amount, foreign_rate):
+        payment_method = journal.payment_method_code if journal.payment_method_code else False
 
         # La moneda del pago se reporta con su propio code_tfhka, igual que el
         # resto del payload: 17.0 mandaba aquí el nombre de la moneda de Odoo,
@@ -937,13 +1055,13 @@ class TfhkaDocumentService(models.AbstractModel):
             exchange_rate = None
         else:
             # Pago en divisa: se incluye el tipo de cambio del propio pago.
-            exchange_rate = "{:.4f}".format(payment_id.foreign_rate)
+            exchange_rate = "{:.4f}".format(foreign_rate)
 
         payment_info = {
             "descripcion": payment_method.description if payment_method else "",
-            "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
+            "fecha": date.strftime("%d/%m/%Y") if date else "",
             "forma": payment_method.code if payment_method else "",
-            "monto": str(round(payment_id.amount, 2)),
+            "monto": str(round(amount, 2)),
             "moneda": currency_code,
         }
 
@@ -952,13 +1070,25 @@ class TfhkaDocumentService(models.AbstractModel):
 
         return payment_info
 
-    def _prepare_additional_information(self, invoice):
-        additional_information = []
-        # for record in invoice:
-        #     if record.guide_number:
-        #         additional_information.append({
-        #             "campo": "numeroGuia",
-        #             "valor": str(record.guide_number),
-        #         })
+    def _build_payment_info(self, invoice, payment, ctx=None):
+        ctx = ctx or self._get_currency_context(invoice)
+        payment_currency = payment.currency_id or invoice.company_id.currency_id
+        return self._build_payment_info_values(
+            payment.journal_id, payment_currency, payment.date, payment.amount, payment.foreign_rate,
+        )
 
-        return additional_information
+    def _build_payment_info_from_move(self, invoice, entry, widget_item):
+        payment_currency = (
+            self.env['res.currency'].browse(widget_item.get('currency_id'))
+            or invoice.company_id.currency_id
+        )
+        amount = abs(widget_item.get('amount') or 0.0)
+        return self._build_payment_info_values(
+            entry.journal_id, payment_currency, entry.date, amount, entry.foreign_rate,
+        )
+
+    def _prepare_additional_information(self, invoice):
+        """Hook de extensión: información adicional del documento (sección
+        ``infoAdicional``). Por defecto vacío -- el número de guía ya se
+        reporta vía ``_get_dispatch_guide_reference`` (sección ``FacturaGuia``)."""
+        return []

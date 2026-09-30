@@ -3,6 +3,12 @@ import json
 from odoo.fields import Domain
 from odoo.tests.common import TransactionCase, tagged
 
+from odoo.addons.l10n_ve_filter_partner import (
+    new_module,
+    old_module,
+    reassign_filter_partner_data_ids,
+)
+
 
 @tagged("post_install", "-at_install")
 class TestFilterPartnerMixin(TransactionCase):
@@ -54,3 +60,38 @@ class TestFilterPartnerMixin(TransactionCase):
         record = self._new_mixin_record()
         record._compute_partner_id_domain()
         self.assertEqual(json.loads(record.partner_id_domain), [])
+
+
+@tagged("post_install", "-at_install")
+class TestReassignFilterPartnerDataIds(TransactionCase):
+    """Covers the hook shared by pre_init_hook (install) and migrations/19.0.0.0.1/pre-migrate.py
+    (upgrade), raised as a review point on PR #1293: the reassignment previously ran silently
+    inside a broad try/except and had no test at all.
+    """
+
+    def _seed_legacy_row(self, name="test_legacy_xmlid"):
+        cr = self.env.cr
+        cr.execute(
+            "INSERT INTO ir_model_data (name, module, model, res_id, noupdate) "
+            "VALUES (%s, %s, %s, %s, %s) RETURNING id",
+            (name, old_module, "res.partner", self.env.user.id, True),
+        )
+        return cr.fetchone()[0]
+
+    def test_reassign_moves_rows_to_new_module(self):
+        cr = self.env.cr
+        data_id = self._seed_legacy_row()
+
+        reassign_filter_partner_data_ids(cr)
+
+        cr.execute("SELECT module FROM ir_model_data WHERE id = %s", (data_id,))
+        self.assertEqual(cr.fetchone()[0], new_module)
+
+    def test_reassign_is_a_noop_when_nothing_legacy_left(self):
+        cr = self.env.cr
+        cr.execute("SELECT count(*) FROM ir_model_data WHERE module = %s", (old_module,))
+        (before,) = cr.fetchone()
+        self.assertEqual(before, 0)
+
+        # Must not raise even with nothing to reassign.
+        reassign_filter_partner_data_ids(cr)
