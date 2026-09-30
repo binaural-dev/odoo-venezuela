@@ -233,8 +233,11 @@ def _backfill_is_advance_account(cr):
     time someone opens the field, and any code filtering accounts by
     is_advance_account would silently miss them.
     """
+    # The field is new in v19: coming from v17 the column does not exist
+    # yet in pre-, so create it here. The ORM then finds it and does not
+    # apply the default (False) over the flags set below.
     if not _column_exists(cr, "account_account", "is_advance_account"):
-        return
+        cr.execute("ALTER TABLE account_account ADD COLUMN is_advance_account boolean")
 
     cr.execute(
         """
