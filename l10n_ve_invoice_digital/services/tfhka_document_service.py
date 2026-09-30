@@ -191,9 +191,14 @@ class TfhkaDocumentService(models.AbstractModel):
 
     def _send_digitalization_email(self, invoice):
         """Envía el aviso de documento digitalizado (plantilla propia de
-        Odoo, independiente del 'notificar' que le indicamos a The Factory
-        HKA en el payload), con el PDF ya digitalizado adjunto -- obtenido en
-        el momento, nunca guardado en el propio documento.
+        Odoo), con el PDF ya digitalizado adjunto -- obtenido en el momento,
+        nunca guardado en el propio documento.
+
+        Se salta si ``notify_email_tfhka`` está activo: en ese caso ya le
+        pedimos a The Factory HKA que notifique al cliente
+        (``"notificar": "Si"`` en el payload, ver
+        ``tfhka.service.base._get_fiscal_party``), así que mandar este
+        también duplicaría el correo.
 
         Se llama desde dentro del cron de la cola de digitalización (ver
         ``tfhka.digitalization.mixin._tfhka_process_digitalization``): un
@@ -203,6 +208,9 @@ class TfhkaDocumentService(models.AbstractModel):
         así que cualquier problema de envío queda solo registrado en el
         chatter, sin propagar la excepción.
         """
+        if invoice.company_id.notify_email_tfhka:
+            return
+
         template = self.env.ref(
             "l10n_ve_invoice_digital.mail_template_tfhka_digitalization_notification",
             raise_if_not_found=False,
@@ -210,13 +218,20 @@ class TfhkaDocumentService(models.AbstractModel):
         if not template:
             return
 
-        email_values = {}
+        email_values = {"tfhka_digitalization_email": True}
         attachment = self._fetch_digitalized_document(invoice)
         if attachment:
             email_values["attachments"] = [attachment]
 
         try:
-            template.send_mail(invoice.id, force_send=True, email_values=email_values)
+            # force_send=False: solo crea el mail.mail (queda en 'outgoing',
+            # sin scheduled_date) en vez de enviarlo de una vez -- lo despacha
+            # el cron nativo "Mail: Email Queue Manager"
+            # (mail.ir_cron_mail_scheduler_action), respetando su frecuencia y
+            # batch_size configurados en vez de saturar el servidor SMTP con
+            # un envío síncrono por cada documento que el cron de TFHKA
+            # digitaliza.
+            template.send_mail(invoice.id, force_send=False, email_values=email_values)
         except Exception as error:
             _logger.error(
                 "TFHKA: no se pudo enviar el correo de digitalización para %s #%s: %s",
