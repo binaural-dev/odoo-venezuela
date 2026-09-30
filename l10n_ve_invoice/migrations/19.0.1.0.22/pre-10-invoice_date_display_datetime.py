@@ -1,27 +1,26 @@
-"""Llena invoice_date_display_datetime en las facturas que vienen de 17.
+"""Fill invoice_date_display_datetime on the invoices coming from v17.
 
-Qué: crea la columna account_move.invoice_date_display_datetime y le pone la fecha de
-    invoice_date_display a las 12:00 (UTC). Donde invoice_date_display está vacío queda vacía.
+What: creates the account_move.invoice_date_display_datetime column and sets it to the
+    invoice_date_display date at 12:00 (UTC). Where invoice_date_display is empty it stays empty.
 
-Por qué: el campo no existe en 17. El post_init_hook de este módulo lo llena, pero ese hook sólo
-    corre al instalar: a un cliente homologado, que ya tiene el módulo, le llega vacío en todas
-    las facturas. En 19 el campo se escribe junto con invoice_date_display (create/write de
-    account.move), así que las facturas migradas quedaban distintas a las nuevas.
+Why: the field does not exist in v17. This module's post_init_hook fills it, but that hook only runs
+    on install: a homologated client, which already has the module, gets it empty on every invoice.
+    In v19 the field is written together with invoice_date_display (account.move create/write), so
+    migrated invoices ended up different from new ones.
 
-    La hora de las facturas de 17 no existe en ningún lado. Se usa el mediodía UTC para que, en
-    cualquier zona horaria del cliente, el campo se vea con el mismo día que invoice_date_display.
-    El hook de instalación usa la hora del momento de instalar, lo que en Venezuela (UTC-4) cambia
-    el día en lo que se registró después de las 20:00.
+    The time of the v17 invoices is not stored anywhere. Noon UTC is used so that, in any client
+    time zone, the field shows the same day as invoice_date_display. The install hook uses the time
+    of the install, which in Venezuela (UTC-4) changes the day of anything registered after 20:00.
 
-    Corre después del pre- de l10n_ve_accountant (19.0.1.1.2), que ya dejó invoice_date_display
-    con la fecha de 17: este módulo depende de aquél.
+    It runs after the l10n_ve_accountant pre- script (19.0.1.1.2), which already set
+    invoice_date_display to the v17 date: this module depends on that one.
 
-Qué pasa si no corre: las facturas migradas quedan sin este campo, y lo que ordene por él las
-    manda al principio o al final de la lista.
+If it does not run: migrated invoices are left without this field, and whatever sorts by it sends
+    them to the start or the end of the list.
 
-Cómo revertirlo: no hace falta. El campo no existía en 17, así que no se pisa ningún dato.
+How to revert: not needed. The field did not exist in v17, so no data is overwritten.
 
-Tarea: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
+Task: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
 """
 
 import logging
@@ -48,4 +47,4 @@ def migrate(cr, version):
         """,
         table="account_move",
     )
-    _logger.info("invoice_date_display_datetime llenado en %s asientos", count)
+    _logger.info("invoice_date_display_datetime filled on %s moves", count)

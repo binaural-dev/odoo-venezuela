@@ -1,34 +1,35 @@
-"""Da a cada contacto las cuentas de anticipo que usaba su compañía en 17.
+"""Give each partner the advance accounts its company used in v17.
 
-Qué: crea res_partner.default_advance_customer_account_id y default_advance_supplier_account_id
-    antes que el ORM y las llena desde res_company.advance_customer_account_id /
+What: creates res_partner.default_advance_customer_account_id and default_advance_supplier_account_id
+    before the ORM does and fills them from res_company.advance_customer_account_id /
     advance_supplier_account_id:
 
-    1. Contacto con compañía: las de su compañía.
-    2. Contacto compartido (sin compañía): las de la única compañía que las tenga configuradas.
-    3. Si hay varias, las de la compañía donde tuvo anticipos en 17, siempre que sea una sola.
-    El resto queda vacío y se lista en el reporte de migración.
+    1. Partner with a company: that company's accounts.
+    2. Shared partner (no company): the accounts of the only company that has them configured.
+    3. If several do, the accounts of the company where it had advance payments in v17, as long as
+       it is a single one.
+    The rest stay empty and are listed in the migration report.
 
-Por qué: en 17 un anticipo tomaba siempre la cuenta de la compañía. En 19 la toma del contacto
-    (account_payment._compute_destination_account_id), y con el contacto sin cuenta
-    res.partner._check_igtf_apply_improved devuelve False: el anticipo no aplica IGTF ni va a la
-    cuenta de anticipo. Los dos campos son nuevos en 19, con default=env.company.<cuenta>. Al crear
-    la columna, el ORM calcula ese default una sola vez, con la compañía principal, y se lo pone a
-    todos los contactos. En 19_proalca_run15 la compañía principal no tiene cuentas de anticipo, y
-    los 3.360 contactos quedaron vacíos, también los de las compañías 2, 3 y 4, que sí las tienen.
-    En un cliente cuya compañía principal sí las tenga, todos los contactos quedarían con las
-    cuentas de esa compañía, aunque sean de otra.
+Why: in v17 an advance payment always took the company's account. In v19 it takes the partner's
+    (account_payment._compute_destination_account_id), and with no account on the partner
+    res.partner._check_igtf_apply_improved returns False: the advance neither applies IGTF nor goes
+    to the advance account. Both fields are new in v19, with default=env.company.<account>. When it
+    creates the column, the ORM computes that default once, with the main company, and writes it on
+    every partner. In 19_proalca_run15 the main company has no advance accounts, and all 3,360
+    partners were left empty, including those of companies 2, 3 and 4, which do have them. On a
+    client whose main company does have them, every partner would get that company's accounts, even
+    partners of another company.
 
-    El campo no es company_dependent: un contacto compartido que se use en dos compañías con
-    anticipos sólo puede tener una cuenta. Eso es del diseño de 19, no de la migración, y esos
-    casos van al reporte.
+    The field is not company_dependent: a shared partner used by two companies with advance payments
+    can only hold one account. That comes from the v19 design, not from the migration, and those
+    cases go to the report.
 
-Qué pasa si no corre: los anticipos de los clientes migrados dejan de aplicar IGTF y de ir a la
-    cuenta de anticipo, o van a la cuenta de otra compañía.
+If it does not run: the advance payments of migrated clients stop applying IGTF and stop going to
+    the advance account, or go to another company's account.
 
-Cómo revertirlo: vaciar los dos campos en los contactos. Las cuentas de la compañía no se tocan.
+How to revert: empty both fields on the partners. The company accounts are not touched.
 
-Tarea: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
+Task: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
 """
 
 from odoo.upgrade import util
@@ -53,7 +54,7 @@ def migrate(cr, version):
         if not created:
             continue
 
-        # 1. contacto con compañía
+        # 1. partner with a company
         cr.execute(
             f"""
             UPDATE res_partner p
@@ -63,7 +64,7 @@ def migrate(cr, version):
                AND c.{company_col} IS NOT NULL
             """
         )
-        # 2. contacto compartido y una sola compañía con la cuenta configurada
+        # 2. shared partner and a single company with the account configured
         cr.execute(f"SELECT array_agg(DISTINCT {company_col}) FROM res_company WHERE {company_col} IS NOT NULL")
         accounts = cr.fetchone()[0] or []
         if len(accounts) == 1:
@@ -72,7 +73,7 @@ def migrate(cr, version):
                 [accounts[0]],
             )
         elif util.column_exists(cr, "account_payment", "is_advance_payment"):
-            # 3. contacto compartido: la compañía donde tuvo anticipos en 17, si es una sola
+            # 3. shared partner: the company where it had advance payments in v17, if only one
             cr.execute(
                 f"""
                 WITH usage AS (
@@ -108,12 +109,13 @@ def migrate(cr, version):
             )
             (pending,) = cr.fetchone()
             if pending:
-                unresolved.append(f"{pending} contactos compartidos ({partner_type})")
+                unresolved.append(f"{pending} shared partners ({partner_type})")
 
     if unresolved:
         util.add_to_migration_reports(
-            "Anticipos: 19 toma la cuenta de anticipo del contacto y no de la compañía. Quedaron sin "
-            f"cuenta, por tener anticipos en más de una compañía: {', '.join(unresolved)}. Sin cuenta, "
-            "sus anticipos no aplican IGTF. Asignarla en la ficha del contacto.",
-            category="Binaural · Contabilidad",
+            "Advance payments: v19 takes the advance account from the partner, not from the company. "
+            f"Left without an account, because they had advance payments in more than one company: "
+            f"{', '.join(unresolved)}. Without an account their advance payments do not apply IGTF. "
+            "Set it on the partner form.",
+            category="Binaural · Accounting",
         )
