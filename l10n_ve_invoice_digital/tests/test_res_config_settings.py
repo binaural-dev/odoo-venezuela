@@ -117,3 +117,36 @@ class TestResConfigSettings(TransactionCase):
         })
         settings.set_values()
         mock_install.assert_not_called()
+
+    def test_08_onchange_digitalization_with_payment_tfhka_disables_batch_invoicing(self):
+        settings = self.env["res.config.settings"].create({
+            "company_id": self.company.id,
+            "digitalization_with_payment_tfhka": True,
+            "batch_invoicing_tfhka": True,
+        })
+        settings.digitalization_with_payment_tfhka = False
+        settings._onchange_digitalization_with_payment_tfhka()
+        self.assertFalse(settings.batch_invoicing_tfhka)
+
+    def test_09_set_values_forces_batch_invoicing_off_when_payment_mode_disabled(self):
+        # Reproduce el guardado real: el wizard llega con batch_invoicing_tfhka
+        # todavía en True en la compañía (el campo quedó invisible al apagar
+        # digitalization_with_payment_tfhka, así que el cliente web no lo
+        # reenvía -- ver comentario en set_values()). set_values() debe forzar
+        # la coherencia igual que ya hace para dispatch_guide_digital_tfhka.
+        #
+        # dispatch_guide_digital_tfhka se apaga aquí para no disparar el
+        # intento de instalación de módulo de set_values() (no transaccional,
+        # prohibido en tests) -- es una rama de código ajena a lo que este
+        # test verifica.
+        self.company.write({
+            "dispatch_guide_digital_tfhka": False,
+            "digitalization_with_payment_tfhka": True,
+            "batch_invoicing_tfhka": True,
+        })
+        settings = self.env["res.config.settings"].create({
+            "company_id": self.company.id,
+            "digitalization_with_payment_tfhka": False,
+        })
+        settings.set_values()
+        self.assertFalse(self.company.batch_invoicing_tfhka)

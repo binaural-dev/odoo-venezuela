@@ -91,10 +91,17 @@ class TfhkaDocumentService(models.AbstractModel):
 
         client.query_numbering(company, series, origin=invoice)
 
-        # Secuencia: en modo "pago primero" se usa el correlativo local de
-        # Odoo; en el modo normal SIEMPRE se ADOPTA el correlativo de The
-        # Factory (último + 1) y luego se sincroniza el diario.
-        if company.digitalization_with_payment_tfhka:
+        # Secuencia: si la factura pertenece a un lote (tfhka.batch.service ya
+        # reservó su número vía /AsignarNumeraciones), se usa ese número tal
+        # cual -- no se vuelve a preguntar "último + 1", porque eso rompería
+        # el rango reservado si otra factura de la misma serie se procesó
+        # entre medio. Fuera de un lote, el comportamiento es el de siempre:
+        # en modo "pago primero" se usa el correlativo local de Odoo; en el
+        # modo normal SIEMPRE se ADOPTA el correlativo de The Factory (último
+        # + 1) y luego se sincroniza el diario.
+        if invoice.tfhka_batch_document_number:
+            document_number = invoice.tfhka_batch_document_number
+        elif company.digitalization_with_payment_tfhka:
             document_number = invoice.sequence_number
         else:
             last = client.get_last_document_number(company, document_type, series, origin=invoice)
@@ -274,9 +281,12 @@ class TfhkaDocumentService(models.AbstractModel):
 
         Devuelve un diccionario con las banderas adicionales del documento:
         * ``esLote``: Boolean indicando si forma parte de una emisión por lotes.
+          Solo es ``True`` cuando la factura fue asignada a un lote por
+          ``tfhka.batch.service`` (``tfhka_batch_ref`` poblado); una factura
+          digitalizada individualmente sigue reportando ``False``.
         """
         return {
-            "esLote": False,
+            "esLote": bool(invoice.tfhka_batch_ref),
         }
 
     # ------------------------------------------------------------------

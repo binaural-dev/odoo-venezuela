@@ -13,6 +13,7 @@ TFHKA_ENDPOINTS = {
     "emision": "/Emision",
     "ultimo_documento": "/UltimoDocumento",
     "consulta_numeraciones": "/ConsultaNumeraciones",
+    "asignar_numeraciones": "/AsignarNumeraciones",
     "anular": "/Anular",
     "descarga_archivo": "/DescargaArchivo",
 }
@@ -250,6 +251,14 @@ class TfhkaApiClient(models.AbstractModel):
                 response.get("numeroDocumento"),
             )
             return 0
+
+    def assign_numbering(self, company, detalle_asignacion, origin=None):
+        """POST /AsignarNumeraciones. Reserva por adelantado un rango de
+        ``numeroDocumento`` (y su ``numeroControl`` correspondiente) para una
+        emisión por lotes. Devuelve la respuesta completa de TFHKA
+        (``rangosAsignados``, ``detallesReserva``, ``fechaAsignacion``, ...)."""
+        payload = {"detalleAsignacion": detalle_asignacion}
+        return self._request(company, "asignar_numeraciones", payload, origin=origin)
 
     def query_numbering(self, company, series="", origin=None):
         """POST /ConsultaNumeraciones. Valida que la serie exista y tenga rango."""

@@ -10,6 +10,21 @@ class AccountMove(models.Model):
     _inherit = ["account.move", "tfhka.digitalization.mixin"]
 
     is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
+    tfhka_batch_ref = fields.Char(
+        copy=False,
+        tracking=True,
+        string="TFHKA Batch Reference",
+        help="Identifies the TFHKA digitalization batch this invoice belongs to. "
+             "Only set when the invoice was assigned via 'Generate TFHKA "
+             "Digitalization Batch'.",
+    )
+    tfhka_batch_document_number = fields.Integer(
+        copy=False,
+        string="TFHKA Batch Document Number",
+        help="Document number reserved for this invoice within its batch (via "
+             "/AsignarNumeraciones). When set, it replaces the normal 'last "
+             "document + 1' calculation at emission time.",
+    )
     show_digital_invoice = fields.Boolean(compute="_compute_invisible_check", copy=False)
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
@@ -640,6 +655,10 @@ class AccountMove(models.Model):
     def generate_document_digital(self):
         # Toda la lógica vive en la capa de servicios (tfhka.document.service).
         return self.env["tfhka.document.service"].send_document(self)
+
+    def action_tfhka_create_batch(self):
+        # Toda la lógica vive en la capa de servicios (tfhka.batch.service).
+        return self.env["tfhka.batch.service"].create_batch(self)
 
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):
