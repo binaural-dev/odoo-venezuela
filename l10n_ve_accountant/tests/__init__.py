@@ -8,5 +8,6 @@ from . import test_account_tax_foreign
 from . import test_coverage_gaps
 from . import test_product_template
 from . import test_action_cancel
+from . import test_foreign_exchange_diff
 from . import test_credit_limit_scope
 from . import test_reversal_foreign_rate
