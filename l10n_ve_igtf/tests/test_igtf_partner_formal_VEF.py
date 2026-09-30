@@ -677,9 +677,12 @@ class TestIGTFNEW(IGTFTestCommon):
             lambda l: l.account_id == self.acc_receivable and l.debit > 0
         )
 
-        partial_reconcile = outstanding_line.matched_debit_ids.filtered(
-            lambda p: p.debit_move_id == invoice_receivable_line
-        )
+        # outstanding_line vive en la cuenta de anticipo; su contraparte
+        # conciliada es la linea de debito del cruce en esa MISMA cuenta,
+        # no la linea de CxC de la factura (cuenta distinta). El partial
+        # que realmente conecta la factura con el cruce cuelga de
+        # invoice_receivable_line (cuenta de CxC).
+        partial_reconcile = invoice_receivable_line.matched_credit_ids
 
         invoice.with_context({}).js_remove_outstanding_partial(partial_reconcile.id)
 
