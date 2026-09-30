@@ -1,7 +1,7 @@
 import logging
 from datetime import timedelta
 
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
 
 _logger = logging.getLogger(__name__)
@@ -2539,3 +2539,64 @@ class TestMultiCurrencyRounding(TransactionCase):
             (20.123456, 6.309876, [self.tax_16, tax_8_own]),
         ])
         self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16, tax_8_own])
+
+    def test_55_unreconcile_normal_payment_updates_payment_state(self):
+        """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`
+        force-recompute: 3 separate register-payment-wizard payments, all
+        unreconciled, must bring `payment_state` back to 'not_paid'."""
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 300.0, [self.tax_16]),
+        ])
+        acc_bank_usd_real = self._get_or_create('100201', 'Bank USD (no reconcile)', 'asset_cash', reconcile=False)
+        bank_usd_real = self._create_bank_journal('BNKUR', 'Banco USD Real', self.currency_usd, acc_bank_usd_real)
+        pay_amount = inv.amount_total / 3
+        if inv.state != 'posted':
+            inv.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(inv.state, 'posted', f"Precondición: la factura debe estar posteada, no {inv.state!r}.")
+
+        payments = self.env['account.payment']
+        for _ in range(3):
+            inv.invalidate_recordset()
+            action_data = inv.action_register_payment()
+            with Form(
+                self.env["account.payment.register"].with_context(action_data["context"])
+            ) as pay_form:
+                pay_form.journal_id = bank_usd_real
+                pay_form.payment_date = fields.Date.today()
+                pay_form.save()
+                pay_form.amount = pay_amount
+            action = pay_form.record.action_create_payments()
+            payments |= self.env["account.payment"].browse(action.get("res_id"))
+
+        inv.invalidate_recordset()
+        payments.invalidate_recordset()
+        self.assertEqual(inv.payment_state, "paid")
+        self.assertEqual(
+            len(inv.matched_payment_ids), 3,
+            f"Precondición: deben estar los 3 pagos matched -- {inv.matched_payment_ids.ids}",
+        )
+
+        # Desconciliar los 3, uno por uno -- como reporta el caso real.
+        for pay in payments:
+            inv_receivable = inv.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+            pay_counterpart = pay.move_id.line_ids.filtered(
+                lambda l: l.account_id == inv_receivable.account_id
+            )
+            partial = inv_receivable.matched_credit_ids.filtered(
+                lambda p: p.credit_move_id in pay_counterpart
+            ) or inv_receivable.matched_debit_ids.filtered(
+                lambda p: p.debit_move_id in pay_counterpart
+            )
+            self.assertTrue(partial, f"Debe existir la conciliación factura<->pago {pay.id}.")
+            inv.with_context({}).js_remove_outstanding_partial(partial[:1].id)
+            inv.invalidate_recordset()
+
+        payments.invalidate_recordset()
+        self.assertEqual(
+            inv.payment_state, "not_paid",
+            f"payment_state quedó en {inv.payment_state!r} tras desconciliar los 3 pagos "
+            f"-- debía quedar 'not_paid'. payments.state={payments.mapped('state')}, "
+            f"inv.amount_residual={inv.amount_residual}, "
+            f"inv.matched_payment_ids={inv.matched_payment_ids.ids}, "
+            f"inv.reconciled_payment_ids={inv.reconciled_payment_ids.ids}",
+        )

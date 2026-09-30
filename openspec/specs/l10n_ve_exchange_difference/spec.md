@@ -477,6 +477,15 @@ armando una reversión (ej. una Nota de Crédito de NEGOCIO real, no
 relacionada, que también participó en cerrar la factura), NO SHALL corregir
 nada -- esa clasificación es genuina.
 
+Si al excluir las notas propias NO queda NINGUNA otra contraparte
+(`remaining_types` vacío -- por ejemplo, tras desconciliar el cruce de
+anticipo que originalmente acompañaba a la nota, dejándola como la ÚNICA
+pieza de la conciliación), la corrección NO SHALL forzar `'paid'`: una nota
+propia sola como contraparte es EXACTAMENTE la definición nativa de
+`'reversed'` del núcleo (un solo `out_refund`), así que el valor que el
+núcleo ya calculó es correcto y forzar `'paid'` ahí lo sobrescribiría con un
+valor desactualizado.
+
 Un documento marcado con `l10n_ve_exchange_diff_entry=True` cuyo `move_type`
 NO sea ni `'entry'` (asiento genérico) ni `out_invoice`/`out_refund` (nota
 propia) SHALL abortar con `UserError` explícito en vez de ignorarse en
@@ -509,6 +518,13 @@ de completar el flujo en silencio.
 - **WHEN** se recomputa `payment_state`
 - **AND** excluir la nota propia de la combinación NO cambia el resultado (la NC de negocio por sí sola ya arma la reversión)
 - **THEN** `payment_state` se queda en `'reversed'`
+
+#### Scenario: La nota propia queda sola tras desconciliar el resto -- no se fuerza 'paid'
+
+- **GIVEN** una factura cuya conciliación incluía un cruce de anticipo y su NC de diferencial
+- **AND** el cruce de anticipo se desconcilia, dejando la NC como la ÚNICA contraparte restante
+- **WHEN** se recomputa `payment_state`
+- **THEN** el sistema NO fuerza `'paid'` -- se respeta el `'reversed'` que el núcleo ya calculó, correcto para una sola nota de crédito como contraparte
 
 #### Scenario: Documento con el flag en un `move_type` inesperado aborta
 
