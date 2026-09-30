@@ -73,15 +73,16 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
             "name": "Concepto Alterno 83486",
             "status": True,
         })
-        source_line = self.concept_one.line_payment_concept_ids.filtered(
-            lambda line: line.type_person_id == self.partner_pnr_75.type_person_id
-        )
         self.env["payment.concept.line"].create({
             "payment_concept_id": self.concept_alt83486.id,
-            "type_person_id": source_line.type_person_id.id,
-            "tariff_id": source_line.tariff_id.id,
-            "percentage_tax_base": source_line.percentage_tax_base,
-            "pay_from": source_line.pay_from,
+            "type_person_id": self.env.ref(
+                "l10n_ve_payment_extension.type_person_l10n_ve_payment_extension"
+            ).id,
+            "tariff_id": self.env.ref(
+                "l10n_ve_payment_extension.fees_retention_data_substrat_l10n_ve_payment_extension"
+            ).id,
+            "percentage_tax_base": 100,
+            "pay_from": 0.13,
             "code": "83486-1",
         })
         self.product_islr_alt83486 = self.env["product.product"].create({
