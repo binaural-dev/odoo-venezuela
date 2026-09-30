@@ -410,6 +410,7 @@ class AccountMoveLine(models.Model):
         with super()._sync_invoice(container):
             yield
 
+        self._fix_price_included_base_per_line(container['records'])
         self._apply_product_real_portion(container['records'])
 
     @api.onchange('amount_currency', 'currency_id')
@@ -456,6 +457,71 @@ class AccountMoveLine(models.Model):
                     line.balance = rounded_balance + adjustment
                 else:
                     line.balance = rounded_balance
+
+    @api.model
+    def _fix_price_included_base_per_line(self, lines):
+        """Recomputes each product line's price-included base on its own
+        (core's `round_globally` sums ALL same-tax lines first, so
+        identical lines can post different amounts). Scoped to simple
+        flat percentage price-included taxes only."""
+        for line in lines:
+            if line.display_type != 'product':
+                continue
+            move = line.move_id
+            if not move.is_invoice(include_receipts=True) or move.state != 'draft':
+                continue
+            taxes = line.tax_ids
+            if not taxes or any(
+                t.amount_type != 'percent' or not t.price_include or t.include_base_amount
+                for t in taxes
+            ):
+                continue
+
+            total_rate = sum(taxes.mapped('amount')) / 100.0
+            if total_rate <= -1.0:
+                continue
+            factor = 1 / (1 + total_rate)
+            # `move.direction_sign`: price_unit/quantity are always positive,
+            # but `amount_currency`/`balance` follow the document's debit/
+            # credit convention (negative for `out_invoice`/`in_refund`,
+            # confirmed against core's own unmodified value for this same
+            # line -- without this, an `out_invoice` product line posted
+            # positive while its tax line (never touched here, core's
+            # native value already correctly-signed) stayed negative,
+            # desync'ing base+tax from reconstructing the document total).
+            raw_included = (
+                line.price_unit * line.quantity
+                * (1 - (line.discount or 0.0) / 100.0) * move.direction_sign
+            )
+
+            currency = line.currency_id
+            cc = move.company_currency_id
+
+            # Mirrors Odoo core exactly (`account.tax._add_tax_details_in_base_line`,
+            # account_tax.py:1764-1795): the base is computed ONCE, unrounded, in
+            # the document currency (`raw_total_excluded_currency`); the company
+            # currency figure is obtained by DIVIDING that same unrounded number
+            # by `rate` (`base_line['rate']`, which for invoice lines IS
+            # `line.currency_rate` -- core uses it directly at this stage, this
+            # isn't the aggregate-reconciliation context `_apply_product_real_portion`
+            # warns about below). Both projections come from the SAME unrounded
+            # split and are rounded INDEPENDENTLY -- neither is derived from the
+            # other's already-rounded value, so there is no sequential rounding
+            # error to amplify in either direction.
+            raw_total_excluded_currency = raw_included * factor
+            new_amount_currency = currency.round(raw_total_excluded_currency)
+
+            if currency == cc:
+                new_balance = new_amount_currency
+            else:
+                rate = line.currency_rate or 1.0
+                raw_total_excluded = raw_total_excluded_currency / rate
+                new_balance = cc.round(raw_total_excluded)
+
+            if not currency.is_zero(new_amount_currency - line.amount_currency):
+                line.amount_currency = new_amount_currency
+            if not cc.is_zero(new_balance - line.balance):
+                line.balance = new_balance
 
     @api.model
     def _apply_product_real_portion(self, lines):
