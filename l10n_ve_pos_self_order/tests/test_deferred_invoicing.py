@@ -78,7 +78,10 @@ class TestKioskDeferredInvoicing(TransactionCase):
                 "property_account_expense_categ_id": account.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # `l10n_ve_stock` solo deja crear un producto con `company_id` si es la
+        # `env.company` (sin bypass de superusuario). Sin `with_company`,
+        # `env.company` es la compañía principal y el create lanza AccessError.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "Kiosk Deferred Product",
                 # `service`: `_process_saved_order` llama a `_create_order_picking`

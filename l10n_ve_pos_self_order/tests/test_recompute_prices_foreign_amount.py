@@ -84,7 +84,10 @@ class TestRecomputePricesForeignAmount(TransactionCase):
                 "account_purchase_tax_id": cls.tax.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # `l10n_ve_stock` only allows creating a product whose `company_id` is
+        # `env.company` (no superuser bypass). Without `with_company`,
+        # `env.company` is the main company and create() raises AccessError.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "Self Order Recompute Product",
                 "lst_price": 100.0,
