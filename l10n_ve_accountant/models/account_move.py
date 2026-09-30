@@ -222,6 +222,70 @@ class AccountMove(models.Model):
     manually_set_rate = fields.Boolean(default=False)
     last_foreign_rate = fields.Float(copy=False)
 
+    can_edit_tax_totals = fields.Boolean(
+        compute="_compute_can_edit_tax_totals",
+        help="Gates the pencil-edit on the tax_totals widget -- same "
+        "group as res.currency.edit_rate, which already gates manually "
+        "overriding an otherwise auto-computed fiscal figure.",
+    )
+
+    def _compute_can_edit_tax_totals(self):
+        can_edit = self.env.user.has_group("l10n_ve_accountant.group_fiscal_config_support")
+        for move in self:
+            move.can_edit_tax_totals = can_edit
+
+    def _inverse_tax_totals(self):
+        """Gates the pencil-edit's actual write, not just the view: only
+        `group_fiscal_config_support` may change a tax group's amount at
+        all, and even then only within `company_id.tax_totals_edit_tolerance`
+        of the computed value -- mirrors the same delta core's own
+        `_inverse_tax_totals` computes to move the first tax line, so a
+        change flagged here is exactly the change core is about to apply."""
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            invoice_totals = move.tax_totals
+            if not invoice_totals:
+                continue
+            tolerance = move.company_id.tax_totals_edit_tolerance
+            for subtotal in invoice_totals.get('subtotals') or []:
+                for tax_group in subtotal.get('tax_groups') or []:
+                    tax_lines = move.line_ids.filtered(
+                        lambda line: line.tax_group_id.id == tax_group['id']
+                    )
+                    if not tax_lines:
+                        continue
+                    tax_group_old_amount = sum(tax_lines.mapped('amount_currency'))
+                    sign = -1 if move.is_inbound() else 1
+                    delta_amount = (
+                        (tax_group_old_amount - tax_group.get('non_deductible_tax_amount_currency', 0.0)) * sign
+                        - tax_group['tax_amount_currency']
+                    )
+                    if move.currency_id.is_zero(delta_amount):
+                        continue
+                    if not move.can_edit_tax_totals:
+                        raise UserError(_(
+                            "You are not allowed to manually edit the tax amount."
+                        ))
+                    if move.currency_id.compare_amounts(abs(delta_amount), tolerance) > 0:
+                        raise UserError(_(
+                            "The manually edited tax amount differs by %(diff)s from the "
+                            "computed value, which is more than the allowed tolerance of "
+                            "%(tolerance)s for %(company)s.",
+                            diff=formatLang(self.env, abs(delta_amount), currency_obj=move.currency_id),
+                            tolerance=formatLang(self.env, tolerance, currency_obj=move.currency_id),
+                            company=move.company_id.display_name,
+                        ))
+        super()._inverse_tax_totals()
+        # `tax_totals` isn't stored, so `add_to_compute` doesn't apply --
+        # and core's own recompute never re-triggers from a write to the
+        # TAX line itself (its `@api.depends` only covers
+        # `invoice_line_ids`, i.e. product lines) -- without this,
+        # `_fix_tax_amount_for_round_per_line`'s VES correction stays
+        # frozen at its pre-edit value on the next read, even though the
+        # real tax line's `balance` already moved.
+        self.invalidate_recordset(['tax_totals'])
+
     vat = fields.Char(
         string="VAT",
         help="VAT of the partner",
