@@ -198,6 +198,23 @@
                             </div>
                         </div>
                     </block>
+
+                    <block title="Alternate Currency Exchange Difference" name="l10n_ve_foreign_exchange_diff_block">
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_foreign_exchange_diff_div">
+                            <div class="col-lg-6 o_setting_left_pane">
+                                <field name="l10n_ve_use_foreign_exchange_diff"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="l10n_ve_use_foreign_exchange_diff"/>
+                                <div class="text-muted">
+                                    The exchange difference entry Odoo creates natively at
+                                    reconciliation time also carries the alternate currency amount
+                                    on its own lines. If only the alternate currency shows a
+                                    difference, the same kind of entry is still created for it.
+                                </div>
+                            </div>
+                        </div>
+                    </block>
                 </xpath>
             </field>
         </record>
