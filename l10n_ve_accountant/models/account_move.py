@@ -270,8 +270,43 @@ class AccountMove(models.Model):
     foreign_balance = fields.Monetary(
         compute="_compute_total_debit_credit", currency_field="foreign_currency_id"
     )
-    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True, 
+    foreign_untaxed_total = fields.Monetary(string="foreign untaxed total", currency_field="foreign_currency_id", store=True,
                                             compute='_compute_foreign_untaxed_total' )
+
+    # ── Alternate-currency exchange difference traceability ──
+    # No custom reversal/idempotency machinery: the standalone entry's own
+    # `account.partial.reconcile.exchange_move_id` (native field) carries
+    # that -- core already reverses it automatically when the partial is
+    # removed (`account.partial.reconcile.unlink()`, core). `copy=True`
+    # here only so that automatic reversal (a `.copy()` under the hood)
+    # keeps this flag on the reversal move too, for consistent filtering.
+    l10n_ve_exchange_foreign_diff_entry = fields.Boolean(
+        string='Is Alternate Currency Exchange Difference Entry',
+        default=False,
+        copy=True,
+        help="Set when this entry carries an alternate-currency exchange "
+             "difference amount, native or standalone.",
+    )
+    l10n_ve_exchange_foreign_source_move_id = fields.Many2one(
+        'account.move',
+        string='Source Document (Alternate Currency Exchange Difference)',
+        copy=False,
+        check_company=True,
+        help="Document whose reconciliation produced a standalone "
+             "alternate-currency exchange difference entry -- kept even "
+             "after the underlying `account.partial.reconcile` is later "
+             "deleted (e.g. the settlement gets undone), since that's the "
+             "only place this information would otherwise survive.",
+    )
+    l10n_ve_exchange_foreign_payment_move_id = fields.Many2one(
+        'account.move',
+        string='Settling Document (Alternate Currency Exchange Difference)',
+        copy=False,
+        check_company=True,
+        help="Counterpart document (payment/settlement) whose reconciliation "
+             "produced this standalone alternate-currency exchange "
+             "difference entry -- informational only, human-readable.",
+    )
     amount = fields.Float(tracking=True)
 
     real_portion_amount = fields.Monetary(
@@ -1492,6 +1527,7 @@ class AccountMove(models.Model):
 
         to_delete = []
         to_create = []
+        touched_move_ids = set()
         for move in container['records']:
             if move.state != 'draft':
                 continue
@@ -1531,17 +1567,61 @@ class AccountMove(models.Model):
                         for base_line, to_update in tax_results['base_lines_to_update']
                     }
 
-                    def _vef_base_for_tax(tax, group_tax):
-                        # `record.tax_ids` holds the tax as the user picked
-                        # it: for a percent tax that is a child of a
-                        # `group`, that's the group, not the child -- match
-                        # on either.
-                        total = 0.0
-                        for base_line, _to_update in tax_results['base_lines_to_update']:
-                            record = base_line['record']
-                            if tax in record.tax_ids or (group_tax and group_tax in record.tax_ids):
-                                total += fresh_balance_by_line_id.get(record.id, 0.0)
-                        return total
+                    # Precompute once: for each tax (or group tax) picked on
+                    # ANY base line, the list of (record_id, balance_vef,
+                    # amount_currency_doc) of the lines that picked it.
+                    # `record.tax_ids` holds whatever the user selected --
+                    # the group itself for a percent tax that is a child of
+                    # a `group` tax, not the child -- so a line lands under
+                    # its OWN `tax_ids` entries, which may be the child or
+                    # the parent group depending on how it was set up.
+                    # Avoids re-scanning all base lines for every tax
+                    # repartition line below (O(n) once instead of O(n) per
+                    # tax, i.e. O(n*taxes) -> O(n) for the indexing pass).
+                    lines_by_tax_id = {}
+                    for base_line, to_update in tax_results['base_lines_to_update']:
+                        record = base_line['record']
+                        entry = (
+                            record.id,
+                            fresh_balance_by_line_id.get(record.id, 0.0),
+                            to_update.get('amount_currency', 0.0),
+                        )
+                        for t in record.tax_ids:
+                            lines_by_tax_id.setdefault(t.id, []).append(entry)
+
+                    def _matching_lines(tax, group_tax):
+                        lines = list(lines_by_tax_id.get(tax.id, ()))
+                        if group_tax:
+                            lines += lines_by_tax_id.get(group_tax.id, ())
+                        return lines
+
+                    # `include_base_amount`: a tax marked this way folds its
+                    # OWN computed amount into the base of the NEXT taxes on
+                    # the SAME product line. Tracked here (fed only by our
+                    # own freshly-computed per-line amounts below, never by
+                    # Odoo's core `tax_details` -- that structure is
+                    # computed with the core's own internal `rate`, which
+                    # can be stale the same way `record.balance` is stale
+                    # this cycle; reading from it regressed test_30 during
+                    # development, see git history). Repartition lines are
+                    # processed in ascending `tax.sequence` order below so a
+                    # chaining tax is always folded in before its dependents
+                    # are computed.
+                    extra_base_by_line_id = {}
+
+                    def _effective_entries(tax, group_tax):
+                        result = []
+                        for record_id, balance, doc_amount in _matching_lines(tax, group_tax):
+                            extra = extra_base_by_line_id.get(record_id, (0.0, 0.0))
+                            result.append((record_id, balance + extra[0], doc_amount + extra[1]))
+                        return result
+
+                    def _accumulate_extra_base(tax, entries_with_line_amounts):
+                        if not tax.include_base_amount:
+                            return
+                        for record_id, line_vef, line_doc in entries_with_line_amounts:
+                            prev_vef, prev_doc = extra_base_by_line_id.get(record_id, (0.0, 0.0))
+                            extra_base_by_line_id[record_id] = (prev_vef + line_vef, prev_doc + line_doc)
 
                     RepLine = self.env['account.tax.repartition.line']
                     Tax = self.env['account.tax']
@@ -1553,6 +1633,60 @@ class AccountMove(models.Model):
                             return value
                         return model.browse(value) if value else model
 
+                    def _per_line_tax_sums(tax, group_tax, factor):
+                        # Fiscal-machine method: round the tax of EACH
+                        # product line individually (VEF and document
+                        # currency) and THEN sum the rounded amounts --
+                        # instead of summing the raw bases first and
+                        # rounding once (what Odoo's grouped tax line does
+                        # by default, regardless of
+                        # `tax_calculation_rounding_method`). Matches how
+                        # `_prepare_product_foreign_base_line_for_taxes_computation`
+                        # already computes the 'foreign'/alterno side.
+                        #
+                        # Both sums stay SIGNED (no `abs()`): a base line's
+                        # own `amount_currency` (fresh this cycle, same
+                        # source as `fresh_balance_by_line_id` for VEF) can
+                        # be negative relative to its siblings (a global
+                        # discount line, a partial refund inside the same
+                        # tax). Summing signed values lets them net out
+                        # correctly instead of stacking as if all positive.
+                        vef_total = 0.0
+                        doc_total = 0.0
+                        per_line_amounts = []
+                        for record_id, eff_balance, eff_doc in _effective_entries(tax, group_tax):
+                            line_vef = cc.round(eff_balance * (tax.amount / 100.0) * factor)
+                            line_doc = move.currency_id.round(eff_doc * (tax.amount / 100.0) * factor)
+                            vef_total += line_vef
+                            doc_total += line_doc
+                            per_line_amounts.append((record_id, line_vef, line_doc))
+                        _accumulate_extra_base(tax, per_line_amounts)
+                        return vef_total, doc_total
+
+                    def _grouped_tax_sums(tax, group_tax, factor):
+                        # `round_globally`: sum the (chained) bases first
+                        # and round once, same shape as before -- but the
+                        # base per line now includes any `include_base_amount`
+                        # carried over from an earlier tax. The resulting
+                        # total is distributed back to each line
+                        # proportionally to its own effective base, to keep
+                        # folding it forward into further chained taxes.
+                        entries = _effective_entries(tax, group_tax)
+                        base_vef = sum(balance for _rid, balance, _doc in entries)
+                        new_balance = cc.round(base_vef * (tax.amount / 100.0) * factor)
+                        new_amount_currency = move.currency_id.round(new_balance * rate)
+                        if tax.include_base_amount and not cc.is_zero(base_vef):
+                            per_line_amounts = [
+                                (
+                                    record_id,
+                                    new_balance * (balance / base_vef),
+                                    new_amount_currency * (doc_amount / base_vef) if not cc.is_zero(base_vef) else 0.0,
+                                )
+                                for record_id, balance, doc_amount in entries
+                            ]
+                            _accumulate_extra_base(tax, per_line_amounts)
+                        return new_balance, new_amount_currency
+
                     def _apply_vef_first(to_update, rep_line_value, group_tax_value):
                         rep_line = _get_recordset(RepLine, rep_line_value)
                         tax = rep_line.tax_id if rep_line else False
@@ -1562,15 +1696,34 @@ class AccountMove(models.Model):
                             return
                         group_tax = _get_recordset(Tax, group_tax_value)
                         factor = rep_line.factor_percent / 100.0
-                        base_vef = _vef_base_for_tax(tax, group_tax)
-                        new_balance = cc.round(base_vef * (tax.amount / 100.0) * factor)
+                        if move.company_id.tax_calculation_rounding_method == 'round_per_line':
+                            new_balance, new_amount_currency = _per_line_tax_sums(tax, group_tax, factor)
+                        else:
+                            new_balance, new_amount_currency = _grouped_tax_sums(tax, group_tax, factor)
                         to_update['balance'] = new_balance
-                        to_update['amount_currency'] = move.currency_id.round(new_balance * rate)
+                        to_update['amount_currency'] = new_amount_currency
 
-                    for vals in tax_results['tax_lines_to_add']:
-                        _apply_vef_first(vals, vals.get('tax_repartition_line_id'), vals.get('group_tax_id'))
-                    for (_line, _key, to_update) in tax_results['tax_lines_to_update']:
-                        _apply_vef_first(to_update, _line.get('tax_repartition_line_id'), _line.get('group_tax_id'))
+                    # Combined and sorted by tax sequence: `include_base_amount`
+                    # must be folded into a dependent tax's base BEFORE that
+                    # dependent tax is computed, regardless of the order
+                    # `tax_lines_to_add`/`tax_lines_to_update` happen to
+                    # list them in.
+                    pending = [
+                        (vals, vals.get('tax_repartition_line_id'), vals.get('group_tax_id'))
+                        for vals in tax_results['tax_lines_to_add']
+                    ] + [
+                        (to_update, _line.get('tax_repartition_line_id'), _line.get('group_tax_id'))
+                        for (_line, _key, to_update) in tax_results['tax_lines_to_update']
+                    ]
+
+                    def _sequence_key(item):
+                        _to_update, rep_line_value, _group_tax_value = item
+                        rep_line = _get_recordset(RepLine, rep_line_value)
+                        tax = rep_line.tax_id if rep_line else False
+                        return tax.sequence if tax else 0
+
+                    for to_update, rep_line_value, group_tax_value in sorted(pending, key=_sequence_key):
+                        _apply_vef_first(to_update, rep_line_value, group_tax_value)
 
             # ── Base lines ───────────────────────────────────────────
             for base_line, to_update in tax_results['base_lines_to_update']:
@@ -1584,6 +1737,7 @@ class AccountMove(models.Model):
             # ── Delete stale tax lines ───────────────────────────────
             for tax_line_vals in tax_results['tax_lines_to_delete']:
                 to_delete.append(tax_line_vals['record'].id)
+                touched_move_ids.add(move.id)
 
             # ── New tax lines ────────────────────────────────────────
             for tax_line_vals in tax_results['tax_lines_to_add']:
@@ -1598,6 +1752,7 @@ class AccountMove(models.Model):
                     **tax_line_vals, 'display_type': 'tax', 'move_id': move.id,
                     'foreign_balance': fb,
                 })
+                touched_move_ids.add(move.id)
 
             # ── Existing tax lines ───────────────────────────────────
             for tax_line_vals, grouping_key, to_update in tax_results['tax_lines_to_update']:
@@ -1618,6 +1773,14 @@ class AccountMove(models.Model):
             self.env['account.move.line'].browse(to_delete).with_context(dynamic_unlink=True).unlink()
         if to_create:
             self.env['account.move.line'].create(to_create)
+
+        # El unlink de arriba puede disparar un _check_balanced/
+        # _sync_dynamic_lines anidado prematuro (IVA ya borrada, nueva aun
+        # sin crear) que deja _real_portion_distributed marcado como
+        # "hecho" y bloquea la corrección posterior. Se limpia aquí mismo,
+        # con las líneas ya completas.
+        for move_id in touched_move_ids:
+            self.env.cr.cache.pop(('_real_portion_distributed', move_id), None)
 
     # ── Sync dynamic lines: distribute foreign in PT ─────────────────────
     @contextmanager
@@ -1868,6 +2031,82 @@ class AccountMove(models.Model):
             new_balance = currency.round(cur_bal + sign * units * currency.rounding)
             lines.browse(line_id).balance = new_balance
             remaining_units -= units
+
+    # `_get_all_reconciled_invoice_partials` is the one method every
+    # `_compute_payments_widget_reconciled_info` variant calls (core's,
+    # and `l10n_ve_igtf`'s from-scratch reimplementation that never calls
+    # `super()`) -- the only honest hook to surface the standalone entry.
+    def _get_all_reconciled_invoice_partials(self):
+        """Adds the standalone alt-diff entry as a synthetic partial (it
+        never reconciles by design, so core's own SQL never finds it).
+        `is_exchange=True` hides the dead "Unreconcile" button; accepted
+        cost is the row's currency getting hardcoded to VEF downstream
+        (see openspec for the full trade-off and the combined-case gap).
+        """
+        self.ensure_one()
+        res = super()._get_all_reconciled_invoice_partials()
+
+        # No `sudo()`: whoever can reach this (viewing the invoice's
+        # "Pagos" widget) already has read access to it, and core's own
+        # `account_move_comp_rule` + `account_move_rule_group_invoice`/
+        # `account_move_see_all` rules grant any Billing/Accountant user
+        # blanket read access to every journal entry in that same company
+        # -- there is no narrower ACL this would be bypassing.
+        standalone_entries = self.env['account.move'].search([
+            ('l10n_ve_exchange_foreign_source_move_id', '=', self.id),
+            ('state', '=', 'posted'),
+            # A reversed entry stays `posted` by design (see
+            # `account_partial_reconcile.py`, "reversed, not cancelled")
+            # -- it must stop showing here the moment it's reversed,
+            # since the settlement it was tracking is gone.
+            ('reversal_move_ids', '=', False),
+        ])
+        for entry in standalone_entries:
+            closing_line = entry.line_ids.filtered(
+                lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+            )[:1]
+            if not closing_line:
+                continue
+            alt_amount = abs(closing_line.foreign_debit - closing_line.foreign_credit)
+            if not alt_amount:
+                continue
+            res.append({
+                'aml_id': closing_line.id,
+                'partial_id': False,
+                'amount': alt_amount,
+                'currency': entry.foreign_currency_id,
+                'aml': closing_line,
+                'is_exchange': True,  # See docstring above: hides "Unreconcile".
+            })
+        return res
+
+    def _reverse_moves(self, default_values_list=None, cancel=False):
+        """EXTENDS core: core's reversal negates `balance`/`amount_currency`
+        but knows nothing about `foreign_debit`/`foreign_credit` (this
+        module's fields), so those either double up or zero out instead of
+        cancelling. Swaps them explicitly per line, matched by `id` (never
+        position: core doesn't preserve line order on credit notes) and
+        restricted to this feature's own alt-diff entries -- those live in
+        the exchange-diff journal, the core copies them 1:1, and nothing
+        else here ever recalculates their `foreign_*` fields. Any other
+        reversal (invoices, credit notes, manual entries) keeps its normal
+        `foreign_*` computation untouched (see openspec for the full
+        failure analysis).
+        """
+        reverse_moves = super()._reverse_moves(default_values_list=default_values_list, cancel=cancel)
+        for original, reversal in zip(self, reverse_moves):
+            if not original.l10n_ve_exchange_foreign_diff_entry:
+                continue
+            for orig_line, rev_line in zip(
+                original.line_ids.sorted('id'), reversal.line_ids.sorted('id')
+            ):
+                if orig_line.foreign_debit or orig_line.foreign_credit:
+                    rev_line.write({
+                        'foreign_debit': orig_line.foreign_credit,
+                        'foreign_credit': orig_line.foreign_debit,
+                        'not_foreign_recalculate': True,
+                    })
+        return reverse_moves
 
     @api.ondelete(at_uninstall=False)
     def _unlink_except_posted_or_was_posted(self):

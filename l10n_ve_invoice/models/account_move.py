@@ -162,7 +162,7 @@ class AccountMove(models.Model):
         # _check_refund_against_origin() and action_post() -- keep them in
         # sync.
         for line in invoice_lines - discount_lines:
-            if line.price_unit <= 0 and line.display_type not in (
+            if line.price_subtotal <= 0 and line.display_type not in (
                 "line_section",
                 "line_subsection",
                 "line_note",
@@ -407,21 +407,39 @@ class AccountMove(models.Model):
                         )
                     )
 
-            if (
-                move.correlative
-                and not move.is_contingency
-                and move.move_type in ("out_invoice", "out_refund")
-            ):
-                repeated_moves = AccountMove.search(
-                    [
-                        ("id", "!=", move.id),
-                        ("company_id", "=", move.company_id.id),
-                        ("correlative", "=", move.correlative),
-                        ("state", "=", "posted"),
-                        ("move_type", "in", ("out_invoice", "out_refund")),
-                    ],
-                    limit=1,
-                )
+            if move.correlative and not move.is_contingency:
+                base_domain = [
+                    ("id", "!=", move.id),
+                    ("company_id", "=", move.company_id.id),
+                    ("correlative", "=", move.correlative),
+                    ("state", "=", "posted"),
+                ]
+
+                if move.move_type in ("out_invoice", "out_refund"):
+                    repeated_moves = AccountMove.search(
+                        base_domain
+                        + [("move_type", "in", ("out_invoice", "out_refund"))],
+                        limit=1,
+                    )
+                elif move.move_type in ("in_invoice", "in_refund"):
+                    # Unlike sales, the control number of a vendor bill is
+                    # assigned by the vendor's own numbering, so uniqueness
+                    # is scoped per vendor, not company-wide.
+                    repeated_moves = AccountMove.search(
+                        base_domain
+                        + [
+                            ("move_type", "in", ("in_invoice", "in_refund")),
+                            (
+                                "commercial_partner_id",
+                                "=",
+                                move.commercial_partner_id.id,
+                            ),
+                        ],
+                        limit=1,
+                    )
+                else:
+                    repeated_moves = AccountMove
+
                 if repeated_moves:
                     raise ValidationError(
                         _(
