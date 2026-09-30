@@ -571,7 +571,21 @@ class AccountRetention(models.Model):
             retention._check_retention_amount_vs_move_residual()
 
             if needs_reset:
-                retention.action_post()
+                # action_post() only returns a falsy result (instead of
+                # raising) when called with an 'automated_action'/'cron_id'
+                # context, which is never the case here - but guard against
+                # it anyway so a silent failure can never leave the
+                # retention reset to draft with no re-emitted payment.
+                result = retention.action_post()
+                if result is False:
+                    raise UserError(
+                        _(
+                            "Recalculating retention %(name)s failed while"
+                            " re-emitting it - the retention was left in"
+                            " draft state."
+                        )
+                        % {"name": retention.display_name}
+                    )
 
     def _would_change_line_set(self, move):
         """
@@ -940,31 +954,23 @@ class AccountRetention(models.Model):
         for retention in self:
             retention._check_duplicate_retention_lines()
 
-            retention_amounts_by_move = defaultdict(float)
-            for line in retention.retention_line_ids:
-                retention_amounts_by_move[line.move_id] += line.retention_amount
+            # Delegates to _check_retention_amount_vs_move_residual() instead
+            # of re-checking the amount inline: this used to be a duplicated
+            # (and looser) copy of that same rule, one that never accounted
+            # for the invoice still being in 'draft' (amount_residual_signed
+            # is 0.0 until posted), which made this check always fail during
+            # the recalculation flow (task #83486, action_post() called on a
+            # retention whose invoice is still draft) - and, since it
+            # returned a dict/False instead of raising, action_recalculate()
+            # had no way to notice the failure either.
+            try:
+                retention._check_retention_amount_vs_move_residual()
+            except UserError as e:
+                if is_automated:
+                    retention.message_post(body=str(e), category='exception')
+                    return False
+                raise
 
-            for move, retention_amount in retention_amounts_by_move.items():
-                invoice_total = abs(move.amount_residual_signed)
-                if invoice_total < retention_amount:
-                    error_msg = _(
-                        "The retention amount (%s) cannot be greater than the invoice total signed amount (%s) for invoice %s."
-                    ) % (retention_amount, invoice_total, move.name)
-
-                    if is_automated:
-                        retention.message_post(body=error_msg, category='exception')
-                        return False
-
-                    return {
-                        'type': 'ir.actions.client',
-                        'tag': 'display_notification',
-                        'params': {
-                            'title': _('Error'),
-                            'message': error_msg,
-                            'sticky': False,
-                            'type': 'danger',
-                        }
-                    }
             zero_retention_lines = retention.retention_line_ids.filtered(
                 lambda l: float_is_zero(l.retention_amount, precision_rounding=self.company_currency_id.rounding)
             )
