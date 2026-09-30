@@ -504,11 +504,24 @@ class AccountRetention(models.Model):
         @api.depends on these line amounts, so they refresh on their own
         once the lines are written - they must not be set by hand here.
 
-        Deliberately does NOT re-run the rest of action_post(): sequence
-        assignment, payment creation/reconciliation and the state
-        transition must only ever happen once, when the retention is first
-        emitted - repeating them here would create duplicate payments/
-        sequence numbers for a document that is already final.
+        Deliberately does NOT re-run the sequence assignment part of
+        action_post(): the retention keeps its already-assigned `number`
+        (_set_sequence() only assigns one when `not retention.number`), so
+        re-emitting it below never consumes a new correlative.
+
+        Payment creation/reconciliation and the 'emitted' state transition
+        ARE re-run, but only when a real reset was needed first (see
+        _would_change_line_set()/_reset_payments_for_resync() below): task
+        #83486 confirmed against a real CI run that, in production, every
+        emitted retention already has its payment posted
+        (action_post()._reconcile_all_payments() posts it as part of
+        emitting), so a sync that adds/removes lines (not just updates
+        amounts of lines that already exist) can never be applied in place -
+        the already-posted payment amount would no longer match the line
+        total. Resetting the retention (and its payments) to draft first,
+        syncing, then re-emitting is what keeps the payment amount correct
+        instead of leaving the recalculation blocked with a UserError for
+        the user to resolve by hand.
 
         _check_duplicate_retention_lines() and, for ISLR,
         _validate_islr_retention() ARE re-run below, since they validate
@@ -539,12 +552,91 @@ class AccountRetention(models.Model):
                     and m in retention.retention_line_ids.move_id
                 )
             )
+            if not retention_moves:
+                continue
+
+            needs_reset = (
+                retention.state == "emitted"
+                and any(retention._would_change_line_set(move) for move in retention_moves)
+                and bool(retention.payment_ids.filtered(lambda p: p.state != "draft"))
+            )
+            if needs_reset:
+                retention._reset_payments_for_resync()
+
             for move in retention_moves:
                 retention._sync_retention_lines_for_move(move)
             retention._check_duplicate_retention_lines()
             if retention._is_islr_supplier_retention():
                 retention._validate_islr_retention()
             retention._check_retention_amount_vs_move_residual()
+
+            if needs_reset:
+                retention.action_post()
+
+    def _would_change_line_set(self, move):
+        """
+        True when syncing `move`'s lines would add and/or remove at least
+        one line (not just update the amount of lines that already exist) -
+        used by action_recalculate() to decide, BEFORE touching any data,
+        whether this recalculation needs the reset-resync-reissue cycle
+        (_reset_payments_for_resync() + action_post()) or can just update
+        amounts in place.
+        """
+        self.ensure_one()
+        if self.type_retention == "iva":
+            expected = self._get_expected_iva_lines_data(move)
+        elif self.type_retention == "islr":
+            expected = self._get_expected_islr_lines_data(move)
+        else:
+            return False
+        existing_keys = {
+            self._retention_line_key(line)
+            for line in self.retention_line_ids.filtered(lambda l: l.move_id == move)
+        }
+        return set(expected.keys()) != existing_keys
+
+    def _reset_payments_for_resync(self):
+        """
+        Resets this (emitted) retention and its payments to draft so
+        action_recalculate() can add/remove retention lines freely, then
+        re-emits it (retention.action_post(), called by action_recalculate
+        right after the sync) to regenerate the payment(s) with the correct
+        amounts.
+
+        Detaches every retention line from its (now draft) payment and
+        deletes the old payment(s) outright, instead of leaving them around
+        for action_post() to reuse: _create_payments_from_retention_lines()
+        skips creating any payment at all as soon as retention.payment_ids
+        is non-empty (it has no notion of "this specific move's payment is
+        stale, recreate only that one") - if the old payments were left
+        linked, a retention covering several invoices would end up with some
+        of them missing a payment entirely after the resync. Deleting them
+        first guarantees action_post() rebuilds payment_ids for every move
+        of this retention from scratch, with the just-synced line amounts.
+
+        account.payment.action_draft() itself refuses to reset a posted
+        retention payment (see AccountPayment.action_draft()) unless called
+        under bypass_retention_lock - passed here since resetting the
+        payment is exactly what this recalculation flow is meant to do.
+        """
+        self.ensure_one()
+        old_payments = self.payment_ids
+        if not old_payments:
+            return
+        self.with_context(bypass_retention_lock=True).action_draft()
+        self.retention_line_ids.write({"payment_id": False})
+        self.write({"payment_ids": [Command.clear()]})
+        old_payments.with_context(bypass_retention_lock=True).unlink()
+        self.message_post(
+            body=_(
+                "Retention reset to draft and payment(s) removed to apply"
+                " this recalculation (task #83486): the set of retention"
+                " lines changed and the previous payment(s) were already"
+                " posted. It will be re-issued automatically with the"
+                " updated lines."
+            ),
+            subtype_xmlid="mail.mt_note",
+        )
 
     def _sync_retention_lines_for_move(self, move):
         """
@@ -562,14 +654,16 @@ class AccountRetention(models.Model):
         - A key only in existing means the invoice line that originated it
           no longer applies - the retention line is obsolete.
 
-        Obsolete lines are only removed if none of them already has a
-        posted payment (payment_id.state != 'draft') - a retention line
-        whose payment has been posted cannot be silently unlinked, since
-        that would leave the payment/journal entry orphaned; this raises
-        instead. Removing an obsolete line is logged as a chatter note on
-        the retention, and if there would be nothing left to retain for
-        this invoice under this retention (no expected lines, or every
-        existing line becomes obsolete), a clear UserError is raised
+        Obsolete lines still linked to a posted payment are never reached
+        here with that payment intact: action_recalculate() already called
+        _reset_payments_for_resync() beforehand whenever a structural change
+        (add/remove) was detected for an emitted retention with posted
+        payment(s), so any payment_id on an obsolete line by this point is
+        either unset or already draft, and account.retention.line.unlink()
+        deleting it is safe. Removing an obsolete line is logged as a
+        chatter note on the retention, and if there would be nothing left to
+        retain for this invoice under this retention (no expected lines, or
+        every existing line becomes obsolete), a clear UserError is raised
         instead of silently leaving the invoice without any withholding.
         """
         self.ensure_one()
@@ -630,23 +724,6 @@ class AccountRetention(models.Model):
                     "invoice": move.display_name,
                     "type_retention": self.type_retention.upper(),
                     "retention": self.display_name,
-                }
-            )
-
-        blocking = obsolete.filtered(
-            lambda l: l.payment_id and l.payment_id.state != "draft"
-        )
-        if blocking:
-            raise UserError(
-                _(
-                    "The retention line(s) %(lines)s of invoice %(invoice)s"
-                    " already have a posted payment. Cancel/reset the"
-                    " payment (or the retention) to draft and issue it"
-                    " again instead of recalculating automatically."
-                )
-                % {
-                    "lines": ", ".join(blocking.mapped("display_name")),
-                    "invoice": move.display_name,
                 }
             )
 

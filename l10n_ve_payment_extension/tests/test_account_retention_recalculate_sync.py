@@ -116,11 +116,20 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
 
         retention.action_recalculate(moves=invoice)
 
+        self.assertEqual(retention.state, "emitted")
         self.assertEqual(len(retention.retention_line_ids), 1)
         self.assertFalse(
             retention.retention_line_ids.filtered(lambda l: round(l.aliquot, 2) == 8.0)
         )
         self.assertGreater(len(retention.message_ids), messages_before)
+        self.assertTrue(retention.payment_ids)
+        self.assertTrue(all(p.state == "posted" for p in retention.payment_ids))
+        remaining_line = retention.retention_line_ids
+        self.assertAlmostEqual(
+            sum(retention.payment_ids.mapped("amount")),
+            remaining_line.retention_amount,
+            places=2,
+        )
         _logger.info("========= test_01 passed =========")
 
     def test_02_add_new_iva_aliquot_creates_line(self):
@@ -202,7 +211,7 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
         self.assertEqual(remaining.payment_concept_id, self.concept_one)
         _logger.info("========= test_04 passed =========")
 
-    def test_05_obsolete_line_with_posted_payment_raises(self):
+    def test_05_obsolete_line_with_posted_payment_resets_and_reissues(self):
         invoice = self._create_invoice_islr(
             200, self.partner_pnr_75, "in_invoice", self.purchase_journal,
         )
@@ -218,8 +227,8 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
         self.assertEqual(len(retention.retention_line_ids), 2)
 
         # Simulate one of the retention lines already having a posted
-        # payment, without going through the full reconciliation flow -
-        # only the payment.state guard is under test here.
+        # payment, without going through the full reconciliation flow - the
+        # reset-resync-reissue path (task #83486) is under test here.
         posted_payment = self.env["account.payment"].create({
             "payment_type": "outbound",
             "partner_type": "supplier",
@@ -232,13 +241,22 @@ class TestAccountRetentionRecalculateSync(RetentionTestCommon):
             lambda l: l.payment_concept_id == self.concept_three
         )
         line_three.payment_id = posted_payment.id
+        retention.payment_ids = [Command.link(posted_payment.id)]
 
         invoice.invoice_line_ids.filtered(
             lambda l: l.product_id == self.product_islr_three
         ).unlink()
 
-        with self.assertRaises(UserError):
-            retention.action_recalculate(moves=invoice)
+        retention.action_recalculate(moves=invoice)
+
+        self.assertEqual(retention.state, "emitted")
+        self.assertFalse(
+            retention.retention_line_ids.filtered(
+                lambda l: l.payment_concept_id == self.concept_three
+            )
+        )
+        self.assertTrue(retention.payment_ids)
+        self.assertTrue(all(p.state == "posted" for p in retention.payment_ids))
         _logger.info("========= test_05 passed =========")
 
     def test_06_invoice_left_without_tax_raises(self):
