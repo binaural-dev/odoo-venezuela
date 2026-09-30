@@ -2167,7 +2167,13 @@ class AccountMove(models.Model):
         self.ensure_one()
         res = super()._get_all_reconciled_invoice_partials()
 
-        standalone_entries = self.env['account.move'].sudo().search([
+        # No `sudo()`: whoever can reach this (viewing the invoice's
+        # "Pagos" widget) already has read access to it, and core's own
+        # `account_move_comp_rule` + `account_move_rule_group_invoice`/
+        # `account_move_see_all` rules grant any Billing/Accountant user
+        # blanket read access to every journal entry in that same company
+        # -- there is no narrower ACL this would be bypassing.
+        standalone_entries = self.env['account.move'].search([
             ('l10n_ve_exchange_foreign_source_move_id', '=', self.id),
             ('state', '=', 'posted'),
             # A reversed entry stays `posted` by design (see
@@ -2199,12 +2205,22 @@ class AccountMove(models.Model):
         """EXTENDS core: core's reversal negates `balance`/`amount_currency`
         but knows nothing about `foreign_debit`/`foreign_credit` (this
         module's fields), so those either double up or zero out instead of
-        cancelling. Swaps them explicitly per line, matched positionally
-        against the original (see openspec for the full failure analysis).
+        cancelling. Swaps them explicitly per line, matched by `id` (never
+        position: core doesn't preserve line order on credit notes) and
+        restricted to this feature's own alt-diff entries -- those live in
+        the exchange-diff journal, the core copies them 1:1, and nothing
+        else here ever recalculates their `foreign_*` fields. Any other
+        reversal (invoices, credit notes, manual entries) keeps its normal
+        `foreign_*` computation untouched (see openspec for the full
+        failure analysis).
         """
         reverse_moves = super()._reverse_moves(default_values_list=default_values_list, cancel=cancel)
         for original, reversal in zip(self, reverse_moves):
-            for orig_line, rev_line in zip(original.line_ids, reversal.line_ids):
+            if not original.l10n_ve_exchange_foreign_diff_entry:
+                continue
+            for orig_line, rev_line in zip(
+                original.line_ids.sorted('id'), reversal.line_ids.sorted('id')
+            ):
                 if orig_line.foreign_debit or orig_line.foreign_credit:
                     rev_line.write({
                         'foreign_debit': orig_line.foreign_credit,

@@ -541,6 +541,19 @@ class AccountMoveLine(models.Model):
             debit_values, credit_values, shadowed_aml_values=shadowed_aml_values, **kwargs
         )
 
+        # `shadowed_aml_values` only shows up on preview/simulation calls
+        # (e.g. the Enterprise reconcile wizard's `_compute_reco_wizard_data`,
+        # recomputed on every UI change to paint residuals before anything is
+        # confirmed) -- the real reconciliation path (`_reconcile_plan_with_sync`)
+        # never passes it. Everything past this point either queues a
+        # standalone entry on the cursor (flushed as a REAL posted move by
+        # `_create_exchange_difference_moves`, even if the user ends up
+        # confirming a different pairing) or mutates a dict that's about to
+        # be persisted -- neither is safe to run for a "what if" computation.
+        # Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
+        if shadowed_aml_values:
+            return res
+
         # Honor core's own suppression context, or an absent
         # `exchange_values` here reads as "nothing to fix" and wrongly
         # falls through to the standalone branch below.
@@ -799,6 +812,21 @@ class AccountMoveLine(models.Model):
         if partial and partial.exchange_move_id:
             return partial.exchange_move_id
 
+        if not partial:
+            # No `account.partial.reconcile` to hook `exchange_move_id` on
+            # means no way to auto-reverse this entry later -- posting it
+            # anyway would leave a real, permanent orphan in the exchange-diff
+            # journal. Skip it instead; it was queued from a partial that
+            # never actually settled as previewed.
+            _logger.warning(
+                "l10n_ve_use_foreign_exchange_diff: could not locate the "
+                "settlement partial for move %s (source %s) -- skipping the "
+                "standalone entry instead of posting one that could never "
+                "be reversed automatically.",
+                self.move_id.id, self.id,
+            )
+            return self.env['account.move']
+
         journal = self._get_exchange_journal(company)
         exchange_account = self._get_exchange_account(company, amount_foreign)
         if not journal or not exchange_account:
@@ -843,20 +871,13 @@ class AccountMoveLine(models.Model):
         })
         move.with_context(validate_analytic=False)._post(soft=False)
 
-        if partial:
-            # Claims this move as the partial's own exchange-diff move --
-            # from here on, breaking this exact settlement (removing
-            # `partial`) makes core reverse `move` automatically, the same
-            # way it already does for its own native exchange entries.
-            partial.exchange_move_id = move.id
-        else:
-            _logger.warning(
-                "l10n_ve_use_foreign_exchange_diff: could not locate the "
-                "settlement partial for move %s (source %s) -- entry %s "
-                "was created but will NOT be reversed automatically if "
-                "this reconciliation is later undone.",
-                self.move_id.id, self.id, move.id,
-            )
+        # Claims this move as the partial's own exchange-diff move -- from
+        # here on, breaking this exact settlement (removing `partial`) makes
+        # core reverse `move` automatically, the same way it already does
+        # for its own native exchange entries. `partial` is guaranteed here:
+        # the no-partial case returns early above instead of posting an
+        # orphan.
+        partial.exchange_move_id = move.id
         return move
 
     # ── "Reconciled Items" must surface the standalone entry too ──

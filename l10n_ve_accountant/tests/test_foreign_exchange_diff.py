@@ -366,6 +366,35 @@ class TestForeignExchangeDiff(TransactionCase):
         )
         self.assertEqual(first, second, "Re-processing the SAME settlement must reuse exchange_move_id, not duplicate")
 
+    def test_create_standalone_entry_skips_when_no_settlement_partial(self):
+        """Regression: a descriptor queued for a settlement that never
+        actually happened (e.g. left over from a wizard preview -- see
+        `test_shadowed_aml_values_preview_does_not_queue_standalone_entry`)
+        must not produce an orphan posted move -- without a real
+        `account.partial.reconcile` there's nothing to hook `exchange_move_id`
+        on for automatic reversal.
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        # No `booking_ves_per_usd` here: `self.booking_date` already has a
+        # rate from the invoice above, and `res.currency.rate` allows only
+        # one rate per (currency, day).
+        other_move = self._create_invoice(50.0)
+        receivable_line = move.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        other_receivable_line = other_move.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        before = self.env["account.move"].search([
+            ("journal_id", "=", self.company.currency_exchange_journal_id.id),
+        ])
+        result = receivable_line._create_standalone_foreign_exchange_difference_entry(
+            other_receivable_line, 0.5, self.today,
+        )
+        after = self.env["account.move"].search([
+            ("journal_id", "=", self.company.currency_exchange_journal_id.id),
+        ])
+
+        self.assertFalse(result, "Without a real settlement partial, no move must be created")
+        self.assertEqual(before, after, "No orphan entry must be posted to the exchange-diff journal")
+
     def test_standalone_entry_reversed_when_reconciliation_broken(self):
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
         self._set_usd_rate(self.settlement_date, 50.0)
@@ -648,6 +677,54 @@ class TestForeignExchangeDiff(TransactionCase):
             "No entry should be created while core's own exchange-diff logic is suppressed",
         )
 
+    def test_shadowed_aml_values_preview_does_not_queue_standalone_entry(self):
+        """Regression: replicates exactly what the Enterprise reconcile
+        wizard's `_compute_reco_wizard_data` does on every UI recompute --
+        it calls this same reconciliation-preview machinery with
+        `shadowed_aml_values`, to paint residuals on screen BEFORE anything
+        is confirmed. Without the guard, this queued a standalone entry
+        that a later, differently-confirmed reconciliation could flush as
+        a real posted move nothing in the UI ever asked for.
+        Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
+        """
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        payment = self.env["account.payment"].with_company(self.company).create({
+            "amount": move.amount_total,
+            "date": self.settlement_date,
+            "currency_id": self.currency_vef.id,
+            "payment_type": "inbound",
+            "partner_type": "customer",
+            "partner_id": self.partner.id,
+            "journal_id": self.bank_journal.id,
+            "payment_method_line_id": self.bank_journal.inbound_payment_method_line_ids[:1].id,
+        })
+        payment.action_post()
+        receivable_line = move.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        payment_line = payment.move_id.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        amls = receivable_line + payment_line
+        shadowed_aml_values = {aml: {} for aml in amls}
+        plan_list, all_amls = amls._optimize_reconciliation_plan([amls], shadowed_aml_values=shadowed_aml_values)
+        aml_values_map = {
+            aml: {
+                "aml": aml,
+                "amount_residual": aml.amount_residual,
+                "amount_residual_currency": aml.amount_residual_currency,
+            }
+            for aml in all_amls
+        }
+        amls._prepare_reconciliation_plan(plan_list[0], aml_values_map, shadowed_aml_values=shadowed_aml_values)
+
+        self.assertFalse(
+            getattr(self.env.cr, "_l10n_ve_foreign_exchange_pending", None),
+            "A preview call with shadowed_aml_values must not queue a standalone entry",
+        )
+        self.assertFalse(
+            receivable_line.matched_debit_ids or receivable_line.matched_credit_ids,
+            "Setup sanity: the preview call must not have actually reconciled anything",
+        )
+
     def test_amount_residual_currency_branch_is_covered(self):
         """VES invoice paid from a USD journal: core fixes this via the
         `amount_residual_currency` branch (`debit`/`credit` both 0).
@@ -805,6 +882,50 @@ class TestForeignExchangeDiff(TransactionCase):
         for (orig_debit, orig_credit), rev_line in zip(original_amounts, reversal_lines):
             self.assertAlmostEqual(rev_line.foreign_debit, orig_credit, places=6)
             self.assertAlmostEqual(rev_line.foreign_credit, orig_debit, places=6)
+
+    def test_credit_note_with_tax_stays_balanced_in_alternate_currency(self):
+        """Regression: `_reverse_moves` must NOT touch a credit note's
+        `foreign_debit`/`foreign_credit` at all -- core doesn't preserve
+        line order when copying a credit note (tax/payment-term lines get
+        regenerated in a different order than the invoice), so matching
+        by position instead of by `l10n_ve_exchange_foreign_diff_entry` +
+        `id` used to swap the wrong lines and leave the note descuadrada
+        in the alternate currency, even with the toggle off.
+        """
+        tax = self.env["account.tax"].create({"name": "IVA 16", "amount": 16, "type_tax_use": "sale"})
+        self._set_usd_rate(self.booking_date, 40.0)
+        move = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "currency_id": self.currency_vef.id,
+            "invoice_date": self.booking_date,
+            "invoice_date_display": self.booking_date,
+            "date": self.booking_date,
+            "invoice_line_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "quantity": 10,
+                "price_unit": 100.0,
+                "tax_ids": [(6, 0, tax.ids)],
+            })],
+        })
+        move.with_context(move_action_post_alert=True).action_post()
+
+        wizard = self.env["account.move.reversal"].with_context(
+            active_model="account.move", active_ids=move.ids,
+        ).create({
+            "date": self.settlement_date,
+            "journal_id": move.journal_id.id,
+            "reason": "test",
+        })
+        refund = self.env["account.move"].browse(wizard.refund_moves()["res_id"])
+        refund.with_context(move_action_post_alert=True).action_post()
+
+        self.assertAlmostEqual(
+            sum(refund.line_ids.mapped("foreign_debit")),
+            sum(refund.line_ids.mapped("foreign_credit")),
+            places=2,
+            msg="A credit note's alternate-currency amounts must stay balanced after reversal",
+        )
 
     # ── `open_reconcile_view`: the standalone entry must surface in
     # "Reconciled Items" even though it is never itself reconciled ──

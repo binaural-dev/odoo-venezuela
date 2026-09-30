@@ -133,9 +133,13 @@ primera entrega:
 - **Reversión rota**: `_reverse_moves` (core) nunca tocaba
   `foreign_debit`/`foreign_credit` al revertir — la reversión duplicaba o
   anulaba el monto alterno en vez de invertirlo. Corregido con un override
-  que invierte esos campos explícitamente, más una red de seguridad en
-  `account_partial_reconcile.unlink()` para cuando un módulo de terceros
-  (`l10n_ve_igtf`) rompe la conciliación por un camino no estándar.
+  acotado a los asientos propios de esta funcionalidad
+  (`l10n_ve_exchange_foreign_diff_entry=True`) que invierte esos campos
+  explícitamente, emparejando líneas por `id` (nunca por posición: el core
+  no conserva el orden de líneas al copiar una nota de crédito), más una
+  red de seguridad en `account_partial_reconcile.unlink()` para cuando un
+  módulo de terceros (`l10n_ve_igtf`) rompe la conciliación por un camino
+  no estándar.
 - **Filtro de estado**: ambas vías de visibilidad ahora excluyen entradas
   con `reversal_move_ids` seteado — antes, un asiento ya revertido seguía
   apareciendo en la factura.
