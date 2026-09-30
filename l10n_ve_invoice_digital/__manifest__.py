@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.4.3",
+    "version": "19.0.1.4.4",
     "depends": [
         "account",
         "l10n_ve_igtf",
@@ -13,6 +13,7 @@
         "l10n_ve_invoice",
         "l10n_ve_payment_extension",
         "l10n_ve_contact",
+        "binaural_mail_auto_blacklist",
     ],
     "external_dependencies": {"python": ["requests", "pytz"]},
     "images": ["static/description/icon.png"],
