@@ -683,7 +683,14 @@ class TestIGTFNEW(IGTFTestCommon):
         )
 
         invoice.with_context({}).js_remove_outstanding_partial(partial_reconcile.id)
-        
+
+        invoice = self.env['account.move'].browse(invoice.id)
+        self.assertEqual(
+            invoice.payment_state, 'not_paid',
+            f"Tras desconciliar el cruce de anticipo, payment_state debe volver a "
+            f"'not_paid', no quedar en {invoice.payment_state!r}"
+        )
+
     def test12_payment_from_invoice_with_igtf_journal_desconciliation(self):
         
         invoice_amount = float(2691.20)
