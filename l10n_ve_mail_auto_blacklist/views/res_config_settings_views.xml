@@ -15,18 +15,22 @@
                                 <label for="l10n_ve_auto_blacklist_threshold" class="col-lg-5 o_light_label"/>
                                 <field name="l10n_ve_auto_blacklist_threshold" class="oe_inline"/>
                             </div>
+                            <div class="text-muted">Number of delivery failures (bounces or SMTP refusals) an address must reach before being automatically blacklisted.</div>
                             <div class="row">
                                 <label for="l10n_ve_auto_blacklist_window_days" class="col-lg-5 o_light_label"/>
                                 <field name="l10n_ve_auto_blacklist_window_days" class="oe_inline"/>
                             </div>
+                            <div class="text-muted">Only failures of the last X days are counted. 0 = no time limit.</div>
                             <div class="row">
                                 <label for="l10n_ve_auto_blacklist_min_spread_days" class="col-lg-5 o_light_label"/>
                                 <field name="l10n_ve_auto_blacklist_min_spread_days" class="oe_inline"/>
                             </div>
+                            <div class="text-muted">Minimum number of days between the first and the last counted failure, to avoid blacklisting because of a temporary server issue. 0 = no constraint.</div>
                             <div class="row">
                                 <label for="l10n_ve_auto_blacklist_count_smtp_errors" class="col-lg-5 o_light_label"/>
                                 <field name="l10n_ve_auto_blacklist_count_smtp_errors"/>
                             </div>
+                            <div class="text-muted">Also count emails refused by the SMTP server because of the recipient address (e.g. 550 mailbox unavailable), not only bounces received afterwards.</div>
                             <div class="mt8">
                                 <button type="action" name="%(l10n_ve_mail_auto_blacklist.mail_bounce_event_action)d"
                                         string="Delivery Failures" icon="oi-arrow-right" class="oe_link"/>
