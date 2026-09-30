@@ -604,13 +604,15 @@ class AccountRetention(models.Model):
         amounts.
 
         Detaches every retention line from its (now draft) payment and
-        deletes the old payment(s) outright, instead of leaving them around
-        for action_post() to reuse: _create_payments_from_retention_lines()
-        skips creating any payment at all as soon as retention.payment_ids
-        is non-empty (it has no notion of "this specific move's payment is
-        stale, recreate only that one") - if the old payments were left
-        linked, a retention covering several invoices would end up with some
-        of them missing a payment entirely after the resync. Deleting them
+        cancels the old payment(s) - properly, through account.payment's own
+        accounting cancel flow, never a raw ORM unlink of a posted journal
+        entry - instead of leaving them around for action_post() to reuse:
+        _create_payments_from_retention_lines() skips creating any payment
+        at all as soon as retention.payment_ids is non-empty (it has no
+        notion of "this specific move's payment is stale, recreate only
+        that one") - if the old payments were left linked, a retention
+        covering several invoices would end up with some of them missing a
+        payment entirely after the resync. Cancelling and detaching them
         first guarantees action_post() rebuilds payment_ids for every move
         of this retention from scratch, with the just-synced line amounts.
 
@@ -618,15 +620,46 @@ class AccountRetention(models.Model):
         retention payment (see AccountPayment.action_draft()) unless called
         under bypass_retention_lock - passed here since resetting the
         payment is exactly what this recalculation flow is meant to do.
+
+        Detaching the old payments follows the exact same safe sequence
+        already used by action_cancel() (draft -> cancel -> detach
+        retention_id -> clear the One2many) instead of a plain
+        `self.write({"payment_ids": [Command.clear()]})`: since payment_ids
+        is a One2many whose inverse (retention_id) is not nullable in
+        practice for a retention payment, clearing it while retention_id is
+        still set makes the ORM delete the (posted) account.payment/
+        account.move outright, which account.move.unlink() then blocks with
+        "You cannot delete a journal item that is posted...". Cancelling the
+        payment first (a real, reversible accounting operation) and only
+        then detaching retention_id keeps Command.clear() a no-op unlink of
+        already-orphaned records.
         """
         self.ensure_one()
         old_payments = self.payment_ids
         if not old_payments:
             return
+        ctx = dict(self.env.context, bypass_retention_lock=True, force_delete=True)
+
         self.with_context(bypass_retention_lock=True).action_draft()
-        self.retention_line_ids.write({"payment_id": False})
+
+        reconciled_lines = old_payments.mapped("move_id.line_ids").filtered(
+            lambda l: l.reconciled
+        )
+        if reconciled_lines:
+            reconciled_lines.with_context(ctx).remove_move_reconcile()
+
+        old_payments.with_context(ctx).action_cancel()
+        old_payments.with_context(ctx).write({
+            "retention_id": False,
+            "is_retention": False,
+            "payment_type_retention": False,
+            "retention_ref": False,
+        })
+
+        self.retention_line_ids.with_context(bypass_retention_lock=True).write(
+            {"payment_id": False}
+        )
         self.write({"payment_ids": [Command.clear()]})
-        old_payments.with_context(bypass_retention_lock=True).unlink()
         self.message_post(
             body=_(
                 "Retention reset to draft and payment(s) removed to apply"
