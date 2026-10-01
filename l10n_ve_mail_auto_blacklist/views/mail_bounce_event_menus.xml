@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <menuitem id="mail_bounce_event_menu"
+              name="Delivery Failures"
+              action="mail_bounce_event_action"
+              parent="mass_mailing.mass_mailing_configuration"
+              groups="base.group_system"
+              sequence="22"/>
+</odoo>
