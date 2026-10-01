@@ -1,3 +1,4 @@
+import email as email_module
 from datetime import timedelta
 
 from odoo import fields
@@ -322,6 +323,20 @@ class TestAutoBlacklist(TransactionCase):
         self.assertEqual(self.BounceEvent._classify_bounce_type(False), 'soft')
         self.assertEqual(self.BounceEvent._classify_bounce_type('no recognizable signal here'), 'soft')
 
+    def test_classify_bounce_type_custom_default(self):
+        """ Callers that already know the failure can only be one kind (e.g. a
+        synchronous SMTP refusal) may override the inconclusive-case default. """
+        self.assertEqual(self.BounceEvent._classify_bounce_type('no recognizable signal here', default='hard'), 'hard')
+        # an explicit signal still wins over the caller's default
+        self.assertEqual(self.BounceEvent._classify_bounce_type('Status: 4.2.2', default='hard'), 'soft')
+
+    def test_classify_bounce_type_any_smtp_code(self):
+        """ Per RFC 5321 any 5xx is permanent and any 4xx is temporary, not
+        just the handful of codes seen in practice. """
+        self.assertEqual(self.BounceEvent._classify_bounce_type('501 5.5.4 Syntax error'), 'hard')
+        self.assertEqual(self.BounceEvent._classify_bounce_type('535 Authentication failed'), 'hard')
+        self.assertEqual(self.BounceEvent._classify_bounce_type('432 Recipient temporarily unavailable'), 'soft')
+
     def test_register_failures_stores_given_bounce_type(self):
         self.BounceEvent._register_failures([self.email], 'bounce', bounce_type='hard')
         event = self.BounceEvent.search([('email', '=', self.email)])
@@ -349,6 +364,62 @@ class TestAutoBlacklist(TransactionCase):
         event = self.BounceEvent.search([('email', '=', self.email)])
         self.assertEqual(event.bounce_type, 'soft')
 
+    def test_smtp_recipient_refused_without_code_defaults_to_hard(self):
+        """ RECIPIENT_REFUSED_RE also matches the bare 'SMTPRecipientsRefused'
+        string with no code attached; without a concrete 4xx/5xx signal to read,
+        it must still default to 'hard' (a recipient-level refusal context),
+        not fall through to the generic 'soft' default. """
+        self._set_config(threshold=1)
+        mail = self.env['mail.mail'].create({'email_to': self.email, 'subject': 'Test'})
+        mail._postprocess_sent_message(
+            [], [], failure_reason='SMTPRecipientsRefused: %s' % self.email, failure_type='unknown')
+        event = self.BounceEvent.search([('email', '=', self.email)])
+        self.assertEqual(event.bounce_type, 'hard')
+
+    def _build_multi_recipient_dsn(self, status_by_recipient):
+        boundary = 'TEST_BOUNDARY'
+        blocks = ''.join(
+            'Action: %s\nStatus: %s\nFinal-Recipient: rfc822;%s\n\n' % (
+                'failed' if status.startswith('5') else 'delayed', status, recipient,
+            )
+            for recipient, status in status_by_recipient.items()
+        )
+        raw = (
+            'From: Mail Delivery Subsystem <mailer-daemon@example.com>\n'
+            'To: sender@example.com\n'
+            'Subject: Delivery Status Notification (Mixed)\n'
+            'Content-Type: multipart/report; report-type=delivery-status; boundary="%s"\n'
+            '\n'
+            '--%s\n'
+            'Content-Type: text/plain; charset=utf-8\n'
+            '\n'
+            'Some recipients failed.\n'
+            '\n'
+            '--%s\n'
+            'Content-Type: message/delivery-status\n'
+            '\n'
+            'Reporting-MTA: dns;mx.example.com\n'
+            '\n'
+            '%s'
+            '--%s--\n'
+        ) % (boundary, boundary, boundary, blocks, boundary)
+        return email_module.message_from_bytes(raw.encode('utf-8'))
+
+    def test_extract_bounce_text_picks_the_matching_recipient_block(self):
+        """ A single DSN can carry one block per original recipient; reading
+        whichever Status: appears first in the concatenated text (instead of
+        the block for the recipient we are actually registering) would
+        misclassify one of the two addresses below. """
+        msg = self._build_multi_recipient_dsn({
+            'soft-one@example.com': '4.2.2',
+            'hard-two@example.com': '5.1.1',
+        })
+        MailThread = self.env['mail.thread']
+        text_for_hard = MailThread._l10n_ve_extract_bounce_text(msg, 'hard-two@example.com')
+        self.assertEqual(self.BounceEvent._classify_bounce_type(text_for_hard), 'hard')
+        text_for_soft = MailThread._l10n_ve_extract_bounce_text(msg, 'soft-one@example.com')
+        self.assertEqual(self.BounceEvent._classify_bounce_type(text_for_soft), 'soft')
+
     # ------------------------------------------------------------
     # BLACKLIST UI HELPERS
     # ------------------------------------------------------------
@@ -372,6 +443,34 @@ class TestAutoBlacklist(TransactionCase):
         record = self.Blacklist.search([('email', '=', self.email)])
         action = record.action_l10n_ve_view_bounce_events()
         self.assertEqual(action['domain'], [('email', '=', self.email)])
+
+    def test_action_view_bounce_events_merges_context(self):
+        """ The action's own context (search_default_group_by_email=1, set on
+        the <ir.actions.act_window> record) must survive alongside the
+        override, not get wiped by a full reassignment. """
+        self._set_config(threshold=1)
+        self.BounceEvent._register_failures([self.email], 'bounce')
+        record = self.Blacklist.search([('email', '=', self.email)])
+        base_action = self.env.ref('l10n_ve_mail_auto_blacklist.mail_bounce_event_action')
+        self.assertIn('search_default_group_by_email', base_action.context)
+        action = record.action_l10n_ve_view_bounce_events()
+        self.assertEqual(action['context'].get('search_default_group_by_email'), 0)
+
+    def test_blacklist_bounce_info_does_not_mix_up_emails(self):
+        """ The batched compute (one query for all records, not one per email)
+        must still attribute the right count/type to the right record. """
+        self._set_config(threshold=1)
+        other_email = 'other-bouncing@example.com'
+        self.BounceEvent._register_failures([self.email], 'bounce', bounce_type='soft')
+        self.BounceEvent._register_failures([self.email], 'bounce', bounce_type='hard')
+        self.BounceEvent._register_failures([other_email], 'bounce', bounce_type='soft')
+
+        record = self.Blacklist.search([('email', '=', self.email)])
+        other_record = self.Blacklist.search([('email', '=', other_email)])
+        self.assertEqual(record.l10n_ve_bounce_event_count, 2)
+        self.assertEqual(record.l10n_ve_last_bounce_type, 'hard')
+        self.assertEqual(other_record.l10n_ve_bounce_event_count, 1)
+        self.assertEqual(other_record.l10n_ve_last_bounce_type, 'soft')
 
     def test_config_settings_constraints(self):
         Settings = self.env['res.config.settings']
