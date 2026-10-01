@@ -15,7 +15,8 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
         self.Account = self.env["account.account"]
         self.Journal = self.env["account.journal"]
         self.company = self.env.ref("base.main_company")
-        
+        self._correlative_seq = 0
+
 
         # 1. Configuración de Monedas
         self.currency_vef = self.env.ref("base.VEF") 
@@ -385,6 +386,13 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
                     f"Monto IGTF en asiento incorrecto. Esperado: {igtf_amount}, Encontrado: {find_amount} "
                     f"en la cuenta {acc_igtf.code}")
 
+    def _next_correlative(self):
+        """Número de control único por factura -- _check_correlative exige
+        unicidad por proveedor y el valor fijo original chocaba en cualquier
+        test que creara mas de una factura para el mismo partner."""
+        self._correlative_seq += 1
+        return f"12345698741256{self._correlative_seq}"
+
     def _create_invoice_usd(self, amount, date=None): # 💡 ACEPTA FECHA
         sale_journal = self.Journal.search([("type", "=", "purchase")], limit=1)
         if not sale_journal:
@@ -396,7 +404,7 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
       
         with Form(self.env["account.move"].with_context(default_move_type='in_invoice',default_journal_id=sale_journal)) as inv_form:
             inv_form.partner_id = self.partner
-            inv_form.correlative = "12345698741256"
+            inv_form.correlative = self._next_correlative()
             inv_form.invoice_date = date or fields.Date.today()
             inv_form.currency_id = self.currency_usd
             inv_form.save() 
@@ -424,7 +432,7 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
 
       
         with Form(self.env["account.move"].with_context(default_move_type='in_invoice',default_journal_id=sale_journal)) as inv_form:
-            inv_form.correlative = "12345698741256"
+            inv_form.correlative = self._next_correlative()
             inv_form.partner_id = self.partner
             inv_form.invoice_date = date or fields.Date.today()
             inv_form.currency_id = self.currency_vef
