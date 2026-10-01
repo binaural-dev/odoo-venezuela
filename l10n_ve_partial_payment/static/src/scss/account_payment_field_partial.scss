@@ -1,12 +1,17 @@
 .o_l10n_ve_partial_payment_popover {
-    min-width: 220px;
+    // Fixed (not min-) width: Odoo 19's popover repositions itself when its
+    // size changes, and the "Remaining payment balance" preview changes its
+    // digit count live as the user types -- a fixed width keeps the
+    // popover from jumping position on every keystroke.
+    width: 18rem;
 
     .popover-header {
         font-size: 0.95rem;
         font-weight: 600;
     }
 
-    .o_l10n_ve_partial_payment_available {
+    .o_l10n_ve_partial_payment_available,
+    .o_l10n_ve_partial_payment_remaining {
         font-size: 0.8rem;
     }
 
