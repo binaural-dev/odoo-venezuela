@@ -322,7 +322,44 @@ class AccountMove(models.Model):
                         max=origin_total_all,
                     ))
 
+    def _check_dates_not_in_future(self):
+        """Factura, nota de crédito, nota de débito o recibo (venta o
+        compra): ninguna de sus fechas puede quedar en el futuro al
+        confirmar (ticket #15450 -- fecha de documento posterior a hoy).
+        Solo corre en `action_post` -- un borrador puede guardarse con
+        fecha futura, pero no confirmarse así.
+        """
+        today = fields.Date.context_today(self)
+        field_names = ("invoice_date", "invoice_date_display", "date")
+        # La etiqueta de cada campo se toma de su propio `string`, ya
+        # traducido por `fields_get` -- NO se hardcodea aquí: invoice_date
+        # en este vertical está sobreescrito a "Rate Date" (l10n_ve_accountant,
+        # usado solo para la tasa de cambio), distinto del "Invoice/Bill
+        # Date" de core. Leerlo dinámicamente evita que el mensaje muestre
+        # una etiqueta que ya no es la que el usuario ve en el formulario.
+        field_descriptions = self.fields_get(list(field_names))
+        for move in self:
+            # Todo lo que no es factura/NC/ND (venta o compra) es 'entry'
+            # (asiento contable) -- is_invoice(include_receipts=True) cubre
+            # los 6 move_type restantes y deja afuera solo 'entry', igual
+            # que el patrón ya usado en _check_invoice_date_display_purchases.
+            if not move.is_invoice(include_receipts=True):
+                continue
+            for field_name in field_names:
+                value = move[field_name]
+                if value and value > today:
+                    raise ValidationError(
+                        _(
+                            "%(field)s (%(value)s) cannot be later than "
+                            "today (%(today)s) to confirm this document.",
+                            field=field_descriptions[field_name]["string"],
+                            value=format_date(self.env, value),
+                            today=format_date(self.env, today),
+                        )
+                    )
+
     def action_post(self):
+        self._check_dates_not_in_future()
 
         for record in self:
             if record.move_type in (
