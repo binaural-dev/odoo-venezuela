@@ -80,8 +80,18 @@
                        decoration-muted="tfhka_digitalization_state == 'not_applicable'"
                        decoration-primary="tfhka_digitalization_state == 'none'"
                        optional="show"/>
+                <field name="tfhka_batch_ref" string="TFHKA Batch" optional="hide"/>
             </xpath>
         </field>
+    </record>
+
+    <record id="action_server_tfhka_create_batch" model="ir.actions.server">
+        <field name="name">Generate TFHKA Digitalization Batch</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_tfhka_create_batch()</field>
     </record>
 
     <record id="view_account_invoice_filter_inherit_tfhka_digitalization" model="ir.ui.view">
