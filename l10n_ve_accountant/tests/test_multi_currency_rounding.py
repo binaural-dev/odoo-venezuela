@@ -4,6 +4,8 @@ from datetime import timedelta
 from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
 from odoo.exceptions import UserError
+from odoo.exceptions import ValidationError
+from odoo.tools.misc import formatLang
 
 _logger = logging.getLogger(__name__)
 
@@ -177,13 +179,20 @@ class TestMultiCurrencyRounding(TransactionCase):
         return (abs(line.foreign_debit - exp_fd) < 0.01 and
                 abs(line.foreign_credit - exp_fc) < 0.01)
 
-    def _create_invoice(self, currency, pricelist, lines_data, move_type='out_invoice'):
-        """Crea y publica una factura.
-        lines_data: list of (qty, price_unit, [tax_records])
+    def _create_invoice(self, currency, pricelist, lines_data, move_type='out_invoice', post=True):
+        """Crea (y por defecto publica) una factura.
+        lines_data: list of (qty, price_unit, [tax_records]) or (qty, price_unit,
+        [tax_records], product) -- the optional 4th element overrides `self.product`
+        (e.g. a discount product, to exercise `_get_discount_lines()`).
         move_type: 'out_invoice' (default), 'in_invoice', 'out_refund' or 'in_refund' --
         `in_invoice`/`out_refund` (Odoo's `is_outbound()` types) have `direction_sign == 1`,
         the OPPOSITE of `out_invoice`/`in_refund`'s `-1`; refunds also use
         `refund_repartition_line_ids` instead of `invoice_repartition_line_ids`.
+        post=False: leaves the move in 'draft' -- needed to exercise
+        `_sync_tax_lines` (it skips non-draft moves outright, see its own
+        `if move.state != 'draft': continue`), e.g. to test the
+        `tax_totals` pencil-edit the way the UI actually allows it
+        (`can_edit_tax_totals`'s view domain requires `state == 'draft'`).
         """
         is_purchase = move_type in ('in_invoice', 'in_refund')
         # Buscar o crear lista de precios en la moneda adecuada
@@ -228,7 +237,8 @@ class TestMultiCurrencyRounding(TransactionCase):
                 for i, (qty, pu, taxes) in enumerate(lines_data)
             ],
         }])[0]
-        inv.action_post()
+        if post:
+            inv.action_post()
         return inv
 
     def _create_payment(self, inv, currency, bank_journal, amount):
@@ -1358,6 +1368,163 @@ class TestMultiCurrencyRounding(TransactionCase):
 
         with self.assertRaises(UserError):
             self._edit_tax_totals_by(inv.with_user(outsider), 0.01)
+
+    def test_59_tax_totals_edit_resyncs_foreign_balance_and_payment_term(self):
+        """Regression for TI-15432 bug 2: the pencil-edit on `tax_totals`
+        only touches the tax line's `amount_currency`/`balance` directly
+        (`_inverse_tax_totals`) -- it never touches any base/product line.
+        Before the fix, `_round_mode` had no branch for "only the tax lines
+        changed", fell through every check and returned `None`, so
+        `_sync_tax_lines` skipped the move entirely: `foreign_balance` on
+        both the tax line and the payment_term line that plugs it stayed
+        frozen at their pre-edit value, leaving the alternate-currency
+        ledger unbalanced.
+
+        Matches the real reported scenario exactly: company
+        `currency_id` = VEF (functional/company currency, where `balance`
+        lives) and `foreign_currency_id` = USD (the alternate ledger,
+        where `foreign_balance`/`foreign_debit`/`foreign_credit` live) --
+        and the invoice itself (`move.currency_id`) is ALSO USD, i.e. the
+        alternate currency coincides with the document currency, same as
+        `test_56`/`test_57`/`test_58`. The fields under test
+        (`foreign_debit`/`foreign_credit`/`foreign_balance`) are
+        currency-agnostic; they just happen to be USD-denominated here
+        because of this company's configuration, not because they are
+        VES-specific.
+
+        Kept in 'draft' on purpose (`post=False`): `_sync_tax_lines` skips
+        non-draft moves outright (`if move.state != 'draft': continue`),
+        and `can_edit_tax_totals`'s view domain only allows this edit while
+        `state == 'draft'` in the first place -- a posted move never
+        reaches the code this test is regression-testing.
+        """
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice', post=False)
+
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        pt_line = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
+        self.assertEqual(len(tax_line), 1)
+        self.assertEqual(len(pt_line), 1)
+
+        old_tax_foreign_balance = tax_line.foreign_balance
+        old_pt_foreign_balance = pt_line.foreign_balance
+
+        tolerance = self.company.tax_totals_edit_tolerance
+        self.assertEqual(tolerance, 0.03, "Precondición: tolerancia default de la compañía.")
+
+        # Mimics the widget exactly like `test_56`/`test_57`/`test_58`: a
+        # small delta (the exact one from the real reported case, $32.00
+        # -> $32.03) within the allowed tolerance.
+        delta = tolerance
+        old_tax_amount_currency = tax_line.amount_currency
+        tax_line = self._edit_tax_totals_by(inv, delta)
+        pt_line = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
+
+        self.assertAlmostEqual(
+            tax_line.amount_currency, old_tax_amount_currency + delta, places=2,
+            msg="Precondición: el monto editado no llegó a la línea de impuesto real.",
+        )
+
+        # The bug: foreign_balance frozen at its pre-edit value.
+        self.assertNotAlmostEqual(
+            tax_line.foreign_balance, old_tax_foreign_balance, places=2,
+            msg=(
+                "La línea de impuesto no resincronizó foreign_balance tras "
+                "la edición manual del lápiz -- el lado alterno (USD, en "
+                "esta configuración) quedó congelado en su valor pre-edición."
+            ),
+        )
+        self.assertNotAlmostEqual(
+            pt_line.foreign_balance, old_pt_foreign_balance, places=2,
+            msg=(
+                "La línea de payment_term no se reajustó tras la edición "
+                "manual -- debió recuadrar contra el nuevo foreign_balance "
+                "de la línea de impuesto."
+            ),
+        )
+
+        # foreign_debit/foreign_credit must stay consistent with the new
+        # foreign_balance on every affected line (same invariant test_01/
+        # test_02 already check for the untouched case).
+        for line in inv.line_ids:
+            self.assertTrue(
+                self._check_foreign(line),
+                f"Línea {line.display_type}: foreign_debit/credit inconsistentes "
+                f"tras la edición manual del lápiz.",
+            )
+
+        # The alternate-currency ledger as a whole must stay balanced:
+        # total foreign_debit == total foreign_credit on the move.
+        total_foreign_debit = sum(inv.line_ids.mapped('foreign_debit'))
+        total_foreign_credit = sum(inv.line_ids.mapped('foreign_credit'))
+        self.assertAlmostEqual(
+            total_foreign_debit, total_foreign_credit, places=2,
+            msg=(
+                "El asiento quedó descuadrado en moneda alterna tras la "
+                "edición manual del lápiz (foreign_debit != foreign_credit)."
+            ),
+        )
+
+        # The company-currency (VEF) side must stay exactly as
+        # `_inverse_tax_totals` left it -- the whole point of the manual
+        # edit is that it's already correct and tolerance-validated; the
+        # fix must only touch the alternate side, never re-derive `balance`
+        # from the base lines and silently discard the manual edit.
+        self.assertAlmostEqual(
+            tax_line.balance, inv.company_currency_id.round(tax_line.amount_currency / inv.invoice_currency_rate),
+            places=2,
+            msg="El lado en moneda de la compañía (VEF) no debió recalcularse a partir de las líneas base.",
+        )
+
+    def test_60_tax_totals_edit_logs_chatter_message(self):
+        """Regression for TI-15432 bug 3: a manual `tax_totals` edit that
+        actually gets applied (non-zero delta, within tolerance) must leave
+        a trace on the invoice's chatter -- who changed it, which tax
+        group, and the old -> new amount -- not just silently mutate the
+        tax line."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice', post=False)
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        old_amount = tax_line.amount_currency
+        messages_before = len(inv.message_ids)
+
+        delta = self.company.tax_totals_edit_tolerance
+        self._edit_tax_totals_by(inv, delta)
+
+        messages_after = inv.message_ids
+        self.assertGreater(
+            len(messages_after), messages_before,
+            "La edición manual del lápiz debió dejar un mensaje nuevo en el chatter.",
+        )
+        last_message = messages_after.sorted('id', reverse=True)[0]
+        self.assertEqual(
+            last_message.author_id, self.env.user.partner_id,
+            "El mensaje del chatter no registró al usuario que hizo la edición manual.",
+        )
+        self.assertIn(self.tax_group.name, last_message.body)
+        # Old and new amounts (both formatted with the invoice's currency,
+        # like `formatLang` does) must show up in the message body -- the
+        # stored body is HTML-sanitized (e.g. the non-breaking space
+        # `formatLang` puts between amount and currency symbol comes back
+        # as the literal `&nbsp;` entity, not the raw '\xa0' char), so
+        # normalize before comparing.
+        # `Markup.replace()` HTML-escapes its own arguments before
+        # applying them (it's a `str` subclass that re-escapes for
+        # safety), so '&nbsp;' would itself become '&amp;nbsp;' and never
+        # match -- cast to plain `str` first to do a literal substitution.
+        body = str(last_message.body).replace('&nbsp;', '\N{NO-BREAK SPACE}')
+        self.assertIn(
+            formatLang(self.env, old_amount, currency_obj=inv.currency_id), body,
+            "El mensaje del chatter no menciona el monto anterior.",
+        )
+        self.assertIn(
+            formatLang(self.env, old_amount + delta, currency_obj=inv.currency_id), body,
+            "El mensaje del chatter no menciona el monto nuevo.",
+        )
 
     def test_35_unreconcile_normal_payment_updates_payment_state(self):
         """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`

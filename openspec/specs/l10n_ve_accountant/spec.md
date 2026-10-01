@@ -223,6 +223,38 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 
 (`_compute_tax_totals` de `account.move`, `l10n_ve_accountant/models/account_move.py`, delega directo a `super()` sin fijar `active_id`/`active_model` por registro -- ese `with_context()` por registro causaba un `RecursionError` real en cadenas de `super()` profundas al conciliar pagos; la prioridad de `base_lines` sobre el contexto de arriba es lo que hace seguro quitarlo. Cubierto por `l10n_ve_accountant/tests/test_coverage_gaps.py::test_39b_tax_totals_record_derived_from_base_lines_ignores_stale_active_id`.)
 
+### Requirement: Edición manual del resumen de impuestos (`tax_totals`) vía lápiz
+
+Cuando el usuario pertenece al grupo `l10n_ve_accountant.group_fiscal_config_support`, el formulario de factura DEBE (MUST) permitir editar manualmente el monto de un grupo de impuesto directamente en el widget `tax_totals`, mientras la factura está en borrador (`state == 'draft'`) -- con el mismo ícono de lápiz (`fa fa-pencil`) que el widget nativo de Odoo junto al monto editable, no solo el click habilitado sin esa señal visual. Usuarios fuera de ese grupo NO DEBEN (SHALL NOT) poder aplicar el cambio aunque lo intenten por escritura directa (no solo oculto en la vista): `_inverse_tax_totals` DEBE (MUST) rechazar la escritura con un `UserError` del lado servidor.
+
+La edición SOLO DEBE (MUST) aplicarse si el delta entre el monto calculado y el editado no supera `company_id.tax_totals_edit_tolerance` (configurable por compañía, default 0,03 en la moneda del documento); fuera de esa tolerancia el sistema DEBE (MUST) rechazar la escritura con un `UserError` que indique la diferencia y la tolerancia permitida, aunque el usuario sí pertenezca al grupo.
+
+Toda edición que efectivamente se aplique (delta distinto de cero y dentro de tolerancia) DEBE (MUST) dejar un rastro de auditoría en el chatter de la factura (`message_post`), consolidado en un único mensaje por guardado aunque hayan cambiado varios grupos de impuesto a la vez, indicando el usuario que hizo el cambio y, por cada grupo afectado, el monto anterior y el nuevo.
+
+La edición manual escribe directamente sobre `amount_currency`/`balance` de la línea de impuesto, sin tocar ninguna línea base/producto -- por eso el sistema DEBE (MUST) resincronizar también el lado de moneda alterna (`foreign_balance`/`foreign_debit`/`foreign_credit`) de esa misma línea de impuesto y de la línea `payment_term` que la cuadra (`_sync_tax_lines`/`_round_mode`, rama `'reapply_tax_lines'` -- ver el requirement "Corrección de redondeo multi-moneda (porción real)"), para que el asiento no quede descuadrado en moneda alterna tras la edición. Esa resincronización NO DEBE (SHALL NOT) recalcular el lado de moneda de la compañía (`balance`) a partir de las líneas base, ya que eso descartaría silenciosamente la edición manual recién validada por la tolerancia.
+
+#### Scenario: Edición dentro de tolerancia se aplica y queda auditada
+
+- **GIVEN** un usuario del grupo `group_fiscal_config_support` editando una factura en borrador
+- **WHEN** edita el monto de un grupo de impuesto con un delta dentro de `tax_totals_edit_tolerance`
+- **THEN** la línea de impuesto queda con el nuevo monto, y el chatter de la factura registra un mensaje con el usuario, el grupo afectado y el monto anterior y el nuevo (`test_56_tax_totals_edit_within_company_tolerance_succeeds`, `test_60_tax_totals_edit_logs_chatter_message`)
+
+#### Scenario: Edición fuera de tolerancia se rechaza
+
+- **WHEN** el delta editado supera `tax_totals_edit_tolerance`
+- **THEN** el sistema rechaza la escritura con un `UserError`, aunque el usuario pertenezca al grupo (`test_57_tax_totals_edit_beyond_company_tolerance_blocked`)
+
+#### Scenario: Usuario sin el grupo no puede editar ni por escritura directa
+
+- **WHEN** un usuario fuera de `group_fiscal_config_support` intenta aplicar el mismo cambio
+- **THEN** el sistema lo rechaza con un `UserError`, incluso si el intento no pasa por el widget (`test_58_tax_totals_edit_denied_for_user_without_fiscal_support_group`)
+
+#### Scenario: La edición resincroniza el lado de moneda alterna y la línea de payment_term
+
+- **GIVEN** una compañía con `currency_id` VEF y `foreign_currency_id` USD, y una factura en USD
+- **WHEN** se edita el monto de un grupo de impuesto dentro de tolerancia
+- **THEN** `foreign_balance` de la línea de impuesto y de la línea `payment_term` se recalculan a partir del nuevo monto, el total de `foreign_debit` sigue igualando al de `foreign_credit` en toda la factura, y `balance` (moneda de la compañía) permanece exactamente el que dejó la edición manual (`test_59_tax_totals_edit_resyncs_foreign_balance_and_payment_term`)
+
 ### Requirement: base_amount por grupo de impuesto coincide con el balance real
 
 Cuando una factura (`account.move`, `out_invoice`/`in_invoice`/`out_refund`/`in_refund`) tiene dos o más grupos de impuesto (`account.tax.group`) distintos, `_fix_base_amount_for_multi_currency` DEBE (MUST) reportar en `tax_totals` un `base_amount` (moneda de la compañía) por cada `tax_group` que coincida, al céntimo, con la suma real del `balance` de las líneas de producto (`account.move.line`, `display_type='product'`) que pagan ese impuesto -- directamente o, para un impuesto tipo 'group', a través de sus `children_tax_ids`.

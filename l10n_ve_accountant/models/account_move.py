@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 
+from markupsafe import Markup
 from lxml import etree
 from contextlib import ExitStack, contextmanager
 from odoo import _, api, fields, models,Command
@@ -241,6 +242,14 @@ class AccountMove(models.Model):
         of the computed value -- mirrors the same delta core's own
         `_inverse_tax_totals` computes to move the first tax line, so a
         change flagged here is exactly the change core is about to apply."""
+        # Por mover (TI-15432, bug 3): registrado ANTES de `super()`, porque
+        # `tax_group_old_amount` se lee de las lineas reales -- despues de
+        # `super()._inverse_tax_totals()` ya estarian en su valor nuevo.
+        # Una entrada por grupo que de verdad se va a aplicar (delta
+        # distinto de cero y dentro de tolerancia -- lo unico que llega
+        # hasta aqui sin que el `raise` de arriba haya cortado el loop
+        # entero para el move).
+        pending_chatter_entries = defaultdict(list)
         for move in self:
             if not move.is_invoice(include_receipts=True):
                 continue
@@ -257,10 +266,10 @@ class AccountMove(models.Model):
                         continue
                     tax_group_old_amount = sum(tax_lines.mapped('amount_currency'))
                     sign = -1 if move.is_inbound() else 1
-                    delta_amount = (
-                        (tax_group_old_amount - tax_group.get('non_deductible_tax_amount_currency', 0.0)) * sign
-                        - tax_group['tax_amount_currency']
-                    )
+                    old_amount_currency = (
+                        tax_group_old_amount - tax_group.get('non_deductible_tax_amount_currency', 0.0)
+                    ) * sign
+                    delta_amount = old_amount_currency - tax_group['tax_amount_currency']
                     if move.currency_id.is_zero(delta_amount):
                         continue
                     if not move.can_edit_tax_totals:
@@ -276,6 +285,11 @@ class AccountMove(models.Model):
                             tolerance=formatLang(self.env, tolerance, currency_obj=move.currency_id),
                             company=move.company_id.display_name,
                         ))
+                    pending_chatter_entries[move].append((
+                        tax_group.get('group_name', ''),
+                        old_amount_currency,
+                        tax_group['tax_amount_currency'],
+                    ))
         super()._inverse_tax_totals()
         # `tax_totals` isn't stored, so `add_to_compute` doesn't apply --
         # and core's own recompute never re-triggers from a write to the
@@ -285,6 +299,24 @@ class AccountMove(models.Model):
         # frozen at its pre-edit value on the next read, even though the
         # real tax line's `balance` already moved.
         self.invalidate_recordset(['tax_totals'])
+        # Un solo mensaje consolidado por move, aunque hayan cambiado
+        # varios grupos de impuesto en el mismo guardado -- no uno por
+        # grupo (TI-15432, bug 3).
+        for move, entries in pending_chatter_entries.items():
+            lines = [
+                _(
+                    "%(group)s: %(old)s → %(new)s",
+                    group=group_name,
+                    old=formatLang(self.env, old_amount, currency_obj=move.currency_id),
+                    new=formatLang(self.env, new_amount, currency_obj=move.currency_id),
+                )
+                for group_name, old_amount, new_amount in entries
+            ]
+            body = Markup("<p>%s</p>%s") % (
+                _("Manual tax amount edit by %(user)s:", user=self.env.user.display_name),
+                Markup().join(Markup("<br/>%s") % line for line in lines),
+            )
+            move.message_post(body=body)
 
     vat = fields.Char(
         string="VAT",
@@ -1654,6 +1686,32 @@ class AccountMove(models.Model):
                 return any_field_has_changed(tax_before, tax_lines)
             if any(line not in base_lines for line, values in base_before.items() if values['tax_ids']):
                 return any_field_has_changed(tax_before, tax_lines)
+            # Ninguna linea base/producto cambio este ciclo, pero si las
+            # propias lineas de impuesto -- el unico efecto posible es la
+            # edicion manual del lapiz en el widget tax_totals via
+            # `_inverse_tax_totals`, que escribe directo `amount_currency`/
+            # `balance` de la primera linea de impuesto sin tocar ninguna
+            # linea base. Sin esta rama caiamos a la de fecha (no cambio) y
+            # de ahi a `return None` -- `_sync_tax_lines` ni siquiera
+            # reconstruye el lado alterno, dejando `foreign_balance` de la
+            # linea de impuesto (y, en cascada, el de la linea de
+            # payment_term que la cuadra via `_distribute_foreign_pt_residual`)
+            # congelado en su valor pre-edicion (unico lugar que las escribe
+            # para estas lineas, ver `account_move_line._get_foreign_value`,
+            # rama 1).
+            # 'reapply_tax_lines': marca distinta de True/False/rftl para no
+            # alterar ninguna otra rama -- ver su uso debajo de
+            # `_get_rounded_foreign_base_and_tax_lines` (fuerza alli
+            # tambien `round_from_tax_lines=True`, en vez del `False`
+            # fijo de las demas ramas) y el guard que salta por completo el
+            # bloque "Fix multi-currency rounding": ese bloque recalcula
+            # `balance`/`amount_currency` de la linea de impuesto DESDE las
+            # lineas base -- exactamente lo que no queremos aqui, pues
+            # sobreescribiria la edicion manual ya validada por la
+            # tolerancia de `_inverse_tax_totals` con el monto "mecanico"
+            # de antes de la edicion.
+            if any_field_has_changed(tax_before, tax_lines):
+                return 'reapply_tax_lines'
             # Nada del calculo en moneda de la compañía cambió -- pero si la
             # fecha que representa la tasa sí cambió (invoice_date en
             # facturas/notas, date en asientos -- ver
@@ -1727,14 +1785,37 @@ class AccountMove(models.Model):
                 continue
 
             blv, tlv = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_mode)
-            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=False)
+            # Hardcodeado a False para todas las demas ramas (el lado
+            # alterno ya se refresca solo con la fuente fresca de cada
+            # linea base -- p.ej. `foreign_price`, que depende de
+            # `move_id.invoice_date`/`move_id.date`). Solo en
+            # 'reapply_tax_lines' (ver `_round_mode`) se ancla tambien al
+            # valor YA escrito en la linea de impuesto, igual que del lado
+            # compania -- es el unico caso donde nada de la fuente base
+            # cambio y por tanto un recalculo "fresco" reproduciria el
+            # monto viejo (pre-edicion) en vez de reflejar la edicion.
+            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(
+                round_from_tax_lines=round_mode == 'reapply_tax_lines'
+            )
             AccountTax._add_accounting_data_in_base_lines_tax_details(blv, move.company_id, include_caba_tags=move.always_tax_exigible)
             AccountTax._add_accounting_data_in_base_lines_tax_details(flv, move.company_id, include_caba_tags=move.always_tax_exigible)
             tax_results = AccountTax._prepare_tax_lines(blv, move.company_id, tax_lines=tlv)
             foreign_tax_results = AccountTax._prepare_tax_lines(flv, move.company_id, tax_lines=ftlv)
 
             # ── Fix multi-currency rounding ──────────────────────────
-            if move.is_invoice(include_receipts=True) and move.currency_id != move.company_id.currency_id:
+            # Salta por completo en 'reapply_tax_lines': este bloque
+            # recalcula `balance`/`amount_currency` de la linea de
+            # impuesto a partir de las lineas base (percent taxes,
+            # `_apply_vef_first`) -- correcto cuando las bases cambiaron,
+            # pero aqui las bases NO cambiaron y haria justo lo que
+            # queremos evitar: sobreescribir la edicion manual (ya
+            # validada por la tolerancia de `_inverse_tax_totals`) con el
+            # monto "mecanico" de antes de la edicion.
+            if (
+                round_mode != 'reapply_tax_lines'
+                and move.is_invoice(include_receipts=True)
+                and move.currency_id != move.company_id.currency_id
+            ):
                 rate = move.invoice_currency_rate
                 if rate:
                     cc = move.company_id.currency_id

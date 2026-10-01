@@ -2041,3 +2041,33 @@ msgid ""
 msgstr ""
 "Con 'Usar Diferencial Cambiario en Moneda Alterna' activado, configure lo "
 "siguiente (Ajustes de Contabilidad > Cuentas por Defecto): %(missing)s."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "You are not allowed to manually edit the tax amount."
+msgstr "No tiene permiso para editar manualmente el monto del impuesto."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"The manually edited tax amount differs by %(diff)s from the computed "
+"value, which is more than the allowed tolerance of %(tolerance)s for "
+"%(company)s."
+msgstr ""
+"El monto de impuesto editado manualmente difiere en %(diff)s del valor "
+"calculado, lo cual supera la tolerancia permitida de %(tolerance)s para "
+"%(company)s."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "Manual tax amount edit by %(user)s:"
+msgstr "Edición manual del monto de impuesto por %(user)s:"
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "%(group)s: %(old)s → %(new)s"
+msgstr "%(group)s: %(old)s → %(new)s"
