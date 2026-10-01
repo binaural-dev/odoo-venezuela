@@ -3,7 +3,6 @@ from datetime import timedelta
 
 from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
-from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -1043,40 +1042,20 @@ class TestMultiCurrencyRounding(TransactionCase):
                     ),
                 )
 
-    def test_31_mixed_sign_lines_both_rounding_modes(self):
-        """Regression fixture for a real `abs()` bug in mixed-sign tax netting
-        (`round_per_line` used to sum `abs(line)` per line instead of the
-        signed amount). That bug is no longer reachable in practice: a bare
-        negative-subtotal product line (not routed through a recognized
-        discount mechanism) is now rejected outright by
-        `l10n_ve_invoice._check_price_in_zero` -- a validation that didn't
-        exist yet when this test was first written. Repurposed to document
-        that current behavior instead of the netting math it can no longer
-        exercise."""
-        self.env["res.currency.rate"].search([
-            ("currency_id", "=", self.currency_usd.id),
-            ("company_id", "=", self.company.id),
-        ]).unlink()
-        self.env["res.currency.rate"].create({
-            "name": fields.Date.today(),
-            "currency_id": self.currency_usd.id,
-            "inverse_company_rate": 803.34,
-            "company_id": self.company.id,
-        })
-        for mode in ("round_per_line", "round_globally"):
-            with self.subTest(mode=mode):
-                self.company.tax_calculation_rounding_method = mode
-                # Line A: 11.16 USD (positive). Line B: a bare -4.16 USD
-                # adjustment on the SAME tax -- not a recognized discount
-                # line, so its negative subtotal is rejected on creation.
-                with self.assertRaises(
-                    ValidationError,
-                    msg=f"[{mode}] A bare negative-subtotal product line must be rejected.",
-                ):
-                    self._create_invoice(self.currency_usd, None, [
-                        (1, 11.16, [self.tax_16]),
-                        (1, -4.16, [self.tax_16]),
-                    ])
+    # `test_31_mixed_sign_lines_both_rounding_modes` fue relocado a
+    # `l10n_ve_invoice/tests/test_account_move.py` (PR #1344/#1417): desde
+    # `bb795e7b7` solo verificaba `l10n_ve_invoice._check_price_in_zero`,
+    # no nada propio de este modulo -- y `l10n_ve_invoice` depende de
+    # `l10n_ve_accountant` (no al reves), asi que no se puede garantizar
+    # instalado aqui. Un PR aislado a `l10n_ve_accountant` (ver PR #1417)
+    # no lo instala, y el test fallaba siempre por eso, sin relacion con
+    # el diff que lo disparara.
+    #
+    # Pendiente (no incluido en este commit): reconstruir cobertura propia
+    # del bug original de `abs()` en `round_per_line` con una linea
+    # `display_type='discount'` (recorrida por `_get_discount_lines()` a
+    # nivel de `account` core, exenta de `_check_price_in_zero` con o sin
+    # `l10n_ve_invoice` instalado) en lugar de una linea negativa "a secas".
 
     def test_32_SCOPE_CHECK_vef_only_invoice_round_per_line(self):
         """SCOPE CHECK: the whole fix (`_fix_base_amount_for_multi_currency` /
