@@ -2821,6 +2821,23 @@ class TestMultiCurrencyRounding(TransactionCase):
         ])
         self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16, tax_8_own])
 
+    def test_55_new_company_defaults_to_round_per_line(self):
+        """`l10n_ve_accountant` overrides `res.company.tax_calculation_
+        rounding_method`'s default to 'round_per_line' ("por linea"),
+        since stock Odoo defaults new companies to 'round_globally'
+        ("por impuesto"). This only affects company records created from
+        here on -- it does not retroactively touch `self.company` (this
+        module's `base.main_company`, whose column was already populated
+        by `account` before this override existed), so create a brand
+        new company instead of asserting on `self.company`.
+        """
+        new_company = self.env['res.company'].create({'name': 'Rounding Default Co'})
+        self.assertEqual(
+            new_company.tax_calculation_rounding_method,
+            'round_per_line',
+            "New companies must default to round-per-line, not stock Odoo's"
+            " round-per-tax."
+        )
     def test_55_unreconcile_normal_payment_updates_payment_state(self):
         """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`
         force-recompute: 3 separate register-payment-wizard payments, all
