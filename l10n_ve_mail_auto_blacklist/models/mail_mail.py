@@ -100,7 +100,11 @@ class MailMail(models.Model):
                 and re.search(r'(?<![\w.+-])%s(?![\w-])(?!\.\w)' % re.escape(email), reason)
             }
             if failed:
-                self.env['mail.bounce.event']._register_failures(failed, 'smtp_error', reason=failure_reason[:2000])
+                BounceEvent = self.env['mail.bounce.event']
+                BounceEvent._register_failures(
+                    failed, 'smtp_error', reason=failure_reason[:2000],
+                    bounce_type=BounceEvent._classify_bounce_type(failure_reason),
+                )
         return super()._postprocess_sent_message(
             success_pids, success_emails, failure_reason=failure_reason, failure_type=failure_type,
         )

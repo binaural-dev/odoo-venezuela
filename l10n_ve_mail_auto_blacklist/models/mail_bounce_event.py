@@ -1,3 +1,4 @@
+import re
 from datetime import timedelta
 
 from markupsafe import Markup
@@ -12,6 +13,32 @@ SKIP_NATIVE_AUTO_BLACKLIST = 'l10n_ve_skip_native_auto_blacklist'
 DEFAULT_THRESHOLD = 5
 DEFAULT_WINDOW_DAYS = 90
 DEFAULT_MIN_SPREAD_DAYS = 0
+
+BOUNCE_TYPE_SELECTION = [
+    ('soft', 'Soft (Temporary)'),
+    ('hard', 'Hard (Permanent)'),
+]
+
+# DSN (RFC 3464) fields, when the mail server that bounced the message followed
+# the standard: the most reliable signal, used by Postfix, Exchange, Office365...
+_STATUS_RE = re.compile(r'Status:\s*([45])\.(\d+\.\d+)', re.IGNORECASE)
+_ACTION_RE = re.compile(r'Action:\s*(\w+)', re.IGNORECASE)
+# Explicit SMTP reply code, when no full DSN block is present.
+_HARD_CODE_RE = re.compile(r'\b55[0-4]\b')
+_SOFT_CODE_RE = re.compile(r'\b4(?:2[01]|5[0-2])\b')
+# Known phrases for bounces without any DSN/code at all (e.g. Gmail's own
+# "domain not found" notice, which is plain text for a human, not a DSN).
+_HARD_PHRASES = (
+    'nxdomain', 'domain not found', 'no se ha encontrado el dominio', 'no existe el dominio',
+    'user unknown', 'no such user', 'address not found', 'mailbox not found',
+    'mailbox unavailable', 'recipient address rejected', 'no se ha encontrado la direcci',
+    'does not exist', 'invalid recipient', 'unrouteable address', 'bad destination mailbox',
+)
+_SOFT_PHRASES = (
+    'mailbox full', 'quota exceeded', 'try again later', 'temporarily deferred', 'greylist',
+    'connection timed out', 'temporary failure', 'throttl', 'service unavailable',
+    'buzón lleno', 'buzon lleno', 'inténtalo más tarde', 'intentalo mas tarde',
+)
 
 
 class MailBounceEvent(models.Model):
@@ -28,7 +55,18 @@ class MailBounceEvent(models.Model):
     event_type = fields.Selection([
         ('bounce', 'Bounce'),
         ('smtp_error', 'SMTP Recipient Refused'),
-    ], string='Type', required=True, readonly=True)
+    ], string='Type', required=True, readonly=True,
+        help='How the failure was detected: an actual bounce (NDR) received by email, '
+             'or the SMTP server refusing the recipient synchronously while sending.')
+    bounce_type = fields.Selection(
+        BOUNCE_TYPE_SELECTION, string='Severity', readonly=True,
+        help='Best-effort classification of the failure:\n'
+             '- Hard (Permanent): will not resolve on its own (bad domain, unknown user...). '
+             'Retrying is pointless.\n'
+             '- Soft (Temporary): may resolve on its own (full mailbox, server busy, '
+             'greylisting...). Only worth blacklisting if it keeps happening.\n'
+             'Guessed from the DSN Status/Action fields when present, an explicit SMTP code, '
+             'or known phrases as a last resort; defaults to Soft when inconclusive.')
     reason = fields.Text('Reason', readonly=True)
     active = fields.Boolean(
         default=True,
@@ -62,17 +100,62 @@ class MailBounceEvent(models.Model):
         return self._get_auto_blacklist_config()['enabled']
 
     # ------------------------------------------------------------
+    # BOUNCE TYPE CLASSIFICATION
+    # ------------------------------------------------------------
+
+    @api.model
+    def _classify_bounce_type(self, text):
+        """ Best-effort soft/hard classification of a delivery failure.
+
+        Tried in this order, from most to least reliable:
+        1. Standard DSN fields (RFC 3464): ``Status: 5.x.x``/``4.x.x`` or
+           ``Action: failed``/``delayed``.
+        2. An explicit SMTP reply code (550-554 hard, 421/450-452 soft).
+        3. Known phrases, for bounces without any DSN/code at all (e.g. Gmail's
+           own plain-text "domain not found" notice).
+        Defaults to 'soft' when nothing conclusive is found, so an address is
+        not blacklisted too eagerly on an unrecognized bounce format.
+
+        :param str text: raw bounce content (DSN fields and/or human text)
+        :return: 'soft' or 'hard'
+        """
+        if not text:
+            return 'soft'
+        status_match = _STATUS_RE.search(text)
+        if status_match:
+            return 'hard' if status_match.group(1) == '5' else 'soft'
+        action_match = _ACTION_RE.search(text)
+        if action_match:
+            action = action_match.group(1).lower()
+            if action == 'failed':
+                return 'hard'
+            if action == 'delayed':
+                return 'soft'
+        if _HARD_CODE_RE.search(text):
+            return 'hard'
+        if _SOFT_CODE_RE.search(text):
+            return 'soft'
+        lowered = text.lower()
+        if any(phrase in lowered for phrase in _HARD_PHRASES):
+            return 'hard'
+        if any(phrase in lowered for phrase in _SOFT_PHRASES):
+            return 'soft'
+        return 'soft'
+
+    # ------------------------------------------------------------
     # BUSINESS
     # ------------------------------------------------------------
 
     @api.model
-    def _register_failures(self, emails, event_type, reason=False):
+    def _register_failures(self, emails, event_type, reason=False, bounce_type=False):
         """ Log a failure for each given email and blacklist the ones reaching
         the configured threshold.
 
         :param emails: iterable of (not necessarily normalized) email addresses
         :param str event_type: 'bounce' or 'smtp_error'
         :param str reason: bounce message / SMTP error, stored for audit
+        :param str bounce_type: 'soft'/'hard' if already known by the caller;
+            guessed from ``reason`` otherwise
         :return: created <mail.bounce.event> records
         """
         config = self._get_auto_blacklist_config()
@@ -83,10 +166,12 @@ class MailBounceEvent(models.Model):
         normalized_emails = {tools.email_normalize(email) for email in emails} - {False}
         if not normalized_emails:
             return self.browse()
+        bounce_type = bounce_type or self._classify_bounce_type(reason)
         events = self.sudo().create([{
             'email': email,
             'event_type': event_type,
             'reason': reason,
+            'bounce_type': bounce_type,
         } for email in normalized_emails])
         self._check_auto_blacklist(normalized_emails, config)
         return events
