@@ -17,7 +17,15 @@ class StockMove(models.Model):
         svl_id,
         cost,
     ):
-        """Override to propagate donation info to the generated account move."""
+        """Override to propagate donation info to the generated account move.
+
+        The header (`vals["partner_id"]`) is left untouched here -- Odoo
+        core (`_get_partner_id_for_valuation_lines`) already resolves it to
+        the real counterparty, which is exactly what the donation
+        certificate needs to show (see account_move.py/sale_order.py).
+        `stock.scrap` has no real contact for its beneficiary/patient, so
+        the header simply stays unset for that flow instead of duplicating
+        the company as both donor and beneficiary."""
         if self.scrap_id and self.scrap_id.is_donation and self.scrap_id.donation_reason:
             description = f"{description} - {self.scrap_id.donation_reason}"
 
@@ -32,12 +40,10 @@ class StockMove(models.Model):
         )
 
         if self.scrap_id and self.scrap_id.is_donation:
-            company_partner = self.env.company.partner_id
             vals.update(
                 {
                     "is_donation": True,
-                    "partner_id": company_partner.id,
-                    "ref": self.scrap_id.donation_reason,
+                    "ref": self.scrap_id.donation_reason or vals.get("ref"),
                 }
             )
         return vals
