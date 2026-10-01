@@ -658,6 +658,18 @@ class AccountMove(models.Model):
 
         rp_lines_to_reconcile.reconcile()
 
+        # Force-recomputes `payment_state` on the invoice -- this
+        # reconciliation is built by hand over plain `account.move`
+        # entries (never a real `account.payment`), and that path can
+        # leave `payment_state` stuck on whatever value was stored right
+        # before this cross settled (ej. still 'partial' after
+        # `amount_residual` already reached 0), instead of picking up
+        # core's own recompute. Same lazy pattern as
+        # `account.partial.reconcile.unlink()` (`l10n_ve_accountant`).
+        self.env.add_to_compute(
+            self.env['account.move']._fields['payment_state'], self
+        )
+
         return True
     
     def js_assign_outstanding_line(self, line_id):
