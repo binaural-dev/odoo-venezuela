@@ -11,6 +11,8 @@
     'data': [
         'security/ir.model.access.csv',
         'views/mail_bounce_event_views.xml',
+        'views/mail_bounce_event_menus.xml',
+        'views/mail_blacklist_views.xml',
         'views/res_config_settings_views.xml',
     ],
     'images': ['static/description/icon.png'],

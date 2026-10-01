@@ -1,10 +1,38 @@
-from odoo import api, models, tools
+from odoo import api, fields, models, tools
 
-from .mail_bounce_event import SKIP_NATIVE_AUTO_BLACKLIST
+from .mail_bounce_event import BOUNCE_TYPE_SELECTION, SKIP_NATIVE_AUTO_BLACKLIST
 
 
 class MailBlacklist(models.Model):
     _inherit = 'mail.blacklist'
+
+    l10n_ve_bounce_event_count = fields.Integer(
+        'Delivery Failures', compute='_compute_l10n_ve_bounce_info',
+        help='Number of recorded bounces/SMTP refusals for this address.')
+    l10n_ve_last_bounce_type = fields.Selection(
+        BOUNCE_TYPE_SELECTION, string='Last Bounce Type', compute='_compute_l10n_ve_bounce_info',
+        help='Severity of the most recent delivery failure for this address: '
+             'Hard (permanent, e.g. unknown domain/user) or Soft (temporary, e.g. full mailbox).')
+
+    def _compute_l10n_ve_bounce_info(self):
+        BounceEvent = self.env['mail.bounce.event'].sudo()
+        emails = list({rec.email for rec in self if rec.email})
+        counts = dict(BounceEvent._read_group([('email', 'in', emails)], ['email'], ['__count'])) if emails else {}
+        last_types = {}
+        for email in emails:
+            last_event = BounceEvent.search([('email', '=', email)], order='event_date desc', limit=1)
+            if last_event:
+                last_types[email] = last_event.bounce_type
+        for rec in self:
+            rec.l10n_ve_bounce_event_count = counts.get(rec.email, 0)
+            rec.l10n_ve_last_bounce_type = last_types.get(rec.email, False)
+
+    def action_l10n_ve_view_bounce_events(self):
+        self.ensure_one()
+        action = self.env['ir.actions.act_window']._for_xml_id('l10n_ve_mail_auto_blacklist.mail_bounce_event_action')
+        action['domain'] = [('email', '=', self.email)]
+        action['context'] = {'search_default_group_by_email': 0}
+        return action
 
     def _add(self, email, message=None):
         # neutralize the hardcoded rule of mass_mailing, see mail.thread override

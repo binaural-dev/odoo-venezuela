@@ -291,6 +291,88 @@ class TestAutoBlacklist(TransactionCase):
     # CONFIGURATION UI
     # ------------------------------------------------------------
 
+    # ------------------------------------------------------------
+    # BOUNCE TYPE CLASSIFICATION (soft/hard)
+    # ------------------------------------------------------------
+
+    def test_classify_bounce_type_from_dsn_status(self):
+        self.assertEqual(self.BounceEvent._classify_bounce_type('Status: 5.1.1'), 'hard')
+        self.assertEqual(self.BounceEvent._classify_bounce_type('Status: 4.2.2'), 'soft')
+
+    def test_classify_bounce_type_from_dsn_action(self):
+        self.assertEqual(self.BounceEvent._classify_bounce_type('Action: failed'), 'hard')
+        self.assertEqual(self.BounceEvent._classify_bounce_type('Action: delayed'), 'soft')
+
+    def test_classify_bounce_type_from_explicit_code(self):
+        self.assertEqual(self.BounceEvent._classify_bounce_type('550 5.1.1 User unknown'), 'hard')
+        self.assertEqual(self.BounceEvent._classify_bounce_type('452 4.2.2 Mailbox full'), 'soft')
+
+    def test_classify_bounce_type_from_known_phrases(self):
+        """ Some providers (Gmail included) send a bounce with no DSN block and
+        no SMTP code at all when the domain does not even resolve. """
+        gmail_nxdomain = (
+            "Tu mensaje no se ha entregado porque no se ha encontrado el dominio example.invalid.\n"
+            "DNS Error: DNS type 'mx' lookup of example.invalid responded with code NXDOMAIN"
+        )
+        self.assertEqual(self.BounceEvent._classify_bounce_type(gmail_nxdomain), 'hard')
+        self.assertEqual(self.BounceEvent._classify_bounce_type('452 mailbox full, try again later'), 'soft')
+
+    def test_classify_bounce_type_defaults_to_soft(self):
+        self.assertEqual(self.BounceEvent._classify_bounce_type(''), 'soft')
+        self.assertEqual(self.BounceEvent._classify_bounce_type(False), 'soft')
+        self.assertEqual(self.BounceEvent._classify_bounce_type('no recognizable signal here'), 'soft')
+
+    def test_register_failures_stores_given_bounce_type(self):
+        self.BounceEvent._register_failures([self.email], 'bounce', bounce_type='hard')
+        event = self.BounceEvent.search([('email', '=', self.email)])
+        self.assertEqual(event.bounce_type, 'hard')
+
+    def test_register_failures_guesses_bounce_type_from_reason(self):
+        self.BounceEvent._register_failures([self.email], 'bounce', reason='Status: 5.1.1')
+        event = self.BounceEvent.search([('email', '=', self.email)])
+        self.assertEqual(event.bounce_type, 'hard')
+
+    def test_smtp_recipient_refused_classified_as_hard(self):
+        """ RECIPIENT_REFUSED_RE only matches 55x/5.1.x codes, so a synchronous
+        SMTP refusal is always a hard failure. """
+        self._set_config(threshold=1)
+        mail = self.env['mail.mail'].create({'email_to': self.email, 'subject': 'Test'})
+        mail._postprocess_sent_message([], [], failure_reason=SMTP_REFUSED % self.email, failure_type='unknown')
+        event = self.BounceEvent.search([('email', '=', self.email)])
+        self.assertEqual(event.bounce_type, 'hard')
+
+    def test_extract_bounce_text_handles_missing_email_message(self):
+        """ _routing_handle_bounce is sometimes called with email_message=None
+        in tests; classification must not crash and fall back to 'soft'. """
+        self._set_config(threshold=1)
+        self.env['mail.thread']._routing_handle_bounce(None, self._bounce_dict(self.email))
+        event = self.BounceEvent.search([('email', '=', self.email)])
+        self.assertEqual(event.bounce_type, 'soft')
+
+    # ------------------------------------------------------------
+    # BLACKLIST UI HELPERS
+    # ------------------------------------------------------------
+
+    def test_blacklist_bounce_info_computed_fields(self):
+        self._set_config(threshold=1)
+        self.BounceEvent._register_failures([self.email], 'bounce', bounce_type='hard')
+        record = self.Blacklist.search([('email', '=', self.email)])
+        self.assertEqual(record.l10n_ve_bounce_event_count, 1)
+        self.assertEqual(record.l10n_ve_last_bounce_type, 'hard')
+
+    def test_blacklist_bounce_info_without_events(self):
+        self.Blacklist._add(self.email)
+        record = self.Blacklist.search([('email', '=', self.email)])
+        self.assertEqual(record.l10n_ve_bounce_event_count, 0)
+        self.assertFalse(record.l10n_ve_last_bounce_type)
+
+    def test_action_view_bounce_events_domain(self):
+        self._set_config(threshold=1)
+        self.BounceEvent._register_failures([self.email], 'bounce')
+        record = self.Blacklist.search([('email', '=', self.email)])
+        action = record.action_l10n_ve_view_bounce_events()
+        self.assertEqual(action['domain'], [('email', '=', self.email)])
+
     def test_config_settings_constraints(self):
         Settings = self.env['res.config.settings']
         with self.assertRaises(ValidationError):
