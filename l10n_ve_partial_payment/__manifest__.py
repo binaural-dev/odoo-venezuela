@@ -29,7 +29,8 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.0.1.0",
+    "version": "19.0.0.1.1",
+    "images": ["static/description/icon.png"],
     "depends": [
         "l10n_ve_igtf",
         # Directly referenced (inherit_id) by views/res_config_settings.xml,
