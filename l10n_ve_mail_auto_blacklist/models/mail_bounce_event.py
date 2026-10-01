@@ -23,9 +23,10 @@ BOUNCE_TYPE_SELECTION = [
 # the standard: the most reliable signal, used by Postfix, Exchange, Office365...
 _STATUS_RE = re.compile(r'Status:\s*([45])\.(\d+\.\d+)', re.IGNORECASE)
 _ACTION_RE = re.compile(r'Action:\s*(\w+)', re.IGNORECASE)
-# Explicit SMTP reply code, when no full DSN block is present.
-_HARD_CODE_RE = re.compile(r'\b55[0-4]\b')
-_SOFT_CODE_RE = re.compile(r'\b4(?:2[01]|5[0-2])\b')
+# Explicit SMTP reply code, when no full DSN block is present. Per RFC 5321
+# any 5xx is permanent and any 4xx is temporary, not just the common ones.
+_HARD_CODE_RE = re.compile(r'\b5\d{2}\b')
+_SOFT_CODE_RE = re.compile(r'\b4\d{2}\b')
 # Known phrases for bounces without any DSN/code at all (e.g. Gmail's own
 # "domain not found" notice, which is plain text for a human, not a DSN).
 _HARD_PHRASES = (
@@ -104,23 +105,30 @@ class MailBounceEvent(models.Model):
     # ------------------------------------------------------------
 
     @api.model
-    def _classify_bounce_type(self, text):
+    def _classify_bounce_type(self, text, default='soft'):
         """ Best-effort soft/hard classification of a delivery failure.
+
+        This only feeds the ``bounce_type`` badge/filter shown in the UI; it
+        does NOT affect the auto-blacklist threshold (``_check_auto_blacklist``
+        counts every event the same regardless of severity).
 
         Tried in this order, from most to least reliable:
         1. Standard DSN fields (RFC 3464): ``Status: 5.x.x``/``4.x.x`` or
            ``Action: failed``/``delayed``.
-        2. An explicit SMTP reply code (550-554 hard, 421/450-452 soft).
+        2. An explicit SMTP reply code (any 5xx hard, any 4xx soft, per RFC 5321).
         3. Known phrases, for bounces without any DSN/code at all (e.g. Gmail's
            own plain-text "domain not found" notice).
-        Defaults to 'soft' when nothing conclusive is found, so an address is
-        not blacklisted too eagerly on an unrecognized bounce format.
+        Returns ``default`` when nothing conclusive is found -- callers that
+        already know the failure can only be one kind (e.g. a synchronous SMTP
+        recipient refusal, always permanent by definition) should pass
+        ``default='hard'`` instead of relying on the generic 'soft' fallback.
 
         :param str text: raw bounce content (DSN fields and/or human text)
+        :param str default: returned when no signal is found ('soft' or 'hard')
         :return: 'soft' or 'hard'
         """
         if not text:
-            return 'soft'
+            return default
         status_match = _STATUS_RE.search(text)
         if status_match:
             return 'hard' if status_match.group(1) == '5' else 'soft'
@@ -140,7 +148,7 @@ class MailBounceEvent(models.Model):
             return 'hard'
         if any(phrase in lowered for phrase in _SOFT_PHRASES):
             return 'soft'
-        return 'soft'
+        return default
 
     # ------------------------------------------------------------
     # BUSINESS

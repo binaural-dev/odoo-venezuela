@@ -17,15 +17,48 @@ class MailThread(models.AbstractModel):
     _inherit = 'mail.thread'
 
     @api.model
-    def _l10n_ve_extract_bounce_text(self, email_message):
-        """ Concatenate the readable text of ``email_message`` (its text/plain
-        and text/html parts) with any DSN field found on any of its parts, so
-        ``mail.bounce.event._classify_bounce_type`` has a single blob of text
-        to search regardless of how the bounce happens to be structured. """
+    def _l10n_ve_find_recipient_dsn_block(self, parts, bounced_email):
+        """ Return the DSN "per-recipient" fields (Action/Status/Diagnostic-Code)
+        of the specific part whose ``Final-Recipient`` matches ``bounced_email``.
+
+        A single DSN can carry one such block per original recipient (e.g. a
+        mail sent to several addresses that all failed); without this, reading
+        whichever ``Status:``/``Action:`` appears first in the whole message
+        can pick up another recipient's severity instead of the one we are
+        actually registering a failure for. """
+        if not bounced_email:
+            return None
+        for part in parts:
+            final_recipient = part.get('Final-Recipient')
+            if not final_recipient or ';' not in final_recipient:
+                continue
+            candidate = tools.email_normalize(final_recipient.split(';', 1)[1].strip())
+            if candidate and candidate == bounced_email:
+                fields = [
+                    '%s: %s' % (field, part.get(field))
+                    for field in _DSN_HEADER_FIELDS if part.get(field)
+                ]
+                if fields:
+                    return '\n'.join(fields)
+        return None
+
+    @api.model
+    def _l10n_ve_extract_bounce_text(self, email_message, bounced_email=False):
+        """ Text used to classify the bounce as soft/hard: the DSN block of
+        ``bounced_email`` specifically when found (see
+        ``_l10n_ve_find_recipient_dsn_block``), otherwise the readable text of
+        the whole message (its text/plain and text/html parts) plus any DSN
+        field found anywhere, for bounces without a standard DSN block at all
+        (e.g. Gmail's own plain-text "domain not found" notice). """
         if email_message is None:
             return ''
+        parts = list(email_message.walk()) if email_message.is_multipart() else [email_message]
+
+        recipient_block = self._l10n_ve_find_recipient_dsn_block(parts, bounced_email)
+        if recipient_block:
+            return recipient_block
+
         texts = []
-        parts = email_message.walk() if email_message.is_multipart() else [email_message]
         for part in parts:
             if part.get_content_maintype() == 'multipart':
                 continue
@@ -51,7 +84,7 @@ class MailThread(models.AbstractModel):
             email_message, message_dict,
         )
         if bounced_email := message_dict.get('bounced_email'):
-            bounce_text = self._l10n_ve_extract_bounce_text(email_message)
+            bounce_text = self._l10n_ve_extract_bounce_text(email_message, bounced_email)
             BounceEvent._register_failures(
                 [bounced_email], 'bounce',
                 reason=tools.html2plaintext(message_dict.get('body') or '')[:2000],
