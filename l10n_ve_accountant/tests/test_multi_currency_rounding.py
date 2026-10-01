@@ -4,6 +4,7 @@ from datetime import timedelta
 from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
 from odoo.exceptions import UserError
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -1046,22 +1047,15 @@ class TestMultiCurrencyRounding(TransactionCase):
                 )
 
     def test_31_mixed_sign_lines_both_rounding_modes(self):
-        """A negative (discount) line sharing a tax with a positive line must NET OUT,
-        not add up as if both were positive -- in BOTH rounding modes. `round_per_line` had a
-        real `abs()` bug here (fixed via `_per_line_tax_sums` summing SIGNED per-line amounts);
-        `round_globally`'s `_vef_base_for_tax`/`_grouped_tax_sums` never used `abs()` so it was
-        never at risk, but is included for completeness/regression coverage.
-
-        The negative line must be a recognized DISCOUNT line (`_get_discount_lines()`, keyed
-        off `company.sale_discount_product_id`) -- any OTHER negative-price line is rejected by
-        `l10n_ve_invoice._check_price_in_zero` when that module is installed (the real
-        production scenario, via `l10n_ve_payment_extension`), and `l10n_ve_accountant` already
-        depends on `sale`, so this discount product is always available."""
-        discount_product = self.env['product.product'].create({
-            'name': 'Descuento global',
-            'type': 'service',
-        })
-        self.company.sale_discount_product_id = discount_product
+        """Regression fixture for a real `abs()` bug in mixed-sign tax netting
+        (`round_per_line` used to sum `abs(line)` per line instead of the
+        signed amount). That bug is no longer reachable in practice: a bare
+        negative-subtotal product line (not routed through a recognized
+        discount mechanism) is now rejected outright by
+        `l10n_ve_invoice._check_price_in_zero` -- a validation that didn't
+        exist yet when this test was first written. Repurposed to document
+        that current behavior instead of the netting math it can no longer
+        exercise."""
         self.env["res.currency.rate"].search([
             ("currency_id", "=", self.currency_usd.id),
             ("company_id", "=", self.company.id),
@@ -1075,44 +1069,17 @@ class TestMultiCurrencyRounding(TransactionCase):
         for mode in ("round_per_line", "round_globally"):
             with self.subTest(mode=mode):
                 self.company.tax_calculation_rounding_method = mode
-                # Line A: 11.16 USD (positive). Line B: a -4.16 USD
-                # discount on the SAME tax -- net base is 7.00 USD, net
-                # tax must reflect that, not `tax(11.16) + tax(-4.16)`
-                # miscomputed as `tax(11.16) + tax(4.16)`.
-                inv = self._create_invoice(self.currency_usd, None, [
-                    (1, 11.16, [self.tax_16]),
-                    (1, -4.16, [self.tax_16], discount_product),
-                ])
-                tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
-                product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
-                net_base_usd = sum(product_lines.mapped('amount_currency'))
-                expected_tax_usd = self.currency_usd.round(abs(net_base_usd) * 0.16)
-                self.assertAlmostEqual(
-                    abs(tax_line.amount_currency), expected_tax_usd, places=2,
-                    msg=(
-                        f"[{mode}] With mixed-sign lines, "
-                        f"tax_line.amount_currency={tax_line.amount_currency} does not match "
-                        f"the netted base's tax ({expected_tax_usd}) -- looks like the negative "
-                        f"line's contribution was added instead of subtracted"
-                    ),
-                )
-                net_base_vef = sum(product_lines.mapped('balance'))
-                expected_tax_vef = self.currency_vef.round(abs(net_base_vef) * 0.16)
-                self.assertAlmostEqual(
-                    abs(tax_line.balance), expected_tax_vef, places=2,
-                    msg=(
-                        f"[{mode}] With mixed-sign lines, tax_line.balance={tax_line.balance} "
-                        f"(VEF) does not match the netted base's tax ({expected_tax_vef}) -- "
-                        f"looks like the negative line's contribution was added instead of "
-                        f"subtracted"
-                    ),
-                )
-                # `amount_tax` is in the document currency (USD), same as
-                # `amount_currency` -- NOT in VEF like `expected_tax_vef`.
-                self.assertAlmostEqual(
-                    abs(inv.amount_tax), abs(tax_line.amount_currency), places=2,
-                    msg=f"[{mode}] inv.amount_tax (widget total, USD) inconsistent with the posted tax line",
-                )
+                # Line A: 11.16 USD (positive). Line B: a bare -4.16 USD
+                # adjustment on the SAME tax -- not a recognized discount
+                # line, so its negative subtotal is rejected on creation.
+                with self.assertRaises(
+                    ValidationError,
+                    msg=f"[{mode}] A bare negative-subtotal product line must be rejected.",
+                ):
+                    self._create_invoice(self.currency_usd, None, [
+                        (1, 11.16, [self.tax_16]),
+                        (1, -4.16, [self.tax_16]),
+                    ])
 
     def test_31b_two_lines_same_tax_both_rounding_modes(self):
         """Two ordinary positive lines sharing a tax must sum their per-line tax
@@ -2905,4 +2872,63 @@ class TestMultiCurrencyRounding(TransactionCase):
             'round_per_line',
             "New companies must default to round-per-line, not stock Odoo's"
             " round-per-tax.",
+    def test_55_unreconcile_normal_payment_updates_payment_state(self):
+        """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`
+        force-recompute: 3 separate register-payment-wizard payments, all
+        unreconciled, must bring `payment_state` back to 'not_paid'."""
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 300.0, [self.tax_16]),
+        ])
+        acc_bank_usd_real = self._get_or_create('100201', 'Bank USD (no reconcile)', 'asset_cash', reconcile=False)
+        bank_usd_real = self._create_bank_journal('BNKUR', 'Banco USD Real', self.currency_usd, acc_bank_usd_real)
+        pay_amount = inv.amount_total / 3
+        if inv.state != 'posted':
+            inv.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(inv.state, 'posted', f"Precondición: la factura debe estar posteada, no {inv.state!r}.")
+
+        payments = self.env['account.payment']
+        for _ in range(3):
+            inv.invalidate_recordset()
+            action_data = inv.action_register_payment()
+            with Form(
+                self.env["account.payment.register"].with_context(action_data["context"])
+            ) as pay_form:
+                pay_form.journal_id = bank_usd_real
+                pay_form.payment_date = fields.Date.today()
+                pay_form.save()
+                pay_form.amount = pay_amount
+            action = pay_form.record.action_create_payments()
+            payments |= self.env["account.payment"].browse(action.get("res_id"))
+
+        inv.invalidate_recordset()
+        payments.invalidate_recordset()
+        self.assertEqual(inv.payment_state, "paid")
+        self.assertEqual(
+            len(inv.matched_payment_ids), 3,
+            f"Precondición: deben estar los 3 pagos matched -- {inv.matched_payment_ids.ids}",
+        )
+
+        # Desconciliar los 3, uno por uno -- como reporta el caso real.
+        for pay in payments:
+            inv_receivable = inv.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+            pay_counterpart = pay.move_id.line_ids.filtered(
+                lambda l: l.account_id == inv_receivable.account_id
+            )
+            partial = inv_receivable.matched_credit_ids.filtered(
+                lambda p: p.credit_move_id in pay_counterpart
+            ) or inv_receivable.matched_debit_ids.filtered(
+                lambda p: p.debit_move_id in pay_counterpart
+            )
+            self.assertTrue(partial, f"Debe existir la conciliación factura<->pago {pay.id}.")
+            inv.with_context({}).js_remove_outstanding_partial(partial[:1].id)
+            inv.invalidate_recordset()
+
+        payments.invalidate_recordset()
+        self.assertEqual(
+            inv.payment_state, "not_paid",
+            f"payment_state quedó en {inv.payment_state!r} tras desconciliar los 3 pagos "
+            f"-- debía quedar 'not_paid'. payments.state={payments.mapped('state')}, "
+            f"inv.amount_residual={inv.amount_residual}, "
+            f"inv.matched_payment_ids={inv.matched_payment_ids.ids}, "
+            f"inv.reconciled_payment_ids={inv.reconciled_payment_ids.ids}",
         )
