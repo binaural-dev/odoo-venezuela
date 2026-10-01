@@ -7,7 +7,7 @@ msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260922\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2026-09-29 16:08+0000\n"
-"PO-Revision-Date: 2026-09-29 16:08+0000\n"
+"PO-Revision-Date: 2026-10-01 12:19+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "Language: es_VE\n"
@@ -15,6 +15,12 @@ msgstr ""
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: \n"
 "Plural-Forms: \n"
+
+#. module: l10n_ve_partial_payment
+#. odoo-javascript
+#: code:addons/l10n_ve_partial_payment/static/src/xml/account_payment_templates.xml:0
+msgid "Amount to apply"
+msgstr "Monto a aplicar"
 
 #. module: l10n_ve_partial_payment
 #. odoo-javascript
@@ -126,9 +132,21 @@ msgstr ""
 
 #. module: l10n_ve_partial_payment
 #. odoo-javascript
+#: code:addons/l10n_ve_partial_payment/static/src/xml/account_payment_templates.xml:0
+msgid "Remaining payment balance:"
+msgstr "Saldo restante del pago:"
+
+#. module: l10n_ve_partial_payment
+#. odoo-javascript
 #: code:addons/l10n_ve_partial_payment/static/src/js/account_payment_field_partial.js:0
 msgid "The amount can't exceed the available balance."
 msgstr "El monto no puede superar el saldo disponible."
+
+#. module: l10n_ve_partial_payment
+#. odoo-javascript
+#: code:addons/l10n_ve_partial_payment/static/src/js/account_payment_field_partial.js:0
+msgid "The amount can't exceed the invoice's pending balance."
+msgstr "El monto no puede superar el saldo pendiente de la factura."
 
 #. module: l10n_ve_partial_payment
 #. odoo-python

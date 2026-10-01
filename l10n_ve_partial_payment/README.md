@@ -103,10 +103,60 @@ estándar.
   del dominio propio del widget de pagos pendientes de Odoo, no
   reimplementado.
 
+### Ajuste posterior a revisión funcional (Ari)
+
+Una reviewer funcional del cliente pidió, en el chatter de la tarea, que el
+popover "Añadir" mostrara además:
+
+- Saldo restante del pago (calculado).
+- Valor sugerido: el menor entre el saldo disponible del pago y el saldo
+  pendiente de la factura.
+
+Se implementó como un preview en vivo dentro del MISMO popover (sin agregar
+una columna nueva a la tabla completa del widget de pagos pendientes — eso
+excedería el alcance de esta tarea): el campo de monto se precarga con el
+valor sugerido (editable/borrable, no de solo lectura), y una línea nueva
+"Remaining payment balance" recalcula en vivo, con cada tecleo, exactamente
+lo que aplicaría "Apply" en ese momento — incluyendo mostrar el mismo error
+que se mostraría al aplicar (en vez de un número inventado) si el valor
+actual del input sería rechazado. No se creó ningún flag/grupo nuevo: ambos
+comportamientos viven siempre activos dentro del popover ya existente,
+gateados por el flag `partial_pay_from_outstanding` + el grupo
+`group_partial_payment_apply` ya existentes (ver `models/res_company.py`).
+
+**Limitación de precisión (aceptada, no bloqueante):** el preview del saldo
+restante es una estimación del lado del cliente (JS), exacta en el caso
+simple —misma moneda entre factura y pago, sin IGTF de por medio— pero puede
+diferir de lo que el servidor termine aplicando en anticipos de un diario
+IGTF o en escenarios multimoneda, donde el servidor sí calcula el monto
+exacto (ver `js_assign_outstanding_line` /
+`l10n_ve_igtf._create_advance_payment_move`). Reproducir esa lógica fiscal
+en JS para el preview se consideró fuera de alcance.
+
+**Nota sobre el `.po` de este ajuste:** los 3 strings nuevos (`Amount to
+apply`, `Remaining payment balance:`, el mensaje de error de saldo pendiente
+de factura) se agregaron a mano a `i18n/es_VE.po`, no vía
+`trans_export` como el resto del archivo — la base de prueba disponible al
+momento tenía datos desactualizados de módulos ajenos (`iap`, `ai_embedding`
+sin la extensión `vector` de Postgres) que rompían cualquier `-u` de módulo,
+incluso uno no relacionado a `l10n_ve_partial_payment`. Se agregaron
+siguiendo exactamente el mismo formato/convención que ya usan las entradas
+hermanas del mismo archivo, y se validó el resultado end-to-end en el
+navegador (popover completo en español, incluido el mensaje de error nuevo).
+Si se vuelve a regenerar el `.po` completo con `trans_export` más adelante,
+confirmar que esos 3 msgid sobrevivan intactos.
+
 ### Pendiente (fuera de este corte, no de la tarea)
 
-- Tests automatizados (dejado deliberadamente fuera, junto con el ajuste
-  fino de `force_balance`, por decisión explícita del líder de tarea).
+- Tests automatizados del Motor server-side: agregados (23 tests, 98% de
+  cobertura — ver `tests/`). El ajuste fino de `force_balance` en sí
+  (recálculo proporcional en vez de neutralizarlo, ver "Limitación conocida"
+  arriba) sigue pendiente; los tests cubren el comportamiento actual
+  (neutralizado), no la alternativa proporcional.
+- Validación del cálculo del preview JS (saldo restante/sugerido, agregado
+  en el ajuste posterior a revisión funcional de Ari, arriba): pendiente
+  decidir entre tests JS (hoot) o checklist manual — todavía no se tomó esa
+  decisión.
 - Los otros 7 flags de configuración del alcance general (Registrar Pago,
   Conciliar Pagos, Asientos Contables, multi-factura, notas de crédito,
   mostrar saldo, editar sugerido) — se crean recién cuando exista el flujo
