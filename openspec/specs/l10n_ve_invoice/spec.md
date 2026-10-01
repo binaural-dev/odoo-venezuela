@@ -38,6 +38,8 @@ Cuando la compañía activa `group_sales_invoicing_series`, el número de contro
 
 El sistema DEBE (MUST) impedir que un documento de venta (`out_invoice`/`out_refund`) de un diario no de contingencia lleve un `correlative` que ya use otro documento de venta **publicado** de la misma compañía (constraint `_check_correlative`). La validación se aplica cualquiera sea el estado del documento que se guarda: solo el documento con el que se compara debe estar en `posted`.
 
+La misma constraint también DEBE (MUST) impedir que un documento de compra (`in_invoice`/`in_refund`) lleve un `correlative` (número de control asignado por el proveedor) que ya use otro documento de compra **publicado** del mismo proveedor comercial (`commercial_partner_id`) de la misma compañía. A diferencia de ventas, donde el `correlative` es la numeración fiscal propia de la compañía y la unicidad se valida a nivel de `company_id`, en compras cada proveedor asigna su propia numeración, por lo que la unicidad se valida por `(company_id, commercial_partner_id, correlative)`. Ventas y compras se validan por separado: un mismo `correlative` puede coincidir entre una factura de venta y una de compra sin conflicto.
+
 #### Scenario: Número de control repetido
 
 - **WHEN** se guarda una factura de venta cuyo `correlative` ya está en uso por otra factura publicada de la compañía
@@ -47,6 +49,21 @@ El sistema DEBE (MUST) impedir que un documento de venta (`out_invoice`/`out_ref
 
 - **WHEN** el `correlative` solo coincide con el de otro documento en borrador
 - **THEN** el guardado se permite
+
+#### Scenario: Número de control de proveedor repetido
+
+- **WHEN** se guarda una factura de proveedor cuyo `correlative` ya está en uso por otra factura publicada del mismo proveedor comercial
+- **THEN** se lanza un error de validación indicando el número y la factura que lo usa
+
+#### Scenario: Mismo número de control, proveedores distintos
+
+- **WHEN** dos facturas de proveedores distintos comparten el mismo `correlative`
+- **THEN** el guardado se permite, pues la unicidad se valida por proveedor
+
+#### Scenario: Mismo número de control entre venta y compra
+
+- **WHEN** una factura de venta y una factura de proveedor comparten el mismo `correlative`
+- **THEN** el guardado se permite en ambas, pues la validación de ventas y compras es independiente
 
 ### Requirement: Correlativo en diarios de contingencia
 
@@ -71,14 +88,33 @@ En facturas de un diario con `is_purchase_international` (de `l10n_ve_accountant
 - **WHEN** se crea una factura de compra internacional con número de declaración de aduana y sin correlativo
 - **THEN** `correlative` queda igual a `declaration_unique_of_customs`
 
-### Requirement: Prohibición de líneas con precio cero
+### Requirement: Prohibición de líneas con subtotal cero o negativo
 
-El sistema DEBE (MUST) impedir guardar facturas con líneas de producto cuyo `price_unit` sea menor o igual a cero (constraint `_check_price_in_zero`), exceptuando las líneas de descuento reconocidas por `_get_discount_lines`, las secciones/notas y los flujos con contexto `from_pos` o `from_loyalty`.
+El sistema DEBE (MUST) impedir guardar facturas con líneas de producto cuyo
+`price_subtotal` sea menor o igual a cero (constraint `_check_price_in_zero`),
+exceptuando las líneas de descuento reconocidas por `_get_discount_lines`, las
+secciones/notas y los flujos con contexto `from_pos` o `from_loyalty`. La
+validación compara `price_subtotal` (no `price_unit`) para no dejar pasar
+líneas cuyo `price_unit` sea positivo pero terminen en subtotal cero tras un
+descuento no marcado como línea de descuento -- y, por esa misma comparación
+`<= 0`, también bloquea cualquier línea de producto SUELTA con subtotal
+NEGATIVO (no solo exactamente cero), aunque el mensaje de error hable solo de
+"precio cero". No hay forma de crear una línea de producto con subtotal
+negativo que no sea una línea de descuento reconocida -- para netear montos
+de signo mixto bajo el mismo impuesto, la línea negativa debe ser una línea de
+descuento real, no un producto suelto.
 
 #### Scenario: Línea en cero
 
 - **WHEN** se guarda una factura con una línea de producto a precio cero fuera de POS/lealtad
 - **THEN** se lanza un error "An invoice cannot have a line with a price of zero"
+
+#### Scenario: Línea de producto suelta con subtotal negativo
+
+- **WHEN** se guarda una factura con una línea de producto (no una línea de
+  descuento reconocida) cuyo `price_subtotal` es negativo (ej.
+  `price_unit` negativo)
+- **THEN** se lanza el mismo error "An invoice cannot have a line with a price of zero", aunque el subtotal no sea exactamente cero
 
 #### Scenario: Línea de descuento
 
@@ -488,3 +524,12 @@ Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST
 
 - **WHEN** se invoca la ruta con un `company_id` distinto del de la compañía activa
 - **THEN** el libro se genera para la compañía indicada en el parámetro, sin control de acceso adicional por parte del controlador
+
+### Requirement: Ajuste de descuento fijo en el desglose por línea en moneda de la compañía
+
+Cuando una línea de factura usa descuento fijo (`discount_fixed`, con el campo nativo `discount` forzado a 0), el sistema DEBE (MUST) calcular el precio unitario y el monto de descuento de `company_currency_line_totals` (`l10n_ve_accountant`) usando el porcentaje de descuento equivalente exacto de `discount_fixed`, no el campo nativo `discount` -- que en este caso vale 0 y daría un precio unitario incorrecto.
+
+#### Scenario: Línea con descuento fijo
+
+- **WHEN** una línea de factura usa `discount_fixed` en una compañía configurada con descuento por monto fijo
+- **THEN** `company_currency_line_totals` de esa línea refleja el descuento real aplicado, con `discount_type` en `'amount'`, y el precio unitario reconstruido reproduce el bruto correcto

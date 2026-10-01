@@ -4,7 +4,7 @@ import logging
 import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
-from odoo.tools import format_date, float_compare
+from odoo.tools import format_date, float_compare, float_round, float_is_zero
 
 _logger = logging.getLogger(__name__)
 
@@ -367,6 +367,39 @@ class AccountMove(models.Model):
                         )
         return super().action_post()
 
+    @api.depends("invoice_line_ids.discount_fixed", "company_id.discount_type")
+    def _compute_company_currency_line_totals(self):
+        """discount_fixed lines force native `discount` (%) to 0, so the
+        base computation gets price_unit/discount_amount wrong for them.
+        Patches just those entries with the exact equivalent %.
+        """
+        super()._compute_company_currency_line_totals()
+        precision = self.env['decimal.precision'].precision_get('Product Price')
+        for move in self:
+            fixed_lines = move.line_ids.filtered(
+                lambda l: l.display_type == 'product' and l._uses_discount_fixed()
+            )
+            if not fixed_lines:
+                continue
+            totals = move.company_currency_line_totals or {}
+            cc = move.company_currency_id
+            for line in fixed_lines:
+                entry = totals.get(str(line.id))
+                if not entry:
+                    continue
+                subtotal = entry['subtotal']
+                discount_percent = line._get_exact_discount_percentage()
+                denominator = line.quantity * (1 - discount_percent / 100.0)
+                price_unit = (
+                    float_round(subtotal / denominator, precision_digits=precision)
+                    if not float_is_zero(denominator, precision_digits=precision)
+                    else 0.0
+                )
+                entry['price_unit'] = price_unit
+                entry['discount_amount'] = cc.round(price_unit * line.quantity - subtotal)
+                entry['discount_type'] = 'amount'
+            move.company_currency_line_totals = totals
+
     @api.model_create_multi
     def create(self, vals_list):
         now = fields.Datetime.now()
@@ -428,21 +461,39 @@ class AccountMove(models.Model):
                         )
                     )
 
-            if (
-                move.correlative
-                and not move.is_contingency
-                and move.move_type in ("out_invoice", "out_refund")
-            ):
-                repeated_moves = AccountMove.search(
-                    [
-                        ("id", "!=", move.id),
-                        ("company_id", "=", move.company_id.id),
-                        ("correlative", "=", move.correlative),
-                        ("state", "=", "posted"),
-                        ("move_type", "in", ("out_invoice", "out_refund")),
-                    ],
-                    limit=1,
-                )
+            if move.correlative and not move.is_contingency:
+                base_domain = [
+                    ("id", "!=", move.id),
+                    ("company_id", "=", move.company_id.id),
+                    ("correlative", "=", move.correlative),
+                    ("state", "=", "posted"),
+                ]
+
+                if move.move_type in ("out_invoice", "out_refund"):
+                    repeated_moves = AccountMove.search(
+                        base_domain
+                        + [("move_type", "in", ("out_invoice", "out_refund"))],
+                        limit=1,
+                    )
+                elif move.move_type in ("in_invoice", "in_refund"):
+                    # Unlike sales, the control number of a vendor bill is
+                    # assigned by the vendor's own numbering, so uniqueness
+                    # is scoped per vendor, not company-wide.
+                    repeated_moves = AccountMove.search(
+                        base_domain
+                        + [
+                            ("move_type", "in", ("in_invoice", "in_refund")),
+                            (
+                                "commercial_partner_id",
+                                "=",
+                                move.commercial_partner_id.id,
+                            ),
+                        ],
+                        limit=1,
+                    )
+                else:
+                    repeated_moves = AccountMove
+
                 if repeated_moves:
                     raise ValidationError(
                         _(

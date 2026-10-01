@@ -531,6 +531,18 @@ Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo 
 - **WHEN** se calcula el impuesto por línea antes de sumar
 - **THEN** la contribución de cada línea se suma con su propio signo, sin tomar el valor absoluto de la línea negativa
 
+> NOTA: la propiedad interna de `_per_line_tax_sums` (sumar por signo, no
+> por `abs()`) sigue siendo correcta, pero `l10n_ve_invoice._check_price_in_zero`
+> bloquea guardar una factura con una línea de producto SUELTA de subtotal
+> negativo (no solo cero -- ver requirement "Prohibición de líneas con
+> subtotal cero o negativo", `openspec/specs/l10n_ve_invoice/spec.md`), a
+> menos que esa línea sea un descuento reconocido por `_get_discount_lines`.
+> El test de regresión de este escenario (`test_31_mixed_sign_lines_both_rounding_modes`,
+> `l10n_ve_accountant/tests/test_multi_currency_rounding.py`) ya no puede
+> construir ese caso de punta a punta vía `account.move.create()` -- fue
+> repurposado para verificar que esa línea suelta se rechaza, en vez de
+> verificar el neteo del impuesto.
+
 ### Requirement: Un impuesto encadenado (`include_base_amount`) suma su propio monto a la base del siguiente impuesto de la misma línea
 
 Cuando un impuesto tiene `include_base_amount=True`, el sistema DEBE (MUST) sumar el monto de ese impuesto -- ya calculado para esa misma línea de producto -- a la base de los impuestos siguientes de la misma línea antes de calcularlos, tanto en `round_per_line` como en `round_globally`. Ese monto DEBE (MUST) derivarse exclusivamente de valores ya calculados en el mismo ciclo (`extra_base_by_line_id`, alimentado con montos frescos por línea), y NO DEBE (SHALL NOT) leerse de `base_line['tax_details']` del motor de impuestos del core: esa estructura usa una tasa interna que puede estar tan desactualizada como `record.balance` en este mismo ciclo -- leer de ahí se probó durante el desarrollo y produjo una regresión verificable en la suite de tests. Los repartition lines se procesan ordenados por `tax.sequence`, para que el impuesto que encadena se calcule antes que su dependiente.
@@ -565,3 +577,24 @@ La normativa de máquinas fiscales de Venezuela exige el método de redondeo por
 
 - **WHEN** se crea o instala una compañía con la localización venezolana
 - **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente
+
+### Requirement: Desglose por línea de factura en moneda de la compañía
+
+El sistema DEBE (MUST) exponer, por cada línea de producto de una factura, un desglose en la moneda de la compañía (`account.move.company_currency_line_totals`, JSON indexado por id de línea) con precio unitario, cantidad, subtotal sin impuesto, subtotal con impuesto, monto de impuesto, monto y tipo de descuento, e impuestos aplicados (id, nombre, si el impuesto está incluido en el precio). El subtotal y el monto de impuesto de cada línea DEBEN (MUST) reconciliar exactamente con el `balance` real posteado en el asiento -- nunca una conversión de moneda independiente que pueda diferir del asiento por redondeo.
+
+Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MUST) repartirse proporcionalmente al `balance` de cada línea, sin perder ni inventar ninguna unidad de la moneda. Los impuestos de tipo `group` DEBEN (MUST) resolverse por su jerarquía completa de impuestos hijos, no solo por coincidencia directa con `tax_ids` de la línea.
+
+#### Scenario: Factura en moneda distinta a la de la compañía
+
+- **WHEN** se crea una factura en USD o EUR con líneas de producto e impuestos
+- **THEN** `company_currency_line_totals` contiene, para cada línea, los montos equivalentes en la moneda de la compañía, y la suma de esos montos coincide exactamente con los `balance` de las líneas de producto e impuesto del asiento
+
+#### Scenario: Varias líneas bajo el mismo impuesto
+
+- **WHEN** tres o más líneas de producto comparten la misma tasa de impuesto
+- **THEN** el monto de impuesto de cada línea es proporcional a su propio `balance`, y la suma de los montos por línea coincide exactamente con el `balance` de la línea de impuesto del asiento
+
+#### Scenario: Impuesto de tipo grupo
+
+- **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
+- **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta
