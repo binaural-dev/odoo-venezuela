@@ -71,91 +71,9 @@ class AccountMove(models.Model):
         )
 
     def _compute_payment_state(self):
-        """Corrects core's own `payment_state` computation for the ONE
-        combination it doesn't anticipate: an invoice closed ENTIRELY by
-        non-payment documents where one of them is our own exchange
-        difference Debit/Credit Note.
-
-        Concretely: `l10n_ve_igtf`'s "cruce de anticipo" mechanism
-        (`_reconcile_move_with_payment_difference`, `l10n_ve_igtf/models/account_move.py`)
-        closes an invoice against a hand-built `account.move`
-        (`move_type='entry'`, created WITHOUT `origin_payment_id` -- it
-        isn't a real `account.payment`, just an accounting entry moving
-        an existing advance balance onto the receivable account). If
-        that reconciliation also leaves a currency residual, THIS module
-        intercepts it and documents it with a real `out_refund` Credit
-        Note (`_create_exchange_difference_note`,
-        `account_move_line.py`), reconciled against the SAME invoice
-        line to close it.
-
-        Core's `_compute_payment_state` (`account/models/account_move.py`)
-        decides `'reversed'` vs `'paid'` by looking at the `move_type` of
-        EVERY counterpart ever reconciled against the invoice's
-        receivable line, but ONLY when NONE of them carries a real
-        `account.payment` (`has_payment`) or bank statement line
-        (`has_st_line`) -- in that branch, if the counterpart types are
-        exactly `{'out_refund'}` or `{'out_refund', 'entry'}` (for an
-        `out_invoice`), it concludes the invoice was REVERSED, not paid.
-        Without this module, that branch was unreachable for this
-        scenario: Odoo's own generic exchange-difference entry is ALSO
-        `move_type='entry'`, so the counterpart set stayed `{'entry'}`
-        (never includes `'out_refund'`) and correctly resolved to
-        `'paid'`. This module's whole point is replacing that generic
-        entry with a REAL fiscal Credit Note -- which is exactly what
-        introduces `'out_refund'` into the set, and exactly what flips a
-        genuinely-paid invoice into `'reversed'`. `payment_state` itself
-        is the only thing this corrects -- checked empirically whether
-        it also rescued `l10n_ve_igtf.compute_bi_igtf`'s IGTF base in
-        this same scenario (a fully-closed invoice reads as `'reversed'`
-        instead of `'paid'`, and that field only computes when
-        `payment_state in ('paid', 'in_payment')` or there's still a
-        residual) and it does NOT: whenever this bug can trigger (the
-        invoice's ENTIRE reconciliation history has zero real payments),
-        `compute_bi_igtf`'s own formula also finds zero real
-        IGTF-carrying counterparts to build a base from, so it computes
-        to 0 regardless of whether `payment_state` is right or wrong.
-        There is no reachable scenario mixing a real IGTF payment with
-        this bug: any real payment in the invoice's history keeps core's
-        computation in its `has_payment` branch, which never evaluates
-        the `'reversed'` condition at all. So the value of this fix is
-        `payment_state` accuracy on its own merits (reporting, filters,
-        anything else that reads it) -- not IGTF base protection.
-
-        Verified this scenario is REAL and specific to this module: with
-        it uninstalled/disabled, the same anticipo-cross-with-currency-
-        residual case always resolves to `'paid'` (confirmed by tracing
-        core's set-comparison with `'entry'` on both sides instead of
-        `'entry'`/`'out_refund'`).
-
-        This override does NOT reimplement or bypass core's SQL-based
-        computation (`_compute_payment_state` builds `reconciliation_vals`
-        via a raw SQL query joining `account_payment`, which -- being raw
-        SQL -- never hits `ir.rule`/`AccessError` in the first place).
-        Instead, it lets `super()` compute normally, then -- ONLY for
-        moves core marked `'reversed'` -- re-derives the SAME
-        `move_type` set-comparison core just used, EXCLUDING our own
-        notes from that set. If removing our notes changes the verdict
-        (the note was the deciding factor), corrects to `'paid'` -- the
-        exact value core's own branch defaults to before evaluating the
-        reversal condition. If removing our notes does NOT change the
-        verdict (some OTHER, unrelated reversal-causing document is
-        still in the mix -- e.g. a genuine business Credit Note that
-        happens to also touch an invoice one of our notes touched on an
-        earlier, unrelated partial payment), leaves `'reversed'` alone:
-        that classification is real and not our module's doing.
-
-        No `.sudo()` here, unlike `compute_bi_igtf`'s -- deliberate.
-        Reading `matched_debit_ids`/`matched_credit_ids` via the ORM
-        (instead of raw SQL) DOES apply `ir.rule`, so a counterpart in a
-        company the current user/process can't see would raise
-        `AccessError` here. In the actual scenario this override exists
-        for, invoice/anticipo-cross/note are always the SAME company
-        (`_create_exchange_difference_note` forces `company =
-        invoice.company_id`), so this never triggers in practice. If it
-        ever does (a parent/subsidiary company structure, out of scope
-        for this fix), failing loud is the correct behavior: a
-        user/process that can't see a company's records shouldn't
-        silently complete a flow that depends on them."""
+        """Corrects core's `'reversed'` verdict when our own exchange-diff
+        Credit Note is the only reason the counterpart set matched core's
+        reversal pattern; re-derives the verdict excluding our notes."""
         super()._compute_payment_state()
         for move in self:
             if move.payment_state != 'reversed':
@@ -212,7 +130,7 @@ class AccountMove(models.Model):
                 move.move_type in ('entry', 'out_refund', 'in_refund')
                 and remaining_types == {'entry'}
             )
-            if not (in_reverse or out_reverse or misc_reverse):
+            if remaining_types and not (in_reverse or out_reverse or misc_reverse):
                 move.payment_state = 'paid'
 
     @api.depends(
