@@ -66,6 +66,12 @@ class TestForeignExchangeDiff(TransactionCase):
         self.product = self.env["product.product"].create({
             "name": "Service", "type": "service", "list_price": 100.0,
         })
+        # `action_post()` requires every product line to carry a tax --
+        # 0% so it satisfies that check without perturbing the exact
+        # amounts (`amount == price_unit`) these tests assert on.
+        self.zero_tax = self.env["account.tax"].create({
+            "name": "IVA 0%", "amount": 0, "amount_type": "percent", "type_tax_use": "sale",
+        })
         self.account_bank = self.env["account.account"].create({
             "name": "BANK ALT DIFF",
             "code": "100200",
@@ -156,7 +162,7 @@ class TestForeignExchangeDiff(TransactionCase):
             "invoice_line_ids": [(0, 0, {
                 "product_id": self.product.id,
                 "price_unit": amount,
-                "tax_ids": [(6, 0, [])],
+                "tax_ids": [(6, 0, self.zero_tax.ids)],
             })],
         })
         # `out_invoice`/`out_refund` `action_post()` returns a confirmation
