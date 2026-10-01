@@ -67,19 +67,10 @@ class AccountPayment(models.Model):
                 continue
             retention_line_id = payment.retention_line_ids[0]
             move = payment.move_id
-            # While the invoice is still in draft, its name is the "/"
-            # placeholder (not unique yet): fall back to the invoice's own
-            # id, which is always unique, to avoid two draft invoices under
-            # the same retention/journal colliding on account_move_unique_name.
-            invoice_ref = (
-                retention_line_id.move_id.name
-                if retention_line_id.move_id.name != "/"
-                else str(retention_line_id.move_id.id)
-            )
             move_name = (
                 account_move_name_by_retention_type[payment.retention_id.type_retention]
                 + f"-{payment.retention_id.number}"
-                + f"-{invoice_ref}"
+                + f"-{retention_line_id.move_id.name}"
             )
             if payment.retention_id.type_retention == "islr":
                 move_name += f"-{retention_line_id.payment_concept_id.name[:5]}"

@@ -167,38 +167,19 @@ class AccountMoveRetention(models.Model):
 
     def action_recalculate_retentions(self):
         """
-        Synchronizes, on-the-fly, the emitted IVA/ISLR retentions linked to
+        Recalculates, on-the-fly, the emitted IVA/ISLR retentions linked to
         this vendor invoice against its current invoice lines (task
-        #83486) - adding/removing retention lines as tax rates/ISLR
-        concepts on the invoice change, not just refreshing existing
-        amounts - without re-running action_post()'s sequence assignment,
+        #83486), without re-running action_post()'s sequence assignment,
         payment creation/reconciliation or state transition - see
         account.retention.action_recalculate() for why those must not be
-        repeated. The sync is scoped to `self`: account.retention.
-        action_recalculate() only touches, per retention, the lines whose
-        move_id is one of the invoices passed in, never the whole
-        document.
+        repeated.
         """
         for move in self:
             retentions = (
                 move.retention_iva_line_ids.retention_id
                 | move.retention_islr_line_ids.retention_id
             ).filtered(lambda r: r.state == "emitted")
-            retentions.action_recalculate(moves=move)
-
-        return {
-            "type": "ir.actions.client",
-            "tag": "display_notification",
-            "params": {
-                "title": _("Retentions recalculated"),
-                "message": _(
-                    "The retentions linked to this invoice have been"
-                    " recalculated against its current lines."
-                ),
-                "sticky": False,
-                "type": "success",
-            },
-        }
+            retentions.action_recalculate()
 
     @api.depends(
         "invoice_line_ids",

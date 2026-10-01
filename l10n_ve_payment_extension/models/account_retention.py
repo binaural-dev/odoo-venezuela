@@ -1,6 +1,5 @@
 from odoo import api, models, fields, Command, _
 import re
-from markupsafe import Markup
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_is_zero, float_compare
 from odoo.addons.account.models.account_move import BYPASS_LOCK_CHECK
@@ -472,470 +471,34 @@ class AccountRetention(models.Model):
         if self.payment_ids:
             self.payment_ids.action_draft()
 
-    def _is_islr_supplier_retention(self):
+    def action_recalculate(self):
         """
-        True when this retention is an ISLR retention taken from a supplier
-        document (in_invoice/in_refund/in_debit) - the only combination that
-        goes through _validate_islr_retention()/the ISLR supplier journal.
-        Extracted (code-reviewer's comment on PR #1393) since this exact
-        condition was repeated verbatim in action_post() and
-        action_recalculate().
-        """
-        self.ensure_one()
-        return self.type_retention == "islr" and self.type in (
-            "in_invoice", "in_refund", "in_debit",
-        )
+        Recalculates, on-the-fly, the amounts of this (already emitted)
+        retention's lines against their invoices' current data (task
+        #83486). total_invoice_amount/total_iva_amount/
+        total_retention_amount and their foreign_* counterparts are
+        store=True computed fields that @api.depends on these line amounts,
+        so they refresh on their own once the lines are written - they must
+        not be set by hand here.
 
-    def action_recalculate(self, moves):
-        """
-        Synchronizes, on-the-fly, this (already emitted) retention's lines
-        for the given invoice(s) (task #83486) against their invoices'
-        current data - not just refreshing amounts of lines that already
-        exist, but adding lines for taxes/concepts that appeared on the
-        invoice after it was retained and removing lines whose tax/concept
-        no longer applies. The sync is scoped to `retention_line_ids` whose
-        `move_id` is in `moves` only - a retention commonly groups several
-        invoices of the same partner, and none of the other invoices'
-        lines must be touched just because one of them was edited and
-        recalculated.
-
-        total_invoice_amount/total_iva_amount/total_retention_amount and
-        their foreign_* counterparts are store=True computed fields that
-        @api.depends on these line amounts, so they refresh on their own
-        once the lines are written - they must not be set by hand here.
-
-        Deliberately does NOT re-run the sequence assignment part of
-        action_post(): the retention keeps its already-assigned `number`
-        (_set_sequence() only assigns one when `not retention.number`), so
-        re-emitting it below never consumes a new correlative.
-
-        Payment creation/reconciliation and the 'emitted' state transition
-        ARE re-run, but only when a real reset was needed first (see
-        _would_change_line_set()/_reset_payments_for_resync() below): task
-        #83486 confirmed against a real CI run that, in production, every
-        emitted retention already has its payment posted
-        (action_post()._reconcile_all_payments() posts it as part of
-        emitting), so a sync that adds/removes lines (not just updates
-        amounts of lines that already exist) can never be applied in place -
-        the already-posted payment amount would no longer match the line
-        total. Resetting the retention (and its payments) to draft first,
-        syncing, then re-emitting is what keeps the payment amount correct
-        instead of leaving the recalculation blocked with a UserError for
-        the user to resolve by hand.
+        Deliberately does NOT re-run the rest of action_post(): sequence
+        assignment, payment creation/reconciliation and the state
+        transition must only ever happen once, when the retention is first
+        emitted - repeating them here would create duplicate payments/
+        sequence numbers for a document that is already final.
 
         _check_duplicate_retention_lines() and, for ISLR,
         _validate_islr_retention() ARE re-run below, since they validate
         the very amounts this recalculation just changed (e.g. a line's
         invoice_amount now exceeding the invoice's real taxable base) and
         would otherwise leave an inconsistent emitted retention silently in
-        place. The same goes for _check_retention_amount_vs_move_residual(),
-        which action_post() runs before ever emitting a retention and must
-        also hold true after a recalculation.
+        place.
         """
         for retention in self:
-            if retention.type_retention not in ("iva", "islr"):
-                # Municipal is out of scope for this task - already kept in
-                # sync on invoice_line_ids change via
-                # onchange_economic_activity_id (see recalculate_amounts()).
-                continue
-            # Only supplier documents are in scope (task #83486, scenario 1
-            # & 2 both talk about vendor bills) - and the move's own
-            # move_type must match this retention's `type` so a client
-            # (out_invoice) retention linked to the same invoice through
-            # retention_iva_line_ids/retention_islr_line_ids is never
-            # silently rewritten.
-            if retention.type not in ("in_invoice", "in_refund", "in_debit"):
-                continue
-            retention_moves = moves.filtered(
-                lambda m, retention=retention: (
-                    m.move_type == retention.type
-                    and m in retention.retention_line_ids.move_id
-                )
-            )
-            if not retention_moves:
-                continue
-
-            needs_reset = (
-                retention.state == "emitted"
-                and any(retention._would_change_line_set(move) for move in retention_moves)
-                and bool(retention.payment_ids.filtered(lambda p: p.state != "draft"))
-            )
-            if needs_reset:
-                retention._reset_payments_for_resync()
-
-            for move in retention_moves:
-                retention._sync_retention_lines_for_move(move)
+            retention.retention_line_ids.recalculate_amounts()
             retention._check_duplicate_retention_lines()
-            if retention._is_islr_supplier_retention():
+            if retention.type_retention == "islr" and retention.type in ("in_invoice", "in_refund", "in_debit"):
                 retention._validate_islr_retention()
-            retention._check_retention_amount_vs_move_residual()
-
-            if needs_reset:
-                # action_post() only returns a falsy result (instead of
-                # raising) when called with an 'automated_action'/'cron_id'
-                # context, which is never the case here - but guard against
-                # it anyway so a silent failure can never leave the
-                # retention reset to draft with no re-emitted payment.
-                result = retention.action_post()
-                if result is False:
-                    raise UserError(
-                        _(
-                            "Recalculating retention %(name)s failed while"
-                            " re-emitting it - the retention was left in"
-                            " draft state."
-                        )
-                        % {"name": retention.display_name}
-                    )
-
-    def _would_change_line_set(self, move):
-        """
-        True when syncing `move`'s lines would add and/or remove at least
-        one line (not just update the amount of lines that already exist) -
-        used by action_recalculate() to decide, BEFORE touching any data,
-        whether this recalculation needs the reset-resync-reissue cycle
-        (_reset_payments_for_resync() + action_post()) or can just update
-        amounts in place.
-        """
-        self.ensure_one()
-        if self.type_retention == "iva":
-            expected = self._get_expected_iva_lines_data(move)
-        elif self.type_retention == "islr":
-            expected = self._get_expected_islr_lines_data(move)
-        else:
-            return False
-        existing_keys = {
-            self._retention_line_key(line)
-            for line in self.retention_line_ids.filtered(lambda l: l.move_id == move)
-        }
-        return set(expected.keys()) != existing_keys
-
-    def _reset_payments_for_resync(self):
-        """
-        Resets this (emitted) retention and its payments to draft so
-        action_recalculate() can add/remove retention lines freely, then
-        re-emits it (retention.action_post(), called by action_recalculate
-        right after the sync) to regenerate the payment(s) with the correct
-        amounts.
-
-        Detaches every retention line from its (now draft) payment and
-        cancels the old payment(s) - properly, through account.payment's own
-        accounting cancel flow, never a raw ORM unlink of a posted journal
-        entry - instead of leaving them around for action_post() to reuse:
-        _create_payments_from_retention_lines() skips creating any payment
-        at all as soon as retention.payment_ids is non-empty (it has no
-        notion of "this specific move's payment is stale, recreate only
-        that one") - if the old payments were left linked, a retention
-        covering several invoices would end up with some of them missing a
-        payment entirely after the resync. Cancelling and detaching them
-        first guarantees action_post() rebuilds payment_ids for every move
-        of this retention from scratch, with the just-synced line amounts.
-
-        account.payment.action_draft() itself refuses to reset a posted
-        retention payment (see AccountPayment.action_draft()) unless called
-        under bypass_retention_lock - passed here since resetting the
-        payment is exactly what this recalculation flow is meant to do.
-
-        Detaching the old payments follows the exact same safe sequence
-        already used by action_cancel() (draft -> cancel -> detach
-        retention_id -> clear the One2many) instead of a plain
-        `self.write({"payment_ids": [Command.clear()]})`: since payment_ids
-        is a One2many whose inverse (retention_id) is not nullable in
-        practice for a retention payment, clearing it while retention_id is
-        still set makes the ORM delete the (posted) account.payment/
-        account.move outright, which account.move.unlink() then blocks with
-        "You cannot delete a journal item that is posted...". Cancelling the
-        payment first (a real, reversible accounting operation) and only
-        then detaching retention_id keeps Command.clear() a no-op unlink of
-        already-orphaned records.
-        """
-        self.ensure_one()
-        old_payments = self.payment_ids
-        if not old_payments:
-            return
-        ctx = dict(self.env.context, bypass_retention_lock=True, force_delete=True)
-
-        self.with_context(bypass_retention_lock=True).action_draft()
-
-        reconciled_lines = old_payments.mapped("move_id.line_ids").filtered(
-            lambda l: l.reconciled
-        )
-        if reconciled_lines:
-            reconciled_lines.with_context(ctx).remove_move_reconcile()
-
-        old_payments.with_context(ctx).action_cancel()
-        old_payments.with_context(ctx).write({
-            "retention_id": False,
-            "is_retention": False,
-            "payment_type_retention": False,
-            "retention_ref": False,
-        })
-
-        self.retention_line_ids.with_context(bypass_retention_lock=True).write(
-            {"payment_id": False}
-        )
-        self.write({"payment_ids": [Command.clear()]})
-        self.message_post(
-            body=_(
-                "Retention reset to draft and payment(s) removed to apply"
-                " this recalculation (task #83486): the set of retention"
-                " lines changed and the previous payment(s) were already"
-                " posted. It will be re-issued automatically with the"
-                " updated lines."
-            ),
-            subtype_xmlid="mail.mt_note",
-        )
-
-    def _sync_retention_lines_for_move(self, move):
-        """
-        Diffs this retention's current lines for `move` against the
-        "expected" set derived from the invoice's current data (task
-        #83486), reusing the same criteria already used to auto-generate
-        retention lines in the first place (compute_retention_lines_data
-        for IVA, account.move._get_payment_concepts_from_invoice for ISLR)
-        instead of inventing a new one:
-
-        - A key present in both existing and expected is updated in place
-          via account.retention.line.recalculate_amounts() (already
-          existing logic).
-        - A key only in expected is a new line to create.
-        - A key only in existing means the invoice line that originated it
-          no longer applies - the retention line is obsolete.
-
-        Obsolete lines still linked to a posted payment are never reached
-        here with that payment intact: action_recalculate() already called
-        _reset_payments_for_resync() beforehand whenever a structural change
-        (add/remove) was detected for an emitted retention with posted
-        payment(s), so any payment_id on an obsolete line by this point is
-        either unset or already draft, and account.retention.line.unlink()
-        deleting it is safe. Removing an obsolete line is logged as a
-        chatter note on the retention, and if there would be nothing left to
-        retain for this invoice under this retention (no expected lines, or
-        every existing line becomes obsolete), a clear UserError is raised
-        instead of silently leaving the invoice without any withholding.
-        """
-        self.ensure_one()
-
-        if self.type_retention == "iva":
-            expected = self._get_expected_iva_lines_data(move)
-        elif self.type_retention == "islr":
-            expected = self._get_expected_islr_lines_data(move)
-        else:
-            return
-
-        if not expected:
-            raise UserError(
-                _(
-                    "Invoice %(invoice)s no longer has anything to withhold"
-                    " for %(type_retention)s; cannot automatically"
-                    " recalculate retention %(retention)s. Review the"
-                    " invoice lines or edit the retention manually."
-                )
-                % {
-                    "invoice": move.display_name,
-                    "type_retention": self.type_retention.upper(),
-                    "retention": self.display_name,
-                }
-            )
-
-        existing = self.retention_line_ids.filtered(lambda l: l.move_id == move)
-        existing_by_key = {
-            self._retention_line_key(line): line for line in existing
-        }
-
-        to_create_vals = []
-        to_create_keys = []
-        to_update_ids = []
-        log_lines = []
-
-        for key, vals in expected.items():
-            line = existing_by_key.pop(key, None)
-            if line:
-                to_update_ids.append(line.id)
-            else:
-                to_create_vals.append(vals)
-                to_create_keys.append(key)
-
-        obsolete = self.env["account.retention.line"].browse(
-            [line.id for line in existing_by_key.values()]
-        )
-
-        if existing and len(obsolete) == len(existing):
-            raise UserError(
-                _(
-                    "After this recalculation, invoice %(invoice)s would be"
-                    " left without any %(type_retention)s retention line in"
-                    " %(retention)s. Review the invoice or cancel/edit the"
-                    " retention manually."
-                )
-                % {
-                    "invoice": move.display_name,
-                    "type_retention": self.type_retention.upper(),
-                    "retention": self.display_name,
-                }
-            )
-
-        for line in obsolete:
-            removed_vals = {
-                "invoice_amount": line.invoice_amount,
-                "retention_amount": line.retention_amount,
-            }
-            log_lines.append(
-                self._describe_sync_change(
-                    _("Line removed"), move, self._retention_line_key(line), removed_vals
-                )
-            )
-
-        commands = [Command.create(vals) for vals in to_create_vals]
-        commands += [Command.unlink(line.id) for line in obsolete]
-        if commands:
-            self.write({"retention_line_ids": commands})
-
-        if to_create_keys:
-            created_by_key = {
-                self._retention_line_key(line): line
-                for line in self.retention_line_ids.filtered(lambda l: l.move_id == move)
-                if self._retention_line_key(line) in to_create_keys
-            }
-            for key in to_create_keys:
-                created_line = created_by_key.get(key)
-                if not created_line:
-                    continue
-                log_lines.append(
-                    self._describe_sync_change(
-                        _("Line created"),
-                        move,
-                        key,
-                        {
-                            "invoice_amount": created_line.invoice_amount,
-                            "retention_amount": created_line.retention_amount,
-                        },
-                    )
-                )
-
-        if to_update_ids:
-            self.env["account.retention.line"].browse(to_update_ids).recalculate_amounts()
-
-        if log_lines:
-            self.message_post(
-                body=Markup("<br/>").join(log_lines),
-                subtype_xmlid="mail.mt_note",
-            )
-
-    def _retention_line_key(self, line):
-        """
-        Natural key that identifies which invoice tax/concept a retention
-        line originates from - used to diff existing lines against the
-        "expected" set computed from the invoice's current data.
-        """
-        self.ensure_one()
-        if self.type_retention == "iva":
-            return round(line.aliquot, 2)
-        if self.type_retention == "islr":
-            siblings = self.retention_line_ids.filtered(
-                lambda l: l.move_id == line.move_id
-                and l.payment_concept_id == line.payment_concept_id
-            ).sorted("id")
-            return (line.payment_concept_id.id, list(siblings).index(line))
-        return None
-
-    def _get_expected_iva_lines_data(self, move):
-        """
-        "Expected" IVA lines for `move`, keyed by the real tax rate
-        (aliquot) - delegates in compute_retention_lines_data(), the same
-        criterion already used to auto-generate IVA retention lines from an
-        invoice (utils_retention.load_retention_lines).
-        """
-        self.ensure_one()
-        lines_data = self.compute_retention_lines_data(move)
-        return {round(data["aliquot"], 2): data for data in lines_data}
-
-    def _get_expected_islr_lines_data(self, move):
-        """
-        "Expected" ISLR lines for `move`, keyed by (payment_concept_id,
-        ordinal) - delegates in
-        account.move._get_payment_concepts_from_invoice(), the same
-        criterion already used to auto-generate ISLR retention lines from
-        an invoice (account.retention.default_get()). `ordinal` is the
-        position of the invoice line among those sharing the same concept,
-        ordered by invoice line id - the same positional index
-        account.retention.line._get_islr_concept_base_amounts() already
-        uses to match a retention line back to "its" invoice line.
-        """
-        self.ensure_one()
-        by_concept = defaultdict(list)
-        for concept_id, base_amount, invoice_line_id in move._get_payment_concepts_from_invoice():
-            by_concept[concept_id].append((invoice_line_id, base_amount))
-
-        expected = {}
-        for concept_id, items in by_concept.items():
-            items.sort(key=lambda item: item[0])
-            for ordinal, (_invoice_line_id, base_amount) in enumerate(items):
-                expected[(concept_id, ordinal)] = {
-                    "move_id": move.id,
-                    "payment_concept_id": concept_id,
-                    "invoice_type": move.move_type,
-                    "invoice_amount": base_amount,
-                }
-        return expected
-
-    def _describe_sync_change(self, label, move, key, vals):
-        self.ensure_one()
-        if self.type_retention == "iva":
-            detail = _("aliquot %s%%") % (key,)
-        else:
-            concept = self.env["payment.concept"].browse(key[0]) if key else False
-            detail = _("concept %s") % (concept.display_name if concept else key,)
-        return _(
-            "%(label)s - invoice %(invoice)s, %(detail)s, base %(base)s,"
-            " retained %(retained)s."
-        ) % {
-            "label": label,
-            "invoice": move.display_name,
-            "detail": detail,
-            "base": vals.get("invoice_amount", 0.0),
-            "retained": vals.get("retention_amount", 0.0),
-        }
-
-    def _check_retention_amount_vs_move_residual(self):
-        """
-        Same rule action_post() enforces before a retention is ever
-        emitted (a retained amount can never exceed the invoice's own
-        residual amount) - re-run after a recalculation since that is
-        exactly what could have changed the retained amounts to break it.
-        """
-        self.ensure_one()
-        retention_amounts_by_move = defaultdict(float)
-        for line in self.retention_line_ids:
-            retention_amounts_by_move[line.move_id] += line.retention_amount
-
-        for move, retention_amount in retention_amounts_by_move.items():
-            # amount_residual_signed only reflects a real amount once the
-            # invoice is posted (it is built from the payment_term move
-            # line, which does not exist yet on a draft invoice) - it is
-            # 0.0 while state == 'draft', which would make ANY recalculation
-            # run on a draft invoice fail this check. The "Recalcular
-            # retenciones" button is restricted to draft invoices precisely
-            # for this use case (task #83486), so fall back to amount_total
-            # (the invoice's full total before any payment can exist) when
-            # the invoice has not been posted yet.
-            invoice_total = (
-                abs(move.amount_residual_signed)
-                if move.state == "posted"
-                else abs(move.amount_total)
-            )
-            if invoice_total < retention_amount:
-                raise UserError(
-                    _(
-                        "The retention amount (%(amount)s) cannot be greater"
-                        " than the invoice total signed amount (%(total)s)"
-                        " for invoice %(invoice)s."
-                    )
-                    % {
-                        "amount": retention_amount,
-                        "total": invoice_total,
-                        "invoice": move.name,
-                    }
-                )
 
     def action_post(self):
         """
@@ -954,23 +517,31 @@ class AccountRetention(models.Model):
         for retention in self:
             retention._check_duplicate_retention_lines()
 
-            # Delegates to _check_retention_amount_vs_move_residual() instead
-            # of re-checking the amount inline: this used to be a duplicated
-            # (and looser) copy of that same rule, one that never accounted
-            # for the invoice still being in 'draft' (amount_residual_signed
-            # is 0.0 until posted), which made this check always fail during
-            # the recalculation flow (task #83486, action_post() called on a
-            # retention whose invoice is still draft) - and, since it
-            # returned a dict/False instead of raising, action_recalculate()
-            # had no way to notice the failure either.
-            try:
-                retention._check_retention_amount_vs_move_residual()
-            except UserError as e:
-                if is_automated:
-                    retention.message_post(body=str(e), category='exception')
-                    return False
-                raise
+            retention_amounts_by_move = defaultdict(float)
+            for line in retention.retention_line_ids:
+                retention_amounts_by_move[line.move_id] += line.retention_amount
 
+            for move, retention_amount in retention_amounts_by_move.items():
+                invoice_total = abs(move.amount_residual_signed)
+                if invoice_total < retention_amount:
+                    error_msg = _(
+                        "The retention amount (%s) cannot be greater than the invoice total signed amount (%s) for invoice %s."
+                    ) % (retention_amount, invoice_total, move.name)
+
+                    if is_automated:
+                        retention.message_post(body=error_msg, category='exception')
+                        return False
+
+                    return {
+                        'type': 'ir.actions.client',
+                        'tag': 'display_notification',
+                        'params': {
+                            'title': _('Error'),
+                            'message': error_msg,
+                            'sticky': False,
+                            'type': 'danger',
+                        }
+                    }
             zero_retention_lines = retention.retention_line_ids.filtered(
                 lambda l: float_is_zero(l.retention_amount, precision_rounding=self.company_currency_id.rounding)
             )
@@ -988,7 +559,7 @@ class AccountRetention(models.Model):
             if retention.type_retention == "iva" and (not retention.number or not re.fullmatch(r"\d{14}", retention.number)):
                 raise ValidationError(_("IVA retention: Number must be exactly 14 numeric digits."))
 
-            if retention._is_islr_supplier_retention():
+            if retention.type_retention == "islr" and retention.type in ["in_invoice", "in_refund", "in_debit"]:
                 retention._validate_islr_retention()
 
             try:
@@ -1554,7 +1125,7 @@ class AccountRetention(models.Model):
             lambda l: l.tax_ids and l.tax_ids[0].amount > 0
         ).mapped("tax_ids")
         if not any(tax_ids):
-            raise UserError(_("The invoice %s has no tax.") % invoice_id.name)
+            raise UserError(_("The invoice %s has no tax."), invoice_id.number)
 
         withholding_amount = invoice_id.partner_id.withholding_type_id.value
         lines_data = []

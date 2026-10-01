@@ -297,15 +297,6 @@ class AccountRetentionLine(models.Model):
                 None,
             )
             if not match:
-                # Reachable from a plain form onchange (the user manually
-                # types an aliquot that isn't on the invoice), but NOT from
-                # account.retention.action_recalculate(): that method's
-                # diff-by-aliquot (_retention_line_key/
-                # _get_expected_iva_lines_data) only ever calls
-                # recalculate_amounts() on a line whose aliquot key already
-                # matched an expected tax group - a line whose aliquot
-                # stopped matching anything on the invoice is classified as
-                # "obsolete" and removed there instead of reaching here.
                 continue
 
             tax_group, tax = match
@@ -447,14 +438,6 @@ class AccountRetentionLine(models.Model):
 
         if index >= len(invoice_lines_for_concept):
             # More retention lines than invoice lines left for this concept.
-            # Reachable from a plain form onchange (e.g. a wizard adding
-            # more ISLR lines than the invoice actually has for that
-            # concept), but NOT from account.retention.action_recalculate():
-            # _get_expected_islr_lines_data() only ever produces one
-            # expected key per invoice line actually present for the
-            # concept, so a retention line whose ordinal has no invoice
-            # line left is classified as "obsolete" and removed by the
-            # sync instead of reaching here via recalculate_amounts().
             return 0.0, 0.0
 
         matched_line = invoice_lines_for_concept[index]
