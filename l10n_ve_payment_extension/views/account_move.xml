@@ -97,26 +97,12 @@
 
                 </xpath>
 
-                <xpath expr="//header" position="inside">
-                    <button
-                        name="action_recalculate_retentions"
-                        type="object"
-                        string="Recalcular retenciones"
-                        invisible="state != 'draft' or (not has_emited_iva_retention and not has_emited_islr_retention)"
-                    />
-                </xpath>
-
                 <xpath expr="//header" position="after">
                     <field name="count_islr_retention" invisible="1"/>
                     <field name="has_emited_islr_retention" invisible="1"/>
-                    <field name="has_emited_iva_retention" invisible="1"/>
                     <div class="alert alert-warning" role="alert"
                          invisible="(count_islr_retention > 0 and has_emited_islr_retention) or count_islr_retention == 0">
                         Warning: You have ISLR retentions to aproved
-                    </div>
-                    <div class="alert alert-danger" role="alert"
-                         invisible="state != 'draft' or (not has_emited_iva_retention and not has_emited_islr_retention)">
-                        Esta factura ya tiene una retención de IVA o ISLR emitida. Recuerde recalcular las retenciones antes de confirmarla, para que reflejen los cambios en las líneas de la factura.
                     </div>
                 </xpath>
 

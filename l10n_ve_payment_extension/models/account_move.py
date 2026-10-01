@@ -165,22 +165,6 @@ class AccountMoveRetention(models.Model):
                 }
         
 
-    def action_recalculate_retentions(self):
-        """
-        Recalculates, on-the-fly, the emitted IVA/ISLR retentions linked to
-        this vendor invoice against its current invoice lines (task
-        #83486), without re-running action_post()'s sequence assignment,
-        payment creation/reconciliation or state transition - see
-        account.retention.action_recalculate() for why those must not be
-        repeated.
-        """
-        for move in self:
-            retentions = (
-                move.retention_iva_line_ids.retention_id
-                | move.retention_islr_line_ids.retention_id
-            ).filtered(lambda r: r.state == "emitted")
-            retentions.action_recalculate()
-
     @api.depends(
         "invoice_line_ids",
         "invoice_line_ids.product_id",
@@ -317,18 +301,7 @@ class AccountMoveRetention(models.Model):
 
     def write(self, vals):
         """
-        Override the write method to recalculate municipal retentions when
-        the invoice lines of a vendor invoice change (task #83486).
-
-        The warning about a stale emitted IVA/ISLR retention is now shown as
-        a persistent banner in the form view (see views/account_move.xml),
-        driven by has_emited_iva_retention/has_emited_islr_retention, instead
-        of a bus notification triggered from write().
-
-        Extends this single existing write() override instead of adding a
-        second one on the model - Odoo already merges every write() in the
-        MRO into one call chain, so a second override would only add
-        indirection without changing behavior.
+        Override the write method to recalculate municipal retentions if the invoice lines change.
         """
         res = super(AccountMoveRetention, self).write(vals)
         if "invoice_line_ids" in vals:
