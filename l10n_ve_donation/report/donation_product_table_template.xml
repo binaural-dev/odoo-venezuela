@@ -1,0 +1,52 @@
+<odoo>
+    <!-- Generic, reusable product table sub-template: no donation concept
+         and no direction (incoming/outgoing) baked in. Callers must set,
+         before the t-call:
+           - donation_line_data: list of {"line": <stock.move.line>, "unit_cost": float, "total_value": float, "expiration_date": formatted string or False}
+           - donation_grand_total: float
+           - donation_cost_currency: res.currency
+
+         `expiration_date` is read from each row dict (NOT from
+         `row['line'].lot_id.expiration_date` directly): that field only
+         exists when `product_expiry` is installed, an optional dependency
+         this generic, reusable template must not assume. The caller's
+         `_get_donation_*_lines()` method resolves it safely per-row, already
+         formatted (language/timezone) with `format_datetime`.
+
+         The column headers below are plain static text on purpose, NOT
+         wrapped in `_()`: this QWeb rendering context does not expose a `_`
+         callable in `values` (confirmed: calling `_()` here raises
+         `TypeError: 'NoneType' object is not callable`). Static text inside
+         a view's arch is already translatable through the module's own
+         `i18n/*.po` export (the same mechanism used by every other view in
+         Odoo), with no code change needed.
+    -->
+    <template id="donation_product_table" name="Donation Product Table">
+        <table class="table table-sm table-bordered">
+            <thead>
+                <tr>
+                    <th>Code</th><th>Description</th><th class="text-end">Qty</th><th>UoM</th>
+                    <th>Lot</th><th>Expiration</th><th class="text-end">Unit Cost</th><th class="text-end">Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr t-foreach="donation_line_data" t-as="row">
+                    <td t-out="row['line'].product_id.default_code or ''" />
+                    <td t-out="row['line'].product_id.name" />
+                    <td class="text-end" t-out="row['line'].quantity" />
+                    <td t-out="row['line'].product_uom_id.name" />
+                    <td t-out="row['line'].lot_id.name or ''" />
+                    <td><span t-if="row.get('expiration_date')" t-out="row['expiration_date']" /></td>
+                    <td class="text-end"><span t-out="'%.2f' % row['unit_cost']" /> <span t-out="donation_cost_currency.symbol" /></td>
+                    <td class="text-end"><span t-out="'%.2f' % row['total_value']" /> <span t-out="donation_cost_currency.symbol" /></td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="7" class="text-end"><strong>Total at cost</strong></td>
+                    <td class="text-end"><strong><span t-out="'%.2f' % donation_grand_total" /> <span t-out="donation_cost_currency.symbol" /></strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </template>
+</odoo>

@@ -7,6 +7,17 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='origin']" position="after">
                 <field name="is_donation" readonly="1"/>
+                <field name="is_donation_delivery" invisible="1"/>
+                <field name="donation_reason" invisible="not is_donation_delivery" readonly="state in ('done', 'cancel')"/>
+            </xpath>
+            <xpath expr="//button[@name='do_print_picking']" position="after">
+                <button
+                    name="print_donation_certificate"
+                    string="Print Donation Certificate"
+                    type="object"
+                    groups="stock.group_stock_user"
+                    invisible="not is_donation_delivery or state != 'done'"
+                />
             </xpath>
         </field>
     </record>

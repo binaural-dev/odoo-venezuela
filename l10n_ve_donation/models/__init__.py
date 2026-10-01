@@ -8,6 +8,7 @@ from . import (
     sale_order,
     stock_location,
     stock_move,
+    stock_picking,
     stock_picking_type,
     stock_scrap,
     stock_warehouse,
