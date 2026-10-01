@@ -1,3 +1,4 @@
+from odoo import Command
 from odoo.tests import tagged
 from odoo.exceptions import ValidationError
 from .common import TestDonationCommon
@@ -68,7 +69,12 @@ class TestStockScrap(TestDonationCommon):
         self.assertEqual(scrap.state, "done")
 
     def test_05_stock_move_prepare_account_move_vals(self):
-        """_prepare_account_move_vals propagates donation info from scrap."""
+        """_prepare_account_move_vals propagates donation info from scrap.
+
+        `partner_id` is NO LONGER forced to the company:
+        stock.scrap has no real contact field for the beneficiary/patient
+        (documented limitation), so the header is simply left unset instead
+        of duplicating the company as both donor and beneficiary."""
         scrap = self.env["stock.scrap"].create({
             "product_id": self.product_storable.id,
             "scrap_qty": 1,
@@ -96,12 +102,18 @@ class TestStockScrap(TestDonationCommon):
             cost=10,
         )
         self.assertTrue(vals.get("is_donation"))
-        self.assertEqual(vals.get("partner_id"), self.company.partner_id.id)
+        self.assertFalse(vals.get("partner_id"))
         self.assertEqual(vals.get("ref"), "Reason A")
         self.assertIn("Reason A", vals.get("ref"))
 
     def test_06_stock_move_prepare_account_move_vals_no_reason(self):
-        """_prepare_account_move_vals with donation but no reason."""
+        """_prepare_account_move_vals with donation but no reason: the `ref`
+        already set by the base `vals` (the move's `description`) must be
+        preserved, not wiped to `False` -- regression test for the bug where
+        the override unconditionally forced `ref` to
+        `self.scrap_id.donation_reason`, which is `False` whenever there is
+        no reason, silently discarding whatever `ref`/description the core
+        `vals` already carried."""
         scrap = self.env["stock.scrap"].create({
             "product_id": self.product_storable.id,
             "scrap_qty": 1,
@@ -128,8 +140,9 @@ class TestStockScrap(TestDonationCommon):
             cost=10,
         )
         self.assertTrue(vals.get("is_donation"))
-        # ref should not contain extra dash when no reason
-        self.assertEqual(vals.get("ref"), False)
+        # No reason -- the description already set by the base vals must be
+        # preserved, not overwritten with False.
+        self.assertEqual(vals.get("ref"), "Desc")
 
     def test_07_multi_company_scrap_location_domain(self):
         """Domain MUST filter by current company."""
@@ -152,3 +165,34 @@ class TestStockScrap(TestDonationCommon):
         
         domain_a = scrap_a.scrap_location_domain
         self.assertIn("'company_id', '=', company_id", domain_a)
+
+    def test_08_scrap_certificate_shows_blank_beneficiary(self):
+        """Documented limitation (not resolved in this change):
+        stock.scrap has no real contact field for the patient/beneficiary,
+        so the certificate for a scrap-originated donation move keeps
+        showing the beneficiary blank -- no regression vs. before, since the
+        header is just left unset instead of forced to the company."""
+        move = self.env["account.move"].create({
+            "move_type": "entry",
+            "is_donation": True,
+            "journal_id": self.journal_general.id,
+            "ref": "Donación por scrap sin contacto real",
+            "line_ids": [
+                Command.create({
+                    "account_id": self.account_expense.id,
+                    "debit": 10,
+                    "credit": 0,
+                    "partner_id": self.company.partner_id.id,
+                }),
+                Command.create({
+                    "account_id": self.account_income.id,
+                    "debit": 0,
+                    "credit": 10,
+                    "partner_id": self.company.partner_id.id,
+                }),
+            ],
+        })
+        self.assertFalse(move.partner_id)
+        report = self.env.ref("l10n_ve_donation.action_donation_certificate_account_move")
+        html, _report_type = report._render_qweb_html(report.report_name, move.ids)
+        self.assertIn(b"__________________", html)

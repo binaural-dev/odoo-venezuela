@@ -58,10 +58,10 @@
                                         ___/___/____, bajo el No. _______, Tomo _______, e inscrita en el Registro de Información 
                                         Fiscal (R.I.F) bajo el No. <strong><span t-out="o.company_id.vat or '__________________'"/></strong>, suficientemente facultado para este acto 
                                         según consta en ____________________________________________________________________________________________, 
-                                        por el presente documento declaro que en nombre de mi representada doy en calidad de DONACIÓN, en forma pura y simple, perfecta e 
-                                        irrevocable a <strong><span t-out="'__________________'"/></strong>, y en el 
-                                        Registro de Información Fiscal (RIF) bajo el No. <strong><span t-out="'__________________'"/></strong>, los siguientes 
-                                        bienes: 
+                                        por el presente documento declaro que en nombre de mi representada doy en calidad de DONACIÓN, en forma pura y simple, perfecta e
+                                        irrevocable a <strong><span t-out="o.partner_id.name or '__________________'"/></strong>, y en el
+                                        Registro de Información Fiscal (RIF) bajo el No. <strong><span t-out="o.partner_id.vat or '__________________'"/></strong>, los siguientes
+                                        bienes:
                                         <br/><br/>
                                         <strong>
                                             <span t-out="o.ref"/>

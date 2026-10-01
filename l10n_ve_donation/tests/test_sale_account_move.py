@@ -1,6 +1,6 @@
 from unittest.mock import patch
 from odoo import fields, Command
-from odoo.tests import tagged
+from odoo.tests import Form, tagged
 from odoo.exceptions import ValidationError, UserError
 from .common import TestDonationCommon
 
@@ -9,7 +9,9 @@ from .common import TestDonationCommon
 class TestSaleAccountMove(TestDonationCommon):
 
     def test_01_sale_order_donation_onchange(self):
-        """Creating a donation SO sets partner to company and warehouse to donation."""
+        """Marking a SO as donation sets the document type and the donation
+        warehouse -- the partner is NOT forced to the company anymore (it
+        keeps representing the real beneficiary)."""
         order = self.env["sale.order"].create({
             "partner_id": self.partner.id,
             "document": "invoice",
@@ -19,7 +21,7 @@ class TestSaleAccountMove(TestDonationCommon):
         })
         order.is_donation = True
         order._onchange_is_donation()
-        self.assertEqual(order.partner_id, self.company.partner_id)
+        self.assertEqual(order.partner_id, self.partner)
         self.assertEqual(order.document, "invoice")
         self.assertEqual(order.warehouse_id, self.warehouse_donation)
 
@@ -39,18 +41,47 @@ class TestSaleAccountMove(TestDonationCommon):
         self.warehouse_donation.write({"is_donation_warehouse": True})
 
     def test_03_sale_order_partner_change_donation(self):
-        """Cannot change partner on a donation SO."""
-        order = self.env["sale.order"].create({
-            "partner_id": self.company.partner_id.id,
-            "is_donation": True,
-            "document": "invoice",
-            "manually_set_rate": True,
-            "foreign_rate": 1.0,
-            "foreign_inverse_rate": 1.0,
-        })
-        with self.assertRaises(ValidationError):
-            order.partner_id = self.partner.id
-            order._onchange_partner_id_donation()
+        """A donation SO accepts any contact as customer -- it no longer has
+        to be the company (the partner represents the real beneficiary, not
+        a duplicate of the company). Built with `Form`, setting the real
+        beneficiary as partner_id AFTER enabling the donation flag but still
+        inside the same `Form` session, so this exercises the `onchange`
+        chain (not a `write()`) -- this is what would catch a regression if
+        `_onchange_partner_id_donation()` were ever reintroduced. Actually
+        invoiced: the resulting invoice carries the real beneficiary as its
+        partner_id, not the company."""
+        # manually_set_rate/foreign_rate/foreign_inverse_rate are
+        # invisible="1" in the form view (backend-only, not user-editable)
+        # -- supplied via context defaults, same as Odoo itself would set
+        # them from a non-UI flow, instead of writing them after save()
+        # (triggers an unrelated pre-existing chatter-message bug in
+        # l10n_ve_sale's write() override when these fields change via
+        # write on an already-saved record).
+        sale_order_model = self.env["sale.order"].with_context(
+            default_manually_set_rate=True,
+            default_foreign_rate=1.0,
+            default_foreign_inverse_rate=1.0,
+        )
+        with Form(sale_order_model) as order_form:
+            order_form.partner_id = self.company.partner_id
+            with order_form.order_line.new() as line:
+                line.product_id = self.product_donation
+                line.product_uom_qty = 1
+                line.price_unit = 100
+            order_form.is_donation = True
+            # The real beneficiary is set AFTER enabling the donation flag,
+            # still inside the Form session so it goes through the onchange
+            # chain -- no longer forced to the company.
+            order_form.partner_id = self.partner
+        order = order_form.save()
+        self.assertEqual(order.document, "invoice")
+        self.assertEqual(order.partner_id, self.partner)
+
+        order.action_confirm()
+        invoices = order._create_invoices()
+        self.assertTrue(invoices)
+        self.assertEqual(invoices.partner_id, self.partner)
+        self.assertNotEqual(invoices.partner_id, self.company.partner_id)
 
     def test_04_sale_order_donation_constrain(self):
         """Cannot change is_donation on confirmed order."""
@@ -90,7 +121,15 @@ class TestSaleAccountMove(TestDonationCommon):
         self.assertTrue(invoice_vals.get("is_donation"))
 
     def test_06_account_move_check_partner_donation(self):
-        """Partner on donation move must be company partner."""
+        """The HEADER partner (move.partner_id) of a donation move is no
+        longer constrained to the company partner -- it represents the real
+        counterparty. Changing it must not raise, as long as the
+        LINES still use the company partner (see test_07, unchanged).
+
+        Also confirms the combined behavior with the blocker fix: after
+        action_post(), the header keeps the beneficiary and every line
+        keeps the company (action_post()'s own line-forcing loop in
+        l10n_ve_donation, untouched)."""
         move = self.env["account.move"].create({
             "move_type": "entry",
             "is_donation": True,
@@ -112,10 +151,16 @@ class TestSaleAccountMove(TestDonationCommon):
         })
         # Should not raise
         move._check_partner_donation()
-        # Now change partner on move
-        with self.assertRaises(ValidationError):
-            move.partner_id = self.partner.id
-            move._check_partner_donation()
+        # Changing the HEADER partner must not raise anymore.
+        move.partner_id = self.partner.id
+        move._check_partner_donation()
+        self.assertEqual(move.partner_id, self.partner)
+
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(move.state, "posted")
+        self.assertEqual(move.partner_id, self.partner)
+        for line in move.line_ids:
+            self.assertEqual(line.partner_id, self.company.partner_id)
 
     def test_07_account_move_check_line_partner_donation(self):
         """Line partner on donation move must be company partner."""
@@ -450,3 +495,33 @@ class TestSaleAccountMove(TestDonationCommon):
 
         self.assertEqual(order_b.warehouse_id, warehouse_b)
         self.assertNotEqual(order_b.warehouse_id, self.warehouse_donation)
+
+    def test_20_certificate_shows_real_beneficiary(self):
+        """The donation certificate (account.move) shows the real
+        beneficiary's name/RIF in both mentions, not the company
+        -- even though the print button is only shown for
+        move_type == 'entry', the report itself is not restricted."""
+        beneficiary = self.env["res.partner"].create({
+            "name": "Fundación Beneficiaria Test",
+            "vat": "J-12345678-9",
+        })
+        move = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": beneficiary.id,
+            "journal_id": self.journal_sale.id,
+            "is_donation": True,
+            "invoice_date": fields.Date.today(),
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product_donation.id,
+                    "quantity": 1,
+                    "price_unit": 100,
+                }),
+            ],
+        })
+        self.assertNotEqual(move.partner_id, self.company.partner_id)
+        report = self.env.ref("l10n_ve_donation.action_donation_certificate_account_move")
+        html, _report_type = report._render_qweb_html(report.report_name, move.ids)
+        self.assertIn(beneficiary.name.encode(), html)
+        self.assertIn(beneficiary.vat.encode(), html)
