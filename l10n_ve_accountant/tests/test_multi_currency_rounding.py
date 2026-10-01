@@ -2871,7 +2871,8 @@ class TestMultiCurrencyRounding(TransactionCase):
             new_company.tax_calculation_rounding_method,
             'round_per_line',
             "New companies must default to round-per-line, not stock Odoo's"
-            " round-per-tax.",
+            " round-per-tax."
+        )
     def test_55_unreconcile_normal_payment_updates_payment_state(self):
         """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`
         force-recompute: 3 separate register-payment-wizard payments, all
