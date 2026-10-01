@@ -144,4 +144,47 @@ class TestAccountMove(TransactionCase):
         invoice.action_post()
         return invoice
 
+    def test_check_price_in_zero_rejects_bare_negative_subtotal_line(self):
+        """`_check_price_in_zero` (`@api.constrains('invoice_line_ids')`) rejects
+        any invoice line with `price_subtotal <= 0` that isn't a recognized
+        discount line (`_get_discount_lines()`). Relocated from
+        `l10n_ve_accountant/tests/test_multi_currency_rounding.py::test_31_mixed_sign_lines_both_rounding_modes`
+        (PR #1344/#1417 investigation): that assertion tested THIS module's own
+        constraint and can't be guaranteed to run in a test DB where only
+        `l10n_ve_accountant` is installed (confirmed via PR #1417, a diff
+        isolated to that module -- it failed with this exact assertion)."""
+        with self.assertRaises(ValidationError):
+            self._create_invoice([
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 11.16,
+                    "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                },
+                {
+                    "product_id": self.product.id,
+                    "price_unit": -4.16,
+                    "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                },
+            ])
+
+    def test_check_price_in_zero_rejects_negative_line_sharing_tax_with_positive_line(self):
+        """Same constraint as above, different amounts -- relocated from
+        `l10n_ve_accountant/tests/test_real_portion.py::test_34i_negative_line_blocked_by_existing_invoice_constraint`
+        (PR #1344/#1417 investigation), kept as a separate case since it
+        documents the concrete shape (100/-20 split) that test's original
+        author found relevant."""
+        with self.assertRaises(ValidationError):
+            self._create_invoice([
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 100.0,
+                    "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                },
+                {
+                    "product_id": self.product.id,
+                    "price_unit": -20.0,
+                    "tax_ids": [(6, 0, [self.tax_iva16.id])],
+                },
+            ])
+
    
