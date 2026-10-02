@@ -184,6 +184,29 @@ class AccountPayment(models.Model):
                 payment.currency_id == payment.company_id.foreign_currency_id
             )
 
+    @api.depends('payment_type')
+    def _compute_available_journal_ids(self):
+        """Restrict available journals to bank journals with a filled payment account.
+
+        This only depends on payment_type, but reads payment_account_id off
+        the journal's payment method lines: if a line's account is changed
+        within the same environment/transaction, available_journal_ids won't
+        recompute until the field is read fresh again (e.g. reopening the
+        form/wizard). Not adding the line accounts as extra dependencies on
+        purpose, to avoid recompute overhead on every line edit; documented
+        here as a known limitation instead.
+        """
+        super(AccountPayment, self)._compute_available_journal_ids()
+        for pay in self:
+            if pay.payment_type == 'inbound':
+                pay.available_journal_ids = pay.available_journal_ids.filtered(
+                    lambda journal: journal.type != 'bank' or journal.inbound_payment_method_line_ids.payment_account_id
+                )
+            else:
+                pay.available_journal_ids = pay.available_journal_ids.filtered(
+                    lambda journal: journal.type != 'bank' or journal.outbound_payment_method_line_ids.payment_account_id
+                )
+
     @api.model_create_multi
     def create(self, vals_list):
         """
