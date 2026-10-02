@@ -42,11 +42,18 @@ Estado recibido, sin confiar en el pareo que mandó el cliente.
 
 #### Scenario: Servidor rechaza un pareo Estado/Municipio inconsistente
 
-- **GIVEN** el ajuste `self_ordering_require_address` activado
+- **GIVEN** el ajuste `self_ordering_require_address` activado o desactivado
 - **WHEN** llega una llamada a `identify/create` con un `municipality_id` que
   no pertenece al `state_id` recibido
 - **THEN** el servidor rechaza la creación con un mensaje de error, sin
   confiar en el pareo que mandó el cliente
+
+#### Scenario: Servidor rechaza un Estado que no es de Venezuela
+
+- **GIVEN** el ajuste `self_ordering_require_address` activado o desactivado
+- **WHEN** llega una llamada a `identify/create` con un `state_id` de otro
+  país, o con un `municipality_id` sin `state_id`
+- **THEN** el servidor rechaza la creación con un mensaje de error
 
 ### Requirement: Datos de Estados/Municipios de Venezuela expuestos al Kiosko
 

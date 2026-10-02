@@ -5,7 +5,7 @@
 - [x] 1.1 `static/src/overrides/cancel_popup.xml`: `t-inherit` de
       `pos_self_order.CancelPopup` — "¿Desea cancelar la orden?" / "Sí" / "No"
 - [x] 1.2 `i18n/es_VE.po`: cadenas nuevas
-- [x] 1.3 `__manifest__.py`: bump de versión (1.3 → 1.4)
+- [x] 1.3 `__manifest__.py`: bump de versión (1.3 → 1.4; luego 1.5)
 
 ## 2. Leyenda de campos obligatorios (punto 3)
 
@@ -151,6 +151,17 @@
 - [x] 7quinquies.2 `kiosk_stepper.scss`: alto fijo de la barra de pasos y las
       páginas `vh-100` que la siguen restan ese alto (antes desbordaban la
       ventana y el pie quedaba recortado en pantallas bajas)
+
+## 7sexies. Review del PR #1367
+
+- [x] 7sexies.1 `controllers/orders.py`: el cruce estado↔municipio y la
+      comprobación de que el estado es de Venezuela corren siempre que llegue
+      un id, con `self_ordering_require_address` activo o no; solo los
+      mensajes de "campo faltante" dependen del flag
+- [x] 7sexies.2 Tests con el flag apagado: pareo inconsistente, estado de
+      otro país y municipio sin estado → rechazados; pareo válido → guardado
+- [x] 7sexies.3 `__manifest__.py`: los patches de modelo de `l10n_ve_pos`
+      se listan uno por uno en el bundle del Kiosko (sin glob)
 
 ## 8. OpenSpec
 

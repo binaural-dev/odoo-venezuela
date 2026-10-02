@@ -527,6 +527,98 @@ class TestKioskPublicRoutes(TransactionCase):
         self.assertEqual(result["res.partner"], [])
         self.assertTrue(result["error"])
 
+    def _mismatched_state_municipality(self):
+        municipality = self.env["res.country.municipality"].search([], limit=1)
+        if not municipality:
+            self.skipTest("l10n_ve_location sin municipios seed en esta BD de test")
+        other_state = self.env["res.country.state"].search(
+            [
+                ("id", "not in", municipality.state_id.ids),
+                ("country_id", "=", self.env.ref("base.ve").id),
+            ],
+            limit=1,
+        )
+        if not other_state:
+            self.skipTest("no hay otro estado VE para probar el cruce estado/municipio")
+        return other_state, municipality
+
+    def test_identify_create_address_optional_mismatched_state_rejected(self):
+        """Con el flag apagado el cruce estado/municipio también se valida:
+        la dirección es opcional, pero lo que llega no se guarda sin validar."""
+        self.assertFalse(self.config.self_ordering_require_address)
+        other_state, municipality = self._mismatched_state_municipality()
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="96969696",
+            name="Cruce Inválido Sin Flag",
+            phone="0412-9990005",
+            state_id=other_state.id,
+            municipality_id=municipality.id,
+        )
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_address_optional_non_ve_state_rejected(self):
+        self.assertFalse(self.config.self_ordering_require_address)
+        foreign_state = self.env["res.country.state"].search(
+            [("country_id.code", "!=", "VE")], limit=1
+        )
+        if not foreign_state:
+            self.skipTest("no hay estados de otro país en esta BD de test")
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="97979797",
+            name="Estado Extranjero",
+            phone="0412-9990006",
+            state_id=foreign_state.id,
+        )
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_address_optional_municipality_without_state_rejected(self):
+        self.assertFalse(self.config.self_ordering_require_address)
+        municipality = self.env["res.country.municipality"].search([], limit=1)
+        if not municipality:
+            self.skipTest("l10n_ve_location sin municipios seed en esta BD de test")
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="98989898",
+            name="Municipio Sin Estado",
+            phone="0412-9990007",
+            municipality_id=municipality.id,
+        )
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_address_optional_valid_pair_is_saved(self):
+        self.assertFalse(self.config.self_ordering_require_address)
+        municipality = self.env["res.country.municipality"].search(
+            [("state_id.country_id.code", "=", "VE")], limit=1
+        )
+        if not municipality:
+            self.skipTest("l10n_ve_location sin municipios seed en esta BD de test")
+        state = municipality.state_id.filtered(lambda s: s.country_id.code == "VE")[:1]
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="99999990",
+            name="Pareo Válido Sin Flag",
+            phone="0412-9990008",
+            state_id=state.id,
+            municipality_id=municipality.id,
+        )
+        self.assertFalse(result["error"])
+        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        self.assertEqual(partner.state_id, state)
+        self.assertEqual(partner.municipality, municipality)
+
     # -- set_phone -----------------------------------------------------------
 
     def test_set_phone_fill_only(self):
