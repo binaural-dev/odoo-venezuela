@@ -887,6 +887,22 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ]
 
     def _determinate_amount_taxeds(self, move):
+        # Durante la generación de un libro (`generate_sales_book`/`generate_purchases_book`) esta
+        # función se invoca decenas de veces por factura (líneas del libro + cada fila del
+        # resumen del pie), y cada llamada reagrupa `move.tax_totals`. En rangos largos eso
+        # multiplica el tiempo de generación. Con el contexto `book_taxeds_cache` el resultado se
+        # memoiza en el cache del cursor (vive solo durante la petición) por (reporte, compañía,
+        # factura). Fuera de ese contexto no hay caché: el cálculo se hace siempre en vivo.
+        if not self.env.context.get("book_taxeds_cache"):
+            return self._compute_amount_taxeds(move)
+        cache = self.env.cr.cache.setdefault("l10n_ve_invoice_book_taxeds", {})
+        key = (self.report, self.company_id.id, move.id)
+        if key not in cache:
+            cache[key] = self._compute_amount_taxeds(move)
+        # Copia, por si el llamador modifica el diccionario.
+        return dict(cache[key])
+
+    def _compute_amount_taxeds(self, move):
         is_posted = move.state == "posted"
         vef_base = self.company_id.currency_id.id == self.env.ref("base.VEF").id
 
@@ -1194,7 +1210,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return tax_result
 
     def generate_sales_book(self, company_id):
-
+        self = self.with_context(book_taxeds_cache=True)
         self.company_id = company_id
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
@@ -1368,6 +1384,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return flat_fields
 
     def generate_purchases_book(self, company_id):
+        self = self.with_context(book_taxeds_cache=True)
         self.company_id = company_id
         purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()
