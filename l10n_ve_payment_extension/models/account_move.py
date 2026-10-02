@@ -10,6 +10,42 @@ _logger = logging.getLogger(__name__)
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
 
+    def _retention_excess_within_currency_precision(self, retention_amount_company_currency):
+        """Diferencia exacta a mandar a diferencial cambiario cuando
+        `retention_amount_company_currency` (VEF, ya sumado por todas las
+        lineas de esta factura) excede lo adeudado SOLO porque las dos
+        monedas no pueden expresar el mismo importe con la misma precision.
+
+        La retencion se calcula sobre el impuesto del asiento (VEF); lo
+        adeudado de la factura vive en su propia moneda con su propia
+        precision. Reconvertir el excedente de vuelta a la moneda de la
+        factura, con la tasa de LA FACTURA (`invoice_currency_rate`, nunca
+        la de compañia ni una tasa recalculada del dia), es la unica forma
+        de confirmar sin adivinar que ese excedente es redondeo: si al
+        reconvertir desaparece (redondea a cero en la moneda del documento),
+        la factura queda saldada en los terminos en que fue emitida y el
+        sobrante es un artefacto de precision. Si no desaparece, es un
+        exceso real y no se tolera.
+
+        Devuelve el excedente exacto en VEF (listo para writeoff) cuando es
+        tolerable, o None cuando no hay excedente que tolerar (retencion
+        normal o con exceso real) o la factura esta en moneda de compañia
+        (no hay dos precisiones que reconciliar).
+        """
+        self.ensure_one()
+        company_currency = self.company_id.currency_id
+        excess = retention_amount_company_currency - abs(self.amount_residual_signed)
+        if company_currency.compare_amounts(excess, 0.0) <= 0:
+            return None
+        if self.currency_id == company_currency or not self.invoice_currency_rate:
+            return None
+        excess_in_document_currency = self.currency_id.round(
+            excess * self.invoice_currency_rate
+        )
+        if not self.currency_id.is_zero(excess_in_document_currency):
+            return None
+        return excess
+
     base_currency_is_vef = fields.Boolean(
         compute="_compute_currency_fields",
     )
