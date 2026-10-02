@@ -106,9 +106,14 @@ class TfhkaDocumentService(models.AbstractModel):
         else:
             last = client.get_last_document_number(company, document_type, series, origin=invoice)
             try:
-                document_number = int(last) + 1
+                last = int(last)
             except (ValueError, TypeError):
-                document_number = invoice.sequence_number or 1
+                last = 0
+            # last == 0 significa que la imprenta no devolvió un número (serie
+            # sin documentos previos o 203+validaciones) -- no asumir que el
+            # siguiente es el 1, sino respetar el correlativo que Odoo ya le
+            # asignó a esta factura.
+            document_number = last + 1 if last else (invoice.sequence_number or 1)
 
         document_number = str(document_number)
 
