@@ -1375,8 +1375,9 @@ class TestAccountMoveApiCalls(TransactionCase):
     def test_49b_get_item_details_with_discount_fixed(self):
         # discount_type='amount' es lo que permite escribir discount_fixed
         # (_enforce_discount_exclusivity fuerza discount_fixed a 0 en modo
-        # 'percent'); la decisión de _prepare_detail_lines de cuál leer es
-        # por el valor de la línea, no por este ajuste de compañía.
+        # 'percent') y lo que hace que _uses_discount_fixed() -- de la que
+        # depende _prepare_detail_lines -- lo reconozca (ver test_49c para
+        # el caso en que la compañía cambia a 'percent' después).
         self.company.discount_type = 'amount'
         prod = self.env['product.product'].create({
             'name': 'Prod Descuento Fijo',
@@ -1395,11 +1396,12 @@ class TestAccountMoveApiCalls(TransactionCase):
         # descuento fijo -- debe cuadrar con lo anterior.
         self.assertEqual(details[0]["precioItem"], "80.0")
 
-    def test_49c_get_item_details_discount_fixed_ignores_company_config(self):
-        # Con discount_type='percent' (config normal) pero una línea que de
-        # todos modos trae discount_fixed cargado, _prepare_detail_lines
-        # debe usarlo igual -- la decisión es por el valor de la línea, no
-        # por la configuración de la compañía.
+    def test_49c_get_item_details_discount_fixed_requires_company_in_amount_mode(self):
+        # Spec (openspec/specs/l10n_ve_invoice/spec.md, "Modo porcentaje
+        # activo"): discount_type es una config GLOBAL de la compañía, no
+        # por línea/documento -- con discount_type='percent', discount_fixed
+        # no tiene ningun efecto aunque la línea tenga un valor distinto de
+        # cero cargado de cuando la compañía estaba en modo 'amount'.
         self.company.discount_type = 'amount'
         prod = self.env['product.product'].create({
             'name': 'Prod Descuento Fijo 2',
@@ -1411,10 +1413,12 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         invoice.invoice_line_ids[0].discount_fixed = 20
         # Cambiar el modo de la compañía DESPUÉS de cargar el descuento fijo
-        # en la línea -- _prepare_detail_lines no debe dejar de reconocerlo.
+        # en la línea: _uses_discount_fixed() vuelve a ser False (depende del
+        # discount_type VIGENTE), asi que _prepare_detail_lines ya no debe
+        # reportar ese descuento fijo.
         self.company.discount_type = 'percent'
         details = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
-        self.assertEqual(details[0]["descuentoMonto"], "20.0")
+        self.assertEqual(details[0]["descuentoMonto"], "0.0")
 
     def test_50_compute_invisible_check_draft(self):
         inv = self.env["account.move"].create({
