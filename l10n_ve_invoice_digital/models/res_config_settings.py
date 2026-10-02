@@ -8,14 +8,18 @@ class ResConfigSettings(models.TransientModel):
     token_auth_tfhka = fields.Char(related="company_id.token_auth_tfhka", string="Token Auth", readonly=False)
     invoice_digital_tfhka = fields.Boolean(related="company_id.invoice_digital_tfhka", string="Invoice Digital", readonly=False)
     dispatch_guide_digital_tfhka = fields.Boolean(related="company_id.dispatch_guide_digital_tfhka", string="Dispatch Guide Digital", readonly=False)
-    sequence_validation_tfhka = fields.Boolean(related="company_id.sequence_validation_tfhka", string="Sequence Validation", readonly=False)
     digitalization_with_payment_tfhka = fields.Boolean(related="company_id.digitalization_with_payment_tfhka", string="Digital invoicing with payment registration", readonly=False)
+    payment_mode_tfhka = fields.Selection(related="company_id.payment_mode_tfhka", readonly=False)
     # Expone el campo multi-moneda de la compañía en la vista de ajustes.
     multi_currency_invoice_tfhka = fields.Boolean(related="company_id.multi_currency_invoice_tfhka", string="Multi-currency digital invoicing", readonly=False)
+    notify_email_tfhka = fields.Boolean(related="company_id.notify_email_tfhka", string="Email sending from The Factory HKA", readonly=False)
     mix_invoicing_tfhka = fields.Boolean(related="company_id.mix_invoicing_tfhka", string="Allow Mixed Invoicing", readonly=False)
     mix_invoicing_type_tfhka = fields.Selection(
         related="company_id.mix_invoicing_type_tfhka",
         readonly=False
+    )
+    batch_invoicing_tfhka = fields.Boolean(
+        related="company_id.batch_invoicing_tfhka", string="Batch Invoicing", readonly=False
     )
 
 
@@ -38,6 +42,16 @@ class ResConfigSettings(models.TransientModel):
     def _onchange_invoice_digital_tfhka(self):
         if not self.invoice_digital_tfhka:
             self.dispatch_guide_digital_tfhka = False
+            self.batch_invoicing_tfhka = False
+
+    @api.onchange('digitalization_with_payment_tfhka')
+    def _onchange_digitalization_with_payment_tfhka(self):
+        # batch_invoicing_tfhka depende de este flag (ver
+        # res.company._check_batch_invoicing_requires_payment_mode): el lote
+        # encola directo, sin pasar por el filtro "not payment-driven" del
+        # encolado normal, así que solo aplica bajo este modo.
+        if not self.digitalization_with_payment_tfhka:
+            self.batch_invoicing_tfhka = False
 
     def set_values(self):
         res = super().set_values()
@@ -50,9 +64,14 @@ class ResConfigSettings(models.TransientModel):
             company.write({
                 'dispatch_guide_digital_tfhka': False,
                 'multi_currency_invoice_tfhka': False,
+                'batch_invoicing_tfhka': False,
             })
+        if not self.digitalization_with_payment_tfhka:
+            company.write({'batch_invoicing_tfhka': False})
         if not self.mix_invoicing_tfhka:
             company.write({'mix_invoicing_type_tfhka': False})
+        if not self.digitalization_with_payment_tfhka:
+            company.write({'payment_mode_tfhka': 'credit'})
 
         if company.dispatch_guide_digital_tfhka:
             module = self.env['ir.module.module'].sudo().search(

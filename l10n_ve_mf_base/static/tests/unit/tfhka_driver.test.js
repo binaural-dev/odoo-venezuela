@@ -727,6 +727,124 @@ describe("TFHKA - TfhkaDriver (con MockSerialConnection)", () => {
         expect(Boolean(result.global_clamped)).toBe(false); // Sin clamp en este caso
     });
 
+    test("Descuento por monto en ítem (mínimo fiscal) envía q- tras el ítem", async () => {
+        const driver = new TfhkaDriver();
+        driver.connection = new MockSerialConnection();
+        driver.retryDelay = 0;
+
+        await driver.connection.requestPort();
+        driver.isConnected = true;
+
+        // Línea de 10 unidades con descuento 100% en el PdV: se factura en el
+        // mínimo fiscal como 10 × 0,01 con descuento de 0,09 sobre el ítem.
+        const orderWithFiscalMinLine = {
+            partner: {
+                vat: "J123456789",
+                name: "CLIENTE MINIMO FISCAL",
+            },
+            lines: [
+                {
+                    product_name: "Producto A",
+                    product_code: "A001",
+                    fiscal_code: "1",
+                    quantity: 10,
+                    price_unit: 0.01,
+                    discount_amount: 0.09,
+                },
+                {
+                    product_name: "Producto B",
+                    product_code: "B001",
+                    fiscal_code: "1",
+                    quantity: 1,
+                    price_unit: 5,
+                },
+            ],
+            payment_lines: [{ payment_method_code: "01", amount: 5.01 }],
+            additional_lines: [],
+            flag_21: "00",
+            has_cashbox: false,
+        };
+
+        driver.connection.setNextResponse("STATUS");
+        driver.connection.setResponseSequence(new Array(30).fill("ACK"));
+        driver.connection.setS1Payload(buildS1Payload({
+            lastInvoiceNumber: 999,
+            dailyClosureCounter: 20,
+            serialMachine: "Z1F0022949",
+        }));
+
+        const result = await driver.printInvoice(orderWithFiscalMinLine);
+        expect(Boolean(result.success)).toBe(true); // Factura con línea de mínimo fiscal impresa
+
+        // Sólo tramas de comando (<STX>...), sin sondeos de estado intermedios
+        const frames = driver.connection
+            .getSentCommands()
+            .map((cmd) => cmd.ascii)
+            .filter((cmd) => cmd.includes("<STX>"));
+        const itemIndex = frames.findIndex((cmd) =>
+            cmd.includes("<STX>!000000000100010000|A001|Producto A<ETX>")
+        );
+        expect(itemIndex >= 0).toBe(true); // Ítem enviado como 0,01 × 10,000 (cantidad real)
+        expect(frames[itemIndex + 1].includes("<STX>q-000000009<ETX>")).toBe(true); // q- de 0,09 justo después del ítem
+        expect(frames.filter((cmd) => cmd.includes("<STX>q-")).length).toBe(1); // Solo el ítem con descuento lleva q-
+    });
+
+    test("Nota de crédito con descuento por monto en ítem envía q- tras el ítem", async () => {
+        const driver = new TfhkaDriver();
+        driver.connection = new MockSerialConnection();
+        driver.retryDelay = 0;
+
+        await driver.connection.requestPort();
+        driver.isConnected = true;
+
+        // Devolución de una línea de mínimo fiscal de 3 unidades: 3 × 0,01
+        // con descuento de 0,02 sobre el ítem (neto 0,01).
+        const creditNoteOrder = {
+            partner: { vat: "V17527041", name: "Cliente NC Minimo Fiscal" },
+            invoice_affected: {
+                number: "900",
+                serial_machine: "Z1F0022949",
+                date: "20/06/2026",
+            },
+            lines: [
+                {
+                    product_name: "Producto Devuelto",
+                    product_code: "P001",
+                    fiscal_code: "1",
+                    quantity: 3,
+                    price_unit: 0.01,
+                    discount_amount: 0.02,
+                },
+            ],
+            payment_lines: [{ payment_method_code: "01", amount: 0.01 }],
+            additional_lines: [],
+            flag_21: "00",
+            has_cashbox: false,
+        };
+
+        driver.connection.setNextResponse("STATUS");
+        driver.connection.setResponseSequence(new Array(20).fill("ACK"));
+        driver.connection.setS1Payload(buildS1Payload({
+            lastInvoiceNumber: 900,
+            lastNCNumber: 1235,
+            dailyClosureCounter: 20,
+            serialMachine: "Z1F0022949",
+        }));
+
+        const result = await driver.printCreditNote(creditNoteOrder);
+        expect(Boolean(result.success)).toBe(true); // NC con línea de mínimo fiscal impresa
+
+        const frames = driver.connection
+            .getSentCommands()
+            .map((cmd) => cmd.ascii)
+            .filter((cmd) => cmd.includes("<STX>"));
+        const itemIndex = frames.findIndex((cmd) =>
+            cmd.includes("<STX>d1000000000100003000|P001|Producto Devuelto<ETX>")
+        );
+        expect(itemIndex >= 0).toBe(true); // Ítem devuelto como 0,01 × 3,000
+        expect(frames[itemIndex + 1].includes("<STX>q-000000002<ETX>")).toBe(true); // q- de 0,02 justo después del ítem
+    });
+
     test("Descuento global (Strategy A) emite aviso adicional cuando es clampado", async () => {
         const driver = new TfhkaDriver();
         driver.connection = new MockSerialConnection();

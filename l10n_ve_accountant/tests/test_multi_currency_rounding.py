@@ -1,8 +1,9 @@
 import logging
 from datetime import timedelta
 
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import TransactionCase, tagged, Form
 from odoo import fields, Command
+from odoo.exceptions import ValidationError
 
 _logger = logging.getLogger(__name__)
 
@@ -1043,11 +1044,15 @@ class TestMultiCurrencyRounding(TransactionCase):
                 )
 
     def test_31_mixed_sign_lines_both_rounding_modes(self):
-        """A negative (discount/adjustment) line sharing a tax with positive lines must NET OUT,
-        not add up as if both were positive -- in BOTH rounding modes. `round_per_line` had a
-        real `abs()` bug here (fixed via `_per_line_tax_sums` summing SIGNED per-line amounts);
-        `round_globally`'s `_vef_base_for_tax`/`_grouped_tax_sums` never used `abs()` so it was
-        never at risk, but is included for completeness/regression coverage."""
+        """Regression fixture for a real `abs()` bug in mixed-sign tax netting
+        (`round_per_line` used to sum `abs(line)` per line instead of the
+        signed amount). That bug is no longer reachable in practice: a bare
+        negative-subtotal product line (not routed through a recognized
+        discount mechanism) is now rejected outright by
+        `l10n_ve_invoice._check_price_in_zero` -- a validation that didn't
+        exist yet when this test was first written. Repurposed to document
+        that current behavior instead of the netting math it can no longer
+        exercise."""
         self.env["res.currency.rate"].search([
             ("currency_id", "=", self.currency_usd.id),
             ("company_id", "=", self.company.id),
@@ -1061,44 +1066,17 @@ class TestMultiCurrencyRounding(TransactionCase):
         for mode in ("round_per_line", "round_globally"):
             with self.subTest(mode=mode):
                 self.company.tax_calculation_rounding_method = mode
-                # Line A: 11.16 USD (positive). Line B: a -4.16 USD
-                # adjustment on the SAME tax -- net base is 7.00 USD, net
-                # tax must reflect that, not `tax(11.16) + tax(-4.16)`
-                # miscomputed as `tax(11.16) + tax(4.16)`.
-                inv = self._create_invoice(self.currency_usd, None, [
-                    (1, 11.16, [self.tax_16]),
-                    (1, -4.16, [self.tax_16]),
-                ])
-                tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
-                product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
-                net_base_usd = sum(product_lines.mapped('amount_currency'))
-                expected_tax_usd = self.currency_usd.round(abs(net_base_usd) * 0.16)
-                self.assertAlmostEqual(
-                    abs(tax_line.amount_currency), expected_tax_usd, places=2,
-                    msg=(
-                        f"[{mode}] With mixed-sign lines, "
-                        f"tax_line.amount_currency={tax_line.amount_currency} does not match "
-                        f"the netted base's tax ({expected_tax_usd}) -- looks like the negative "
-                        f"line's contribution was added instead of subtracted"
-                    ),
-                )
-                net_base_vef = sum(product_lines.mapped('balance'))
-                expected_tax_vef = self.currency_vef.round(abs(net_base_vef) * 0.16)
-                self.assertAlmostEqual(
-                    abs(tax_line.balance), expected_tax_vef, places=2,
-                    msg=(
-                        f"[{mode}] With mixed-sign lines, tax_line.balance={tax_line.balance} "
-                        f"(VEF) does not match the netted base's tax ({expected_tax_vef}) -- "
-                        f"looks like the negative line's contribution was added instead of "
-                        f"subtracted"
-                    ),
-                )
-                # `amount_tax` is in the document currency (USD), same as
-                # `amount_currency` -- NOT in VEF like `expected_tax_vef`.
-                self.assertAlmostEqual(
-                    abs(inv.amount_tax), abs(tax_line.amount_currency), places=2,
-                    msg=f"[{mode}] inv.amount_tax (widget total, USD) inconsistent with the posted tax line",
-                )
+                # Line A: 11.16 USD (positive). Line B: a bare -4.16 USD
+                # adjustment on the SAME tax -- not a recognized discount
+                # line, so its negative subtotal is rejected on creation.
+                with self.assertRaises(
+                    ValidationError,
+                    msg=f"[{mode}] A bare negative-subtotal product line must be rejected.",
+                ):
+                    self._create_invoice(self.currency_usd, None, [
+                        (1, 11.16, [self.tax_16]),
+                        (1, -4.16, [self.tax_16]),
+                    ])
 
     def test_32_SCOPE_CHECK_vef_only_invoice_round_per_line(self):
         """SCOPE CHECK: the whole fix (`_fix_base_amount_for_multi_currency` /
@@ -2343,4 +2321,260 @@ class TestMultiCurrencyRounding(TransactionCase):
             sorted(before.values()), sorted(after.values()),
             msg="El ciclo draft->post cambio los balances de las lineas "
                 f"sin motivo. Antes: {before}. Despues: {after}",
+        )
+
+    # ── tax_totals base_amount per group vs. real posted balance ────────
+    #
+    # `_fix_tax_amount_for_round_per_line` (account_tax.py) already fixes
+    # `tax_amount` per group against the real posted tax line (test_43-45),
+    # but `_fix_base_amount_for_multi_currency` still splits `base_amount`
+    # by PROPORTION across groups, not by each group's own real product
+    # lines -- confirmed off-by-a-cent on a real invoice (base_amount
+    # 217,994.27 in the widget vs. 217,994.28 actually posted).
+
+    def _set_usd_rate(self, rate):
+        """Replace today's USD rate -- a clean rate (like setUp's 40.0)
+        never triggers the rounding diff this bug depends on.
+        """
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+        self.env["res.currency.rate"].create({
+            "name": fields.Date.today(),
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": rate,
+            "company_id": self.company.id,
+        })
+
+    def _create_tax_with_own_group(self, name, amount):
+        """Like `_create_tax`, but in its OWN `account.tax.group` -- taxes
+        sharing `self.tax_group` would merge into one reported group.
+        """
+        group = self.env['account.tax.group'].create({
+            'name': name, 'company_id': self.company.id, 'country_id': self.country_ve.id,
+        })
+        tax = self._create_tax(name, amount)
+        tax.tax_group_id = group.id
+        return tax
+
+    def _assert_tax_group_base_matches_real_lines(self, inv, taxes_to_check):
+        """Each reported `tax_group.base_amount` must match the real
+        `balance` of the product lines paying that tax (direct or via a
+        'group' tax's `children_tax_ids`), not just the invoice total.
+        """
+        product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
+        sign = inv.direction_sign
+        cc = inv.company_currency_id
+        for tax in taxes_to_check:
+            lines = product_lines.filtered(
+                lambda l, t=tax: t in l.tax_ids
+                or any(t in parent.children_tax_ids for parent in l.tax_ids)
+            )
+            self.assertTrue(lines, f"fixture invalid: no line uses tax {tax.name!r}")
+            expected_base = cc.round(sum(lines.mapped('balance')) * sign)
+            tg = self._tax_totals_group(inv, tax.tax_group_id)
+            self.assertAlmostEqual(
+                tg.get('base_amount', 0.0), expected_base, places=2,
+                msg=(
+                    f"tax_totals group {tg.get('group_name')!r}: base_amount "
+                    f"({tg.get('base_amount')}) != real posted balance ({expected_base})"
+                ),
+            )
+
+    def test_49_tax_totals_base_per_group_matches_real_balance_vendor(self):
+        """Real case (vendor bill FPCCS/2026/0002): two distinct tax
+        groups (0%/exempt and 16%) on one USD invoice, VEF company.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+        self._set_usd_rate(807.386198)
+        tax_exempt = self._create_tax_with_own_group('IVA 0% (vendor)', 0.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [tax_exempt]),
+            (60.654321, 4.501234, [self.tax_16]),
+        ], move_type='in_invoice')
+        self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, self.tax_16])
+
+    def test_50_tax_totals_base_per_group_matches_real_balance_customer(self):
+        """Same as test_49, customer side (out_invoice) -- the proportional
+        split doesn't distinguish document direction.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+        self._set_usd_rate(807.386198)
+        tax_exempt = self._create_tax_with_own_group('IVA 0% (customer)', 0.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [tax_exempt]),
+            (60.654321, 4.501234, [self.tax_16]),
+        ], move_type='out_invoice')
+        self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, self.tax_16])
+
+    def test_51_tax_totals_base_three_distinct_groups_vendor(self):
+        """Edge case: THREE distinct groups, not two -- the middle one
+        must also land exact, not just the first/last.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+        self._set_usd_rate(807.386198)
+        tax_exempt = self._create_tax_with_own_group('IVA 0% (3 groups)', 0.0)
+        tax_8_own = self._create_tax_with_own_group('IVA 8% (own group)', 8.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [tax_exempt]),
+            (15.246813, 12.407531, [tax_8_own]),
+            (60.654321, 4.501234, [self.tax_16]),
+        ], move_type='in_invoice')
+        self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, tax_8_own, self.tax_16])
+
+    def test_52_tax_totals_base_group_tax_children_share_base_customer(self):
+        """Edge case: a 'group' tax (two children sharing one base, as in
+        test_26) plus an independent group -- the line holds the PARENT in
+        `tax_ids`, so matching must fall back to `children_tax_ids`.
+        """
+        dp_price = self.env['decimal.precision'].search([('name', '=', 'Product Price')], limit=1)
+        if dp_price:
+            dp_price.digits = 6
+        self._set_usd_rate(807.386198)
+        tax_a = self._create_tax('Group child A 5%', 5.0)
+        tax_b = self._create_tax('Group child B 3%', 3.0)
+        group_tax = self._create_group_tax('Group AB', tax_a + tax_b)
+        tax_exempt = self._create_tax_with_own_group('IVA 0% (group-tax)', 0.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [tax_exempt]),
+            (60.654321, 4.501234, [group_tax]),
+        ], move_type='out_invoice')
+        self._assert_tax_group_base_matches_real_lines(inv, [tax_exempt, tax_a, tax_b])
+
+    # ── Code review (PR tax-totals-base-per-group): the LAST tax group
+    # always takes `subtotal['base_amount'] - assigned_so_far` (the
+    # remainder) instead of its own real lines' balance, unlike every
+    # other group. Two real failure modes:
+    #
+    # (a) An untaxed product line (`unique_tax` off allows this) still
+    #     contributes to `subtotal['base_amount']` (it's summed from ALL
+    #     product lines, tax or not) but is never matched by any group's
+    #     `tg_lines` -- that stray balance lands on whichever group happens
+    #     to be last. With only ONE tax group, that group IS the last one
+    #     by construction (`j < n_tg - 1` is never true for `n_tg == 1`),
+    #     so this isn't even a "2+ groups" edge case.
+    #
+    # (b) A single line carrying taxes from TWO distinct groups is valid
+    #     tax semantics (the same base pays two different taxes) -- both
+    #     groups must independently report that line's own balance. The
+    #     remainder-based last group instead computes `subtotal_base -
+    #     assigned_so_far`, where `assigned_so_far` already included that
+    #     same line's balance from the non-last group's own pass.
+
+    def test_53_tax_totals_base_excludes_untaxed_line_single_group(self):
+        """Fix: an untaxed line's balance must never leak into the (only,
+        hence 'last') tax group's reported base_amount.
+
+        Draft only, not posted: `l10n_ve_invoice`'s own posting constraint
+        ("Add a tax to each product line") blocks confirming a move with an
+        untaxed product line regardless of `unique_tax` -- but `tax_totals`
+        is a non-stored compute, read the same way on a draft. The bug this
+        reproduces lives in that compute, not in what happens after posting.
+        """
+        self._set_usd_rate(807.386198)
+        partner = self.env['res.partner'].create({
+            'name': 'Partner untaxed line', 'company_id': self.company.id,
+            'property_account_receivable_id': self.acc_rec.id,
+        })
+        inv = self.env['account.move'].with_context(check_move_validity=False).create([{
+            'move_type': 'out_invoice',
+            'partner_id': partner.id,
+            'currency_id': self.currency_usd.id,
+            'journal_id': self.sale_journal.id,
+            'invoice_date': fields.Date.today(),
+            'company_id': self.company.id,
+            'invoice_line_ids': [
+                (0, 0, {
+                    'product_id': self.product.id, 'name': 'L0',
+                    'quantity': 20.123456, 'price_unit': 6.309876,
+                    'account_id': self.acc_inc.id,
+                    'tax_ids': [(6, 0, [self.tax_16.id])],
+                }),
+                (0, 0, {
+                    'product_id': self.product.id, 'name': 'L1 (untaxed)',
+                    'quantity': 15.246813, 'price_unit': 12.407531,
+                    'account_id': self.acc_inc.id,
+                    'tax_ids': [(6, 0, [])],
+                }),
+            ],
+        }])[0]
+        self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16])
+
+    def test_54_tax_totals_base_line_with_two_tax_groups_both_correct(self):
+        """Fix: a line taxed by two distinct groups must report its own
+        real balance as the base for BOTH groups, not a double-counted/
+        remainder-derived value for whichever one is last."""
+        self._set_usd_rate(807.386198)
+        tax_8_own = self._create_tax_with_own_group('IVA 8% (linea dos grupos)', 8.0)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (20.123456, 6.309876, [self.tax_16, tax_8_own]),
+        ])
+        self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16, tax_8_own])
+
+    def test_55_unreconcile_normal_payment_updates_payment_state(self):
+        """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`
+        force-recompute: 3 separate register-payment-wizard payments, all
+        unreconciled, must bring `payment_state` back to 'not_paid'."""
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 300.0, [self.tax_16]),
+        ])
+        acc_bank_usd_real = self._get_or_create('100201', 'Bank USD (no reconcile)', 'asset_cash', reconcile=False)
+        bank_usd_real = self._create_bank_journal('BNKUR', 'Banco USD Real', self.currency_usd, acc_bank_usd_real)
+        pay_amount = inv.amount_total / 3
+        if inv.state != 'posted':
+            inv.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(inv.state, 'posted', f"Precondición: la factura debe estar posteada, no {inv.state!r}.")
+
+        payments = self.env['account.payment']
+        for _ in range(3):
+            inv.invalidate_recordset()
+            action_data = inv.action_register_payment()
+            with Form(
+                self.env["account.payment.register"].with_context(action_data["context"])
+            ) as pay_form:
+                pay_form.journal_id = bank_usd_real
+                pay_form.payment_date = fields.Date.today()
+                pay_form.save()
+                pay_form.amount = pay_amount
+            action = pay_form.record.action_create_payments()
+            payments |= self.env["account.payment"].browse(action.get("res_id"))
+
+        inv.invalidate_recordset()
+        payments.invalidate_recordset()
+        self.assertEqual(inv.payment_state, "paid")
+        self.assertEqual(
+            len(inv.matched_payment_ids), 3,
+            f"Precondición: deben estar los 3 pagos matched -- {inv.matched_payment_ids.ids}",
+        )
+
+        # Desconciliar los 3, uno por uno -- como reporta el caso real.
+        for pay in payments:
+            inv_receivable = inv.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+            pay_counterpart = pay.move_id.line_ids.filtered(
+                lambda l: l.account_id == inv_receivable.account_id
+            )
+            partial = inv_receivable.matched_credit_ids.filtered(
+                lambda p: p.credit_move_id in pay_counterpart
+            ) or inv_receivable.matched_debit_ids.filtered(
+                lambda p: p.debit_move_id in pay_counterpart
+            )
+            self.assertTrue(partial, f"Debe existir la conciliación factura<->pago {pay.id}.")
+            inv.with_context({}).js_remove_outstanding_partial(partial[:1].id)
+            inv.invalidate_recordset()
+
+        payments.invalidate_recordset()
+        self.assertEqual(
+            inv.payment_state, "not_paid",
+            f"payment_state quedó en {inv.payment_state!r} tras desconciliar los 3 pagos "
+            f"-- debía quedar 'not_paid'. payments.state={payments.mapped('state')}, "
+            f"inv.amount_residual={inv.amount_residual}, "
+            f"inv.matched_payment_ids={inv.matched_payment_ids.ids}, "
+            f"inv.reconciled_payment_ids={inv.reconciled_payment_ids.ids}",
         )

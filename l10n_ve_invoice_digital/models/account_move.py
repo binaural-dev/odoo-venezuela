@@ -10,6 +10,21 @@ class AccountMove(models.Model):
     _inherit = ["account.move", "tfhka.digitalization.mixin"]
 
     is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
+    tfhka_batch_ref = fields.Char(
+        copy=False,
+        tracking=True,
+        string="TFHKA Batch Reference",
+        help="Identifies the TFHKA digitalization batch this invoice belongs to. "
+             "Only set when the invoice was assigned via 'Generate TFHKA "
+             "Digitalization Batch'.",
+    )
+    tfhka_batch_document_number = fields.Integer(
+        copy=False,
+        string="TFHKA Batch Document Number",
+        help="Document number reserved for this invoice within its batch (via "
+             "/AsignarNumeraciones). When set, it replaces the normal 'last "
+             "document + 1' calculation at emission time.",
+    )
     show_digital_invoice = fields.Boolean(compute="_compute_invisible_check", copy=False)
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
@@ -216,7 +231,44 @@ class AccountMove(models.Model):
         queue) so a failure here never touches tfhka_digitalization_state."""
         for move in self:
             move._tfhka_validate_sequence_before_queue()
+        self._check_tfhka_payment_required()
         return super().action_tfhka_generate_digital()
+
+    def _check_tfhka_payment_required(self):
+        """In 'cash' mode, block digitalization until the invoice is paid.
+
+        Same criteria as binaural_unidigital.AccountMove.
+        _check_unidigital_payment_required: accepts ``paid``, ``in_payment``
+        and ``reversed`` as satisfying the "paid" requirement, excludes
+        credit notes (``out_refund``), and only applies in "digitalization
+        with payment" mode (``digitalization_with_payment_tfhka``) -- the
+        exact TFHKA analog of ``unidigital_invoice_payment_register``. All
+        invoices are validated together and reported in a single error
+        listing every offending invoice.
+
+        Only called from ``action_tfhka_generate_digital()``: in payment
+        mode that's the sole entry point to the queue (see the docstring
+        above), so gating it there is enough -- the normal/automatic flow
+        never enqueues while this mode is active (see
+        ``_tfhka_is_eligible_for_digitalization``).
+        """
+        unpaid = self.filtered(
+            lambda invoice: (
+                invoice.move_type != "out_refund"
+                and invoice.company_id.digitalization_with_payment_tfhka
+                and invoice.company_id.payment_mode_tfhka == "cash"
+                and invoice.payment_state not in ("paid", "in_payment", "reversed")
+            )
+        )
+        if unpaid:
+            raise ValidationError(
+                _(
+                    "The following invoices must have their payment in "
+                    "process, be fully paid, or be reversed before they can "
+                    "be digitalized:\n%s",
+                    "\n".join(unpaid.mapped("name")),
+                )
+            )
 
     def _tfhka_validate_sequence_before_queue(self):
         """Sequence guard exclusive to "digitalization with payment" mode
@@ -603,6 +655,10 @@ class AccountMove(models.Model):
     def generate_document_digital(self):
         # Toda la lógica vive en la capa de servicios (tfhka.document.service).
         return self.env["tfhka.document.service"].send_document(self)
+
+    def action_tfhka_create_batch(self):
+        # Toda la lógica vive en la capa de servicios (tfhka.batch.service).
+        return self.env["tfhka.batch.service"].create_batch(self)
 
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):

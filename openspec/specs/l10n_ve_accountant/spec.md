@@ -223,6 +223,46 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 
 (`_compute_tax_totals` de `account.move`, `l10n_ve_accountant/models/account_move.py`, delega directo a `super()` sin fijar `active_id`/`active_model` por registro -- ese `with_context()` por registro causaba un `RecursionError` real en cadenas de `super()` profundas al conciliar pagos; la prioridad de `base_lines` sobre el contexto de arriba es lo que hace seguro quitarlo. Cubierto por `l10n_ve_accountant/tests/test_coverage_gaps.py::test_39b_tax_totals_record_derived_from_base_lines_ignores_stale_active_id`.)
 
+### Requirement: base_amount por grupo de impuesto coincide con el balance real
+
+Cuando una factura (`account.move`, `out_invoice`/`in_invoice`/`out_refund`/`in_refund`) tiene dos o más grupos de impuesto (`account.tax.group`) distintos, `_fix_base_amount_for_multi_currency` DEBE (MUST) reportar en `tax_totals` un `base_amount` (moneda de la compañía) por cada `tax_group` que coincida, al céntimo, con la suma real del `balance` de las líneas de producto (`account.move.line`, `display_type='product'`) que pagan ese impuesto -- directamente o, para un impuesto tipo 'group', a través de sus `children_tax_ids`.
+
+Esto aplica a TODOS los grupos por igual, incluido el último: ningún grupo se calcula como "el remanente" del resto (`subtotal['base_amount']` menos la suma de los demás grupos). Esa resta, usada en una versión anterior de este fix, arrastra a un grupo cualquier balance que no pertenezca a NINGÚN grupo (una línea sin impuesto, posible con `unique_tax` desactivado) y descuenta dos veces el balance de una línea que sí pertenece a DOS grupos distintos (impuesto legítimo: la misma base paga dos impuestos, cada grupo debe reportarla completa, no repartida). Como respaldo defensivo, si no se pueden identificar las líneas propias de un grupo puntual (`tg_lines` vacío, setup de impuestos exótico), el sistema recurre al reparto proporcional del diferencial agregado solo para ese grupo.
+
+El total agregado de la factura y el reparto entre subtotales (cuando existe cash rounding) no cambian por esta corrección.
+
+#### Scenario: Dos grupos de impuesto distintos en una factura de proveedor
+
+- **WHEN** una factura de proveedor en USD (compañía en VEF) tiene una línea exenta (0%, grupo propio) y otra al 16% (otro grupo), con una tasa BCV de varios decimales
+- **THEN** el `base_amount` de cada `tax_group` en `tax_totals` coincide con el `balance` real posteado de su propia línea, no con un reparto proporcional del diferencial agregado
+
+#### Scenario: Mismo escenario en una factura de cliente
+
+- **WHEN** el mismo escenario ocurre en una factura de cliente (`out_invoice`)
+- **THEN** el `base_amount` de cada grupo también coincide con el balance real, sin distinción por dirección del documento
+
+#### Scenario: Tres o más grupos distintos
+
+- **WHEN** una factura tiene tres grupos de impuesto distintos (no solo dos)
+- **THEN** el grupo del medio (no solo el primero o el último) también coincide con su balance real
+
+#### Scenario: Impuesto tipo 'group' con hijos que comparten base
+
+- **WHEN** una línea usa un impuesto tipo 'group' (dos hijos porcentuales que comparten la misma base), combinado con un grupo de impuesto independiente en otra línea
+- **THEN** el sistema identifica las líneas de cada grupo también a través de `children_tax_ids`, y ambos grupos reportados coinciden con su balance real
+
+#### Scenario: Línea sin impuesto junto a una línea gravada (un solo grupo)
+
+- **GIVEN** una factura con una línea gravada al 16% y otra sin ningún impuesto (`unique_tax` desactivado)
+- **WHEN** solo existe un grupo de impuesto en la factura -- ese grupo ES "el último" por construcción, ya que ningún grupo se salta con el criterio de "no es el último"
+- **THEN** el `base_amount` del grupo 16% refleja únicamente el balance de su propia línea, sin arrastrar el balance de la línea sin impuesto
+
+#### Scenario: Una línea con impuestos de dos grupos distintos
+
+- **GIVEN** una única línea de producto con dos impuestos, cada uno en su propio `tax_group`
+- **WHEN** se calcula `tax_totals`
+- **THEN** ambos grupos reportan el balance completo de esa línea como su propia base -- la misma base pagando dos impuestos, no un reparto ni un remanente en cero para el segundo grupo
+
 ### Requirement: Unicidad del nombre del asiento por partner, compañía y diario
 
 El sistema DEBE (MUST) crear un índice único (`account_move_unique_name` / `account_move_unique_name_ve`) sobre (`name`, `partner_id`, `company_id`, `journal_id`) para asientos publicados con nombre distinto de `/`, renombrando previamente los duplicados históricos de documentos de compra con sufijos `(n)`.
@@ -464,6 +504,14 @@ Esta misma corrección DEBE (MUST) aplicarse también al resumen que alimenta el
 
 Las líneas de signo mixto bajo un mismo impuesto (un ajuste o descuento global negativo junto a líneas positivas) DEBEN (MUST) sumarse con su propio signo, no con su valor absoluto.
 
+Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo sobre un borrador todavía no guardado), el sistema NO DEBE (SHALL NOT) aplicar esta corrección: no existe ningún asiento real que igualar todavía, y `record.line_ids` puede reflejar el estado de un paso de onchange ANTERIOR (ej. el usuario cambió la moneda del documento y luego el precio de una línea, dentro del mismo borrador sin guardar entre medio) en vez del precio actual. Sin este resguardo, el `tax_amount` recién calculado por el core para el precio actual quedaría pisado por el monto obsoleto de esas líneas, congelando el widget de totales en un valor que no corresponde a lo que el usuario está viendo en pantalla.
+
+#### Scenario: Onchange en vivo sobre un borrador duplicado no pisa el monto fresco con líneas obsoletas
+
+- **GIVEN** una factura duplicada de otra ya posteada, con la moneda del documento cambiada y luego el precio de una línea editado, todo dentro del mismo borrador sin guardar
+- **WHEN** `_fix_tax_amount_for_round_per_line` se ejecuta sobre ese registro virtual (`NewId`), antes de cualquier guardado
+- **THEN** el método retorna sin modificar `res`, dejando el `tax_amount` que el core ya calculó para el precio actual
+
 #### Scenario: Dos líneas con el mismo impuesto, método de la máquina fiscal
 
 - **GIVEN** una compañía VEF con alterna USD, `round_per_line`, y una tasa de 803,34 VEF por USD
@@ -482,6 +530,18 @@ Las líneas de signo mixto bajo un mismo impuesto (un ajuste o descuento global 
 - **GIVEN** una factura con una línea positiva y una negativa (ajuste o descuento global) bajo el mismo impuesto, en `round_per_line`
 - **WHEN** se calcula el impuesto por línea antes de sumar
 - **THEN** la contribución de cada línea se suma con su propio signo, sin tomar el valor absoluto de la línea negativa
+
+> NOTA: la propiedad interna de `_per_line_tax_sums` (sumar por signo, no
+> por `abs()`) sigue siendo correcta, pero `l10n_ve_invoice._check_price_in_zero`
+> bloquea guardar una factura con una línea de producto SUELTA de subtotal
+> negativo (no solo cero -- ver requirement "Prohibición de líneas con
+> subtotal cero o negativo", `openspec/specs/l10n_ve_invoice/spec.md`), a
+> menos que esa línea sea un descuento reconocido por `_get_discount_lines`.
+> El test de regresión de este escenario (`test_31_mixed_sign_lines_both_rounding_modes`,
+> `l10n_ve_accountant/tests/test_multi_currency_rounding.py`) ya no puede
+> construir ese caso de punta a punta vía `account.move.create()` -- fue
+> repurposado para verificar que esa línea suelta se rechaza, en vez de
+> verificar el neteo del impuesto.
 
 ### Requirement: Un impuesto encadenado (`include_base_amount`) suma su propio monto a la base del siguiente impuesto de la misma línea
 
@@ -517,3 +577,24 @@ La normativa de máquinas fiscales de Venezuela exige el método de redondeo por
 
 - **WHEN** se crea o instala una compañía con la localización venezolana
 - **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente
+
+### Requirement: Desglose por línea de factura en moneda de la compañía
+
+El sistema DEBE (MUST) exponer, por cada línea de producto de una factura, un desglose en la moneda de la compañía (`account.move.company_currency_line_totals`, JSON indexado por id de línea) con precio unitario, cantidad, subtotal sin impuesto, subtotal con impuesto, monto de impuesto, monto y tipo de descuento, e impuestos aplicados (id, nombre, si el impuesto está incluido en el precio). El subtotal y el monto de impuesto de cada línea DEBEN (MUST) reconciliar exactamente con el `balance` real posteado en el asiento -- nunca una conversión de moneda independiente que pueda diferir del asiento por redondeo.
+
+Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MUST) repartirse proporcionalmente al `balance` de cada línea, sin perder ni inventar ninguna unidad de la moneda. Los impuestos de tipo `group` DEBEN (MUST) resolverse por su jerarquía completa de impuestos hijos, no solo por coincidencia directa con `tax_ids` de la línea.
+
+#### Scenario: Factura en moneda distinta a la de la compañía
+
+- **WHEN** se crea una factura en USD o EUR con líneas de producto e impuestos
+- **THEN** `company_currency_line_totals` contiene, para cada línea, los montos equivalentes en la moneda de la compañía, y la suma de esos montos coincide exactamente con los `balance` de las líneas de producto e impuesto del asiento
+
+#### Scenario: Varias líneas bajo el mismo impuesto
+
+- **WHEN** tres o más líneas de producto comparten la misma tasa de impuesto
+- **THEN** el monto de impuesto de cada línea es proporcional a su propio `balance`, y la suma de los montos por línea coincide exactamente con el `balance` de la línea de impuesto del asiento
+
+#### Scenario: Impuesto de tipo grupo
+
+- **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
+- **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta

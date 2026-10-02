@@ -94,6 +94,11 @@ msgid "Cancel at The Factory HKA"
 msgstr "Anular en The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__payment_mode_tfhka__cash
+msgid "Cash Payment"
+msgstr "Pago de contado"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
 msgid ""
@@ -188,6 +193,12 @@ msgid "Control Number"
 msgstr "Número de control"
 
 #. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_document_service.py:0
+msgid "Could not send the digitalization notification email: %s"
+msgstr "No se pudo enviar el correo de aviso de digitalización: %s"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention_alert_wizard__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_payment_method_tfhka__create_uid
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_annul_wizard__create_uid
@@ -202,6 +213,11 @@ msgstr "Creado por"
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__create_date
 msgid "Created on"
 msgstr "Creado el"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__payment_mode_tfhka__credit
+msgid "Credit Payment"
+msgstr "Pago a crédito"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_res_currency
@@ -644,6 +660,12 @@ msgid "Not Digitalized"
 msgstr "Sin Digitalizar"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__notify_email_tfhka
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__notify_email_tfhka
+msgid "Email sending from The Factory HKA"
+msgstr "Envío de correo desde The Factory HKA"
+
+#. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/ir_module_module.py:0
 msgid ""
@@ -654,6 +676,21 @@ msgstr ""
 "Solo un Administrador TFHKA puede desinstalar el módulo de facturación "
 "digital. Desinstalarlo eliminaría permanentemente las facturas digitalizadas"
 " y su trazabilidad fiscal."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__payment_mode_tfhka
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_config_settings__payment_mode_tfhka
+msgid ""
+"Only applies when 'Digital invoicing with payment registration' is "
+"enabled. 'Credit Payment' keeps the current flow (the invoice can be "
+"digitalized with or without a registered payment). 'Cash Payment' blocks "
+"digitalization until the invoice's payment is in process, fully paid, or "
+"the invoice has been reversed."
+msgstr ""
+"Solo aplica con 'Facturación digital con registro de pagos' activo. 'Pago "
+"a crédito' mantiene el flujo actual (se puede digitalizar con o sin pago "
+"registrado). 'Pago de contado' bloquea la digitalización hasta que la "
+"factura tenga el pago en proceso, esté pagada, o haya sido revertida."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__res_name
@@ -867,6 +904,12 @@ msgid "TFHKA Payment Methods"
 msgstr "Formas de Pago TFHKA"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__payment_mode_tfhka
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__payment_mode_tfhka
+msgid "TFHKA Payment Mode"
+msgstr "Modalidad de pago TFHKA"
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__tfhka_queued_at
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_retention__tfhka_queued_at
 msgid "TFHKA Queued At"
@@ -1012,6 +1055,18 @@ msgstr ""
 msgid "The 'NIF' field of the Customer cannot be empty for digitalization."
 msgstr ""
 "El campo 'RIF' del Cliente no puede estar vacío para la digitalización."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"The following invoices must have their payment in process, be fully paid, "
+"or be reversed before they can be digitalized:\n"
+"%s"
+msgstr ""
+"Las siguientes facturas deben tener el pago en proceso, estar pagadas, o "
+"haber sido revertidas antes de poder digitalizarse:\n"
+"%s"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_api_log
@@ -1342,6 +1397,19 @@ msgstr ""
 "Odoo y The Factory."
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__notify_email_tfhka
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_config_settings__notify_email_tfhka
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid ""
+"When enabled, The Factory HKA will send the digitalized document to the "
+"customer by email. When disabled, the email will be sent directly from "
+"Odoo."
+msgstr ""
+"Si está activo, The Factory HKA enviará el documento digitalizado por "
+"correo al cliente. Si está desactivado, el envío del correo se gestionará "
+"directamente desde Odoo."
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__multi_currency_invoice_tfhka
 #: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_config_settings__multi_currency_invoice_tfhka
 msgid ""
@@ -1395,3 +1463,175 @@ msgstr "Debe registrar la URL para TFHKA."
 #: code:addons/l10n_ve_invoice_digital/models/res_company.py:0
 msgid "You must register the Username for TFHKA."
 msgstr "Debe registrar el Nombre de Usuario para TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid "All invoices in a batch must belong to the same company."
+msgstr "Todas las facturas de un lote deben pertenecer a la misma compañía."
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_res_config_settings_inherit_tfhka
+msgid ""
+"Allows grouping posted invoices into a TFHKA digitalization batch (esLote)."
+msgstr ""
+"Permite agrupar facturas confirmadas en un lote de digitalización TFHKA "
+"(esLote)."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_company__batch_invoicing_tfhka
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_res_config_settings__batch_invoicing_tfhka
+msgid ""
+"Allows grouping several posted invoices into a TFHKA digitalization batch: "
+"reserves a numbering range via /AsignarNumeraciones and marks them with "
+"esLote before they go through the digitalization queue. Requires 'Digital "
+"invoicing with payment registration' to be enabled."
+msgstr ""
+"Permite agrupar varias facturas confirmadas en un lote de digitalización "
+"TFHKA: reserva un rango de numeración vía /AsignarNumeraciones y las marca "
+"con esLote antes de que pasen por la cola de digitalización. Requiere que "
+"'Facturación digital con registro de pagos' esté habilitado."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_company__batch_invoicing_tfhka
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_res_config_settings__batch_invoicing_tfhka
+msgid "Batch Invoicing"
+msgstr "Facturación por Lotes"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid "Batch digitalization queued"
+msgstr "Digitalización por lote encolada"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_bank_statement_line__tfhka_batch_document_number
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__tfhka_batch_document_number
+msgid ""
+"Document number reserved for this invoice within its batch (via "
+"/AsignarNumeraciones). When set, it replaces the normal 'last document + 1' "
+"calculation at emission time."
+msgstr ""
+"Número de documento reservado para esta factura dentro de su lote (vía "
+"/AsignarNumeraciones). Cuando está definido, sustituye el cálculo normal de "
+"'último documento + 1' al momento de emitir."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.actions.server,name:l10n_ve_invoice_digital.action_server_tfhka_create_batch
+msgid "Generate TFHKA Digitalization Batch"
+msgstr "Generar Lote de Digitalización TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_bank_statement_line__tfhka_batch_ref
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__tfhka_batch_ref
+msgid ""
+"Identifies the TFHKA digitalization batch this invoice belongs to. Only set "
+"when the invoice was assigned via 'Generate TFHKA Digitalization Batch'."
+msgstr ""
+"Identifica el lote de digitalización TFHKA al que pertenece esta factura. "
+"Solo se define cuando la factura fue asignada vía 'Generar Lote de "
+"Digitalización TFHKA'."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid ""
+"Invoice %(name)s has no valid TFHKA document type (only invoices, credit "
+"notes and debit notes can be batched)."
+msgstr ""
+"La factura %(name)s no tiene un tipo de documento TFHKA válido (solo se "
+"pueden agrupar en lotes facturas, notas de crédito y notas de débito)."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid ""
+"Invoice included in TFHKA batch %(ref)s (assigned document number: "
+"%(number)s)."
+msgstr ""
+"Factura incluida en el lote TFHKA %(ref)s (número de documento asignado: "
+"%(number)s)."
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_invoice_tree_inherit_tfhka_digitalization
+msgid "TFHKA Batch"
+msgstr "Lote TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_batch_service
+msgid "TFHKA Batch Digitalization Service"
+msgstr "Servicio de Digitalización por Lote TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__tfhka_batch_document_number
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__tfhka_batch_document_number
+msgid "TFHKA Batch Document Number"
+msgstr "Número de Documento del Lote TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__tfhka_batch_ref
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__tfhka_batch_ref
+msgid "TFHKA Batch Reference"
+msgstr "Referencia del Lote TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid ""
+"TFHKA batch invoicing is not enabled for this company. Enable 'Batch "
+"Invoicing' in Accounting > Configuration > Settings."
+msgstr ""
+"La facturación por lotes TFHKA no está habilitada para esta compañía. "
+"Habilite 'Facturación por Lotes' en Contabilidad > Configuración > Ajustes."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid ""
+"TFHKA batch invoicing requires 'Digital invoicing with payment registration'"
+" to be enabled for this company."
+msgstr ""
+"La facturación por lotes TFHKA requiere que 'Facturación digital con "
+"registro de pagos' esté habilitado para esta compañía."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid "TFHKA digital invoicing is not enabled for this company."
+msgstr "La facturación digital TFHKA no está habilitada para esta compañía."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid "The following invoices are already digitalized: %(names)s"
+msgstr "Las siguientes facturas ya están digitalizadas: %(names)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid ""
+"The following invoices are already queued for digitalization: %(names)s"
+msgstr ""
+"Las siguientes facturas ya están en cola de digitalización: %(names)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid "The following invoices are not posted: %(names)s"
+msgstr "Las siguientes facturas no están confirmadas (posted): %(names)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid ""
+"The following invoices belong to a journal that is not digital: %(names)s"
+msgstr ""
+"Las siguientes facturas pertenecen a un diario que no es digital: %(names)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_batch_service.py:0
+msgid "The selected invoices were queued for TFHKA batch digitalization."
+msgstr ""
+"Las facturas seleccionadas fueron encoladas para su digitalización por "
+"lote en TFHKA."

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Núcleo de facturación fiscal venezolana: asigna y controla el número de control (`correlative`) de las facturas, gestiona series de facturación y diarios de contingencia/débito, agrega las validaciones fiscales de confirmación (impuesto por línea, precio distinto de cero, máximo de productos), la forma libre de impresión y los libros fiscales de compras y ventas en Excel (`wizard.accounting.reports`). Extiende `account.move`, `account.journal`, `account.debit.note`, `ir.actions.report`, `res.company` y `res.config.settings`. Depende de `l10n_ve_accountant` (de donde consume `invoice_date_display`, `vat`, `tax_totals` extendido y la configuración de alícuotas por compañía), `l10n_ve_rate`, `l10n_ve_base`, `l10n_ve_contact`, `od_journal_sequence` y `account_debit_note`. El módulo `l10n_ve_igtf` extiende sus libros fiscales.
+Núcleo de facturación fiscal venezolana: asigna y controla el número de control (`correlative`) de las facturas, gestiona series de facturación y diarios de contingencia/débito, agrega las validaciones fiscales de confirmación (impuesto por línea, precio distinto de cero, máximo de productos, Notas de Crédito contra su factura origen), la forma libre de impresión y los libros fiscales de compras y ventas en Excel (`wizard.accounting.reports`). Extiende `account.move`, `account.journal`, `account.debit.note`, `ir.actions.report`, `res.company` y `res.config.settings`. Depende de `l10n_ve_accountant` (de donde consume `invoice_date_display`, `vat`, `tax_totals` extendido y la configuración de alícuotas por compañía), `l10n_ve_rate`, `l10n_ve_base`, `l10n_ve_contact`, `od_journal_sequence` y `account_debit_note`. El módulo `l10n_ve_igtf` extiende sus libros fiscales.
 
 ## Requirements
 
@@ -38,6 +38,8 @@ Cuando la compañía activa `group_sales_invoicing_series`, el número de contro
 
 El sistema DEBE (MUST) impedir que un documento de venta (`out_invoice`/`out_refund`) de un diario no de contingencia lleve un `correlative` que ya use otro documento de venta **publicado** de la misma compañía (constraint `_check_correlative`). La validación se aplica cualquiera sea el estado del documento que se guarda: solo el documento con el que se compara debe estar en `posted`.
 
+La misma constraint también DEBE (MUST) impedir que un documento de compra (`in_invoice`/`in_refund`) lleve un `correlative` (número de control asignado por el proveedor) que ya use otro documento de compra **publicado** del mismo proveedor comercial (`commercial_partner_id`) de la misma compañía. A diferencia de ventas, donde el `correlative` es la numeración fiscal propia de la compañía y la unicidad se valida a nivel de `company_id`, en compras cada proveedor asigna su propia numeración, por lo que la unicidad se valida por `(company_id, commercial_partner_id, correlative)`. Ventas y compras se validan por separado: un mismo `correlative` puede coincidir entre una factura de venta y una de compra sin conflicto.
+
 #### Scenario: Número de control repetido
 
 - **WHEN** se guarda una factura de venta cuyo `correlative` ya está en uso por otra factura publicada de la compañía
@@ -47,6 +49,21 @@ El sistema DEBE (MUST) impedir que un documento de venta (`out_invoice`/`out_ref
 
 - **WHEN** el `correlative` solo coincide con el de otro documento en borrador
 - **THEN** el guardado se permite
+
+#### Scenario: Número de control de proveedor repetido
+
+- **WHEN** se guarda una factura de proveedor cuyo `correlative` ya está en uso por otra factura publicada del mismo proveedor comercial
+- **THEN** se lanza un error de validación indicando el número y la factura que lo usa
+
+#### Scenario: Mismo número de control, proveedores distintos
+
+- **WHEN** dos facturas de proveedores distintos comparten el mismo `correlative`
+- **THEN** el guardado se permite, pues la unicidad se valida por proveedor
+
+#### Scenario: Mismo número de control entre venta y compra
+
+- **WHEN** una factura de venta y una factura de proveedor comparten el mismo `correlative`
+- **THEN** el guardado se permite en ambas, pues la validación de ventas y compras es independiente
 
 ### Requirement: Correlativo en diarios de contingencia
 
@@ -71,14 +88,33 @@ En facturas de un diario con `is_purchase_international` (de `l10n_ve_accountant
 - **WHEN** se crea una factura de compra internacional con número de declaración de aduana y sin correlativo
 - **THEN** `correlative` queda igual a `declaration_unique_of_customs`
 
-### Requirement: Prohibición de líneas con precio cero
+### Requirement: Prohibición de líneas con subtotal cero o negativo
 
-El sistema DEBE (MUST) impedir guardar facturas con líneas de producto cuyo `price_unit` sea menor o igual a cero (constraint `_check_price_in_zero`), exceptuando las líneas de descuento reconocidas por `_get_discount_lines`, las secciones/notas y los flujos con contexto `from_pos` o `from_loyalty`.
+El sistema DEBE (MUST) impedir guardar facturas con líneas de producto cuyo
+`price_subtotal` sea menor o igual a cero (constraint `_check_price_in_zero`),
+exceptuando las líneas de descuento reconocidas por `_get_discount_lines`, las
+secciones/notas y los flujos con contexto `from_pos` o `from_loyalty`. La
+validación compara `price_subtotal` (no `price_unit`) para no dejar pasar
+líneas cuyo `price_unit` sea positivo pero terminen en subtotal cero tras un
+descuento no marcado como línea de descuento -- y, por esa misma comparación
+`<= 0`, también bloquea cualquier línea de producto SUELTA con subtotal
+NEGATIVO (no solo exactamente cero), aunque el mensaje de error hable solo de
+"precio cero". No hay forma de crear una línea de producto con subtotal
+negativo que no sea una línea de descuento reconocida -- para netear montos
+de signo mixto bajo el mismo impuesto, la línea negativa debe ser una línea de
+descuento real, no un producto suelto.
 
 #### Scenario: Línea en cero
 
 - **WHEN** se guarda una factura con una línea de producto a precio cero fuera de POS/lealtad
 - **THEN** se lanza un error "An invoice cannot have a line with a price of zero"
+
+#### Scenario: Línea de producto suelta con subtotal negativo
+
+- **WHEN** se guarda una factura con una línea de producto (no una línea de
+  descuento reconocida) cuyo `price_subtotal` es negativo (ej.
+  `price_unit` negativo)
+- **THEN** se lanza el mismo error "An invoice cannot have a line with a price of zero", aunque el subtotal no sea exactamente cero
 
 #### Scenario: Línea de descuento
 
@@ -160,6 +196,102 @@ El sistema DEBE (MUST) impedir agregar a facturas de venta más líneas que el m
 
 - **WHEN** un usuario agrega más productos que el máximo configurado en una factura de venta
 - **THEN** se lanza un error indicando el máximo de productos permitido
+
+### Requirement: Validación de la Nota de Crédito contra su factura origen al publicar
+
+Al publicar (`_post`) una Nota de Crédito (`out_refund`/`in_refund`) con `reversed_entry_id`, el sistema DEBE (MUST) validar sus líneas de producto contra las de la factura que revierte (`_check_refund_against_origin`); la validación NO se ejecuta al crear ni al editar el borrador. Un producto Almacenable o Consumible que la factura origen no tenga se rechaza; un producto de tipo Servicio ajeno al origen (conceptos financieros como pronto pago, descuento comercial o diferencial cambiario) se permite, sujeto al tope total del requirement siguiente; toda línea de producto sin `product_id` se rechaza. Secciones, subsecciones y notas se ignoran. Una Nota de Crédito sin `reversed_entry_id` no se valida.
+
+#### Scenario: Producto presente en la factura origen
+
+- **WHEN** se publica una Nota de Crédito cuyas líneas de producto son un subconjunto de los productos de su factura origen, dentro de los montos facturados
+- **THEN** la Nota de Crédito se publica sin error
+
+#### Scenario: Producto Almacenable/Consumible ajeno al origen
+
+- **WHEN** se publica una Nota de Crédito con un producto Almacenable o Consumible que la factura origen nunca facturó
+- **THEN** se lanza un error de validación indicando el producto y la factura origen
+
+#### Scenario: Servicio ajeno al origen
+
+- **WHEN** se publica una Nota de Crédito con un producto de tipo Servicio que la factura origen nunca facturó, sin superar el total facturado
+- **THEN** la Nota de Crédito se publica sin error
+
+#### Scenario: Línea sin producto
+
+- **WHEN** se publica una Nota de Crédito con una línea de producto sin `product_id`
+- **THEN** se lanza un error de validación pidiendo un producto en cada línea
+
+#### Scenario: Edición del borrador
+
+- **WHEN** se edita una línea de una Nota de Crédito en borrador dejándola fuera de lo permitido (producto ajeno o monto excedido)
+- **THEN** la edición se guarda y el error se lanza al intentar publicarla
+
+### Requirement: Monto acreditado contra la factura origen, contando las Notas de Crédito publicadas
+
+Al publicar una Nota de Crédito con `reversed_entry_id`, el sistema DEBE (MUST) impedir que, para cada producto presente en el origen, lo acreditado por ella más lo acreditado por las demás Notas de Crédito del mismo tipo contra el mismo origen que estén **publicadas o se publiquen en la misma operación** supere lo facturado por ese producto en el origen; y, cuando la Nota de Crédito incluya servicios ajenos al origen, que el total acreditado (productos del origen, servicios ajenos y demás Notas de Crédito publicadas) supere el total facturado. Las Notas de Crédito en borrador que no se están publicando no cuentan. La comparación usa la precisión de redondeo de la moneda del documento.
+
+#### Scenario: Nota de Crédito que excede lo facturado por sí sola
+
+- **WHEN** una Nota de Crédito acredita por un producto más de lo facturado por ese producto en el origen
+- **THEN** se lanza un error de validación indicando el producto, los montos y la factura origen
+
+#### Scenario: Segunda Nota de Crédito que, sumada a una publicada, excede el origen
+
+- **WHEN** ya existe una Nota de Crédito publicada contra el origen y se publica otra cuyo monto, sumado al ya acreditado, supera lo facturado
+- **THEN** se lanza un error de validación indicando el monto ya acreditado por otras Notas de Crédito
+
+#### Scenario: Dos Notas de Crédito publicadas en la misma operación
+
+- **WHEN** se publican juntas dos Notas de Crédito contra el mismo origen que, sumadas, superan lo facturado
+- **THEN** se lanza un error de validación
+
+#### Scenario: Borrador olvidado
+
+- **WHEN** existe una Nota de Crédito en borrador que por sí sola excede el origen y se publica otra que respeta el tope
+- **THEN** la segunda se publica sin error; el borrador solo se valida cuando se intente publicar
+
+#### Scenario: Servicio ajeno que excede el total facturado
+
+- **WHEN** una Nota de Crédito con un servicio ajeno al origen hace que el total acreditado supere el total facturado
+- **THEN** se lanza un error de validación indicando los montos y la factura origen
+
+#### Scenario: Diferencia de redondeo
+
+- **WHEN** el acumulado difiere de lo facturado solo por un arrastre menor a la precisión de la moneda
+- **THEN** la Nota de Crédito se publica sin error
+
+### Requirement: Borrador editable desde el asistente de reversión
+
+El asistente "Nota de Crédito" > "Revertir" (`account.move.reversal.refund_moves`) DEBE (MUST) poder crear el borrador de la Nota de Crédito con las cantidades completas de la factura aunque, sumado a Notas de Crédito ya publicadas, exceda lo facturado, para que el usuario lo reduzca antes de publicar (Odoo 17+ no tiene botón de reembolso parcial).
+
+#### Scenario: Segunda Nota de Crédito parcial sobre la misma factura
+
+- **WHEN** una factura ya tiene una Nota de Crédito parcial publicada y el usuario usa "Revertir" de nuevo
+- **THEN** se crea el borrador con las cantidades completas de la factura, sin error
+
+#### Scenario: Borrador publicado sin reducir
+
+- **WHEN** el usuario publica ese borrador sin reducir cantidades ni montos
+- **THEN** se lanza el error de validación de monto acreditado
+
+#### Scenario: Borrador reducido
+
+- **WHEN** el usuario reduce la cantidad del borrador de modo que el acumulado no supere lo facturado y lo publica
+- **THEN** la Nota de Crédito se publica sin error
+
+### Requirement: Exención de la validación por registro
+
+La validación DEBE (MUST) consultar por cada Nota de Crédito `_l10n_ve_skip_refund_origin_validation()`, que por defecto devuelve verdadero solo si la clave de contexto `l10n_ve_skip_refund_origin_validation` está activa **al publicar** (no basta con haberla usado al crear). Los módulos que generan Notas de Crédito con un producto propio PUEDEN (MAY) sobrescribirlo para eximirlas por un campo guardado (p. ej. `l10n_ve_donation` con `is_donation`). La clave de contexto es de uso interno, no se expone en la UI.
+
+#### Scenario: Clave de contexto activa al publicar
+
+- **WHEN** una Nota de Crédito con un producto ajeno al origen se publica con el contexto `l10n_ve_skip_refund_origin_validation=True`
+- **THEN** la validación de producto y monto no se ejecuta
+
+#### Scenario: Clave de contexto solo al crear
+
+- **WHEN** la Nota de Crédito se creó con la clave de contexto pero se publica en una llamada posterior sin ella, y ningún módulo la exime por el hook
+- **THEN** la validación se ejecuta al publicar
 
 ### Requirement: Fecha de factura no posterior a la fecha contable en compras
 
@@ -392,3 +524,12 @@ Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST
 
 - **WHEN** se invoca la ruta con un `company_id` distinto del de la compañía activa
 - **THEN** el libro se genera para la compañía indicada en el parámetro, sin control de acceso adicional por parte del controlador
+
+### Requirement: Ajuste de descuento fijo en el desglose por línea en moneda de la compañía
+
+Cuando una línea de factura usa descuento fijo (`discount_fixed`, con el campo nativo `discount` forzado a 0), el sistema DEBE (MUST) calcular el precio unitario y el monto de descuento de `company_currency_line_totals` (`l10n_ve_accountant`) usando el porcentaje de descuento equivalente exacto de `discount_fixed`, no el campo nativo `discount` -- que en este caso vale 0 y daría un precio unitario incorrecto.
+
+#### Scenario: Línea con descuento fijo
+
+- **WHEN** una línea de factura usa `discount_fixed` en una compañía configurada con descuento por monto fijo
+- **THEN** `company_currency_line_totals` de esa línea refleja el descuento real aplicado, con `discount_type` en `'amount'`, y el precio unitario reconstruido reproduce el bruto correcto
