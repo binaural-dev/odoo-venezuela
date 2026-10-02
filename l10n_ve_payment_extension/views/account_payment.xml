@@ -7,6 +7,13 @@
             <field name="arch" type="xml">
                 <xpath expr="//group[@name='group2']" position="after">
                     <field name="is_retention" string="Is retention" invisible="1"/>
+                    <field name="retention_resync_pending" invisible="1"/>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not retention_resync_pending">
+                        Warning: this payment's linked withholding retention no longer matches
+                        its invoice's current data. Recalculate it from the invoice (button
+                        "Recalculate Retentions") to bring it up to date.
+                    </div>
                     <field name="payment_type_retention" string="Payment type retention" invisible="not is_retention"/>
                     <field name="retention_ref" string="Retention ref" invisible="not is_retention"/>
                     <notebook invisible="not is_retention">
