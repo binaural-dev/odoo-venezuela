@@ -1558,6 +1558,13 @@ class AccountMove(models.Model):
             grouping_key = AccountTax._prepare_base_line_grouping_key(fake_base_line)
             if line.move_id.is_invoice(include_receipts=True):
                 extra_fields = ['price_unit', 'quantity', 'discount']
+                # discount_fixed (l10n_ve_invoice, opcional -- este modulo no
+                # depende de ese) tambien cambia la base de la linea y debe
+                # disparar el re-balanceo igual que discount (%); sin esto,
+                # escribirlo solo no refresca balance/amount_currency y
+                # quedan desincronizados de price_subtotal.
+                if 'discount_fixed' in line._fields:
+                    extra_fields.append('discount_fixed')
             else:
                 extra_fields = ['amount_currency']
             return list(grouping_key.keys()) + extra_fields
