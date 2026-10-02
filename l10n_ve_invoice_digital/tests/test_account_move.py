@@ -2464,6 +2464,43 @@ class TestAccountMoveApiCalls(TransactionCase):
                     inv.generate_document_digital()
                     self.assertTrue(inv.is_digitalized)
 
+    def test_165_send_document_adopts_odoo_sequence_when_factory_has_no_last_number(self):
+        # Ticket #15552/#15590: UltimoDocumento devolviendo 0 (serie sin
+        # documentos previos en la imprenta) se interpretaba como "el
+        # siguiente numero es 1", pisando el correlativo que Odoo ya le
+        # habia asignado a la factura.
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.get_last_document_number',
+            return_value=0,
+        ):
+            with patch(
+                'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.query_numbering',
+                return_value=None,
+            ):
+                with patch(
+                    'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request'
+                ) as mock_call:
+                    mock_call.return_value = {
+                        "codigo": "200",
+                        "resultado": {"numeroControl": "00-00000001"},
+                    }
+                    self.journal.sequence_id.number_next_actual = 251
+                    inv = self._create_invoice(
+                        products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                    )
+                    self.assertEqual(inv.sequence_number, 251)
+                    inv.generate_document_digital()
+                    self.assertTrue(inv.is_digitalized)
+
+                    payload = mock_call.call_args.args[2]
+                    document_number = payload["documentoElectronico"]["encabezado"][
+                        "identificacionDocumento"
+                    ]["numeroDocumento"]
+                    self.assertEqual(document_number, "251")
+                    # No se adopta el numero de The Factory (0+1=1): se
+                    # conserva el correlativo de Odoo sin renombrar la factura.
+                    self.assertTrue(inv.name.endswith("00000251"))
+
     @patch(
         'odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService'
         '._prepare_additional_information',
