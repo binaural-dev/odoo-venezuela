@@ -1,0 +1,72 @@
+<odoo>
+    <data noupdate="1">
+        <record id="mail_template_seniat_summary" model="mail.template">
+            <field name="name">SENIAT: Resumen de Guías de Despacho sin Facturar</field>
+            <field name="model_id" ref="stock.model_stock_picking"/>
+            <field name="subject">{{ (ctx and ctx.get('seniat_company') and ctx.get('seniat_company').name) or object.env.company.name }} - Resumen SENIAT de Guías de Despacho sin Facturar al {{ (ctx and ctx.get('period_end_date')) or 'N/A' }}</field>
+            <field name="email_from">{{ (ctx and ctx.get('seniat_company') and ctx.get('seniat_company').email) or object.env.company.email or user.email_formatted }}</field>
+            <field name="auto_delete" eval="False"/>
+            <field name="body_html" type="html">
+                <div style="margin: 0px; padding: 0px; font-family: Arial, Helvetica, sans-serif; font-size: 13px; color: #454748;">
+                    <t t-set="company" t-value="ctx and ctx.get('seniat_company') or object.env.company"/>
+                    <t t-set="period_end" t-value="ctx and ctx.get('period_end_date') or 'N/A'"/>
+                    <t t-set="send_date" t-value="ctx and ctx.get('send_date') or 'N/A'"/>
+                    <t t-set="pickings_summary" t-value="ctx and ctx.get('pickings_summary') or []"/>
+                    <t t-set="total_count" t-value="ctx and ctx.get('total_count') or 0"/>
+                    <t t-set="total_amount" t-value="ctx and ctx.get('total_amount') or 'N/A'"/>
+                    <t t-set="base_url" t-value="ctx and ctx.get('base_url') or ''"/>
+                    <table border="0" cellpadding="0" cellspacing="0" width="100%" style="max-width: 640px; margin: 0 auto; background-color: #ffffff;">
+                        <tr>
+                            <td style="padding: 16px; text-align: center; border-bottom: 2px solid #714B67;">
+                                <img t-if="base_url" t-attf-src="{{ base_url }}/l10n_ve_stock_account/static/description/icon.png" alt="Binaural" style="max-height: 64px;"/>
+                                <h2 style="color: #714B67; margin: 8px 0 0 0;">Resumen SENIAT — Guías de Despacho sin Facturar</h2>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 16px;">
+                                <p>
+                                    A continuación el resumen de las guías de despacho sin facturar de
+                                    <strong t-out="company.name"/>
+                                    correspondiente al período impositivo con cierre el
+                                    <strong t-out="period_end"/>.
+                                </p>
+                                <table border="0" cellpadding="6" cellspacing="0" width="100%" style="border-collapse: collapse; margin-top: 8px;">
+                                    <thead>
+                                        <tr style="background-color: #714B67; color: #ffffff;">
+                                            <th style="text-align: left; padding: 6px;">Guía de Despacho</th>
+                                            <th style="text-align: center; padding: 6px;">Fecha de Despacho</th>
+                                            <th style="text-align: right; padding: 6px;">Monto Total</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr t-foreach="pickings_summary" t-as="line" style="border-bottom: 1px solid #e0e0e0;">
+                                            <td style="padding: 6px;" t-out="line.get('name', '')"/>
+                                            <td style="padding: 6px; text-align: center;" t-out="line.get('date', '')"/>
+                                            <td style="padding: 6px; text-align: right;" t-out="line.get('amount_formatted', '')"/>
+                                        </tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style="background-color: #f5f5f5; font-weight: bold;">
+                                            <td style="padding: 6px;">Total de guías: <t t-out="total_count"/></td>
+                                            <td style="padding: 6px;"/>
+                                            <td style="padding: 6px; text-align: right;" t-out="total_amount"/>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="padding: 16px; border-top: 1px solid #e0e0e0; font-size: 11px; color: #999999; text-align: center;">
+                                <p style="margin: 0;">
+                                    Compañía emisora: <t t-out="company.name"/> —
+                                    Período impositivo con cierre: <t t-out="period_end"/> —
+                                    Fecha de envío: <t t-out="send_date"/>
+                                </p>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </field>
+        </record>
+    </data>
+</odoo>
