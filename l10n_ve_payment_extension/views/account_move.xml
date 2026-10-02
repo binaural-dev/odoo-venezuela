@@ -5,6 +5,34 @@
             <field name="model">account.move</field>
             <field name="inherit_id" ref="account.view_move_form"/>
             <field name="arch" type="xml">
+                <xpath expr="//header/field[@name='state'][@widget='statusbar']" position="before">
+                    <field name="has_pending_retention_to_cancel" invisible="1"/>
+                    <field name="retention_resync_pending" invisible="1"/>
+                    <button name="button_cancel" string="Cancel"
+                        type="object"
+                        groups="l10n_ve_invoice.group_show_cancel_button"
+                        invisible="not entry_in_period and (not id or state != 'draft' or move_type == 'entry') or not has_pending_retention_to_cancel"
+                        confirm="This invoice has an emitted withholding retention. Cancelling it will also cancel that retention and its accounting entries. Are you sure you want to continue?"
+                        data-hotkey="x"/>
+                    <button name="button_cancel" string="Cancel"
+                        type="object"
+                        groups="!l10n_ve_invoice.group_show_cancel_button"
+                        invisible="(not entry_in_period and (not id or state != 'draft') or move_type in ('out_invoice', 'out_refund', 'out_receipt', 'entry')) or not has_pending_retention_to_cancel"
+                        confirm="This invoice has an emitted withholding retention. Cancelling it will also cancel that retention and its accounting entries. Are you sure you want to continue?"
+                        data-hotkey="x"/>
+                    <button name="action_recalculate_retentions" string="Recalculate Retentions"
+                        type="object"
+                        groups="account.group_account_invoice"
+                        invisible="not retention_resync_pending or state != 'posted'"/>
+                </xpath>
+
+                <xpath expr="//header/button[@name='button_cancel'][@groups='l10n_ve_invoice.group_show_cancel_button']" position="attributes">
+                    <attribute name="invisible">(not entry_in_period and (not id or state != 'draft' or move_type == 'entry')) or has_pending_retention_to_cancel</attribute>
+                </xpath>
+                <xpath expr="//header/button[@name='button_cancel'][@groups='!l10n_ve_invoice.group_show_cancel_button']" position="attributes">
+                    <attribute name="invisible">(not entry_in_period and (not id or state != 'draft') or move_type in ('out_invoice', 'out_refund', 'out_receipt', 'entry')) or has_pending_retention_to_cancel</attribute>
+                </xpath>
+
                 <xpath expr="//div[@name='button_box']" position="inside">
                     <field name="is_isrl_retention_available" invisible="1"/>
                     <field name="has_emited_islr_retention" invisible="1"/>
@@ -103,6 +131,11 @@
                     <div class="alert alert-warning" role="alert"
                          invisible="(count_islr_retention > 0 and has_emited_islr_retention) or count_islr_retention == 0">
                         Warning: You have ISLR retentions to aproved
+                    </div>
+                    <div class="alert alert-warning" role="alert"
+                         invisible="not retention_resync_pending or state != 'posted'">
+                        Warning: this invoice's withholding retentions no longer match its current
+                        data. Use the "Recalculate Retentions" button to bring them up to date.
                     </div>
                 </xpath>
 

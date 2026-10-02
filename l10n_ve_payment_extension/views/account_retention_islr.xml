@@ -20,6 +20,13 @@
                         <field name="state" widget="statusbar" nolabel="1" />
                     </header>
                     <sheet>
+                        <field name="retention_resync_pending" invisible="1" />
+                        <div class="alert alert-warning" role="alert"
+                             invisible="not retention_resync_pending">
+                            Warning: this retention's declared base/amount no longer match its
+                            invoice's current data. Recalculate it from the invoice (button
+                            "Recalculate Retentions") to bring it up to date.
+                        </div>
                         <group colspan="4" col="4">
                             <!-- Invisible fields -->
                             <field name="name" invisible="1" force_save="1" />
