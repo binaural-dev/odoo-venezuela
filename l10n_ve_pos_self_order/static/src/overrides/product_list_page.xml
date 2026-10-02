@@ -3,12 +3,13 @@
 
     <t t-name="l10n_ve_pos_self_order.ProductListPage" t-inherit="pos_self_order.ProductListPage" t-inherit-mode="extension" owl="1">
 
-        <!-- Greeting + search bar, only in scan/search-only kiosk mode. -->
+        <!-- Greeting on every kiosk; the search bar only in scan/search-only
+             mode (with the catalog, the category bar is the navigation). -->
         <xpath expr="//div[hasclass('bg-view')][hasclass('border-bottom')]" position="before">
-            <div t-if="hideCatalog" class="o_ve_kiosk_scan_header user-select-none">
+            <div t-if="showGreeting" class="o_ve_kiosk_scan_header user-select-none">
                 <div class="container o_self_container py-4 px-4 d-flex flex-column gap-3">
                     <h1 class="o_ve_kiosk_greeting m-0 fw-bold text-truncate" t-esc="greeting"/>
-                    <div class="o_ve_kiosk_search position-relative">
+                    <div t-if="hideCatalog" class="o_ve_kiosk_search position-relative">
                         <i class="fa fa-search position-absolute top-50 translate-middle-y ms-3 text-muted pe-none"/>
                         <input type="text"
                                class="o_ve_kiosk_search_input form-control form-control-lg ps-5 py-3 rounded-pill"
@@ -59,6 +60,11 @@
                             <button type="button" class="btn btn-link text-muted ms-2 align-self-start" t-on-click="() => this.removeSummaryLine(line)"><i class="fa fa-trash-o fa-lg"/></button>
                         </div>
                     </t>
+                </div>
+                <!-- Desglose de montos (ticket 80343): en este modo review()
+                     salta el carrito, así que va aquí antes de Pagar. -->
+                <div class="bg-white px-3 px-kiosk-p-4 py-3 mt-3 rounded-4 border border-light shadow-sm">
+                    <KioskAmountsSummary/>
                 </div>
             </div>
 

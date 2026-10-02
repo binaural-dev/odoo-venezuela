@@ -8,3 +8,8 @@ class ResConfigSettings(models.TransientModel):
         related="pos_config_id.self_ordering_hide_catalog",
         readonly=False,
     )
+
+    pos_self_ordering_require_address = fields.Boolean(
+        related="pos_config_id.self_ordering_require_address",
+        readonly=False,
+    )
