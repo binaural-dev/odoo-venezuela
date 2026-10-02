@@ -115,6 +115,8 @@ class AccountMoveLine(models.Model):
                   "move_id.foreign_inverse_rate")
     def _compute_foreign_price(self):
         for line in self:
+            if line.foreign_price_manual:
+                continue
             line.foreign_price = line.currency_id._convert(
                 line.price_unit,
                 line.foreign_currency_id,
@@ -428,6 +430,16 @@ class AccountMoveLine(models.Model):
         if self.price_unit < 0:
             raise ValidationError(_("The price entered cannot be negative"))
         self.foreign_price_manual = False
+
+    def write(self, vals):
+        """Limpia foreign_price_manual cuando se escribe price_unit (no solo
+        desde el onchange de la UI), para que un cambio real del precio
+        nativo vuelva a recalcular el alterno."""
+        if "price_unit" in vals:
+            manual_lines = self.filtered("foreign_price_manual")
+            if manual_lines:
+                manual_lines.write({"foreign_price_manual": False})
+        return super().write(vals)
     
     
     @api.model
