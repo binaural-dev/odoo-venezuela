@@ -85,7 +85,12 @@ class StockPicking(models.Model):
         compute="_compute_allowed_reason_ids",
     )
 
-    is_donation = fields.Boolean(related="sale_id.is_donation")
+    is_donation = fields.Boolean(
+        string="Is Donation",
+        default=False,
+        help="Marks the picking as a donation. It is set by the Donations "
+        "menu or when the picking is created from a donation sale order.",
+    )
 
     is_dispatch_guide = fields.Boolean(
         tracking=True,

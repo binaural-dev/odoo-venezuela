@@ -12,28 +12,29 @@ class StockPicking(models.Model):
 
     donation_reason = fields.Char(string="Donation Reason")
 
-    is_donation_delivery = fields.Boolean(
-        compute="_compute_is_donation_delivery",
-        help="Light computed field used to drive view visibility -- "
-        "`invisible` attributes in the arch cannot call a method directly.",
-    )
+    @api.model
+    def default_get(self, fields_list):
+        """Mark the picking as a donation when it is created from the
+        Donations menu.
 
-    @api.depends("picking_type_id.is_donation_picking_type", "picking_type_id.code")
-    def _compute_is_donation_delivery(self):
-        for picking in self:
-            picking.is_donation_delivery = picking._is_donation_delivery()
-
-    def _is_donation_delivery(self):
-        """True only for the OUTGOING direction -- `is_donation_picking_type`
-        is now a shared flag (also set by higea_donation on its incoming
-        receipt type), so this module must check `code` explicitly to stay
-        scoped to its own direction."""
-        self.ensure_one()
-        return bool(self.picking_type_id.is_donation_picking_type) and self.picking_type_id.code == "outgoing"
+        The menu passes `donation_menu` instead of `default_is_donation`
+        because every `default_*` key of an action context is propagated to
+        all the records created from it, including the stock valuation
+        journal entries, which must not inherit the donation mark."""
+        res = super().default_get(fields_list)
+        if self.env.context.get("donation_menu") and "is_donation" in fields_list:
+            res["is_donation"] = True
+        return res
 
     def button_validate(self):
         for picking in self:
-            if picking._is_donation_delivery() and not picking.partner_id and not picking.donation_reason:
+            if (
+                picking.is_donation
+                and not picking.sale_id
+                and picking.picking_type_code == "outgoing"
+                and not picking.partner_id
+                and not picking.donation_reason
+            ):
                 raise UserError(_(
                     "You must set the recipient (Contact) or the donation reason "
                     "to validate a donation delivery."
