@@ -233,6 +233,10 @@ Toda edición que efectivamente se aplique (delta distinto de cero y dentro de t
 
 La edición manual escribe directamente sobre `amount_currency`/`balance` de la línea de impuesto, sin tocar ninguna línea base/producto -- por eso el sistema DEBE (MUST) resincronizar también el lado de moneda alterna (`foreign_balance`/`foreign_debit`/`foreign_credit`) de esa misma línea de impuesto y de la línea `payment_term` que la cuadra (`_sync_tax_lines`/`_round_mode`, rama `'reapply_tax_lines'` -- ver el requirement "Corrección de redondeo multi-moneda (porción real)"), para que el asiento no quede descuadrado en moneda alterna tras la edición. Esa resincronización NO DEBE (SHALL NOT) recalcular el lado de moneda de la compañía (`balance`) a partir de las líneas base, ya que eso descartaría silenciosamente la edición manual recién validada por la tolerancia.
 
+Core escribe `tax_totals` dos veces por cada `write()` de la factura: una transitoria, dentro de `_sync_dynamic_lines` (antes de que las líneas de impuesto terminen de resincronizarse contra el nuevo estado de las líneas base), y la real, después. Core marca la pasada transitoria con `_disable_recursion(..., 'skip_invoice_sync')`, y su propio `_inverse_tax_totals` ya respeta ese guard; `_inverse_tax_totals` de este módulo DEBE (MUST) respetarlo también, delegando directo a `super()` sin validar ni auditar durante esa pasada -- de lo contrario cualquier edición normal de línea (no el lápiz) puede disparar ahí un `UserError` espurio de tolerancia, y una edición real del lápiz deja dos mensajes de chatter por un solo guardado.
+
+`_sync_dynamic_lines` DEBE (MUST) ejecutar `_distribute_final_real_portion`/`_distribute_foreign_pt_residual` solo mientras no haya ya una ejecución en curso para el mismo move en la pila actual (guarda de reentrancia, liberada en `finally`), porque ambos métodos escriben campos (`foreign_balance`, `balance` de línea de impuesto) cuyo propio write/inverse reentra `_sync_dynamic_lines`. Esta guarda es un endurecimiento defensivo: en el escenario de prueba cubierto (dos líneas de producto, tres cuotas de payment_term) la reentrada observada es real pero de profundidad acotada (3-6 niveles) y converge sola incluso sin la guarda -- NO reproduce el `RecursionError` real reportado en producción (que supera 150 frames e involucra módulos enterprise/integra-addons fuera de este escenario mínimo). Esta guarda NO DEBE (MUST NOT) presentarse como una corrección confirmada de ese incidente; queda pendiente reproducirlo con el escenario completo antes de cerrar ese hallazgo.
+
 #### Scenario: Edición dentro de tolerancia se aplica y queda auditada
 
 - **GIVEN** un usuario del grupo `group_fiscal_config_support` editando una factura en borrador
@@ -254,6 +258,18 @@ La edición manual escribe directamente sobre `amount_currency`/`balance` de la 
 - **GIVEN** una compañía con `currency_id` VEF y `foreign_currency_id` USD, y una factura en USD
 - **WHEN** se edita el monto de un grupo de impuesto dentro de tolerancia
 - **THEN** `foreign_balance` de la línea de impuesto y de la línea `payment_term` se recalculan a partir del nuevo monto, el total de `foreign_debit` sigue igualando al de `foreign_credit` en toda la factura, y `balance` (moneda de la compañía) permanece exactamente el que dejó la edición manual (`test_59_tax_totals_edit_resyncs_foreign_balance_and_payment_term`)
+
+#### Scenario: Un guardado normal que reenvía tax_totals ya recalculado no se bloquea
+
+- **GIVEN** una factura en borrador donde el usuario edita una línea de producto (no el lápiz de `tax_totals`)
+- **WHEN** el mismo `write()` incluye también el `tax_totals` ya recalculado del lado cliente (como hace el webclient en cualquier guardado donde el widget cambió)
+- **THEN** el guardado no lanza `UserError` y el impuesto final refleja la edición real de la línea (`test_61_normal_line_edit_with_tax_totals_in_vals_does_not_raise`)
+
+#### Scenario: La guarda de reentrancia de _sync_dynamic_lines no rompe un guardado normal multi-línea/multi-cuota
+
+- **GIVEN** una factura en borrador con dos líneas de producto y tres cuotas de `payment_term`
+- **WHEN** se edita `price_unit` de una línea de producto
+- **THEN** el guardado no lanza `RecursionError`, el asiento queda cuadrado, el número de cuotas de `payment_term` no cambia y `foreign_debit`/`foreign_credit` quedan consistentes en todas las líneas (`test_62_sync_dynamic_lines_reentrancy_guard_does_not_break_normal_save`)
 
 ### Requirement: base_amount por grupo de impuesto coincide con el balance real
 
