@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 
+from markupsafe import Markup
 from lxml import etree
 from contextlib import ExitStack, contextmanager
 from odoo import _, api, fields, models,Command
@@ -221,6 +222,84 @@ class AccountMove(models.Model):
 
     manually_set_rate = fields.Boolean(default=False)
     last_foreign_rate = fields.Float(copy=False)
+
+    can_edit_tax_totals = fields.Boolean(
+        compute="_compute_can_edit_tax_totals",
+        help="Gates the pencil-edit on the tax_totals widget -- same "
+        "group as res.currency.edit_rate, which already gates manually "
+        "overriding an otherwise auto-computed fiscal figure.",
+    )
+
+    def _compute_can_edit_tax_totals(self):
+        can_edit = self.env.user.has_group("l10n_ve_accountant.group_fiscal_config_support")
+        for move in self:
+            move.can_edit_tax_totals = can_edit
+
+    def _inverse_tax_totals(self):
+        """Gates the pencil-edit's actual write: only
+        `group_fiscal_config_support` may change a tax group's amount,
+        and only within `company_id.tax_totals_edit_tolerance`."""
+        with self._disable_recursion({'records': self}, 'skip_invoice_sync') as disabled:
+            if disabled:
+                return super()._inverse_tax_totals()
+        pending_chatter_entries = defaultdict(list)
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            invoice_totals = move.tax_totals
+            if not invoice_totals:
+                continue
+            tolerance = move.company_id.tax_totals_edit_tolerance
+            for subtotal in invoice_totals.get('subtotals') or []:
+                for tax_group in subtotal.get('tax_groups') or []:
+                    tax_lines = move.line_ids.filtered(
+                        lambda line: line.tax_group_id.id == tax_group['id']
+                    )
+                    if not tax_lines:
+                        continue
+                    tax_group_old_amount = sum(tax_lines.mapped('amount_currency'))
+                    sign = -1 if move.is_inbound() else 1
+                    old_amount_currency = (
+                        tax_group_old_amount - tax_group.get('non_deductible_tax_amount_currency', 0.0)
+                    ) * sign
+                    delta_amount = old_amount_currency - tax_group['tax_amount_currency']
+                    if move.currency_id.is_zero(delta_amount):
+                        continue
+                    if not move.can_edit_tax_totals:
+                        raise UserError(_(
+                            "You are not allowed to manually edit the tax amount."
+                        ))
+                    if move.currency_id.compare_amounts(abs(delta_amount), tolerance) > 0:
+                        raise UserError(_(
+                            "The manually edited tax amount differs by %(diff)s from the "
+                            "computed value, which is more than the allowed tolerance of "
+                            "%(tolerance)s for %(company)s.",
+                            diff=formatLang(self.env, abs(delta_amount), currency_obj=move.currency_id),
+                            tolerance=formatLang(self.env, tolerance, currency_obj=move.currency_id),
+                            company=move.company_id.display_name,
+                        ))
+                    pending_chatter_entries[move].append((
+                        tax_group.get('group_name', ''),
+                        old_amount_currency,
+                        tax_group['tax_amount_currency'],
+                    ))
+        super()._inverse_tax_totals()
+        self.invalidate_recordset(['tax_totals'])
+        for move, entries in pending_chatter_entries.items():
+            lines = [
+                _(
+                    "%(group)s: %(old)s → %(new)s",
+                    group=group_name,
+                    old=formatLang(self.env, old_amount, currency_obj=move.currency_id),
+                    new=formatLang(self.env, new_amount, currency_obj=move.currency_id),
+                )
+                for group_name, old_amount, new_amount in entries
+            ]
+            body = Markup("<p>%s</p>%s") % (
+                _("Manual tax amount edit by %(user)s:", user=self.env.user.display_name),
+                Markup().join(Markup("<br/>%s") % line for line in lines),
+            )
+            move.message_post(body=body)
 
     vat = fields.Char(
         string="VAT",
@@ -1590,6 +1669,8 @@ class AccountMove(models.Model):
                 return any_field_has_changed(tax_before, tax_lines)
             if any(line not in base_lines for line, values in base_before.items() if values['tax_ids']):
                 return any_field_has_changed(tax_before, tax_lines)
+            if any_field_has_changed(tax_before, tax_lines):
+                return 'reapply_tax_lines'
             # Nada del calculo en moneda de la compañía cambió -- pero si la
             # fecha que representa la tasa sí cambió (invoice_date en
             # facturas/notas, date en asientos -- ver
@@ -1663,14 +1744,20 @@ class AccountMove(models.Model):
                 continue
 
             blv, tlv = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_mode)
-            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=False)
+            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(
+                round_from_tax_lines=round_mode == 'reapply_tax_lines'
+            )
             AccountTax._add_accounting_data_in_base_lines_tax_details(blv, move.company_id, include_caba_tags=move.always_tax_exigible)
             AccountTax._add_accounting_data_in_base_lines_tax_details(flv, move.company_id, include_caba_tags=move.always_tax_exigible)
             tax_results = AccountTax._prepare_tax_lines(blv, move.company_id, tax_lines=tlv)
             foreign_tax_results = AccountTax._prepare_tax_lines(flv, move.company_id, tax_lines=ftlv)
 
             # ── Fix multi-currency rounding ──────────────────────────
-            if move.is_invoice(include_receipts=True) and move.currency_id != move.company_id.currency_id:
+            if (
+                round_mode != 'reapply_tax_lines'
+                and move.is_invoice(include_receipts=True)
+                and move.currency_id != move.company_id.currency_id
+            ):
                 rate = move.invoice_currency_rate
                 if rate:
                     cc = move.company_id.currency_id
@@ -1908,19 +1995,22 @@ class AccountMove(models.Model):
     def _sync_dynamic_lines(self, container):
         with super()._sync_dynamic_lines(container):
             yield
-        self._distribute_final_real_portion(container['records'])
-        self._distribute_foreign_pt_residual(container['records'])
-       
+        records = container['records']
+        in_progress = self.env.cr.cache.setdefault('_dynamic_lines_in_progress', set())
+        pending = records.filtered(lambda m: m.id not in in_progress)
+        if not pending:
+            return
+        in_progress.update(pending.ids)
+        try:
+            self._distribute_final_real_portion(pending)
+            self._distribute_foreign_pt_residual(pending)
+        finally:
+            in_progress.difference_update(pending.ids)
 
     def _distribute_foreign_pt_residual(self, moves):
-        """Distributes foreign_debit/foreign_credit across payment term lines
-        proportionally to the native balance, forcing the total sum
-        of foreign_debit = total sum of foreign_credit of the entry.
-
-        Runs at the end of _sync_dynamic_lines (initial distribution)
-        and also from the write hook of AccountMoveLine when the real
-        portion adjusts the native balances of PT lines.
-        """
+        """Distributes foreign_debit/foreign_credit across payment term
+        lines proportionally to the native balance, so total
+        foreign_debit = total foreign_credit for the entry."""
         for move in moves:
             if move.state != 'draft':
                 continue
