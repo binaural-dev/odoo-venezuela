@@ -24,6 +24,8 @@
     </field>
 </record>
 
+<!-- Donation by scrap is disabled: the donation action and its menu are replaced by
+     Inventory > Operations > Transfers > Donations (stock.picking, several products).
 <record id="view_stock_scrap_action_donation" model="ir.actions.act_window">
     <field name="name">Donation</field>
     <field name="res_model">stock.scrap</field>
@@ -31,6 +33,7 @@
     <field name="domain">[('is_donation', '=', True)]</field>
     <field name="context">{'default_is_donation': True}</field>
 </record>
+-->
 
 <record model="ir.actions.act_window" id="stock.action_stock_scrap">
     <field name="name">Scrap Orders</field>
@@ -47,5 +50,7 @@
     </field>
 </record>
 
+<!--
 <menuitem id="menu_stock_scrap_donation" name="Donation" parent="stock.menu_stock_adjustments" sequence="100" action="view_stock_scrap_action_donation"/>
+-->
 </odoo>
