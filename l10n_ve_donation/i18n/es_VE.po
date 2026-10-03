@@ -578,21 +578,15 @@ msgid "Donation picking type must be incoming or outgoing"
 msgstr "El tipo de operación de donación debe ser de entrada o de salida"
 
 #. module: l10n_ve_donation
+#: model:ir.actions.act_window,name:l10n_ve_donation.action_stock_picking_donation
+#: model:ir.ui.menu,name:l10n_ve_donation.menu_stock_picking_donation
+msgid "Donations"
+msgstr "Donaciones"
+
+#. module: l10n_ve_donation
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_product_table
 msgid "Expiration"
 msgstr "Vencimiento"
-
-#. module: l10n_ve_donation
-#: model:ir.model.fields,field_description:l10n_ve_donation.field_stock_picking__is_donation_delivery
-msgid "Is Donation Delivery"
-msgstr "Es Entrega de Donación"
-
-#. module: l10n_ve_donation
-#: model:ir.model.fields,help:l10n_ve_donation.field_stock_picking__is_donation_delivery
-msgid ""
-"Light computed field used to drive view visibility -- `invisible` attributes"
-" in the arch cannot call a method directly."
-msgstr "Campo computado liviano usado para condicionar la visibilidad en la vista -- los atributos `invisible` del arch no pueden llamar un método directamente."
 
 #. module: l10n_ve_donation
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_product_table
@@ -605,6 +599,19 @@ msgid "Name, Signature and Seal"
 msgstr "Nombre, Firma y Sello"
 
 #. module: l10n_ve_donation
+#: model:ir.model.fields,help:l10n_ve_donation.field_stock_picking_type__is_donation_picking_type
+msgid ""
+"Only filters the operation types offered in the form of the Inventory > "
+"Operations > Donations menu. It does not activate any donation logic by "
+"itself: a picking is a donation only when its `Is Donation` field is set (by"
+" that menu, or by a donation sale)."
+msgstr ""
+"Solo filtra los tipos de operación que se ofrecen en el formulario del menú "
+"Inventario > Operaciones > Donaciones. No activa ninguna lógica de donación "
+"por sí misma: un picking es una donación solo cuando su campo `Es Donación` "
+"está marcado (por ese menú, o por una venta de donación)."
+
+#. module: l10n_ve_donation
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.view_picking_form_inherit_l10n_ve_donation
 msgid "Print Donation Certificate"
 msgstr "Imprimir Certificado de Donación"
@@ -613,20 +620,6 @@ msgstr "Imprimir Certificado de Donación"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_product_table
 msgid "Qty"
 msgstr "Cant."
-
-#. module: l10n_ve_donation
-#: model:ir.model.fields,help:l10n_ve_donation.field_stock_picking_type__is_donation_picking_type
-msgid ""
-"Shared flag: marks this operation type as part of a donation flow, either "
-"outgoing (donation given) or incoming (donation received). Each module that "
-"implements donations determines its own direction by checking the native "
-"`code` of the operation type, not a separate field per direction."
-msgstr ""
-"Bandera compartida: marca este tipo de operación como parte de un flujo de "
-"donación, de salida (donación otorgada) o de entrada (donación recibida). "
-"Cada módulo que implementa donaciones determina su propia dirección "
-"revisando el `code` nativo del tipo de operación, no un campo separado por "
-"dirección."
 
 #. module: l10n_ve_donation
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_product_table

@@ -36,13 +36,24 @@ class StockMove(models.Model):
         `action_post()`, so `action_post()`'s own line-forcing loop never
         runs for this path.
 
-        `stock.scrap` has no real contact for its beneficiary/patient (see
-        the header limitation documented on `_is_donation_delivery`/the
-        certificate template), so the header stays unset for that flow as
-        before -- only the line-level forcing below applies equally to both
-        flows."""
+        The picking branch only applies to donation deliveries created from
+        the Donations menu: `is_donation and not sale_id and outgoing`.
+        Deliveries that come from a donation sale order are excluded on
+        purpose, their accounting must not change.
+
+        `vals["is_donation"]` is always written explicitly (also False), so
+        that no `default_is_donation` coming from the context can mark a
+        valuation entry that is not a donation.
+
+        The donation through `stock.scrap` keeps working: its branch is still
+        active (only the scrap view and menu are disabled in the manifest)."""
         is_donation_scrap = bool(self.scrap_id and self.scrap_id.is_donation)
-        is_donation_picking = bool(self.picking_id and self.picking_id._is_donation_delivery())
+        is_donation_picking = bool(
+            self.picking_id
+            and self.picking_id.is_donation
+            and not self.picking_id.sale_id
+            and self.picking_id.picking_type_code == "outgoing"
+        )
 
         if is_donation_scrap and self.scrap_id.donation_reason:
             description = f"{description} - {self.scrap_id.donation_reason}"
@@ -59,7 +70,9 @@ class StockMove(models.Model):
             cost,
         )
 
-        if is_donation_scrap or is_donation_picking:
+        is_donation = is_donation_scrap or is_donation_picking
+        vals["is_donation"] = is_donation
+        if is_donation:
             company_partner = self.env.company.partner_id
             vals["line_ids"] = [
                 (command[0], command[1], {**command[2], "partner_id": company_partner.id})
@@ -67,10 +80,5 @@ class StockMove(models.Model):
                 for command in vals.get("line_ids", [])
             ]
             reason = self.scrap_id.donation_reason if is_donation_scrap else self.picking_id.donation_reason
-            vals.update(
-                {
-                    "is_donation": True,
-                    "ref": reason or vals.get("ref"),
-                }
-            )
+            vals["ref"] = reason or vals.get("ref")
         return vals
