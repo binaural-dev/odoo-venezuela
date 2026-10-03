@@ -236,19 +236,12 @@ class AccountMove(models.Model):
             move.can_edit_tax_totals = can_edit
 
     def _inverse_tax_totals(self):
-        """Gates the pencil-edit's actual write, not just the view: only
-        `group_fiscal_config_support` may change a tax group's amount at
-        all, and even then only within `company_id.tax_totals_edit_tolerance`
-        of the computed value -- mirrors the same delta core's own
-        `_inverse_tax_totals` computes to move the first tax line, so a
-        change flagged here is exactly the change core is about to apply."""
-        # Por mover (TI-15432, bug 3): registrado ANTES de `super()`, porque
-        # `tax_group_old_amount` se lee de las lineas reales -- despues de
-        # `super()._inverse_tax_totals()` ya estarian en su valor nuevo.
-        # Una entrada por grupo que de verdad se va a aplicar (delta
-        # distinto de cero y dentro de tolerancia -- lo unico que llega
-        # hasta aqui sin que el `raise` de arriba haya cortado el loop
-        # entero para el move).
+        """Gates the pencil-edit's actual write: only
+        `group_fiscal_config_support` may change a tax group's amount,
+        and only within `company_id.tax_totals_edit_tolerance`."""
+        with self._disable_recursion({'records': self}, 'skip_invoice_sync') as disabled:
+            if disabled:
+                return super()._inverse_tax_totals()
         pending_chatter_entries = defaultdict(list)
         for move in self:
             if not move.is_invoice(include_receipts=True):
@@ -291,17 +284,7 @@ class AccountMove(models.Model):
                         tax_group['tax_amount_currency'],
                     ))
         super()._inverse_tax_totals()
-        # `tax_totals` isn't stored, so `add_to_compute` doesn't apply --
-        # and core's own recompute never re-triggers from a write to the
-        # TAX line itself (its `@api.depends` only covers
-        # `invoice_line_ids`, i.e. product lines) -- without this,
-        # `_fix_tax_amount_for_round_per_line`'s VES correction stays
-        # frozen at its pre-edit value on the next read, even though the
-        # real tax line's `balance` already moved.
         self.invalidate_recordset(['tax_totals'])
-        # Un solo mensaje consolidado por move, aunque hayan cambiado
-        # varios grupos de impuesto en el mismo guardado -- no uno por
-        # grupo (TI-15432, bug 3).
         for move, entries in pending_chatter_entries.items():
             lines = [
                 _(
@@ -1686,30 +1669,6 @@ class AccountMove(models.Model):
                 return any_field_has_changed(tax_before, tax_lines)
             if any(line not in base_lines for line, values in base_before.items() if values['tax_ids']):
                 return any_field_has_changed(tax_before, tax_lines)
-            # Ninguna linea base/producto cambio este ciclo, pero si las
-            # propias lineas de impuesto -- el unico efecto posible es la
-            # edicion manual del lapiz en el widget tax_totals via
-            # `_inverse_tax_totals`, que escribe directo `amount_currency`/
-            # `balance` de la primera linea de impuesto sin tocar ninguna
-            # linea base. Sin esta rama caiamos a la de fecha (no cambio) y
-            # de ahi a `return None` -- `_sync_tax_lines` ni siquiera
-            # reconstruye el lado alterno, dejando `foreign_balance` de la
-            # linea de impuesto (y, en cascada, el de la linea de
-            # payment_term que la cuadra via `_distribute_foreign_pt_residual`)
-            # congelado en su valor pre-edicion (unico lugar que las escribe
-            # para estas lineas, ver `account_move_line._get_foreign_value`,
-            # rama 1).
-            # 'reapply_tax_lines': marca distinta de True/False/rftl para no
-            # alterar ninguna otra rama -- ver su uso debajo de
-            # `_get_rounded_foreign_base_and_tax_lines` (fuerza alli
-            # tambien `round_from_tax_lines=True`, en vez del `False`
-            # fijo de las demas ramas) y el guard que salta por completo el
-            # bloque "Fix multi-currency rounding": ese bloque recalcula
-            # `balance`/`amount_currency` de la linea de impuesto DESDE las
-            # lineas base -- exactamente lo que no queremos aqui, pues
-            # sobreescribiria la edicion manual ya validada por la
-            # tolerancia de `_inverse_tax_totals` con el monto "mecanico"
-            # de antes de la edicion.
             if any_field_has_changed(tax_before, tax_lines):
                 return 'reapply_tax_lines'
             # Nada del calculo en moneda de la compañía cambió -- pero si la
@@ -1785,15 +1744,6 @@ class AccountMove(models.Model):
                 continue
 
             blv, tlv = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_mode)
-            # Hardcodeado a False para todas las demas ramas (el lado
-            # alterno ya se refresca solo con la fuente fresca de cada
-            # linea base -- p.ej. `foreign_price`, que depende de
-            # `move_id.invoice_date`/`move_id.date`). Solo en
-            # 'reapply_tax_lines' (ver `_round_mode`) se ancla tambien al
-            # valor YA escrito en la linea de impuesto, igual que del lado
-            # compania -- es el unico caso donde nada de la fuente base
-            # cambio y por tanto un recalculo "fresco" reproduciria el
-            # monto viejo (pre-edicion) en vez de reflejar la edicion.
             flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(
                 round_from_tax_lines=round_mode == 'reapply_tax_lines'
             )
@@ -1803,14 +1753,6 @@ class AccountMove(models.Model):
             foreign_tax_results = AccountTax._prepare_tax_lines(flv, move.company_id, tax_lines=ftlv)
 
             # ── Fix multi-currency rounding ──────────────────────────
-            # Salta por completo en 'reapply_tax_lines': este bloque
-            # recalcula `balance`/`amount_currency` de la linea de
-            # impuesto a partir de las lineas base (percent taxes,
-            # `_apply_vef_first`) -- correcto cuando las bases cambiaron,
-            # pero aqui las bases NO cambiaron y haria justo lo que
-            # queremos evitar: sobreescribir la edicion manual (ya
-            # validada por la tolerancia de `_inverse_tax_totals`) con el
-            # monto "mecanico" de antes de la edicion.
             if (
                 round_mode != 'reapply_tax_lines'
                 and move.is_invoice(include_receipts=True)
@@ -2053,19 +1995,22 @@ class AccountMove(models.Model):
     def _sync_dynamic_lines(self, container):
         with super()._sync_dynamic_lines(container):
             yield
-        self._distribute_final_real_portion(container['records'])
-        self._distribute_foreign_pt_residual(container['records'])
-       
+        records = container['records']
+        in_progress = self.env.cr.cache.setdefault('_dynamic_lines_in_progress', set())
+        pending = records.filtered(lambda m: m.id not in in_progress)
+        if not pending:
+            return
+        in_progress.update(pending.ids)
+        try:
+            self._distribute_final_real_portion(pending)
+            self._distribute_foreign_pt_residual(pending)
+        finally:
+            in_progress.difference_update(pending.ids)
 
     def _distribute_foreign_pt_residual(self, moves):
-        """Distributes foreign_debit/foreign_credit across payment term lines
-        proportionally to the native balance, forcing the total sum
-        of foreign_debit = total sum of foreign_credit of the entry.
-
-        Runs at the end of _sync_dynamic_lines (initial distribution)
-        and also from the write hook of AccountMoveLine when the real
-        portion adjusts the native balances of PT lines.
-        """
+        """Distributes foreign_debit/foreign_credit across payment term
+        lines proportionally to the native balance, so total
+        foreign_debit = total foreign_credit for the entry."""
         for move in moves:
             if move.state != 'draft':
                 continue

@@ -1337,7 +1337,6 @@ class TestMultiCurrencyRounding(TransactionCase):
             msg="Un ajuste que excede la tolerancia no debió aplicarse ni parcialmente.",
         )
 
-        # La tolerancia es configurable por compañía -- subirla permite el mismo delta.
         self.company.tax_totals_edit_tolerance = tolerance + 0.01
         tax_line = self._edit_tax_totals_by(inv, tolerance + 0.01)
         self.assertAlmostEqual(
@@ -1370,34 +1369,9 @@ class TestMultiCurrencyRounding(TransactionCase):
             self._edit_tax_totals_by(inv.with_user(outsider), 0.01)
 
     def test_59_tax_totals_edit_resyncs_foreign_balance_and_payment_term(self):
-        """Regression for TI-15432 bug 2: the pencil-edit on `tax_totals`
-        only touches the tax line's `amount_currency`/`balance` directly
-        (`_inverse_tax_totals`) -- it never touches any base/product line.
-        Before the fix, `_round_mode` had no branch for "only the tax lines
-        changed", fell through every check and returned `None`, so
-        `_sync_tax_lines` skipped the move entirely: `foreign_balance` on
-        both the tax line and the payment_term line that plugs it stayed
-        frozen at their pre-edit value, leaving the alternate-currency
-        ledger unbalanced.
-
-        Matches the real reported scenario exactly: company
-        `currency_id` = VEF (functional/company currency, where `balance`
-        lives) and `foreign_currency_id` = USD (the alternate ledger,
-        where `foreign_balance`/`foreign_debit`/`foreign_credit` live) --
-        and the invoice itself (`move.currency_id`) is ALSO USD, i.e. the
-        alternate currency coincides with the document currency, same as
-        `test_56`/`test_57`/`test_58`. The fields under test
-        (`foreign_debit`/`foreign_credit`/`foreign_balance`) are
-        currency-agnostic; they just happen to be USD-denominated here
-        because of this company's configuration, not because they are
-        VES-specific.
-
-        Kept in 'draft' on purpose (`post=False`): `_sync_tax_lines` skips
-        non-draft moves outright (`if move.state != 'draft': continue`),
-        and `can_edit_tax_totals`'s view domain only allows this edit while
-        `state == 'draft'` in the first place -- a posted move never
-        reaches the code this test is regression-testing.
-        """
+        """Regression for TI-15432 bug 2: a pencil-edit on `tax_totals`
+        must resync `foreign_balance` on the tax line and the
+        payment_term line that plugs it, not leave them frozen."""
         self._set_usd_rate(803.34)
         inv = self._create_invoice(self.currency_usd, None, [
             (1, 100.0, [self.tax_16]),
@@ -1414,9 +1388,6 @@ class TestMultiCurrencyRounding(TransactionCase):
         tolerance = self.company.tax_totals_edit_tolerance
         self.assertEqual(tolerance, 0.03, "Precondición: tolerancia default de la compañía.")
 
-        # Mimics the widget exactly like `test_56`/`test_57`/`test_58`: a
-        # small delta (the exact one from the real reported case, $32.00
-        # -> $32.03) within the allowed tolerance.
         delta = tolerance
         old_tax_amount_currency = tax_line.amount_currency
         tax_line = self._edit_tax_totals_by(inv, delta)
@@ -1427,7 +1398,6 @@ class TestMultiCurrencyRounding(TransactionCase):
             msg="Precondición: el monto editado no llegó a la línea de impuesto real.",
         )
 
-        # The bug: foreign_balance frozen at its pre-edit value.
         self.assertNotAlmostEqual(
             tax_line.foreign_balance, old_tax_foreign_balance, places=2,
             msg=(
@@ -1445,9 +1415,6 @@ class TestMultiCurrencyRounding(TransactionCase):
             ),
         )
 
-        # foreign_debit/foreign_credit must stay consistent with the new
-        # foreign_balance on every affected line (same invariant test_01/
-        # test_02 already check for the untouched case).
         for line in inv.line_ids:
             self.assertTrue(
                 self._check_foreign(line),
@@ -1455,8 +1422,6 @@ class TestMultiCurrencyRounding(TransactionCase):
                 f"tras la edición manual del lápiz.",
             )
 
-        # The alternate-currency ledger as a whole must stay balanced:
-        # total foreign_debit == total foreign_credit on the move.
         total_foreign_debit = sum(inv.line_ids.mapped('foreign_debit'))
         total_foreign_credit = sum(inv.line_ids.mapped('foreign_credit'))
         self.assertAlmostEqual(
@@ -1467,11 +1432,6 @@ class TestMultiCurrencyRounding(TransactionCase):
             ),
         )
 
-        # The company-currency (VEF) side must stay exactly as
-        # `_inverse_tax_totals` left it -- the whole point of the manual
-        # edit is that it's already correct and tolerance-validated; the
-        # fix must only touch the alternate side, never re-derive `balance`
-        # from the base lines and silently discard the manual edit.
         self.assertAlmostEqual(
             tax_line.balance, inv.company_currency_id.round(tax_line.amount_currency / inv.invoice_currency_rate),
             places=2,
@@ -1479,11 +1439,9 @@ class TestMultiCurrencyRounding(TransactionCase):
         )
 
     def test_60_tax_totals_edit_logs_chatter_message(self):
-        """Regression for TI-15432 bug 3: a manual `tax_totals` edit that
-        actually gets applied (non-zero delta, within tolerance) must leave
-        a trace on the invoice's chatter -- who changed it, which tax
-        group, and the old -> new amount -- not just silently mutate the
-        tax line."""
+        """Regression for TI-15432 bug 3: a manual `tax_totals` edit
+        that gets applied must log exactly one chatter message with
+        the user, tax group, and old -> new amount."""
         self._set_usd_rate(803.34)
         inv = self._create_invoice(self.currency_usd, None, [
             (1, 100.0, [self.tax_16]),
@@ -1496,9 +1454,12 @@ class TestMultiCurrencyRounding(TransactionCase):
         self._edit_tax_totals_by(inv, delta)
 
         messages_after = inv.message_ids
-        self.assertGreater(
-            len(messages_after), messages_before,
-            "La edición manual del lápiz debió dejar un mensaje nuevo en el chatter.",
+        self.assertEqual(
+            len(messages_after), messages_before + 1,
+            "La edición manual del lápiz debió dejar exactamente UN mensaje "
+            "nuevo en el chatter -- si hay más de uno, `_inverse_tax_totals` "
+            "volvió a duplicar el registro en la pasada transitoria de "
+            "`_sync_dynamic_lines` (no respeta `skip_invoice_sync`).",
         )
         last_message = messages_after.sorted('id', reverse=True)[0]
         self.assertEqual(
@@ -1506,16 +1467,6 @@ class TestMultiCurrencyRounding(TransactionCase):
             "El mensaje del chatter no registró al usuario que hizo la edición manual.",
         )
         self.assertIn(self.tax_group.name, last_message.body)
-        # Old and new amounts (both formatted with the invoice's currency,
-        # like `formatLang` does) must show up in the message body -- the
-        # stored body is HTML-sanitized (e.g. the non-breaking space
-        # `formatLang` puts between amount and currency symbol comes back
-        # as the literal `&nbsp;` entity, not the raw '\xa0' char), so
-        # normalize before comparing.
-        # `Markup.replace()` HTML-escapes its own arguments before
-        # applying them (it's a `str` subclass that re-escapes for
-        # safety), so '&nbsp;' would itself become '&amp;nbsp;' and never
-        # match -- cast to plain `str` first to do a literal substitution.
         body = str(last_message.body).replace('&nbsp;', '\N{NO-BREAK SPACE}')
         self.assertIn(
             formatLang(self.env, old_amount, currency_obj=inv.currency_id), body,
@@ -1525,6 +1476,142 @@ class TestMultiCurrencyRounding(TransactionCase):
             formatLang(self.env, old_amount + delta, currency_obj=inv.currency_id), body,
             "El mensaje del chatter no menciona el monto nuevo.",
         )
+
+    def test_61_normal_line_edit_with_tax_totals_in_vals_does_not_raise(self):
+        """Regression for TI-15432 bug 2/3 follow-up: a normal line edit
+        where the webclient resends the already-recalculated `tax_totals`
+        in the same `write()` must not raise a spurious UserError."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice', post=False)
+        product_line = inv.line_ids.filtered(lambda l: l.display_type == 'product')
+        self.assertEqual(len(product_line), 1)
+
+        old_tax_amount = inv.line_ids.filtered(
+            lambda l: l.display_type == 'tax'
+        ).amount_currency
+        self.assertGreater(
+            inv.company_id.tax_totals_edit_tolerance, 0.0,
+            "Precondición: la compañía debe tener una tolerancia positiva.",
+        )
+
+        inv.write({'invoice_line_ids': [(1, product_line.id, {'price_unit': 200.0})]})
+        new_totals = inv.tax_totals
+        new_tax_amount = inv.line_ids.filtered(
+            lambda l: l.display_type == 'tax'
+        ).amount_currency
+        self.assertGreater(
+            abs(new_tax_amount - old_tax_amount), inv.company_id.tax_totals_edit_tolerance,
+            "Precondición: la edición debe cambiar el impuesto más que la "
+            "tolerancia -- si no, el escenario no distingue del caso trivial.",
+        )
+        inv.write({'invoice_line_ids': [(1, product_line.id, {'price_unit': 100.0})]})
+        self.assertAlmostEqual(
+            inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency,
+            old_tax_amount, places=2,
+            msg="Precondición: la reversión debió dejar el impuesto como al inicio.",
+        )
+
+        try:
+            inv.write({
+                'invoice_line_ids': [(1, product_line.id, {'price_unit': 200.0})],
+                'tax_totals': new_totals,
+            })
+        except UserError as e:
+            self.fail(
+                "Un guardado normal (edición de línea, el webclient reenvía "
+                "`tax_totals` ya recalculado) no debió lanzar UserError: "
+                f"{e}"
+            )
+
+        self.assertAlmostEqual(
+            inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency,
+            new_tax_amount, places=2,
+            msg="El impuesto final debió reflejar la nueva cantidad (el "
+            "guardado no debió descartar la edición real de la línea).",
+        )
+
+    def test_62_sync_dynamic_lines_reentrancy_guard_does_not_break_normal_save(self):
+        """Sanity check for the reentrancy guard added to
+        `_sync_dynamic_lines` (TI-15432) -- NOT a confirmed repro of the
+        production `RecursionError`, just proof it doesn't break a
+        normal multi-line/multi-installment save."""
+        payment_term = self.env['account.payment.term'].create({
+            'name': 'TI-15432 34/33/33',
+            'line_ids': [
+                Command.create({'value': 'percent', 'value_amount': 34, 'nb_days': 0}),
+                Command.create({'value': 'percent', 'value_amount': 33, 'nb_days': 30}),
+                Command.create({'value': 'percent', 'value_amount': 33, 'nb_days': 60}),
+            ],
+        })
+        self._set_usd_rate(803.34)
+        partner = self.env['res.partner'].create({
+            'name': 'Partner recursion test',
+            'company_id': self.company.id,
+            'property_account_receivable_id': self.acc_rec.id,
+            'property_account_payable_id': self.acc_pay.id,
+        })
+        inv = self.env['account.move'].with_context(check_move_validity=False).create({
+            'move_type': 'in_invoice',
+            'partner_id': partner.id,
+            'currency_id': self.currency_usd.id,
+            'journal_id': self.purchase_journal.id,
+            'invoice_date': fields.Date.today(),
+            'company_id': self.company.id,
+            'invoice_payment_term_id': payment_term.id,
+            'invoice_line_ids': [
+                Command.create({
+                    'product_id': self.product.id,
+                    'name': 'L0',
+                    'quantity': 1,
+                    'price_unit': 1000.0,
+                    'account_id': self.acc_exp.id,
+                    'tax_ids': [(6, 0, [self.tax_16.id])],
+                }),
+                Command.create({
+                    'product_id': self.product.id,
+                    'name': 'L1',
+                    'quantity': 2,
+                    'price_unit': 500.0,
+                    'account_id': self.acc_exp.id,
+                    'tax_ids': [(6, 0, [self.tax_31.id])],
+                }),
+            ],
+        })
+
+        pt_lines = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
+        self.assertEqual(len(pt_lines), 3, "Precondición: 3 cuotas de payment_term.")
+        product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
+        self.assertEqual(len(product_lines), 2, "Precondición: 2 líneas de producto.")
+
+        try:
+            product_lines[0].write({'price_unit': 1234.56})
+        except RecursionError:
+            self.fail(
+                "write() sobre una línea de producto normal lanzó "
+                "RecursionError -- la guarda de reentrancia en "
+                "`_sync_dynamic_lines` falta o está rota."
+            )
+
+        inv.invalidate_recordset()
+        td = sum(inv.line_ids.mapped('debit'))
+        tc = sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg="El asiento quedó descuadrado tras el write() que disparó la recursión.",
+        )
+        pt_lines = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
+        self.assertEqual(
+            len(pt_lines), 3,
+            msg="El número de cuotas de payment_term cambió tras el write().",
+        )
+        for line in inv.line_ids:
+            self.assertTrue(
+                self._check_foreign(line),
+                f"Línea {line.display_type}: foreign_debit/credit inconsistentes "
+                f"tras el write() que dispara _sync_dynamic_lines.",
+            )
 
     def test_35_unreconcile_normal_payment_updates_payment_state(self):
         """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`
