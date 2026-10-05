@@ -1011,6 +1011,24 @@ export class TfhkaDriver {
         return TAX_MAP[normalizedCode] || "!";
     }
 
+    /**
+     * Largo máximo de la descripción de un ítem. Por defecto se recorta para
+     * que el comando quepa en una línea (MAX_LINE_LEN). Si la orden trae
+     * `max_item_desc_len` (backend: igual que el flujo IoT, hasta 127), la
+     * impresora parte la descripción en varias líneas por su cuenta.
+     *
+     * @param {Object} orderData
+     * @param {number} overhead - caracteres del comando antes de la descripción
+     * @returns {number}
+     */
+    _itemDescMaxLen(orderData, overhead) {
+        const maxDesc = Number(orderData?.max_item_desc_len || 0);
+        if (maxDesc > 0) {
+            return maxDesc;
+        }
+        return TfhkaDriver.MAX_LINE_LEN - overhead;
+    }
+
     _appendHeaderInfo(commands, orderData, startIndex = 0) {
         let infoIndex = startIndex;
 
@@ -1345,7 +1363,7 @@ export class TfhkaDriver {
                     .trim();
 
                 const overhead = 1 + price.length + qty.length + code.length;
-                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
+                const available = this._itemDescMaxLen(orderData, overhead);
                 if (available > 0 && desc.length > available) {
                     desc = desc.substring(0, available);
                 }
@@ -1562,7 +1580,7 @@ export class TfhkaDriver {
                     .trim();
 
                 const overhead = 2 + price.length + qty.length + code.length;
-                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
+                const available = this._itemDescMaxLen(orderData, overhead);
                 if (available > 0 && desc.length > available) {
                     desc = desc.substring(0, available);
                 }
@@ -1757,7 +1775,7 @@ export class TfhkaDriver {
                     .trim();
 
                 const overhead = 2 + price.length + qty.length + code.length;
-                const available = TfhkaDriver.MAX_LINE_LEN - overhead;
+                const available = this._itemDescMaxLen(orderData, overhead);
                 if (available > 0 && desc.length > available) {
                     desc = desc.substring(0, available);
                 }
