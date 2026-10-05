@@ -165,12 +165,110 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     def parse_sale_book_data(self):
         sale_book_lines = []
         moves = self.search_moves()
-        
+
         for move in moves:
             taxes = self._determinate_amount_taxeds(move)
             sale_book_line = self._fields_sale_book_line(move, taxes)
             sale_book_lines.append(sale_book_line)
+
+        zero_z_lines = self._get_zero_z_session_lines()
+        if zero_z_lines:
+            sale_book_lines.extend(zero_z_lines)
+            # Ordenamos por fecha para intercalar los Reportes Z sin
+            # movimientos en su lugar cronológico. `sorted` es estable: las
+            # líneas reales que comparten fecha conservan el orden que ya
+            # traían de `search_moves` (correlative asc, name asc).
+            sale_book_lines.sort(
+                key=lambda line: datetime.strptime(line["document_date"], "%d/%m/%Y")
+            )
         return sale_book_lines
+
+    def _get_zero_z_session_lines(self):
+        """Filas del Libro de Ventas para Reportes Z sin ningún movimiento.
+
+        Un Reporte Z se imprime siempre al cerrar la caja del POS (ver
+        `l10n_ve_pos_mf`), incluso en un día sin ventas — la normativa exige
+        que el libro refleje también esos cierres. Ese número de Z queda
+        guardado en `pos.session.report_z`, pero si la sesión no generó
+        ningún `account.move`, no llega a esta tabla por ningún otro camino:
+        no hay factura que lo traiga. Sin este método esas sesiones eran
+        invisibles para el libro (bug: "Reportes Z en cero no aparecen").
+
+        Dependencia SUAVE de `point_of_sale`/`l10n_ve_pos_mf`: si el modelo
+        `pos.session` o el campo `report_z` no existen en este registro
+        (cliente sin POS, o con una versión de `l10n_ve_pos_mf` anterior a
+        `report_z`), no falla — simplemente no agrega filas.
+        """
+        if self.report != "sale":
+            return []
+
+        PosSession = self.env.get("pos.session")
+        if PosSession is None or "report_z" not in PosSession._fields:
+            return []
+
+        sessions = PosSession.sudo().search(
+            [
+                ("config_id.company_id", "=", self.company_id.id),
+                ("report_z", "!=", False),
+                ("stop_at", ">=", self.date_from),
+                ("stop_at", "<=", self.date_to),
+            ]
+        )
+        if not sessions:
+            return []
+
+        used_report_z = set(
+            self.env["account.move"]
+            .search(
+                [
+                    ("company_id", "=", self.company_id.id),
+                    ("mf_reportz", "!=", False),
+                ]
+            )
+            .mapped("mf_reportz")
+        )
+
+        lines = []
+        for session in sessions:
+            if str(session.report_z) in used_report_z:
+                # Otra sesión cerrada con el mismo número de Z sí tuvo
+                # movimientos (se puede abrir/cerrar caja varias veces antes
+                # del cierre fiscal real de la máquina) — ese Z ya aparece en
+                # el libro a través de esos movimientos, no lo duplicamos.
+                continue
+
+            session_date = fields.Datetime.to_datetime(session.stop_at).date()
+            date_str = self._format_date(str(session_date))
+            lines.append(
+                {
+                    "_id": f"z-{session.id}",
+                    "document_date": date_str,
+                    "accounting_date": date_str,
+                    "vat": "--",
+                    "partner_name": f"Reporte Z N° {session.report_z} - Sin movimientos",
+                    "document_number": "--",
+                    "move_type": "Z",
+                    "transaction_type": "--",
+                    "number_invoice_affected": "--",
+                    "correlative": "--",
+                    "zero_aliquiot_international": 0.00,
+                    "reduced_aliquot": 0.08,
+                    "general_aliquot": 0.16,
+                    "extend_aliquot": 0.31,
+                    "total_sales": 0,
+                    "total_sales_iva": 0,
+                    "total_sales_not_iva": 0,
+                    "amount_zero_aliquot_international": 0,
+                    "amount_reduced_aliquot": 0,
+                    "amount_general_aliquot": 0,
+                    "amount_extend_aliquot": 0,
+                    "tax_base_zero_aliquot_international": 0,
+                    "tax_base_reduced_aliquot": 0,
+                    "tax_base_general_aliquot": 0,
+                    "tax_base_extend_aliquot": 0,
+                }
+            )
+        return lines
 
     def parse_purchase_book_data(self):
         purchase_book_lines = []
@@ -710,8 +808,19 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain += [
             ("state", "in", states),
             ("move_type", "in", move_type),
-            ("correlative", "not in", ['/',False])
         ]
+
+        # `correlative` (número de control) sólo se asigna cuando la compañía
+        # NO imprime por máquina fiscal (ver account_move._post: se salta
+        # a propósito si `invoice_print_type == "fiscal"`, porque ese caso ya
+        # tiene su propio número de control — el de la máquina,
+        # `mf_invoice_number`). Exigir `correlative` sin importar esto excluye
+        # TODA factura de cualquier compañía con impresora fiscal — que es el
+        # caso de la mayoría de los clientes de este libro — dejando el
+        # reporte sin ninguna fila que mostrar.
+        invoice_print_type = getattr(self.company_id, "invoice_print_type", None)
+        if invoice_print_type != "fiscal":
+            search_domain += [("correlative", "not in", ['/', False])]
             
         if hasattr(self, 'account_analytic_id') and self.account_analytic_id:
 
