@@ -338,19 +338,6 @@ class AccountMove(models.Model):
         Ensure that the foreign_rate and foreign_inverse_rate are computed and computes the foreign
         debit and foreign credit of the line_ids fields (journal entries) when the move is created.
         """
-        for vals in vals_list:
-
-            if 'name' in vals and vals['name'] != "/":
-                
-                domain = [
-                    ('name', '=', vals['name']),
-                    ('partner_id', '=', vals.get('partner_id'))
-                ]
-                existing_record = self.search(domain, limit=1)
-                
-                if existing_record:
-                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-
         moves = super().create(vals_list)
 
         for move in moves:
@@ -380,21 +367,6 @@ class AccountMove(models.Model):
 
         if vals has 'journal_id' inside, then call _update_invoice_lines_with_new_journal to update the line_ids to update the account_id.
         """
-        if 'name' in vals and vals['name'] != "/":
-            for move in self:
-                partner_id = vals.get('partner_id', move.partner_id.id)
-                
-                domain = [
-                    ('name', '=', vals['name']),
-                    ('partner_id', '=', partner_id),
-                    ('id', '!=', move.id) 
-                ]
-                
-                existing_record = self.search(domain, limit=1)
-                
-                if existing_record:
-                    raise ValidationError(_("The operation cannot be completed: Another entry with the same name already exists."))
-                
         if vals.get("foreign_rate", False):
             for move in self:
                 vals.update({"last_foreign_rate": move.foreign_rate})
