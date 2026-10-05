@@ -55,14 +55,6 @@ dependencia, lo dejaría vacío para siempre en cualquier ND/NC de este módulo.
 - **AND** la línea de la ND incluye `product_id = <producto configurado>`
 - **AND** la línea está conciliada contra el residual de la factura
 
-#### Scenario: Factura en VEF pagada con tasa distintos si hay otros movimientos
-
-- **GIVEN** una factura en moneda de compañía (VEF) pero con líneas cuya
-  conversión extranjera deja un residual de redondeo
-- **AND** el pago es en moneda extranjera
-- **WHEN** se concilia
-- **THEN** se genera ND por el redondeo (Odoo nativo también lo hace)
-
 ### Requirement: Una Nota de Crédito se emite cuando hay pérdida cambiaria
 
 El sistema SHALL emitir una Nota de Crédito (out_refund) vinculada a la factura
@@ -451,6 +443,46 @@ la emisión de la ND/NC que si aplica al flujo del ticket.
 - **THEN** Odoo resuelve el diferencial cambiario con su propio mecanismo interno del widget
 - **AND** no se genera ninguna ND/NC de este módulo
 - **AND** esto es el comportamiento esperado, no un defecto
+
+### Requirement: Una factura en moneda de compañía pagada vía el asistente estándar no deja residual de redondeo
+
+El sistema SHALL NOT generar ND/NC cuando una factura de cliente en moneda de
+COMPAÑÍA (VEF) se liquida por completo con el asistente "Registrar Pago" en
+un diario de moneda extranjera, dejando que el asistente calcule el monto por
+defecto (sin que el usuario escriba un monto propio). Verificado empíricamente
+(trazas sobre `account.payment.move_id.line_ids`): Odoo calcula primero el
+monto de la línea contraparte del pago en moneda de COMPAÑÍA, exactamente
+igual al residual pendiente de la factura, y de ahí DERIVA el monto en moneda
+extranjera -- nunca al revés. Como la factura ya está en moneda de compañía,
+no hay ningún lado con una conversión independiente que pueda dejar un
+sobrante: `amount_residual` (y `amount_residual_currency`) quedan en 0.0
+exactos tras la conciliación, así que el motor nativo de Odoo
+(`_prepare_reconciliation_single_partial`) nunca encuentra un residual que
+corregir y `_prepare_exchange_difference_move_vals` -- el método que este
+módulo intercepta -- nunca se invoca.
+
+Esto corrige una expectativa anterior de este documento (y de su test de
+cobertura) que asumía, sin verificarlo contra el comportamiento real de Odoo,
+que este escenario simple SIEMPRE deja un residual de redondeo. Un escenario
+que sí deje un residual real para una factura en moneda de compañía (ej. vía
+un monto de pago escrito a mano que no coincide centavo a centavo, o vía el
+widget de Conciliación Bancaria de Enterprise -- ver el requirement de ese
+widget, que de todas formas nunca pasa por este módulo) queda fuera del
+alcance de este requirement, que cubre específicamente el flujo estándar del
+asistente con monto por defecto.
+
+#### Scenario: Factura en VEF pagada por completo con el asistente estándar en un diario USD
+
+- **GIVEN** una factura de cliente en moneda de compañía (VEF)
+- **AND** se liquida con el asistente "Registrar Pago" en un diario de moneda
+  extranjera (USD), aceptando el monto por defecto que calcula el asistente
+- **WHEN** se concilia
+- **THEN** la línea contraparte del pago queda con `balance` (VEF) EXACTAMENTE
+  igual al residual que tenía la factura
+- **AND** `amount_residual` de la factura queda en 0.0 exacto, sin redondeo
+  pendiente
+- **AND** no se genera ninguna ND/NC de este módulo, porque no hay ningún
+  residual que documentar
 
 ### Requirement: Compatibilidad con `l10n_ve_igtf`
 

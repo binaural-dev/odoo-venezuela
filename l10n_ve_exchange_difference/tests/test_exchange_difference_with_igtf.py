@@ -699,11 +699,18 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         """Complemento del test anterior: una factura en VES (moneda de
         COMPAÑÍA), pagada en USD con IGTF de por medio, en fechas y tasas
         distintas. El monto adeudado en VES no tiene exposición cambiaria
-        propia, pero al conciliarla contra un pago en USD, Odoo igual
-        calcula un residual de redondeo de la conversión. El alcance de
-        este módulo es replicar CUALQUIER asiento de diferencial que Odoo
-        genere para una factura de cliente como ND/NC real -- también
-        este caso, sin excepción."""
+        propia -- y, verificado empíricamente (trazas sobre
+        `payment.move_id.line_ids`), tampoco deja NINGÚN residual de
+        redondeo al conciliarla: Odoo calcula la línea contraparte del
+        pago con `balance` (VEF) EXACTAMENTE igual al residual de la
+        factura, y de ahí deriva el monto en USD -- nunca al revés. Este
+        test antes asumía, sin verificarlo, que este escenario siempre
+        deja un residual corregible; no es así para el flujo estándar del
+        asistente con monto por defecto (ver requirement "Una factura en
+        moneda de compañía pagada vía el asistente estándar no deja
+        residual de redondeo", `openspec/specs/l10n_ve_exchange_difference/spec.md`).
+        Repurposed para documentar ese comportamiento verificado: ninguna
+        ND/NC se genera porque no hay nada que corregir."""
         yesterday = fields.Date.subtract(fields.Date.today(), days=1)
         invoice_amount = 500000.00
 
@@ -738,13 +745,11 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
             ("l10n_ve_exchange_invoice_id", "=", invoice.id),
         ])
         self.assertEqual(
-            len(notes), 1,
-            "El residual de redondeo de conciliar la factura en Bs contra un pago "
-            "en USD debió documentarse como ND/NC, igual que cualquier otro "
-            "diferencial de una factura de cliente.",
+            len(notes), 0,
+            "Una factura en moneda de compañía liquidada con el monto por "
+            "defecto del asistente de pago no deja residual de redondeo -- "
+            "no debió generarse ninguna ND/NC.",
         )
-        note_line = notes.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
-        self.assertTrue(note_line.reconciled, "La nota debió quedar cerrada por su propia conciliación.")
 
     def test_invoice_closed_by_advance_cross_and_note_does_not_end_up_reversed(self):
         """Regresión: factura cerrada vía cruce de anticipo (`entry` sin

@@ -563,6 +563,18 @@ Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo 
 - **WHEN** se calcula el impuesto por línea antes de sumar
 - **THEN** la contribución de cada línea se suma con su propio signo, sin tomar el valor absoluto de la línea negativa
 
+> NOTA: la propiedad interna de `_per_line_tax_sums` (sumar por signo, no
+> por `abs()`) sigue siendo correcta, pero `l10n_ve_invoice._check_price_in_zero`
+> bloquea guardar una factura con una línea de producto SUELTA de subtotal
+> negativo (no solo cero -- ver requirement "Prohibición de líneas con
+> subtotal cero o negativo", `openspec/specs/l10n_ve_invoice/spec.md`), a
+> menos que esa línea sea un descuento reconocido por `_get_discount_lines`.
+> El test de regresión de este escenario (`test_31_mixed_sign_lines_both_rounding_modes`,
+> `l10n_ve_accountant/tests/test_multi_currency_rounding.py`) ya no puede
+> construir ese caso de punta a punta vía `account.move.create()` -- fue
+> repurposado para verificar que esa línea suelta se rechaza, en vez de
+> verificar el neteo del impuesto.
+
 ### Requirement: Un impuesto encadenado (`include_base_amount`) suma su propio monto a la base del siguiente impuesto de la misma línea
 
 Cuando un impuesto tiene `include_base_amount=True`, el sistema DEBE (MUST) sumar el monto de ese impuesto -- ya calculado para esa misma línea de producto -- a la base de los impuestos siguientes de la misma línea antes de calcularlos, tanto en `round_per_line` como en `round_globally`. Ese monto DEBE (MUST) derivarse exclusivamente de valores ya calculados en el mismo ciclo (`extra_base_by_line_id`, alimentado con montos frescos por línea), y NO DEBE (SHALL NOT) leerse de `base_line['tax_details']` del motor de impuestos del core: esa estructura usa una tasa interna que puede estar tan desactualizada como `record.balance` en este mismo ciclo -- leer de ahí se probó durante el desarrollo y produjo una regresión verificable en la suite de tests. Los repartition lines se procesan ordenados por `tax.sequence`, para que el impuesto que encadena se calcule antes que su dependiente.
