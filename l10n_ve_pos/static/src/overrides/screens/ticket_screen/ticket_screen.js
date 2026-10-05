@@ -15,10 +15,6 @@ patch(TicketScreen, {
 patch(TicketScreen.prototype, {
   async addAdditionalRefundInfo(order, destinationOrder) {
     destinationOrder.to_receipt = order.to_receipt;
-    const rate = order.orderlines[0]?.foreign_currency_rate;
-    if (rate) {
-      destinationOrder._original_conversion_rate = rate;
-    }
     return Promise.resolve();
   },
 

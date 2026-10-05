@@ -29,14 +29,13 @@ class TestIgtfPurchaseBook(IGTFTestCommonPurchaseBook):
         
         with Form(
             self.env['account.payment.register'].with_context(
-               action_data['context']  
+               **action_data['context']
             )
         ) as pay_form:
             
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = invoice.foreign_rate
             pay_form.save()
             pay_form.amount = payment_amount
 

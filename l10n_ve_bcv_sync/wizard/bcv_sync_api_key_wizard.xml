@@ -1,0 +1,22 @@
+<odoo>
+    <record id="view_bcv_sync_api_key_wizard" model="ir.ui.view">
+        <field name="name">bcv.sync.api.key.wizard.form</field>
+        <field name="model">bcv.sync.api.key.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Token Generado" create="false" edit="false">
+                <sheet>
+                    <div class="alert alert-warning" role="alert">
+                        Copia este token ahora y pegalo en el panel de BCV Sync
+                        (campo API Key de este cliente). No se muestra de nuevo.
+                    </div>
+                    <group>
+                        <field name="token" readonly="1" password="false" />
+                    </group>
+                    <footer>
+                        <button string="Cerrar" class="btn-primary" special="cancel" />
+                    </footer>
+                </sheet>
+            </form>
+        </field>
+    </record>
+</odoo>

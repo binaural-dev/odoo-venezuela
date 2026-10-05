@@ -75,7 +75,34 @@ class AccountPaymentIgtf(models.Model):
                                 vals[0].update({"debit": 0.0, "credit": total_base_residual})
                                 vals[1].update({"debit": total_base_residual, "credit": 0.0})
 
+            rec._fix_amount_currency_sign(vals)
             return vals
+
+    def _fix_amount_currency_sign(self, vals):
+        """Garantiza que ``amount_currency`` conserve el mismo signo que
+        ``balance`` (debit - credit) en cada línea, como exige el CHECK SQL
+        ``check_amount_currency_balance_sign`` de ``account.move.line``.
+
+        La línea de contrapartida y la de "Diferencia de pago" pueden llegar
+        recalculadas con tasas distintas (oficial vs. tasa manual) a través de
+        los ``_inherit`` encadenados de ``l10n_ve_accountant``/``l10n_ve_igtf``
+        (tasa manual en la línea de banco/contrapartida, tasa oficial en la
+        línea de diferencia de pago armada por el wizard core). Para pagos con
+        una diferencia de pago pequeña eso puede dejar el signo de
+        ``amount_currency`` opuesto al de ``balance`` en una sola línea, lo que
+        Odoo reporta como "El importe expresado en la divisa secundaria debe
+        ser positivo cuando se carga la cuenta y negativo cuando se acredita
+        la cuenta...". Solo se corrige el signo, nunca la magnitud ni el
+        debit/credit, así que no afecta el cuadre del asiento en moneda de la
+        compañía.
+        """
+        for line in vals:
+            balance = line.get('debit', 0.0) - line.get('credit', 0.0)
+            amount_currency = line.get('amount_currency')
+            if not amount_currency or not balance:
+                continue
+            if (balance > 0) != (amount_currency > 0):
+                line['amount_currency'] = -amount_currency
 
     def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, payment_date, base=False):
         return self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(

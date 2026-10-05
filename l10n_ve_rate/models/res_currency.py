@@ -11,20 +11,18 @@ class ResCurrency(models.Model):
         self, to_currency = self or to_currency, to_currency or self
         assert self, "convert amount from unknown currency"
         assert to_currency, "convert amount to unknown currency"
-        assert company, "convert amount from unknown company"
-        assert date, "convert amount from unknown date"
+        company = company or self.env.company
+        date = date or fields.Date.context_today(self)
 
-        if from_amount:
-            if custom_rate > 0:
-               
-                if company.currency_id != self and company.currency_id == self.env.ref("base.USD"):
-                    to_amount = from_amount / custom_rate
-                else:
-                    to_amount = from_amount * custom_rate
-               
-            else:
-                to_amount = from_amount * self._get_conversion_rate(self, to_currency, company, date)
-        else:
+        if not from_amount:
             return 0.0
 
-        return to_currency.round(to_amount) 
+        if custom_rate > 0:
+            if company.currency_id != self and company.currency_id == self.env.ref("base.USD"):
+                to_amount = from_amount / custom_rate
+            else:
+                to_amount = from_amount * custom_rate
+        else:
+            to_amount = from_amount * self._get_conversion_rate(self, to_currency, company, date)
+
+        return to_currency.round(to_amount) if round else to_amount

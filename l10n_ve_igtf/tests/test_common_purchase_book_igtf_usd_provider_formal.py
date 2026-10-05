@@ -85,17 +85,43 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
                 "code": "ANTICIGTF",
                 "type": "general",
                 "company_id": self.company.id,
-               
+
             }
         )
 
-        self.company.write(
-            {
-                "igtf_percentage": 3.0,
-                "customer_account_igtf_id": self.acc_igtf_cli.id,
-                "supplier_account_igtf_id": self.acc_igtf_prov.id,
-            }
+        self.acc_advance_supplier = self.get_or_create_account(
+            "21601", "liability_current", "Anticipo Proveedores", recon=True
         )
+
+        company_vals = {
+            "igtf_percentage": 3.0,
+            "customer_account_igtf_id": self.acc_igtf_cli.id,
+            "supplier_account_igtf_id": self.acc_igtf_prov.id,
+        }
+        advance_payment_fields = {
+            "advance_payment_igtf_journal_id",
+            "advance_customer_account_id",
+            "advance_supplier_account_id",
+        }
+        if advance_payment_fields <= self.company._fields.keys():
+            company_vals.update(
+                {
+                    "advance_payment_igtf_journal_id": self.journal_anticipo.id,
+                    "advance_customer_account_id": self.acc_igtf_cli.id,
+                    "advance_supplier_account_id": self.acc_advance_supplier.id,
+                }
+            )
+        try:
+            self.company.write(company_vals)
+        except ValueError:
+            # binaural_advance_payment(_igtf) is not installed in this test's
+            # addon set, so the advance-payment fields aren't real columns on
+            # res.company even when a stale registry cache reports them in
+            # _fields -- fall back to the base IGTF-only values.
+            company_vals = {
+                k: v for k, v in company_vals.items() if k not in advance_payment_fields
+            }
+            self.company.write(company_vals)
         
         manual_in = self.env.ref("account.account_payment_method_manual_in")
         manual_out = self.env.ref("account.account_payment_method_manual_out") 
@@ -239,14 +265,13 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
         
         with Form(
             self.env['account.payment.register'].with_context(
-               action_data['context']  
+               **action_data['context']
             )
         ) as pay_form:
             
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = reversed_move.foreign_rate
             pay_form.save()
             pay_form.amount = payment_amount
 

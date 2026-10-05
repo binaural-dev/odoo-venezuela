@@ -75,7 +75,7 @@ class TestIGTFBypass(IGTFTestCommonPurchaseBook):
 
         # Use Form to register payment to simulate real flow
         action_data = invoice.action_register_payment()
-        with Form(self.env['account.payment.register'].with_context(action_data['context'])) as pay_form:
+        with Form(self.env['account.payment.register'].with_context(**action_data['context'])) as pay_form:
             pay_form.journal_id = international_bank_journal
             pay_form.currency_id = self.currency_usd
             # Amount should default to 100.0
@@ -103,7 +103,7 @@ class TestIGTFBypass(IGTFTestCommonPurchaseBook):
         standard_bank_journal = self.bank_journal_usd
         
         action_data = invoice.action_register_payment()
-        with Form(self.env['account.payment.register'].with_context(action_data['context'])) as pay_form:
+        with Form(self.env['account.payment.register'].with_context(**action_data['context'])) as pay_form:
             pay_form.journal_id = standard_bank_journal
             pay_form.currency_id = self.currency_usd
         
@@ -149,7 +149,7 @@ class TestIGTFBypass(IGTFTestCommonPurchaseBook):
         invoice.action_post()
 
         action_data = invoice.action_register_payment()
-        with Form(self.env['account.payment.register'].with_context(action_data['context'])) as pay_form:
+        with Form(self.env['account.payment.register'].with_context(**action_data['context'])) as pay_form:
             # Select the international journal
             pay_form.journal_id = international_bank_journal
             pay_form.currency_id = self.currency_usd

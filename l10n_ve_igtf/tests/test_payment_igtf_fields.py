@@ -12,7 +12,7 @@ class TestIGTFPurchasePaymentFields(IGTFTestCommonPurchaseBook):
     def _open_payment_wizard(self, invoice, journal=None):
         journal = journal or self.bank_journal_usd
         ctx = invoice.action_register_payment()['context']
-        return self.env['account.payment.register'].with_context(ctx)
+        return self.env['account.payment.register'].with_context(**ctx)
 
     # ─────────────────────────────────────────────────────────
     # Single invoice full payment (outbound)
@@ -27,7 +27,6 @@ class TestIGTFPurchasePaymentFields(IGTFTestCommonPurchaseBook):
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = invoice.foreign_rate
             pay_form.save()
 
         action = pay_form.record.action_create_payments()
@@ -70,7 +69,6 @@ class TestIGTFPurchasePaymentFields(IGTFTestCommonPurchaseBook):
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = invoice.foreign_rate
             pay_form.save()
             pay_form.amount = payment_amount
 
@@ -107,7 +105,6 @@ class TestIGTFPurchasePaymentFields(IGTFTestCommonPurchaseBook):
                 pay_form.journal_id = self.bank_journal_usd
                 pay_form.payment_date = fields.Date.today()
                 pay_form.foreign_currency_id = self.currency_usd
-                pay_form.foreign_rate = inv.foreign_rate
                 pay_form.save()
 
             action = pay_form.record.action_create_payments()
@@ -149,7 +146,6 @@ class TestIGTFPurchasePaymentFields(IGTFTestCommonPurchaseBook):
             pay_form.journal_id = non_igtf_journal
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = invoice.foreign_rate
             pay_form.save()
 
         wizard = pay_form.record
@@ -165,7 +161,7 @@ class TestIGTFSalePaymentFields(IGTFTestCommonSaleBook):
     def _open_payment_wizard(self, invoice, journal=None):
         journal = journal or self.bank_journal_usd
         ctx = invoice.action_register_payment()['context']
-        return self.env['account.payment.register'].with_context(ctx)
+        return self.env['account.payment.register'].with_context(**ctx)
 
     # ─────────────────────────────────────────────────────────
     # Single invoice full payment (inbound)
@@ -180,7 +176,6 @@ class TestIGTFSalePaymentFields(IGTFTestCommonSaleBook):
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = invoice.foreign_rate
             pay_form.save()
 
         action = pay_form.record.action_create_payments()
@@ -232,7 +227,6 @@ class TestIGTFSalePaymentFields(IGTFTestCommonSaleBook):
             pay_form.journal_id = self.bank_journal_usd
             pay_form.payment_date = fields.Date.today()
             pay_form.foreign_currency_id = self.currency_usd
-            pay_form.foreign_rate = invoice.foreign_rate
             pay_form.save()
             pay_form.amount = payment_amount
 
@@ -262,7 +256,6 @@ class TestIGTFSalePaymentFields(IGTFTestCommonSaleBook):
                 pay_form.journal_id = self.bank_journal_usd
                 pay_form.payment_date = fields.Date.today()
                 pay_form.foreign_currency_id = self.currency_usd
-                pay_form.foreign_rate = inv.foreign_rate
                 pay_form.save()
 
             action = pay_form.record.action_create_payments()

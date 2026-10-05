@@ -1,5 +1,7 @@
+import math
+
 from odoo.tools.float_utils import float_round, float_compare
-from odoo import api, models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools.misc import formatLang
 
@@ -96,48 +98,10 @@ class AccountTax(models.Model):
         )
 
         fc = move.company_id.currency_foreign_id if move else self.env.company.currency_foreign_id
-        if move and move.is_invoice(include_receipts=True) and move.line_ids:
-            # Align the foreign total with the actual foreign amounts of the entry lines
-            # (sum of product foreign subtotals + tax line foreign amounts) instead of
-            # forcing a conversion of the native total at the move rate. This keeps the
-            # tax_totals dict coherent with the journal entry when line alternos were
-            # computed at a rate different from the current move rate.
-            product_foreign = sum(
-                line.foreign_subtotal
-                for line in move.line_ids if line.display_type == 'product')
-            tax_foreign = move.direction_sign * sum(
-                line.foreign_debit - line.foreign_credit
-                for line in move.line_ids if line.display_type == 'tax')
-            expected_untaxed = fc.round(abs(product_foreign))
-            expected_total = fc.round(abs(product_foreign + tax_foreign))
-            current_untaxed = foreign_taxes.get("amount_untaxed", 0.0)
-            current_total = foreign_taxes.get("amount_total", 0.0)
-            diff_untaxed = fc.round(expected_untaxed - current_untaxed)
-            diff_total = fc.round(expected_total - current_total)
-            if not fc.is_zero(diff_untaxed) or not fc.is_zero(diff_total):
-                foreign_taxes["amount_total"] = expected_total
-                foreign_taxes["amount_untaxed"] = expected_untaxed
-                subtotals = foreign_taxes.get("subtotals", [])
-                if subtotals:
-                    total_sub = sum(s.get("amount", 0.0) for s in subtotals)
-                    if not fc.is_zero(total_sub):
-                        remaining = diff_total
-                        n = len(subtotals)
-                        for i, sub in enumerate(subtotals):
-                            if i < n - 1:
-                                ratio = sub.get("amount", 0.0) / total_sub
-                                share = fc.round(ratio * diff_total)
-                                sub["amount"] = fc.round(sub["amount"] + share)
-                                remaining -= share
-                            else:
-                                sub["amount"] = fc.round(sub["amount"] + remaining)
-                            sub["formatted_amount"] = formatLang(self.env, sub["amount"], currency_obj=foreign_currency)
-                foreign_taxes["formatted_amount_total"] = formatLang(
-                    self.env, expected_total, currency_obj=foreign_currency,
-                )
-                foreign_taxes["formatted_amount_untaxed"] = formatLang(
-                    self.env, foreign_taxes["amount_untaxed"], currency_obj=foreign_currency,
-                )
+        if move and move._name == 'account.move' and move.is_invoice(include_receipts=True) and move.line_ids:
+            self._sync_foreign_taxes_with_entry(move, foreign_taxes, fc, foreign_currency)
+        elif move and move._name in ('sale.order', 'purchase.order') and move.order_line:
+            self._anchor_foreign_taxes_for_order(move, foreign_taxes, fc, foreign_currency)
 
         foreign_taxes_without_discount = foreign_taxes.copy()
         if has_discount:
@@ -179,7 +143,7 @@ class AccountTax(models.Model):
 
         foreign_amount_total = res.get("foreign_amount_total", 0.0)
         foreign_amount_residual = foreign_amount_total
-        if move and move.payment_state in ('partial', 'paid', 'in_payment'):
+        if move and move._name == 'account.move' and move.payment_state in ('partial', 'paid', 'in_payment'):
             foreign_amount_residual = move.foreign_amount_residual or foreign_amount_total
         res["foreign_total_amount_paid"] = foreign_amount_total - foreign_amount_residual
         res["foreign_total_residual"] = foreign_amount_residual
@@ -189,16 +153,252 @@ class AccountTax(models.Model):
 
         return res
 
+    def _apportion_largest_remainder(self, groups, key, target_total, decimal_places):
+        """Round each groups[i][key] so they sum exactly to target_total,
+        handing out the leftover cents to the entries with the largest
+        fractional remainder (deterministic, no arbitrary single-line
+        patch). Mirrors account.move's helper of the same name/purpose.
+
+        The bulk of the gap between the sum of floors and the target is
+        distributed in one `divmod` pass (O(n)), and only the last few
+        units are handed out one by one to the largest remainders --
+        never a naive one-cent-at-a-time loop over the whole gap, which
+        would be O(remaining) and can hang for minutes when the ideal
+        values are wildly off-scale from the target (e.g. a bug upstream).
+        """
+        n = len(groups)
+        if n == 0:
+            return
+        scale = 10 ** decimal_places
+        values = [groups[i].get(key, 0.0) for i in range(n)]
+        target_scaled = round(target_total * scale)
+        signs = [1 if v >= 0 else -1 for v in values]
+        scaled = [abs(v) * scale for v in values]
+        floors = [math.floor(v) for v in scaled]
+        remainders = [s - f for s, f in zip(scaled, floors)]
+        result = floors[:]
+        remaining = target_scaled - sum(s * f for s, f in zip(signs, floors))
+        order = sorted(range(n), key=lambda i: -remainders[i])
+        if remaining != 0:
+            base, extra = divmod(abs(remaining), n)
+            step = 1 if remaining > 0 else -1
+            for i in range(n):
+                result[i] += step * base
+            for i in range(extra):
+                result[order[i]] += step
+        idx = 0
+        order_rev = list(reversed(order))
+        while any(v < 0 for v in result):
+            neg_idx = next(i for i, v in enumerate(result) if v < 0)
+            donor = order_rev[idx % n]
+            if result[donor] > 0:
+                result[donor] -= 1
+                result[neg_idx] += 1
+            idx += 1
+            if idx > n * 4:
+                break
+        for i in range(n):
+            groups[i][key] = signs[i] * (result[i] / scale)
+
+    def _sync_foreign_taxes_with_entry(self, move, foreign_taxes, fc, foreign_currency):
+        """Make the widget's foreign breakdown (`groups_by_subtotal`,
+        `subtotals`, `amount_untaxed`/`amount_total`) match what's actually
+        posted on the journal entry, instead of an independent re-tax of
+        each product's `foreign_price` (which used to only get reconciled
+        with the entry at the grand-total level, leaving the per-tax-group
+        breakdown -- e.g. the 8%/16%/31% split -- a few cents off from what
+        was really posted).
+
+        `foreign_subtotal` already carries the natural sign of the price
+        (negative for a discount/credit line) regardless of move type, so
+        it is summed as-is. `foreign_debit - foreign_credit` instead follows
+        the ledger's debit/credit convention, which flips between inbound
+        (out_invoice) and outbound (in_invoice) documents -- `direction_sign`
+        normalizes that back to the same "positive means charge" convention
+        as the base, so mixed-sign lines (e.g. a negative discount line next
+        to a normal one) cancel out correctly instead of every line's
+        magnitude being added regardless of sign (the bug from #14341 this
+        used to reintroduce via `abs()`).
+
+        `product_foreign`/`tax_foreign` (the real entry totals every group
+        must reconcile to) are signed for the same reason; the final total
+        is wrapped in `abs()` in `_finalize_foreign_taxes` since the
+        document-level amount is conventionally shown as a magnitude.
+        """
+        sign = move.direction_sign
+        base_by_group = {}
+        tax_by_group = {}
+        for line in move.line_ids:
+            if line.display_type == 'product':
+                for tax in line.tax_ids:
+                    grp_id = tax.tax_group_id.id
+                    base_by_group[grp_id] = base_by_group.get(grp_id, 0.0) + line.foreign_subtotal
+            elif line.display_type == 'tax' and line.tax_repartition_line_id:
+                grp_id = line.tax_repartition_line_id.tax_id.tax_group_id.id
+                tax_by_group[grp_id] = tax_by_group.get(grp_id, 0.0) + sign * (line.foreign_debit - line.foreign_credit)
+
+        all_groups = [
+            g
+            for groups in (foreign_taxes.get("groups_by_subtotal") or {}).values()
+            for g in groups
+        ]
+        for g in all_groups:
+            grp_id = g.get("tax_group_id")
+            g["tax_group_base_amount"] = base_by_group.get(grp_id, g.get("tax_group_base_amount", 0.0))
+            g["tax_group_amount"] = tax_by_group.get(grp_id, g.get("tax_group_amount", 0.0))
+
+        product_foreign = sum(
+            line.foreign_subtotal for line in move.line_ids if line.display_type == 'product')
+        tax_foreign = sign * sum(
+            (line.foreign_debit - line.foreign_credit)
+            for line in move.line_ids if line.display_type == 'tax')
+
+        self._finalize_foreign_taxes(
+            foreign_taxes, all_groups, product_foreign, tax_foreign, fc, foreign_currency)
+
+    def _anchor_foreign_taxes_for_order(self, order, foreign_taxes, fc, foreign_currency):
+        """Anchor a sale.order's or purchase.order's (quotation/RFQ's)
+        `tax_totals` tax breakdown to each line's own native tax amount,
+        the same criterion `account.move.line._compute_foreign_subtotal`
+        uses for a posted invoice: convert `price_total - price_subtotal`
+        (both already stored on the order line) at the order's rate,
+        rather than taxing the alterno base independently.
+
+        A quotation has no posted journal entry to reconcile against, so
+        without this a line's alterno tax was computed by re-taxing
+        `foreign_price` directly (`tax_id.compute_all` on the converted
+        base), which can diverge from `amount_total x rate` by a few cents
+        of native rounding and leave the quotation inconsistent with the
+        invoice it will turn into. No new field is introduced here --
+        `price_total`/`price_subtotal` are core fields already present on
+        both `sale.order.line` and `purchase.order.line`.
+
+        EXCEPT when the company's base currency is USD: `price_total`/
+        `price_subtotal` are then already rounded to USD's 2 decimals
+        before any conversion, and multiplying that already-rounded delta
+        by the (large, VEF-per-USD) rate amplifies a fraction-of-a-cent
+        USD rounding difference into several bolivares of drift. There,
+        the ideal per-tax breakdown computed below (taxing `foreign_price`
+        -- which keeps its own higher precision -- directly) is used
+        as-is instead of being discarded in favor of the converted delta,
+        same reasoning as `account.move.line._compute_foreign_subtotal`.
+        """
+        usd = self.env.ref("base.USD", raise_if_not_found=False)
+        is_usd_base = bool(usd and order.company_id.currency_id == usd)
+        product_lines = order.order_line.filtered(lambda l: not l.display_type)
+        if not product_lines or 'foreign_price' not in product_lines._fields:
+            return
+        product_foreign = sum(abs(l.foreign_subtotal) for l in product_lines)
+
+        all_groups = [
+            g
+            for groups in (foreign_taxes.get("groups_by_subtotal") or {}).values()
+            for g in groups
+        ]
+        if not all_groups:
+            return
+
+        tax_field = 'tax_id' if 'tax_id' in product_lines._fields else 'taxes_id'
+        qty_field = 'product_uom_qty' if 'product_uom_qty' in product_lines._fields else 'product_qty'
+        ideal_by_group = {}
+        for pl in product_lines:
+            taxes = pl[tax_field]
+            if not taxes:
+                continue
+            discount = pl.discount if 'discount' in pl._fields else 0.0
+            base_amount = pl.foreign_price * (1 - discount / 100.0)
+            foreign_res = taxes.compute_all(
+                base_amount,
+                quantity=pl[qty_field],
+                currency=fc,
+                product=pl.product_id,
+                partner=order.partner_id,
+            )
+            ideal_tax_by_id = {t['id']: abs(t['amount']) for t in foreign_res['taxes']}
+            ideal_line_total = sum(ideal_tax_by_id.values())
+
+            if is_usd_base:
+                # Base USD: tax the alterno base directly (the ideal
+                # breakdown already computed above) instead of converting
+                # an already-2-decimal-rounded native delta, which would
+                # amplify sub-cent USD noise into several bolivares.
+                line_tax_total = ideal_line_total
+            else:
+                # Anchor this line's REAL tax portion to the direct
+                # conversion of its own native tax amount; the ideal
+                # breakdown above is only used to split that real total
+                # across the line's own tax groups when it carries more
+                # than one.
+                line_tax_total = abs(pl.currency_id._convert(
+                    pl.price_total - pl.price_subtotal,
+                    fc,
+                    order.company_id,
+                    order.date_order.date() if getattr(order, "date_order", False) else fields.Date.today(),
+                    custom_rate=pl.foreign_inverse_rate,
+                ))
+
+            for tax_id, ideal_amount in ideal_tax_by_id.items():
+                grp_id = self.browse(tax_id).tax_group_id.id
+                share = (
+                    line_tax_total * (ideal_amount / ideal_line_total)
+                    if ideal_line_total
+                    else 0.0
+                )
+                ideal_by_group[grp_id] = ideal_by_group.get(grp_id, 0.0) + share
+
+        for g in all_groups:
+            g["tax_group_amount"] = ideal_by_group.get(g["tax_group_id"], 0.0)
+        tax_foreign = fc.round(sum(ideal_by_group.values()))
+
+        self._finalize_foreign_taxes(
+            foreign_taxes, all_groups, product_foreign, tax_foreign, fc, foreign_currency)
+
+    def _finalize_foreign_taxes(self, foreign_taxes, all_groups, product_foreign, tax_foreign, fc, foreign_currency):
+        """Shared tail of `_sync_foreign_taxes_with_entry` and
+        `_anchor_foreign_taxes_for_order`: apportion `all_groups`' base/tax
+        amounts to sum exactly to `product_foreign`/`tax_foreign`, then
+        refresh every derived formatted/subtotal/total field from them.
+        """
+        if all_groups:
+            self._apportion_largest_remainder(
+                all_groups, "tax_group_base_amount", product_foreign, fc.decimal_places)
+            self._apportion_largest_remainder(
+                all_groups, "tax_group_amount", tax_foreign, fc.decimal_places)
+
+        for g in all_groups:
+            g["formatted_tax_group_base_amount"] = formatLang(
+                self.env, g["tax_group_base_amount"], currency_obj=foreign_currency)
+            g["formatted_tax_group_amount"] = formatLang(
+                self.env, g["tax_group_amount"], currency_obj=foreign_currency)
+
+        for subtotal_name, groups in (foreign_taxes.get("groups_by_subtotal") or {}).items():
+            subtotal_untaxed = fc.round(sum(g["tax_group_base_amount"] for g in groups))
+            for sub in foreign_taxes.get("subtotals", []):
+                if sub.get("name") == subtotal_name:
+                    sub["amount"] = subtotal_untaxed
+                    sub["formatted_amount"] = formatLang(
+                        self.env, subtotal_untaxed, currency_obj=foreign_currency)
+
+        foreign_taxes["amount_untaxed"] = fc.round(product_foreign)
+        foreign_taxes["amount_total"] = fc.round(abs(product_foreign + tax_foreign))
+        foreign_taxes["formatted_amount_untaxed"] = formatLang(
+            self.env, foreign_taxes["amount_untaxed"], currency_obj=foreign_currency)
+        foreign_taxes["formatted_amount_total"] = formatLang(
+            self.env, foreign_taxes["amount_total"], currency_obj=foreign_currency)
+
     def _get_move_from_base_lines(self, base_lines):
         for l in (base_lines or []):
             r = l.get("record")
             if not r:
                 continue
-            if getattr(r, "_name", None) == "account.move":
+            if getattr(r, "_name", None) in ("account.move", "sale.order"):
                 return r
             if "move_id" in getattr(r, "_fields", {}):
                 if r.move_id:
                     return r.move_id
+            if "order_id" in getattr(r, "_fields", {}):
+                if r.order_id:
+                    return r.order_id
         return None
 
     def _get_foreign_base_tax_lines(self, base_lines, tax_lines, currency):

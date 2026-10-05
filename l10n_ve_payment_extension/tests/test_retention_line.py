@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 # your_module/tests/test_retention_line.py
 
-from odoo.tests import TransactionCase, tagged
+from odoo import fields
+from odoo.tests import TransactionCase, Form, tagged
 from unittest.mock import patch
 
 _logger = __import__('logging').getLogger(__name__)
@@ -26,6 +27,14 @@ class TestRetentionFlows(TransactionCase):
         cls.foreign_currency = cls.env.ref('base.USD')
         if not cls.company.currency_foreign_id:
             cls.company.currency_foreign_id = cls.foreign_currency.id
+
+        if not cls.company.municipal_supplier_retention_journal_id:
+            cls.company.municipal_supplier_retention_journal_id = cls.env["account.journal"].create({
+                "name": "Retenciones Municipales",
+                "code": "RETMUN",
+                "type": "bank",
+                "company_id": cls.company.id,
+            }).id
 
         cls.partner = cls.env["res.partner"].search([('name', '=', 'Test Partner')], limit=1) or \
         cls.env["res.partner"].create({"name": "Test Partner"})
@@ -154,6 +163,46 @@ class TestRetentionFlows(TransactionCase):
 
         if "foreign_amount_untaxed" in (invoice.tax_totals or {}):
             self.assertAlmostEqual(line.foreign_invoice_amount, 500.0, places=2)
+
+    def test_municipal_retention_survives_onchange_before_save(self):
+        """Regression: retention_amount must not reset to 0 for an unsaved
+        municipal line during the onchange dispatch (see
+        _compute_retention_amount's other_lines branch)."""
+        self.foreign_currency.rate_ids = [(0, 0, {
+            "company_rate": 2.0,
+            "name": fields.Date.today(),
+        })]
+
+        with Form(
+            self.env["account.move"].with_context(default_move_type="in_invoice")
+        ) as inv_form:
+            inv_form.partner_id = self.partner
+            inv_form.journal_id = self.journal
+            inv_form.invoice_date = fields.Date.today()
+            inv_form.correlative = "00000000000001"
+        invoice = inv_form.save()
+        with Form(invoice) as inv_form_edit:
+            with inv_form_edit.invoice_line_ids.new() as line:
+                line.product_id = self.product
+                line.quantity = 2
+                line.price_unit = 100.0
+        invoice = inv_form_edit.save()
+
+        with Form(
+            self.env["account.retention"].with_context(
+                default_type="in_invoice", default_type_retention="municipal"
+            ),
+            view="l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension",
+        ) as retention_form:
+            retention_form.partner_id = self.partner
+            with retention_form.retention_line_ids.new() as line:
+                line.move_id = invoice
+                line.economic_activity_id = self.economic_activity
+                self.assertNotEqual(
+                    line.retention_amount,
+                    0.0,
+                    "retention_amount must not reset to 0 before the line is saved.",
+                )
 
     def _ensure_tax_totals(self, move):
         """
