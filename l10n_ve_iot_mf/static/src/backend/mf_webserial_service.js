@@ -85,15 +85,18 @@ export function toDriverOrder(payload) {
     }));
 
     // `payload.info`: líneas informativas opcionales devueltas por
-    // check_print_out_invoice/refund/debit_note (ej. NUMERO DE CONTROL,
-    // REFERENCIA, tasa del día) usadas por customizaciones de cliente
-    // (ej. solumedica_mf). En el flujo IoT legado estas líneas viajaban
-    // dentro del payload hacia el IoT Box y el SDK Python las imprimía
-    // como líneas "iXX". En Web Serial el navegador debe reenviarlas
-    // explícitamente como additional_lines para que el driver las envíe.
-    const additionalLines = Array.isArray(payload.info)
-        ? payload.info.filter((line) => !!line).map((line) => String(line))
+    // check_print_out_invoice/refund/debit_note (ej. ACCION en
+    // binaural_club_socios_mf, NUMERO DE CONTROL en solumedica_mf). El flujo
+    // IoT legado (SerialFiscalDriver) las imprimía como "iXX" en el
+    // ENCABEZADO, después de dirección y teléfono; se mandan como
+    // header_lines para conservar esa ubicación.
+    // `payload.footer_info` (opcional): líneas que deben salir al PIE, se
+    // mandan como additional_lines.
+    const toLines = (value) => Array.isArray(value)
+        ? value.filter((line) => !!line).map((line) => String(line))
         : [];
+    const infoLines = toLines(payload.info);
+    const footerLines = toLines(payload.footer_info);
 
     return {
         flag_21: String(payload.flag_21 || "00"),
@@ -108,9 +111,12 @@ export function toDriverOrder(payload) {
         invoice_affected: payload.invoice_affected || null,
         // En backend no manejamos gaveta ni líneas de encabezado/pie de POS
         has_cashbox: false,
-        header_lines: [],
+        header_lines: infoLines,
         footer_lines: [],
-        additional_lines: additionalLines,
+        additional_lines: footerLines,
+        // Igual que el flujo IoT legado: descripción del ítem hasta 127
+        // caracteres; la impresora la parte en varias líneas.
+        max_item_desc_len: 127,
     };
 }
 
