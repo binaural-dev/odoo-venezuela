@@ -803,6 +803,14 @@ class AccountMoveLine(models.Model):
     def _compute_amount_currency(self):
         for line in self:
             if line.amount_currency is False:
-                line.amount_currency = line.balance * line.currency_rate
+                line.amount_currency = line.currency_id.round(line.balance * line.currency_rate)
             if line.currency_id == line.company_id.currency_id:
-                line.amount_currency = line.balance
+                # Rounded explicitly: on journals with 4-decimal "Product
+                # Price" precision (e.g. international purchases) `balance`
+                # can still carry an unrounded intermediate value at the
+                # point this compute runs, before the invoice sync pass
+                # settles it. Assigning it unrounded here freezes that
+                # residual into amount_currency and desyncs it from the
+                # already-rounded debit/credit, unbalancing the move by a
+                # fraction of a cent.
+                line.amount_currency = line.currency_id.round(line.balance)
