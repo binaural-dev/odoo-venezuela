@@ -141,6 +141,12 @@ patch(PosPayment.prototype, {
             return;
         }
 
+        // A refund payment carries the refund's sign even if the cashier
+        // typed a positive amount (task 83148, H1). Sales keep what was typed.
+        const sign = localTotal < 0 ? -1 : 1;
+        const signedRequested = sign < 0 && requested > 0 ? -requested : requested;
+        this.foreign_amount = signedRequested;
+
         // Convert local due to foreign ONCE (same rounding as
         // get_foreign_total_with_tax → foreign_currency.round).
         //
@@ -174,13 +180,14 @@ patch(PosPayment.prototype, {
         if (coversDue) {
             // Payment covers the local due exactly, plus any overpay.
             // isPositive() discards float-noise "overpay" below the
-            // currency precision instead of converting it.
+            // currency precision instead of converting it. The overpay is a
+            // magnitude: it takes the sign of the due (negative on a refund).
             const overpaymentForeign = absRequested - absDue;
             const hasOverpay = hasComp
                 ? fc.isPositive(overpaymentForeign)
                 : overpaymentForeign > 0;
             const overpaymentLocal = hasOverpay
-                ? order._convertForeignOrderAmount(overpaymentForeign)
+                ? sign * order._convertForeignOrderAmount(overpaymentForeign)
                 : 0;
             this.amount = localDueBefore + overpaymentLocal;
             return;
@@ -189,6 +196,6 @@ patch(PosPayment.prototype, {
         // Partial payment: strict mathematical conversion. Refund-aware so a
         // partial refund's local (main-currency) amount is proportional to
         // the original sale's rate, not today's rate.
-        this.amount = order._convertForeignOrderAmount(requested);
+        this.amount = order._convertForeignOrderAmount(signedRequested);
     },
 });

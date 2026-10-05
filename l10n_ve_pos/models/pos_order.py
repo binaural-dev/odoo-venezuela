@@ -116,6 +116,32 @@ class PosOrder(models.Model):
             )
         return res
 
+    def _process_saved_order(self, draft):
+        # Before super: it marks the order paid and creates the payment moves
+        # and the invoice, which read the foreign amounts. Runs for the POS
+        # sync and for the backend return wizard (pos.make.payment).
+        self._align_foreign_signs()
+        return super()._process_saved_order(draft)
+
+    def _align_foreign_signs(self):
+        """Give ``foreign_amount_total`` and every ``foreign_amount`` the sign
+        of their local amount, keeping the magnitude the POS sent.
+
+        POS clients still running a bundle from before task 83148 (H1) send
+        refunds with positive foreign amounts next to a negative ``amount``.
+        ``binaural_pos_close`` and the session cross moves add
+        ``foreign_amount`` as stored, so the refund counted as cash coming in:
+        a false shortage at close and a crash on
+        ``account_move_line_check_amount_currency_balance_sign`` when the net
+        of a foreign cash method was a refund.
+        """
+        for order in self:
+            if order.amount_total * order.foreign_amount_total < 0:
+                order.foreign_amount_total = -order.foreign_amount_total
+            for payment in order.payment_ids:
+                if payment.amount * payment.foreign_amount < 0:
+                    payment.foreign_amount = -payment.foreign_amount
+
     @api.model
     def get_payments_order_refund(self, order_ids):
         if not order_ids:
