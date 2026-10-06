@@ -213,3 +213,37 @@ describe("l10n_ve_pos _recomputeForeignFromLocal", () => {
         expect(payment.foreign_amount).toBe(0);
     });
 });
+
+// Reembolso SIN tasa exacta (proporción agregada de la orden): el pago lleva el
+// signo del reembolso aunque el cajero teclee el monto en positivo, y el
+// excedente se suma con el signo de la deuda (tarea 83148, H1).
+describe("l10n_ve_pos set_foreign_amount — signo en reembolso agregado", () => {
+    const REFUND_DUE = -3600; // -$90 a la tasa agregada de 40
+    const makeAggregateRefund = () =>
+        makeOrderStub({ totalDue: REFUND_DUE, rate: 36.5, refundRate: 40 });
+
+    test("monto tecleado en positivo queda negativo", () => {
+        const p = callSetForeignAmount(makeAggregateRefund(), 90);
+        expect(p.foreign_amount).toBe(-90);
+        expect(p.amount).toBe(REFUND_DUE);
+    });
+
+    test("excedente: deuda más el excedente convertido, ambos negativos", () => {
+        // $100 contra una deuda de $90: excedente $10 × 40 = 400 Bs.
+        const p = callSetForeignAmount(makeAggregateRefund(), -100);
+        expect(p.foreign_amount).toBe(-100);
+        expect(p.amount).toBe(REFUND_DUE - 400);
+    });
+
+    test("parcial tecleado en positivo se convierte con el signo del reembolso", () => {
+        const p = callSetForeignAmount(makeAggregateRefund(), 50);
+        expect(p.foreign_amount).toBe(-50);
+        expect(p.amount).toBe(-2000);
+    });
+
+    test("en una venta el monto negativo tecleado se respeta", () => {
+        const p = callSetForeignAmount(makeOrderStub({ totalDue: 3650 }), -10);
+        expect(p.foreign_amount).toBe(-10);
+        expect(p.amount).toBe(-365);
+    });
+});

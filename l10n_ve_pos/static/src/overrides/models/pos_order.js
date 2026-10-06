@@ -49,7 +49,7 @@ patch(PosOrder.prototype, {
         const local = this._localTotalWithTax();
         const foreign = this.get_foreign_total_with_tax();
         if (local && foreign) {
-          const m = Math.abs(foreign) / Math.abs(local);
+          const m = foreign / local;
           if (Number.isFinite(m) && m > 0) {
             rawRate = m;
           }
@@ -522,7 +522,14 @@ patch(PosOrder.prototype, {
   },
 
   _sumForeignLines(getterName) {
-    return this.roundForeignMoney(
+    // Odoo 19 gives each line's priceIncl/priceExcl multiplied by
+    // order.orderSign (-1 on a refund): a positive magnitude for display,
+    // while totalDue stays negative. Multiplying the sum by orderSign again
+    // gives the foreign total the sign of the local total; without it a
+    // refund's foreign total came out positive and the ratios derived from
+    // it (_convertOrderAmount, _convertForeignOrderAmount) negative, which
+    // flipped foreign_amount on every refund payment (task 83148, H1).
+    return this.orderSign * this.roundForeignMoney(
       (this.lines || []).reduce(
         (sum, line) => sum + (Number(line[getterName]?.()) || 0),
         0
@@ -656,12 +663,13 @@ patch(PosOrder.prototype, {
       const localTotal = this._localTotalWithTax();
       const foreignTotal = this.get_foreign_total_with_tax();
       if (localTotal && foreignTotal) {
+        // Both totals carry the order's sign, so the ratio is positive. An
+        // exchange (refund at the original rate plus a sale at today's) can
+        // net to opposite signs; that ratio is not a rate, so it falls back
+        // to the live multiplier like get_display_rate does.
         const ratio = foreignTotal / localTotal;
-        if (Number.isFinite(ratio) && ratio !== 0) {
-          // Magnitude: get_foreign_total_with_tax is unsigned while totalDue
-          // is negative on refunds, so the raw ratio would be negative. A
-          // stamped rate must stay positive.
-          return Math.abs(ratio);
+        if (Number.isFinite(ratio) && ratio > 0) {
+          return ratio;
         }
       }
     }
