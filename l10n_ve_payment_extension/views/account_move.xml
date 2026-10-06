@@ -134,8 +134,7 @@
                     </div>
                     <div class="alert alert-warning" role="alert"
                          invisible="not retention_resync_pending or state != 'posted'">
-                        Warning: this invoice's withholding retentions no longer match its current
-                        data. Use the "Recalculate Retentions" button to bring them up to date.
+                        Warning: this invoice's withholding retentions no longer match its current data. Use the "Recalculate Retentions" button to bring them up to date.
                     </div>
                 </xpath>
 
