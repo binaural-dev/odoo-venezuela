@@ -20,11 +20,9 @@ patch(PosPayment.prototype, {
     serializeForORM(opts = {}) {
         const data = super.serializeForORM(opts);
         data["foreign_amount"] = this.foreign_amount || 0;
-        // Refund orders stamp the rate their foreign amounts were valued at
-        // (the frozen original-sale rate), not today's live rate, so the
-        // payment move frozen by pos_payment._create_payment_moves is
-        // internally consistent. Non-refund orders keep the live multiplier.
-        data["foreign_rate"] = Number(this.pos_order_id?.get_effective_foreign_multiplier?.() ?? 0);
+        // `foreign_rate` is not set here: the order sync serializes its
+        // payments without calling this method, so the rate is stamped on the
+        // order's payment commands (PosOrder._setPaymentForeignRates).
         return data;
     },
 
