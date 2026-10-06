@@ -114,7 +114,28 @@ class PosOrder(models.Model):
                     "foreign_rate": order.foreign_currency_rate,
                 }
             )
+        # The POS serializes the payments nested in the order, so a bundle
+        # older than task 83148 (H7), or an order queued offline with it,
+        # sends them without ``foreign_rate``. Fill those with the rate their
+        # foreign amounts were valued at.
+        payments_without_rate = order.payment_ids.filtered(
+            lambda payment: not payment.is_change and not payment.foreign_rate
+        )
+        rate = order._get_payment_foreign_rate()
+        if payments_without_rate and rate:
+            payments_without_rate.write({"foreign_rate": rate})
         return res
+
+    def _get_payment_foreign_rate(self):
+        """Main → foreign multiplier the payments of this order are valued at:
+        the order's own, or the original sale's for a refund (the POS values a
+        refund's foreign amounts at the original rate, see
+        ``get_effective_foreign_multiplier``)."""
+        self.ensure_one()
+        original = self.refunded_order_id
+        if original and original.foreign_currency_rate:
+            return original.foreign_currency_rate
+        return self.foreign_currency_rate
 
     def _process_saved_order(self, draft):
         # Before super: it marks the order paid and creates the payment moves
