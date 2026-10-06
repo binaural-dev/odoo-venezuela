@@ -152,7 +152,6 @@ export class MfWebSerialButtonComponent extends Component {
 
         // 1. Validar y obtener payload desde el backend
         const payload = await this.orm.call("account.move", checkMethod, [this.moveId]);
-        console.log(`[TI15610] ${checkMethod} payload backend:`, JSON.parse(JSON.stringify(payload)));
         if (payload && payload.valid === false) {
             this.notifyError(payload.message || _t("Documento no válido para impresión fiscal"));
             return;
@@ -171,13 +170,10 @@ export class MfWebSerialButtonComponent extends Component {
         // pestañas (POS, otro backoffice) que también hablen con la MF.
         this.notifyInfo(_t("Comunicando con la máquina fiscal, por favor espere..."));
         const order = toDriverOrder(payload);
-        console.log(`[TI15610] ${driverMethod} orden para el driver:`, JSON.parse(JSON.stringify(order)));
         let response;
         try {
             response = await driver.withConnection(() => driver[driverMethod](order));
-            console.log(`[TI15610] ${driverMethod} respuesta del driver:`, response);
         } catch (error) {
-            console.error(`[TI15610] ${driverMethod} excepción en withConnection:`, error);
             this.notifyError(this.errorMessage(error));
             await this.logPrintFailure(error?.message || String(error));
             return;

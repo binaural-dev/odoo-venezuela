@@ -221,10 +221,6 @@ class AccountMoveInh(models.Model):
             "reprint_document": _("Reimpresión"),
         }
         label = action_labels.get(action, action or _("Documento fiscal"))
-        _logger.info(
-            "[TI15610] log_mf_print_failure moves=%s action=%s reason=%r",
-            self.mapped("name"), action, reason,
-        )
         body = _(
             "No se ha impreso en máquina fiscal (%(label)s) porque no hay "
             "máquina fiscal conectada.",
@@ -314,13 +310,6 @@ class AccountMoveInh(models.Model):
                     if payment["currency_id"] != data.env.ref("base.VEF").id:
                         new_payment["amount"] = payment["amount"] * data.foreign_inverse_rate
 
-                    _logger.info(
-                        "[TI15610] %s pago widget: journal_name=%r -> journal_id=%s "
-                        "payment_method=%r currency_id=%s amount_widget=%s rate=%s -> amount_enviado=%s",
-                        data.name, payment.get("journal_name"), journal_id.id,
-                        journal_id.payment_method, payment.get("currency_id"),
-                        payment.get("amount"), data.foreign_inverse_rate, new_payment["amount"],
-                    )
                     payment_lines.append(new_payment)
 
             _invoice_lines = []
@@ -360,28 +349,13 @@ class AccountMoveInh(models.Model):
                 "payment_lines": payment_lines,
                 "max_razon_social": data.iot_mf.max_razon_social or 40,
             }
-            for line in data.invoice_line_ids:
-                _logger.info(
-                    "[TI15610] %s linea id=%s price_unit=%s foreign_price=%s discount=%s "
-                    "qty=%s fiscal_code=%s name=%r",
-                    data.name, line.id, line.price_unit, line.foreign_price, line.discount,
-                    line.quantity, line.tax_ids[:1].fiscal_code, line.name,
-                )
-            _logger.info(
-                "[TI15610] %s totales: amount_total=%s %s | foreign_total_billed=%s | "
-                "rate=%s | flag_21=%s | suma_pagos_enviados=%s",
-                data.name, data.amount_total, data.currency_id.name, data.foreign_total_billed,
-                data.foreign_inverse_rate, _data["flag_21"],
-                sum(p["amount"] for p in payment_lines),
-            )
             return _data
-
+        
         except ValidationError as ae:
             raise ValidationError(str(ae))
 
     def print_out_invoice(self, values):
         _logger.info("VALUE %s", values)
-        _logger.info("[TI15610] %s print_out_invoice recibido del driver: %s", self.name, values)
         result_data = values.get("data", {})
         sequence = result_data.get("sequence")
 
