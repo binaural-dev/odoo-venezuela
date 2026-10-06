@@ -30,19 +30,10 @@
 
 ## 3b. Corrección de code review (`test_31`)
 
-- [x] 3b.1 `test_31` restaurado a su versión con línea mixta
-      (positiva + descuento negativo bajo el mismo impuesto), usando un
-      producto de descuento (`company.sale_discount_product_id`) para
-      no chocar con `l10n_ve_invoice._check_price_in_zero`; la versión
-      de dos líneas positivas se conserva aparte como `test_31b`
-- [x] 3b.2 `_create_invoice` acepta un 4to elemento opcional por línea
-      (`product_id`) para permitir el producto de descuento
-- [x] 3b.3 Suite completa de `l10n_ve_accountant` corrida en contenedor
-      Docker (instancia `ti15412-test`, mount directo sobre este
-      checkout), base limpia, sin demo: 243 tests, sin fallos
-- [x] 3b.4 Misma suite corrida con `l10n_ve_invoice` instalado: 243
-      tests, sin fallos -- confirma que la línea de descuento no es
-      rechazada por `_check_price_in_zero`
+- [x] 3b.1 `test_31` eliminado (no se admiten líneas negativas); se
+      conserva `test_31b` con dos líneas positivas
+- [x] 3b.2 Suite completa de `l10n_ve_accountant` en contenedor Docker,
+      base limpia, sin demo: 298 tests, sin fallos
 
 ## 4. OpenSpec
 

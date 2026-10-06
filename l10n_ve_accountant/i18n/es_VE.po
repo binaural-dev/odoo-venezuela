@@ -2059,3 +2059,46 @@ msgstr "Edición manual del monto de impuesto por %(user)s:"
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "%(group)s: %(old)s → %(new)s"
 msgstr "%(group)s: %(old)s → %(new)s"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_company__tax_totals_edit_tolerance
+#: model:ir.model.fields,field_description:l10n_ve_accountant.field_res_config_settings__tax_totals_edit_tolerance
+msgid "Tax Amount Edit Tolerance"
+msgstr "Tolerancia de edición del monto de impuesto"
+
+#. module: l10n_ve_accountant
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_company__tax_totals_edit_tolerance
+#: model:ir.model.fields,help:l10n_ve_accountant.field_res_config_settings__tax_totals_edit_tolerance
+msgid ""
+"Maximum amount (in the document's currency) that the tax_totals pencil-edit "
+"may move a tax group's amount away from its computed value, in either "
+"direction. Only enforced for users in the 'Fiscal Config Support' group -- "
+"everyone else can't edit the field at all."
+msgstr ""
+"Monto máximo (en la moneda del documento) que la edición con el lápiz de "
+"tax_totals puede mover el monto de un grupo de impuesto respecto a su valor "
+"calculado, en cualquier sentido. Solo se aplica a los usuarios del grupo "
+"'Configuraciones fiscales soporte'; los demás no pueden editar el campo."
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
+msgid "Tax Totals Manual Edit"
+msgstr "Edición manual de totales de impuestos"
+
+#. module: l10n_ve_accountant
+#: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
+msgid ""
+"Maximum amount the tax pencil-edit on the invoice may move a tax group away "
+"from its computed value, in either direction. Only users in the \"Fiscal "
+"Config Support\" group can use that pencil-edit at all."
+msgstr ""
+"Monto máximo que el lápiz de edición de impuestos de la factura puede mover "
+"un grupo de impuesto respecto a su valor calculado, en cualquier sentido. "
+"Solo los usuarios del grupo \"Configuraciones fiscales soporte\" pueden usar "
+"ese lápiz."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_company.py:0
+msgid "The tax amount edit tolerance must be between 0 and 1."
+msgstr "La tolerancia de edición del monto de impuesto debe estar entre 0 y 1."

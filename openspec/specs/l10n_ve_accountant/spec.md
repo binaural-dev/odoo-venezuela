@@ -227,6 +227,10 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 
 Cuando el usuario pertenece al grupo `l10n_ve_accountant.group_fiscal_config_support`, el formulario de factura DEBE (MUST) permitir editar manualmente el monto de un grupo de impuesto directamente en el widget `tax_totals`, mientras la factura está en borrador (`state == 'draft'`) -- con el mismo ícono de lápiz (`fa fa-pencil`) que el widget nativo de Odoo junto al monto editable, no solo el click habilitado sin esa señal visual. Usuarios fuera de ese grupo NO DEBEN (SHALL NOT) poder aplicar el cambio aunque lo intenten por escritura directa (no solo oculto en la vista): `_inverse_tax_totals` DEBE (MUST) rechazar la escritura con un `UserError` del lado servidor.
 
+El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los tres widgets de totales: el nativo (`account-tax-totals-field`, pestaña principal), el de moneda alterna y el de VES. Los tres comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
+
+`tax_totals_edit_tolerance` DEBE (MUST) estar entre 0 y 1 (constraint de `res.company`); fuera de ese rango se rechaza el guardado.
+
 La edición SOLO DEBE (MUST) aplicarse si el delta entre el monto calculado y el editado no supera `company_id.tax_totals_edit_tolerance` (configurable por compañía, default 0,03 en la moneda del documento); fuera de esa tolerancia el sistema DEBE (MUST) rechazar la escritura con un `UserError` que indique la diferencia y la tolerancia permitida, aunque el usuario sí pertenezca al grupo.
 
 Toda edición que efectivamente se aplique (delta distinto de cero y dentro de tolerancia) DEBE (MUST) dejar un rastro de auditoría en el chatter de la factura (`message_post`), consolidado en un único mensaje por guardado aunque hayan cambiado varios grupos de impuesto a la vez, indicando el usuario que hizo el cambio y, por cada grupo afectado, el monto anterior y el nuevo.
@@ -270,6 +274,16 @@ Core escribe `tax_totals` dos veces por cada `write()` de la factura: una transi
 - **GIVEN** una factura en borrador con dos líneas de producto y tres cuotas de `payment_term`
 - **WHEN** se edita `price_unit` de una línea de producto
 - **THEN** el guardado no lanza `RecursionError`, el asiento queda cuadrado, el número de cuotas de `payment_term` no cambia y `foreign_debit`/`foreign_credit` quedan consistentes en todas las líneas (`test_62_sync_dynamic_lines_reentrancy_guard_does_not_break_normal_save`)
+
+### Requirement: Las líneas con impuesto porcentual incluido calculan base e impuesto por línea
+
+Para toda factura en borrador, en cualquiera de los dos modos de redondeo, la base de cada línea de producto cuyos impuestos sean todos porcentuales, con precio incluido y sin `include_base_amount` DEBE (MUST) calcularse a partir de su propio precio (`_fix_price_included_base_per_line`). El impuesto de esa línea DEBE (MUST) ser el precio incluido menos su base, de modo que la suma de base e impuesto de cada línea sea exactamente su precio y el total del documento coincida con el tipeado. Dos líneas idénticas DEBEN (MUST) registrar los mismos montos, y el resumen `tax_totals` DEBE (MUST) leer el impuesto de las líneas posteadas también en `round_globally` cuando existan estos impuestos.
+
+#### Scenario: Dos líneas idénticas con IVA 16% incluido en `round_globally` y `round_per_line`
+
+- **GIVEN** una factura de proveedor en USD con dos líneas de 12,95 USD, IVA 16% incluido en el precio
+- **WHEN** se publica la factura en cualquiera de los dos modos de redondeo
+- **THEN** ambas líneas registran la misma base (11,16 USD), el impuesto es 3,58 USD y `amount_total` es 25,90 USD (`test_33`)
 
 ### Requirement: base_amount por grupo de impuesto coincide con el balance real
 
@@ -550,7 +564,7 @@ Cuando `company.tax_calculation_rounding_method` es `round_per_line`, el sistema
 
 Esta misma corrección DEBE (MUST) aplicarse también al resumen que alimenta el widget de totales y el reporte impreso: `account.tax._get_tax_totals_summary` (vía `_fix_tax_amount_for_round_per_line`) DEBE (MUST) sobrescribir `tax_amount`/`tax_amount_currency` (y los de cada subtotal/grupo de impuesto) desde las líneas de impuesto reales ya posteadas cuando el modo es `round_per_line`, en lugar de dejar el cálculo independiente que hace el motor del core sobre `base_lines` (que sigue sumando bases y redondeando una sola vez, sin importar el modo) -- de lo contrario la factura mostrada al cliente y el asiento contable divergirían en el mismo caso que este requirement corrige. Esto aplica en cualquier dirección de documento (`out_invoice`, `in_invoice`, `out_refund`, `in_refund`), independientemente del signo de `direction_sign`.
 
-Las líneas de signo mixto bajo un mismo impuesto (un ajuste o descuento global negativo junto a líneas positivas) DEBEN (MUST) sumarse con su propio signo, no con su valor absoluto.
+Ninguna línea de producto puede tener monto negativo (ni siquiera para representar un descuento): las líneas que comparten un impuesto son siempre positivas y su contribución por línea se suma tal cual.
 
 Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo sobre un borrador todavía no guardado), el sistema NO DEBE (SHALL NOT) aplicar esta corrección: no existe ningún asiento real que igualar todavía, y `record.line_ids` puede reflejar el estado de un paso de onchange ANTERIOR (ej. el usuario cambió la moneda del documento y luego el precio de una línea, dentro del mismo borrador sin guardar entre medio) en vez del precio actual. Sin este resguardo, el `tax_amount` recién calculado por el core para el precio actual quedaría pisado por el monto obsoleto de esas líneas, congelando el widget de totales en un valor que no corresponde a lo que el usuario está viendo en pantalla.
 
@@ -573,23 +587,11 @@ Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo 
 - **WHEN** se lee `amount_tax`/`tax_totals` (lo que muestra el formulario y el reporte impreso) de una factura de venta (`out_invoice`), una de compra (`in_invoice`) o una nota de crédito (`out_refund`)
 - **THEN** el monto coincide con la suma de `balance`/`amount_currency` de las líneas de impuesto reales ya posteadas, en las tres direcciones (`test_43`/`test_44`/`test_45` de `test_multi_currency_rounding.py`)
 
-#### Scenario: Líneas de signo mixto bajo el mismo impuesto
+#### Scenario: Dos líneas positivas bajo el mismo impuesto en ambos modos
 
-- **GIVEN** una factura con una línea positiva y una negativa (ajuste o descuento global) bajo el mismo impuesto, en `round_per_line`
-- **WHEN** se calcula el impuesto por línea antes de sumar
-- **THEN** la contribución de cada línea se suma con su propio signo, sin tomar el valor absoluto de la línea negativa
-
-> NOTA: la propiedad interna de `_per_line_tax_sums` (sumar por signo, no
-> por `abs()`) sigue siendo correcta, pero `l10n_ve_invoice._check_price_in_zero`
-> bloquea guardar una factura con una línea de producto SUELTA de subtotal
-> negativo (no solo cero -- ver requirement "Prohibición de líneas con
-> subtotal cero o negativo", `openspec/specs/l10n_ve_invoice/spec.md`), a
-> menos que esa línea sea un descuento reconocido por `_get_discount_lines`.
-> El test de regresión de este escenario (`test_31_mixed_sign_lines_both_rounding_modes`,
-> `l10n_ve_accountant/tests/test_multi_currency_rounding.py`) ya no puede
-> construir ese caso de punta a punta vía `account.move.create()` -- fue
-> repurposado para verificar que esa línea suelta se rechaza, en vez de
-> verificar el neteo del impuesto.
+- **GIVEN** una factura con dos líneas positivas bajo el mismo impuesto
+- **WHEN** se calcula el impuesto en `round_per_line` y en `round_globally`
+- **THEN** cada modo coincide con su propia fórmula esperada (`test_31b_two_lines_same_tax_both_rounding_modes`)
 
 ### Requirement: Un impuesto encadenado (`include_base_amount`) suma su propio monto a la base del siguiente impuesto de la misma línea
 
