@@ -145,11 +145,46 @@ describe("l10n_ve_pos set_foreign_amount — reembolso a tasa exacta", () => {
         expect(pNeg.foreign_amount).toBe(-100);
     });
 
-    test("snap solo dentro de un paso foráneo (tolerancia = tasa × redondeo)", () => {
-        // tol = 40 × 0,01 = 0,40 Bs. 90,01 → 3600,40 (dentro) → snap a -3600.
+    test("snap solo dentro de un paso foráneo de la deuda mostrada", () => {
+        // Deuda mostrada 90,00 $. 90,01 está a un paso → snap a -3600.
         expect(callSetForeignAmount(makeExactRefund(), 90.01).amount).toBe(REFUND_DUE);
         // 90,05 → 3602,00 (fuera) → conversión directa.
         expect(callSetForeignAmount(makeExactRefund(), 90.05).amount).toBe(-3602);
+    });
+
+    test("snap también un paso por debajo, y no a dos pasos (tarea 83148, H20)", () => {
+        // 89,99 → 3599,60: a un céntimo de $ de la deuda → snap.
+        expect(callSetForeignAmount(makeExactRefund(), 89.99).amount).toBe(REFUND_DUE);
+        // 89,98 → 3599,20: a dos céntimos → espeja lo tecleado.
+        expect(callSetForeignAmount(makeExactRefund(), 89.98).amount).toBe(-3599.2);
+    });
+
+    test("moneda sin resolver: mismo límite con la tolerancia manual", () => {
+        const order = makeOrderStub({
+            totalDue: REFUND_DUE,
+            refundExactRate: EXACT_RATE,
+            fc: makeBareCurrency(),
+        });
+        expect(callSetForeignAmount(order, 90.01).amount).toBe(REFUND_DUE);
+        expect(callSetForeignAmount(order, 89.99).amount).toBe(REFUND_DUE);
+        expect(callSetForeignAmount(order, 89.98).amount).toBe(-3599.2);
+        expect(callSetForeignAmount(order, 90.05).amount).toBe(-3602);
+    });
+
+    test("deuda que no cae en el céntimo: el paso se cuenta desde la deuda mostrada", () => {
+        // -3600,25 Bs a 40 = 90,00625 $, mostrada 90,01 $.
+        const order = makeOrderStub({ totalDue: -3600.25, refundExactRate: EXACT_RATE });
+        expect(callSetForeignAmount(order, 90.02).amount).toBe(-3600.25); // un paso
+        expect(callSetForeignAmount(order, 90).amount).toBe(-3600.25); // un paso
+        expect(callSetForeignAmount(order, 89.99).amount).toBe(-3599.6); // dos: espejo
+    });
+
+    test("tasa no entera: el ruido de 1/tasa no mueve el límite", () => {
+        // 36,5 Bs por $: deuda -3285 Bs = 90 $ (3285 × 1/36,5 = 89,999…).
+        const order = makeOrderStub({ totalDue: -3285, refundExactRate: 36.5 });
+        expect(callSetForeignAmount(order, 90).amount).toBe(-3285);
+        expect(callSetForeignAmount(order, 90.01).amount).toBe(-3285);
+        expect(callSetForeignAmount(order, 90.02).amount).toBe(-3285.73);
     });
 
     test("sin tasa exacta cae al camino de respaldo (agregada, con snap de venta)", () => {
