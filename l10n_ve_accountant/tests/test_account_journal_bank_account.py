@@ -97,32 +97,86 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
         payment.action_post()
         self.assertTrue(payment.move_id, "A correctly configured journal must produce a move on posting.")
 
-    def test_payment_method_line_without_account_never_falls_back_silently(self):
-        """Regression guard: even if a payment method line ends up without a
-        payment_account_id (bypassing the journal-level safeguards on purpose,
-        as done here via a direct write), Odoo must refuse to post the
-        payment rather than silently picking some other account.
+    def test_writing_empty_account_on_bank_line_raises(self):
+        """_check_payment_account_id_required_for_bank (account_payment_method_line.py,
+        code review follow-up to PR #1344 / task 81735) fires on a direct
+        write to the line itself. Needed because account.journal's own
+        _check_payment_method_line_accounts is a constrains on the o2m
+        fields inbound/outbound_payment_method_line_ids, which Odoo does
+        NOT re-evaluate from a write on the child line directly (confirmed
+        via code review) -- only account_payment_method_line.py's own
+        constrains closes that path."""
+        self._get_foreign_bank_journal(self.currency_usd)
 
-        _check_payment_method_line_accounts (pre-existing, not touched here)
-        already blocks this at the journal level before a payment can even be
-        attempted with such a line, so this test exercises that same
-        guarantee rather than reimplementing it -- there's no separate code
-        path in core Odoo to bypass account_id determination once the line
-        exists without one."""
+        with self.assertRaisesRegex(UserError, "must have an assigned account"):
+            self.pm_line_in.payment_account_id = False
+
+    def test_cash_journal_lines_without_account_do_not_raise(self):
+        """The constrains (and the create() fill) are scoped to type ==
+        'bank' only -- a cash journal's native lines are left exactly as
+        core creates them (no account), same as before this change."""
+        cash_journal = self.env["account.journal"].sudo().create({
+            "name": "Caja Chica Test",
+            "code": "CSHT",
+            "type": "cash",
+            "company_id": self.company.id,
+        })
+        all_lines = cash_journal.inbound_payment_method_line_ids | cash_journal.outbound_payment_method_line_ids
+        self.assertTrue(all_lines)
+        self.assertTrue(
+            all(not line.payment_account_id for line in all_lines),
+            "Cash journal lines must not be affected by the bank-only account requirement.",
+        )
+
+    def test_confirming_legacy_bank_line_without_account_raises_in_community(self):
+        """Regression for the gap found in code review (PR #1344 / task
+        81735): with the full Accounting app not installed (confirmed via
+        dependency analysis that this test environment's accounting_installed
+        is False), core's account.payment.create() falls back to
+        company.transfer_account_id when outstanding_account_id is empty --
+        silently using a GENERIC account instead of the one configured on
+        the payment method line, or raising. _get_outstanding_account's
+        override (account_payment.py) must disable that fallback for a bank
+        journal whose line lacks an account, and action_post() must then
+        refuse to confirm rather than let the payment through with no
+        journal entry.
+
+        The company is given a transfer_account_id FIRST, so an unpatched
+        core would have silently succeeded here -- proving the block is
+        ours, not an accident of a fixture company with no chart of
+        accounts (the mistake in the original version of this test, found
+        in code review)."""
         journal = self._get_foreign_bank_journal(self.currency_usd)
-        self.pm_line_in.payment_account_id = False
+        self.company.transfer_account_id = self.account_bank
 
-        with self.assertRaises(UserError):
-            self.env["account.payment"].create({
-                "amount": 50.0,
-                "date": self.payment_date,
-                "currency_id": self.currency_usd.id,
-                "payment_type": "inbound",
-                "partner_type": "customer",
-                "partner_id": self.partner.id,
-                "journal_id": journal.id,
-                "payment_method_id": self.manual_in.id,
-            })
+        # Simulate a pre-existing line that bypassed the ORM (legacy data
+        # from before this module's fix, or any write that predates the
+        # constrains added in account_payment_method_line.py) -- that
+        # constrains would otherwise block this at write time, which is
+        # correct going forward but not what this test exercises.
+        self.env.cr.execute(
+            "UPDATE account_payment_method_line SET payment_account_id = NULL WHERE id = %s",
+            (self.pm_line_in.id,),
+        )
+        self.pm_line_in.invalidate_recordset(['payment_account_id'])
+
+        payment = self.env["account.payment"].create({
+            "amount": 50.0,
+            "date": self.payment_date,
+            "currency_id": self.currency_usd.id,
+            "payment_type": "inbound",
+            "partner_type": "customer",
+            "partner_id": self.partner.id,
+            "journal_id": journal.id,
+            "payment_method_id": self.manual_in.id,
+        })
+        self.assertFalse(
+            payment.outstanding_account_id,
+            "The fallback to transfer_account_id must be disabled for a bank "
+            "journal whose payment method line has no account.",
+        )
+        with self.assertRaisesRegex(UserError, "has no account"):
+            payment.action_post()
 
     def _create_valid_bank_journal(self, code):
         return self.env["account.journal"].sudo().create({
