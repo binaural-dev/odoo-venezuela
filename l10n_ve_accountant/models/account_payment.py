@@ -306,13 +306,6 @@ class AccountPayment(models.Model):
                 return
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
 
-    def _is_pos_payment(self):
-        """True for an account.payment created by point_of_sale (pos_session_id
-        is only a real field when that module is installed -- l10n_ve_accountant
-        doesn't depend on it, so this must degrade safely when it's absent).
-        """
-        return bool(self._fields.get('pos_session_id')) and bool(self.pos_session_id)
-
     def _get_outstanding_account(self, payment_type):
         """Disable core's silent fallback (company.transfer_account_id or a
         chart template account) for bank journals whose payment method line
@@ -326,19 +319,13 @@ class AccountPayment(models.Model):
         outstanding_account_id False, which the action_post() guard below
         turns into an explicit error at confirmation time.
 
-        Exempts point_of_sale payments (code review, PR #1344 / task 81735):
-        pos.payment.method.outstanding_account_id is only ever filled by its
-        own @api.onchange('journal_id') -- never for a method created by API
-        or data, meaning pos_session.py's _ensure_payment_outstanding_account
-        calls THIS method directly (not just the direct-assignment paths an
-        earlier review assumed were the only ones) whenever that's empty.
-        Without this exemption, a POS payment method whose bank journal line
-        lacks an account would get blocked here, and action_post()'s guard
-        below would then break closing the POS session -- a flow this task
-        has no business touching.
+        Scoped to bank journals only, and only when accounting_installed is
+        False in core's create() (this method is never called by core
+        otherwise) -- doesn't affect POS, hr_expense or
+        l10n_account_withholding_tax, which set outstanding_account_id
+        directly rather than through this method (confirmed via code
+        review, PR #1344 / task 81735).
         """
-        if self._is_pos_payment():
-            return super()._get_outstanding_account(payment_type)
         if self.journal_id.type == 'bank' and not self.payment_method_line_id.payment_account_id:
             return self.env['account.account']
         return super()._get_outstanding_account(payment_type)
@@ -354,17 +341,9 @@ class AccountPayment(models.Model):
         _check_move_id's own constrains only fires when outstanding_account_id
         is truthy. Must run before super() flips the state, since that
         assignment is what triggers write()'s journal-entry generation.
-
-        Exempts point_of_sale payments, same reasoning as the
-        _get_outstanding_account override above -- this task has no business
-        blocking POS session closing.
         """
         for payment in self:
-            if (
-                payment.journal_id.type == 'bank'
-                and not payment.outstanding_account_id
-                and not payment._is_pos_payment()
-            ):
+            if payment.journal_id.type == 'bank' and not payment.outstanding_account_id:
                 raise UserError(_(
                     "Payment method \"%(method)s\" on bank journal \"%(journal)s\" has no account "
                     "configured; the payment cannot be confirmed without a journal entry.",

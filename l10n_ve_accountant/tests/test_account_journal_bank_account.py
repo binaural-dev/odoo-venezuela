@@ -178,36 +178,6 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
         with self.assertRaisesRegex(UserError, "has no account"):
             payment.action_post()
 
-    def test_outstanding_account_override_does_not_affect_non_pos_payments_without_pos_installed(self):
-        """Regression guard for a bug found in code review (PR #1344 / task
-        81735, Christopher's automated review): the _get_outstanding_account
-        override and the action_post() guard both exempt POS payments via
-        _is_pos_payment() (pos_session_id), since pos.payment.method.outstanding_account_id
-        is only ever filled by its own onchange and pos_session.py calls
-        _get_outstanding_account() directly when that's empty -- without the
-        exemption, closing a POS session could break for a bank journal whose
-        payment method line lacks an account.
-
-        point_of_sale is NOT a transitive dependency of l10n_ve_accountant
-        (confirmed), so this module's own CI never installs it and a real
-        POS-session regression test can't live here. This only confirms
-        _is_pos_payment() degrades safely (returns False, doesn't raise) when
-        the pos_session_id field doesn't exist at all -- the common case for
-        this module's test environment -- so the exemption check itself
-        never breaks a database without point_of_sale installed."""
-        payment = self.env["account.payment"].create({
-            "amount": 50.0,
-            "date": self.payment_date,
-            "currency_id": self.currency_usd.id,
-            "payment_type": "inbound",
-            "partner_type": "customer",
-            "partner_id": self.partner.id,
-            "journal_id": self._get_foreign_bank_journal(self.currency_usd).id,
-            "payment_method_id": self.manual_in.id,
-        })
-        self.assertNotIn('pos_session_id', payment._fields)
-        self.assertFalse(payment._is_pos_payment())
-
     def _create_valid_bank_journal(self, code):
         return self.env["account.journal"].sudo().create({
             "name": f"Bank Constrains Test {code}",
