@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta
 
 from odoo.tests import TransactionCase, tagged, Form
+from lxml import etree
 from odoo import fields, Command
 from odoo.exceptions import UserError
 from odoo.exceptions import ValidationError
@@ -1319,6 +1320,55 @@ class TestMultiCurrencyRounding(TransactionCase):
 
         with self.assertRaises(UserError):
             self._edit_tax_totals_by(inv.with_user(outsider), 0.01)
+
+    def _create_pencil_user(self, login, with_group, extra_groups=()):
+        groups = [
+            self.env.ref('base.group_user').id,
+            self.env.ref('account.group_account_invoice').id,
+        ]
+        if with_group:
+            groups.append(self.env.ref('l10n_ve_accountant.group_fiscal_config_support').id)
+        groups += [self.env.ref(xmlid).id for xmlid in extra_groups]
+        return self.env['res.users'].create({
+            'name': login, 'login': login, 'group_ids': [Command.set(groups)],
+        })
+
+    def test_58b_pencil_edit_allowed_for_user_with_fiscal_support_group(self):
+        """A user in `group_fiscal_config_support` sees the pencil enabled
+        (`can_edit_tax_totals`) and the edit within tolerance is applied."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice')
+        user = self._create_pencil_user('con_permiso_fiscal_test', with_group=True)
+        inv_user = inv.with_user(user)
+        self.assertTrue(inv_user.can_edit_tax_totals)
+        old_amount = inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency
+        tax_line = self._edit_tax_totals_by(inv_user, 0.01)
+        self.assertAlmostEqual(abs(tax_line.amount_currency), abs(old_amount) + 0.01, places=2)
+
+    def test_58c_pencil_edit_hidden_and_rejected_without_fiscal_support_group(self):
+        """Without the group the pencil is disabled in the native, alternate
+        and VES widgets, and the amount stays untouched when the write is tried."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice')
+        user = self._create_pencil_user(
+            'sin_permiso_fiscal_test_2', with_group=False,
+            extra_groups=('l10n_ve_accountant.group_foreign_currency_view_accountant',),
+        )
+        inv_user = inv.with_user(user)
+        self.assertFalse(inv_user.can_edit_tax_totals)
+        arch = etree.fromstring(inv_user.get_view(view_type='form')['arch'])
+        for widget in ('account-tax-totals-field', 'account-tax-foreign-totals-field', 'account-tax-ves-totals-field'):
+            field = arch.xpath(f"//field[@name='tax_totals'][@widget='{widget}']")
+            self.assertTrue(field, f"widget {widget} missing in the form view")
+            self.assertIn('not can_edit_tax_totals', field[0].get('readonly'), widget)
+        old_amount = inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency
+        with self.assertRaises(UserError):
+            self._edit_tax_totals_by(inv_user, 0.01)
+        self.assertEqual(inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency, old_amount)
 
     def test_59_tax_totals_edit_resyncs_foreign_balance_and_payment_term(self):
         """Regression for TI-15432 bug 2: a pencil-edit on `tax_totals`
