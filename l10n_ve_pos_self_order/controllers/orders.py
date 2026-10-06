@@ -296,6 +296,12 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         safe_state_id = _ve_safe_int(state_id)
         safe_municipality_id = _ve_safe_int(municipality_id)
         if safe_state_id:
+            # The company's municipality/city/parish/zip belong to the
+            # company's state: keeping them next to the customer's state would
+            # persist an inconsistent address (e.g. state chosen without a
+            # municipality while the flag is off).
+            for field in ("municipality", "city_id", "parish_id", "zip"):
+                vals.pop(field, None)
             vals["state_id"] = safe_state_id
         if safe_municipality_id:
             vals["municipality"] = safe_municipality_id
