@@ -16,8 +16,9 @@ ya existían al momento de instalar o actualizar el módulo: la columna
 ya fue poblada por `account` antes de que este default cargue en el
 registro, y una actualización de módulo no re-ejecuta el default sobre
 filas existentes. Este alcance -- solo compañías nuevas, sin migración
-retroactiva de las existentes -- es una decisión de negocio confirmada
-explícitamente con el usuario, no un gap pendiente de resolver.
+retroactiva de las existentes -- es una decisión de negocio: por petición de los
+superiores, el encargado de la vertical (Saul Ortega) mantiene este
+alcance, no es un gap pendiente de resolver.
 
 Reemplaza al requirement previo ("`round_per_line` es la configuración
 esperada para compañías venezolanas (hallazgo de configuración, no

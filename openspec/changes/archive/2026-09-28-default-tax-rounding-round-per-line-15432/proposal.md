@@ -21,9 +21,9 @@ a mano en Configuración cada vez.
     existentes (la columna ya fue poblada por `account` antes de que
     este override cargue en el registro, y una actualización de módulo
     no re-ejecuta el default sobre filas ya existentes). Verificado en
-    base de prueba y confirmado explícitamente con el usuario que este
-    alcance (solo compañías nuevas) es el deseado; no se agrega
-    migración retroactiva.
+    base de prueba. Por petición de los superiores, el encargado de la
+    vertical (Saul Ortega) mantiene este alcance (solo compañías
+    nuevas); no se agrega migración retroactiva.
 - `l10n_ve_accountant/tests/test_multi_currency_rounding.py`
   - Nuevo test `test_55_new_company_defaults_to_round_per_line`: crea
     una compañía nueva desde cero y verifica el default, sin depender
@@ -47,7 +47,7 @@ a mano en Configuración cada vez.
 - **Riesgo**: bajo. Cambio de un solo `default=` en un campo
   `Selection` ya existente; no toca lógica de cálculo ni datos
   existentes.
-- **Verificado**: suite completa de `l10n_ve_accountant` (298 tests) corrida en
+- **Verificado**: suite completa de `l10n_ve_accountant` (300 tests) corrida en
   contenedor Docker sobre base limpia (`--without-demo=True`), tanto sin
   como con `l10n_ve_invoice` instalado (vía `l10n_ve_payment_extension`,
   escenario real de producción) - sin fallos en ningún caso.
