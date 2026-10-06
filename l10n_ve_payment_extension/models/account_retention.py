@@ -148,8 +148,8 @@ class AccountRetention(models.Model):
             pending = False
             for invoice in retention.retention_line_ids.mapped("move_id"):
                 diff = invoice._get_retention_resync_diff()
-                if retention in diff.get("to_cancel", invoice.browse()) | diff.get(
-                    "to_rebuild", invoice.browse()
+                if retention in diff.get("to_cancel", retention.browse()) | diff.get(
+                    "to_rebuild", retention.browse()
                 ):
                     pending = True
                     break
