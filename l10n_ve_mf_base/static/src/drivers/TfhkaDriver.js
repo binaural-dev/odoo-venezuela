@@ -1165,6 +1165,17 @@ export class TfhkaDriver {
         );
     }
 
+    _pickDivisaClosingPayment(payments) {
+        return (payments || [])
+            .filter((payment) =>
+                this._isDivisaPaymentMethod(payment.payment_method_code) &&
+                Math.abs(Number(payment.amount || 0)) > 0
+            )
+            .reduce((max, payment) =>
+                !max || Math.abs(Number(payment.amount)) > Math.abs(Number(max.amount)) ? payment : max
+            , null);
+    }
+
     _appendPaymentCommands(commands, orderData, config) {
         const payments = orderData.payment_lines || [];
 
@@ -1185,11 +1196,11 @@ export class TfhkaDriver {
             return;
         }
 
-        // IGTF (manual TFHKA v1.1.0): si hay pago en divisas (20-24), el
-        // cierre NO puede ser "1XX" — se deben enviar TODOS los métodos
-        // como "2XX" (incluido el que normalmente cerraría) y dejar que el
-        // comando "199" final (ya emitido al final de cada documento fiscal
-        // en printInvoice/printCreditNote/printDebitNote) haga el cierre.
+        // IGTF (manual TFHKA v1.1.0): si hay pago en divisas (20-24), los
+        // métodos se envían como "2XX" y el comando "199" final (ya emitido
+        // en printInvoice/printCreditNote/printDebitNote) hace el cierre. Con
+        // `close_with_direct_payment` el pago en divisas de mayor monto se
+        // envía como "1XX" (pago directo) en vez de "2XX".
         //
         // IMPORTANTE (ver manual impuesto_igtf.md, seccion 7, punto 5): el
         // comando "199" SOLO es aceptado por la impresora si el documento
@@ -1207,9 +1218,12 @@ export class TfhkaDriver {
         // cálculo de IGTF de la impresora sea fiel a cómo se recibieron los
         // pagos realmente.
         if (hasDivisa) {
+            const closingPayment = orderData.close_with_direct_payment
+                ? this._pickDivisaClosingPayment(payments)
+                : null;
             for (const payment of payments) {
                 const amount = Math.abs(Number(payment.amount || 0));
-                if (amount <= 0) {
+                if (amount <= 0 || payment === closingPayment) {
                     continue;
                 }
                 const methodCode = String(payment.payment_method_code || "01").padStart(2, '0');
@@ -1236,7 +1250,10 @@ export class TfhkaDriver {
                 comandos: sent2xx,
                 suma_cruda: total2xxAmount,
             });
-            // NO se envía "1XX": el "199" final cierra el documento con IGTF.
+            if (closingPayment) {
+                const closingMethod = String(closingPayment.payment_method_code || "01").padStart(2, '0');
+                commands.push(`1${closingMethod}`);
+            }
             return;
         }
 
