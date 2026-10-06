@@ -181,19 +181,8 @@ class TestMultiCurrencyRounding(TransactionCase):
 
     def _create_invoice(self, currency, pricelist, lines_data, move_type='out_invoice', post=True):
         """Crea (y por defecto publica) una factura.
-        lines_data: list of (qty, price_unit, [tax_records]) or (qty, price_unit,
-        [tax_records], product) -- the optional 4th element overrides `self.product`
-        (e.g. a discount product, to exercise `_get_discount_lines()`).
-        move_type: 'out_invoice' (default), 'in_invoice', 'out_refund' or 'in_refund' --
-        `in_invoice`/`out_refund` (Odoo's `is_outbound()` types) have `direction_sign == 1`,
-        the OPPOSITE of `out_invoice`/`in_refund`'s `-1`; refunds also use
-        `refund_repartition_line_ids` instead of `invoice_repartition_line_ids`.
-        post=False: leaves the move in 'draft' -- needed to exercise
-        `_sync_tax_lines` (it skips non-draft moves outright, see its own
-        `if move.state != 'draft': continue`), e.g. to test the
-        `tax_totals` pencil-edit the way the UI actually allows it
-        (`can_edit_tax_totals`'s view domain requires `state == 'draft'`).
-        """
+        lines_data: (qty, price_unit, [taxes]) con un 4to elemento opcional: el producto.
+        move_type: tipo de factura; post=False la deja en borrador."""
         is_purchase = move_type in ('in_invoice', 'in_refund')
         # Buscar o crear lista de precios en la moneda adecuada
         pl = pricelist
@@ -1053,15 +1042,10 @@ class TestMultiCurrencyRounding(TransactionCase):
                     ),
                 )
 
-    def test_31_two_lines_same_tax_both_rounding_modes(self):
-        """Two lines sharing a tax must sum their per-line tax contributions correctly
-        in BOTH rounding modes. `round_per_line` sums per-line amounts via
-        `_per_line_tax_sums`; `round_globally` sums bases first via `_grouped_tax_sums` --
-        both must agree with the tax computed on the combined base.
-
-        No product/invoice line may ever carry a negative price -- not even to represent
-        a discount or adjustment (`l10n_ve_invoice._check_price_in_zero` enforces this for
-        real invoices), so this only exercises two ordinary positive lines."""
+    def test_31b_two_lines_same_tax_both_rounding_modes(self):
+        """Two positive lines sharing a tax must sum their per-line tax
+        correctly in BOTH rounding modes, matching the tax computed on
+        the combined base."""
         self.env["res.currency.rate"].search([
             ("currency_id", "=", self.currency_usd.id),
             ("company_id", "=", self.company.id),
@@ -1081,14 +1065,6 @@ class TestMultiCurrencyRounding(TransactionCase):
                 ])
                 tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
                 product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
-                # `round_per_line` rounds each line's tax before summing;
-                # `round_globally` sums the bases first and rounds once --
-                # the two legitimately land a cent apart, so the expected
-                # value must be computed the same way as the mode under test.
-                # `balance` follows the accounting debit/credit sign convention
-                # (negative for an `out_invoice` product line) -- take `abs()`
-                # per line before applying the tax rate, same as the `amount_tax`
-                # comparisons below.
                 line_balances_vef = [abs(b) for b in product_lines.mapped('balance')]
                 if mode == 'round_per_line':
                     expected_tax_usd = sum(
@@ -1100,9 +1076,6 @@ class TestMultiCurrencyRounding(TransactionCase):
                 else:
                     expected_tax_usd = self.currency_usd.round(sum(line_amounts_usd) * 0.16)
                     expected_tax_vef = self.currency_vef.round(sum(line_balances_vef) * 0.16)
-                # `amount_currency`/`balance` follow the accounting debit/credit
-                # sign convention (negative for an `out_invoice` tax line) --
-                # unrelated to rounding mode, hence the `abs()`.
                 self.assertAlmostEqual(
                     abs(tax_line.amount_currency), expected_tax_usd, places=2,
                     msg=(
@@ -1117,8 +1090,6 @@ class TestMultiCurrencyRounding(TransactionCase):
                         f"the expected per-mode tax ({expected_tax_vef})"
                     ),
                 )
-                # `amount_tax` is in the document currency (USD), same as
-                # `amount_currency` -- NOT in VEF like `expected_tax_vef`.
                 self.assertAlmostEqual(
                     abs(inv.amount_tax), abs(tax_line.amount_currency), places=2,
                     msg=f"[{mode}] inv.amount_tax (widget total, USD) inconsistent with the posted tax line",
@@ -1164,34 +1135,9 @@ class TestMultiCurrencyRounding(TransactionCase):
                 )
 
     def test_33_identical_price_included_lines_always_match(self):
-        """Regression for `AccountMoveLine._fix_price_included_base_per_line`:
-        two identical invoice lines using a flat-rate, price-included tax
-        must post the exact same `amount_currency` and `balance` -- in
-        BOTH rounding modes, not just `round_per_line`.
-
-        Without the fix, `round_globally` (Odoo's default) sums the raw
-        price-included amounts of every line sharing a tax, rounds ONCE,
-        and dumps the resulting remainder onto a single line (see
-        `_round_tax_details_base_lines`'s own docstring example in
-        `account/models/account_tax.py`) -- independently per currency, so
-        the two lines could even disagree with themselves across USD and
-        VES. Real case that triggered this: a USD vendor bill, rate
-        803.34, two identical lines at $12.95 (16% price-included) --
-        product lines posted $11.17/Bs 8973.31 and $11.16/Bs 8965.27
-        instead of matching.
-
-        The fix recomputes each line's base directly from `price_unit`
-        (Odoo core's own price-included formula, applied per line), so
-        there is never a cross-line remainder to distribute -- regardless
-        of what `tax_calculation_rounding_method` the company has.
-
-        Mirrors Odoo core exactly (`account.tax._add_tax_details_in_base_line`):
-        the base is computed ONCE, unrounded, in USD (12.95/1.16 =
-        11.163793...); the VEF figure is obtained by dividing that SAME
-        unrounded number by `line.currency_rate` (11.163793... / rate =
-        8968.3216...). Both projections are rounded INDEPENDENTLY from
-        there -- $11.16 (amount_currency) and Bs 8968.32 (balance) --
-        neither derived from the other's already-rounded value."""
+        """Two identical price-included lines must post the same
+        `amount_currency` and `balance` in BOTH rounding modes, and the
+        document total must stay the typed one (2 x 12.95)."""
         tax_16_incl = self._create_tax('IVA 16% (incluido)', 16.0)
         tax_16_incl.price_include_override = 'tax_included'
         self._set_usd_rate(803.34)
@@ -1222,16 +1168,26 @@ class TestMultiCurrencyRounding(TransactionCase):
                 )
                 self.assertAlmostEqual(lines[0].amount_currency, 11.16, places=2)
                 self.assertAlmostEqual(lines[0].balance, 8968.32, places=2)
+                self.assertAlmostEqual(
+                    inv.amount_total, 25.90, places=2,
+                    msg=f"[{mode}] amount_total no coincide con el total del documento",
+                )
+                self.assertAlmostEqual(abs(inv.amount_tax), 3.58, places=2)
+
+    def test_33b_tax_totals_edit_tolerance_must_be_between_0_and_1(self):
+        """The edit tolerance only accepts values between 0 and 1."""
+        for value in (-0.01, 1.01):
+            with self.subTest(value=value), self.assertRaises(ValidationError):
+                self.company.tax_totals_edit_tolerance = value
+        for value in (0.0, 0.03, 1.0):
+            self.company.tax_totals_edit_tolerance = value
 
     def test_34_manual_tax_totals_edit_stays_consistent(self):
-        """Regression for unblocking the `tax_totals` pencil-edit. Simulates
-        core's JS pencil flow (mutate `tax_totals`, write back) and checks
-        every derived field -- USD and l10n_ve's VES additions -- agrees.
-        Tolerance widened on purpose: this test exercises PROPAGATION
-        consistency with a comfortably large delta, not the tolerance gate
-        itself (see test_56/test_57/test_58 for that)."""
+        """Simulates the JS pencil flow and checks every derived field
+        (USD and VES) agrees. Maximum tolerance on purpose: this tests
+        propagation, not the tolerance gate (see test_56/57/58)."""
         self.company.tax_calculation_rounding_method = 'round_per_line'
-        self.company.tax_totals_edit_tolerance = 10.0
+        self.company.tax_totals_edit_tolerance = 1.0
         self._set_usd_rate(803.34)
         inv = self._create_invoice(self.currency_usd, None, [
             (1, 100.0, [self.tax_16]),
@@ -1241,8 +1197,7 @@ class TestMultiCurrencyRounding(TransactionCase):
         old_tax_amount_currency = tax_line.amount_currency
         old_tax_balance = tax_line.balance
 
-        # Simulate the pencil: type a value 5.00 higher than the current one.
-        delta = 5.00
+        delta = 0.50
         totals = inv.tax_totals
         subtotal = totals['subtotals'][0]
         tax_group = subtotal['tax_groups'][0]
@@ -1267,9 +1222,6 @@ class TestMultiCurrencyRounding(TransactionCase):
             msg="inv.amount_tax (USD) disagrees with the real posted tax line after the manual edit",
         )
 
-        # Re-read tax_totals fresh (it's a computed field) and check EVERY
-        # figure derived from the tax line -- core USD and l10n_ve's own
-        # VES/foreign additions -- agrees with what was actually posted.
         fresh_totals = inv.tax_totals
         fresh_tax_group = fresh_totals['subtotals'][0]['tax_groups'][0]
         self.assertAlmostEqual(
@@ -1649,7 +1601,6 @@ class TestMultiCurrencyRounding(TransactionCase):
             f"Precondición: deben estar los 3 pagos matched -- {inv.matched_payment_ids.ids}",
         )
 
-        # Desconciliar los 3, uno por uno -- como reporta el caso real.
         for pay in payments:
             inv_receivable = inv.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
             pay_counterpart = pay.move_id.line_ids.filtered(
@@ -3076,15 +3027,9 @@ class TestMultiCurrencyRounding(TransactionCase):
         self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16, tax_8_own])
 
     def test_55_new_company_defaults_to_round_per_line(self):
-        """`l10n_ve_accountant` overrides `res.company.tax_calculation_
-        rounding_method`'s default to 'round_per_line' ("por linea"),
-        since stock Odoo defaults new companies to 'round_globally'
-        ("por impuesto"). This only affects company records created from
-        here on -- it does not retroactively touch `self.company` (this
-        module's `base.main_company`, whose column was already populated
-        by `account` before this override existed), so create a brand
-        new company instead of asserting on `self.company`.
-        """
+        """New companies default to 'round_per_line' (stock Odoo uses
+        'round_globally'); existing companies are not touched, so a new
+        company is created instead of asserting on `self.company`."""
         new_company = self.env['res.company'].create({'name': 'Rounding Default Co'})
         self.assertEqual(
             new_company.tax_calculation_rounding_method,

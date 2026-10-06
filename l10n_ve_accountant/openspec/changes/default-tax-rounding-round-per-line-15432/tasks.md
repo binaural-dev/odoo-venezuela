@@ -28,6 +28,13 @@
       `l10n_ve_payment_extension`, escenario real de producción): 242
       tests, sin fallos
 
+## 3b. Corrección de code review (`test_31`)
+
+- [x] 3b.1 `test_31` eliminado (no se admiten líneas negativas); se
+      conserva `test_31b` con dos líneas positivas
+- [x] 3b.2 Suite completa de `l10n_ve_accountant` en contenedor Docker,
+      base limpia, sin demo: 298 tests, sin fallos
+
 ## 4. OpenSpec
 
 - [x] 4.1 `proposal.md` + spec delta (`ADDED` - capability nueva)

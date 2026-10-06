@@ -105,6 +105,10 @@
                     optional="show"/>
             </xpath>
             
+            <xpath expr="//field[@name='tax_totals'][@widget='account-tax-totals-field']" position="attributes">
+                <attribute name="readonly">state != 'draft' or (move_type not in ('in_invoice', 'in_refund', 'in_receipt') and not quick_edit_mode) or not can_edit_tax_totals</attribute>
+            </xpath>
+
             <xpath expr="//notebook" position="inside">
                 <page string="Foreign currency" name="foreign_currency" groups="l10n_ve_accountant.group_foreign_currency_view_accountant">
                     <group>

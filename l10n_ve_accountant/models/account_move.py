@@ -1756,7 +1756,10 @@ class AccountMove(models.Model):
             if (
                 round_mode != 'reapply_tax_lines'
                 and move.is_invoice(include_receipts=True)
-                and move.currency_id != move.company_id.currency_id
+                and (
+                    move.currency_id != move.company_id.currency_id
+                    or any(l._price_included_split() for l in move.line_ids)
+                )
             ):
                 rate = move.invoice_currency_rate
                 if rate:
@@ -1841,6 +1844,20 @@ class AccountMove(models.Model):
                             return value
                         return model.browse(value) if value else model
 
+                    def _price_included_tax(record_id, tax, factor):
+                        if tax.amount_type != 'percent' or not tax.price_include or tax.include_base_amount:
+                            return None
+                        line = self.env['account.move.line'].browse(record_id)
+                        split = line._price_included_split()
+                        if split is None:
+                            return None
+                        base_doc, base_vef, included_doc, included_vef = split
+                        share = tax.amount * factor / sum(line.tax_ids.mapped('amount'))
+                        return (
+                            cc.round((included_vef - base_vef) * share),
+                            move.currency_id.round((included_doc - base_doc) * share),
+                        )
+
                     def _per_line_tax_sums(tax, group_tax, factor):
                         # Fiscal-machine method: round the tax of EACH
                         # product line individually (VEF and document
@@ -1865,6 +1882,9 @@ class AccountMove(models.Model):
                         for record_id, eff_balance, eff_doc in _effective_entries(tax, group_tax):
                             line_vef = cc.round(eff_balance * (tax.amount / 100.0) * factor)
                             line_doc = move.currency_id.round(eff_doc * (tax.amount / 100.0) * factor)
+                            included_tax = _price_included_tax(record_id, tax, factor)
+                            if included_tax is not None:
+                                line_vef, line_doc = included_tax
                             vef_total += line_vef
                             doc_total += line_doc
                             per_line_amounts.append((record_id, line_vef, line_doc))
@@ -1904,7 +1924,10 @@ class AccountMove(models.Model):
                             return
                         group_tax = _get_recordset(Tax, group_tax_value)
                         factor = rep_line.factor_percent / 100.0
-                        if move.company_id.tax_calculation_rounding_method == 'round_per_line':
+                        if (
+                            move.company_id.tax_calculation_rounding_method == 'round_per_line'
+                            or (tax.price_include and not tax.include_base_amount)
+                        ):
                             new_balance, new_amount_currency = _per_line_tax_sums(tax, group_tax, factor)
                         else:
                             new_balance, new_amount_currency = _grouped_tax_sums(tax, group_tax, factor)

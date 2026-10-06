@@ -17,6 +17,12 @@ class ResCompany(models.Model):
         "the field at all.",
     )
 
+    @api.constrains('tax_totals_edit_tolerance')
+    def _check_tax_totals_edit_tolerance(self):
+        for company in self:
+            if not 0.0 <= company.tax_totals_edit_tolerance <= 1.0:
+                raise ValidationError(_("The tax amount edit tolerance must be between 0 and 1."))
+
     taxpayer_type = fields.Selection(
         [
             ("formal", "Formal"),
