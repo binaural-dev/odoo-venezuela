@@ -1153,9 +1153,8 @@ export class TfhkaDriver {
 
     /**
      * Determina si el conjunto de pagos de la orden contiene al menos un
-     * medio de pago en divisas (códigos 20-24). Si es así, el cierre fiscal
-     * DEBE usar el comando "199" (obligatorio con Flag 50=01) en vez del
-     * cierre directo "1XX", según el manual IGTF de TFHKA.
+     * medio de pago en divisas (códigos 20-24). Con Flag 50=01 el documento
+     * se cierra con el comando "199" (manual TFHKA V8.5, sección 24).
      * @param {Array} payments - orderData.payment_lines
      * @returns {boolean}
      */
@@ -1163,17 +1162,6 @@ export class TfhkaDriver {
         return (payments || []).some((payment) =>
             this._isDivisaPaymentMethod(payment.payment_method_code)
         );
-    }
-
-    _pickDivisaClosingPayment(payments) {
-        return (payments || [])
-            .filter((payment) =>
-                this._isDivisaPaymentMethod(payment.payment_method_code) &&
-                Math.abs(Number(payment.amount || 0)) > 0
-            )
-            .reduce((max, payment) =>
-                !max || Math.abs(Number(payment.amount)) > Math.abs(Number(max.amount)) ? payment : max
-            , null);
     }
 
     _appendPaymentCommands(commands, orderData, config) {
@@ -1196,30 +1184,21 @@ export class TfhkaDriver {
             return;
         }
 
-        // IGTF (manual TFHKA v1.1.0): si hay pago en divisas (20-24), los
-        // métodos se envían como "2XX" y el comando "199" final (ya emitido
-        // en printInvoice/printCreditNote/printDebitNote) hace el cierre. Con
-        // `close_with_direct_payment` el pago en divisas de mayor monto se
-        // envía como "1XX" (pago directo) en vez de "2XX".
-        //
-        // IMPORTANTE (ver manual impuesto_igtf.md, seccion 7, punto 5): el
-        // comando "199" SOLO es aceptado por la impresora si el documento
-        // fue pagado en su totalidad (según el cálculo interno de LA
-        // IMPRESORA, que incluye su propio cálculo de IGTF sobre el monto en
-        // divisas). Si la suma de los montos 2XX enviados no coincide
-        // exactamente con lo que la impresora espera (subtotal + IVA + IGTF
-        // calculado por ELLA), rechaza el "199" con NAK y el documento no se
-        // cierra (no se corta el papel).
-        //
-        // NO se agrupan los pagos por método aquí: el IGTF se calcula por
-        // cada pago en divisa que la impresora recibe individualmente. Si
-        // hay 2 pagos con el mismo método en divisa, deben enviarse como 2
-        // comandos "2XX" separados (no sumados en uno solo), para que el
-        // cálculo de IGTF de la impresora sea fiel a cómo se recibieron los
-        // pagos realmente.
+        // IGTF (manual TFHKA V8.5, Tabla 29 y sección 24): con pago en divisas
+        // (20-24) el "199" final solo cierra si lo pagado cubre el total de la
+        // impresora (subtotal + IVA + IGTF). Los pagos no se agrupan: el IGTF se
+        // calcula por cada pago en divisa. Con `close_with_direct_payment` el
+        // de mayor monto va como "1XX" (pago directo) y la impresora cubre el resto.
         if (hasDivisa) {
             const closingPayment = orderData.close_with_direct_payment
-                ? this._pickDivisaClosingPayment(payments)
+                ? payments
+                    .filter((payment) =>
+                        this._isDivisaPaymentMethod(payment.payment_method_code) &&
+                        Math.abs(Number(payment.amount || 0)) > 0
+                    )
+                    .reduce((max, payment) =>
+                        !max || Math.abs(Number(payment.amount)) > Math.abs(Number(max.amount)) ? payment : max
+                    , null)
                 : null;
             for (const payment of payments) {
                 const amount = Math.abs(Number(payment.amount || 0));
