@@ -31,6 +31,19 @@
                                 </div>
                             </div>
                         </div>
+                        <separator string="Tax Totals Manual Edit"/>
+                        <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_tax_div_tax_totals_edit_tolerance">
+                            <div class="o_setting_right_pane">
+                                <label for="tax_totals_edit_tolerance"/>
+                                <div class="text-muted">
+                                    Maximum amount the tax pencil-edit on the invoice may move a
+                                    tax group away from its computed value, in either direction.
+                                    Only users in the "Fiscal Config Support" group can use that
+                                    pencil-edit at all.
+                                </div>
+                                <field name="tax_totals_edit_tolerance"/>
+                            </div>
+                        </div>
                     </block>
 
                      <block title="Config payment Wizard Indexacion" name="l10n_ve_index_payment">
