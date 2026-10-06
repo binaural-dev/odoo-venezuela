@@ -19,4 +19,7 @@ _logger = logging.getLogger(__name__)
 
 
 def migrate(cr, version):
+    if not version or not version.startswith("17."):
+        return
+
     _logger.info("l10n_ve_igtf post-migrate (19.0.1.2.17): sin acciones adicionales")

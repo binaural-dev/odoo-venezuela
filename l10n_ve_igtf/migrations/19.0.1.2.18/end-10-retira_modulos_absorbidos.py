@@ -69,7 +69,8 @@ INSTALLED_STATES = ("installed", "to upgrade", "to install", "to remove")
 
 
 def migrate(cr, version):
-    if not version:
+    # Native 19 databases keep these modules: they still ship in integra-addons 19.0.
+    if not version or not version.startswith("17."):
         return
 
     cr.execute(

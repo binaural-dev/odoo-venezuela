@@ -200,6 +200,9 @@ def _mark_modules_to_remove(cr, module_names):
 
 
 def migrate(cr, version):
+    if not version or not version.startswith("17."):
+        return
+
     _logger.info(
         "l10n_ve_igtf pre-migrate (19.0.1.2.17): línea homologada "
         "(binaural_advance_payment*) ya cubierta por 19.0.1.2.16, "

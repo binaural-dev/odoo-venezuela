@@ -263,6 +263,9 @@ def _backfill_is_advance_account(cr):
 
 
 def migrate(cr, version):
+    if not version or not version.startswith("17."):
+        return
+
     _logger.info(
         "l10n_ve_igtf pre-migrate: retiring binaural_advance_payment / "
         "binaural_advance_payment_igtf -- fields already in l10n_ve_igtf "

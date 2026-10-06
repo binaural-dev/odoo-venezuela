@@ -67,6 +67,9 @@ def _recompute_bi_igtf(cr):
 
 
 def migrate(cr, version):
+    if not version or not version.startswith("17."):
+        return
+
     for table, columns in EXCLUSIVE_COLUMNS.items():
         tbl = sql.Identifier(table)
         for col in columns:

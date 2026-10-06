@@ -46,4 +46,7 @@ ORPHAN_VIEWS = [
 
 
 def migrate(cr, version):
+    if not version or not version.startswith("17."):
+        return
+
     util.remove_views(cr, *(f"{MODULE}.{name}" for name in ORPHAN_VIEWS))
