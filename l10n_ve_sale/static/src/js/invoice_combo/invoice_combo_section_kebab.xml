@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <!--
+        Template exclusivo de ProductLabelSectionAndNoteListRender (facturas).
+        Restringe el menú kebab de secciones/subsecciones marcadas con
+        combo_tagged a mostrar únicamente la opción "Eliminar".
+
+        Se crea en modo PRIMARY para no tocar account.SectionAndNoteListRenderer.RecordRow
+        (compartido con otros renderers) ni sale.ListRenderer.RecordRow.
+
+        El componente apunta a este template vía:
+            ProductLabelSectionAndNoteListRender.recordRowTemplate = "l10n_ve_sale.InvoiceComboRecordRow"
+        (ver invoice_combo_list_renderer.js).
+    -->
+    <t t-name="l10n_ve_sale.InvoiceComboRecordRow"
+       t-inherit="account.SectionAndNoteListRenderer.RecordRow"
+       t-inherit-mode="primary">
+
+        <!-- 1. Excluir combo_tagged del bloque de opciones completo -->
+        <xpath expr="//t[@t-set-slot='content']/t[@t-if='this.isSectionInPage(record)']"
+               position="attributes">
+            <attribute name="t-if">!record.data.combo_tagged and this.isSectionInPage(record)</attribute>
+        </xpath>
+
+        <!-- 2. Reemplazar el t-else original:
+                - combo_tagged → solo Eliminar
+                - sección normal no visible → "Mostrar todas las líneas" (original) -->
+        <xpath expr="//t[@t-set-slot='content']/t[@t-else]" position="replace">
+            <t t-if="record.data.combo_tagged">
+                <t t-if="hasDeleteButton">
+                    <DropdownItem onSelected="() => this.deleteSection(record)" class="'text-danger'">
+                        <i class="me-1 fa fa-fw fa-trash"/><span>Delete</span>
+                    </DropdownItem>
+                </t>
+            </t>
+            <t t-elif="!this.isSectionInPage(record)">
+                <DropdownItem onSelected="() => this.expandPager()"
+                              attrs="{ 'data-tooltip': this.showAllItemsTooltip }">
+                    <i class="me-1 fa fa-fw fa-expand"/><span>Show all lines</span>
+                </DropdownItem>
+            </t>
+        </xpath>
+    </t>
+</templates>

@@ -4,10 +4,10 @@
 #
 msgid ""
 msgstr ""
-"Project-Id-Version: Odoo Server 19.0+e-20251118\n"
+"Project-Id-Version: Odoo Server 19.0+e-20260828\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-01-14 19:37+0000\n"
-"PO-Revision-Date: 2026-01-14 19:37+0000\n"
+"POT-Creation-Date: 2026-10-05 19:56+0000\n"
+"PO-Revision-Date: 2026-10-05 19:56+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -16,15 +16,15 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__combo_added_via_subsection_kebab
+msgid "Agregado desde el kebab de una subsección de combo"
+msgstr "Agregado desde el kebab de una subsección de combo"
+
+#. module: l10n_ve_sale
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid "All products must contain only one tax."
 msgstr "Todos los productos deben contener solo un impuesto."
-
-#. module: l10n_ve_sale
-#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.report_sale_document_l10n_ve_sale
-msgid "BORRADOR"
-msgstr ""
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -66,6 +66,18 @@ msgid "Cancel Orders After Day"
 msgstr "Cancelar Presupuestos Luego de 24h de Creado"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__combo_item_qty_per_combo
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move_line__combo_item_qty_per_combo
+msgid "Cantidad elegida por combo"
+msgstr "Cantidad elegida por combo"
+
+#. module: l10n_ve_sale
+#. odoo-javascript
+#: code:addons/l10n_ve_sale/static/src/js/combo_multi_select/combo_section_list.xml:0
+msgid "Cantidad:"
+msgstr "Cantidad:"
+
+#. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid "Check this if you want limit the number of lines by sale order."
 msgstr ""
@@ -95,29 +107,31 @@ msgstr ""
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
 msgid ""
 "Check this if you want to convert the price unit of the customer invoice "
-"lines based on the sale order, using the invoice rate. It cannot be "
-"combined with pricelist rules for the same products."
+"lines based on the sale order, using the invoice rate. It cannot be combined"
+" with pricelist rules for the same products."
 msgstr ""
-"Marque esta opción si desea convertir el precio unitario de las líneas de "
-"la factura de cliente en base al pedido de venta, usando la tasa de la "
+"Marque esta opción si desea convertir el precio unitario de las líneas de la"
+" factura de cliente en base al pedido de venta, usando la tasa de la "
 "factura. No se puede combinar con reglas de tarifa para los mismos "
 "productos."
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_bank_statement_line__convert_currency_from_sale_order
+#: model:ir.model.fields,help:l10n_ve_sale.field_account_move__convert_currency_from_sale_order
 #: model:ir.model.fields,help:l10n_ve_sale.field_res_company__convert_currency_from_sale_order
 #: model:ir.model.fields,help:l10n_ve_sale.field_res_config_settings__convert_currency_from_sale_order
 msgid ""
 "Check this if you want to convert the price unit of the customer invoice "
-"lines based on the sale order, using the invoice rate. It cannot be "
-"combined with pricelist rules for the same products: if the invoice "
-"pricelist defines a rule for a product, the recalculation raises an error "
-"instead of overriding it."
+"lines based on the sale order, using the invoice rate. It cannot be combined"
+" with pricelist rules for the same products: if the invoice pricelist "
+"defines a rule for a product, the recalculation raises an error instead of "
+"overriding it."
 msgstr ""
-"Marque esta opción si desea convertir el precio unitario de las líneas de "
-"la factura de cliente en base al pedido de venta, usando la tasa de la "
+"Marque esta opción si desea convertir el precio unitario de las líneas de la"
+" factura de cliente en base al pedido de venta, usando la tasa de la "
 "factura. No se puede combinar con reglas de tarifa para los mismos "
-"productos: si la tarifa de la factura define una regla para un producto, "
-"el recálculo lanza un error en vez de sobrescribirla."
+"productos: si la tarifa de la factura define una regla para un producto, el "
+"recálculo lanza un error en vez de sobrescribirla."
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.res_config_settings_l10n_ve_sale
@@ -145,6 +159,14 @@ msgid "Configuration Sales: Generals"
 msgstr "Configuración Ventas: Generales"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__combo_root_line_id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move_line__combo_root_line_id
+msgid "Contenedor Combo Raíz"
+msgstr "Contenedor Combo Raíz"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_bank_statement_line__convert_currency_from_sale_order
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__convert_currency_from_sale_order
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__convert_currency_from_sale_order
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__convert_currency_from_sale_order
 msgid "Convert Currency From Sale Order"
@@ -156,13 +178,33 @@ msgid "Create Invoice"
 msgstr "Crear factura"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_rate_date
+msgid ""
+"Date whose exchange rate is used for this order's alternate currency "
+"amounts. It is not date_order: the core rewrites date_order with the "
+"confirmation date, and when the rate is frozen ('Update sale order rate "
+"using date order' disabled) this field keeps the date the rate was actually "
+"taken from. It is the date passed to the invoice so both convert with the "
+"same rate."
+msgstr ""
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+msgid "Debe seleccionar al menos un producto para cada opción del combo: %s"
+msgstr "Debe seleccionar al menos un producto para cada opción del combo: %s"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_combo_item__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_product_pricelist_item__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__display_name
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__display_name
 msgid "Display Name"
-msgstr "Nombre en pantalla"
+msgstr "Nombre para mostrar"
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -175,6 +217,18 @@ msgstr "No tiene suficientes unidades disponibles para el producto "
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__not_allow_sell_products
 msgid "Dont allow sell products without quantity"
 msgstr "No permitir vender inventario en cero"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order_line__combo_tagged
+msgid ""
+"Espejo booleano de `combo_root_line_id`/`combo_parent_line_id` (ver "
+"`_retag_combo_hierarchy_for_combo_line`). Existe porque el JS del subtotal "
+"de sección (`combo_section_subtotal.js`) necesita saber si una línea "
+"pertenece a un combo ANTES de guardar la orden, y un Many2one que apunta a "
+"otra línea también sin guardar (`NewId`) no llega resuelto de forma "
+"confiable a `record.data` del lado cliente -- un booleano simple sí viaja "
+"bien sin importar el estado de guardado."
+msgstr "Espejo booleano de `combo_root_line_id`/`combo_parent_line_id` (ver `_retag_combo_hierarchy_for_combo_line`). Existe porque el JS del subtotal de sección (`combo_section_subtotal.js`) necesita saber si una línea pertenece a un combo ANTES de guardar la orden, y un Many2one que apunta a otra línea también sin guardar (`NewId`) no llega resuelto de forma confiable a `record.data` del lado cliente -- un booleano simple sí viaja bien sin importar el estado de guardado."
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__filter_partner
@@ -191,6 +245,11 @@ msgstr ""
 "necesite)"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__product_combo_item__item_type__fixed_price
+msgid "Fixed Price"
+msgstr "Precio fijo"
+
+#. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_quotation_tree
 msgid "Foreign Amount total"
 msgstr "Monto total alterno"
@@ -198,6 +257,7 @@ msgstr "Monto total alterno"
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_currency_id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__foreign_currency_id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__foreign_currency_id
 msgid "Foreign Currency"
 msgstr "Moneda alterna"
 
@@ -256,6 +316,7 @@ msgstr "Base imponible alterna de la factura"
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_total_billed
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__foreign_total_billed
 msgid "Foreign Total Billed"
 msgstr "Total alterno facturado"
 
@@ -263,6 +324,11 @@ msgstr "Total alterno facturado"
 #: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_total_billed
 msgid "Foreign Total Billed of the invoice"
 msgstr "Total alterno facturado de la factura"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__foreign_untaxed_total
+msgid "Foreign Untaxed Total"
+msgstr ""
 
 #. module: l10n_ve_sale
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
@@ -273,6 +339,11 @@ msgstr "Moneda alterna"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_sale_order_form_l10n_ve_sales
 msgid "Foreign inverse rate"
 msgstr "Tasa inversa alterna"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_rate_date
+msgid "Foreign rate date"
+msgstr ""
 
 #. module: l10n_ve_sale
 #: model:res.groups,name:l10n_ve_sale.contact_filter_sale_order_group
@@ -295,11 +366,14 @@ msgid "Hide pricelist (sale)"
 msgstr "Ocultar Tarifas (venta)"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_combo_item__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_product_pricelist_item__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__id
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_report__id
 msgid "ID"
 msgstr ""
 
@@ -329,9 +403,24 @@ msgid "In payment process"
 msgstr "En proceso de pago"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__invoice_status
+msgid "Invoice Status"
+msgstr "Estado de la factura"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__invoiced
 msgid "Invoiced"
 msgstr ""
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_combo_item__item_type
+msgid "Item Type"
+msgstr "Tipo de opción"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__last_foreign_rate
@@ -350,6 +439,18 @@ msgid "Manually Set Rate"
 msgstr "Tasa Actualizada manualmente"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order_line__combo_added_via_subsection_kebab
+msgid ""
+"Marca puesta en create() cuando la línea se creó vía el kebab 'Agregar un "
+"producto' de una sección/subsección que pertenece a un combo (ver "
+"combo_section_kebab_context.js). No se puede distinguir esto de un producto "
+"agregado por el botón global al pie de la lista solo por posición/secuencia "
+"-- cuando el combo es lo último de la orden, ambos caminos producen "
+"exactamente el mismo resultado posicional -- así que se marca explícitamente"
+" desde el propio contexto de la acción en vez de adivinarlo después."
+msgstr "Marca puesta en create() cuando la línea se creó vía el kebab 'Agregar un producto' de una sección/subsección que pertenece a un combo (ver combo_section_kebab_context.js). No se puede distinguir esto de un producto agregado por el botón global al pie de la lista solo por posición/secuencia -- cuando el combo es lo último de la orden, ambos caminos producen exactamente el mismo resultado posicional -- así que se marca explícitamente desde el propio contexto de la acción en vez de adivinarlo después."
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_company__maximum_sales_line_limit
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__maximum_sales_line_limit
 msgid "Maximum Sales Line Limit"
@@ -359,6 +460,11 @@ msgstr "Límite máximo de línea de venta"
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__mobile
 msgid "Mobile"
 msgstr "Teléfono"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.report_sale_document_l10n_ve_sale
+msgid "NO FISCAL"
+msgstr ""
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -383,6 +489,11 @@ msgid "Not paid"
 msgstr "No pagado"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__invoice_status__partially_billed
+msgid "Partially billed"
+msgstr "Parcialmente facturado"
+
+#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__partner_id_domain
 msgid "Partner Id Domain"
 msgstr "Dominio ID de socio"
@@ -392,6 +503,22 @@ msgstr "Dominio ID de socio"
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__block_order_invoice_payment_state
 msgid "Payment State"
 msgstr "Estado de pago"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__product_combo_item__item_type__percentage
+msgid "Percentage"
+msgstr "Porcentaje"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_combo_item__percentage
+msgid "Percentage (%)"
+msgstr "Porcentaje (%)"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__combo_tagged
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move_line__combo_tagged
+msgid "Pertenece a un combo"
+msgstr "Pertenece a un combo"
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -432,12 +559,28 @@ msgid "Pricelist Rule"
 msgstr "Regla de la lista de precios"
 
 #. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__product_combo_item__item_type__principal
+msgid "Principal"
+msgstr "Principal"
+
+#. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_product_combo_item
+msgid "Product Combo Item"
+msgstr "Artículo del combo de productos"
+
+#. module: l10n_ve_sale
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
 msgid "Product prices have been recomputed according to pricelist %s."
 msgstr ""
 "Se han vuelto a calcular los precios de los productos según la lista de "
 "precios %s."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/sale_order.py:0
+msgid "Productos Adicionales"
+msgstr "Productos Adicionales"
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,help:l10n_ve_sale.field_sale_order__foreign_inverse_rate
@@ -460,6 +603,11 @@ msgid "SIN DERECHO A CRÉDITO FISCAL"
 msgstr ""
 
 #. module: l10n_ve_sale
+#: model:ir.model,name:l10n_ve_sale.model_sale_report
+msgid "Sales Analysis Report"
+msgstr "Reporte de análisis de ventas"
+
+#. module: l10n_ve_sale
 #: model:ir.model,name:l10n_ve_sale.model_sale_order
 msgid "Sales Order"
 msgstr "Orden de venta"
@@ -468,6 +616,12 @@ msgstr "Orden de venta"
 #: model:ir.model,name:l10n_ve_sale.model_sale_order_line
 msgid "Sales Order Line"
 msgstr "Línea de la orden de venta"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__combo_parent_line_id
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move_line__combo_parent_line_id
+msgid "Sección / Subsección Padre"
+msgstr "Sección / Subsección Padre"
 
 #. module: l10n_ve_sale
 #: model:res.groups,name:l10n_ve_sale.group_view_pricelist_items
@@ -482,8 +636,9 @@ msgstr "Dirección"
 #. module: l10n_ve_sale
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
+#: code:addons/l10n_ve_sale/report/sale_report.py:0
 msgid "Subtotal"
-msgstr "Subtotal"
+msgstr ""
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -509,22 +664,21 @@ msgstr "El límite de la línea de pedido no debe exceder de %s."
 
 #. module: l10n_ve_sale
 #. odoo-python
+#: code:addons/l10n_ve_sale/models/product_combo_item.py:0
+msgid "The percentage for the item must be between 0 and 100."
+msgstr "El porcentaje de la opción debe estar entre 0 y 100."
+
+#. module: l10n_ve_sale
+#. odoo-python
 #: code:addons/l10n_ve_sale/models/account_move.py:0
 msgid ""
-"The pricelist %(pricelist)s defines a rule for the following products, so "
-"their price cannot be recalculated from the sale order: %(products)s.\n"
+"The pricelist %(pricelist)s defines a rule for the following products, so their price cannot be recalculated from the sale order: %(products)s.\n"
 "\n"
-"Both mechanisms set the same unit price and one would override the other. "
-"Either remove the pricelist rule or disable \"Convert Currency From Sale "
-"Order\"."
+"Both mechanisms set the same unit price and one would override the other. Either remove the pricelist rule or disable \"Convert Currency From Sale Order\"."
 msgstr ""
-"La tarifa %(pricelist)s define una regla para los siguientes productos, "
-"por lo que su precio no se puede recalcular a partir del pedido de venta: "
-"%(products)s.\n"
+"La tarifa %(pricelist)s define una regla para los siguientes productos, por lo que su precio no se puede recalcular a partir del pedido de venta: %(products)s.\n"
 "\n"
-"Ambos mecanismos fijan el mismo precio unitario y uno sobrescribiría al "
-"otro. Elimine la regla de la tarifa o desactive \"Convertir Moneda Desde "
-"la Orden de Venta\"."
+"Ambos mecanismos fijan el mismo precio unitario y uno sobrescribiría al otro. Elimine la regla de la tarifa o desactive \"Convertir Moneda Desde la Orden de Venta\"."
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -550,8 +704,9 @@ msgstr ""
 #. module: l10n_ve_sale
 #. odoo-python
 #: code:addons/l10n_ve_sale/models/sale_order.py:0
+#: code:addons/l10n_ve_sale/report/sale_report.py:0
 msgid "Total"
-msgstr "Total"
+msgstr ""
 
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__amount_total_signed
@@ -578,6 +733,15 @@ msgstr "Total sin impuesto firmado"
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_res_config_settings__block_order_invoice_total_amount_overdue
 msgid "Total amount overdue"
 msgstr "Monto total vencido"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_sale_order_line__combo_item_qty_per_combo
+msgid ""
+"Unidades de este producto elegidas en el wizard por cada unidad del combo. "
+"Se usa para recalcular product_uom_qty en cada onchange, porque el core "
+"sobreescribe la cantidad de todas las líneas de combo para igualarla a la "
+"del combo padre cada vez que vuelve a correr su propio onchange."
+msgstr "Unidades de este producto elegidas en el wizard por cada unidad del combo. Se usa para recalcular product_uom_qty en cada onchange, porque el core sobreescribe la cantidad de todas las líneas de combo para igualarla a la del combo padre cada vez que vuelve a correr su propio onchange."
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -627,7 +791,7 @@ msgstr ""
 #. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_untaxed_total
 msgid "foreign untaxed total"
-msgstr "Total sin impuesto foraneo" 
+msgstr "Total sin impuesto foraneo"
 
 #. module: l10n_ve_sale
 #. odoo-python
@@ -642,6 +806,23 @@ msgid "{}. Only has {} units of the {} demanded."
 msgstr "{}. Solo tiene {} unidades de {} exigidas."
 
 #. module: l10n_ve_sale
-#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__invoice_status__partially_billed
-msgid "Partially billed"
-msgstr "Parcialmente facturado"
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move_line__product_template_id
+msgid "Plantilla de Producto"
+msgstr "Plantilla de Producto"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_account_move_line__product_type
+msgid "Tipo de Producto"
+msgstr "Tipo de Producto"
+
+#. module: l10n_ve_sale
+#. odoo-javascript
+#: code:addons/l10n_ve_sale/static/src/js/invoice_combo/invoice_combo_section_kebab.xml:0
+msgid "Delete"
+msgstr "Eliminar"
+
+#. module: l10n_ve_sale
+#. odoo-javascript
+#: code:addons/l10n_ve_sale/static/src/js/invoice_combo/invoice_combo_section_kebab.xml:0
+msgid "Show all lines"
+msgstr "Mostrar todas las líneas"

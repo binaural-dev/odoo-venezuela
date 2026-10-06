@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+    <!--
+        Recorta el kebab de sección/subsección (ver
+        account.SectionAndNoteListRenderer.RecordRow, heredada por
+        sale.ListRenderer.RecordRow) para que, cuando la fila pertenezca a
+        un combo (isComboLockedRow, ver combo_lock_drag.js), no se muestre
+        ninguna opción salvo "Eliminar": agregar línea/subsección, ocultar
+        precios/composición, agregar nota, mover arriba/abajo y duplicar
+        quedan ocultos: todos manipulan o reordenan el árbol del combo
+        de formas que el modelo no sabe reconciliar.
+    -->
+    <t t-inherit="sale.ListRenderer.RecordRow" t-inherit-mode="extension">
+        <xpath expr="//DropdownItem[contains(@onSelected,'addRowInSection(record, false)')]"
+            position="attributes">
+            <attribute name="t-if">!this.isComboLockedRow(record)</attribute>
+        </xpath>
+        <xpath expr="//DropdownItem[contains(@onSelected,'addRowInSection(record, true)')]"
+            position="attributes">
+            <attribute name="t-if" separator=" and " add="!this.isComboLockedRow(record)"/>
+        </xpath>
+        <xpath expr="//DropdownItem[contains(@onSelected,&quot;toggleCollapse(record, 'collapse_prices')&quot;)]"
+            position="attributes">
+            <attribute name="t-if" separator=" and " add="!this.isComboLockedRow(record)"/>
+        </xpath>
+        <xpath
+            expr="//DropdownItem[contains(@onSelected,&quot;toggleCollapse(record, 'collapse_composition')&quot;)]"
+            position="attributes">
+            <attribute name="t-if" separator=" and " add="!this.isComboLockedRow(record)"/>
+        </xpath>
+        <xpath expr="//DropdownItem[contains(@onSelected,'addNoteInSection(record)')]"
+            position="attributes">
+            <attribute name="t-if">!this.isComboLockedRow(record)</attribute>
+        </xpath>
+        <xpath expr="//DropdownItem[contains(@onSelected,'moveSectionUp(record)')]"
+            position="attributes">
+            <attribute name="t-if" separator=" and " add="!this.isComboLockedRow(record)"/>
+        </xpath>
+        <xpath expr="//DropdownItem[contains(@onSelected,'moveSectionDown(record)')]"
+            position="attributes">
+            <attribute name="t-if" separator=" and " add="!this.isComboLockedRow(record)"/>
+        </xpath>
+        <xpath expr="//DropdownItem[contains(@onSelected,'duplicateSection(record)')]"
+            position="attributes">
+            <attribute name="t-if">!this.isComboLockedRow(record)</attribute>
+        </xpath>
+
+        <!-- La línea RAÍZ del combo (isCombo(record)) tiene su propio
+             kebab aparte, con Move Up/Down vía `moveCombo` (no
+             `moveSectionUp/Down`, eso es para secciones/subsecciones
+             normales): ver sale_order_line_field.xml. Se oculta igual. -->
+        <xpath expr="//DropdownItem[contains(@onSelected,&quot;moveCombo(record, 'up')&quot;)]"
+            position="attributes">
+            <attribute name="t-if" separator=" and " add="!this.isComboLockedRow(record)"/>
+        </xpath>
+        <xpath expr="//DropdownItem[contains(@onSelected,&quot;moveCombo(record, 'down')&quot;)]"
+            position="attributes">
+            <attribute name="t-if" separator=" and " add="!this.isComboLockedRow(record)"/>
+        </xpath>
+
+        <!-- "Establecer como opcional" lo agrega sale_management (no
+             sale), por eso ahora es dependencia explícita de este módulo:
+             sin esa garantía este xpath fallaría la compilación entera
+             del bundle de assets en instalaciones sin sale_management. -->
+        <xpath expr="//DropdownItem[contains(@onSelected,'toggleIsOptional(record)')]"
+            position="attributes">
+            <attribute name="t-if">!this.isComboLockedRow(record)</attribute>
+        </xpath>
+    </t>
+</templates>

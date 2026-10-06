@@ -1,9 +1,12 @@
 import datetime
+import json
 import logging
+from collections import defaultdict
 
 from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
+from odoo.fields import Command
 from odoo.tools.float_utils import float_is_zero
 
 _logger = logging.getLogger(__name__)
@@ -37,6 +40,284 @@ class SaleOrder(models.Model):
         readonly=False,
     )
 
+    @api.onchange('order_line')
+    def _onchange_order_line(self):
+        combo_lines_pending = self.order_line.filtered(
+            lambda l: l.product_template_id.type == 'combo' and l.selected_combo_items
+        )
+        for line in combo_lines_pending:
+            self._apply_multi_select_combo_items(line)
+
+        super()._onchange_order_line()
+
+        combo_lines = self.order_line.filtered(
+            lambda l: l.product_template_id.type == 'combo'
+        )
+        for line in combo_lines:
+            self._retag_combo_hierarchy_for_combo_line(line)
+            self._quarantine_stray_lines_from_combo(line)
+
+        self._cleanup_orphaned_combo_lines()
+
+    def _apply_multi_select_combo_items(self, line):
+        """Extiende la creación nativa de líneas de combo para admitir varias
+        elecciones por opción, agrupadas en una subsección decorativa por opción
+        cuando el combo tiene más de una.
+        """
+        selected_combo_items = json.loads(line.selected_combo_items)
+        if not selected_combo_items:
+            return
+
+        combo_item_model = self.env['product.combo.item']
+        combo_ids = line.product_template_id.sudo().combo_ids
+
+        by_combo = defaultdict(list)
+        for entry in selected_combo_items:
+            combo_item = combo_item_model.browse(entry['combo_item_id'])
+            by_combo[combo_item.combo_id.id].append(entry)
+
+        missing = combo_ids.filtered(lambda c: c.id not in by_combo)
+        if missing:
+            raise ValidationError(_(
+                "Debe seleccionar al menos un producto para cada opción del "
+                "combo: %s"
+            ) % ", ".join(missing.mapped('name')))
+
+        combo_item_lines = line._get_linked_lines().filtered('combo_item_id')
+        delete_commands = [Command.delete(l.id) for l in combo_item_lines]
+
+        create_commands = []
+        sequence_offset = 1
+        multi_option = len(combo_ids) > 1
+        for combo in combo_ids:
+            entries = by_combo.get(combo.id) or []
+            if multi_option:
+                create_commands.append(Command.create({
+                    'display_type': 'line_subsection',
+                    'name': combo.name.upper(),
+                    'sequence': line.sequence + sequence_offset,
+                    # combo_tagged desde la creación: super()._onchange_order_line
+                    # promueve line_subsection→line_section cuando no hay parent_id,
+                    # y _retag revierte eso solo si ya está marcada como combo.
+                    'combo_tagged': True,
+                }))
+                sequence_offset += 1
+            for entry in entries:
+                qty_multiplier = entry.get('quantity') or 1
+                create_commands.append(Command.create({
+                    'product_id': entry['product_id'],
+                    'product_uom_qty': line.product_uom_qty * qty_multiplier,
+                    'combo_item_qty_per_combo': qty_multiplier,
+                    'combo_item_id': entry['combo_item_id'],
+                    'product_no_variant_attribute_value_ids': [
+                        Command.set(entry['no_variant_attribute_value_ids'])
+                    ],
+                    'product_custom_attribute_value_ids': [Command.clear()] + [
+                        Command.create(attribute_value)
+                        for attribute_value in entry['product_custom_attribute_values']
+                    ],
+                    'sequence': line.sequence + sequence_offset,
+                    'linked_line_id': line.id if line._origin else False,
+                    'linked_virtual_id': line.virtual_id if not line._origin else False,
+                }))
+                sequence_offset += 1
+
+        shift = sequence_offset - 1
+        update_commands = [Command.update(
+            order_line.id,
+            {'sequence': order_line.sequence + shift},
+        ) for order_line in self.order_line if order_line.sequence > line.sequence]
+
+        line.selected_combo_items = False
+        self.order_line = delete_commands + create_commands + update_commands
+
+    def _retag_combo_hierarchy_for_combo_line(self, combo_line):
+        """Reasigna combo_parent_line_id/combo_root_line_id por posición dentro
+        del bloque del combo y revierte la promoción nativa de
+        `line_subsection` a `line_section`.
+        """
+        combo_ids = combo_line.product_template_id.sudo().combo_ids.ids
+        lines = self.order_line.sorted('sequence')
+
+        combo_line.combo_root_line_id = combo_line
+        combo_line.combo_tagged = True
+
+        current_subsection = self.env['sale.order.line']
+        in_block = False
+        for ln in lines:
+            if ln == combo_line:
+                in_block = True
+                current_subsection = self.env['sale.order.line']
+                continue
+            if not in_block:
+                continue
+
+            is_combo_header = (
+                not ln.product_id
+                and not ln.combo_item_id
+                and ln.combo_tagged
+                and ln.display_type in ('line_section', 'line_subsection')
+            )
+            if is_combo_header:
+                if ln.display_type != 'line_subsection':
+                    ln.display_type = 'line_subsection'
+                current_subsection = ln
+                ln.combo_parent_line_id = combo_line
+                ln.combo_root_line_id = combo_line
+                ln.combo_tagged = True
+                continue
+
+            is_native_combo_item = bool(
+                ln.combo_item_id and ln.combo_item_id.combo_id.id in combo_ids
+            )
+            added_via_subsection_kebab = (
+                not is_native_combo_item
+                and ln.product_id
+                and ln.combo_added_via_subsection_kebab
+            )
+
+            if is_native_combo_item or added_via_subsection_kebab:
+                ln.combo_parent_line_id = current_subsection or combo_line
+                ln.combo_root_line_id = combo_line
+                ln.combo_tagged = True
+                # Tanto los ítems nativos del wizard como los agregados por
+                # el kebab de la subsección escalan con la cantidad del
+                # combo padre: si el combo se pide 2 veces, cada producto
+                # de adentro también se duplica (multiplicador *
+                # cantidad del combo), nunca se iguala sin más a la
+                # cantidad del combo (eso es justo lo que hace el core por
+                # su cuenta -- ver `sale.order_line._onchange_order_line`,
+                # rama `elif combo_item_lines and ...` -- y lo pisa acá,
+                # después de correr `super()`).
+                ln.product_uom_qty = (
+                    combo_line.product_uom_qty * (ln.combo_item_qty_per_combo or 1.0)
+                )
+                continue
+
+            if ln.display_type in ('line_section', 'line_subsection'):
+                # Una sección/subsección AJENA de verdad sí cierra el
+                # bloque del combo -- pero un producto suelto (el caso de
+                # abajo) no debería, porque entonces cualquier cosa que
+                # venga DESPUÉS en la lista (p.ej. "lol" y sus hijos, si el
+                # producto ajeno quedó posicionado antes) dejaría de
+                # re-etiquetarse esta ronda y perdería su marca -- eso es
+                # justo lo que pasaba con los "productos opcionales" del
+                # configurador nativo, que se insertan en medio del árbol.
+                in_block = False
+                continue
+
+            # Producto suelto, ajeno al combo: no se toca, pero tampoco
+            # corta el recorrido -- se sigue buscando el resto del árbol
+            # más adelante en la lista.
+            continue
+
+    def _quarantine_stray_lines_from_combo(self, combo_line):
+        """Reubica al final del árbol, bajo "Productos Adicionales", los productos
+        ajenos al combo que quedaron intercalados (detección por posición en el
+        array, no por `sequence`).
+        """
+        tree = self.order_line.filtered(
+            lambda l: l == combo_line or l.combo_root_line_id == combo_line
+        )
+        if len(tree) <= 1:
+            return
+
+        order_lines = list(self.order_line)
+        if combo_line not in order_lines:
+            return
+        root_index = order_lines.index(combo_line)
+        last_tree_index = max(i for i, ln in enumerate(order_lines) if ln in tree)
+
+        strays = self.env['sale.order.line']
+        for ln in order_lines[root_index + 1:last_tree_index + 1]:
+            if ln.product_id and ln not in tree:
+                strays |= ln
+
+        if not strays:
+            return
+
+        separator_name = _("Productos Adicionales")
+        existing_separator = self.env['sale.order.line']
+        if last_tree_index + 1 < len(order_lines):
+            candidate = order_lines[last_tree_index + 1]
+            if (
+                candidate not in strays
+                and candidate.display_type == 'line_section'
+                and candidate.name == separator_name
+            ):
+                existing_separator = candidate
+
+        insertion_point = max(tree.mapped('sequence')) + 1
+        shift = len(strays) + (0 if existing_separator else 1)
+        shift_commands = [
+            Command.update(ln.id, {'sequence': ln.sequence + shift})
+            for ln in self.order_line
+            if ln not in strays and ln != existing_separator and ln.sequence >= insertion_point
+        ]
+
+        next_sequence = insertion_point
+        separator_commands = []
+        if existing_separator:
+            separator_commands.append(
+                Command.update(existing_separator.id, {'sequence': next_sequence})
+            )
+        else:
+            separator_commands.append(Command.create({
+                'display_type': 'line_section',
+                'name': separator_name,
+                'sequence': next_sequence,
+            }))
+        next_sequence += 1
+
+        stray_commands = []
+        for stray in strays.sorted('sequence'):
+            stray_commands.append(Command.update(stray.id, {'sequence': next_sequence}))
+            next_sequence += 1
+
+        self.order_line = shift_commands + separator_commands + stray_commands
+
+    def _cleanup_orphaned_combo_lines(self):
+        """Elimina subsecciones sin hijos y la raíz del combo cuando se queda sin
+        ningún descendiente.
+        """
+        combo_roots = self.order_line.filtered(
+            lambda l: l.product_template_id.type == 'combo'
+        )
+
+        # OJO: solo se chequea que la RAÍZ siga presente -- no que el padre
+        # directo (subsección) también lo esté. Ese segundo chequeo se
+        # intentó agregar y causó una falsa alarma real: si el retag de
+        # este ciclo se corta antes de llegar a una subsección (p.ej. por
+        # una línea en blanco recién insertada por el kebab, que todavía no
+        # es ni cabecera ni ítem de combo), esa subsección no se re-etiqueta
+        # ESTE ciclo, pero su `combo_parent_line_id`/`combo_root_line_id`
+        # siguen siendo válidos de ciclos anteriores -- no hay nada roto de
+        # verdad, y borrarla ahí fue un falso positivo que se llevó una
+        # subsección entera (con sus hijos) sin que el usuario tocara nada.
+        orphans = self.order_line.filtered(
+            lambda l: l.combo_root_line_id and l.combo_root_line_id not in combo_roots
+        )
+        if orphans:
+            self.order_line = [Command.delete(l.id) for l in orphans]
+
+        remaining = self.order_line - orphans
+        empty_subsections = remaining.filtered(
+            lambda l: l.display_type == 'line_subsection'
+            and l.combo_root_line_id
+            and not remaining.filtered(lambda c: c.combo_parent_line_id == l)
+        )
+        if empty_subsections:
+            self.order_line = [Command.delete(l.id) for l in empty_subsections]
+
+        remaining = remaining - empty_subsections
+        emptied_roots = combo_roots.filtered(
+            lambda r: r in remaining
+            and (r._origin or r.virtual_id)
+            and not r.selected_combo_items
+            and not remaining.filtered(lambda c: c.id != r.id and c.combo_root_line_id == r)
+        )
+        if emptied_roots:
+            self.order_line = [Command.delete(r.id) for r in emptied_roots]
 
     def default_rate(self):
         """
@@ -478,18 +759,16 @@ class SaleOrder(models.Model):
         return res[:limit]
 
     def _create_invoices(self, grouped=False, final=False, date=None):
-        """
-        This function creates the invoice associated to the order,
-        but with this inheritance it creates multiple invoices if
-        it exceeds the configuration limit.
-
-        It also sends the custom rate of the order to the invoice
+        """Crea las facturas de la orden (varias si excede el límite de líneas),
+        envía la tasa de la orden y reconstruye la jerarquía de combo en la factura.
         """
         invoices = self.env["account.move"]
         for order in self:
             invoiceable_lines = order._get_invoiceable_lines(final)
             while len(invoiceable_lines) != 0:
-                invoices |= super()._create_invoices(grouped, final, date)
+                new_invoices = super()._create_invoices(grouped, final, date)
+                invoices |= new_invoices
+                new_invoices._fix_combo_hierarchy_links_invoice()
                 invoiceable_lines = order._get_invoiceable_lines(final)
 
         return invoices
@@ -525,6 +804,7 @@ class SaleOrder(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
+        res._fix_combo_hierarchy_links()
         for sale in res:
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
@@ -545,6 +825,8 @@ class SaleOrder(models.Model):
         if vals.get("foreign_rate", False):
             vals.update({"last_foreign_rate": self.foreign_rate})
         res = super().write(vals)
+        if "order_line" in vals:
+            self._fix_combo_hierarchy_links()
         if (
             vals.get("foreign_rate", False)
             and self.manually_set_rate
@@ -557,6 +839,72 @@ class SaleOrder(models.Model):
                 % ({"rate": self.foreign_rate, "last_rate": self.last_foreign_rate})
             )
         return res
+
+    def _fix_combo_hierarchy_links(self):
+        """Reconstruye combo_parent_line_id/combo_root_line_id con ids reales
+        después de guardar (un Many2one entre líneas nuevas del mismo lote no
+        persiste bien desde el onchange).
+        """
+        for order in self:
+            lines = order.order_line.sorted('sequence')
+            combo_roots = lines.filtered(
+                lambda l: l.product_template_id.type == 'combo'
+            )
+            for combo_line in combo_roots:
+                combo_ids = combo_line.product_template_id.sudo().combo_ids.ids
+                if combo_line.combo_root_line_id != combo_line:
+                    combo_line.write({'combo_root_line_id': combo_line.id})
+
+                current_subsection = self.env['sale.order.line']
+                in_block = False
+                for ln in lines:
+                    if ln == combo_line:
+                        in_block = True
+                        current_subsection = self.env['sale.order.line']
+                        continue
+                    if not in_block:
+                        continue
+
+                    is_combo_header = (
+                        not ln.product_id
+                        and not ln.combo_item_id
+                        and ln.display_type == 'line_subsection'
+                    )
+                    if is_combo_header:
+                        current_subsection = ln
+                        if (
+                            ln.combo_parent_line_id != combo_line
+                            or ln.combo_root_line_id != combo_line
+                        ):
+                            ln.write({
+                                'combo_parent_line_id': combo_line.id,
+                                'combo_root_line_id': combo_line.id,
+                            })
+                        continue
+
+                    is_native_combo_item = bool(
+                        ln.combo_item_id and ln.combo_item_id.combo_id.id in combo_ids
+                    )
+                    adopted = (
+                        not is_native_combo_item
+                        and ln.product_id
+                        and ln.combo_added_via_subsection_kebab
+                    )
+                    if is_native_combo_item or adopted:
+                        parent = current_subsection or combo_line
+                        if (
+                            ln.combo_parent_line_id != parent
+                            or ln.combo_root_line_id != combo_line
+                        ):
+                            ln.write({
+                                'combo_parent_line_id': parent.id,
+                                'combo_root_line_id': combo_line.id,
+                            })
+                        continue
+
+                    if ln.display_type in ('line_section', 'line_subsection'):
+                        in_block = False
+                    continue
 
     @api.onchange("pricelist_id")
     def _onchange_pricelist_id(self):

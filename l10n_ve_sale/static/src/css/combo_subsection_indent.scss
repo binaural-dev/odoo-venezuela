@@ -1,0 +1,20 @@
+// Jerarquía visual tipo árbol para combos en facturas y SO.
+// Las clases las añade getRowClass() en invoice_combo_list_renderer.js
+// y combo_lock_drag.js según display_type + combo_tagged.
+
+$combo-indent-1: 1.25rem;  // subsección (nivel 1)
+$combo-indent-2: 2.75rem;  // producto bajo subsección (nivel 2)
+
+// Subsección (nivel 1): sangría en la columna de nombre de producto.
+// Para section rows, el <td> de la sección no tiene attr `name`, así que
+// se aplica a todos los o_field_cell (solo la celda de nombre existe).
+tr.l10n-ve-combo-subsection > td.o_field_cell {
+    padding-left: $combo-indent-1;
+}
+
+// Producto bajo subsección (nivel 2): solo en la columna product_id
+// (factura) o name (SO), que el listrenderer marca con name="<field>".
+tr.l10n-ve-combo-item > td[name='product_id'],
+tr.l10n-ve-combo-item > td[name='name'] {
+    padding-left: $combo-indent-2;
+}

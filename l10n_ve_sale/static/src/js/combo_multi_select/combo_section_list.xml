@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-name="sale_combo_hierarchy.ComboConfiguratorDialogInherit" 
+       t-inherit="sale.ComboConfiguratorDialog" 
+       t-inherit-mode="extension">
+        
+        <!-- Clic en cualquier parte de la fila (imagen + nombre) también
+             suma 1, igual que el ProductCard de las opciones configurables
+             (onClick="() => this.updateItemQuantity(...)"). Los botones
+             +/- de abajo usan `.stop` para no disparar esto también. -->
+        <xpath expr="//div[@t-foreach='unconfigurableCombos']" position="attributes">
+            <attribute name="t-on-click">() => this.updateItemQuantity(combo.id, combo.combo_items[0], 1)</attribute>
+            <attribute name="class" separator=" " add="cursor-pointer"/>
+        </xpath>
+
+        <xpath expr="//div[@name='preselected_product_name']" position="after">
+            <!-- La opción "Incluido" (un solo candidato, sin alternativas)
+                 nativamente no deja tocar la cantidad: se agrega igual
+                 los mismos botones +/- que las opciones configurables,
+                 pero sin permitir bajar de 1 (siempre se incluye). -->
+            <div class="col-auto d-flex align-items-center">
+                <div class="btn-group btn-group-sm">
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        t-att-disabled="getItemQuantity(combo.combo_items[0].id) &lt;= 1"
+                        t-on-click.stop="() => this.updateItemQuantity(combo.id, combo.combo_items[0], -1)">
+                        -
+                    </button>
+                    <span class="btn btn-sm btn-light disabled px-3 fw-bold text-dark">
+                        <t t-out="getItemQuantity(combo.combo_items[0].id)"/>
+                    </span>
+                    <button
+                        type="button"
+                        class="btn btn-outline-secondary"
+                        t-on-click.stop="() => this.updateItemQuantity(combo.id, combo.combo_items[0], 1)">
+                        +
+                    </button>
+                </div>
+            </div>
+        </xpath>
+
+        <xpath expr="//t[@t-foreach='combo.combo_items']" position="replace">
+            <t t-foreach="combo.combo_items" t-as="comboItem" t-key="comboItem.id">
+                <div class="col">
+                    <div t-attf-class="card h-100 p-2 d-flex flex-column justify-content-between {{ getItemQuantity(comboItem.id) > 0 ? 'border border-primary bg-light' : '' }}">
+                        <ProductCard
+                            product="getSelectedOrProvidedComboItem(combo.id, comboItem).product"
+                            extraPrice="comboItem.extra_price"
+                            onClick="() => this.updateItemQuantity(combo.id, comboItem, 1)"
+                            isSelected="getItemQuantity(comboItem.id) > 0"
+                            isConfigurable="comboItem.is_configurable"
+                        />
+                        <!-- Botones + / - por producto -->
+                        <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top">
+                            <span class="small text-muted fw-bold">Cantidad:</span>
+                            <div class="btn-group btn-group-sm">
+                                <button 
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    t-att-disabled="getItemQuantity(comboItem.id) === 0"
+                                    t-on-click.stop="() => this.updateItemQuantity(combo.id, comboItem, -1)">
+                                    -
+                                </button>
+                                <span class="btn btn-sm btn-light disabled px-3 fw-bold text-dark">
+                                    <t t-out="getItemQuantity(comboItem.id)"/>
+                                </span>
+                                <button 
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    t-on-click.stop="() => this.updateItemQuantity(combo.id, comboItem, 1)">
+                                    +
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </t>
+        </xpath>
+
+    </t>
+</templates>

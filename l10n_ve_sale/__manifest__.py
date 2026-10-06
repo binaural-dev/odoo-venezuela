@@ -7,12 +7,13 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Sales/Sales",
-    "version": "19.0.1.0.8",
+    "version": "19.0.1.0.10",
     # any module necessary for this one to work correctly
     "depends": [
         "base",
         "l10n_ve_base",
         "sale",
+        "sale_management",
         "l10n_ve_rate",
         "l10n_ve_contact",
         "l10n_ve_invoice",
@@ -28,8 +29,17 @@
         "views/res_config_settings.xml",
         "views/sale_order.xml",
         "views/product_pricelist_item_views.xml",
+        "views/product_combo_views.xml",
+        "views/account_move_views.xml",
         "views/menuitems.xml",
     ],
+    'assets': {
+        'web.assets_backend': [
+            "l10n_ve_sale/static/src/js/**/*.js",
+            'l10n_ve_sale/static/src/js/**/*.xml',
+            'l10n_ve_sale/static/src/css/**/*.scss',
+        ],
+    },
     "images": ["static/description/icon.png"],
     "application": True,
     "pre_init_hook": "pre_init_hook",

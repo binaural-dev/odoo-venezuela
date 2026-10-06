@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Agrega los campos de jerarquía de combo como campos invisibles en las
+         líneas de factura, para que estén disponibles en record.data del cliente
+         (el JS de combo_section_subtotal y combo_lock_drag los necesita). -->
+    <record id="view_move_form_l10n_ve_sale_combo" model="ir.ui.view">
+        <field name="name">view.move.form.l10n_ve_sale.combo</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <!-- Dentro del list de invoice_line_ids, justo después de sequence -->
+            <xpath expr="//field[@name='invoice_line_ids']//field[@name='sequence']" position="after">
+                <field name="combo_tagged" column_invisible="True"/>
+                <field name="combo_root_line_id" column_invisible="True"/>
+                <field name="combo_parent_line_id" column_invisible="True"/>
+                <field name="product_template_id" column_invisible="True"/>
+                <field name="product_type" column_invisible="True"/>
+                <!-- Campo efímero que el configurador escribe y el onchange lee -->
+                <field name="selected_combo_items" column_invisible="True"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
