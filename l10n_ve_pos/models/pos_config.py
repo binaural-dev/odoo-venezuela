@@ -153,6 +153,42 @@ class PosConfig(models.Model):
         result = from_amount * rate
         return to_currency.round(result) if round else result
 
+    def _check_before_creating_new_session(self):
+        res = super()._check_before_creating_new_session()
+        self._check_cross_move_accounts()
+        return res
+
+    def _check_cross_move_accounts(self):
+        """Refuse to open a session whose cross moves would miss an account.
+
+        Same idea as the native ``_check_profit_loss_cash_journal``: a
+        foreign-currency method with both cross journals set will need the
+        accounts listed by ``pos.session._get_cross_move_missing_accounts``
+        (on opening, with the foreign cash drawer's opening difference, and on
+        closing). Without them the cross move used to be built with a NULL
+        ``account_id`` and the opening crashed on
+        ``account_move_line_check_accountable_required_fields``.
+        """
+        self.ensure_one()
+        # A virtual session of this config: which methods cross depends on the
+        # session (e.g. its currency), and other modules extend that per session.
+        session = self.env["pos.session"].new({"config_id": self.id})
+        missing = [
+            f"- {method.name} → {account}"
+            for method in self.payment_method_ids
+            if session._is_cross_move_eligible(method)
+            for account in session._get_cross_move_missing_accounts(method)
+        ]
+        if missing:
+            raise ValidationError(
+                _(
+                    "The session cannot be opened: the cross move of these "
+                    "payment methods needs accounts that are not set:\n%(accounts)s\n"
+                    "Set them in Accounting > Configuration > Journals.",
+                    accounts="\n".join(missing),
+                )
+            )
+
     def _action_to_open_ui(self):
         res = super()._action_to_open_ui()
         if (
