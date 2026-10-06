@@ -401,6 +401,38 @@ class AccountMoveLine(models.Model):
                 else:
                     line.balance = rounded_balance
 
+    def _price_included_split(self):
+        """Returns (base_currency, base_company, included_currency,
+        included_company) of a product line whose taxes are all flat
+        percentage price-included, or None for any other line."""
+        self.ensure_one()
+        move = self.move_id
+        taxes = self.tax_ids
+        if self.display_type != 'product' or not move.is_invoice(include_receipts=True):
+            return None
+        if not taxes or any(
+            t.amount_type != 'percent' or not t.price_include or t.include_base_amount
+            for t in taxes
+        ):
+            return None
+        total_rate = sum(taxes.mapped('amount')) / 100.0
+        if total_rate <= -1.0:
+            return None
+        raw_included = (
+            self.price_unit * self.quantity
+            * (1 - (self.discount or 0.0) / 100.0) * move.direction_sign
+        )
+        raw_excluded = raw_included / (1 + total_rate)
+        currency = self.currency_id
+        cc = move.company_currency_id
+        rate = 1.0 if currency == cc else (self.currency_rate or 1.0)
+        return (
+            currency.round(raw_excluded),
+            cc.round(raw_excluded / rate),
+            currency.round(raw_included),
+            cc.round(raw_included / rate),
+        )
+
     @api.model
     def _fix_price_included_base_per_line(self, lines):
         """Recomputes each product line's price-included base on its own
@@ -408,62 +440,15 @@ class AccountMoveLine(models.Model):
         identical lines can post different amounts). Scoped to simple
         flat percentage price-included taxes only."""
         for line in lines:
-            if line.display_type != 'product':
+            if line.move_id.state != 'draft':
                 continue
-            move = line.move_id
-            if not move.is_invoice(include_receipts=True) or move.state != 'draft':
+            split = line._price_included_split()
+            if split is None:
                 continue
-            taxes = line.tax_ids
-            if not taxes or any(
-                t.amount_type != 'percent' or not t.price_include or t.include_base_amount
-                for t in taxes
-            ):
-                continue
-
-            total_rate = sum(taxes.mapped('amount')) / 100.0
-            if total_rate <= -1.0:
-                continue
-            factor = 1 / (1 + total_rate)
-            # `move.direction_sign`: price_unit/quantity are always positive,
-            # but `amount_currency`/`balance` follow the document's debit/
-            # credit convention (negative for `out_invoice`/`in_refund`,
-            # confirmed against core's own unmodified value for this same
-            # line -- without this, an `out_invoice` product line posted
-            # positive while its tax line (never touched here, core's
-            # native value already correctly-signed) stayed negative,
-            # desync'ing base+tax from reconstructing the document total).
-            raw_included = (
-                line.price_unit * line.quantity
-                * (1 - (line.discount or 0.0) / 100.0) * move.direction_sign
-            )
-
-            currency = line.currency_id
-            cc = move.company_currency_id
-
-            # Mirrors Odoo core exactly (`account.tax._add_tax_details_in_base_line`,
-            # account_tax.py:1764-1795): the base is computed ONCE, unrounded, in
-            # the document currency (`raw_total_excluded_currency`); the company
-            # currency figure is obtained by DIVIDING that same unrounded number
-            # by `rate` (`base_line['rate']`, which for invoice lines IS
-            # `line.currency_rate` -- core uses it directly at this stage, this
-            # isn't the aggregate-reconciliation context `_apply_product_real_portion`
-            # warns about below). Both projections come from the SAME unrounded
-            # split and are rounded INDEPENDENTLY -- neither is derived from the
-            # other's already-rounded value, so there is no sequential rounding
-            # error to amplify in either direction.
-            raw_total_excluded_currency = raw_included * factor
-            new_amount_currency = currency.round(raw_total_excluded_currency)
-
-            if currency == cc:
-                new_balance = new_amount_currency
-            else:
-                rate = line.currency_rate or 1.0
-                raw_total_excluded = raw_total_excluded_currency / rate
-                new_balance = cc.round(raw_total_excluded)
-
-            if not currency.is_zero(new_amount_currency - line.amount_currency):
+            new_amount_currency, new_balance = split[0], split[1]
+            if not line.currency_id.is_zero(new_amount_currency - line.amount_currency):
                 line.amount_currency = new_amount_currency
-            if not cc.is_zero(new_balance - line.balance):
+            if not line.move_id.company_currency_id.is_zero(new_balance - line.balance):
                 line.balance = new_balance
 
     @api.model

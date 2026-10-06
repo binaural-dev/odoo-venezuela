@@ -29,6 +29,12 @@ a mano en Configuración cada vez.
     una compañía nueva desde cero y verifica el default, sin depender
     de `self.company` (la compañía principal del fixture, que no
     refleja el nuevo default por la razón de alcance de arriba).
+  - `test_31` (línea negativa mezclada con una positiva) se elimina:
+    ninguna línea de producto puede tener monto negativo, ni siquiera
+    un descuento. Queda `test_31b_two_lines_same_tax_both_rounding_modes`
+    con dos líneas positivas, comparando cada modo contra su fórmula.
+  - `test_33` verifica `amount_total` (25,90) e impuesto (3,58) en ambos
+    modos de redondeo.
 
 ## Impact
 
@@ -37,8 +43,7 @@ a mano en Configuración cada vez.
 - **Riesgo**: bajo. Cambio de un solo `default=` en un campo
   `Selection` ya existente; no toca lógica de cálculo ni datos
   existentes.
-- **Verificado**: suite completa de `l10n_ve_accountant` (242 tests)
-  corrida en contenedor Docker sobre base limpia (`--without-demo=True`),
-  incluyendo con `l10n_ve_invoice` instalado (vía
-  `l10n_ve_payment_extension`, escenario real de producción) - sin
-  fallos.
+- **Verificado**: suite completa de `l10n_ve_accountant` (298 tests) corrida en
+  contenedor Docker sobre base limpia (`--without-demo=True`), tanto sin
+  como con `l10n_ve_invoice` instalado (vía `l10n_ve_payment_extension`,
+  escenario real de producción) - sin fallos en ningún caso.
