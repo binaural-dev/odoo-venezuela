@@ -60,6 +60,21 @@ Estado recibido, sin confiar en el pareo que mandó el cliente.
   país, o con un `municipality_id` sin `state_id`
 - **THEN** el servidor rechaza la creación con un mensaje de error
 
+#### Scenario: La dirección del cliente no se mezcla con la de la compañía
+
+- **GIVEN** una compañía con dirección completa (estado, municipio, ciudad,
+  parroquia y código postal)
+- **WHEN** el cliente del Kiosko elige un estado (con o sin municipio)
+- **THEN** el contacto se crea con el estado y municipio del cliente, y sin el
+  municipio, la ciudad, la parroquia ni el código postal de la compañía
+- **AND** si el cliente no manda dirección, el contacto conserva la dirección
+  por defecto de la compañía
+
+#### Scenario: Servidor rechaza textos demasiado largos
+
+- **WHEN** llega un `name` o `street` de más de 255 caracteres
+- **THEN** el servidor no crea el contacto y devuelve un mensaje de error
+
 ### Requirement: Datos de Estados/Municipios de Venezuela expuestos al Kiosko
 
 El Kiosko SHALL recibir los `res.country.state` de Venezuela (ya expuestos

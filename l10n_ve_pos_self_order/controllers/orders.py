@@ -42,6 +42,9 @@ _PHONE_OPERATOR_CODES = ("0412", "0414", "0416", "0422", "0424", "0426")
 # Kiosko compone y envía este único string; el servidor revalida el string
 # completo en vez de confiar en el split que hizo el cliente.
 _PHONE_RE = re.compile(r"^(%s)-\d{7}$" % "|".join(_PHONE_OPERATOR_CODES))
+# Tope de los textos libres que llegan por la ruta pública de creación
+# (``name``/``street``): evita guardar valores enormes en ``res.partner``.
+_MAX_TEXT_LENGTH = 255
 
 
 def _ve_within_rate_limit(access_token):
@@ -254,6 +257,15 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         if phone_error:
             return {"res.partner": [], "error": phone_error}
         phone = phone.strip()
+
+        if len(name or "") > _MAX_TEXT_LENGTH or len(street or "") > _MAX_TEXT_LENGTH:
+            return {
+                "res.partner": [],
+                "error": _(
+                    "The name and the address can have at most %s characters.",
+                    _MAX_TEXT_LENGTH,
+                ),
+            }
 
         # Dedup: si la cédula ya existe, NO crear un duplicado. Devolver el
         # existente y —solo si le falta— rellenarle el teléfono (fill-only,
