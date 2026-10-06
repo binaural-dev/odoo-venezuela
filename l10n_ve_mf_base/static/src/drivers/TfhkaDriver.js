@@ -1012,6 +1012,31 @@ export class TfhkaDriver {
     }
 
     /**
+     * Limpia un texto para enviarlo dentro de un comando fiscal.
+     *
+     * Los nombres de línea de factura suelen traer saltos de línea (ej.
+     * "Cuota - 1 Meses\n01/10/2026 a 31/10/2026"). Un 0x0A dentro de la
+     * trama hace avanzar el papel sin que el firmware lo cuente: en las
+     * impresoras de formulario (Tally 1140) se descuadra la página, se
+     * sobreimprimen líneas y la impresora se detiene a mitad del documento.
+     * También se quitan acentos y Ñ porque la trama se codifica en UTF-8 y
+     * la impresora espera un byte por carácter.
+     *
+     * @param {string} text
+     * @returns {string}
+     */
+    _sanitizeFiscalText(text) {
+        return String(text || "")
+            .replace(/Ñ/g, "N")
+            .replace(/ñ/g, "n")
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/[^\x20-\x7E]+/g, " ")
+            .replace(/ {2,}/g, " ")
+            .trim();
+    }
+
+    /**
      * Largo máximo de la descripción de un ítem. Por defecto se recorta para
      * que el comando quepa en una línea (MAX_LINE_LEN). Si la orden trae
      * `max_item_desc_len` (backend: igual que el flujo IoT, hasta 127), la
@@ -1053,7 +1078,7 @@ export class TfhkaDriver {
         }
 
         for (const line of orderData.header_lines || []) {
-            commands.push(`i${String(infoIndex).padStart(2, '0')}${String(line).substring(0, 127)}`);
+            commands.push(`i${String(infoIndex).padStart(2, '0')}${this._sanitizeFiscalText(line).substring(0, 127)}`);
             infoIndex++;
         }
 
@@ -1065,12 +1090,12 @@ export class TfhkaDriver {
         this._appendDiscountInfoLine(commands, orderData, counter);
 
         for (const line of orderData.footer_lines || []) {
-            commands.push(`i${String(counter.value).padStart(2, '0')}${String(line).substring(0, 127)}`);
+            commands.push(`i${String(counter.value).padStart(2, '0')}${this._sanitizeFiscalText(line).substring(0, 127)}`);
             counter.value++;
         }
 
         for (const line of orderData.additional_lines || []) {
-            commands.push(`i${String(counter.value).padStart(2, '0')}${String(line).substring(0, 127)}`);
+            commands.push(`i${String(counter.value).padStart(2, '0')}${this._sanitizeFiscalText(line).substring(0, 127)}`);
             counter.value++;
         }
     }
@@ -1357,10 +1382,7 @@ export class TfhkaDriver {
                 const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
-                let desc  = (line.product_name || "PRODUCTO")
-                    .replace(/Ñ/g, 'N')
-                    .replace(/ñ/g, 'n')
-                    .trim();
+                let desc  = this._sanitizeFiscalText(line.product_name || "PRODUCTO");
 
                 const overhead = 1 + price.length + qty.length + code.length;
                 const available = this._itemDescMaxLen(orderData, overhead);
@@ -1575,9 +1597,7 @@ export class TfhkaDriver {
                 const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
-                let desc  = (line.product_name || "PRODUCTO")
-                    .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
-                    .trim();
+                let desc  = this._sanitizeFiscalText(line.product_name || "PRODUCTO");
 
                 const overhead = 2 + price.length + qty.length + code.length;
                 const available = this._itemDescMaxLen(orderData, overhead);
@@ -1770,9 +1790,7 @@ export class TfhkaDriver {
                 const price = this._formatAmount(linePrice, config.max_amount_int, config.max_amount_decimal);
                 const qty   = this._formatAmount(line.quantity || 1, config.max_qty_int, config.max_qty_decimal);
                 const code  = line.product_code ? `|${line.product_code}|` : "";
-                let desc  = (line.product_name || "PRODUCTO")
-                    .replace(/Ñ/g, 'N').replace(/ñ/g, 'n')
-                    .trim();
+                let desc  = this._sanitizeFiscalText(line.product_name || "PRODUCTO");
 
                 const overhead = 2 + price.length + qty.length + code.length;
                 const available = this._itemDescMaxLen(orderData, overhead);
