@@ -247,6 +247,18 @@ Core escribe `tax_totals` dos veces por cada `write()` de la factura: una transi
 - **WHEN** edita el monto de un grupo de impuesto con un delta dentro de `tax_totals_edit_tolerance`
 - **THEN** la línea de impuesto queda con el nuevo monto, y el chatter de la factura registra un mensaje con el usuario, el grupo afectado y el monto anterior y el nuevo (`test_56_tax_totals_edit_within_company_tolerance_succeeds`, `test_60_tax_totals_edit_logs_chatter_message`)
 
+#### Scenario: Usuario con el grupo de soporte fiscal
+
+- **GIVEN** un usuario en `group_fiscal_config_support` y una factura de proveedor en borrador
+- **WHEN** edita el monto de un grupo de impuesto dentro de la tolerancia
+- **THEN** `can_edit_tax_totals` es verdadero y la edición se aplica (`test_58b`)
+
+#### Scenario: Usuario sin el grupo de soporte fiscal
+
+- **GIVEN** un usuario fuera de `group_fiscal_config_support`
+- **WHEN** abre el formulario o intenta escribir `tax_totals`
+- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los tres widgets de totales incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
+
 #### Scenario: Edición fuera de tolerancia se rechaza
 
 - **WHEN** el delta editado supera `tax_totals_edit_tolerance`
@@ -623,7 +635,7 @@ El sistema DEBE (MUST) corregir el redondeo por línea (`round_per_line`) única
 
 La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El default de Odoo 19 es `round_globally`, y este módulo NO fuerza `round_per_line` en ningún dato de instalación (`data/res_company_data.xml` no toca `tax_calculation_rounding_method`). Esto queda documentado como hallazgo pendiente de decisión de negocio (forzarlo vía dato de instalación, o documentarlo como paso manual de configuración post-instalación), NO como un cambio de código de este cierre.
 
-#### Scenario: Compañía venezolana recién instalada
+Este default NO DEBE (SHALL NOT) migrar retroactivamente compañías que ya existían al momento de instalar o actualizar el módulo: la columna ya fue poblada por `account` antes de que este default cargue en el registro, y una actualización de módulo no re-ejecuta el default sobre filas existentes. Este alcance -- solo compañías nuevas, sin migración retroactiva de las existentes -- es una decisión de negocio: por petición de los superiores, el encargado de la vertical (Saul Ortega) mantiene este alcance, no es un gap pendiente de resolver.
 
 - **WHEN** se crea o instala una compañía con la localización venezolana
 - **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente

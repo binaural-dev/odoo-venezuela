@@ -15,9 +15,9 @@
       `res_company.tax_calculation_rounding_method`) que el override
       solo aplica a compañías nuevas -- la compañía principal (creada
       por `base`/`account` antes de que el override cargue en el
-      registro) mantiene su valor previo (`round_globally`); confirmado
-      con el usuario que ese alcance es el deseado (no se agrega
-      migración retroactiva)
+      registro) mantiene su valor previo (`round_globally`); por petición
+      de los superiores, el encargado de la vertical (Saul Ortega)
+      mantiene ese alcance (no se agrega migración retroactiva)
 
 ## 3. Verificación
 
@@ -33,7 +33,7 @@
 - [x] 3b.1 `test_31` eliminado (no se admiten líneas negativas); se
       conserva `test_31b` con dos líneas positivas
 - [x] 3b.2 Suite completa de `l10n_ve_accountant` en contenedor Docker,
-      base limpia, sin demo: 298 tests, sin fallos
+      base limpia, sin demo: 300 tests, sin fallos
 
 ## 4. OpenSpec
 
