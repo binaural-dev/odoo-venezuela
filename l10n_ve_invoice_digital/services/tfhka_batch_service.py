@@ -73,6 +73,62 @@ class TfhkaBatchService(models.AbstractModel):
                 % {"names": ", ".join(not_digital_journal.mapped("name"))}
             )
 
+    def _check_sequence_integrity(self, sorted_moves):
+        """A batch must not let a document skip an earlier posted invoice
+        that was left out of the selection and never digitalized -- the same
+        invariant ``account.move._tfhka_validate_sequence_before_queue``
+        enforces for a single invoice via the "Generate Digital Invoice"
+        button (see its docstring), applied here to the whole group:
+        - the first invoice in ``sorted_moves`` still needs its real
+          predecessor in Odoo's numbering sequence (if any) to already be
+          digitalized/queued, with no gap in between -- reuses that exact
+          check/message. Being merely 'queued' (not yet actually emitted) is
+          fine here: unlike a numbering *gap*, a queued-but-unconsumed
+          reservation from an earlier batch is handled separately, by
+          computing this batch's own starting number high enough to never
+          collide with it (see ``create_batch``'s use of
+          ``_last_reserved_batch_number``) rather than by blocking;
+        - every following invoice must be exactly one more than the
+          previous one *in the batch*: a hole between two selected invoices
+          (e.g. B and D batched without C) would pass the check above
+          unnoticed (B's own predecessor is fine), so it's caught here
+          instead, pairwise, the same way ``_tfhka_check_sequence_gap``
+          already does for a single invoice against its real predecessor.
+        """
+        sorted_moves[0]._tfhka_validate_sequence_before_queue()
+        for previous_in_batch, move in zip(sorted_moves, sorted_moves[1:]):
+            move._tfhka_check_sequence_gap(previous_in_batch)
+
+    def _last_reserved_batch_number(self, company, document_type, series):
+        """Highest document number already reserved via a *previous* batch
+        for this exact (document_type, series) stream, whether or not it has
+        actually been emitted to TFHKA yet. 0 if none.
+
+        ``tfhka.api.client.get_last_document_number`` (TFHKA's own
+        "/UltimoDocumento") only reflects documents actually EMITTED. If an
+        earlier batch reserved a range that hasn't been fully emitted yet
+        (its invoices still queued/processing/error), that range is already
+        irreversibly claimed on TFHKA's side (``assign_numbering``) even
+        though TFHKA's own "last" counter hasn't advanced past it -- a new
+        batch computing its start from that counter alone would request the
+        same range again and get rejected with a "previous reservation
+        exists" business error. Looking at what Odoo itself already knows
+        was reserved avoids that collision without blocking the new batch on
+        the earlier one actually finishing.
+
+        ``tfhka_batch_ref`` encodes the exact stream a reservation was made
+        for (``f"{document_type}-{series or 'NA'}-{start}-{end}"``, see
+        ``create_batch``), so matching its prefix scopes this query to the
+        same stream without needing to re-derive document_type/series for
+        arbitrary historical moves.
+        """
+        prefix = f"{document_type}-{series or 'NA'}-"
+        reserved = self.env["account.move"].search([
+            ("company_id", "=", company.id),
+            ("tfhka_batch_ref", "=like", prefix + "%"),
+        ])
+        return max(reserved.mapped("tfhka_batch_document_number") or [0])
+
     def _group_by_type_and_series(self, moves):
         doc_service = self.env["tfhka.document.service"]
         grouped = {}
@@ -155,10 +211,12 @@ class TfhkaBatchService(models.AbstractModel):
                     m.id,
                 )
             )
+            self._check_sequence_integrity(sorted_moves)
             count = len(sorted_moves)
 
             last = client.get_last_document_number(company, document_type, series)
-            start = int(last) + 1
+            local_last_reserved = self._last_reserved_batch_number(company, document_type, series)
+            start = max(int(last), local_last_reserved) + 1
             end = start + count - 1
 
             detail = [{
