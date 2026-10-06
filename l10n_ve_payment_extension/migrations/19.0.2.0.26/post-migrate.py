@@ -50,6 +50,9 @@ def _column_exists(cr, table, column):
 
 
 def migrate(cr, version):
+    if not version or not version.startswith("17."):
+        return
+
     if not _column_exists(cr, "tax_unit", "available_date"):
         _logger.info(
             "l10n_ve_payment_extension post-migrate: tax_unit.available_date "
