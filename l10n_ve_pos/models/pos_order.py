@@ -61,13 +61,7 @@ class PosOrder(models.Model):
     def _prepare_invoice_vals(self):
         self.ensure_one()
         res = super()._prepare_invoice_vals()
-        res.update(
-            {
-                "foreign_rate": self.foreign_currency_rate,
-                "foreign_inverse_rate": self.foreign_currency_rate,
-                "manually_set_rate": True,
-            }
-        )
+        res.update(self.config_id._get_move_foreign_rate_vals(self.foreign_currency_rate))
         return res
 
     def _amount_to_foreign(self, amount):

@@ -85,13 +85,11 @@ class PosPayment(models.Model):
             if not payment_move:
                 continue
 
-            payment_move.write(
-                {
-                    "foreign_rate": payment.foreign_rate,
-                    "foreign_inverse_rate": payment.foreign_rate,
-                    "manually_set_rate": True,
-                }
+            rate_vals = payment.pos_order_id.config_id._get_move_foreign_rate_vals(
+                payment.foreign_rate
             )
+            if rate_vals:
+                payment_move.write(rate_vals)
             # Fallback: a change (vuelto) line created server-side may reach
             # here with foreign_amount == 0 (see pos.order._process_payment_lines).
             # Derive it from the order rate so the alternate-currency columns are

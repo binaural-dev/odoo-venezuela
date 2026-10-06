@@ -153,6 +153,34 @@ class PosConfig(models.Model):
         result = from_amount * rate
         return to_currency.round(result) if round else result
 
+    def _get_move_foreign_rate_vals(self, main_to_foreign_rate):
+        """Rates stamped on a POS move (invoice, payment move) valued at the
+        ``main_to_foreign_rate`` multiplier (company currency → foreign, the
+        same orientation as ``foreign_inverse_rate`` in
+        ``_get_pos_conversion_rate``).
+
+        Same pair ``l10n_ve_rate`` (``res.currency.rate.compute_rate``) gives
+        every other move and this config: ``foreign_inverse_rate`` is the
+        multiplier ``l10n_ve_accountant`` computes the lines' foreign amounts
+        with, and ``foreign_rate`` its inverse, the rate shown on the move and
+        read by the digital invoice and the withholdings. Holds for both
+        company currencies: 803.34 / 0.001244… with the company in Bs,
+        0.001244… / 803.34 with the company in USD. The multiplier is the
+        order's frozen one, not today's rate of this config, which is why the
+        inverse is built here instead of reading ``self.foreign_rate``.
+
+        :param main_to_foreign_rate: company currency → foreign multiplier
+        :return: ``account.move`` values; empty without a rate, so the move
+            takes the rate of its date instead of a fixed 0
+        """
+        if not main_to_foreign_rate:
+            return {}
+        return {
+            "foreign_inverse_rate": main_to_foreign_rate,
+            "foreign_rate": 1 / main_to_foreign_rate,
+            "manually_set_rate": True,
+        }
+
     def _check_before_creating_new_session(self):
         res = super()._check_before_creating_new_session()
         self._check_cross_move_accounts()
