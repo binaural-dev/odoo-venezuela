@@ -346,6 +346,9 @@ export class TfhkaDriver {
                 }
 
                 const frame = FiscalProtocol.buildFrame(command);
+                const t0 = Date.now();
+                console.log(`[TI15610] sendCommand intento ${attempt + 1}/${this.retryAttempts}:`,
+                    JSON.stringify(command), `chars=${command.length} bytes_trama=${frame.length} timeout=${timeout}`);
 
                 const sent = await this.connection.write(frame);
                 if (!sent) {
@@ -356,8 +359,13 @@ export class TfhkaDriver {
 
                 const response = await this.connection.read(timeout);
                 if (!response) {
+                    console.error(`[TI15610] sendCommand SIN RESPUESTA tras ${Date.now() - t0}ms:`, JSON.stringify(command));
                     throw new Error("No se recibió respuesta de la impresora");
                 }
+                const respBytes = response instanceof Uint8Array ? Array.from(response) : response;
+                console.log(`[TI15610] sendCommand respuesta en ${Date.now() - t0}ms:`, JSON.stringify(command),
+                    "->", FiscalProtocol.isACK(response) ? "ACK" : FiscalProtocol.isNAK(response) ? "NAK" : "OTRO",
+                    Array.isArray(respBytes) ? respBytes.map((b) => b.toString(16).padStart(2, "0")).join(" ") : respBytes);
 
                 if (FiscalProtocol.isACK(response)) {
                     if (command === "199") {
@@ -403,17 +411,21 @@ export class TfhkaDriver {
         try {
             const statusBefore = await this.getStatus();
             const stsBefore = statusBefore?.raw?.sts1;
+            console.warn("[TI15610] abortTransaction inicio: STS1=", this._formatSts(stsBefore),
+                "STS2=", this._formatSts(statusBefore?.raw?.sts2), "errores=", statusBefore?.errors);
             if (this._isWaitingState(stsBefore)) {
                 return true;
             }
-            
+
             await this.connection.flushBuffer();
 
             // Intentar cancelar el documento actual con "9" (Anular Documento)
             const frame9 = FiscalProtocol.buildFrame("9");
             await this.connection.write(frame9);
             const response9 = await this.connection.read(3000);
-            
+            console.warn("[TI15610] abortTransaction respuesta al '9':",
+                response9 ? Array.from(response9).map((b) => b.toString(16).padStart(2, "0")).join(" ") : "SIN RESPUESTA");
+
             if (response9 && FiscalProtocol.isACK(response9)) {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 return true;
@@ -430,6 +442,8 @@ export class TfhkaDriver {
             const frame199 = FiscalProtocol.buildFrame("199");
             await this.connection.write(frame199);
             const response199 = await this.connection.read(3000);
+            console.warn("[TI15610] abortTransaction respuesta al '199':",
+                response199 ? Array.from(response199).map((b) => b.toString(16).padStart(2, "0")).join(" ") : "SIN RESPUESTA");
 
             if (response199 && FiscalProtocol.isACK(response199)) {
                 await new Promise(resolve => setTimeout(resolve, 500));
@@ -900,6 +914,24 @@ export class TfhkaDriver {
         return { success: true, data, error: "" };
     }
 
+    async _ti15610LogS25(moment) {
+        try {
+            const s25 = await this.readS25Data();
+            console.log(`[TI15610] S25 ${moment}:`, s25.success ? {
+                subtotal_bases: s25.data.subtotalBases,
+                subtotal_iva: s25.data.subtotalTax,
+                total_sin_igtf: s25.data.totalWithoutIgtf,
+                total_con_igtf: s25.data.totalWithIgtf,
+                igtf: s25.data.igtfAmount,
+                pagos_realizados: s25.data.paymentCount,
+                tipo_doc: s25.data.documentTypeLabel,
+                raw: s25.data.raw,
+            } : s25.error);
+        } catch (error) {
+            console.error(`[TI15610] S25 ${moment}: excepción`, error);
+        }
+    }
+
     _parseS4Data(rawData) {
         if (!rawData) {
             return null;
@@ -1289,6 +1321,8 @@ export class TfhkaDriver {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
 
+        console.log("[TI15610] printInvoice orderData:", JSON.parse(JSON.stringify(orderData)));
+
         // Paso 0: Verificar que la impresora esté libre antes de empezar
         const statusBefore = await this.getStatus();
         if (!statusBefore) {
@@ -1296,6 +1330,8 @@ export class TfhkaDriver {
         }
 
         const sts1Before = statusBefore.raw?.sts1;
+        console.log("[TI15610] printInvoice estado inicial: STS1=", this._formatSts(sts1Before),
+            "STS2=", this._formatSts(statusBefore.raw?.sts2), "errores=", statusBefore.errors);
         const isWaiting = this._isWaitingState(sts1Before);
         if (!isWaiting) {
             console.warn("TfhkaDriver:: Impresora no está en reposo (STS1=" + this._formatSts(sts1Before) + "), intentando abortar...");
@@ -1375,9 +1411,12 @@ export class TfhkaDriver {
             phase1Commands.push("3");
             console.log("TfhkaDriver::printInvoice - FASE 1: items:", orderData.lines?.length, "comandos:", phase1Commands.length);
 
+            console.log("[TI15610] printInvoice FASE 1 comandos:", phase1Commands.map((c) => JSON.stringify(c)));
+
             // Enviar FASE 1 a la impresora
             for (let i = 0; i < phase1Commands.length; i++) {
                 const result = await this.sendCommand(phase1Commands[i], null, false, i > 0);
+                console.log(`[TI15610] FASE 1 [${i}]`, JSON.stringify(phase1Commands[i]), "->", result);
                 if (!result.success) {
                     console.error("TfhkaDriver:: FASE 1 - comando falló:", phase1Commands[i], result.error);
                     await this.abortTransaction();
@@ -1388,11 +1427,14 @@ export class TfhkaDriver {
             // ================================================================
             // FASE 2: Construir y enviar pagos + footer + cierre
             // ================================================================
+            await this._ti15610LogS25("después del subtotal (antes de pagos)");
+
             const phase2Commands = [];
             console.log("TfhkaDriver::printInvoice - payment_lines a enviar:", JSON.stringify(orderData.payment_lines));
             this._appendPaymentCommands(phase2Commands, orderData, config);
             this._appendFooterInfo(phase2Commands, orderData);
             phase2Commands.push("199");
+            console.log("[TI15610] printInvoice FASE 2 comandos:", phase2Commands.map((c) => JSON.stringify(c)));
 
             const payment2xxCommands = phase2Commands.filter(c => c.startsWith("2"));
             const total2xx = payment2xxCommands.reduce((sum, cmd) => {
@@ -1404,10 +1446,20 @@ export class TfhkaDriver {
             let payment199Result = null;
             for (let i = 0; i < phase2Commands.length; i++) {
                 const cmd = phase2Commands[i];
+                if (cmd === "199") {
+                    await this._ti15610LogS25("justo antes del 199");
+                }
                 const result = await this.sendCommand(cmd, null, false, true);
+                console.log(`[TI15610] FASE 2 [${i}]`, JSON.stringify(cmd), "->", result);
 
                 if (cmd === "199") {
                     payment199Result = result;
+                    if (!result.success) {
+                        const st = await this.getStatus();
+                        console.error("[TI15610] 199 rechazado. Estado: STS1=", this._formatSts(st?.raw?.sts1),
+                            "STS2=", this._formatSts(st?.raw?.sts2), "errores=", st?.errors);
+                        await this._ti15610LogS25("después del 199 rechazado");
+                    }
                 }
 
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
