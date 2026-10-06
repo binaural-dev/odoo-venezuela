@@ -117,6 +117,7 @@ export function toDriverOrder(payload) {
         // Igual que el flujo IoT legado: descripción del ítem hasta 127
         // caracteres; la impresora la parte en varias líneas.
         max_item_desc_len: 127,
+        close_with_direct_payment: true,
     };
 }
 
