@@ -367,12 +367,18 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
         whose outbound payment method line has no payment_account_id must be
         excluded from available_journal_ids on an outbound payment."""
         journal = self._get_foreign_bank_journal(self.currency_eur)
-        # Writing directly on the line (not on the journal's o2m field) does
-        # not re-trigger the journal's own _check_payment_method_line_accounts
-        # constrains, so this leaves the journal itself in a persistable
-        # (if inconsistent) state for the purpose of this test.
+        # Writing False directly on the line is now blocked by
+        # _check_payment_account_id_required_for_bank (account_payment_method_line.py,
+        # code review follow-up to PR #1344 / task 81735) -- simulate a
+        # pre-existing inconsistent line (legacy data) via raw SQL instead,
+        # bypassing that constrains, same as
+        # test_confirming_legacy_bank_line_without_account_raises_in_community.
         outbound_line = journal.outbound_payment_method_line_ids
-        outbound_line.payment_account_id = False
+        self.env.cr.execute(
+            "UPDATE account_payment_method_line SET payment_account_id = NULL WHERE id = %s",
+            (outbound_line.id,),
+        )
+        outbound_line.invalidate_recordset(['payment_account_id'])
 
         payment = self.env["account.payment"].new({
             "payment_type": "outbound",
@@ -389,8 +395,16 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
         whose inbound payment method line has no payment_account_id must be
         excluded from available_journal_ids on an inbound payment."""
         journal = self._get_foreign_bank_journal(self.currency_eur)
+        # See the matching comment in
+        # test_outbound_payment_excludes_journal_without_outbound_account:
+        # writing False directly is now blocked by the constrains added in
+        # account_payment_method_line.py, so simulate it via raw SQL.
         inbound_line = journal.inbound_payment_method_line_ids
-        inbound_line.payment_account_id = False
+        self.env.cr.execute(
+            "UPDATE account_payment_method_line SET payment_account_id = NULL WHERE id = %s",
+            (inbound_line.id,),
+        )
+        inbound_line.invalidate_recordset(['payment_account_id'])
 
         payment = self.env["account.payment"].new({
             "payment_type": "inbound",
