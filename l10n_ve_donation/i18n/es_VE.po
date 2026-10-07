@@ -338,6 +338,11 @@ msgid "Readonly Donation Warehouse"
 msgstr "Almacén de Donación de Solo Lectura"
 
 #. module: l10n_ve_donation
+#: model:ir.model,name:l10n_ve_donation.model_stock_return_picking
+msgid "Return Picking"
+msgstr ""
+
+#. module: l10n_ve_donation
 #: model:ir.model,name:l10n_ve_donation.model_sale_order
 msgid "Sales Order"
 msgstr "Orden de venta"
@@ -394,6 +399,61 @@ msgstr ""
 
 #. module: l10n_ve_donation
 #. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_picking_type.py:0
+#: code:addons/odoo-venezuela/l10n_ve_donation/models/stock_picking_type.py:0
+#, python-format
+msgid ""
+"The Default Destination Location %(location)s of the donation delivery "
+"operation type %(picking_type)s is not of type Inventory Loss. Change the "
+"Default Destination Location of the operation type to an Inventory Loss "
+"location."
+msgstr "La Ubicación de destino predeterminada %(location)s del tipo de operación de entrega de donación %(picking_type)s no es de tipo Pérdida de inventario. Cambie la Ubicación de destino predeterminada del tipo de operación a una ubicación de tipo Pérdida de inventario."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_picking.py:0
+#: code:addons/odoo-venezuela/l10n_ve_donation/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The destination location %(location)s of a donation delivery has no Stock "
+"Valuation Account (Incoming). Set it in Inventory > Configuration > "
+"Locations, in the Accounting Information section of the location."
+msgstr "La ubicación de destino %(location)s de una entrega de donación no tiene Cuenta de valoración de existencias (entrada). Indíquela en Inventario > Configuración > Ubicaciones, en la sección Información contable de la ubicación."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_picking.py:0
+#: code:addons/odoo-venezuela/l10n_ve_donation/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The destination %(location)s of a donation delivery is not of type "
+"Inventory Loss. Change the Destination Location of the delivery (or the "
+"Default Destination Location of its operation type) to an Inventory Loss "
+"location, e.g. the default destination of the donation operation type."
+msgstr "El destino %(location)s de una entrega de donación no es de tipo Pérdida de inventario. Cambie la Ubicación de destino de la entrega (o la Ubicación de destino predeterminada de su tipo de operación) a una ubicación de tipo Pérdida de inventario, p. ej. el destino predeterminado del tipo de operación de donaciones."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_return_picking.py:0
+#: code:addons/odoo-venezuela/l10n_ve_donation/models/stock_return_picking.py:0
+#, python-format
+msgid ""
+"The donation %(picking)s cannot be returned: donations are not returned."
+msgstr "La donación %(picking)s no se puede devolver: las donaciones no se devuelven."
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_picking_type.py:0
+#: code:addons/odoo-venezuela/l10n_ve_donation/models/stock_picking_type.py:0
+#, python-format
+msgid ""
+"The donation delivery operation type %(picking_type)s must belong to a "
+"donation warehouse. Set the Warehouse field of the operation type to the "
+"donation warehouse."
+msgstr "El tipo de operación de entrega de donación %(picking_type)s debe pertenecer a un almacén de donaciones. Indique en el campo Almacén del tipo de operación el almacén de donaciones."
+
+#. module: l10n_ve_donation
+#. odoo-python
 #: code:addons/l10n_ve_donation/models/sale_order.py:0
 msgid ""
 "The field 'Is Donation' cannot be modified on a confirmed or completed "
@@ -446,6 +506,17 @@ msgstr "de"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_donation.donation_certificate_template_account_move
 msgid "días del mes de"
 msgstr "días del mes de"
+
+#. module: l10n_ve_donation
+#. odoo-python
+#: code:addons/l10n_ve_donation/models/stock_location.py:0
+#: code:addons/odoo-venezuela/l10n_ve_donation/models/stock_location.py:0
+#, python-format
+msgid ""
+"The location %(location)s is the default destination of the donation "
+"delivery operation type %(picking_type)s, so its Location Type must be "
+"Inventory Loss."
+msgstr "La ubicación %(location)s es el destino predeterminado del tipo de operación de entrega de donación %(picking_type)s, por lo que su Tipo de ubicación debe ser Pérdida de inventario."
 
 #. module: l10n_ve_donation
 #. odoo-python

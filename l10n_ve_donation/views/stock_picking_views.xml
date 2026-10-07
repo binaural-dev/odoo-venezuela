@@ -11,6 +11,11 @@
                 <field name="is_donation" readonly="1" force_save="1"/>
                 <field name="donation_reason" invisible="not is_donation or sale_id or picking_type_code != 'outgoing'" readonly="state in ('done', 'cancel')"/>
             </xpath>
+            <!-- Donations are not returned (see stock.return.picking). The base
+                 condition already hides the button for returns. -->
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="attributes">
+                <attribute name="invisible">state != 'done' or is_return or (is_donation and not sale_id)</attribute>
+            </xpath>
             <xpath expr="//button[@name='do_print_picking']" position="after">
                 <button
                     name="print_donation_certificate"

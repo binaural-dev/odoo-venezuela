@@ -10,6 +10,7 @@ from . import (
     stock_move,
     stock_picking,
     stock_picking_type,
+    stock_return_picking,
     stock_scrap,
     stock_warehouse,
 )

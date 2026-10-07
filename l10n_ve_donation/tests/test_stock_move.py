@@ -12,11 +12,11 @@ class TestStockMove(TestDonationCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        # Some environments leave default_location_src_id/dest_id unset on
-        # existing picking types -- force a recompute so these tests don't
-        # depend on that pre-existing state.
+        # Some environments leave default_location_src_id unset on existing
+        # picking types -- force a recompute so these tests don't depend on
+        # that pre-existing state. The destination is not recomputed: the
+        # fixture sets the donation location (see `common.py`).
         cls.picking_type_donation._compute_default_location_src_id()
-        cls.picking_type_donation._compute_default_location_dest_id()
         cls.location_stock = cls.picking_type_donation.default_location_src_id
         cls.product_storable_donation = cls.env["product.product"].create({
             "name": "Storable Donation Move Test",
