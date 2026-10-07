@@ -1,4 +1,5 @@
 import logging
+from unittest.mock import patch
 from odoo.tests import tagged, TransactionCase, Form
 from odoo import Command, fields
 from odoo.tools.float_utils import float_round
@@ -418,3 +419,59 @@ class TestAccountMove(TransactionCase):
         invoice.unlink()
 
         _logger.info("test_06_unlink_invoice_with_emitted_retention_municipal_cancelled --- successfully.")
+
+    def test_07_button_cancel_invoice_with_emitted_retention_iva(self):
+        invoice = self._create_invoice_simple()
+        invoice.generate_iva_retention = True
+        invoice.action_post()
+        self.assertTrue(invoice.retention_iva_line_ids, "IVA retention should be created from the invoice.")
+
+        with self.assertRaises(UserError) as e:
+            invoice.button_cancel()
+        self.assertIn("You cannot cancel an invoice with an emitted retention", str(e.exception))
+        self.assertEqual(invoice.state, "posted", "Invoice should remain posted when cancel is blocked.")
+
+        _logger.info("test_07_button_cancel_invoice_with_emitted_retention_iva --- successfully.")
+
+    def test_08_button_cancel_invoice_with_emitted_retention_iva_cancelled(self):
+        invoice = self._create_invoice_simple()
+        invoice.generate_iva_retention = True
+        invoice.action_post()
+        retention = invoice.retention_iva_line_ids
+        self.assertTrue(retention, "IVA retention should be created from the invoice.")
+        retention.retention_id.action_cancel()
+
+        invoice.button_cancel()
+        self.assertEqual(invoice.state, "cancel", "Invoice should be cancelled once the retention is cancelled.")
+
+        _logger.info("test_08_button_cancel_invoice_with_emitted_retention_iva_cancelled --- successfully.")
+
+    def test_09_button_draft_invoice_with_emitted_retention_sends_bus_warning(self):
+        invoice = self._create_invoice_simple()
+        invoice.generate_iva_retention = True
+        invoice.action_post()
+        self.assertTrue(invoice.retention_iva_line_ids, "IVA retention should be created from the invoice.")
+
+        with patch.object(type(self.env["bus.bus"]), "_sendone") as mock_sendone:
+            invoice.button_draft()
+
+        self.assertEqual(invoice.state, "draft", "Invoice should be reset to draft.")
+        mock_sendone.assert_called_once()
+        target, notification_type, message = mock_sendone.call_args.args
+        self.assertEqual(target, self.env.user.partner_id)
+        self.assertEqual(notification_type, "simple_notification")
+        self.assertIn("associated retention", message.get("message", ""))
+
+        _logger.info("test_09_button_draft_invoice_with_emitted_retention_sends_bus_warning --- successfully.")
+
+    def test_10_button_draft_invoice_without_retention_sends_no_warning(self):
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+
+        with patch.object(type(self.env["bus.bus"]), "_sendone") as mock_sendone:
+            invoice.button_draft()
+
+        self.assertEqual(invoice.state, "draft", "Invoice should be reset to draft.")
+        mock_sendone.assert_not_called()
+
+        _logger.info("test_10_button_draft_invoice_without_retention_shows_no_warning --- successfully.")
