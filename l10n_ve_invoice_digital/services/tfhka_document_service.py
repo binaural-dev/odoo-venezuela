@@ -91,10 +91,17 @@ class TfhkaDocumentService(models.AbstractModel):
 
         client.query_numbering(company, series, origin=invoice)
 
-        # Secuencia: en modo "pago primero" se usa el correlativo local de
-        # Odoo; en el modo normal SIEMPRE se ADOPTA el correlativo de The
-        # Factory (último + 1) y luego se sincroniza el diario.
-        if company.digitalization_with_payment_tfhka:
+        # Secuencia: si la factura pertenece a un lote (tfhka.batch.service ya
+        # reservó su número vía /AsignarNumeraciones), se usa ese número tal
+        # cual -- no se vuelve a preguntar "último + 1", porque eso rompería
+        # el rango reservado si otra factura de la misma serie se procesó
+        # entre medio. Fuera de un lote, el comportamiento es el de siempre:
+        # en modo "pago primero" se usa el correlativo local de Odoo; en el
+        # modo normal SIEMPRE se ADOPTA el correlativo de The Factory (último
+        # + 1) y luego se sincroniza el diario.
+        if invoice.tfhka_batch_document_number:
+            document_number = invoice.tfhka_batch_document_number
+        elif company.digitalization_with_payment_tfhka:
             document_number = invoice.sequence_number
         else:
             last = client.get_last_document_number(company, document_type, series, origin=invoice)
@@ -180,6 +187,85 @@ class TfhkaDocumentService(models.AbstractModel):
             except Exception as error:
                 _logger.error("No se pudo sincronizar la secuencia del diario TFHKA: %s", error)
 
+        self._send_digitalization_email(invoice)
+
+    def _send_digitalization_email(self, invoice):
+        """Envía el aviso de documento digitalizado (plantilla propia de
+        Odoo), con el PDF ya digitalizado adjunto -- obtenido en el momento,
+        nunca guardado en el propio documento.
+
+        Se salta si ``notify_email_tfhka`` está activo: en ese caso ya le
+        pedimos a The Factory HKA que notifique al cliente
+        (``"notificar": "Si"`` en el payload, ver
+        ``tfhka.service.base._get_fiscal_party``), así que mandar este
+        también duplicaría el correo.
+
+        Se llama desde dentro del cron de la cola de digitalización (ver
+        ``tfhka.digitalization.mixin._tfhka_process_digitalization``): un
+        fallo aquí (SMTP no configurado, plantilla borrada, el PDF no se pudo
+        descargar, etc.) nunca debe hacer que ese método marque el documento
+        como 'error' -- la digitalización en sí ya fue exitosa en este punto,
+        así que cualquier problema de envío queda solo registrado en el
+        chatter, sin propagar la excepción.
+        """
+        if invoice.company_id.notify_email_tfhka:
+            return
+
+        template = self.env.ref(
+            "l10n_ve_invoice_digital.mail_template_tfhka_digitalization_notification",
+            raise_if_not_found=False,
+        )
+        if not template:
+            return
+
+        email_values = {"tfhka_digitalization_email": True}
+        attachment = self._fetch_digitalized_document(invoice)
+        if attachment:
+            email_values["attachments"] = [attachment]
+
+        try:
+            # force_send=False: solo crea el mail.mail (queda en 'outgoing',
+            # sin scheduled_date) en vez de enviarlo de una vez -- lo despacha
+            # el cron nativo "Mail: Email Queue Manager"
+            # (mail.ir_cron_mail_scheduler_action), respetando su frecuencia y
+            # batch_size configurados en vez de saturar el servidor SMTP con
+            # un envío síncrono por cada documento que el cron de TFHKA
+            # digitaliza.
+            template.send_mail(invoice.id, force_send=False, email_values=email_values)
+        except Exception as error:
+            _logger.error(
+                "TFHKA: no se pudo enviar el correo de digitalización para %s #%s: %s",
+                invoice._name, invoice.id, error,
+            )
+            invoice.message_post(
+                body=_("Could not send the digitalization notification email: %s") % error,
+            )
+
+    def _fetch_digitalized_document(self, invoice):
+        """POST /DescargaArchivo -- trae el PDF ya digitalizado (campo
+        ``archivo``, base64) para adjuntarlo al correo de aviso. Devuelve
+        ``(nombre_archivo, contenido_base64)`` o ``None`` si falla: un fallo
+        aquí no debe impedir que el correo se mande (se manda sin adjunto),
+        ya que la digitalización en sí ya fue exitosa.
+        """
+        try:
+            document_type = self._get_document_type(invoice)
+            series = self._get_series(invoice)
+            document_number = str(invoice.sequence_number)
+            response = self.env["tfhka.api.client"].download_document(
+                invoice.company_id, document_type, document_number, series=series, origin=invoice,
+            )
+            archivo = response.get("archivo") if response else None
+            if not archivo:
+                return None
+            return (f"{document_number}.pdf", archivo.encode())
+        except Exception as error:
+            _logger.error(
+                "TFHKA: no se pudo descargar el documento digitalizado para %s #%s: %s",
+                invoice._name, invoice.id, error,
+            )
+            return None
+
     def _get_sequence_field(self, invoice):
         if invoice.move_type == "out_refund":
             return "refund_sequence_number_next"
@@ -210,9 +296,12 @@ class TfhkaDocumentService(models.AbstractModel):
 
         Devuelve un diccionario con las banderas adicionales del documento:
         * ``esLote``: Boolean indicando si forma parte de una emisión por lotes.
+          Solo es ``True`` cuando la factura fue asignada a un lote por
+          ``tfhka.batch.service`` (``tfhka_batch_ref`` poblado); una factura
+          digitalizada individualmente sigue reportando ``False``.
         """
         return {
-            "esLote": False,
+            "esLote": bool(invoice.tfhka_batch_ref),
         }
 
     # ------------------------------------------------------------------
@@ -876,6 +965,16 @@ class TfhkaDocumentService(models.AbstractModel):
             product_lines = record.invoice_line_ids.filtered(
                 lambda l: l.display_type == 'product'
             ) - discount_lines
+
+            document_currency = ctx["document_currency"]
+            # En bolívares (el caso sin multi_currency_invoice, el default),
+            # el precio/subtotal de línea sale de company_currency_line_totals
+            # -- ya reconciliado contra el balance posteado del asiento -- en
+            # vez de convertir price_unit/price_subtotal con la tasa del
+            # documento, que podía desviarse del monto contable real.
+            use_company_currency_totals = document_currency == record.company_id.currency_id
+            company_currency_totals = record.company_currency_line_totals or {}
+
             for line in product_lines:
                 tax_mapping = {
                     0.0: "E",
@@ -886,38 +985,47 @@ class TfhkaDocumentService(models.AbstractModel):
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
 
-                # Los montos de línea van en la moneda del documento. Se parte
-                # de price_unit/price_subtotal (que están en la moneda de la
-                # factura, o sea la de la tarifa) y se convierte con la tasa del
-                # contexto; NO se usa foreign_price, que siempre convierte a
-                # company.foreign_currency_id y rompería una tarifa en EUR con
-                # la compañía en USD.
-                document_currency = ctx["document_currency"]
-                base_price = self._get_amount_in_currency(
-                    record, document_currency, ctx, line.price_unit
-                )
-                base_subtotal = self._get_amount_in_currency(
-                    record, document_currency, ctx, line.price_subtotal
-                )
+                if use_company_currency_totals:
+                    line_totals = company_currency_totals.get(str(line.id)) or {}
+                    unit_price = round(line_totals.get("price_unit", 0.0), 2)
+                    item_price = round(line_totals.get("subtotal", 0.0), 2)
+                    discount_amount = round(line_totals.get("discount_amount", 0.0), 2)
+                    unit_price_discount = (
+                        round(item_price / line.quantity, 2) if line.quantity else unit_price
+                    )
+                    price_before_discount = round(unit_price * line.quantity, 2)
+                else:
+                    # Los montos de línea van en la moneda del documento. Se parte
+                    # de price_unit/price_subtotal (que están en la moneda de la
+                    # factura, o sea la de la tarifa) y se convierte con la tasa del
+                    # contexto; NO se usa foreign_price, que siempre convierte a
+                    # company.foreign_currency_id y rompería una tarifa en EUR con
+                    # la compañía en USD.
+                    base_price = self._get_amount_in_currency(
+                        record, document_currency, ctx, line.price_unit
+                    )
+                    base_subtotal = self._get_amount_in_currency(
+                        record, document_currency, ctx, line.price_subtotal
+                    )
 
-                # El % real de descuento puede venir de discount (%) o de
-                # discount_fixed (monto fijo, ver l10n_ve_invoice/models/
-                # account_move_line.py) -- ambas formas conviven, se decide
-                # por lo que la línea tenga cargado, no por la configuración
-                # de la compañía: _enforce_discount_exclusivity ya garantiza
-                # que una línea nunca tiene los dos a la vez.
-                discount_ratio = (
-                    line._get_exact_discount_percentage()
-                    if line.discount_fixed
-                    else (line.discount or 0.0)
-                )
-                discount_factor = discount_ratio / 100.0
-                unit_price = round(base_price, 2)
-                discount_unit = round(base_price * discount_factor, 2)
-                unit_price_discount = round(base_price - discount_unit, 2)
-                discount_amount = round(base_price * discount_factor * line.quantity, 2)
-                item_price = round(base_subtotal, 2)
-                price_before_discount = round(base_price * line.quantity, 2)
+                    # El % real de descuento puede venir de discount (%) o de
+                    # discount_fixed (monto fijo, ver l10n_ve_invoice/models/
+                    # account_move_line.py) -- ambas formas conviven, se decide
+                    # por lo que la línea tenga cargado, no por la configuración
+                    # de la compañía: _enforce_discount_exclusivity ya garantiza
+                    # que una línea nunca tiene los dos a la vez.
+                    discount_ratio = (
+                        line._get_exact_discount_percentage()
+                        if line.discount_fixed
+                        else (line.discount or 0.0)
+                    )
+                    discount_factor = discount_ratio / 100.0
+                    unit_price = round(base_price, 2)
+                    discount_unit = round(base_price * discount_factor, 2)
+                    unit_price_discount = round(base_price - discount_unit, 2)
+                    discount_amount = round(base_price * discount_factor * line.quantity, 2)
+                    item_price = round(base_subtotal, 2)
+                    price_before_discount = round(base_price * line.quantity, 2)
 
                 vat = round(item_price * tax_rate / 100.0, 2)
                 total_item_value = round(item_price + vat, 2)

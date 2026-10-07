@@ -1764,7 +1764,8 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         inv.multi_currency_invoice = False
         self.env['tfhka.document.service'].generate_document_data(inv, "144", "01", "")
-        payload = mock_call.call_args[0][2]
+        emision_call = next(c for c in mock_call.call_args_list if c.args[1] == "emision")
+        payload = emision_call.args[2]
         encabezado = payload["documentoElectronico"]["encabezado"]
         self.assertEqual(encabezado["identificacionDocumento"]["moneda"], vef.code_tfhka)
         self.assertNotIn("totalesOtraMoneda", encabezado)
@@ -2496,7 +2497,8 @@ class TestAccountMoveApiCalls(TransactionCase):
         ):
             self.env['tfhka.document.service'].generate_document_data(inv, "141", "01", "")
         self.assertTrue(inv.is_digitalized)
-        payload = mock_call.call_args[0][2]
+        emision_call = next(c for c in mock_call.call_args_list if c.args[1] == "emision")
+        payload = emision_call.args[2]
         self.assertEqual(payload["documentoElectronico"]["encabezado"]["vendedor"], seller)
 
     def test_167_generate_document_data_falsy_response_no_register(self):
@@ -2524,7 +2526,8 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         self.env['tfhka.document.service'].generate_document_data(inv, "143", "01", "")
         self.assertTrue(inv.is_digitalized)
-        payload = mock_call.call_args[0][2]
+        emision_call = next(c for c in mock_call.call_args_list if c.args[1] == "emision")
+        payload = emision_call.args[2]
         self.assertNotIn("totalesOtraMoneda", payload["documentoElectronico"]["encabezado"])
 
     def test_169_prepare_identification_series_and_vef_amounts(self):

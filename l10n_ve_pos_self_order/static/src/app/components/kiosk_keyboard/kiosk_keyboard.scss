@@ -1,0 +1,72 @@
+// On-screen keyboard for the Kiosk (ticket 80343, point 6). Same visual
+// language as identification_page.scss's o_ve_numpad (border, radius,
+// active-state background) — duplicated here under its own namespace since
+// this component is not scoped under .o_self_identification_box and may be
+// reused by pages other than IdentificationPage.
+.o_ve_kiosk_keyboard {
+    max-width: 34rem;
+    margin-left: auto;
+    margin-right: auto;
+
+    // Numeric mode: identical markup/classes to identification_page's own
+    // cédula numpad, so it inherits the exact same look.
+    .o_ve_numpad {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.75rem;
+
+        .o_ve_numpad_key {
+            padding: 0.9rem 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            border: 2px solid $o-gray-300;
+            border-radius: 0.75rem;
+            background-color: $white;
+
+            &:active {
+                background-color: $o-gray-200;
+            }
+        }
+
+        .o_ve_numpad_action {
+            color: $o-action;
+        }
+    }
+
+    .o_ve_kiosk_keyboard_row {
+        display: flex;
+        justify-content: center;
+        gap: 0.4rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .o_ve_kiosk_keyboard_key {
+        flex: 1 1 0;
+        max-width: 3rem;
+        padding: 0.7rem 0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        text-transform: none;
+        border: 2px solid $o-gray-300;
+        border-radius: 0.6rem;
+        background-color: $white;
+
+        &:active {
+            background-color: $o-gray-200;
+        }
+    }
+
+    .o_ve_kiosk_keyboard_action {
+        color: $o-action;
+    }
+
+    .o_ve_kiosk_keyboard_shift_active {
+        background-color: $o-action;
+        color: $white;
+    }
+
+    .o_ve_kiosk_keyboard_space {
+        flex: 3 1 auto;
+        max-width: none;
+    }
+}
