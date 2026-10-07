@@ -2803,3 +2803,68 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertFalse(invoice.is_digitalized)
         self.assertEqual(invoice.tfhka_digitalization_state, "none")
 
+    # ------------------------------------------------------------------
+    # action_tfhka_generate_digital(): el documento anterior en la
+    # numeracion del diario debe estar 'queued' o 'success' antes de poder
+    # mandar este a digitalizar.
+    # ------------------------------------------------------------------
+
+    def test_201_action_generate_digital_blocks_when_previous_not_queued(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        # inv1 nunca se mando a digitalizar: sigue en 'none'.
+        with self.assertRaises(ValidationError) as e:
+            inv2.action_tfhka_generate_digital()
+        self.assertIn(inv1.name, str(e.exception))
+        self.assertEqual(inv2.tfhka_digitalization_state, "none")
+
+    def test_202_action_generate_digital_allows_when_previous_queued(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.action_tfhka_generate_digital()
+        self.assertEqual(inv1.tfhka_digitalization_state, "queued")
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "queued")
+
+    def test_203_action_generate_digital_allows_when_previous_success(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.write({"tfhka_digitalization_state": "success", "is_digitalized": True})
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "queued")
+
+    def test_204_action_generate_digital_blocks_when_previous_errored(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "none")
+

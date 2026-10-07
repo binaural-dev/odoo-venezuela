@@ -307,11 +307,49 @@ class AccountMove(models.Model):
         this request. In "digitalization with payment" mode this button is
         the ONLY entry point to the queue (see
         _tfhka_is_eligible_for_digitalization, always False in that mode),
-        so it's the only place that can stop an unpaid invoice before it
-        reaches 'queued'. Validated BEFORE enqueueing so a failure here
-        never touches tfhka_digitalization_state."""
+        so it's the only place that can stop an unpaid or out-of-order
+        invoice before it reaches 'queued'. Both validated BEFORE
+        enqueueing so a failure here never touches
+        tfhka_digitalization_state."""
+        for move in self:
+            move._tfhka_validate_previous_document_queued()
         self._check_tfhka_payment_required()
         self._tfhka_enqueue_digitalization()
+
+    def _tfhka_validate_previous_document_queued(self):
+        """Hard block: the previous posted document in this journal's own
+        numbering (by name) must already be 'queued' or 'success' before
+        this one can be sent to the queue. Only meaningful in
+        "digitalization with payment" mode -- the only mode where a human
+        chooses, via this button, which document to enqueue next; in
+        normal mode documents are enqueued automatically at posting, in
+        strict chronological order, so there's nothing retroactive to
+        check. TFHKA requires strictly consecutive numbering, so letting a
+        later document jump the queue ahead of an unsent earlier one would
+        risk submitting them out of order.
+        """
+        self.ensure_one()
+        previous = self.env["account.move"].search(
+            [
+                ("id", "!=", self.id),
+                ("company_id", "=", self.company_id.id),
+                ("journal_id", "=", self.journal_id.id),
+                ("move_type", "=", self.move_type),
+                ("state", "=", "posted"),
+                ("name", "<", self.name),
+            ],
+            order="name desc",
+            limit=1,
+        )
+        if previous and previous.tfhka_digitalization_state not in ("queued", "success"):
+            raise ValidationError(
+                _(
+                    "Cannot queue %(name)s for digitalization: the previous document, "
+                    "%(previous_name)s, is neither digitalized nor queued.",
+                    name=self.name,
+                    previous_name=previous.name,
+                )
+            )
 
     def _check_tfhka_payment_required(self):
         """In 'cash' mode, block digitalization until the invoice is paid.
