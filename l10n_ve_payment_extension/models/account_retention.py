@@ -131,29 +131,17 @@ class AccountRetention(models.Model):
 
     retention_resync_pending = fields.Boolean(
         string="Retention Resync Pending",
-        compute="_compute_retention_resync_pending",
+        related="retention_line_ids.move_id.retention_resync_pending",
+        readonly=True,
         help=(
-            "True when this retention's declared base/amount no longer"
-            " match what would be recalculated from its invoice's current"
-            " data (see account.move.retention_resync_pending)."
+            "True when this retention's invoice has some retention whose"
+            " declared base/amount no longer matches what would be"
+            " recalculated from the invoice's current data (see"
+            " account.move.retention_resync_pending). Note: for a"
+            " retention grouping several invoices, this only reflects the"
+            " first one."
         ),
     )
-
-    @api.depends("state", "retention_line_ids.move_id.retention_resync_pending")
-    def _compute_retention_resync_pending(self):
-        for retention in self:
-            if retention.state != "emitted":
-                retention.retention_resync_pending = False
-                continue
-            pending = False
-            for invoice in retention.retention_line_ids.mapped("move_id"):
-                diff = invoice._get_retention_resync_diff()
-                if retention in diff.get("to_cancel", retention.browse()) | diff.get(
-                    "to_rebuild", retention.browse()
-                ):
-                    pending = True
-                    break
-            retention.retention_resync_pending = pending
 
     code_visible = fields.Boolean(related="company_id.code_visible")
 
@@ -495,7 +483,7 @@ class AccountRetention(models.Model):
         self.ensure_one()
         self.write({"state": "draft"})
         if self.payment_ids:
-            self.payment_ids.action_draft()
+            self._unreconcile_and_draft_payments(self.payment_ids)
 
     def action_post(self):
         """
