@@ -388,27 +388,64 @@ class PosSession(models.Model):
         return res
 
     def _create_cash_statement_lines_and_cash_move_lines(self, data):
-        res = super()._create_cash_statement_lines_and_cash_move_lines(data)
-        split_receivables_cash = res.get("split_receivables_cash")
-        combine_receivables_cash = res.get("combine_receivables_cash")
-        split_cash_statement_lines = res.get("split_cash_statement_lines")
-        combine_cash_statement_lines = res.get("combine_cash_statement_lines")
-        split_cash_receivable_lines = res.get("split_cash_receivable_lines")
-        combine_cash_receivable_lines = res.get("combine_cash_receivable_lines")
+        """
+        Fija el monto alterno de las líneas de efectivo con la suma histórica de
+        los pagos, igual que _create_bank_payment_moves y
+        _create_invoice_receivable_lines.
 
-        for payment, amounts in split_receivables_cash.items():
-            lines = split_cash_receivable_lines + split_cash_statement_lines
-            for line in lines:
-                self.set_foreign_amount_in_line(
-                    line, amounts["foreign_amount"], amounts["amount"]
-                )
+        Antes se usaba set_foreign_amount_in_line, que buscaba la línea por monto
+        y solo actuaba si el asiento tenía alguna línea que no fuera por cobrar.
+        En el asiento de la sesión, cuando todas las órdenes se facturan, todas
+        las líneas son por cobrar: las de efectivo quedaban sin fijar y se
+        recalculaban con la tasa del cierre, mientras su contrapartida ("De los
+        pagos de factura") sí quedaba fijada con la tasa de cada pago,
+        descuadrando el asiento en la moneda alterna.
+        """
+        data = super()._create_cash_statement_lines_and_cash_move_lines(data)
+        rounding = self.currency_id.rounding
 
-        for payment_method, amounts in combine_receivables_cash.items():
-            lines = combine_cash_receivable_lines + combine_cash_statement_lines
-            for line in lines:
-                self.set_foreign_amount_in_line(
-                    line, amounts["foreign_amount"], amounts["amount"]
+        # El core crea las líneas en el mismo orden en que recorre estos
+        # diccionarios (en combinados omite los montos en cero).
+        split_amounts = list(data.get("split_receivables_cash").values())
+        combine_amounts = [
+            amounts
+            for amounts in data.get("combine_receivables_cash").values()
+            if not float_is_zero(amounts["amount"], precision_rounding=rounding)
+        ]
+
+        for amounts_list, receivable_lines, statement_lines in (
+            (
+                split_amounts,
+                data.get("split_cash_receivable_lines"),
+                data.get("split_cash_statement_lines"),
+            ),
+            (
+                combine_amounts,
+                data.get("combine_cash_receivable_lines"),
+                data.get("combine_cash_statement_lines"),
+            ),
+        ):
+            if not (
+                len(amounts_list) == len(receivable_lines) == len(statement_lines)
+            ):
+                _logger.warning(
+                    "POS session %s: no se pudo fijar el monto alterno del efectivo "
+                    "(%s montos, %s líneas por cobrar, %s líneas de extracto).",
+                    self.name,
+                    len(amounts_list),
+                    len(receivable_lines),
+                    len(statement_lines),
                 )
+                continue
+            for amounts, receivable_line, statement_line in zip(
+                amounts_list, receivable_lines, statement_lines
+            ):
+                foreign_amount = amounts["foreign_amount"]
+                self._lock_foreign_amount(receivable_line, foreign_amount)
+                # El extracto de caja es otro asiento: se fijan sus dos líneas
+                # (liquidez y contrapartida) para que también cuadre.
+                for line in statement_line.move_id.line_ids:
+                    self._lock_foreign_amount(line, foreign_amount)
         return data
 
     def set_foreign_amount_in_line(self, line, foreign_amount, amount=0.0):

@@ -156,6 +156,7 @@ class AccountMoveLine(models.Model):
         "foreign_subtotal",
         "foreign_balance",
         "amount_currency",
+        "foreign_inverse_rate",
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
@@ -280,6 +281,14 @@ class AccountMoveLine(models.Model):
             line.foreign_debit = new_foreign_debit
         if new_foreign_credit:
             line.foreign_credit = new_foreign_credit
+
+        # Si la línea cambia de lado (p. ej. la contrapartida que Odoo propone
+        # como crédito y el usuario convierte en débito), el lado que quedó en
+        # cero no debe conservar el monto alterno anterior: descuadra el asiento.
+        if line.company_currency_id.is_zero(line.debit) and line.foreign_debit:
+            line.foreign_debit = 0.0
+        if line.company_currency_id.is_zero(line.credit) and line.foreign_credit:
+            line.foreign_credit = 0.0
 
     def _calculate_from_product(self, line):
         
