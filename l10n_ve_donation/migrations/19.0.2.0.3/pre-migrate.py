@@ -11,12 +11,12 @@ loses real usability. This backs up the raw text either way, then
 best-efforts a tag migration: one stock.scrap.reason.tag per distinct
 non-empty donation_reason value, linked to the scraps that had it.
 
-Also backs up res_company.account_stock_journal_id (Many2one, gone in
-v19 -- see MIGRATION_NOTES_donation.md in this folder for why this one
-is NOT just a data-migration matter: v19's own stock_move.py still
-references company_id.account_stock_journal_id, which no longer
-exists as a field. That's a code defect in v19, not something this
-script can fix).
+Also backs up res_company.account_stock_journal_id as a safety copy.
+That column is not gone in v19: it is the core stock_account field
+(stock_account/models/res_company.py), which l10n_ve_donation reads in
+stock_move.py and declares as a direct dependency in its manifest. The
+column itself is kept as is -- see MIGRATION_NOTES_donation.md in this
+folder.
 """
 
 import logging
@@ -192,11 +192,8 @@ def migrate(cr, version):
     _backup_simple_column(cr, "stock_scrap", "donation_reason")
     _backup_simple_column(cr, "res_company", "account_stock_journal_id")
     _migrate_donation_reason_to_tags(cr)
-    _logger.warning(
-        "l10n_ve_donation pre-migrate: res_company.account_stock_journal_id has no "
-        "v19 field and was only backed up, NOT migrated to anything -- v19's own "
-        "stock_move.py._create_account_move() still reads "
-        "company_id.account_stock_journal_id, which will raise an error the first "
-        "time a donation scrap is processed. This is a CODE defect in v19, not "
-        "something a data migration can fix. See MIGRATION_NOTES_donation.md."
+    _logger.info(
+        "l10n_ve_donation pre-migrate: res_company.account_stock_journal_id backed up "
+        "as a safety copy; it is the core stock_account field and stays in place. "
+        "See MIGRATION_NOTES_donation.md."
     )

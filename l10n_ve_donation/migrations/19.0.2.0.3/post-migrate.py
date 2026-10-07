@@ -91,11 +91,10 @@ def migrate(cr, version):
             cr.execute(sql.SQL("ALTER TABLE {} DROP COLUMN {}").format(tbl, col_id))
             _logger.info("  Dropped column %s.%s", table, col)
 
-    _logger.warning(
-        "l10n_ve_donation post-migrate: res_company.account_stock_journal_id "
-        "se DEJA intacta a propósito -- l10n_ve_donation/models/stock_move.py Y "
-        "binaural_subsidiary_stock/models/stock_move.py todavía la leen por "
-        "atributo (bug de código v19 en ambos módulos, no de esta migración). "
-        "No borrar hasta que el equipo de desarrollo corrija esas dos líneas o "
-        "reexponga el campo. Ver MIGRATION_NOTES_donation.md."
+    _logger.info(
+        "l10n_ve_donation post-migrate: res_company.account_stock_journal_id is kept "
+        "on purpose: it is the core stock_account field, read by "
+        "l10n_ve_donation/models/stock_move.py and "
+        "binaural_subsidiary_stock/models/stock_move.py. "
+        "See MIGRATION_NOTES_donation.md."
     )

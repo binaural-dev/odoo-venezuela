@@ -20,21 +20,21 @@ que haya desaparecido. Confirmado NO es un rename hacia
 apunta a `account.journal`, `donation_account_id` a `account.account`,
 para propósitos diferentes).
 
-El problema real: `l10n_ve_donation/__manifest__.py` no declaraba
-`"stock_account"` en `depends` (solo `l10n_ve_accountant`, `l10n_ve_stock`,
-`l10n_ve_invoice`, `l10n_ve_sale` — ninguno de estos arrastra
-`stock_account`). Sin esa dependencia, el campo core simplemente no
-estaba registrado en el modelo `res.company` de esa base de datos, y
-`_create_account_move()` fallaba con `AttributeError` al primer scrap
-de donación.
+El problema original: `l10n_ve_donation/__manifest__.py` no declaraba
+`"stock_account"` en `depends`, aunque el módulo lee directamente un
+campo de `stock_account`. Cuando se escribió esta nota, sus dependencias
+de entonces no lo traían y `_create_account_move()` fallaba con
+`AttributeError` al primer scrap de donación. Hoy `stock_account` también
+llega de forma transitiva (`l10n_ve_stock_account` → `sale_stock` →
+`stock_account`), así que el fallo ya no se reproduce, pero el módulo no
+debe depender de esa cadena para un campo que usa directamente.
 
-**Corrección aplicada** (este mismo commit): se agrega `"stock_account"`
-a `depends` en `l10n_ve_donation/__manifest__.py` (version
-19.0.2.0.3 → 19.0.2.0.4). No se crea ningún campo nuevo -- se corrige
-la dependencia que faltaba para que el campo core ya existente quede
-disponible. La columna física `res_company.account_stock_journal_id`
-no se toca (no hace falta migrarla ni eliminarla: es la misma columna
-que Odoo core ya gestiona).
+**Corrección aplicada**: se declara `"stock_account"` en `depends` de
+`l10n_ve_donation/__manifest__.py`. Se había agregado originalmente en
+19.0.2.0.4 y se perdió en un merge con `19.0`; se reaplicó en 19.0.2.0.6.
+No se crea ningún campo nuevo. La columna física
+`res_company.account_stock_journal_id` no se toca (no hace falta migrarla
+ni eliminarla: es la misma columna que Odoo core ya gestiona).
 
 **Falso positivo descartado en el mismo repaso**:
 `integra-addons/binaural_subsidiary_stock/models/stock_move.py:132`
