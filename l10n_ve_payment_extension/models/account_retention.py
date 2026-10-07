@@ -1451,7 +1451,7 @@ class AccountRetention(models.Model):
 
             duplicate_line = self.env['account.retention.line'].search([
                 ('retention_id.state', 'in', ['draft', 'emitted']),
-                ('retention_id.retention_type', '=', retention.retention_type),
+                ('retention_id.type_retention', '=', retention.type_retention),
                 ('retention_id', '!=', retention.id),
                 ('move_id', 'in', invoices.ids),
             ], limit=1)
