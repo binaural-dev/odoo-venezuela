@@ -83,9 +83,9 @@ class TestPosSessionAccountingMoveCreation(TestPosSessionAccountingBase):
             "foreign_amount": payment.foreign_amount,
         }
 
-        # Set a distinctive foreign_rate on the config so we can assert it
-        # propagated onto the created ``account.payment``. This forces
-        # triangulation against C2's write contract.
+        # A config rate different from the one the register charged with:
+        # the ``account.payment`` must carry the payment's rate (H15, tarea
+        # 83148), not today's rate of the config.
         self.config.write({"foreign_rate": 42.5, "foreign_inverse_rate": 1 / 42.5})
 
         # ACT — the pre-C2 l10n_ve_pos override crashes here because it
@@ -130,25 +130,26 @@ class TestPosSessionAccountingMoveCreation(TestPosSessionAccountingBase):
         )
 
         # The originating ``account.payment`` (Odoo 19: reached via
-        # ``move.origin_payment_id``) must carry the config's foreign_rate
-        # / foreign_inverse_rate — this is the writeback the pre-C2
-        # override attempted through the now-broken ``payment_id`` chain.
+        # ``move.origin_payment_id``) must carry the rate the register
+        # charged with (``pos.payment.foreign_rate``, the company → foreign
+        # multiplier, as ``foreign_inverse_rate``), like the other POS
+        # payment moves (``pos.config._get_move_foreign_rate_vals``).
         origin_payment = receivable_lines.move_id.origin_payment_id
         self.assertTrue(
             origin_payment,
             "Odoo 19 contract: account.move exposes origin_payment_id (not payment_id)",
         )
         self.assertAlmostEqual(
-            origin_payment.foreign_rate,
-            self.config.foreign_rate,
-            places=4,
-            msg="origin_payment must carry config.foreign_rate",
+            origin_payment.foreign_inverse_rate,
+            payment.foreign_rate,
+            places=12,
+            msg="origin_payment must carry the payment's rate",
         )
         self.assertAlmostEqual(
-            origin_payment.foreign_inverse_rate,
-            self.config.foreign_inverse_rate,
+            origin_payment.foreign_rate,
+            1 / payment.foreign_rate,
             places=4,
-            msg="origin_payment must carry config.foreign_inverse_rate",
+            msg="origin_payment.foreign_rate is the inverse of the payment's rate",
         )
 
         # Every line of the originating move must carry the matching

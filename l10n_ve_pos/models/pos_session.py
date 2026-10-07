@@ -750,12 +750,12 @@ class PosSession(models.Model):
         Migration contract (spec ``pos-cross-account-move/spec.md``): the
         pre-C2 override accessed ``res.move_id.payment_id``, which raised
         ``AttributeError`` in Odoo 19 (renamed to ``origin_payment_id`` —
-        see the same fix already applied in ``_create_split_account_payment``).
+        see the same fix already applied in ``_create_split_account_payments``).
 
         Native Odoo 19 ``_create_combine_account_payment`` returns the
         receivable ``account.move.line`` on the ``account.payment``'s own
         move (see ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1094``),
-        the same contract as ``_create_split_account_payment``.
+        the same contract as the core ``_create_split_account_payment``.
         """
         res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
             payment_method, amounts, diff_amount
@@ -779,58 +779,55 @@ class PosSession(models.Model):
                 line.foreign_debit = abs(amounts["foreign_amount"])
         return res
 
-    def _create_split_account_payment(self, payment, amounts):
-        """Odoo 19-compatible override.
+    def _create_split_account_payments(self, payment_amounts_list):
+        """Venezuelan rate and alternate amounts on the ``account.payment``
+        of each split bank payment.
 
-        Migration contract (Slice C2.1, spec
-        ``pos-odoo19-session-accounting/spec.md``):
+        Odoo 19 creates the split payments in batch: ``_create_bank_payment_moves``
+        calls this method directly and the core ``_create_split_account_payment``
+        only delegates to it, so an override of the singular method never runs
+        when a session is closed (tarea 83148, H15).
 
-        - Odoo 19 super returns an ``account.move.line`` recordset (the
-          receivable line on the ``account.payment.move_id``), NOT an
-          ``account.payment`` — see
-          ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1170``.
-        - When the payment method has no journal, super short-circuits
-          and returns ``self.env['account.move.line']`` (empty recordset)
-          — see native line 1147-1148. We MUST handle the empty case
-          without touching non-existent records.
-        - The pre-C2 override accessed ``res.move_id.payment_id`` which
-          raised ``AttributeError`` in Odoo 19 (the field on
-          ``account.move`` was renamed to ``origin_payment_id`` —
-          ``/home/binaural19/odoo/addons/account/models/account_move.py:206``).
-
-        The Venezuelan write contract is preserved: the originating
-        ``account.payment`` receives ``foreign_rate`` and
-        ``foreign_inverse_rate``, and every line of its move receives
-        the matching ``foreign_debit`` / ``foreign_credit``.
+        Each payment move gets the rate the register charged with
+        (``pos.payment.foreign_rate``, same convention as the other POS
+        payment moves) and, on every line, the alternate amount the register
+        charged (``foreign_amount``). Otherwise ``l10n_ve_accountant`` values
+        the liquidity line at the rate of the move date: when the rate changed
+        between the sale and the closing, the move no longer balances in the
+        alternate currency (receivable 12.45 against liquidity 11.76).
         """
-        receivable_lines = super(
+        payment_to_line = super(
             PosSession, self.with_context(from_pos=True)
-        )._create_split_account_payment(payment, amounts)
+        )._create_split_account_payments(payment_amounts_list)
 
-        if not receivable_lines:
-            # Odoo 19 early-return: payment method without journal.
-            return receivable_lines
-
-        payment_move = receivable_lines.move_id
-        account_payment = payment_move.origin_payment_id
-        if account_payment:
-            account_payment.write(
-                {
-                    "foreign_rate": self.config_id.foreign_rate,
-                    "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-                }
+        for payment, receivable_lines in payment_to_line.items():
+            payment_move = receivable_lines.move_id
+            if not payment_move:
+                continue
+            rate_vals = payment.pos_order_id.config_id._get_move_foreign_rate_vals(
+                payment.foreign_rate
             )
+            account_payment = payment_move.origin_payment_id
+            if account_payment and rate_vals:
+                account_payment.write(
+                    {
+                        "foreign_rate": rate_vals["foreign_rate"],
+                        "foreign_inverse_rate": rate_vals["foreign_inverse_rate"],
+                    }
+                )
+            if rate_vals:
+                payment_move.write(rate_vals)
 
-        foreign_amount = abs(payment.foreign_amount)
-        for line in payment_move.line_ids:
-            if line.credit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_credit = foreign_amount
-            if line.debit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_debit = foreign_amount
-
-        return receivable_lines
+            foreign_amount = abs(payment.foreign_amount)
+            for line in payment_move.line_ids:
+                line.write(
+                    {
+                        "not_foreign_recalculate": True,
+                        "foreign_debit": foreign_amount if line.debit > 0 else 0.0,
+                        "foreign_credit": foreign_amount if line.credit > 0 else 0.0,
+                    }
+                )
+        return payment_to_line
 
     def _create_account_move(
         self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None
@@ -999,7 +996,7 @@ class PosSession(models.Model):
           the session-side receivable line (created here) plus the
           receivable line on the ``account.payment.move_id`` (created
           by ``_create_combine_account_payment`` /
-          ``_create_split_account_payment``).
+          ``_create_split_account_payments``).
 
         For every receivable line in both buckets we set the matching
         Venezuelan ``foreign_debit`` / ``foreign_credit`` and mark it
