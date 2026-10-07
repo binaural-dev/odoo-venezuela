@@ -1,0 +1,370 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_mail_auto_blacklist
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260916\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-01 20:06+0000\n"
+"PO-Revision-Date: 2026-10-01 20:06+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_mail_auto_blacklist
+#. odoo-python
+#: code:addons/l10n_ve_mail_auto_blacklist/models/mail_bounce_event.py:0
+msgid "%s days"
+msgstr "%s días"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__active
+msgid "Active"
+msgstr "Activo"
+
+#. module: l10n_ve_mail_auto_blacklist
+#. odoo-python
+#: code:addons/l10n_ve_mail_auto_blacklist/models/mail_mail.py:0
+msgid "All recipients are in the email blacklist."
+msgstr "Todos los destinatarios están en la lista negra de correo."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_count_smtp_errors
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.res_config_settings_view_form
+msgid ""
+"Also count emails refused by the SMTP server because of the recipient "
+"address (e.g. 550 mailbox unavailable), not only bounces received "
+"afterwards."
+msgstr ""
+"También cuenta los correos rechazados por el servidor SMTP debido a la "
+"dirección del destinatario (ej. 550 buzón no disponible), no solo los "
+"rebotes recibidos después."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_form
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_search
+msgid "Archived"
+msgstr "Archivado"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__active
+msgid ""
+"Archived failures are not counted anymore (the address was removed from the "
+"blacklist or replied to an email)."
+msgstr ""
+"Los fallos archivados ya no se cuentan (la dirección fue removida de la "
+"lista negra o respondió un correo)."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.res_config_settings_view_form
+msgid "Automatic Blacklist"
+msgstr "Lista Negra Automática"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__bounce_type
+msgid ""
+"Best-effort classification of the failure:\n"
+"- Hard (Permanent): will not resolve on its own (bad domain, unknown user...). Retrying is pointless.\n"
+"- Soft (Temporary): may resolve on its own (full mailbox, server busy, greylisting...). Only worth blacklisting if it keeps happening.\n"
+"Guessed from the DSN Status/Action fields when present, an explicit SMTP code, or known phrases as a last resort; defaults to Soft when inconclusive."
+msgstr ""
+"Clasificación aproximada del fallo:\n"
+"- Hard (Permanente): no se va a resolver solo (dominio incorrecto, usuario desconocido...). Reintentar no sirve de nada.\n"
+"- Soft (Temporal): puede resolverse solo (buzón lleno, servidor ocupado, greylisting...). Solo vale la pena poner en lista negra si se repite.\n"
+"Se adivina a partir de los campos Status/Action del DSN cuando están presentes, un código SMTP explícito, o frases conocidas como último recurso; por defecto es Soft cuando no es concluyente."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.res_config_settings_view_form
+msgid "Blacklist"
+msgstr "Lista Negra"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.res_config_settings_view_form
+msgid ""
+"Blacklist addresses after a configurable number of delivery failures and "
+"stop sending them any email (marketing and transactional) until they are "
+"manually removed from the blacklist."
+msgstr ""
+"Agrega direcciones a la lista negra después de un número configurable de "
+"fallos de entrega y detiene el envío de cualquier correo (marketing y "
+"transaccional) hasta que sean removidas manualmente de la lista negra."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields.selection,name:l10n_ve_mail_auto_blacklist.selection__mail_bounce_event__event_type__bounce
+msgid "Bounce"
+msgstr "Rebote"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_search
+msgid "Bounces"
+msgstr "Rebotes"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model,name:l10n_ve_mail_auto_blacklist.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_enabled
+msgid "Configurable Auto Blacklist"
+msgstr "Lista Negra Automática Configurable"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_count_smtp_errors
+msgid "Count SMTP Refusals"
+msgstr "Contar Rechazos SMTP"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__create_uid
+msgid "Created by"
+msgstr "Creado por"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__create_date
+msgid "Created on"
+msgstr "Creado el"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__event_date
+msgid "Date"
+msgstr "Fecha"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_blacklist__l10n_ve_bounce_event_count
+#: model:ir.ui.menu,name:l10n_ve_mail_auto_blacklist.mail_bounce_event_menu
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_blacklist_view_form_inherit
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.res_config_settings_view_form
+msgid "Delivery Failures"
+msgstr "Fallos de Entrega"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_blacklist__display_name
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__display_name
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_mail__display_name
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_thread__display_name
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_res_config_settings__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__email
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_search
+msgid "Email"
+msgstr "Correo Electrónico"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model,name:l10n_ve_mail_auto_blacklist.model_mail_bounce_event
+msgid "Email Delivery Failure"
+msgstr "Fallo de Entrega de Correo"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.actions.act_window,name:l10n_ve_mail_auto_blacklist.mail_bounce_event_action
+msgid "Email Delivery Failures"
+msgstr "Fallos de Entrega de Correo"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model,name:l10n_ve_mail_auto_blacklist.model_mail_thread
+msgid "Email Thread"
+msgstr "Hilo de correos"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_blacklist_view_list_inherit
+msgid "Failures"
+msgstr "Fallos"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_threshold
+msgid "Failures Before Blacklist"
+msgstr "Fallos Antes de Lista Negra"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields.selection,name:l10n_ve_mail_auto_blacklist.selection__mail_blacklist__l10n_ve_last_bounce_type__hard
+#: model:ir.model.fields.selection,name:l10n_ve_mail_auto_blacklist.selection__mail_bounce_event__bounce_type__hard
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_search
+msgid "Hard (Permanent)"
+msgstr "Hard (Permanente)"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__event_type
+msgid ""
+"How the failure was detected: an actual bounce (NDR) received by email, or "
+"the SMTP server refusing the recipient synchronously while sending."
+msgstr ""
+"Cómo se detectó el fallo: un rebote real (NDR) recibido por correo, o el "
+"servidor SMTP rechazando al destinatario de forma síncrona durante el envío."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_blacklist__id
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__id
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_mail__id
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_thread__id
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_res_config_settings__id
+msgid "ID"
+msgstr "ID"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_blacklist_view_list_inherit
+msgid "Last Bounce"
+msgstr "Último Rebote"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_blacklist__l10n_ve_last_bounce_type
+msgid "Last Bounce Type"
+msgstr "Tipo del Último Rebote"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__write_uid
+msgid "Last Updated by"
+msgstr "Última actualización por"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__write_date
+msgid "Last Updated on"
+msgstr "Última actualización el"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model,name:l10n_ve_mail_auto_blacklist.model_mail_blacklist
+msgid "Mail Blacklist"
+msgstr "Exclusión del correo"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_min_spread_days
+msgid "Minimum Spread (days)"
+msgstr "Dispersión Mínima (días)"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_min_spread_days
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.res_config_settings_view_form
+msgid ""
+"Minimum number of days between the first and the last counted failure, to "
+"avoid blacklisting because of a temporary server issue. 0 = no constraint."
+msgstr ""
+"Cantidad mínima de días entre el primer y el último fallo contado, para "
+"evitar poner en lista negra por un problema temporal del servidor. 0 = sin "
+"restricción."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_threshold
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.res_config_settings_view_form
+msgid ""
+"Number of delivery failures (bounces or SMTP refusals) an address must reach"
+" before being automatically blacklisted."
+msgstr ""
+"Número de fallos de entrega (rebotes o rechazos SMTP) que debe alcanzar una "
+"dirección antes de ser agregada automáticamente a la lista negra."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_mail_blacklist__l10n_ve_bounce_event_count
+msgid "Number of recorded bounces/SMTP refusals for this address."
+msgstr "Cantidad de rebotes/rechazos SMTP registrados para esta dirección."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_window_days
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.res_config_settings_view_form
+msgid "Only failures of the last X days are counted. 0 = no time limit."
+msgstr ""
+"Solo se cuentan los fallos de los últimos X días. 0 = sin límite de tiempo."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model,name:l10n_ve_mail_auto_blacklist.model_mail_mail
+msgid "Outgoing Mails"
+msgstr "Correos salientes"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_window_days
+msgid "Period (days)"
+msgstr "Período (días)"
+
+#. module: l10n_ve_mail_auto_blacklist
+#. odoo-python
+#: code:addons/l10n_ve_mail_auto_blacklist/models/res_config_settings.py:0
+msgid "Periods cannot be negative."
+msgstr "Los períodos no pueden ser negativos."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__reason
+msgid "Reason"
+msgstr "Motivo"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_res_config_settings__l10n_ve_auto_blacklist_enabled
+msgid ""
+"Replaces the native rule (5 bounces within 13 weeks, spread over more than "
+"one week) and blocks every outgoing email, including transactional ones, to "
+"blacklisted addresses."
+msgstr ""
+"Reemplaza la regla nativa (5 rebotes en 13 semanas, con al menos una semana "
+"de dispersión) y bloquea el envío de cualquier correo, incluyendo "
+"transaccionales, a las direcciones en lista negra."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields.selection,name:l10n_ve_mail_auto_blacklist.selection__mail_bounce_event__event_type__smtp_error
+msgid "SMTP Recipient Refused"
+msgstr "Destinatario Rechazado por SMTP"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_search
+msgid "SMTP Refusals"
+msgstr "Rechazos SMTP"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__bounce_type
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_search
+msgid "Severity"
+msgstr "Severidad"
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,help:l10n_ve_mail_auto_blacklist.field_mail_blacklist__l10n_ve_last_bounce_type
+msgid ""
+"Severity of the most recent delivery failure for this address: Hard "
+"(permanent, e.g. unknown domain/user) or Soft (temporary, e.g. full "
+"mailbox)."
+msgstr ""
+"Severidad del fallo de entrega más reciente para esta dirección: Hard "
+"(permanente, ej. dominio/usuario desconocido) o Soft (temporal, ej. buzón "
+"lleno)."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields.selection,name:l10n_ve_mail_auto_blacklist.selection__mail_blacklist__l10n_ve_last_bounce_type__soft
+#: model:ir.model.fields.selection,name:l10n_ve_mail_auto_blacklist.selection__mail_bounce_event__bounce_type__soft
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_search
+msgid "Soft (Temporary)"
+msgstr "Soft (Temporal)"
+
+#. module: l10n_ve_mail_auto_blacklist
+#. odoo-python
+#: code:addons/l10n_ve_mail_auto_blacklist/models/res_config_settings.py:0
+msgid "The minimum spread must be shorter than the counted period."
+msgstr "La dispersión mínima debe ser menor que el período contado."
+
+#. module: l10n_ve_mail_auto_blacklist
+#. odoo-python
+#: code:addons/l10n_ve_mail_auto_blacklist/models/res_config_settings.py:0
+msgid "The number of failures before blacklisting must be at least 1."
+msgstr "El número de fallos antes de la lista negra debe ser al menos 1."
+
+#. module: l10n_ve_mail_auto_blacklist
+#. odoo-python
+#: code:addons/l10n_ve_mail_auto_blacklist/models/mail_bounce_event.py:0
+msgid ""
+"This email has been automatically added to the blocklist after %(count)s "
+"delivery failures (limit: %(threshold)s, period: %(period)s)."
+msgstr ""
+"Este correo fue agregado automáticamente a la lista negra después de "
+"%(count)s fallos de entrega (límite: %(threshold)s, período: %(period)s)."
+
+#. module: l10n_ve_mail_auto_blacklist
+#: model:ir.model.fields,field_description:l10n_ve_mail_auto_blacklist.field_mail_bounce_event__event_type
+#: model_terms:ir.ui.view,arch_db:l10n_ve_mail_auto_blacklist.mail_bounce_event_view_search
+msgid "Type"
+msgstr "Tipo"
+
+#. module: l10n_ve_mail_auto_blacklist
+#. odoo-python
+#: code:addons/l10n_ve_mail_auto_blacklist/models/mail_bounce_event.py:0
+msgid "no time limit"
+msgstr "sin límite de tiempo"

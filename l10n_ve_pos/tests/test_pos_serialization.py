@@ -106,6 +106,25 @@ class TestPosSerialization(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        # TI-15065: l10n_ve_accountant rejects products created without a
+        # single sale AND purchase tax unless the company carries default
+        # fiscal configuration. Give this isolated test company its defaults
+        # so the scaffolding products stay fiscally consistent.
+        cls.purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "Slice B Purchase Tax",
+                "amount": 16.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": cls.tax.tax_group_id.id,
+                "company_id": cls.company.id,
+            }
+        )
+        cls.company.write(
+            {
+                "account_sale_tax_id": cls.tax.id,
+                "account_purchase_tax_id": cls.purchase_tax.id,
+            }
+        )
         cls.product_category = cls.env["product.category"].create(
             {
                 "name": "Slice B Category",
@@ -113,7 +132,10 @@ class TestPosSerialization(TransactionCase):
                 "property_account_expense_categ_id": cls.account_income.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # ``l10n_ve_stock`` rejects creating a product in a company other than
+        # ``env.company`` (no superuser bypass), so create it from the test
+        # company.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "Slice B Product",
                 "lst_price": 100.0,
@@ -121,7 +143,13 @@ class TestPosSerialization(TransactionCase):
                 "available_in_pos": True,
                 "company_id": cls.company.id,
                 "categ_id": cls.product_category.id,
+                # l10n_ve_accountant.ProductTemplate._enforce_single_tax_vals_create
+                # requires exactly one tax in BOTH taxes_id and
+                # supplier_taxes_id (this test company has no default fiscal
+                # configuration). Reusing the sale tax for both is enough:
+                # this product is never actually purchased in these tests.
                 "taxes_id": [(6, 0, cls.tax.ids)],
+                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
             }
         )
         # `property_account_income_id` is company_dependent. Set it FOR the

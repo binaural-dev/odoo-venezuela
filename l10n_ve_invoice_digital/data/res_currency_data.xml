@@ -1,0 +1,21 @@
+<odoo>
+    <function name="write" model="ir.model.data">
+        <function name="search" model="ir.model.data">
+            <value eval="[('module', '=', 'base'), ('name', 'in', ['VEF', 'USD', 'EUR'])]"/>
+        </function>
+        <value eval="{'noupdate': True}"/>
+    </function>
+
+    <record id="base.VEF" model="res.currency">
+        <field name="code_tfhka">VES</field>
+    </record>
+
+    <record id="base.USD" model="res.currency">
+        <field name="code_tfhka">USD</field>
+    </record>
+
+    <record id="base.EUR" model="res.currency">
+        <field name="code_tfhka">EUR</field>
+    </record>
+
+</odoo>

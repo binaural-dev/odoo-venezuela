@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- Declarada sin actualización automática para que se pueda
+         personalizar/borrar libremente desde Ajustes > Técnico > Plantillas
+         de correo, igual que las plantillas nativas de account. -->
+    <data noupdate="1">
+        <record id="mail_template_tfhka_digitalization_notification" model="mail.template">
+            <field name="name">TFHKA: Aviso de documento digitalizado</field>
+            <field name="model_id" ref="account.model_account_move"/>
+            <field name="subject">{{ object.company_id.name }} - Documento electrónico {{ object.sequence_number or object.name }}</field>
+            <field name="email_from">{{ object.company_id.email_formatted or user.email_formatted }}</field>
+            <field name="partner_to">{{ object.partner_id.id }}</field>
+            <field name="use_default_to" eval="False"/>
+            <field name="description">Base para avisar al cliente por correo, desde Odoo, cuando un documento se digitaliza ante The Factory HKA. Reemplazo local del aviso que hoy manda The Factory HKA (campo 'notificar').</field>
+            <field name="auto_delete" eval="True"/>
+            <field name="body_html" type="html">
+<t t-set="month_name" t-value="format_date(object.invoice_date or object.date, date_format='MMMM', lang_code='es_VE').capitalize()"/>
+<t t-set="emission_dt" t-value="format_datetime(object.write_date, dt_format='dd/MM/yyyy HH:mm:ss')"/>
+<!-- RIF = prefix_vat + vat cuando vienen por separado (caso normal en Venezuela);
+     si no hay prefix_vat se cae al primer caracter de vat cuando ya es una letra
+     (mismo criterio que _parse_partner_identification en tfhka_service_base.py). -->
+<t t-set="buyer_prefix" t-value="object.partner_id.prefix_vat or (object.partner_id.vat[0] if object.partner_id.vat and object.partner_id.vat[0].isalpha() else '')"/>
+<t t-set="buyer_number" t-value="(object.partner_id.vat[1:] if object.partner_id.vat and object.partner_id.vat[0].isalpha() and not object.partner_id.prefix_vat else object.partner_id.vat) or ''"/>
+<t t-set="buyer_rif" t-value="(buyer_prefix + '-' + buyer_number) if buyer_number else ''"/>
+<t t-set="issuer_prefix" t-value="object.company_id.prefix_vat or (object.company_id.vat[0] if object.company_id.vat and object.company_id.vat[0].isalpha() else '')"/>
+<t t-set="issuer_number" t-value="(object.company_id.vat[1:] if object.company_id.vat and object.company_id.vat[0].isalpha() and not object.company_id.prefix_vat else object.company_id.vat) or ''"/>
+<t t-set="issuer_rif" t-value="(issuer_prefix + '-' + issuer_number) if issuer_number else ''"/>
+<div style="margin:0; padding:0; background:#f1f3f5; font-family:Arial, Helvetica, sans-serif;">
+    <table cellpadding="0" cellspacing="0" border="0" style="width:100%; background:#f1f3f5; padding:24px 0;">
+        <tr>
+            <td align="center">
+                <table cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px; max-width:600px; background:#ffffff; border:1px solid #e3e6ea; border-radius:6px; overflow:hidden;">
+                    <!-- Encabezado: mes del documento -->
+                    <tr>
+                        <td style="background:#2f6fa3; color:#ffffff; font-size:15px; font-weight:600; padding:16px 24px;">
+                            Mes <t t-out="month_name">Septiembre</t>
+                        </td>
+                    </tr>
+                    <!-- Logo de la compañía -->
+                    <tr>
+                        <td align="center" style="padding:28px 24px 20px;">
+                            <img t-attf-src="/logo.png?company={{ object.company_id.id }}" alt="" style="max-width:260px; max-height:120px; object-fit:contain;"/>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border-top:1px solid #e3e6ea;"></td>
+                    </tr>
+                    <!-- Datos del documento -->
+                    <tr>
+                        <td style="padding:24px 32px 28px; font-size:13px; color:#333333; line-height:1.9;">
+                            Estimado(a): <strong t-out="object.partner_id.name or ''">Cliente</strong>, RIF: <strong t-out="buyer_rif">V-00000000</strong>
+                            <br/><br/>
+                            El emisor <strong t-out="object.company_id.name or ''">YourCompany</strong>, con RIF <strong t-out="issuer_rif">J-000000000</strong>, ha emitido un documento electrónico:
+                            <br/><br/>
+                            Número de documento: <strong t-out="object.sequence_number or object.name">0</strong>
+                            <br/>
+                            Fecha de emisión: <strong t-out="emission_dt">01/01/2026 00:00:00</strong>
+                            <br/>
+                            Número de control: <strong t-out="object.correlative or ''">00-00000000</strong>
+                            <br/><br/>
+                            Gracias por su preferencia.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="border-top:1px solid #e3e6ea;"></td>
+                    </tr>
+                    <!-- Pie: avisos legales -->
+                    <tr>
+                        <td align="center" style="padding:14px 24px 0; background:#f8f9fa; font-size:11px; color:#8a8f98;">
+                            Por favor, no responda a este mensaje, ha sido enviado de forma automática desde una cuenta no monitoreada.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding:10px 24px 0; background:#f8f9fa; font-size:11px; color:#8a8f98; line-height:1.6;">
+                            Para proteger la seguridad e integridad de sus documentos fiscales, es fundamental restringir el acceso a esta información confidencial solo al personal autorizado.
+                        </td>
+                    </tr>
+                    <tr>
+                        <td align="center" style="padding:14px 24px 18px; background:#f8f9fa; font-size:10px; color:#b0b5bb;">
+                            <t t-out="object.company_id.name">YourCompany</t> <t t-out="datetime.date.today().year">2026</t> — © Todos los derechos reservados
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</div>
+            </field>
+            <field name="report_template_ids" eval="[]"/>
+        </record>
+    </data>
+</odoo>

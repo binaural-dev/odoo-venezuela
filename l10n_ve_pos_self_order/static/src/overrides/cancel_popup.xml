@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <!-- Ticket 80343 punto 5: texto y botones del popup de cancelar orden del
+         Kiosko en español llano ("¿Desea cancelar la orden?" / "Sí" / "No"),
+         igual que confirmation_page.xml (t-inherit + hasclass en minúsculas). -->
+    <t t-name="l10n_ve_pos_self_order.CancelPopup" t-inherit="pos_self_order.CancelPopup" t-inherit-mode="extension" owl="1">
+        <xpath expr="//div[hasclass('mt-4')][hasclass('pb-4')]" position="replace">
+            <div class="mt-4 pb-4 mt-lg-5 pb-lg-5 text-center fs-2">
+                Do you want to cancel the order?
+            </div>
+        </xpath>
+        <xpath expr="//button[hasclass('btn-primary')][hasclass('popup_button')]" position="replace">
+            <button type="button" class="btn btn-primary kiosk-p-btn-lg popup_button" t-on-click="() => this.confirm()">Yes</button>
+        </xpath>
+        <xpath expr="//button[hasclass('btn-secondary')][hasclass('popup_button')]" position="replace">
+            <button type="button" class="btn btn-secondary kiosk-p-btn-lg popup_button" t-on-click="() => this.props.close()">No</button>
+        </xpath>
+    </t>
+</templates>
