@@ -129,6 +129,20 @@ class AccountRetention(models.Model):
         copy=False,
     )
 
+    retention_resync_pending = fields.Boolean(
+        string="Retention Resync Pending",
+        related="retention_line_ids.move_id.retention_resync_pending",
+        readonly=True,
+        help=(
+            "True when this retention's invoice has some retention whose"
+            " declared base/amount no longer matches what would be"
+            " recalculated from the invoice's current data (see"
+            " account.move.retention_resync_pending). Note: for a"
+            " retention grouping several invoices, this only reflects the"
+            " first one."
+        ),
+    )
+
     code_visible = fields.Boolean(related="company_id.code_visible")
 
     payment_ids = fields.One2many(
@@ -469,7 +483,7 @@ class AccountRetention(models.Model):
         self.ensure_one()
         self.write({"state": "draft"})
         if self.payment_ids:
-            self.payment_ids.action_draft()
+            self._unreconcile_and_draft_payments(self.payment_ids)
 
     def action_post(self):
         """
@@ -982,6 +996,32 @@ class AccountRetention(models.Model):
                 elif rec.type_retention == 'municipal' and invoice.municipal_voucher_number:
                     invoice.municipal_voucher_number = False
 
+    def _unreconcile_and_draft_payments(self, payments):
+        """
+        Undo any reconciliation held by the move lines of `payments` and
+        reset each payment to draft, in an idempotent way: safe to call
+        even when there is nothing reconciled (remove_move_reconcile() is a
+        no-op in that case) or a payment is already in 'draft' (e.g. after
+        a previous draft-by-resync, needed so action_cancel() can still
+        operate on it afterwards).
+
+        Unlike the filter this replaces (`l.reconciled`), this does NOT
+        restrict to fully-reconciled lines - partially reconciled lines
+        must be unreconciled too, remove_move_reconcile() already handles
+        that correctly either way.
+        """
+        if not payments:
+            return
+
+        ctx = dict(self.env.context, bypass_retention_lock=True, force_delete=True)
+        lines = payments.mapped("move_id.line_ids")
+        if lines:
+            lines.with_context(ctx).remove_move_reconcile()
+
+        for payment in payments:
+            if payment.state != 'draft':
+                payment.with_context(ctx).action_draft()
+
     def action_cancel(self):
         for rec in self:
             if rec.state == 'cancel':
@@ -990,11 +1030,8 @@ class AccountRetention(models.Model):
             if rec.payment_ids:
                 ctx = dict(self.env.context, bypass_retention_lock=True,force_delete=True)
 
-                reconciled_lines = rec.payment_ids.mapped("move_id.line_ids").filtered(lambda l: l.reconciled)
-                if reconciled_lines:
-                    reconciled_lines.with_context(ctx).remove_move_reconcile()
+                rec._unreconcile_and_draft_payments(rec.payment_ids)
 
-                rec.payment_ids.with_context(ctx).action_draft()
                 rec.payment_ids.with_context(ctx).action_cancel()
                 rec.payment_ids.with_context(ctx).write({'retention_id': False, 'is_retention': False, 'payment_type_retention': False, 'retention_ref': False})
 
@@ -1303,6 +1340,30 @@ class AccountRetention(models.Model):
                 )
 
     @api.model
+    def _prepare_islr_line_vals(self, move, concept_id, base_amount, invoice_type, payment=None):
+        """
+        Builds the vals for a single ISLR account.retention.line out of a
+        (concept_id, base_amount, invoice_line_id) tuple as produced by
+        account.move._get_payment_concepts_from_invoice().
+
+        Shared by default_get() (new retention created from the invoice's
+        "Retención ISLR" button, where there is no payment yet - `payment`
+        stays None, preserving the original behavior) and by account.move's
+        resync rebuild (account_move.py, _resync_retention()), which passes
+        the retention's existing payment so the recreated line stays linked
+        to it, as the original one was.
+        """
+        vals = {
+            'move_id': move.id,
+            'payment_concept_id': int(concept_id),
+            'invoice_type': str(invoice_type),
+            'invoice_amount': base_amount,
+        }
+        if payment:
+            vals['payment_id'] = payment.id
+        return vals
+
+    @api.model
     def default_get(self, fields_list):
         res = super(AccountRetention, self).default_get(fields_list)
 
@@ -1312,30 +1373,23 @@ class AccountRetention(models.Model):
         multi = self.env.context.get('multi',False)
 
         if islr_lines_data and move_id and not multi:
+            move = self.env['account.move'].browse(move_id)
             line_commands = []
             for line_data in islr_lines_data:
                 concept_id, base_amount, invoice_line_id = line_data
-                line_vals = {
-                    'move_id': move_id,
-                    'payment_concept_id': concept_id,
-                    'invoice_type': str(ret_type),
-                    'invoice_amount': base_amount,
-                }
-                line_commands.append(Command.create(line_vals))
+                line_commands.append(Command.create(
+                    self._prepare_islr_line_vals(move, concept_id, base_amount, ret_type)
+                ))
             res['retention_line_ids'] = line_commands
 
         elif multi:
             line_commands = []
             for line_data in islr_lines_data:
                 concept_id, base_amount, invoice_line_id = line_data
-                actual_move_id = self.env['account.move.line'].browse(invoice_line_id).move_id.id
-                line_vals = {
-                    'move_id': actual_move_id,
-                    'payment_concept_id': int(concept_id),
-                    'invoice_type': str(ret_type),
-                    'invoice_amount': base_amount,
-                 }
-                line_commands.append(Command.create(line_vals))
+                actual_move = self.env['account.move.line'].browse(invoice_line_id).move_id
+                line_commands.append(Command.create(
+                    self._prepare_islr_line_vals(actual_move, concept_id, base_amount, ret_type)
+                ))
             res['retention_line_ids'] = line_commands
 
         return res
