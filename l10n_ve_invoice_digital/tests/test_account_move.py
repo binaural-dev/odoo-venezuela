@@ -887,18 +887,15 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         _logger.info("Test passed: code 200 error, UserError raised as expected.")
 
-    # Validacion de factura sin digitalizar
+    # Modo pago-primero: el posteo nunca encola/digitaliza automaticamente,
+    # y ya no bloquea en base al estado de una factura previa -- esa validacion
+    # sincronica fue removida junto con el flujo sincronico: la cola (FIFO +
+    # halt-on-error) es lo que ahora garantiza el orden.
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
-    def test_15_generate_document_digital_has_not_been_digitized_error(self, mock_call):
-
-        # El wizard solo aplica la logica TFHKA en diarios digitales, y para que
-        # exista una factura previa "sin digitalizar" la compania debe estar en
-        # modo pago-primero (no digitaliza automaticamente al confirmar).
+    def test_15_wizard_payment_first_mode_never_auto_enqueues(self, mock_call):
         self.journal.digital_invoice = True
         self.company.digitalization_with_payment_tfhka = True
 
-        # Ambas facturas se dejan en borrador a proposito: el posteo lo hace el
-        # propio wizard en action_confirm(), que es el flujo que este test cubre.
         self.invoice = self._create_invoice(
             products=[
                 {
@@ -913,6 +910,14 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.env['move.action.post.alert.wizard'].create({
             'move_id': self.invoice.id
         }).action_confirm()
+        self.assertEqual(self.invoice.state, "posted")
+        self.assertEqual(self.invoice.tfhka_digitalization_state, "none")
+
+        seq = self.env["ir.sequence"].sudo().search(
+            [("code", "=", "invoice.correlative"), ("company_id", "=", self.company.id)], limit=1
+        )
+        if seq:
+            seq.sudo().write({"number_next_actual": seq.number_next_actual + 1})
 
         invoice = self._create_invoice(
             products=[
@@ -925,13 +930,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             do_post=False,
         )
 
-        with self.assertRaises(UserError) as e:
-            self.env['move.action.post.alert.wizard'].create({
-                'move_id': invoice.id
-            }).action_confirm()
+        self.env['move.action.post.alert.wizard'].create({
+            'move_id': invoice.id
+        }).action_confirm()
 
-        _logger.info(e.exception)
-        _logger.info("Test passed: ")
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(invoice.tfhka_digitalization_state, "none")
 
     # Validacion de fecha
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
@@ -2783,14 +2787,19 @@ class TestAccountMoveApiCalls(TransactionCase):
         invoice._check_tfhka_payment_required()
 
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
-    def test_200_generate_document_digital_cash_blocks_unpaid(self, mock_call):
+    def test_200_action_generate_digital_cash_blocks_unpaid(self, mock_call):
+        # The payment guard now lives at the enqueue boundary
+        # (action_tfhka_generate_digital), not inside generate_document_digital
+        # itself -- that call is deferred to the queue's cron, which has no
+        # context to stop an unpaid invoice from being submitted.
         self.company.digitalization_with_payment_tfhka = True
         self.company.payment_mode_tfhka = "cash"
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
         with self.assertRaises(ValidationError):
-            invoice.generate_document_digital()
+            invoice.action_tfhka_generate_digital()
         mock_call.assert_not_called()
         self.assertFalse(invoice.is_digitalized)
+        self.assertEqual(invoice.tfhka_digitalization_state, "none")
 
