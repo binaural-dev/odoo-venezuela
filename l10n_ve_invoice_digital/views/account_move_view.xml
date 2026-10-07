@@ -56,4 +56,42 @@
             </xpath>
         </field>
     </record>
+
+    <record id="view_invoice_tree_inherit_tfhka_digitalization" model="ir.ui.view">
+        <field name="name">account.move.list.inherit.tfhka.digitalization</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_invoice_tree"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='name']" position="after">
+                <field name="tfhka_digitalization_state"
+                       string="Digitalization Status"
+                       widget="badge"
+                       decoration-success="tfhka_digitalization_state == 'success'"
+                       decoration-danger="tfhka_digitalization_state == 'error'"
+                       decoration-info="tfhka_digitalization_state == 'processing'"
+                       decoration-warning="tfhka_digitalization_state == 'queued'"
+                       decoration-primary="tfhka_digitalization_state == 'none'"
+                       optional="show"/>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_invoice_filter_inherit_tfhka_digitalization" model="ir.ui.view">
+        <field name="name">account.invoice.select.inherit.tfhka.digitalization</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <xpath expr="//filter[@name='to_check']" position="after">
+                <separator/>
+                <filter name="tfhka_digitalization_error" string="TFHKA: Error"
+                        domain="[('tfhka_digitalization_state', '=', 'error')]"/>
+                <filter name="tfhka_digitalization_queued" string="TFHKA: Queued"
+                        domain="[('tfhka_digitalization_state', '=', 'queued')]"/>
+            </xpath>
+            <xpath expr="//filter[@name='status']" position="after">
+                <filter name="group_tfhka_digitalization_state" string="TFHKA Digitalization Status"
+                        context="{'group_by': 'tfhka_digitalization_state'}"/>
+            </xpath>
+        </field>
+    </record>
 </odoo>
