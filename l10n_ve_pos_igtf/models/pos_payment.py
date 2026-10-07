@@ -43,8 +43,12 @@ class PosPayment(models.Model):
                     {
                         "journal_id": journal.id,
                         "date": fields.Date.context_today(order, order.date_order),
-                        "ref": _("Invoice payment for %s (%s) using %s")
-                        % (order.name, order.account_move.name, payment_method.name),
+                        "ref": _(
+                            "Invoice payment for %(order)s (%(invoice)s) using %(method)s",
+                            order=order.name,
+                            invoice=order.account_move.name,
+                            method=payment_method.name,
+                        ),
                         "pos_payment_ids": payment.ids,
                     }
                 )
