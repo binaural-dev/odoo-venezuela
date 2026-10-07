@@ -39,7 +39,68 @@ class StockPicking(models.Model):
                     "You must set the recipient (Contact) or the donation reason "
                     "to validate a donation delivery."
                 ))
+            if (
+                picking.is_donation
+                and not picking.sale_id
+                and picking.picking_type_code == "outgoing"
+            ):
+                errors = picking._get_donation_delivery_config_errors()
+                if errors:
+                    raise UserError("\n".join(errors))
         return super().button_validate()
+
+    def _has_real_time_valuation_moves(self):
+        """Whether some non-cancelled move is of a storable product with
+        automated (real_time) valuation, i.e. whether the picking generates
+        valuation journal entries (the stock valuation skips the products that
+        are not storable). The valuation mode is company dependent: it is read
+        with the company of the picking, as the stock valuation does
+        (`with_company(move.company_id)`), not with the active company of the
+        user, which may differ when several companies are enabled."""
+        self.ensure_one()
+        products = self.move_ids.filtered(
+            lambda move: move.state != "cancel"
+        ).product_id.with_company(self.company_id)
+        return any(
+            product.type == "product" and product.valuation == "real_time"
+            for product in products
+        )
+
+    def _get_donation_delivery_config_errors(self):
+        """Return the list of messages describing why the configuration of
+        this donation delivery is not coherent (empty if it is).
+
+        The valuation journal entry of the delivery is determined by the
+        configuration, not forced by the donation hook: the stock valuation
+        takes the debit account from the destination location, which must be
+        an `inventory` location. Its incoming valuation account is required
+        only when a move has a product with automated (real_time) valuation:
+        otherwise the delivery generates no valuation entry. Extension point:
+        other modules append their own checks with `super()`."""
+        self.ensure_one()
+        errors = []
+        moves = self.move_ids.filtered(lambda move: move.state != "cancel")
+        locations = self.location_dest_id | moves.location_dest_id
+        is_real_time = self._has_real_time_valuation_moves()
+        for location in locations:
+            if location.usage != "inventory":
+                # The account of a location that is not a donation destination
+                # is not evaluated: the destination itself must be changed.
+                errors.append(_(
+                    "The destination %(location)s of a donation delivery is not of type "
+                    "Inventory Loss. Change the Destination Location of the delivery (or the "
+                    "Default Destination Location of its operation type) to an Inventory Loss "
+                    "location, e.g. the default destination of the donation operation type.",
+                    location=location.display_name,
+                ))
+            elif is_real_time and not location.valuation_in_account_id:
+                errors.append(_(
+                    "The destination location %(location)s of a donation delivery has no "
+                    "Stock Valuation Account (Incoming). Set it in Inventory > Configuration > "
+                    "Locations, in the Accounting Information section of the location.",
+                    location=location.display_name,
+                ))
+        return errors
 
     def _get_donation_product_lines(self):
         """Per-line detail (code, description, qty, uom, lot, expiration,
