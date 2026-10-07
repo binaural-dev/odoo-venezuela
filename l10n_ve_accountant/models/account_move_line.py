@@ -159,6 +159,9 @@ class AccountMoveLine(models.Model):
         "not_foreign_recalculate",
         "foreign_debit_adjustment",
         "foreign_credit_adjustment",
+        # El término de pago de una factura se cuadra contra el resto de sus
+        # líneas (_balance_invoice_foreign_payment_term).
+        "move_id.line_ids.foreign_subtotal",
     )
     def _compute_foreign_debit_credit(self):
         for line in self:
@@ -190,6 +193,44 @@ class AccountMoveLine(models.Model):
                 self._calculate_from_product(line)
             else:
                 self._calculate_for_non_invoice(line)
+
+        self._balance_invoice_foreign_payment_term()
+
+    def _round_foreign_amount(self, line, amount):
+        # No se usa currency.round(): l10n_ve_rate lo sobrescribe y devuelve sin
+        # redondear los montos con más de 6 decimales (monto x tasa).
+        currency = line.foreign_currency_id or line.company_id.currency_foreign_id
+        return float_round(amount or 0.0, precision_digits=currency.decimal_places or 2)
+
+    def _balance_invoice_foreign_payment_term(self):
+        """
+        En una factura con un único vencimiento, el monto alterno de la línea de
+        CxC/CxP es la suma de las demás líneas (productos e impuestos ya
+        redondeados), en vez de débito x tasa sin redondear. Así el asiento
+        cuadra en la moneda alterna y la CxC coincide con el total impreso.
+        """
+        for move in self.move_id.filtered(lambda m: m.is_invoice(include_receipts=True)):
+            term_line = move.line_ids.filtered(lambda l: l.display_type == "payment_term")
+            if len(term_line) != 1 or term_line not in self:
+                continue
+            if (
+                term_line.not_foreign_recalculate
+                or term_line.foreign_debit_adjustment
+                or term_line.foreign_credit_adjustment
+            ):
+                continue
+            other_lines = move.line_ids - term_line
+            balance = self._round_foreign_amount(
+                term_line,
+                sum(other_lines.mapped("foreign_debit"))
+                - sum(other_lines.mapped("foreign_credit")),
+            )
+            foreign_debit = -balance if balance < 0 else 0.0
+            foreign_credit = balance if balance > 0 else 0.0
+            if term_line.foreign_debit != foreign_debit:
+                term_line.foreign_debit = foreign_debit
+            if term_line.foreign_credit != foreign_credit:
+                term_line.foreign_credit = foreign_credit
 
     def _calculate_from_adjustment(self, line):
         new_foreign_debit = abs(line.foreign_debit_adjustment) if line.foreign_debit_adjustment else 0.0
@@ -275,7 +316,13 @@ class AccountMoveLine(models.Model):
        
         line.foreign_debit_no_format = line.debit * inverse_rate_to_use
         line.foreign_credit_no_format = line.credit * inverse_rate_to_use
-        
+
+        # En facturas, los impuestos se redondean igual que los productos para
+        # que la suma de las líneas coincida con el total impreso.
+        if line.display_type == "tax" and line.move_id.is_invoice(include_receipts=True):
+            new_foreign_debit = self._round_foreign_amount(line, new_foreign_debit)
+            new_foreign_credit = self._round_foreign_amount(line, new_foreign_credit)
+
         if new_foreign_debit:
             line.foreign_debit = new_foreign_debit
         if new_foreign_credit:
@@ -284,7 +331,7 @@ class AccountMoveLine(models.Model):
     def _calculate_from_product(self, line):
 
         sign = line.move_id.direction_sign * -1
-        amount = line.foreign_currency_id.round(line.foreign_subtotal * sign)
+        amount = self._round_foreign_amount(line, line.foreign_subtotal * sign)
         new_foreign_debit = abs(amount) if amount < 0 else 0.0
         if line.foreign_debit != new_foreign_debit:
             line.foreign_debit = new_foreign_debit

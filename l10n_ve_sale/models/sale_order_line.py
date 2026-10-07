@@ -1,7 +1,7 @@
 from odoo import api, fields, models, _
 import logging
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_is_zero
+from odoo.tools import float_is_zero, float_round
 
 
 
@@ -78,8 +78,11 @@ class SaleOrderLine(models.Model):
             
             price_with_discount = line.foreign_price * (1 - (discount / 100.0))
 
-            line.foreign_subtotal = line.foreign_currency_id.round(
-                price_with_discount * line.product_uom_qty
+            # No se usa currency.round(): l10n_ve_rate lo sobrescribe y devuelve
+            # sin redondear los montos con más de 6 decimales.
+            line.foreign_subtotal = float_round(
+                price_with_discount * line.product_uom_qty,
+                precision_digits=line.foreign_currency_id.decimal_places or 2,
             )
             
     def _prepare_invoice_line(self, **optional_values):
