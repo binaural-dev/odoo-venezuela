@@ -12,3 +12,4 @@ from . import test_pos_change_foreign_amount
 from . import test_pos_session_close_statement_foreign_rate
 from . import test_pos_refund_foreign_sign
 from . import test_pos_payment_foreign_rate
+from . import test_pos_change_payment_moves
