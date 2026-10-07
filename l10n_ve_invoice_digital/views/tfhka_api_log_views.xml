@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tfhka_api_log_tree" model="ir.ui.view">
+        <field name="name">tfhka.api.log.tree</field>
+        <field name="model">tfhka.api.log</field>
+        <field name="arch" type="xml">
+            <tree string="TFHKA API Log" default_order="request_date desc" create="false" edit="false">
+                <field name="request_date"/>
+                <field name="endpoint"/>
+                <field name="http_method"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+                <field name="status_code"/>
+                <field name="success"/>
+                <field name="res_name"/>
+            </tree>
+        </field>
+    </record>
+
+    <record id="view_tfhka_api_log_form" model="ir.ui.view">
+        <field name="name">tfhka.api.log.form</field>
+        <field name="model">tfhka.api.log</field>
+        <field name="arch" type="xml">
+            <form string="TFHKA API Log" create="false" edit="false">
+                <sheet>
+                    <field name="res_id" invisible="1"/>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_open_origin"
+                                type="object"
+                                string="View Origin Document"
+                                class="oe_stat_button"
+                                icon="fa-external-link"
+                                invisible="not res_id"/>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="request_date"/>
+                            <field name="endpoint"/>
+                            <field name="http_method"/>
+                            <field name="company_id" groups="base.group_multi_company"/>
+                        </group>
+                        <group>
+                            <field name="status_code"/>
+                            <field name="success"/>
+                            <field name="res_name"/>
+                        </group>
+                    </group>
+                    <group>
+                        <field name="request_payload_html" readonly="1"/>
+                        <field name="response_payload_html" readonly="1"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="view_tfhka_api_log_search" model="ir.ui.view">
+        <field name="name">tfhka.api.log.search</field>
+        <field name="model">tfhka.api.log</field>
+        <field name="arch" type="xml">
+            <search string="Search TFHKA API Log">
+                <field name="endpoint"/>
+                <field name="company_id"/>
+                <filter string="Successful" name="filter_success" domain="[('success', '=', True)]"/>
+                <filter string="Failed" name="filter_failed" domain="[('success', '=', False)]"/>
+                <separator/>
+                <filter string="Endpoint" name="group_by_endpoint" context="{'group_by': 'endpoint'}"/>
+                <filter string="Company" name="group_by_company" context="{'group_by': 'company_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_tfhka_api_log" model="ir.actions.act_window">
+        <field name="name">TFHKA API Log</field>
+        <field name="res_model">tfhka.api.log</field>
+        <field name="view_mode">tree,form</field>
+        <field name="context">{'search_default_group_by_endpoint': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No records in the TFHKA API log yet
+            </p>
+            <p>
+                Every request and response to the The Factory HKA API is logged here.
+                Records older than 3 months are automatically deleted.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_tfhka_api_log"
+              name="TFHKA API Log"
+              parent="account.menu_finance_configuration"
+              action="action_tfhka_api_log"
+              groups="l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin,base.group_system"
+              sequence="101"/>
+</odoo>
