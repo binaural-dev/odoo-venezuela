@@ -2,7 +2,7 @@ import importlib.util
 import os
 from itertools import count
 
-from odoo import Command
+from odoo import Command, _
 from odoo.exceptions import UserError
 from odoo.tests import tagged
 
@@ -22,13 +22,13 @@ class TestStockPicking(TestDonationCommon):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        # Some environments leave default_location_src_id/dest_id unset on
-        # existing picking types (e.g. a fresh DB where stock's own location
-        # data loaded after the warehouse's operation types were created) --
-        # force a recompute so these tests don't depend on that pre-existing
-        # state.
+        # Some environments leave default_location_src_id unset on existing
+        # picking types (e.g. a fresh DB where stock's own location data
+        # loaded after the warehouse's operation types were created) -- force
+        # a recompute so these tests don't depend on that pre-existing state.
+        # The destination is not recomputed: the fixture sets the donation
+        # location (see `common.py`).
         cls.picking_type_donation._compute_default_location_src_id()
-        cls.picking_type_donation._compute_default_location_dest_id()
         cls.location_stock = cls.picking_type_donation.default_location_src_id
 
         cls.product_donation_a = cls.env["product.product"].create({
@@ -50,8 +50,11 @@ class TestStockPicking(TestDonationCommon):
                 "quantity": 100.0,
             })
 
-    def _create_donation_delivery(self, products_qty, partner=None, donation_reason=None, group=None, extra_vals=None):
+    def _create_donation_delivery(
+        self, products_qty, partner=None, donation_reason=None, group=None, extra_vals=None, dest_location=None
+    ):
         picking_type = self.picking_type_donation
+        dest_location = dest_location or picking_type.default_location_dest_id
         move_vals = [
             Command.create({
                 "name": product.name,
@@ -59,7 +62,7 @@ class TestStockPicking(TestDonationCommon):
                 "product_uom_qty": qty,
                 "product_uom": product.uom_id.id,
                 "location_id": picking_type.default_location_src_id.id,
-                "location_dest_id": picking_type.default_location_dest_id.id,
+                "location_dest_id": dest_location.id,
                 "group_id": group.id if group else False,
             })
             for product, qty in products_qty
@@ -67,7 +70,7 @@ class TestStockPicking(TestDonationCommon):
         picking = self.env["stock.picking"].create({
             "picking_type_id": picking_type.id,
             "location_id": picking_type.default_location_src_id.id,
-            "location_dest_id": picking_type.default_location_dest_id.id,
+            "location_dest_id": dest_location.id,
             "partner_id": partner.id if partner else False,
             "donation_reason": donation_reason,
             "is_donation": True,
@@ -222,7 +225,9 @@ class TestStockPicking(TestDonationCommon):
     def test_07_receipt_picking_not_confused_with_delivery(self):
         """A donation RECEIPT (is_donation=True, code='incoming') does not
         behave like a delivery: validating it without a recipient or a
-        reason does not raise the donation delivery error."""
+        reason does not raise the donation delivery error. Other modules may
+        require the contact of a receipt (higea_donation does), so what is
+        checked is that the delivery error is not the one raised."""
         receipt_picking_type = self.env["stock.picking.type"].create({
             "name": "Donation Receipt Test",
             "code": "incoming",
@@ -252,8 +257,16 @@ class TestStockPicking(TestDonationCommon):
         self.assertTrue(picking.is_donation)
         self.assertEqual(picking.picking_type_code, "incoming")
         self._confirm_and_set_done_qty(picking)
-        picking.button_validate()
-        self.assertEqual(picking.state, "done")
+        delivery_error = _(
+            "You must set the recipient (Contact) or the donation reason "
+            "to validate a donation delivery."
+        )
+        try:
+            picking.button_validate()
+        except UserError as error:
+            self.assertNotEqual(error.args[0], delivery_error)
+        else:
+            self.assertEqual(picking.state, "done")
 
     def test_08_real_time_valuation_delivery_with_partner_posts_correctly(self):
         """A donation delivery with a recipient set must validate
@@ -451,3 +464,176 @@ class TestStockPicking(TestDonationCommon):
             self.assertTrue(flagged_picking.is_donation)
             self.assertFalse(sale_picking.is_donation)
             self.assertFalse(normal_picking.is_donation)
+
+    def _prepare_delivery_to(self, dest_location, group=None, product=None):
+        picking = self._create_donation_delivery(
+            [(product or self.product_donation_a, 1)],
+            partner=self.partner,
+            dest_location=dest_location,
+            group=group,
+        )
+        self._confirm_and_set_done_qty(picking)
+        return picking
+
+    def _create_donation_location(self, **vals):
+        return self.env["stock.location"].create({
+            "name": "Donation Destination Test",
+            "usage": "inventory",
+            "location_id": self.warehouse_donation.view_location_id.id,
+            "valuation_in_account_id": False,
+            **vals,
+        })
+
+    def test_16_real_time_delivery_to_destination_without_account_is_blocked(self):
+        """A donation delivery of a real_time product whose destination has no
+        incoming valuation account is blocked, naming the location."""
+        location = self._create_donation_location(name="Donations Without Account")
+        picking = self._prepare_delivery_to(location, product=self._create_real_time_product())
+        self.assertEqual(len(picking._get_donation_delivery_config_errors()), 1)
+        with self.assertRaises(UserError) as error:
+            picking.button_validate()
+        self.assertIn(location.display_name, error.exception.args[0])
+        self.assertNotEqual(picking.state, "done")
+
+    def test_17_manual_valuation_delivery_to_destination_without_account_validates(self):
+        """With manual_periodic valuation no valuation entry is generated, so
+        the incoming account is not required (the usage still is)."""
+        self.assertEqual(self.product_donation_a.valuation, "manual_periodic")
+        location = self._create_donation_location(name="Donations Without Account Manual")
+        picking = self._prepare_delivery_to(location)
+        self.assertEqual(picking._get_donation_delivery_config_errors(), [])
+        picking.button_validate()
+        self.assertEqual(picking.state, "done")
+
+        internal = self._create_donation_location(name="Donations Manual Internal", usage="internal")
+        picking = self._prepare_delivery_to(internal)
+        self.assertEqual(len(picking._get_donation_delivery_config_errors()), 1)
+        with self.assertRaises(UserError):
+            picking.button_validate()
+
+    def test_18_delivery_to_destination_not_inventory_is_blocked(self):
+        """A donation delivery whose destination is not an `inventory`
+        location is blocked, even if it has an account. The account of such a
+        location is not evaluated, so there is a single error."""
+        product = self._create_real_time_product()
+        internal = self._create_donation_location(
+            name="Donations Internal", usage="internal", valuation_in_account_id=self.account_expense.id
+        )
+        picking = self._prepare_delivery_to(internal, product=product)
+        self.assertEqual(len(picking._get_donation_delivery_config_errors()), 1)
+        with self.assertRaises(UserError) as error:
+            picking.button_validate()
+        self.assertIn(internal.display_name, error.exception.args[0])
+
+        customers = self.env.ref("stock.stock_location_customers")
+        picking = self._prepare_delivery_to(customers, product=product)
+        errors = picking._get_donation_delivery_config_errors()
+        self.assertEqual(len(errors), 1)
+        self.assertIn(customers.display_name, errors[0])
+        with self.assertRaises(UserError) as error:
+            picking.button_validate()
+        self.assertEqual(error.exception.args[0], errors[0])
+
+    def test_19_well_configured_delivery_validates_and_debits_location_account(self):
+        """A delivery to a coherent destination validates, the config check
+        returns no errors, and the valuation entry debits the incoming
+        account of the destination location."""
+        product = self._create_real_time_product()
+        picking = self._create_donation_delivery([(product, 2)], partner=self.partner)
+        self._confirm_and_set_done_qty(picking)
+        self.assertEqual(picking._get_donation_delivery_config_errors(), [])
+        picking.button_validate()
+        self.assertEqual(picking.state, "done")
+        valuation_move = picking.move_ids.stock_valuation_layer_ids.account_move_id
+        debit_lines = valuation_move.line_ids.filtered(lambda line: line.debit > 0)
+        self.assertEqual(debit_lines.account_id, self.location_donation.valuation_in_account_id)
+
+    def test_20_donation_sale_delivery_is_not_affected(self):
+        """A delivery that comes from a donation sale order is not checked:
+        it validates even if its destination is not coherent."""
+        customers = self.env.ref("stock.stock_location_customers")
+        picking = self._prepare_delivery_to(
+            customers, group=self._create_donation_sale_group(), product=self._create_real_time_product()
+        )
+        self.assertTrue(picking.sale_id)
+        picking.button_validate()
+        self.assertEqual(picking.state, "done")
+
+    def test_21_non_donation_delivery_is_not_checked(self):
+        """The check only applies to donation deliveries: a normal delivery
+        (is_donation False) to Customers validates."""
+        customers = self.env.ref("stock.stock_location_customers")
+        picking = self._prepare_delivery_to(customers, product=self._create_real_time_product())
+        picking.is_donation = False
+        picking.button_validate()
+        self.assertEqual(picking.state, "done")
+
+    def test_22_move_destination_different_from_picking_header_is_checked(self):
+        """The destination of a move that differs from the header of the
+        picking is checked too (the valuation entry uses the move's)."""
+        bad_location = self._create_donation_location(name="Move Destination Without Account")
+        picking = self._create_donation_delivery(
+            [(self._create_real_time_product(), 1)], partner=self.partner
+        )
+        self.assertEqual(picking.location_dest_id, self.location_donation)
+        picking.move_ids.location_dest_id = bad_location
+        self.assertEqual(picking.location_dest_id, self.location_donation)
+        errors = picking._get_donation_delivery_config_errors()
+        self.assertEqual(len(errors), 1)
+        self.assertIn(bad_location.display_name, errors[0])
+        self._confirm_and_set_done_qty(picking)
+        with self.assertRaises(UserError):
+            picking.button_validate()
+
+    def test_23_cancelled_moves_are_ignored(self):
+        """A cancelled move neither requires the account nor adds locations."""
+        bad_location = self._create_donation_location(name="Cancelled Move Destination")
+        picking = self._create_donation_delivery(
+            [(self.product_donation_a, 1), (self._create_real_time_product(), 1)], partner=self.partner
+        )
+        real_time_move = picking.move_ids.filtered(lambda move: move.product_id.valuation == "real_time")
+        real_time_move.location_dest_id = bad_location
+        picking.action_confirm()
+        self.assertEqual(len(picking._get_donation_delivery_config_errors()), 1)
+        real_time_move._action_cancel()
+        self.assertEqual(picking._get_donation_delivery_config_errors(), [])
+
+    def test_24_real_time_is_read_with_the_company_of_the_picking(self):
+        """The valuation mode is company dependent: it is read with the
+        company of the picking, not with the active company of the user. With
+        another company as the active one (where the category is manual) a
+        real_time delivery to a destination without account is still blocked."""
+        company_b = self.env["res.company"].create({"name": "Company B Real Time"})
+        product = self._create_real_time_product()
+        self.assertEqual(product.valuation, "real_time")
+        location = self._create_donation_location(name="Donations Without Account Multi")
+        picking = self._prepare_delivery_to(location, product=product)
+        self.assertEqual(picking.company_id, self.company)
+
+        multi_company = picking.with_context(
+            allowed_company_ids=[company_b.id, self.company.id]
+        )
+        self.assertEqual(multi_company.env.company, company_b)
+        self.assertEqual(product.with_company(company_b).valuation, "manual_periodic")
+        self.assertTrue(multi_company._has_real_time_valuation_moves())
+        self.assertEqual(len(multi_company._get_donation_delivery_config_errors()), 1)
+        with self.assertRaises(UserError):
+            multi_company.button_validate()
+
+    def test_25_consumable_in_real_time_category_does_not_require_the_account(self):
+        """Only storable products generate valuation entries: a consumable in
+        a real_time category does not make the destination account required."""
+        storable = self._create_real_time_product()
+        consumable = self.env["product.product"].create({
+            "name": "Consumable In Real Time Category",
+            "type": "consu",
+            "categ_id": storable.categ_id.id,
+        })
+        self.assertEqual(consumable.valuation, "real_time")
+        location = self._create_donation_location(name="Donations Without Account Consumable")
+        picking = self._prepare_delivery_to(location, product=consumable)
+        self.assertFalse(picking._has_real_time_valuation_moves())
+        self.assertEqual(picking._get_donation_delivery_config_errors(), [])
+        storable_picking = self._prepare_delivery_to(location, product=storable)
+        self.assertTrue(storable_picking._has_real_time_valuation_moves())
+        self.assertEqual(len(storable_picking._get_donation_delivery_config_errors()), 1)

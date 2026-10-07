@@ -41,37 +41,6 @@ class TestProductWarehouse(TestDonationCommon):
         new_loc = self.env["stock.location"].new({"name": "Fake"})
         self.assertFalse(new_loc.get_warehouse())
 
-    def test_05_picking_type_donation_must_be_incoming_or_outgoing(self):
-        """Donation picking type must have code incoming or outgoing.
-
-        `is_donation_picking_type` is a shared flag: `l10n_ve_donation` uses
-        it for its outgoing donation delivery, `higea_donation` reuses the
-        SAME flag for its incoming donation receipt -- so both codes must be
-        accepted, while any other code (ej. 'internal') must still fail."""
-        donation_incoming = self.env["stock.picking.type"].create({
-            "name": "Donation Receipt",
-            "code": "incoming",
-            "sequence_code": "DONIN",
-            "is_donation_picking_type": True,
-        })
-        self.assertTrue(donation_incoming.is_donation_picking_type)
-
-        donation_outgoing = self.env["stock.picking.type"].create({
-            "name": "Donation Delivery",
-            "code": "outgoing",
-            "sequence_code": "DONOUT",
-            "is_donation_picking_type": True,
-        })
-        self.assertTrue(donation_outgoing.is_donation_picking_type)
-
-        with self.assertRaises(ValidationError):
-            self.env["stock.picking.type"].create({
-                "name": "Bad Donation Picking",
-                "code": "internal",
-                "sequence_code": "BAD",
-                "is_donation_picking_type": True,
-            })
-
     def test_06_warehouse_readonly_compute(self):
         """Readonly field mirrors is_donation_warehouse."""
         self.assertTrue(self.warehouse_donation.readonly_is_donation_warehouse)

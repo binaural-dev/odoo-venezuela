@@ -162,9 +162,11 @@ class TestStockScrap(TestDonationCommon):
             "is_donation": True,
         })
         scrap_a._compute_scrap_location_domain()
-        
+
         domain_a = scrap_a.scrap_location_domain
-        self.assertIn("'company_id', '=', company_id", domain_a)
+        self.assertIn(f"('company_id', '=', {self.company.id})", domain_a)
+        self.assertNotIn(f"('company_id', '=', {company_b.id})", domain_a)
+        self.assertIn("('is_donation_warehouse', '=', True)", domain_a)
 
     def test_08_scrap_certificate_shows_blank_beneficiary(self):
         """Documented limitation (not resolved in this change):
