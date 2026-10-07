@@ -483,6 +483,7 @@ class AccountRetention(models.Model):
         # from 20:00 local onward), making this fallback fail the very
         # constraint it's about to trigger on write() a few lines below.
         today = fields.Date.context_today(self)
+        self._check_duplicate_invoices_all_states()
         is_automated = self.env.context.get('automated_action') or self.env.context.get('cron_id')
 
         for retention in self:
@@ -1441,3 +1442,33 @@ class AccountRetention(models.Model):
             res["keep_alter_value_vef"] = True
 
         return res
+
+    def _check_duplicate_invoices_all_states(self):
+        for retention in self:
+            invoices = retention.retention_line_ids.mapped('move_id')
+            if not invoices:
+                continue
+
+            duplicate_line = self.env['account.retention.line'].search([
+                ('retention_id.state', 'in', ['draft', 'emitted']),
+                ('retention_id.retention_type', '=', retention.retention_type),
+                ('retention_id', '!=', retention.id),
+                ('move_id', 'in', invoices.ids),
+            ], limit=1)
+
+            if duplicate_line:
+                other_ret = duplicate_line.retention_id
+
+                # Obtener el label del campo (ej. 'Estado')
+                field_label = other_ret._fields['state'].string
+
+                raise UserError(_(
+                    "No se puede emitir este comprobante.\n\n"
+                    "La factura '%(invoice)s' ya está incluida en el comprobante '%(other_ret)s' "
+                    "(%(field_name)s: %(state_val)s)."
+                ) % {
+                    'invoice': duplicate_line.move_id.display_name,
+                    'other_ret': other_ret.display_name,
+                    'field_name': field_label,
+                    'state_val': other_ret.state,
+                })
