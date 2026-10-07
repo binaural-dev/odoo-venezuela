@@ -298,7 +298,9 @@ class TestPosDataLoading(TransactionCase):
         )
         self.assertAlmostEqual(expected, 365.0)
 
-        data = self._load()
+        # Con la compañía de la sesión, como el PdV: el core convierte con
+        # ``self.env.company`` y la tasa de 36,5 es de esta compañía.
+        data = self.session.with_company(self.company).load_data([])
         products = {p["id"]: p for p in data["product.product"]}
         self.assertIn(self.product.id, products)
         self.assertAlmostEqual(products[self.product.id]["lst_price"], expected)

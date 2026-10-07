@@ -14,6 +14,8 @@ Spec: ``openspec/changes/l10n-ve-pos-change-payment-moves``.
 from odoo import Command
 from odoo.tests import tagged
 
+from odoo.addons.l10n_ve_pos.models.pos_payment import PosPayment as VePosPayment
+
 from .test_pos_session_accounting_common import TestPosSessionAccountingBase
 
 RATE = 36.5
@@ -43,6 +45,14 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
             }
         )
         cls.config.write({"payment_method_ids": [Command.link(cls.other_cash_method.id)]})
+
+    def _payment_moves(self, payments):
+        """Asientos de pago de ``l10n_ve_pos``, aunque otro módulo lo
+        reimplemente encima: ``l10n_ve_pos_igtf`` reescribe
+        ``_create_payment_moves`` sin ``super()`` (un asiento por pago, nunca
+        funde el vuelto) y, con él instalado como en el CI, este código no se
+        ejecutaría."""
+        return VePosPayment._create_payment_moves(payments)
 
     def _order(self):
         session = self.env["pos.session"].create(
@@ -125,7 +135,7 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
         change = self._pay(order, self.other_cash_method, -4.0, is_change=True)
 
         self._invoice(order)
-        moves = order.payment_ids._create_payment_moves()
+        moves = self._payment_moves(order.payment_ids)
 
         self.assertEqual(len(moves), 2)
         self.assertNotEqual(payment.account_move_id, change.account_move_id)
@@ -140,7 +150,7 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
         change = self._pay(order, self.combined_cash_method, -4.0, is_change=True)
 
         self._invoice(order)
-        moves = order.payment_ids._create_payment_moves()
+        moves = self._payment_moves(order.payment_ids)
 
         self.assertEqual(len(moves), 1)
         self.assertEqual(moves.pos_payment_ids, payment | change)
@@ -156,7 +166,7 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
         self._invoice(order)
         # El core funde el vuelto con el primer cobro en efectivo del
         # recordset, sea del método que sea.
-        moves = (other_payment | same_method_payment | change)._create_payment_moves()
+        moves = self._payment_moves(other_payment | same_method_payment | change)
 
         self.assertEqual(len(moves), 2)
         self.assertEqual(
@@ -180,7 +190,7 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
         )
 
         self._invoice(order)
-        order.payment_ids._create_payment_moves()
+        self._payment_moves(order.payment_ids)
 
         self.assertMoveForeign(bank.account_move_id, bank.foreign_amount)
         self.assertMoveForeign(cash.account_move_id, cash.foreign_amount)
@@ -193,7 +203,7 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
         change = self._pay(order, self.split_cash_method, -4.0, is_change=True)
 
         self._invoice(order)
-        moves = order.payment_ids._create_payment_moves()
+        moves = self._payment_moves(order.payment_ids)
 
         self.assertEqual(len(moves), 2)
         self.assertEqual(payment.account_move_id.pos_payment_ids, payment)
@@ -208,7 +218,7 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
         other_change = self._pay(order, self.other_cash_method, -4.0, is_change=True)
 
         self._invoice(order)
-        moves = order.payment_ids._create_payment_moves()
+        moves = self._payment_moves(order.payment_ids)
 
         self.assertEqual(len(moves), 3)
         for paid in (payment, change, other_change):
@@ -239,7 +249,7 @@ class TestPosChangePaymentMoves(TestPosSessionAccountingBase):
         invoice.action_post()
         order.write({"account_move": invoice.id})
 
-        moves = order.payment_ids._create_payment_moves()
+        moves = self._payment_moves(order.payment_ids)
         self.assertEqual(len(moves), 2)
         order._reconcile_invoice_payments(invoice, moves)
 
