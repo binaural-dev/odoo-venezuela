@@ -118,8 +118,52 @@ class AccountPaymentRegister(models.TransientModel):
             "foreign_rate": self.foreign_rate,
             "foreign_inverse_rate": self.foreign_inverse_rate,
         })
-       
+        if self.writeoff_is_exchange_account and "force_balance" in payment_vals:
+            # Core only sends a 'force_balance' when the write-off account is an exchange difference
+            # account, but the liquidity line is recomputed with the custom rate of the payment, so
+            # that balance is lost and the invoice stays partially paid. Post the difference as an
+            # explicit write-off line instead.
+            payment_vals.pop("force_balance")
+            payment_vals["write_off_line_vals"].append(
+                self._prepare_exchange_difference_write_off_vals(batch_result)
+            )
         return payment_vals
+
+    def _prepare_exchange_difference_write_off_vals(self, batch_result):
+        """
+        Build the write-off line of the exchange difference so the counterpart line of the payment
+        matches exactly the residual of the invoices in company currency.
+
+        The liquidity balance is computed the same way as in account.payment
+        _prepare_move_line_default_vals, so the counterpart line ends up being equal to the residual
+        and the invoices are fully reconciled without leaving any remaining cents.
+        """
+        self.ensure_one()
+        comp_curr = self.company_id.currency_id
+        sign = 1 if self.payment_type == "inbound" else -1
+        custom_rate = 0.0
+        if self.foreign_inverse_rate:
+            custom_rate = (
+                self.foreign_rate
+                if self.currency_id == self.foreign_currency_id
+                else self.foreign_inverse_rate
+            )
+        liquidity_balance = sign * abs(self.currency_id._convert(
+            abs(self.amount),
+            comp_curr,
+            self.company_id,
+            self.payment_date,
+            custom_rate=custom_rate,
+        ))
+        residual_balance = sum(batch_result["lines"].mapped("amount_residual"))
+        return {
+            "name": self.writeoff_label,
+            "account_id": self.writeoff_account_id.id,
+            "partner_id": self.partner_id.id,
+            "currency_id": self.currency_id.id,
+            "amount_currency": sign * self.payment_difference,
+            "balance": comp_curr.round(residual_balance - liquidity_balance),
+        }
 
 
    
