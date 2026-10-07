@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "17.0.1.0.3",
+    "version": "17.0.1.0.6",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "",
@@ -15,10 +15,14 @@
     ],
     "data": [
         "data/donation_certificate_paperformat.xml",
+        "data/ir_sequence.xml",
         "security/res_groups.xml",
         "security/ir.model.access.csv",
         "report/donation_certificate_report.xml",
         "report/donation_certificate_template.xml",
+        "report/donation_product_table_template.xml",
+        "report/donation_delivery_certificate_report.xml",
+        "report/donation_delivery_certificate_template.xml",
         "views/account_move_views.xml",
         "views/product_template_views.xml",
         "views/res_config_setting_views.xml",

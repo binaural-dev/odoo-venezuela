@@ -24,7 +24,10 @@ class StockScrap(models.Model):
         native_domain = "[('usage', '=', 'inventory')]"
         for picking in self:
             if picking.is_donation:
-                picking.scrap_location_domain = "[('is_donation_warehouse', '=', True), ('company_id', '=', company_id)]"
+                picking.scrap_location_domain = str([
+                    ("is_donation_warehouse", "=", True),
+                    ("company_id", "=", picking.company_id.id),
+                ])
             else:
                 picking.scrap_location_domain = native_domain
 
@@ -41,6 +44,11 @@ class StockScrap(models.Model):
                     limit=1,
                 )
                 scrap.scrap_location_id = scrap_location
+
+    def _creation_message(self):
+        if self.is_donation:
+            return _("Donation created")
+        return super()._creation_message()
 
     def do_scrap(self):
         self._check_company()
