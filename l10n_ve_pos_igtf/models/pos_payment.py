@@ -43,8 +43,12 @@ class PosPayment(models.Model):
                     {
                         "journal_id": journal.id,
                         "date": fields.Date.context_today(order, order.date_order),
-                        "ref": _("Invoice payment for %s (%s) using %s")
-                        % (order.name, order.account_move.name, payment_method.name),
+                        "ref": _(
+                            "Invoice payment for %(order)s (%(invoice)s) using %(method)s",
+                            order=order.name,
+                            invoice=order.account_move.name,
+                            method=payment_method.name,
+                        ),
                         "pos_payment_ids": payment.ids,
                     }
                 )
@@ -121,7 +125,13 @@ class PosPayment(models.Model):
                     [add_credit_line_vals]
                 )
                 receivable_line.not_foreign_recalculate = True
-                receivable_line.foreign_credit = abs(payment.foreign_amount - payment.foreign_igtf_amount)
+                foreign_value = abs(payment.foreign_amount - payment.foreign_igtf_amount)
+                if receivable_line.credit > 0:
+                    receivable_line.foreign_credit = foreign_value
+                    receivable_line.foreign_debit = 0
+                else:
+                    receivable_line.foreign_debit = foreign_value
+                    receivable_line.foreign_credit = 0
 
             other_lines = self.env["account.move.line"].with_context(check_move_validity=False).create(
                 [credit_line_vals, debit_line_vals]
@@ -129,16 +139,27 @@ class PosPayment(models.Model):
             igtf_or_receivable_line = other_lines[0]
             debit_line = other_lines[1]
 
-            # Setear Bs correctos en la línea de débito (CUENTA POR COBRAR POS)
             debit_line.not_foreign_recalculate = True
-            debit_line.foreign_debit = abs(payment.foreign_amount)
-
-            # Setear Bs correctos en crédito IGTF o cuenta por cobrar (pago sin IGTF split)
-            igtf_or_receivable_line.not_foreign_recalculate = True
-            if payment.include_igtf:
-                igtf_or_receivable_line.foreign_credit = abs(payment.foreign_igtf_amount)
+            foreign_value = abs(payment.foreign_amount)
+            if debit_line.debit > 0:
+                debit_line.foreign_debit = foreign_value
+                debit_line.foreign_credit = 0
             else:
-                igtf_or_receivable_line.foreign_credit = abs(payment.foreign_amount)
+                debit_line.foreign_credit = foreign_value
+                debit_line.foreign_debit = 0
+
+            igtf_or_receivable_line.not_foreign_recalculate = True
+            foreign_value = (
+                abs(payment.foreign_igtf_amount)
+                if payment.include_igtf
+                else abs(payment.foreign_amount)
+            )
+            if igtf_or_receivable_line.credit > 0:
+                igtf_or_receivable_line.foreign_credit = foreign_value
+                igtf_or_receivable_line.foreign_debit = 0
+            else:
+                igtf_or_receivable_line.foreign_debit = foreign_value
+                igtf_or_receivable_line.foreign_credit = 0
 
             payment_move._post()
         return result
