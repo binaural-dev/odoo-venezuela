@@ -173,22 +173,43 @@ class TestRetentionResync(RetentionTestCommon):
         _logger.info("========= test_05 passed =========")
 
     # 6. _check_retention_paid_lock(): button_draft() and
-    # action_recalculate_retentions() refuse to touch a paid invoice.
+    # action_recalculate_retentions() refuse to touch an invoice with a
+    # REAL payment applied (not just the retention's own payment - see
+    # test_06b for that case, which must NOT block).
     def test_06_paid_lock_blocks_draft_and_recalculate(self):
         invoice = self._create_prepared_iva_invoice()
         self._emit_iva_retention(invoice)
-        invoice.write({"payment_state": "paid"})
+
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
 
         with self.assertRaises(UserError):
             invoice.button_draft()
 
         with self.assertRaises(UserError):
             invoice.action_recalculate_retentions()
-
-        invoice.write({"payment_state": "in_payment"})
-        with self.assertRaises(UserError):
-            invoice.button_draft()
         _logger.info("========= test_06 passed =========")
+
+    # 6b. A retention's own payment being the only thing reconciled
+    # against the invoice must NOT block button_draft()/
+    # action_recalculate_retentions() - only a REAL external payment does.
+    def test_06b_retention_only_payment_does_not_block(self):
+        invoice = self._create_prepared_iva_invoice()
+        retention = self._emit_iva_retention(invoice)
+        payment = retention.payment_ids
+
+        self.assertTrue(payment.is_retention)
+        invoice._check_retention_paid_lock()  # must not raise
+
+        invoice.button_draft()
+        self.assertEqual(retention.state, "draft")
+        _logger.info("========= test_06b passed =========")
 
     # 7. button_cancel() of the invoice cancels its emitted retention(s)
     # before the invoice itself is cancelled.
@@ -217,7 +238,7 @@ class TestRetentionResync(RetentionTestCommon):
         self.assertEqual(retention.state, "cancel")
         _logger.info("========= test_08 passed =========")
 
-    # 9. retention_resync_pending / _get_retention_resync_diff(): False when
+    # 9. retention_resync_pending / _get_retentions_pending_resync(): False when
     # everything matches, True when the declared base (IVA) or the linked
     # payment's amount (also covers Municipal) no longer match what the
     # generators would recompute - and turns False again after
@@ -238,8 +259,7 @@ class TestRetentionResync(RetentionTestCommon):
         self.assertTrue(invoice.retention_resync_pending)
         self.assertTrue(retention.retention_resync_pending)
 
-        diff = invoice._get_retention_resync_diff()
-        self.assertIn(retention, diff.get("to_rebuild", self.env["account.retention"]))
+        self.assertIn(retention, invoice._get_retentions_pending_resync())
 
         invoice.action_recalculate_retentions()
 
