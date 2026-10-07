@@ -1,172 +1,7 @@
-from types import SimpleNamespace
-from unittest.mock import patch
-
 from odoo import Command
-from odoo.addons.l10n_ve_sale.models.sale_order_line import SaleOrderLine
+from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
-
-
-class FakeRecordset(list):
-    def filtered(self, predicate):
-        return FakeRecordset([record for record in self if predicate(record)])
-
-
-class FakeCurrency:
-    def __init__(self, digits=2):
-        self.digits = digits
-        self.convert_calls = []
-
-    def round(self, amount):
-        return round(amount, self.digits)
-
-    def _convert(self, from_amount, to_currency, company, date):
-        self.convert_calls.append(
-            {
-                "to_currency": to_currency,
-                "company": company,
-                "date": date,
-            }
-        )
-        return from_amount
-
-
-class FakeComboItem:
-    def __init__(self, item_type, percentage=0.0, lst_price=0.0, currency=None):
-        self.item_type = item_type
-        self.percentage = percentage
-        self.lst_price = lst_price
-        self.currency_id = currency or FakeCurrency()
-
-
-class FakeLine:
-    def __init__(self, order, currency, combo_item=None, linked_line=None, combo_price=0.0):
-        self.order_id = order
-        self.currency_id = currency
-        self.company_id = SimpleNamespace(id=99)
-        self.combo_item_id = combo_item
-        self._linked_line = linked_line
-        self._combo_price = combo_price
-
-    def ensure_one(self):
-        return True
-
-    def _get_linked_line(self):
-        return self._linked_line
-
-    def _get_display_price_ignore_combo(self):
-        return self._combo_price
-
-
-@tagged("l10n_ve_sale", "post_install", "-at_install")
-class TestSaleOrderLineComboPricing(TransactionCase):
-    def _get_parent_with_method(self, model_name, method_name):
-        model_cls = type(self.env[model_name])
-        for klass in model_cls.__mro__[1:]:
-            if method_name in klass.__dict__:
-                return klass
-        self.fail("No super class found for %s.%s" % (model_name, method_name))
-
-    def test_get_combo_item_display_price_falls_back_to_super(self):
-        model_cls = type(self.env["sale.order.line"])
-        parent_class = self._get_parent_with_method(
-            "sale.order.line", "_get_combo_item_display_price"
-        )
-        line = self.env["sale.order.line"].new({})
-
-        with patch.object(model_cls, "_get_linked_line", return_value=False), patch.object(
-            parent_class, "_get_combo_item_display_price", return_value=42.0
-        ):
-            self.assertEqual(line._get_combo_item_display_price(), 42.0)
-
-    def test_get_combo_item_display_price_distributes_with_principal_delta(self):
-        combo_token = object()
-        currency = FakeCurrency(digits=2)
-        order = SimpleNamespace(order_line=FakeRecordset(), date_order=False)
-
-        combo_line = FakeLine(order=order, currency=currency, linked_line=None, combo_price=100.0)
-
-        fixed_line = FakeLine(
-            order=order,
-            currency=currency,
-            combo_item=FakeComboItem("fixed_price", lst_price=20.0, currency=currency),
-            linked_line=combo_token,
-        )
-        percentage_line = FakeLine(
-            order=order,
-            currency=currency,
-            combo_item=FakeComboItem("percentage", percentage=50.0, currency=currency),
-            linked_line=combo_token,
-        )
-        principal_line_1 = FakeLine(
-            order=order,
-            currency=currency,
-            combo_item=FakeComboItem("principal", currency=currency),
-            linked_line=combo_token,
-        )
-        principal_line_2 = FakeLine(
-            order=order,
-            currency=currency,
-            combo_item=FakeComboItem("principal", currency=currency),
-            linked_line=combo_token,
-        )
-        principal_line_3 = FakeLine(
-            order=order,
-            currency=currency,
-            combo_item=FakeComboItem("principal", currency=currency),
-            linked_line=combo_token,
-        )
-
-        order.order_line = FakeRecordset(
-            [
-                fixed_line,
-                percentage_line,
-                principal_line_1,
-                principal_line_2,
-                principal_line_3,
-            ]
-        )
-
-        for current in [fixed_line, percentage_line, principal_line_1, principal_line_2, principal_line_3]:
-            current._linked_line = combo_line
-
-        value_first_principal = SaleOrderLine._get_combo_item_display_price(principal_line_1)
-        value_last_principal = SaleOrderLine._get_combo_item_display_price(principal_line_3)
-
-        self.assertAlmostEqual(value_first_principal, 13.33, places=2)
-        self.assertAlmostEqual(value_last_principal, 13.34, places=2)
-        self.assertEqual(currency.convert_calls[0]["company"].id, 99)
-
-    def test_get_combo_item_display_price_without_principal_assigns_delta(self):
-        combo_token = object()
-        currency = FakeCurrency(digits=2)
-        order = SimpleNamespace(order_line=FakeRecordset(), date_order=False)
-
-        combo_line = FakeLine(order=order, currency=currency, linked_line=None, combo_price=99.99)
-
-        fixed_line = FakeLine(
-            order=order,
-            currency=currency,
-            combo_item=FakeComboItem("fixed_price", lst_price=33.33, currency=currency),
-            linked_line=combo_token,
-        )
-        percentage_line = FakeLine(
-            order=order,
-            currency=currency,
-            combo_item=FakeComboItem("percentage", percentage=50.0, currency=currency),
-            linked_line=combo_token,
-        )
-
-        order.order_line = FakeRecordset([fixed_line, percentage_line])
-
-        fixed_line._linked_line = combo_line
-        percentage_line._linked_line = combo_line
-
-        value_fixed = SaleOrderLine._get_combo_item_display_price(fixed_line)
-        value_percentage = SaleOrderLine._get_combo_item_display_price(percentage_line)
-
-        self.assertEqual(value_fixed, 33.33)
-        self.assertEqual(value_percentage, 66.66)
 
 
 @tagged("l10n_ve_sale", "post_install", "-at_install")
@@ -205,6 +40,7 @@ class TestSaleOrderLineComboPricingIntegration(TransactionCase):
         # (readonly from product_id.lst_price), so we set the product price directly.
         cls.combo = cls.env["product.combo"].create({
             "name": "Medical Combo",
+            "price_distribution": "by_item_type",
             "combo_item_ids": [
                 Command.create({
                     "product_id": cls.service_product.id,
@@ -340,3 +176,117 @@ class TestSaleOrderLineComboPricingIntegration(TransactionCase):
 
         # Total distributed = 30 + 60 + 60 = 150
         self.assertEqual(price_fixed + price_principal_1 + price_principal_2, 150.0)
+
+    def _make_order_with_combo(self, combo, list_price=150.0):
+        template = self.env["product.template"].create({
+            "name": "Combo %s" % combo.name,
+            "type": "combo",
+            "list_price": list_price,
+            "uom_id": self.product_uom.id,
+            "combo_ids": [(4, combo.id)],
+        })
+        order = self.env["sale.order"].create({
+            "partner_id": self.partner.id,
+            "pricelist_id": self.pricelist.id,
+        })
+        combo_line = self.env["sale.order.line"].create({
+            "order_id": order.id,
+            "product_id": template.product_variant_id.id,
+            "product_uom_qty": 1.0,
+        })
+        return order, combo_line
+
+    def _make_item_line(self, order, combo_line, item):
+        return self.env["sale.order.line"].create({
+            "order_id": order.id,
+            "product_id": item.product_id.id,
+            "product_uom_qty": 1.0,
+            "linked_line_id": combo_line.id,
+            "combo_item_id": item.id,
+        })
+
+    def test_price_proration_option_splits_its_share_between_chosen_items(self):
+        combo = self.env["product.combo"].create({
+            "name": "Proration Combo",
+            "combo_item_ids": [
+                Command.create({"product_id": self.service_product.id}),
+                Command.create({"product_id": self.material_product.id}),
+            ],
+        })
+        self.assertEqual(combo.price_distribution, "native")
+        order, combo_line = self._make_order_with_combo(combo)
+        lines = [self._make_item_line(order, combo_line, item) for item in combo.combo_item_ids]
+
+        prices = [line._get_combo_item_display_price() for line in lines]
+
+        self.assertEqual(prices, [75.0, 75.0])
+
+    def test_price_proration_option_with_single_item_keeps_native_price(self):
+        combo = self.env["product.combo"].create({
+            "name": "Proration Single",
+            "combo_item_ids": [Command.create({"product_id": self.service_product.id})],
+        })
+        order, combo_line = self._make_order_with_combo(combo)
+        line = self._make_item_line(order, combo_line, combo.combo_item_ids)
+
+        self.assertEqual(line._get_combo_item_display_price(), 150.0)
+
+
+    def test_combo_product_rejects_prices_that_make_items_negative(self):
+        with self.assertRaises(ValidationError):
+            self.env["product.template"].create({
+                "name": "Combo inválido",
+                "type": "combo",
+                "list_price": 20.0,
+                "uom_id": self.product_uom.id,
+                "combo_ids": [(4, self.combo.id)],
+            })
+
+    def test_combo_product_accepts_prices_that_fit(self):
+        self.env["product.template"].create({
+            "name": "Combo válido",
+            "type": "combo",
+            "list_price": 150.0,
+            "uom_id": self.product_uom.id,
+            "combo_ids": [(4, self.combo.id)],
+        })
+
+
+@tagged("l10n_ve_sale", "post_install", "-at_install")
+class TestDistributeComboPrice(TransactionCase):
+    def _distribute(self, price, entries):
+        from odoo.addons.l10n_ve_sale.models.product_combo_item import distribute_combo_price
+        return distribute_combo_price(price, entries, lambda amount: round(amount, 2))
+
+    def test_fixed_percentage_and_principal_add_up(self):
+        prices = self._distribute(100.0, [
+            ("fixed", "fixed_price", 0.0, 20.0),
+            ("pct", "percentage", 25.0, 0.0),
+            ("main", "principal", 0.0, 0.0),
+        ])
+        self.assertEqual(prices, {"fixed": 20.0, "pct": 20.0, "main": 60.0})
+
+    def test_rounding_residue_goes_to_last_principal(self):
+        prices = self._distribute(100.0, [
+            ("a", "principal", 0.0, 0.0),
+            ("b", "principal", 0.0, 0.0),
+            ("c", "principal", 0.0, 0.0),
+        ])
+        self.assertAlmostEqual(sum(prices.values()), 100.0)
+        self.assertEqual(prices["a"], prices["b"])
+
+    def test_without_principal_residue_goes_to_last_entry(self):
+        prices = self._distribute(100.0, [
+            ("fixed", "fixed_price", 0.0, 30.0),
+            ("pct", "percentage", 50.0, 0.0),
+        ])
+        self.assertAlmostEqual(sum(prices.values()), 100.0)
+        self.assertEqual(prices["fixed"], 30.0)
+
+    def test_prorate_by_base_price_and_even_when_zero(self):
+        from odoo.addons.l10n_ve_sale.models.product_combo_item import prorate_combo_price
+        rnd = lambda amount: round(amount, 2)
+        shares = prorate_combo_price(100.0, [("a", 10.0), ("b", 30.0)], rnd)
+        self.assertEqual(shares, {"a": 25.0, "b": 75.0})
+        even = prorate_combo_price(100.0, [("a", 0.0), ("b", 0.0), ("c", 0.0)], rnd)
+        self.assertAlmostEqual(sum(even.values()), 100.0)

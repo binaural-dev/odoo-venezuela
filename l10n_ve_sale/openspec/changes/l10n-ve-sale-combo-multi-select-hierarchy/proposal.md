@@ -38,7 +38,7 @@ puede configurar un combo. La misma jerarquía debe funcionar en
   `combo_root_line_id` (Many2one, sin `ondelete='cascade'` — ver más abajo
   por qué) y `combo_tagged` (booleano, espejo de pertenencia a un combo).
 - Subsección decorativa (`line_subsection`, sin `combo_item_id`) por cada
-  opción con más de un candidato elegible, insertada y re-etiquetada en
+  opción cuando el combo tiene más de una opción, insertada y re-etiquetada en
   cada onchange por `_retag_combo_hierarchy_for_combo_line`.
 - `_quarantine_stray_lines_from_combo`: cualquier producto ajeno al combo
   (botón global "Agregar un producto", o el configurador nativo de
@@ -81,14 +81,25 @@ consultando la base directo). Se resuelve con dos medidas:
 
 ### Reparto de precio por tipo de ítem (portado desde `binaural_clinics_sale`)
 
-- Nuevo campo `item_type` (`principal`/`percentage`/`fixed_price`) +
+- Nuevo campo `price_distribution` en `product.combo` (la opción del combo),
+  select "Cálculo de precio": `native` (por defecto, "Prorrateo de precio") o `by_item_type` ("Reparto de precio"). Si no es `by_item_type`, el
+  form de la opción oculta `item_type` y `percentage` de sus ítems.
+- Nuevos campos `item_type` (`principal`/`percentage`/`fixed_price`) +
   `percentage` en `product.combo.item`.
-- Override de `_get_combo_item_display_price()`: `fixed_price` conserva su
-  `lst_price` propio; `percentage` recibe un % de lo que queda tras los
-  fixed_price; `principal` reparte el resto en partes iguales **por
-  línea** (no por cantidad -- decisión explícita del cliente, confirmada:
-  si un ítem `principal` tiene cantidad > 1, el total del combo no cuadra
-  con su `list_price`, y así se quiere dejar).
+- Override de `_get_combo_item_display_price()` en dos niveles: (1) la parte de
+  cada opción sale del prorrateo nativo (`super()`, por `base_price`); (2)
+  dentro de la opción, con `native` se divide en partes iguales entre los ítems
+  elegidos (con un solo ítem queda idéntico al nativo) y con `by_item_type`:
+  `fixed_price` conserva su `lst_price`, `percentage` recibe un % de lo que
+  queda y `principal` reparte el resto en partes iguales **por línea**
+  (no por cantidad, decisión confirmada del cliente). El `extra_price` y los
+  extras `no_variant` se suman encima, como en el core.
+- Validaciones: `fixed_price` exige producto con precio de lista > 0 (solo si
+  la opción usa `by_item_type`; no se compara con el precio del combo),
+  `percentage` entre 0 y 100. Al guardar el producto combo (o sus opciones/ítems)
+  se simula el reparto con su `list_price` y se rechaza si algún ítem queda con
+  precio <= 0 (aproximado: no considera tarifas). Al cargar el combo en un
+  documento no se lanza ninguna validación de precio.
 - `price_unit` de una línea de ítem de combo pasa a ser editable a mano.
 
 ### Extensión a `account.move` (factura directa y desde SO)
@@ -159,5 +170,8 @@ impide en la SO, porque al configurar el combo la línea pierde su
   en bases grandes.
 - Sin migración de datos para `sale.order.line`: campos nuevos, ningún campo
   existente cambia de significado.
-- Bump de manifest `19.0.1.0.8` → `19.0.1.0.10`; nuevo asset SCSS en
+- `migrations/19.0.1.0.11/post-migrate.py`: las opciones que ya tenían ítems
+  con `item_type` distinto de `principal` (reparto heredado de clinics) quedan
+  en `by_item_type`; el resto queda en `native`.
+- Bump de manifest `19.0.1.0.8` → `19.0.1.0.11`; nuevo asset SCSS en
   `web.assets_backend`.

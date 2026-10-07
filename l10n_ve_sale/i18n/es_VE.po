@@ -670,6 +670,12 @@ msgstr "El porcentaje de la opción debe estar entre 0 y 100."
 
 #. module: l10n_ve_sale
 #. odoo-python
+#: code:addons/l10n_ve_sale/models/product_combo_item.py:0
+msgid "The product of a fixed price item must have a price greater than 0."
+msgstr "El producto de un ítem de precio fijo debe tener un precio mayor que 0."
+
+#. module: l10n_ve_sale
+#. odoo-python
 #: code:addons/l10n_ve_sale/models/account_move.py:0
 msgid ""
 "The pricelist %(pricelist)s defines a rule for the following products, so their price cannot be recalculated from the sale order: %(products)s.\n"
@@ -826,3 +832,43 @@ msgstr "Eliminar"
 #: code:addons/l10n_ve_sale/static/src/js/invoice_combo/invoice_combo_section_kebab.xml:0
 msgid "Show all lines"
 msgstr "Mostrar todas las líneas"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,field_description:l10n_ve_sale.field_product_combo__price_distribution
+msgid "Price Calculation"
+msgstr "Cálculo de precio"
+
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_product_combo__price_distribution
+msgid "Price Proration: the option's share of the combo price is the native one (prorated by base price).\nPrice Distribution: that share is split among the chosen items according to their Item Type (principal, percentage, fixed price)."
+msgstr "Prorrateo de precio: la parte de la opción en el precio del combo es la nativa (prorrateada por precio base).\nReparto de precio: esa parte se divide entre los ítems elegidos según su Tipo de opción (principal, porcentaje, precio fijo)."
+
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__product_combo__price_distribution__native
+msgid "Price Proration"
+msgstr "Prorrateo de precio"
+
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields.selection,name:l10n_ve_sale.selection__product_combo__price_distribution__by_item_type
+msgid "Price Distribution"
+msgstr "Reparto de precio"
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_product_combo__price_distribution
+msgid "Price Proration: the share of the combo price for this option is the one Odoo calculates (prorated by base price) and it is split equally among the chosen items.\nPrice Distribution: that share is split among the chosen items according to their Item Type (principal, percentage or fixed price)."
+msgstr "Prorrateo de precio: la parte del precio del combo para esta opción es la que calcula Odoo (prorrateada por precio base) y se divide en partes iguales entre los ítems elegidos.\nReparto de precio: esa parte se divide entre los ítems elegidos según su Tipo de opción (principal, porcentaje o precio fijo)."
+
+
+#. module: l10n_ve_sale
+#: model:ir.model.fields,help:l10n_ve_sale.field_product_combo_item__item_type
+msgid "Principal: gets what is left of the option's price after the fixed price and percentage items; several principal items split it equally.\nPercentage: gets the given % of what is left after the fixed price items.\nFixed Price: keeps the price of its product, which must be greater than 0."
+msgstr "Principal: recibe lo que queda del precio de la opción después de los ítems de precio fijo y porcentaje; si hay varios principales, se divide en partes iguales.\nPorcentaje: recibe el % indicado de lo que queda después de los ítems de precio fijo.\nPrecio fijo: conserva el precio de su producto, que debe ser mayor que 0."
+
+#. module: l10n_ve_sale
+#. odoo-python
+#: code:addons/l10n_ve_sale/models/product_template.py:0
+msgid "Combo \"%(product)s\", option \"%(option)s\": the part of the combo price for this option is %(share)s, which is not enough for its fixed price and percentage items, so some items would get a zero or negative price. Review the prices of the items or the combo price."
+msgstr "Combo \"%(product)s\", opción \"%(option)s\": la parte del precio del combo para esta opción es %(share)s, que no alcanza para sus ítems de precio fijo y porcentaje, por lo que algunos ítems quedarían con precio cero o negativo. Revise los precios de los ítems o el precio del combo."

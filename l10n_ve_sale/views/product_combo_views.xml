@@ -5,12 +5,18 @@
         <field name="inherit_id" ref="product.product_combo_view_form"/>
         <field name="arch" type="xml">
 
+            <xpath expr="//group/field[@name='company_id']" position="after">
+                <field name="price_distribution"/>
+            </xpath>
+
             <xpath expr="//field[@name='combo_item_ids']/list/field[@name='product_id']" position="before">
-                <field name="item_type"/>
+                <field name="item_type"
+                    column_invisible="parent.price_distribution != 'by_item_type'"/>
             </xpath>
 
             <xpath expr="//field[@name='combo_item_ids']/list/field[@name='extra_price']" position="after">
                 <field name="percentage"
+                    column_invisible="parent.price_distribution != 'by_item_type'"
                     invisible="item_type != 'percentage'"
                     required="item_type == 'percentage'"/>
             </xpath>

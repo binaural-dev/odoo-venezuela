@@ -3,6 +3,8 @@ from odoo.fields import Command
 from odoo.tools import float_round
 import logging
 
+from .product_combo_item import distribute_combo_price
+
 _logger = logging.getLogger(__name__)
 
 
@@ -46,13 +48,15 @@ class SaleOrderLine(models.Model):
         # sale_order.py); 'set null' es la salida segura para lo que la
         # BD intente hacer sola.
         ondelete='set null',
-        index=True
+        index=True,
+        copy=False,
     )
     combo_root_line_id = fields.Many2one(
         'sale.order.line',
         string="Contenedor Combo Raíz",
         ondelete='set null',
-        index=True
+        index=True,
+        copy=False,
     )
     combo_item_qty_per_combo = fields.Float(
         string="Cantidad elegida por combo",
@@ -312,7 +316,9 @@ class SaleOrderLine(models.Model):
         # El core nativo genera '{nombre} x {qty}' para el combo raíz:
         # se reemplaza por solo el nombre del producto en MAYÚSCULAS.
         if self.product_id.type == 'combo':
-            res['name'] = self.product_id.display_name.upper()
+            res['name'] = self.product_id.with_context(
+                display_default_code=False
+            ).display_name.upper()
 
         if self.combo_tagged:
             res['combo_tagged'] = True
@@ -324,10 +330,24 @@ class SaleOrderLine(models.Model):
 
         return res
 
+    def _get_combo_item_extra_price(self):
+        """Extra del ítem (extra_price + extras no_variant) en la moneda de la orden."""
+        self.ensure_one()
+        item = self.combo_item_id
+        return item.currency_id._convert(
+            from_amount=item.extra_price
+            + self.product_id._get_no_variant_attributes_price_extra(
+                self.product_no_variant_attribute_value_ids
+            ),
+            to_currency=self.currency_id,
+            company=self.company_id,
+            date=self.order_id.date_order,
+        )
+
     def _get_combo_item_display_price(self):
-        """Reparte el precio del combo por item_type: fixed_price conserva su
-        lst_price, percentage toma un % del resto y principal reparte lo que sobra
-        por línea, absorbiendo el residuo de redondeo.
+        """La parte de la opción se calcula con el prorrateo nativo; si la opción
+        usa "Reparto de precio" se divide entre sus ítems elegidos por item_type
+        y, si no, en partes iguales. El extra del ítem se suma encima.
         """
         self.ensure_one()
 
@@ -335,51 +355,36 @@ class SaleOrderLine(models.Model):
         if not combo_line:
             return super()._get_combo_item_display_price()
 
-        combo_product_price = combo_line._get_display_price_ignore_combo()
-
-        sibling_lines = self.order_id.order_line.filtered(
-            lambda l: l.combo_item_id and l._get_linked_line() == combo_line
+        native_price = super()._get_combo_item_display_price()
+        option = self.combo_item_id.combo_id
+        by_item_type = option.price_distribution == 'by_item_type'
+        siblings = self.order_id.order_line.filtered(
+            lambda l: l.combo_item_id
+            and l._get_linked_line() == combo_line
+            and l.combo_item_id.combo_id == option
         )
+        if len(siblings) <= 1 and not by_item_type:
+            return native_price
 
-        line_prices = {}
-
-        for line in sibling_lines:
-            if line.combo_item_id.item_type == 'fixed_price':
-                fixed_price = line.combo_item_id.currency_id._convert(
-                    from_amount=line.combo_item_id.lst_price,
+        extra_price = self._get_combo_item_extra_price()
+        date = self.order_id.date_order or fields.Date.today()
+        entries = []
+        for line in siblings:
+            item = line.combo_item_id
+            if not by_item_type:
+                entries.append((line, 'principal', 0.0, 0.0))
+                continue
+            fixed_price = 0.0
+            if item.item_type == 'fixed_price':
+                fixed_price = item.currency_id._convert(
+                    from_amount=item.lst_price,
                     to_currency=self.currency_id,
                     company=self.company_id,
-                    date=self.order_id.date_order or fields.Date.today(),
+                    date=date,
                 )
-                line_prices[line] = self.currency_id.round(fixed_price)
+            entries.append((line, item.item_type, item.percentage, fixed_price))
 
-        total_fixed = sum(line_prices.values()) if line_prices else 0
-        remain_after_fixed = combo_product_price - total_fixed
-
-        total_percentage = 0.0
-        for line in sibling_lines:
-            if line.combo_item_id.item_type == 'percentage':
-                pct_amount = remain_after_fixed * (line.combo_item_id.percentage / 100.0)
-                pct_amount_rounded = self.currency_id.round(pct_amount)
-                line_prices[line] = pct_amount_rounded
-                total_percentage += pct_amount_rounded
-
-        remain_for_principal = remain_after_fixed - total_percentage
-
-        principal_lines = sibling_lines.filtered(lambda l: l.combo_item_id.item_type == 'principal')
-        if principal_lines:
-            avg_principal_price = self.currency_id.round(remain_for_principal / len(principal_lines))
-            for p_line in principal_lines:
-                line_prices[p_line] = avg_principal_price
-
-            total_calculated = sum(line_prices.values())
-            delta = combo_product_price - total_calculated
-            if delta:
-                line_prices[principal_lines[-1]] += delta
-        else:
-            total_calculated = sum(line_prices.values())
-            delta = combo_product_price - total_calculated
-            if delta and sibling_lines:
-                line_prices[sibling_lines[-1]] = line_prices.get(sibling_lines[-1], 0.0) + delta
-
-        return line_prices.get(self, 0.0)
+        prices = distribute_combo_price(
+            native_price - extra_price, entries, self.currency_id.round
+        )
+        return prices.get(self, 0.0) + extra_price

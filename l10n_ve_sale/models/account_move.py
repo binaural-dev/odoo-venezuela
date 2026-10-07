@@ -7,6 +7,8 @@ from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Command
 from odoo.tools import float_round
 
+from .product_combo_item import distribute_combo_price, prorate_combo_price
+
 _logger = logging.getLogger(__name__)
 
 
@@ -33,7 +35,7 @@ class AccountMove(models.Model):
         # Raíces de combo: secciones marcadas como combo_tagged
         combo_roots = self.invoice_line_ids.filtered(
             lambda l: l.display_type == 'line_section' and l.combo_tagged
-        )
+        ).sorted('sequence')
         for line in combo_roots:
             self._retag_combo_hierarchy_for_combo_line_invoice(line)
 
@@ -63,8 +65,13 @@ class AccountMove(models.Model):
             ) % ", ".join(missing.mapped('name')))
 
         # Convertir la línea raíz a line_section (igual que SO→factura nativo)
-        combo_name = line.product_id.display_name.upper()
+        combo_name = line.product_id.with_context(
+            display_default_code=False
+        ).display_name.upper()
         combo_qty = line.quantity
+        item_prices = self._get_combo_item_prices_invoice(
+            line, combo_ids, by_combo, combo_item_model
+        )
 
         # Borrar líneas hijo anteriores
         existing_children = self.invoice_line_ids.filtered(
@@ -101,6 +108,7 @@ class AccountMove(models.Model):
                     'product_id': entry['product_id'],
                     'quantity': combo_qty * qty_multiplier,
                     'combo_item_qty_per_combo': qty_multiplier,
+                    'price_unit': item_prices.get(entry['combo_item_id'], 0.0),
                     'sequence': line.sequence + sequence_offset,
                     'combo_tagged': True,
                 }))
@@ -114,6 +122,45 @@ class AccountMove(models.Model):
 
         line.selected_combo_items = False
         self.invoice_line_ids = [root_update] + delete_commands + create_commands + update_commands
+
+    def _get_combo_item_prices_invoice(self, line, combo_ids, by_combo, combo_item_model):
+        """Misma lógica que la orden de venta: prorrateo del precio entre las
+        opciones y, dentro de cada opción, reparto en partes iguales o por
+        item_type; el extra_price del ítem se suma encima.
+        """
+        date = self.invoice_date or fields.Date.context_today(self)
+        currency = self.currency_id
+        combo_price = line.price_unit or line.product_id.lst_price
+        base_prices = [
+            (combo, combo.currency_id._convert(combo.base_price, currency, self.company_id, date))
+            for combo in combo_ids
+        ]
+        shares = prorate_combo_price(combo_price, base_prices, currency.round)
+
+        prices = {}
+        for combo in combo_ids:
+            chosen = by_combo.get(combo.id) or []
+            if not chosen:
+                continue
+            by_item_type = combo.price_distribution == 'by_item_type'
+            items = {e['combo_item_id']: combo_item_model.browse(e['combo_item_id']) for e in chosen}
+            entries = []
+            for entry in chosen:
+                item = items[entry['combo_item_id']]
+                if not by_item_type:
+                    entries.append((entry['combo_item_id'], 'principal', 0.0, 0.0))
+                    continue
+                fixed_price = 0.0
+                if item.item_type == 'fixed_price':
+                    fixed_price = item.currency_id._convert(item.lst_price, currency, self.company_id, date)
+                entries.append((entry['combo_item_id'], item.item_type, item.percentage, fixed_price))
+            option_prices = distribute_combo_price(shares[combo], entries, currency.round)
+            for item_id, price in option_prices.items():
+                extra = items[item_id].currency_id._convert(
+                    items[item_id].extra_price, currency, self.company_id, date
+                )
+                prices[item_id] = price + extra
+        return prices
 
     def _retag_combo_hierarchy_for_combo_line_invoice(self, combo_line):
         """Reasigna combo_parent_line_id/combo_root_line_id para las líneas de
@@ -134,15 +181,14 @@ class AccountMove(models.Model):
             if not in_block:
                 continue
 
-            # Otra line_section (no combo) cierra el bloque
-            if ln.display_type == 'line_section' and not ln.combo_tagged:
+            # Cualquier otra line_section (otro combo o sección ajena) cierra el bloque
+            if ln.display_type == 'line_section':
                 in_block = False
                 continue
 
             # Subsección del combo
             is_combo_subsection = (
-                ln.display_type == 'line_subsection'
-                and (ln.combo_tagged or not ln.combo_root_line_id)
+                ln.display_type == 'line_subsection' and ln.combo_tagged
             )
             if is_combo_subsection:
                 current_subsection = ln
@@ -181,6 +227,30 @@ class AccountMove(models.Model):
     # Reconstrucción de jerarquía después de guardar (directo o desde SO)
     # -------------------------------------------------------------------------
 
+    @api.model_create_multi
+    def create(self, vals_list):
+        moves = super().create(vals_list)
+        moves._rebuild_combo_hierarchy_if_needed()
+        return moves
+
+    def write(self, vals):
+        res = super().write(vals)
+        if 'invoice_line_ids' in vals or 'line_ids' in vals:
+            self._rebuild_combo_hierarchy_if_needed()
+        return res
+
+    def _rebuild_combo_hierarchy_if_needed(self):
+        """Reconstruye la jerarquía con ids reales en facturas que tienen
+        líneas de combo (el Many2one entre líneas del mismo lote no persiste
+        bien desde el onchange).
+        """
+        moves = self.filtered(
+            lambda m: m.is_invoice(include_receipts=True)
+            and m.invoice_line_ids.filtered('combo_tagged')
+        )
+        if moves:
+            moves._fix_combo_hierarchy_links_invoice()
+
     def _fix_combo_hierarchy_links_invoice(self):
         """Reconstruye combo_parent_line_id/combo_root_line_id con ids reales,
         de forma posicional o, si no hay secciones combo, desde sale_line_ids.
@@ -194,7 +264,7 @@ class AccountMove(models.Model):
             # Raíces de combo: secciones marcadas con combo_tagged
             combo_roots = lines.filtered(
                 lambda l: l.display_type == 'line_section' and l.combo_tagged
-            )
+            ).sorted('sequence')
             if combo_roots:
                 self._fix_combo_hierarchy_positional_invoice(move, lines, combo_roots)
                 continue
@@ -218,8 +288,8 @@ class AccountMove(models.Model):
                 if not in_block:
                     continue
 
-                # Otra sección sin combo_tagged cierra el bloque
-                if ln.display_type == 'line_section' and not ln.combo_tagged:
+                # Cualquier otra line_section (otro combo o sección ajena) cierra el bloque
+                if ln.display_type == 'line_section':
                     in_block = False
                     continue
 

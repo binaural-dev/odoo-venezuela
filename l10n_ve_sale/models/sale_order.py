@@ -152,6 +152,10 @@ class SaleOrder(models.Model):
             if not in_block:
                 continue
 
+            if ln.product_template_id.type == 'combo':
+                in_block = False
+                continue
+
             is_combo_header = (
                 not ln.product_id
                 and not ln.combo_item_id
@@ -230,7 +234,12 @@ class SaleOrder(models.Model):
 
         strays = self.env['sale.order.line']
         for ln in order_lines[root_index + 1:last_tree_index + 1]:
-            if ln.product_id and ln not in tree:
+            if (
+                ln.product_id
+                and ln not in tree
+                and not ln.combo_tagged
+                and ln.product_template_id.type != 'combo'
+            ):
                 strays |= ln
 
         if not strays:
@@ -865,9 +874,14 @@ class SaleOrder(models.Model):
                     if not in_block:
                         continue
 
+                    if ln.product_template_id.type == 'combo':
+                        in_block = False
+                        continue
+
                     is_combo_header = (
                         not ln.product_id
                         and not ln.combo_item_id
+                        and ln.combo_tagged
                         and ln.display_type == 'line_subsection'
                     )
                     if is_combo_header:

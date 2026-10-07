@@ -22,8 +22,8 @@ por el `CHECK` de Postgres que lo impide.
 Cada línea que pertenezca a un combo (raíz, subsección u ítem) SHALL tener
 `combo_tagged = True`. La raíz y los ítems SHALL tener `combo_root_line_id`
 apuntando a la raíz. Una subsección decorativa (`line_subsection`, sin
-`combo_item_id`) SHALL crearse por cada opción con más de un candidato
-elegible, y los ítems de esa opción SHALL tener `combo_parent_line_id`
+`combo_item_id`) SHALL crearse por cada opción cuando el combo tiene más de
+una opción, y los ítems de esa opción SHALL tener `combo_parent_line_id`
 apuntando a ella.
 
 #### Scenario: Combo con una sola opción
@@ -88,25 +88,59 @@ arrastrarse ni recibir un drop de otra fila junto a ella.
 - **WHEN** se abre su menú kebab
 - **THEN** la única opción visible es "Eliminar"
 
-### Requirement: Reparto de precio del combo por tipo de ítem
+### Requirement: Cálculo de precio por opción de combo
 
-Cada `product.combo.item` SHALL tener un `item_type`
-(`principal`/`percentage`/`fixed_price`). El precio del combo SHALL
-repartirse: primero los ítems `fixed_price` (su propio `lst_price`,
-convertido a la moneda de la orden), luego los `percentage` (un % de lo que
-queda), y el resto en partes iguales entre los ítems `principal` **por
-línea**, no ponderado por cantidad.
+Cada `product.combo` (opción) SHALL tener `price_distribution` con valores
+`native` (por defecto) y `by_item_type`. La parte de cada opción en el precio
+del combo SHALL calcularse con el prorrateo nativo por `base_price`. Dentro de
+la opción con `native`, esa parte SHALL dividirse en partes iguales entre los
+ítems elegidos (un solo ítem recibe exactamente el precio nativo). Con
+`by_item_type`, SHALL repartirse: primero los `fixed_price` (su `lst_price`
+convertido a la moneda del documento), luego los `percentage` (un % de lo que
+queda) y el resto en partes iguales entre los `principal` **por línea**, no
+ponderado por cantidad. El `extra_price` del ítem y los extras `no_variant`
+SHALL sumarse encima, como en el core.
 
-#### Scenario: Ítem principal con cantidad mayor a 1
+La vista de la opción SHALL ocultar `item_type` y `percentage` de sus ítems
+mientras `price_distribution` no sea `by_item_type`.
 
-- **GIVEN** dos ítems `principal` en la misma opción, uno con cantidad 1 y
-  otro con cantidad 3
-- **WHEN** se calcula el precio de cada uno
-- **THEN** ambos reciben el mismo `price_unit` (reparto por línea, no por
-  unidad)
-- **AND** el total resultante del combo puede no coincidir con su
-  `list_price` cuando las cantidades difieren de 1 (comportamiento
-  aceptado explícitamente, no es un defecto a corregir en este cambio)
+#### Scenario: Opción con prorrateo nativo y dos ítems elegidos
+
+- **GIVEN** una opción en `native` cuya parte del precio es 150
+- **WHEN** se eligen 2 de sus ítems
+- **THEN** cada línea recibe 75
+
+#### Scenario: Opción con reparto por tipo
+
+- **GIVEN** una opción en `by_item_type` con parte 150, un `fixed_price` de 30
+  y un `principal`
+- **WHEN** se calcula el precio de las líneas
+- **THEN** el fijo recibe 30 y el principal 120
+
+### Requirement: Validaciones de los ítems del reparto
+
+Un ítem `fixed_price` SHALL requerir que su producto tenga precio de lista
+mayor que 0 cuando su opción usa `by_item_type`; esto SHALL validarse al
+configurar el ítem y NO se compara con el precio del combo. Un `percentage`
+SHALL estar entre 0 y 100. Al guardar el producto combo (o al cambiar sus
+opciones o ítems) el sistema SHALL simular el reparto con su precio de lista,
+con todos los ítems de cada opción `by_item_type` elegidos, y SHALL rechazar la
+configuración si algún ítem queda con precio menor o igual a 0. Cargar el combo
+en una orden o factura SHALL NO lanzar ninguna validación de precio.
+
+#### Scenario: Ítem de precio fijo con producto sin precio
+
+- **GIVEN** un ítem `fixed_price` en una opción `by_item_type` cuyo producto
+  tiene precio 0
+- **WHEN** se guarda el ítem
+- **THEN** se lanza un error de validación
+
+#### Scenario: Combo cuyo precio no alcanza para los precios fijos
+
+- **GIVEN** un producto combo de precio 20 con una opción `by_item_type` que
+  tiene un `fixed_price` de 30 y un `principal`
+- **WHEN** se guarda el producto
+- **THEN** se lanza un error de validación indicando la opción afectada
 
 ### Requirement: Combo en `account.move` con la misma jerarquía
 
@@ -162,3 +196,43 @@ estar en `l10n_ve_sale/i18n/es_VE.po`.
 - **WHEN** se actualiza `binaural_clinics_sale`
 - **THEN** los campos y el reparto de precio siguen funcionando, provistos por
   `l10n_ve_sale`
+
+### Requirement: Varios combos en el mismo documento no se mezclan
+
+Cuando una orden o factura tiene más de un combo, el bloque de cada combo SHALL
+cerrarse al encontrar la raíz de otro combo (o cualquier otra sección). Las
+líneas de un combo SHALL NO tomar como raíz a otro combo, ni SHALL enviarse a
+"Productos Adicionales" las raíces, subsecciones o ítems de un combo vecino.
+
+#### Scenario: Agregar un segundo combo a una orden
+
+- **GIVEN** una orden con el combo A ya armado
+- **WHEN** se agrega el combo B, que comparte opciones con A
+- **THEN** las subsecciones e ítems de B conservan a B como raíz
+- **AND** la cantidad de los ítems de B depende solo de la cantidad de B
+
+### Requirement: El precio del combo en la factura directa se reparte por tipo de ítem
+
+Al configurar un combo en una factura directa, el `price_unit` de cada ítem SHALL
+calcularse con el mismo cálculo por opción que la orden de venta (prorrateo
+entre opciones y `price_distribution` de cada una), a partir del precio de la
+raíz (o del precio de lista del producto si es 0), convertido a la moneda de la
+factura.
+
+#### Scenario: Combo configurado en factura directa
+
+- **GIVEN** un combo con ítems principal, porcentaje y precio fijo
+- **WHEN** se confirma el wizard en una factura directa
+- **THEN** la suma de los importes de los ítems es el precio del combo
+
+### Requirement: Las subsecciones del usuario no se adoptan como parte del combo
+
+Una subsección sin `combo_tagged` SHALL NO recibir `combo_parent_line_id` ni
+`combo_root_line_id` de un combo, aunque quede posicionada dentro de su bloque, y
+SHALL NO ser eliminada por la limpieza de subsecciones vacías del combo.
+
+### Requirement: Copias de documentos no apuntan a líneas del original
+
+`combo_parent_line_id` y `combo_root_line_id` SHALL NO copiarse al duplicar ni
+revertir un documento; la jerarquía se reconstruye por posición al guardar la
+copia.

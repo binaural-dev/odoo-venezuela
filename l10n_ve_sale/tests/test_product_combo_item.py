@@ -42,3 +42,26 @@ class TestProductComboItem(TransactionCase):
         )
 
         item._check_percentage_value()
+
+    def _item(self, mode, item_type, list_price):
+        combo = self.env["product.combo"].new({"name": "Opción", "price_distribution": mode})
+        product = self.env["product.product"].create({"name": "Producto", "list_price": list_price})
+        return self.env["product.combo.item"].new(
+            {"combo_id": combo, "item_type": item_type, "product_id": product.id}
+        )
+
+    def test_fixed_price_item_rejects_zero_priced_product(self):
+        item = self._item("by_item_type", "fixed_price", 0.0)
+
+        with self.assertRaises(ValidationError):
+            item._check_fixed_price_value()
+
+    def test_fixed_price_item_accepts_priced_product(self):
+        self._item("by_item_type", "fixed_price", 10.0)._check_fixed_price_value()
+
+    def test_principal_item_allows_zero_priced_product(self):
+        self._item("by_item_type", "principal", 0.0)._check_fixed_price_value()
+
+    def test_fixed_price_not_validated_when_option_uses_native_proration(self):
+        self._item("native", "fixed_price", 0.0)._check_fixed_price_value()
+

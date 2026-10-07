@@ -16,12 +16,14 @@ class AccountMoveLine(models.Model):
         # para no disparar DELETEs contra ids aún no guardados en la BD.
         ondelete='set null',
         index=True,
+        copy=False,
     )
     combo_root_line_id = fields.Many2one(
         'account.move.line',
         string="Contenedor Combo Raíz",
         ondelete='set null',
         index=True,
+        copy=False,
     )
     combo_tagged = fields.Boolean(
         string="Pertenece a un combo",

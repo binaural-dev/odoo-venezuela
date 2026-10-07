@@ -9,7 +9,7 @@
       `combo_tagged`, `combo_item_qty_per_combo`,
       `combo_added_via_subsection_kebab`
 - [x] 1.3 Subsección decorativa (`line_subsection`, sin `combo_item_id`)
-      por opción con más de un candidato
+      por opción cuando el combo tiene más de una opción
 
 ## 2. Jerarquía y limpieza en cada onchange
 
@@ -63,9 +63,16 @@
 
 - [x] 5.1 `item_type`/`percentage` en `product.combo.item`
       (`product_combo_item.py`, nuevo)
-- [x] 5.2 Override de `_get_combo_item_display_price`: fixed_price →
-      percentage → principal (reparto por línea, no por cantidad --
-      confirmado con el cliente que así se quiere dejar)
+- [x] 5.2 Override de `_get_combo_item_display_price` en dos niveles: parte de
+      la opción por prorrateo nativo (`super()`), y dentro de la opción partes
+      iguales (`native`) o fixed_price → percentage → principal
+      (`by_item_type`, por línea, no por cantidad -- confirmado con el cliente)
+- [x] 5.6 Campo `price_distribution` en `product.combo` (`native` por defecto /
+      "Reparto de precio"); la vista oculta `item_type`/`percentage` si no es
+      `by_item_type`
+- [x] 5.7 Validaciones: `fixed_price` con producto de precio > 0 (solo en
+      `by_item_type`), `percentage` 0-100; simulación del reparto al guardar el producto combo (precios
+      <= 0 rechazados, `product_template.py`); sin validación al cargar el combo
 - [x] 5.3 Vista `product_combo_views.xml` (nueva): expone los campos en el
       form de `product.combo`
 - [x] 5.4 `price_unit` editable en línea de ítem de combo
@@ -80,7 +87,8 @@
       con seguridad "Establecer como opcional", que ese módulo agrega al
       kebab -- sin la dependencia explícita, el xpath rompería la
       compilación de assets en instalaciones sin `sale_management`)
-- [x] 6.2 Bump de manifest `19.0.1.0.8` → `19.0.1.0.10` (+ asset SCSS)
+- [x] 6.2 Bump de manifest `19.0.1.0.8` → `19.0.1.0.11` (+ asset SCSS y post-migrate que conserva el reparto
+      por tipo en las opciones ya configuradas)
 - [x] 6.3 Traducciones `i18n/es_VE.po` regeneradas y completadas (campos combo,
       `item_type`/`percentage` traídos de clinics, campos de `account.move.line`,
       kebab de factura)
@@ -134,3 +142,27 @@
 - [ ] 10.2 `openspec validate --changes`
 - [ ] 10.3 Prueba manual en Odoo: combo en SO y factura (directa y desde SO),
       jerarquía/`::`/sangría y tests de `l10n_ve_sale`
+
+## 11. Correcciones del code review
+
+- [x] 11.1 Varios combos en un mismo documento: el bloque cierra en otra raíz
+      (SO: `_retag`/`_fix_combo_hierarchy_links`; factura: cualquier
+      `line_section`), la cuarentena ignora combos/ítems etiquetados y las raíces
+      de factura se procesan por `sequence`
+- [x] 11.2 Precio en factura directa: `distribute_combo_price` (función pura en
+      `product_combo_item.py`) compartida por la SO y la factura
+- [x] 11.3 Detección JS limitada a filas de combo (`combo_tagged`,
+      `combo_parent_line_id`, `isComboItem`); subsecciones nativas vuelven a
+      ser movibles; la raíz de la SO ya no recibe sangría de ítem
+- [x] 11.4 `copy=False` en `combo_parent_line_id`/`combo_root_line_id` (SO y
+      factura) y reconstrucción de la jerarquía en `account.move.create/write`
+- [x] 11.5 Subsecciones sin `combo_tagged` no se adoptan (SO y factura)
+- [x] 11.6 Nombre de la raíz sin referencia interna (`display_default_code=False`)
+- [x] 11.7 Cálculo de precio: se suman `extra_price`/extras `no_variant` encima
+      de cada ítem (como el core) y el reparto por tipo pasa a ser opcional por
+      opción (`price_distribution`, nativo por defecto), de modo que las bases
+      existentes conservan el prorrateo nativo
+- [ ] 11.8 Pendiente: "Eliminar" en la raíz de factura borra todo hasta la
+      siguiente sección (sin cuarentena de productos ajenos en factura)
+- [ ] 11.9 Pendiente: pruebas de onchange, cuarentena, `unlink` y facturación
+

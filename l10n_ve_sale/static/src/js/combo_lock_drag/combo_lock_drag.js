@@ -9,15 +9,12 @@ import { SaleOrderLineListRenderer } from '@sale/js/sale_order_line_field/sale_o
 // combo sin que el modelo se entere.
 patch(SaleOrderLineListRenderer.prototype, {
     isComboLockedRow(record) {
-        // combo_tagged y display_type son los flags primarios.
-        // combo_parent_line_id permite detectar subsecciones en SOs guardados
-        // con código anterior donde combo_tagged puede ser False.
-        // isComboItem cubre ítems nativos del configurador de combo.
+        // Solo filas realmente de combo: una subsección nativa del usuario
+        // (sin combo_tagged ni combo_parent_line_id) sigue siendo movible.
         return Boolean(
             this.isCombo(record)
             || this.isComboItem(record)
             || record.data.combo_tagged
-            || record.data.display_type === 'line_subsection'
             || (this.isSection(record) && record.data.combo_parent_line_id)
         );
     },
@@ -27,23 +24,15 @@ patch(SaleOrderLineListRenderer.prototype, {
         if (this.isComboLockedRow(record)) {
             classNames = classNames.replace('o_row_draggable', '').trim();
         }
-        const dt = record.data.display_type;
-        // Subsección: display_type='line_subsection' (datos nuevos) O
-        // sección con combo_parent_line_id (datos guardados con código anterior
-        // donde _retag promovió a line_section pero sí estableció el parent).
-        const isComboSubsection =
-            dt === 'line_subsection'
-            || (this.isSection(record) && record.data.combo_parent_line_id);
-
-        if (isComboSubsection) {
-            classNames += ' l10n-ve-combo-subsection';
-        } else if (!this.isCombo(record) && !this.isSection(record) && (
+        if (this.isSection(record)) {
+            if (record.data.combo_tagged || record.data.combo_parent_line_id) {
+                classNames += ' l10n-ve-combo-subsection';
+            }
+        } else if (!this.isCombo(record) && (
             record.data.combo_tagged
             || this.isComboItem(record)
             || record.data.combo_parent_line_id
         )) {
-            // Productos hijo del combo: detectados por combo_tagged (datos nuevos),
-            // isComboItem (ítems nativos del wizard), o combo_parent_line_id.
             classNames += ' l10n-ve-combo-item';
         }
         return classNames;

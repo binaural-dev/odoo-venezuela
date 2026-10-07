@@ -53,21 +53,19 @@ patch(ProductLabelSectionAndNoteListRender.prototype, {
     // -------------------------------------------------------------------------
 
     isComboLockedRowInvoice(record) {
-        return Boolean(
-            record.data.combo_tagged
-            || record.data.display_type === 'line_subsection'
-        );
+        return Boolean(record.data.combo_tagged);
     },
 
     getRowClass(record) {
         let classNames = super.getRowClass(record);
-        if (this.isComboLockedRowInvoice(record)) {
-            classNames = classNames.replace('o_row_draggable', '').trim();
+        if (!this.isComboLockedRowInvoice(record)) {
+            return classNames;
         }
-        const dt = record.data.display_type;
-        if (dt === 'line_subsection') {
+        classNames = classNames.replace('o_row_draggable', '').trim();
+        if (record.data.display_type === 'line_subsection') {
             classNames += ' l10n-ve-combo-subsection';
-        } else if (record.data.combo_tagged && !this.isSection(record)) {
+        } else if (!this.isSection(record) && !(this.isCombo && this.isCombo(record))) {
+            // La raíz del combo en la SO (isCombo) no lleva sangría de ítem.
             classNames += ' l10n-ve-combo-item';
         }
         return classNames;
