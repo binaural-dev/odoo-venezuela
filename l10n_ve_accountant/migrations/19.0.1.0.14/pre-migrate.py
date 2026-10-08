@@ -31,6 +31,11 @@ RENAMED (real data migration, done below):
   account_move_line.international_purchase_exempt_product (v17)
   -> account_move_line.international_purchase_exent_product (v19)
   Same boolean, just a typo fix in the column name ("exempt" -> "exent").
+  pre-migrate runs before init_models, so coming from v17 only the old
+  column exists: it is renamed in place with util.rename_field (column,
+  ir.model.fields, xmlid and references in views/filters). Only if both
+  columns already exist is the value copied, and post-migrate.py drops
+  the old one.
 
 NO v19 FIELD AT ALL -- backed up here, then dropped in post-migrate.py,
 NOT migrated (nothing in l10n_ve_accountant or anywhere else in v19
@@ -46,6 +51,8 @@ receives them):
 
 import logging
 
+from odoo.upgrade import util
+
 _logger = logging.getLogger(__name__)
 
 BACKUP_TABLE = "l10n_ve_accountant_migration_v17_backup"
@@ -60,8 +67,8 @@ DROPPED_COLUMNS = {
     "account_journal": ["is_sale_international"],
 }
 
-RENAMED_COLUMNS = [
-    ("account_move_line", "international_purchase_exempt_product", "international_purchase_exent_product"),
+RENAMED_FIELDS = [
+    ("account.move.line", "international_purchase_exempt_product", "international_purchase_exent_product"),
 ]
 
 
@@ -119,22 +126,23 @@ def _backup_column(cr, table, column):
     _logger.info("  Backed up %s row(s) from %s.%s (l10n_ve_tax, no v19 field)", len(rows), table, column)
 
 
-def _rename_column(cr, table, old_column, new_column):
+def _rename_field(cr, model, old_column, new_column):
+    table = util.table_of_model(cr, model)
     if not _column_exists(cr, table, old_column):
         _logger.info("  %s.%s does not exist, nothing to rename", table, old_column)
         return
     if not _column_exists(cr, table, new_column):
-        _logger.warning(
-            "  %s.%s exists but target %s.%s does not -- v19 schema not "
-            "applied yet or field removed unexpectedly, skipping rename",
-            table, old_column, table, new_column,
+        # Usual case coming from v17: init_models has not created the v19
+        # column yet, so the old one is renamed in place and keeps its data.
+        util.rename_field(cr, model, old_column, new_column)
+        _logger.info(
+            "  Renamed %s.%s to %s (typo-fix rename)", table, old_column, new_column
         )
         return
 
-    # Both columns exist post-schema-init (old one lingers since v19
-    # doesn't declare it, new one was just created) -- copy the data
-    # across, preferring the old value where the new column is empty,
-    # then the old column gets dropped in post-migrate.py.
+    # Both columns already exist (e.g. a previous partial upgrade created the
+    # v19 one) -- copy the data across, preferring the old value where the
+    # new column is empty, then the old column gets dropped in post-migrate.py.
     cr.execute(
         f'UPDATE "{table}" SET "{new_column}" = "{old_column}" '  # noqa: S608
         f'WHERE "{old_column}" IS NOT NULL AND "{new_column}" IS NOT TRUE'
@@ -154,6 +162,6 @@ def migrate(cr, version):
     for table, columns in DROPPED_COLUMNS.items():
         for column in columns:
             _backup_column(cr, table, column)
-    for table, old_column, new_column in RENAMED_COLUMNS:
-        _rename_column(cr, table, old_column, new_column)
+    for model, old_column, new_column in RENAMED_FIELDS:
+        _rename_field(cr, model, old_column, new_column)
     _logger.info("l10n_ve_accountant pre-migrate (19.0.1.0.14) complete")

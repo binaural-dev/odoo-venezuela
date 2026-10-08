@@ -1,8 +1,9 @@
 """Post-migration for l10n_ve_accountant 19.0.1.0.14.
 
 Drops: the l10n_ve_tax columns with no v19 field (already backed up),
-and the old international_purchase_exempt_product column (already
-copied to international_purchase_exent_product in pre-migrate.py).
+and the old international_purchase_exempt_product column. Coming from
+v17, pre-migrate.py renames that column in place, so it is only still
+here when both columns existed and its value was copied.
 """
 
 import logging
