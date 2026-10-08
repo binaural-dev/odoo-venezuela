@@ -2794,3 +2794,96 @@ class TestAccountMoveApiCalls(TransactionCase):
         mock_call.assert_not_called()
         self.assertFalse(invoice.is_digitalized)
 
+
+    def _fake_move_with_igtf(self, igtf, multi_currency=False):
+        groups = {"Subtotal": [
+            {"tax_group_name": "IVA 16%", "tax_group_base_amount": 1000.0, "tax_group_amount": 160.0},
+        ]}
+        foreign_groups = {"Subtotal": [
+            {"tax_group_name": "IVA 16%", "tax_group_base_amount": 25.0, "tax_group_amount": 4.0},
+        ]}
+        return type("FakeMove", (), {
+            "__iter__": lambda self: iter([self]),
+            "company_id": self.company,
+            "multi_currency_invoice": multi_currency,
+            "show_payment_box": False,
+            "foreign_rate": 40.0,
+            "invoice_line_ids": self.env["account.move.line"],
+            "tax_totals": {
+                "subtotal": 1000.0,
+                "amount_untaxed": 1000.0,
+                "amount_total": 1160.0,
+                "amount_total_igtf": 1160.0 + igtf["igtf_amount"],
+                "foreign_subtotal": 25.0,
+                "foreign_amount_untaxed": 25.0,
+                "foreign_amount_total": 29.0,
+                "foreign_amount_total_igtf": 29.0 + igtf["foreign_igtf_amount"],
+                "groups_by_subtotal": groups,
+                "groups_by_foreign_subtotal": foreign_groups,
+                "igtf": dict(igtf, apply_igtf=True, name="3.0 %"),
+            },
+        })()
+
+    def test_201_prepare_totals_igtf_ves_company_in_bolivares(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 400.0,
+            "igtf_amount": 12.0,
+            "foreign_igtf_base_amount": 10.0,
+            "foreign_igtf_amount": 0.3,
+        })
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertFalse(foreign_totals)
+        igtf_line = next(
+            (t for t in totals["impuestosSubtotal"] if t["codigoTotalImp"] == "IGTF"), None
+        )
+        self.assertTrue(igtf_line, "el IGTF debe viajar en impuestosSubtotal sin multimoneda")
+        self.assertEqual(igtf_line["baseImponibleImp"], "400.0")
+        self.assertEqual(igtf_line["valorTotalImp"], "12.0")
+
+    def test_202_prepare_totals_igtf_ves_company_multi_currency(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 400.0,
+            "igtf_amount": 12.0,
+            "foreign_igtf_base_amount": 10.0,
+            "foreign_igtf_amount": 0.3,
+        }, multi_currency=True)
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertEqual(foreign_totals["totalIGTF"], "0.3")
+        self.assertEqual(foreign_totals["totalIGTF_VES"], "12.0")
+
+    def test_203_prepare_totals_igtf_usd_company(self):
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 10.0,
+            "igtf_amount": 0.3,
+            "foreign_igtf_base_amount": 400.0,
+            "foreign_igtf_amount": 12.0,
+        })
+        fake.tax_totals.update({
+            "subtotal": 25.0,
+            "amount_untaxed": 25.0,
+            "amount_total": 29.0,
+            "amount_total_igtf": 29.3,
+            "foreign_subtotal": 1000.0,
+            "foreign_amount_untaxed": 1000.0,
+            "foreign_amount_total": 1160.0,
+            "foreign_amount_total_igtf": 1172.0,
+            "groups_by_subtotal": fake.tax_totals["groups_by_foreign_subtotal"],
+            "groups_by_foreign_subtotal": fake.tax_totals["groups_by_subtotal"],
+        })
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertEqual(foreign_totals["totalIGTF"], "0.3")
+        self.assertEqual(foreign_totals["totalIGTF_VES"], "12.0")
