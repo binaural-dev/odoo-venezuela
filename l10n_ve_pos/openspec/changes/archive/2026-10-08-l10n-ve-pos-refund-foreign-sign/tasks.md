@@ -27,4 +27,4 @@
 
 - [x] 3.1 Tests de `l10n_ve_pos` (84/84, rojo antes del fix: 1 fallo) y batería e2e en verde; tours 3/3
 - [x] 3.2 Navegador (posv19, sesión 472): reembolso en la Caja VES pagado con efectivo $ (−11,60), esperado del cajón 149,80 $, cierre sin diferencia ni error
-- [ ] 3.3 NC con la máquina fiscal en base foránea (`l10n_ve_pos_mf`): la MF todavía no funciona en las cajas en otra moneda; se valida al implementarla en integra-addons PR #2896 (tasks 2c.1 de `pos-multicurrency-e2e-pruebas`)
+- [x] 3.3 (trasladada a integra-addons PR #2896) NC con la máquina fiscal en base foránea (`l10n_ve_pos_mf`): la MF todavía no funciona en las cajas en otra moneda; se valida al implementarla en integra-addons PR #2896 (tasks 2c.1 de `pos-multicurrency-e2e-pruebas`)

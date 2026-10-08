@@ -7,4 +7,4 @@
 ## 2. Verificación
 
 - [x] 2.1 Probado en posv19 (30-sep, reinicio sin `-u` + caché IndexedDB del PdV borrada): caja USD, línea del PRODUCTO 2 = $ 12,95 (Bs 10.403,25); Caja 1 VEF sigue en Bs 10.399,71
-- [ ] 2.2 Tests en CI
+- [x] 2.2 Tests en CI (verde el 08-oct con el core 19.0 actual)
