@@ -429,4 +429,56 @@ class TestAccountant(TransactionCase):
 
             self.assertIn(propiedad, options, f"Opciones de '{field_name}' deben incluir '{propiedad}'")
             self.assertEqual(options[propiedad], expected_value, f"La precisión de '{field_name}' debe ser '{expected_value}'")
+
+    def test_foreign_amount_residual_decoupled_from_core_totals(self):
+        """Ticket #15205: foreign_amount_residual debe tener su propio compute,
+        separado de _compute_amount, para no invalidar amount_untaxed (core,
+        tracking=True) cada vez que cambia el estado de conciliacion/pago de
+        OTRO asiento vinculado por matching."""
+        Move = self.Move
+        amount_untaxed_field = Move._fields['amount_untaxed']
+        residual_field = Move._fields['foreign_amount_residual']
+
+        self.assertEqual(
+            residual_field.compute,
+            '_compute_foreign_amount_residual',
+            "foreign_amount_residual debe computarse en su propio metodo, "
+            "no en _compute_amount",
+        )
+        self.assertNotEqual(
+            amount_untaxed_field.compute,
+            residual_field.compute,
+            "amount_untaxed y foreign_amount_residual no deben compartir "
+            "metodo de computo",
+        )
+
+        amount_untaxed_depends = self.env.registry.field_depends.get(
+            amount_untaxed_field, ()
+        )
+        for forbidden in (
+            'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',
+            'line_ids.matched_credit_ids.credit_move_id.move_id.payment_id.is_matched',
+            'line_ids.payment_id.state',
+            'line_ids.full_reconcile_id',
+        ):
+            self.assertNotIn(
+                forbidden,
+                amount_untaxed_depends,
+                f"amount_untaxed no debe depender de '{forbidden}' (eso solo "
+                "concierne a foreign_amount_residual)",
+            )
+
+        # La separacion no debe romper el computo de foreign_amount_residual.
+        move = self._create_draft_invoice(
+            self.journal_contado,
+            [{
+                'name': 'L1',
+                'product': self.product,
+                'qty': 1,
+                'price': 100.0,
+                'taxes': [self.tax_iva16.id],
+            }],
+        )
+        move.action_post()
+        self.assertIn('foreign_amount_residual', move.read(['foreign_amount_residual'])[0])
         
