@@ -137,9 +137,11 @@
                     </group>
                 </page>
             </xpath>
-            <!-- ONLY VES SQUARE -->
+            <!-- ONLY VES SQUARE: it only adds something when the invoice is not already in VES;
+                 if currency_id == company_currency_id this box would duplicate the
+                 Subtotal/Total above, which is already in Bs. -->
             <xpath expr="//page[@name='invoice_tab']//group[hasclass('oe_invoice_lines_tab')]" position="after">
-                <group col="12" class="overflow-hidden">
+                <group col="12" class="overflow-hidden" invisible="currency_id == company_currency_id">
                     <group colspan="8">
                     </group>
                     <group colspan="4">

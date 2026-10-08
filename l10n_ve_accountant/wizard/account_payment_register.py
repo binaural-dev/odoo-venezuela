@@ -71,7 +71,7 @@ class AccountPaymentRegister(models.TransientModel):
         store=True,
     )
     base_currency_is_vef = fields.Boolean(
-        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
+        default=lambda self: self.env.company.currency_id.is_venezuelan_bolivar()
     )
 
     indexaxion_payment_mode = fields.Selection(
