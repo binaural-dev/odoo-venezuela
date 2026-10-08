@@ -1,7 +1,9 @@
 """Carry the v17 POS order rate over to v19 and back up the POS options that v19 removed.
 
 What:
-    1. Creates pos_order.foreign_currency_rate and fills it with the v17 foreign_inverse_rate.
+    1. Sets pos_order.foreign_currency_rate to the v17 foreign_inverse_rate, creating the column
+       if needed. v17 already had that column, with the rate rounded to the foreign currency
+       decimals (0.00 on a VEF base, as v17's order_model.js warns), so it is overwritten.
     2. Copies to l10n_ve_pos_migration_v17_backup the v17 flags and options that v19 no longer
        declares: account.move.is_pos_cross_move, pos.payment.method.apply_one_cross_move,
        pos.config.allow_sales_on_order and product.template.pos_sale_on_order. If any POS or
@@ -24,7 +26,8 @@ Why:
 If it does not run: invoices and refunds of v17 orders come out at rate 0 or today's rate, and the
     stores that sold on order lose it without notice.
 
-How to revert: empty foreign_currency_rate on the migrated orders. The backup changes nothing.
+How to revert: empty foreign_currency_rate on the migrated orders. The v17 value it replaces was the
+    same rate rounded to the foreign currency decimals. The backup changes nothing.
 
 Task: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
 """
@@ -47,17 +50,19 @@ def migrate(cr, version):
         return
 
     if util.column_exists(cr, "pos_order", "foreign_inverse_rate"):
-        if util.create_column(cr, "pos_order", "foreign_currency_rate", "float8"):
-            util.explode_execute(
-                cr,
-                """
-                UPDATE pos_order
-                   SET foreign_currency_rate = foreign_inverse_rate
-                 WHERE foreign_inverse_rate IS NOT NULL
-                   AND foreign_inverse_rate <> 0
-                """,
-                table="pos_order",
-            )
+        # v17 already had a foreign_currency_rate column, holding the rate rounded to the foreign
+        # currency decimals (0.00 on a VEF base): it is overwritten, not only filled when created.
+        util.create_column(cr, "pos_order", "foreign_currency_rate", "float8")
+        util.explode_execute(
+            cr,
+            """
+            UPDATE pos_order
+               SET foreign_currency_rate = foreign_inverse_rate
+             WHERE foreign_inverse_rate IS NOT NULL
+               AND foreign_inverse_rate <> 0
+            """,
+            table="pos_order",
+        )
 
     cr.execute(
         f"""
