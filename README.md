@@ -1,5 +1,6 @@
 # Localización Venezolana para Odoo
 
+
 ## Propósito de esta Localización
 
 En Binaural C.A., estamos comprometidos con el desarrollo de herramientas que impulsen la mejora continua de nuestro país. Por eso, hemos decidido liberar esta localización venezolana para Odoo con el objetivo de:
