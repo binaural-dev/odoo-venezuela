@@ -2811,6 +2811,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             {"tax_group_name": "IVA 16%", "tax_group_base_amount": 25.0, "tax_group_amount": 4.0},
         ]}
         return type("FakeMove", (), {
+            # Como un singleton de Odoo: _prepare_totals y _prepare_tax_subtotals
+            # hacen ``for record in invoice``.
+            "__iter__": lambda self: iter([self]),
             "company_id": self.company,
             "multi_currency_invoice": multi_currency,
             "show_payment_box": False,
