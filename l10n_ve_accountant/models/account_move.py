@@ -166,28 +166,16 @@ class AccountMove(models.Model):
     
     foreign_inverse_rate_vef = fields.Float(compute="_compute_inverse_rate_vef",store=True)
 
-    foreign_amount_residual = fields.Monetary('Foreign Amount Residual',copy=False, compute = "_compute_amount", currency_field="foreign_currency_id",readonly=False)
-
-    @api.depends(
-        'line_ids.matched_debit_ids.debit_move_id.move_id.payment_id.is_matched',
-        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
-        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual_currency',
-        'line_ids.matched_credit_ids.credit_move_id.move_id.payment_id.is_matched',
-        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual',
-        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.amount_residual_currency',
-        'line_ids.balance',
-        'line_ids.currency_id',
-        'line_ids.amount_currency',
-        'line_ids.amount_residual',
-        'line_ids.amount_residual_currency',
-        'line_ids.payment_id.state',
-        'line_ids.full_reconcile_id',
-        'state',
-        'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.foreign_amount_residual',
-        'line_ids.matched_credit_ids.credit_move_id.move_id.line_ids.foreign_amount_residual',
+    foreign_amount_residual = fields.Monetary(
+        'Foreign Amount Residual',
+        copy=False,
+        compute="_compute_foreign_amount_residual",
+        currency_field="foreign_currency_id",
+        readonly=False,
     )
-    def _compute_amount(self):
-        super()._compute_amount()
+
+    @api.depends('line_ids.foreign_amount_residual')
+    def _compute_foreign_amount_residual(self):
         for move in self:
             total_residual_currency = 0.0
             for line in move.line_ids:
@@ -198,8 +186,6 @@ class AccountMove(models.Model):
                 move.foreign_amount_residual = -sign * total_residual_currency
             else:
                 move.foreign_amount_residual = abs(total_residual_currency)
-            
-         
 
     @api.depends('invoice_date', 'date', 'company_id.currency_foreign_id')
     def _compute_inverse_rate_vef(self):
