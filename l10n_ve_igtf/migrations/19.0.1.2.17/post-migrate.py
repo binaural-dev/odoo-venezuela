@@ -1,16 +1,16 @@
 """Post-migration for l10n_ve_igtf 19.0.1.2.17.
 
-Nada que hacer aquí: 19.0.1.2.16/post-migrate.py ya dropea
-EXCLUSIVE_COLUMNS (mismas columnas, sin cambios en esta versión) y esa
-versión corre siempre antes que esta en el mismo -u. El único cambio de
-19.0.1.2.17 es el rename de pre-migrate.py (RENAMED_COLUMNS), que no
-necesita ningún paso de post-migrate.
+Nothing to do here: 19.0.1.2.16/post-migrate.py already drops
+EXCLUSIVE_COLUMNS (same columns, unchanged in this version) and that
+version always runs before this one in the same -u. The only change in
+19.0.1.2.17 is the pre-migrate.py rename (RENAMED_COLUMNS), which does
+not need any post-migrate step.
 
-(Ver el docstring de pre-migrate.py en esta misma carpeta: la sección
-de retiro de binaural_igtf/binaural_base_igtf para la línea no
-homologada que originalmente vivía aquí se movió a
-l10n_ve_igtf/__init__.py -- pre_init_hook -- porque este archivo nunca
-se ejecuta en instalación nueva de módulo.)
+(See the docstring of pre-migrate.py in this same folder: the section
+for the retirement of binaural_igtf/binaural_base_igtf for the
+non-homologated line that originally lived here was moved to
+l10n_ve_igtf/__init__.py -- pre_init_hook -- because this file never
+runs on a fresh install of a module.)
 """
 
 import logging
@@ -22,4 +22,4 @@ def migrate(cr, version):
     if not version or not version.startswith("17."):
         return
 
-    _logger.info("l10n_ve_igtf post-migrate (19.0.1.2.17): sin acciones adicionales")
+    _logger.info("l10n_ve_igtf post-migrate (19.0.1.2.17): no additional actions")

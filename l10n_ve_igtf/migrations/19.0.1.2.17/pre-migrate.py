@@ -1,30 +1,30 @@
 """Pre-migration for l10n_ve_igtf 19.0.1.2.17.
 
-CORRECCIÓN (auditoría posterior): esta carpeta originalmente incluía
-también un MODULES_TO_RETIRE_NO_HOMOLOGADA (binaural_igtf,
-binaural_base_igtf) pensado para la línea NO homologada. Se retiró de
-aquí porque es código muerto: para esos clientes l10n_ve_igtf es
-SIEMPRE instalación nueva (nunca tuvieron el módulo), y
-odoo/modules/migration.py:151-152 confirma que
-migrations/<version>/pre-migrate.py NUNCA se ejecuta en instalación
-nueva (state='to install'), solo en actualización de un módulo ya
-instalado (state='to upgrade'). Esa lógica quedó dejada correctamente
-en l10n_ve_igtf/__init__.py (pre_init_hook), que sí corre en
-instalación nueva -- ver ese archivo para la cobertura real de la línea
-no homologada. Mantener ambas copias aquí y allá inducía a pensar
-erróneamente que este archivo también cubre esa línea.
+CORRECTION (later audit): this folder originally also included a
+MODULES_TO_RETIRE_NO_HOMOLOGADA (binaural_igtf, binaural_base_igtf)
+meant for the NON-homologated line. It was removed from here because it
+is dead code: for those clients l10n_ve_igtf is ALWAYS a fresh install
+(they never had the module), and
+odoo/modules/migration.py:151-152 confirms that
+migrations/<version>/pre-migrate.py NEVER runs on a fresh install
+(state='to install'), only on an upgrade of an already installed module
+(state='to upgrade'). That logic was correctly left in
+l10n_ve_igtf/__init__.py (pre_init_hook), which does run on a fresh
+install -- see that file for the actual coverage of the non-homologated
+line. Keeping both copies, here and there, led people to wrongly think
+that this file also covers that line.
 
-Esta carpeta (línea HOMOLOGADA, checkout maintenance-l10nve_17.0)
-extiende 19.0.1.2.16 con un solo cambio real: RENAMED_COLUMNS corrige
-un rename detectado en binaural_advance_payment_igtf --
+This folder (HOMOLOGATED line, checkout maintenance-l10nve_17.0)
+extends 19.0.1.2.16 with a single real change: RENAMED_COLUMNS fixes
+a rename detected in binaural_advance_payment_igtf --
 res_company.not_show_bi_igtf_sale_order / not_show_bi_igtf_purchase_order
-(con infijo "_bi_") no tienen columna homónima en v19 -- v19 los tiene
-SIN el infijo: not_show_igtf_sale_order / not_show_igtf_purchase_order
-(l10n_ve_igtf/models/res_company.py). Es un rename, no una columna
-huérfana -- se migra con UPDATE, no se respalda y descarta. Para el
-resto (MODULES_TO_RETIRE, EXCLUSIVE_COLUMNS de binaural_advance_payment/
-_igtf/_report y binaural_subsidiary_payment_advance), ver 19.0.1.2.16 --
-sin cambios.
+(with the "_bi_" infix) have no column of the same name in v19 -- v19 has
+them WITHOUT the infix: not_show_igtf_sale_order / not_show_igtf_purchase_order
+(l10n_ve_igtf/models/res_company.py). It is a rename, not an orphan
+column -- it is renamed in place (ALTER TABLE ... RENAME COLUMN), not
+backed up and discarded. For the rest (MODULES_TO_RETIRE, EXCLUSIVE_COLUMNS
+of binaural_advance_payment/_igtf/_report and
+binaural_subsidiary_payment_advance), see 19.0.1.2.16 -- unchanged.
 """
 
 import logging
@@ -34,7 +34,7 @@ _logger = logging.getLogger(__name__)
 BACKUP_TABLE = "l10n_ve_igtf_migration_v17_backup"
 
 # ============================================================================
-# LÍNEA HOMOLOGADA -- sin cambios respecto a 19.0.1.2.16
+# HOMOLOGATED LINE -- unchanged from 19.0.1.2.16
 # ============================================================================
 EXCLUSIVE_COLUMNS = {
     "account_payment": ["amount_residual_from_payment"],
@@ -55,9 +55,9 @@ MODULES_TO_RETIRE = [
     "binaural_subsidiary_payment_advance",
 ]
 
-# Rename detectado en binaural_advance_payment_igtf (afecta a cualquier
-# cliente, de cualquiera de las dos líneas, que lo haya tenido instalado):
-# infijo "_bi_" no presente en el nombre de columna v19.
+# Rename detected in binaural_advance_payment_igtf (affects any client,
+# on either of the two lines, that had it installed): the "_bi_" infix
+# is not present in the v19 column name.
 RENAMED_COLUMNS = [
     ("res_company", "not_show_bi_igtf_sale_order", "not_show_igtf_sale_order"),
     ("res_company", "not_show_bi_igtf_purchase_order", "not_show_igtf_purchase_order"),
@@ -136,9 +136,9 @@ def _migrate_renamed_columns(cr):
 
 
 def _delete_module_views(cr, module_names):
-    """Igual que en 19.0.1.2.16, reutilizado aquí para los módulos de la
-    línea no homologada -- ver ese archivo para el detalle del guard de
-    inherit_id.
+    """Same as in 19.0.1.2.16, reused here for the modules of the
+    homologated line (MODULES_TO_RETIRE) -- see that file for the details of
+    the inherit_id guard.
     """
     for module_name in module_names:
         cr.execute(
@@ -183,13 +183,13 @@ def _mark_modules_to_remove(cr, module_names):
         if not row:
             _logger.info("  Module %s not present in this database, skipping", module_name)
             continue
-        # 'to upgrade' cuenta como instalado: durante un `-u all` —que es el
-        # procedimiento documentado— TODO modulo instalado esta en ese estado,
-        # no en 'installed'. Con el guard original el retiro se saltaba en
-        # silencio justo los modulos que se estaban actualizando, y quedaban
-        # instalados con su dependencia ya desinstalada.
+        # 'to upgrade' counts as installed: during a `-u all` —which is the
+        # documented procedure— EVERY installed module is in that state,
+        # not in 'installed'. With the original guard the retirement was
+        # silently skipped for exactly the modules being upgraded, and they
+        # stayed installed with their dependency already uninstalled.
         if row[0] not in ("installed", "to upgrade"):
-            _logger.info("  Module %s is in state '%s', no esta instalado, skipping",
+            _logger.info("  Module %s is in state '%s', not installed, skipping",
                          module_name, row[0])
             continue
         cr.execute(
@@ -204,9 +204,9 @@ def migrate(cr, version):
         return
 
     _logger.info(
-        "l10n_ve_igtf pre-migrate (19.0.1.2.17): línea homologada "
-        "(binaural_advance_payment*) ya cubierta por 19.0.1.2.16, "
-        "agrega aquí el rename not_show_bi_igtf_*"
+        "l10n_ve_igtf pre-migrate (19.0.1.2.17): homologated line "
+        "(binaural_advance_payment*) already covered by 19.0.1.2.16, "
+        "adds the not_show_bi_igtf_* rename here"
     )
     _ensure_backup_table(cr)
     _backup_exclusive_columns(cr)

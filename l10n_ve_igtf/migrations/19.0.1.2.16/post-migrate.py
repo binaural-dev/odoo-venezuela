@@ -14,7 +14,7 @@ from odoo.upgrade import util
 
 _logger = logging.getLogger(__name__)
 
-# Los cuatro campos que en v19 pasaron a compute+store con compute_bi_igtf.
+# The four fields that became compute+store in v19 with compute_bi_igtf.
 IGTF_COMPUTED_FIELDS = ["bi_igtf", "igtf_top_aply", "alter_bi_igtf", "foreign_bi_igtf"]
 
 EXCLUSIVE_COLUMNS = {
@@ -42,26 +42,29 @@ def _views_referencing_field(cr, column):
 
 
 def _recompute_bi_igtf(cr):
-    """account_move.bi_igtf/igtf_top_aply/alter_bi_igtf/foreign_bi_igtf eran
-    campos de asignacion directa en v17; en v19 son compute+store con una
-    formula reescrita (compute_bi_igtf). Los valores crudos que vienen de v17
-    no son confiables bajo la formula nueva, asi que hay que recomputarlos.
+    """account_move.bi_igtf/igtf_top_aply/alter_bi_igtf/foreign_bi_igtf were
+    directly assigned fields in v17; in v19 they are compute+store with a
+    rewritten formula (compute_bi_igtf). The raw values coming from v17
+    are not reliable under the new formula, so they must be recomputed.
 
-    Esta version llamaba a recalculate_bi_igtf(), que **no existe en v19** --
-    ni en l10n_ve_igtf ni en ningun otro addon del arbol. El resultado era que
-    las 303 tandas fallaban con AttributeError, el guion lo tragaba con un
-    try/except y la migracion terminaba "bien" **sin haber recomputado nada**:
+    This version used to call recalculate_bi_igtf(), which **does not exist in
+    v19** -- not in l10n_ve_igtf nor in any other addon in the tree. The result
+    was that the 303 batches failed with AttributeError, the script swallowed it
+    with a try/except and the migration finished "fine" **without having
+    recomputed anything**:
 
         AttributeError: 'account.move' object has no attribute 'recalculate_bi_igtf'
 
-    Se recomputa con util.recompute_fields, que es el metodo del proyecto
-    (ADR-001): trocea solo, decide entre flush y commit segun el volumen, y
-    reporta progreso. Y si un campo no existe, falla en vez de tragarselo.
+    It is recomputed with util.recompute_fields, which is the project's method
+    (ADR-001): it chunks on its own, decides between flush and commit based on
+    the volume, and reports progress. And if a field does not exist, it fails
+    instead of swallowing the error.
 
-    Ojo: el server action "Fix Venezuela BI IGTF Invoices"
-    (l10n_ve_igtf/data/ir_actions_server.xml) llama a ese mismo metodo
-    inexistente, igual que binaural_advance_payment_igtf/models/account_move.py.
-    Los dos siguen rotos en runtime; eso es del vertical, no de esta migracion.
+    Watch out: the server action "Fix Venezuela BI IGTF Invoices"
+    (l10n_ve_igtf/data/ir_actions_server.xml) calls that same nonexistent
+    method, as does binaural_advance_payment_igtf/models/account_move.py.
+    Both are still broken at runtime; that belongs to the vertical, not to
+    this migration.
     """
     util.recompute_fields(cr, "account.move", IGTF_COMPUTED_FIELDS, logger=_logger)
 
