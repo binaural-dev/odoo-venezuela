@@ -14,12 +14,6 @@ class AccountMoveLine(models.Model):
     foreign_currency_id = fields.Many2one(
         related="move_id.foreign_currency_id", store=True
     )
-    ves_currency_id = fields.Many2one(
-        "res.currency",
-        string="Moneda VES",
-        compute="_compute_ves_currency_id",
-        store=True,
-    )
     foreign_rate = fields.Float(related="move_id.foreign_rate", store=True)
     foreign_inverse_rate = fields.Float(
         related="move_id.foreign_inverse_rate", store=True, index=True
@@ -64,14 +58,6 @@ class AccountMoveLine(models.Model):
         store=True,
     )
 
-    price_unit_ves = fields.Monetary(
-        string="Unit Price VES",
-        currency_field="ves_currency_id",
-        help="Unit Price in VES currency",
-        compute="_compute_price_unit_ves",
-        store=True,
-    )
-
     international_purchase_exent_product = fields.Boolean(string="International Purchase Exent Product")
     is_purchase_international = fields.Boolean(related="move_id.journal_id.is_purchase_international")
 
@@ -79,8 +65,7 @@ class AccountMoveLine(models.Model):
         """Fecha con la que se busca la tasa para convertir montos de esta linea.
 
         Unica fuente de fecha para todo calculo de moneda alterna de la linea:
-        _compute_foreign_price, _compute_price_unit_ves y
-        _get_non_invoice_foreign_value.
+        _compute_foreign_price y _get_non_invoice_foreign_value.
 
         Facturas y notas de credito/debito: invoice_date, que en esta
         localizacion es la fecha de la tasa (la fecha visible del documento es
@@ -112,48 +97,6 @@ class AccountMoveLine(models.Model):
         if move.is_invoice(include_receipts=True):
             return move.invoice_date or move.date or fields.Date.context_today(self)
         return move.date or fields.Date.context_today(self)
-
-    @api.depends(
-        "price_unit",
-        "currency_id",
-        "move_id.currency_id",
-        "move_id.invoice_date",
-        "move_id.date",
-    )
-    def _compute_price_unit_ves(self):
-        for line in self:
-            company_currency = line.company_id.currency_id
-            if not line.currency_id or line.currency_id == company_currency:
-                line.price_unit_ves = line.price_unit
-                continue
-            # Convertir con _convert() y no dividiendo entre currency_id.rate:
-            # no revienta si la tasa del dia no esta cargada (rate = 0).
-            # round=False + redondeo a la precision del campo (igual que
-            # _compute_foreign_price): _convert() redondea por defecto a los
-            # decimales de la moneda destino (VEF = 2), pero "Product Price"
-            # tiene mas digitos (6) - sin round=False esa precision extra se
-            # pierde antes de que el float_round de abajo pueda hacer nada.
-            precision = self.env["decimal.precision"].precision_get(
-                "Product Price"
-            )
-            line.price_unit_ves = float_round(
-                line.currency_id._convert(
-                    line.price_unit,
-                    company_currency,
-                    line.company_id,
-                    line._get_foreign_rate_date(),
-                    round=False,
-                ),
-                precision_digits=precision
-            )
-
-    def _compute_ves_currency_id(self):
-        ves_currency = self.env.ref("base.VES", raise_if_not_found=False) or self.env["res.currency"].search([("name", "=", "VES")], limit=1)
-        for line in self:
-            if line.currency_id and ves_currency and line.currency_id == ves_currency:
-                line.ves_currency_id = ves_currency
-            else:
-                line.ves_currency_id = False
 
     foreign_debit_adjustment = fields.Monetary(
         currency_field="foreign_currency_id",
@@ -430,6 +373,7 @@ class AccountMoveLine(models.Model):
         with super()._sync_invoice(container):
             yield
 
+        self._fix_price_included_base_per_line(container['records'])
         self._apply_product_real_portion(container['records'])
 
     @api.onchange('amount_currency', 'currency_id')
@@ -476,6 +420,56 @@ class AccountMoveLine(models.Model):
                     line.balance = rounded_balance + adjustment
                 else:
                     line.balance = rounded_balance
+
+    def _price_included_split(self):
+        """Returns (base_currency, base_company, included_currency,
+        included_company) of a product line whose taxes are all flat
+        percentage price-included, or None for any other line."""
+        self.ensure_one()
+        move = self.move_id
+        taxes = self.tax_ids
+        if self.display_type != 'product' or not move.is_invoice(include_receipts=True):
+            return None
+        if not taxes or any(
+            t.amount_type != 'percent' or not t.price_include or t.include_base_amount
+            for t in taxes
+        ):
+            return None
+        total_rate = sum(taxes.mapped('amount')) / 100.0
+        if total_rate <= -1.0:
+            return None
+        raw_included = (
+            self.price_unit * self.quantity
+            * (1 - (self.discount or 0.0) / 100.0) * move.direction_sign
+        )
+        raw_excluded = raw_included / (1 + total_rate)
+        currency = self.currency_id
+        cc = move.company_currency_id
+        rate = 1.0 if currency == cc else (self.currency_rate or 1.0)
+        return (
+            currency.round(raw_excluded),
+            cc.round(raw_excluded / rate),
+            currency.round(raw_included),
+            cc.round(raw_included / rate),
+        )
+
+    @api.model
+    def _fix_price_included_base_per_line(self, lines):
+        """Recomputes each product line's price-included base on its own
+        (core's `round_globally` sums ALL same-tax lines first, so
+        identical lines can post different amounts). Scoped to simple
+        flat percentage price-included taxes only."""
+        for line in lines:
+            if line.move_id.state != 'draft':
+                continue
+            split = line._price_included_split()
+            if split is None:
+                continue
+            new_amount_currency, new_balance = split[0], split[1]
+            if not line.currency_id.is_zero(new_amount_currency - line.amount_currency):
+                line.amount_currency = new_amount_currency
+            if not line.move_id.company_currency_id.is_zero(new_balance - line.balance):
+                line.balance = new_balance
 
     @api.model
     def _apply_product_real_portion(self, lines):

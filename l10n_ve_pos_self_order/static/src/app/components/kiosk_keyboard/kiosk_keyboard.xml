@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_self_order.KioskKeyboard">
+        <div class="o_ve_kiosk_keyboard" t-ref="root"
+             t-on-mousedown.prevent="() => {}" t-att-class="{ 'o_ve_kiosk_keyboard_numeric': isNumeric }">
+
+            <!-- Numeric mode: same 3x4 numpad as identification_page's cédula step. -->
+            <t t-if="isNumeric">
+                <div class="o_ve_numpad">
+                    <button t-foreach="numpadKeys" t-as="key" t-key="key.value"
+                            type="button"
+                            class="btn btn-lg o_ve_numpad_key"
+                            t-att-class="{ 'o_ve_numpad_action': key.action }"
+                            t-on-click="() => this.onNumpadClick(key.value)">
+                        <t t-esc="key.label"/>
+                    </button>
+                </div>
+            </t>
+
+            <!-- Text mode: full QWERTY + Ñ + numbers + space/backspace/shift. -->
+            <t t-else="">
+                <div class="o_ve_kiosk_keyboard_row">
+                    <button t-foreach="numberKeys" t-as="key" t-key="key"
+                            type="button" class="btn o_ve_kiosk_keyboard_key"
+                            t-on-click="() => this.onNumpadClick(key)">
+                        <t t-esc="key"/>
+                    </button>
+                </div>
+                <div class="o_ve_kiosk_keyboard_row">
+                    <button t-foreach="letterRow1" t-as="key" t-key="key"
+                            type="button" class="btn o_ve_kiosk_keyboard_key"
+                            t-on-click="() => this.onLetterClick(key)">
+                        <t t-esc="displayLetter(key)"/>
+                    </button>
+                </div>
+                <div class="o_ve_kiosk_keyboard_row">
+                    <button t-foreach="letterRow2" t-as="key" t-key="key"
+                            type="button" class="btn o_ve_kiosk_keyboard_key"
+                            t-on-click="() => this.onLetterClick(key)">
+                        <t t-esc="displayLetter(key)"/>
+                    </button>
+                </div>
+                <div class="o_ve_kiosk_keyboard_row">
+                    <button type="button"
+                            class="btn o_ve_kiosk_keyboard_key o_ve_kiosk_keyboard_action o_ve_kiosk_keyboard_shift"
+                            t-att-class="{ 'o_ve_kiosk_keyboard_shift_active': state.shift }"
+                            t-on-click="() => this.toggleShift()">⇧</button>
+                    <button t-foreach="letterRow3" t-as="key" t-key="key"
+                            type="button" class="btn o_ve_kiosk_keyboard_key"
+                            t-on-click="() => this.onLetterClick(key)">
+                        <t t-esc="displayLetter(key)"/>
+                    </button>
+                    <button type="button"
+                            class="btn o_ve_kiosk_keyboard_key o_ve_kiosk_keyboard_action"
+                            t-on-click="() => this.onBackspace()">⌫</button>
+                </div>
+                <div class="o_ve_kiosk_keyboard_row">
+                    <button type="button" class="btn o_ve_kiosk_keyboard_key o_ve_kiosk_keyboard_space"
+                            t-on-click="() => this.onSpace()">Space</button>
+                </div>
+            </t>
+
+        </div>
+    </t>
+</templates>

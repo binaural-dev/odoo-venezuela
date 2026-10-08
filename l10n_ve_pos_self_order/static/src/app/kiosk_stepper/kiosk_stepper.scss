@@ -1,10 +1,14 @@
+// Fixed height so the pages below can subtract it (see the rule at the end).
+$o-kiosk-stepper-height: 3.5rem;
+
 .o_kiosk_stepper {
     position: sticky;
     top: 0;
     z-index: 10;
     flex-shrink: 0;
     gap: 0.5rem;
-    padding: 0.75rem 1rem;
+    height: $o-kiosk-stepper-height;
+    padding: 0 1rem;
     background-color: rgba(255, 255, 255, 0.95);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
 
@@ -46,4 +50,13 @@
     .o_kiosk_stepper_step.done .o_kiosk_stepper_label {
         color: $o-gray-700;
     }
+}
+
+// Every core self-order page is `vh-100` and the Router renders it right
+// after the stepper, as a sibling: stepper + 100vh overflowed the window by
+// the stepper's height, and on short screens (1366x768, Windows zoom at
+// 125-150%) the page footer (Back / Create / Pay) ended up clipped and did not
+// receive clicks. Pages that follow the stepper take the remaining height.
+.o_kiosk_stepper ~ .vh-100 {
+    height: calc(100vh - #{$o-kiosk-stepper-height}) !important;
 }

@@ -1,27 +1,27 @@
 """Pre-migration for l10n_ve_invoice_digital: v17 -> v19.
 
-CORRECCIÓN (auditoría posterior, verificada directamente contra el
-código actual del módulo): esta versión originalmente asumía que v19
-había eliminado por completo el modelo `payment.method.tfhka` y los
-campos `account_journal.payment_method_code`, `res_currency.code_tfhka`,
+CORRECTION (later audit, verified directly against the current code of
+the module): this version originally assumed that v19 had completely
+removed the `payment.method.tfhka` model and the fields
+`account_journal.payment_method_code`, `res_currency.code_tfhka`,
 `res_company.dispatch_guide_digital_tfhka` /
-`digitalization_with_payment_tfhka`, y respaldaba + eliminaba todo eso.
+`digitalization_with_payment_tfhka`, and backed up + deleted all of that.
 
-Esa premisa era FALSA: comparado directamente contra el código actual
-de `l10n_ve_invoice_digital` en v19
+That premise was FALSE: compared directly against the current code
+of `l10n_ve_invoice_digital` in v19
 (models/payment_method_tfhka.py, models/account_journal.py,
-models/res_currency.py, models/res_company.py), los 5 son IDÉNTICOS a
-v17 -- mismo modelo, misma tabla, mismas columnas, mismo tipo. No hay
-nada que respaldar ni migrar: el `post-migrate.py` de esta misma
-carpeta hacía `DROP TABLE payment_method_tfhka CASCADE` y `DROP COLUMN`
-sobre columnas que el propio módulo v19 sigue declarando y usando --
-de haber corrido, habría destruido esquema y datos en vivo (el modelo
-Python seguiría declarando el campo, pero la columna física ya no
-existiría, causando errores SQL "column/relation does not exist" en
-cualquier operación posterior). Se elimina toda esa lógica.
+models/res_currency.py, models/res_company.py), all 5 are IDENTICAL to
+v17 -- same model, same table, same columns, same type. There is
+nothing to back up or migrate: the `post-migrate.py` in this same
+folder ran `DROP TABLE payment_method_tfhka CASCADE` and `DROP COLUMN`
+on columns that the v19 module itself still declares and uses --
+had it run, it would have destroyed live schema and data (the Python
+model would still declare the field, but the physical column would no
+longer exist, causing SQL errors "column/relation does not exist" in
+any later operation). All of that logic is removed.
 
-Lo único real de esta carpeta es la brecha semántica documentada
-abajo, que sigue siendo válida y no involucra ningún DROP.
+The only real thing in this folder is the semantic gap documented
+below, which is still valid and does not involve any DROP.
 """
 
 import logging
@@ -37,9 +37,9 @@ def migrate(cr, version):
         "pickings will come out of this migration with is_digitalized=False "
         "regardless of whether they were actually sent to TFHKA under the "
         "old flow -- there is no v17 data to derive that from per-picking. "
-        "El resto de campos de este módulo (payment.method.tfhka, "
+        "The rest of the fields of this module (payment.method.tfhka, "
         "account_journal.payment_method_code, res_currency.code_tfhka, "
         "res_company.dispatch_guide_digital_tfhka/"
-        "digitalization_with_payment_tfhka) son idénticos entre v17 y v19 -- "
-        "no requieren ninguna acción de esta migración."
+        "digitalization_with_payment_tfhka) are identical between v17 and v19 -- "
+        "they do not require any action from this migration."
     )

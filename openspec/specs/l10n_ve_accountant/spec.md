@@ -223,6 +223,80 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 
 (`_compute_tax_totals` de `account.move`, `l10n_ve_accountant/models/account_move.py`, delega directo a `super()` sin fijar `active_id`/`active_model` por registro -- ese `with_context()` por registro causaba un `RecursionError` real en cadenas de `super()` profundas al conciliar pagos; la prioridad de `base_lines` sobre el contexto de arriba es lo que hace seguro quitarlo. Cubierto por `l10n_ve_accountant/tests/test_coverage_gaps.py::test_39b_tax_totals_record_derived_from_base_lines_ignores_stale_active_id`.)
 
+### Requirement: Edición manual del resumen de impuestos (`tax_totals`) vía lápiz
+
+Cuando el usuario pertenece al grupo `l10n_ve_accountant.group_fiscal_config_support`, el formulario de factura DEBE (MUST) permitir editar manualmente el monto de un grupo de impuesto directamente en el widget `tax_totals`, mientras la factura está en borrador (`state == 'draft'`) -- con el mismo ícono de lápiz (`fa fa-pencil`) que el widget nativo de Odoo junto al monto editable, no solo el click habilitado sin esa señal visual. Usuarios fuera de ese grupo NO DEBEN (SHALL NOT) poder aplicar el cambio aunque lo intenten por escritura directa (no solo oculto en la vista): `_inverse_tax_totals` DEBE (MUST) rechazar la escritura con un `UserError` del lado servidor.
+
+El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los tres widgets de totales: el nativo (`account-tax-totals-field`, pestaña principal), el de moneda alterna y el de VES. Los tres comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
+
+`tax_totals_edit_tolerance` DEBE (MUST) estar entre 0 y 1 (constraint de `res.company`); fuera de ese rango se rechaza el guardado.
+
+La edición SOLO DEBE (MUST) aplicarse si el delta entre el monto calculado y el editado no supera `company_id.tax_totals_edit_tolerance` (configurable por compañía, default 0,03 en la moneda del documento); fuera de esa tolerancia el sistema DEBE (MUST) rechazar la escritura con un `UserError` que indique la diferencia y la tolerancia permitida, aunque el usuario sí pertenezca al grupo.
+
+Toda edición que efectivamente se aplique (delta distinto de cero y dentro de tolerancia) DEBE (MUST) dejar un rastro de auditoría en el chatter de la factura (`message_post`), consolidado en un único mensaje por guardado aunque hayan cambiado varios grupos de impuesto a la vez, indicando el usuario que hizo el cambio y, por cada grupo afectado, el monto anterior y el nuevo.
+
+La edición manual escribe directamente sobre `amount_currency`/`balance` de la línea de impuesto, sin tocar ninguna línea base/producto -- por eso el sistema DEBE (MUST) resincronizar también el lado de moneda alterna (`foreign_balance`/`foreign_debit`/`foreign_credit`) de esa misma línea de impuesto y de la línea `payment_term` que la cuadra (`_sync_tax_lines`/`_round_mode`, rama `'reapply_tax_lines'` -- ver el requirement "Corrección de redondeo multi-moneda (porción real)"), para que el asiento no quede descuadrado en moneda alterna tras la edición. Esa resincronización NO DEBE (SHALL NOT) recalcular el lado de moneda de la compañía (`balance`) a partir de las líneas base, ya que eso descartaría silenciosamente la edición manual recién validada por la tolerancia.
+
+Core escribe `tax_totals` dos veces por cada `write()` de la factura: una transitoria, dentro de `_sync_dynamic_lines` (antes de que las líneas de impuesto terminen de resincronizarse contra el nuevo estado de las líneas base), y la real, después. Core marca la pasada transitoria con `_disable_recursion(..., 'skip_invoice_sync')`, y su propio `_inverse_tax_totals` ya respeta ese guard; `_inverse_tax_totals` de este módulo DEBE (MUST) respetarlo también, delegando directo a `super()` sin validar ni auditar durante esa pasada -- de lo contrario cualquier edición normal de línea (no el lápiz) puede disparar ahí un `UserError` espurio de tolerancia, y una edición real del lápiz deja dos mensajes de chatter por un solo guardado.
+
+`_sync_dynamic_lines` DEBE (MUST) ejecutar `_distribute_final_real_portion`/`_distribute_foreign_pt_residual` solo mientras no haya ya una ejecución en curso para el mismo move en la pila actual (guarda de reentrancia, liberada en `finally`), porque ambos métodos escriben campos (`foreign_balance`, `balance` de línea de impuesto) cuyo propio write/inverse reentra `_sync_dynamic_lines`. Esta guarda es un endurecimiento defensivo: en el escenario de prueba cubierto (dos líneas de producto, tres cuotas de payment_term) la reentrada observada es real pero de profundidad acotada (3-6 niveles) y converge sola incluso sin la guarda -- NO reproduce el `RecursionError` real reportado en producción (que supera 150 frames e involucra módulos enterprise/integra-addons fuera de este escenario mínimo). Esta guarda NO DEBE (MUST NOT) presentarse como una corrección confirmada de ese incidente; queda pendiente reproducirlo con el escenario completo antes de cerrar ese hallazgo.
+
+#### Scenario: Edición dentro de tolerancia se aplica y queda auditada
+
+- **GIVEN** un usuario del grupo `group_fiscal_config_support` editando una factura en borrador
+- **WHEN** edita el monto de un grupo de impuesto con un delta dentro de `tax_totals_edit_tolerance`
+- **THEN** la línea de impuesto queda con el nuevo monto, y el chatter de la factura registra un mensaje con el usuario, el grupo afectado y el monto anterior y el nuevo (`test_56_tax_totals_edit_within_company_tolerance_succeeds`, `test_60_tax_totals_edit_logs_chatter_message`)
+
+#### Scenario: Usuario con el grupo de soporte fiscal
+
+- **GIVEN** un usuario en `group_fiscal_config_support` y una factura de proveedor en borrador
+- **WHEN** edita el monto de un grupo de impuesto dentro de la tolerancia
+- **THEN** `can_edit_tax_totals` es verdadero y la edición se aplica (`test_58b`)
+
+#### Scenario: Usuario sin el grupo de soporte fiscal
+
+- **GIVEN** un usuario fuera de `group_fiscal_config_support`
+- **WHEN** abre el formulario o intenta escribir `tax_totals`
+- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los tres widgets de totales incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
+
+#### Scenario: Edición fuera de tolerancia se rechaza
+
+- **WHEN** el delta editado supera `tax_totals_edit_tolerance`
+- **THEN** el sistema rechaza la escritura con un `UserError`, aunque el usuario pertenezca al grupo (`test_57_tax_totals_edit_beyond_company_tolerance_blocked`)
+
+#### Scenario: Usuario sin el grupo no puede editar ni por escritura directa
+
+- **WHEN** un usuario fuera de `group_fiscal_config_support` intenta aplicar el mismo cambio
+- **THEN** el sistema lo rechaza con un `UserError`, incluso si el intento no pasa por el widget (`test_58_tax_totals_edit_denied_for_user_without_fiscal_support_group`)
+
+#### Scenario: La edición resincroniza el lado de moneda alterna y la línea de payment_term
+
+- **GIVEN** una compañía con `currency_id` VEF y `foreign_currency_id` USD, y una factura en USD
+- **WHEN** se edita el monto de un grupo de impuesto dentro de tolerancia
+- **THEN** `foreign_balance` de la línea de impuesto y de la línea `payment_term` se recalculan a partir del nuevo monto, el total de `foreign_debit` sigue igualando al de `foreign_credit` en toda la factura, y `balance` (moneda de la compañía) permanece exactamente el que dejó la edición manual (`test_59_tax_totals_edit_resyncs_foreign_balance_and_payment_term`)
+
+#### Scenario: Un guardado normal que reenvía tax_totals ya recalculado no se bloquea
+
+- **GIVEN** una factura en borrador donde el usuario edita una línea de producto (no el lápiz de `tax_totals`)
+- **WHEN** el mismo `write()` incluye también el `tax_totals` ya recalculado del lado cliente (como hace el webclient en cualquier guardado donde el widget cambió)
+- **THEN** el guardado no lanza `UserError` y el impuesto final refleja la edición real de la línea (`test_61_normal_line_edit_with_tax_totals_in_vals_does_not_raise`)
+
+#### Scenario: La guarda de reentrancia de _sync_dynamic_lines no rompe un guardado normal multi-línea/multi-cuota
+
+- **GIVEN** una factura en borrador con dos líneas de producto y tres cuotas de `payment_term`
+- **WHEN** se edita `price_unit` de una línea de producto
+- **THEN** el guardado no lanza `RecursionError`, el asiento queda cuadrado, el número de cuotas de `payment_term` no cambia y `foreign_debit`/`foreign_credit` quedan consistentes en todas las líneas (`test_62_sync_dynamic_lines_reentrancy_guard_does_not_break_normal_save`)
+
+### Requirement: Las líneas con impuesto porcentual incluido calculan base e impuesto por línea
+
+Para toda factura en borrador, en cualquiera de los dos modos de redondeo, la base de cada línea de producto cuyos impuestos sean todos porcentuales, con precio incluido y sin `include_base_amount` DEBE (MUST) calcularse a partir de su propio precio (`_fix_price_included_base_per_line`). El impuesto de esa línea DEBE (MUST) ser el precio incluido menos su base, de modo que la suma de base e impuesto de cada línea sea exactamente su precio y el total del documento coincida con el tipeado. Dos líneas idénticas DEBEN (MUST) registrar los mismos montos, y el resumen `tax_totals` DEBE (MUST) leer el impuesto de las líneas posteadas también en `round_globally` cuando existan estos impuestos.
+
+#### Scenario: Dos líneas idénticas con IVA 16% incluido en `round_globally` y `round_per_line`
+
+- **GIVEN** una factura de proveedor en USD con dos líneas de 12,95 USD, IVA 16% incluido en el precio
+- **WHEN** se publica la factura en cualquiera de los dos modos de redondeo
+- **THEN** ambas líneas registran la misma base (11,16 USD), el impuesto es 3,58 USD y `amount_total` es 25,90 USD (`test_33`)
+
 ### Requirement: base_amount por grupo de impuesto coincide con el balance real
 
 Cuando una factura (`account.move`, `out_invoice`/`in_invoice`/`out_refund`/`in_refund`) tiene dos o más grupos de impuesto (`account.tax.group`) distintos, `_fix_base_amount_for_multi_currency` DEBE (MUST) reportar en `tax_totals` un `base_amount` (moneda de la compañía) por cada `tax_group` que coincida, al céntimo, con la suma real del `balance` de las líneas de producto (`account.move.line`, `display_type='product'`) que pagan ese impuesto -- directamente o, para un impuesto tipo 'group', a través de sus `children_tax_ids`.
@@ -502,7 +576,7 @@ Cuando `company.tax_calculation_rounding_method` es `round_per_line`, el sistema
 
 Esta misma corrección DEBE (MUST) aplicarse también al resumen que alimenta el widget de totales y el reporte impreso: `account.tax._get_tax_totals_summary` (vía `_fix_tax_amount_for_round_per_line`) DEBE (MUST) sobrescribir `tax_amount`/`tax_amount_currency` (y los de cada subtotal/grupo de impuesto) desde las líneas de impuesto reales ya posteadas cuando el modo es `round_per_line`, en lugar de dejar el cálculo independiente que hace el motor del core sobre `base_lines` (que sigue sumando bases y redondeando una sola vez, sin importar el modo) -- de lo contrario la factura mostrada al cliente y el asiento contable divergirían en el mismo caso que este requirement corrige. Esto aplica en cualquier dirección de documento (`out_invoice`, `in_invoice`, `out_refund`, `in_refund`), independientemente del signo de `direction_sign`.
 
-Las líneas de signo mixto bajo un mismo impuesto (un ajuste o descuento global negativo junto a líneas positivas) DEBEN (MUST) sumarse con su propio signo, no con su valor absoluto.
+Ninguna línea de producto puede tener monto negativo (ni siquiera para representar un descuento): las líneas que comparten un impuesto son siempre positivas y su contribución por línea se suma tal cual.
 
 Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo sobre un borrador todavía no guardado), el sistema NO DEBE (SHALL NOT) aplicar esta corrección: no existe ningún asiento real que igualar todavía, y `record.line_ids` puede reflejar el estado de un paso de onchange ANTERIOR (ej. el usuario cambió la moneda del documento y luego el precio de una línea, dentro del mismo borrador sin guardar entre medio) en vez del precio actual. Sin este resguardo, el `tax_amount` recién calculado por el core para el precio actual quedaría pisado por el monto obsoleto de esas líneas, congelando el widget de totales en un valor que no corresponde a lo que el usuario está viendo en pantalla.
 
@@ -525,11 +599,11 @@ Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo 
 - **WHEN** se lee `amount_tax`/`tax_totals` (lo que muestra el formulario y el reporte impreso) de una factura de venta (`out_invoice`), una de compra (`in_invoice`) o una nota de crédito (`out_refund`)
 - **THEN** el monto coincide con la suma de `balance`/`amount_currency` de las líneas de impuesto reales ya posteadas, en las tres direcciones (`test_43`/`test_44`/`test_45` de `test_multi_currency_rounding.py`)
 
-#### Scenario: Líneas de signo mixto bajo el mismo impuesto
+#### Scenario: Dos líneas positivas bajo el mismo impuesto en ambos modos
 
-- **GIVEN** una factura con una línea positiva y una negativa (ajuste o descuento global) bajo el mismo impuesto, en `round_per_line`
-- **WHEN** se calcula el impuesto por línea antes de sumar
-- **THEN** la contribución de cada línea se suma con su propio signo, sin tomar el valor absoluto de la línea negativa
+- **GIVEN** una factura con dos líneas positivas bajo el mismo impuesto
+- **WHEN** se calcula el impuesto en `round_per_line` y en `round_globally`
+- **THEN** cada modo coincide con su propia fórmula esperada (`test_31b_two_lines_same_tax_both_rounding_modes`)
 
 ### Requirement: Un impuesto encadenado (`include_base_amount`) suma su propio monto a la base del siguiente impuesto de la misma línea
 
@@ -557,11 +631,41 @@ El sistema DEBE (MUST) corregir el redondeo por línea (`round_per_line`) única
 - **WHEN** se compara el resultado entre `round_per_line` y `round_globally`
 - **THEN** el resultado es idéntico en ambos modos
 
-### Requirement: `round_per_line` es la configuración esperada para compañías venezolanas (hallazgo de configuración, no implementado)
+### Requirement: Una compañía nueva nace con `round_per_line`; una compañía ya existente al instalar/actualizar el módulo NO se migra
 
-La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El default de Odoo 19 es `round_globally`, y este módulo NO fuerza `round_per_line` en ningún dato de instalación (`data/res_company_data.xml` no toca `tax_calculation_rounding_method`). Esto queda documentado como hallazgo pendiente de decisión de negocio (forzarlo vía dato de instalación, o documentarlo como paso manual de configuración post-instalación), NO como un cambio de código de este cierre.
+La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El sistema DEBE (MUST) usar `'round_per_line'` como valor por defecto de `tax_calculation_rounding_method` en `res.company` (sobreescribiendo el default `'round_globally'` heredado de `account`) para cualquier compañía CREADA después de instalar/actualizar `l10n_ve_accountant`.
 
-#### Scenario: Compañía venezolana recién instalada
+Este default NO DEBE (SHALL NOT) migrar retroactivamente compañías que ya existían al momento de instalar o actualizar el módulo: la columna ya fue poblada por `account` antes de que este default cargue en el registro, y una actualización de módulo no re-ejecuta el default sobre filas existentes. Este alcance -- solo compañías nuevas, sin migración retroactiva de las existentes -- es una decisión de negocio: por petición de los superiores, el encargado de la vertical (Saul Ortega) mantiene este alcance, no es un gap pendiente de resolver.
 
-- **WHEN** se crea o instala una compañía con la localización venezolana
-- **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente
+#### Scenario: Compañía nueva creada con el módulo ya instalado
+
+- **GIVEN** `l10n_ve_accountant` instalado
+- **WHEN** se crea una nueva `res.company` sin declarar `tax_calculation_rounding_method` explícitamente
+- **THEN** su `tax_calculation_rounding_method` SHALL ser `'round_per_line'`
+
+#### Scenario: Compañía ya existente al instalar o actualizar el módulo
+
+- **GIVEN** una compañía ya existente con `tax_calculation_rounding_method = 'round_globally'`
+- **WHEN** se instala o actualiza `l10n_ve_accountant`
+- **THEN** su valor SHALL permanecer sin cambios (`round_globally`), sin ninguna migración automática
+
+### Requirement: Desglose por línea de factura en moneda de la compañía
+
+El sistema DEBE (MUST) exponer, por cada línea de producto de una factura, un desglose en la moneda de la compañía (`account.move.company_currency_line_totals`, JSON indexado por id de línea) con precio unitario, cantidad, subtotal sin impuesto, subtotal con impuesto, monto de impuesto, monto y tipo de descuento, e impuestos aplicados (id, nombre, si el impuesto está incluido en el precio). El subtotal y el monto de impuesto de cada línea DEBEN (MUST) reconciliar exactamente con el `balance` real posteado en el asiento -- nunca una conversión de moneda independiente que pueda diferir del asiento por redondeo.
+
+Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MUST) repartirse proporcionalmente al `balance` de cada línea, sin perder ni inventar ninguna unidad de la moneda. Los impuestos de tipo `group` DEBEN (MUST) resolverse por su jerarquía completa de impuestos hijos, no solo por coincidencia directa con `tax_ids` de la línea.
+
+#### Scenario: Factura en moneda distinta a la de la compañía
+
+- **WHEN** se crea una factura en USD o EUR con líneas de producto e impuestos
+- **THEN** `company_currency_line_totals` contiene, para cada línea, los montos equivalentes en la moneda de la compañía, y la suma de esos montos coincide exactamente con los `balance` de las líneas de producto e impuesto del asiento
+
+#### Scenario: Varias líneas bajo el mismo impuesto
+
+- **WHEN** tres o más líneas de producto comparten la misma tasa de impuesto
+- **THEN** el monto de impuesto de cada línea es proporcional a su propio `balance`, y la suma de los montos por línea coincide exactamente con el `balance` de la línea de impuesto del asiento
+
+#### Scenario: Impuesto de tipo grupo
+
+- **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
+- **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta

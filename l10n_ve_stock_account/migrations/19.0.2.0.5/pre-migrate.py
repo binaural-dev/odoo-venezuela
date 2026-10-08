@@ -9,16 +9,16 @@ _XMLID_MODULE = "l10n_ve_stock_account"
 _XMLID_NAME = "l10n_ve_stock_inherit_l10n_ve_stock_account"
 _STALE_DIV_ID = "l10n_ve_settings_hide_disc_field_dispatch_guide"
 
-# Vista que v17 traia y v19 ya no declara. Su unico contenido es un xpath
-# sobre //div[@id='l10n_ve_stock_block_limit_product_qty_out'], un div que
-# l10n_ve_stock declaraba en 17 y en 19 tampoco existe. Al quedarse en la BD
-# sin que ningun archivo de datos la reescriba, revienta la validacion del
-# arbol de res.config.settings en cuanto se carga cualquier vista hermana:
+# View that v17 shipped and v19 no longer declares. Its only content is an xpath
+# on //div[@id='l10n_ve_stock_block_limit_product_qty_out'], a div that
+# l10n_ve_stock declared in 17 and that does not exist in 19 either. Since it stays
+# in the database without any data file rewriting it, it breaks the validation of
+# the res.config.settings tree as soon as any sibling view is loaded:
 #
-#   ParseError: El elemento "<xpath expr="//div[@id='l10n_ve_stock_block_
-#   limit_product_qty_out']">" no se puede localizar en la vista principal
+#   ParseError: Element '<xpath expr="//div[@id='l10n_ve_stock_block_
+#   limit_product_qty_out']">' cannot be located in parent view
 #
-# y eso aborta la carga del registro, o sea la migracion entera.
+# and that aborts the registry loading, i.e. the whole migration.
 _ORPHAN_XMLID_NAME = "res_config_settings_view_form_stock_inherit"
 
 
@@ -32,16 +32,16 @@ def _strip_stale_div(arch):
 
 
 def _drop_orphan_view(cr):
-    """Borra la vista que v19 ya no declara, antes de que valide nada.
+    """Deletes the view that v19 no longer declares, before anything is validated.
 
-    Odoo limpia solo los registros cuyo xmlid desaparecio del modulo, pero esa
-    pasada corre al FINAL de toda la actualizacion; la validacion que revienta
-    ocurre mucho antes. Hay que quitarla a mano y a tiempo.
+    Odoo cleans up on its own the records whose xmlid disappeared from the module,
+    but that pass runs at the END of the whole update; the validation that breaks
+    happens much earlier. It has to be removed by hand and in time.
 
-    Por SQL crudo y no por el ORM, por el mismo motivo que explica el docstring
-    de migrate(): en este punto res.config.settings todavia no termino de armar
-    sus campos y cualquier operacion del ORM sobre ir.ui.view dispara
-    _check_xml() contra un modelo incompleto.
+    Through raw SQL and not the ORM, for the same reason the docstring of
+    migrate() explains: at this point res.config.settings has not finished
+    building its fields yet and any ORM operation on ir.ui.view triggers
+    _check_xml() against an incomplete model.
     """
     cr.execute(
         """
@@ -54,25 +54,25 @@ def _drop_orphan_view(cr):
     )
     row = cr.fetchone()
     if not row:
-        _logger.info("  %s.%s no existe, nada que borrar", _XMLID_MODULE, _ORPHAN_XMLID_NAME)
+        _logger.info("  %s.%s does not exist, nothing to delete", _XMLID_MODULE, _ORPHAN_XMLID_NAME)
         return
     view_id, data_id = row
 
-    # Si alguien heredo de ella, esas hijas quedarian colgando de un padre
-    # inexistente. Se cuentan y se borran tambien.
+    # If someone inherited from it, those children would be left hanging from a
+    # nonexistent parent. They are counted and deleted too.
     cr.execute("SELECT id FROM ir_ui_view WHERE inherit_id = %s", (view_id,))
-    hijas = [r[0] for r in cr.fetchall()]
-    if hijas:
-        _logger.warning("  %s.%s tenia %s vista(s) heredada(s) (%s): se borran con ella",
-                        _XMLID_MODULE, _ORPHAN_XMLID_NAME, len(hijas), hijas)
+    child_view_ids = [r[0] for r in cr.fetchall()]
+    if child_view_ids:
+        _logger.warning("  %s.%s had %s inherited view(s) (%s): they are deleted with it",
+                        _XMLID_MODULE, _ORPHAN_XMLID_NAME, len(child_view_ids), child_view_ids)
         cr.execute("DELETE FROM ir_model_data WHERE model = 'ir.ui.view' AND res_id = ANY(%s)",
-                   (hijas,))
-        cr.execute("DELETE FROM ir_ui_view WHERE id = ANY(%s)", (hijas,))
+                   (child_view_ids,))
+        cr.execute("DELETE FROM ir_ui_view WHERE id = ANY(%s)", (child_view_ids,))
 
     cr.execute("DELETE FROM ir_model_data WHERE id = %s", (data_id,))
     cr.execute("DELETE FROM ir_ui_view WHERE id = %s", (view_id,))
-    _logger.info("  Borrada la vista huerfana %s.%s (id %s): v19 ya no la declara y su "
-                 "ancla tampoco existe", _XMLID_MODULE, _ORPHAN_XMLID_NAME, view_id)
+    _logger.info("  Deleted the orphan view %s.%s (id %s): v19 no longer declares it and its "
+                 "anchor does not exist either", _XMLID_MODULE, _ORPHAN_XMLID_NAME, view_id)
 
 
 def migrate(cr, version):

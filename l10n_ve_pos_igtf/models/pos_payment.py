@@ -178,9 +178,7 @@ class PosPayment(models.Model):
             # del dia en vez de la tasa realmente pactada en el pago. Mismo
             # write que hace l10n_ve_pos/models/pos_payment.py, que aqui no
             # se hereda porque este metodo no llama a super().
-            payment_move.write({
-                "foreign_rate": payment.foreign_rate,
-                "foreign_inverse_rate": payment.foreign_rate,
-                "manually_set_rate": True,
-            })
+            rate_vals = order.config_id._get_move_foreign_rate_vals(payment.foreign_rate)
+            if rate_vals:
+                payment_move.write(rate_vals)
         return result

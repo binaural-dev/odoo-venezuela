@@ -49,7 +49,7 @@ patch(PosOrder.prototype, {
         const local = this._localTotalWithTax();
         const foreign = this.get_foreign_total_with_tax();
         if (local && foreign) {
-          const m = Math.abs(foreign) / Math.abs(local);
+          const m = foreign / local;
           if (Number.isFinite(m) && m > 0) {
             rawRate = m;
           }
@@ -412,6 +412,7 @@ patch(PosOrder.prototype, {
     const data = super.serializeForORM(opts);
     data["foreign_amount_total"] = this.get_foreign_total_with_tax();
     data["foreign_currency_rate"] = Number(this.init_conversion_rate || 0);
+    this._setPaymentForeignRates(data);
     if (typeof this.is_to_receipt === "function") {
       data["to_receipt"] = this.is_to_receipt();
     } else if ("to_receipt" in this) {
@@ -421,6 +422,30 @@ patch(PosOrder.prototype, {
     // La facturación obligatoria aplica a TODAS las órdenes, incluyendo
     // reembolsos (isRefund).
     return data;
+  },
+  // Stamps `foreign_rate` on the payment commands of a serialized order.
+  //
+  // The core serializes the payments nested in the order by direct recursion
+  // (`deepSerialization`, raw field values), skipping
+  // `PosPayment.serializeForORM`, so a rate set there never reached the
+  // server (task 83148, H7). Same approach as l10n_ve_pos_igtf
+  // (order_model.js): patch the [0, 0, vals] / [1, id, vals] commands,
+  // matched by uuid, instead of writing the reactive field on every amount
+  // change. The rate is the order's effective multiplier, the one the
+  // payments' `foreign_amount` was computed with (a refund's original rate).
+  _setPaymentForeignRates(data) {
+    const commands = data?.payment_ids;
+    if (!Array.isArray(commands) || !commands.length) {
+      return;
+    }
+    const uuids = new Set(Array.from(this.payment_ids || [], (payment) => payment.uuid));
+    const rate = Number(this.get_effective_foreign_multiplier()) || 0;
+    for (const command of commands) {
+      const vals = Array.isArray(command) && command.length === 3 ? command[2] : null;
+      if (vals && uuids.has(vals.uuid)) {
+        vals.foreign_rate = rate;
+      }
+    }
   },
 //   is_to_receipt() {
 //     return this.to_receipt;
@@ -522,7 +547,14 @@ patch(PosOrder.prototype, {
   },
 
   _sumForeignLines(getterName) {
-    return this.roundForeignMoney(
+    // Odoo 19 gives each line's priceIncl/priceExcl multiplied by
+    // order.orderSign (-1 on a refund): a positive magnitude for display,
+    // while totalDue stays negative. Multiplying the sum by orderSign again
+    // gives the foreign total the sign of the local total; without it a
+    // refund's foreign total came out positive and the ratios derived from
+    // it (_convertOrderAmount, _convertForeignOrderAmount) negative, which
+    // flipped foreign_amount on every refund payment (task 83148, H1).
+    return this.orderSign * this.roundForeignMoney(
       (this.lines || []).reduce(
         (sum, line) => sum + (Number(line[getterName]?.()) || 0),
         0
@@ -656,12 +688,13 @@ patch(PosOrder.prototype, {
       const localTotal = this._localTotalWithTax();
       const foreignTotal = this.get_foreign_total_with_tax();
       if (localTotal && foreignTotal) {
+        // Both totals carry the order's sign, so the ratio is positive. An
+        // exchange (refund at the original rate plus a sale at today's) can
+        // net to opposite signs; that ratio is not a rate, so it falls back
+        // to the live multiplier like get_display_rate does.
         const ratio = foreignTotal / localTotal;
-        if (Number.isFinite(ratio) && ratio !== 0) {
-          // Magnitude: get_foreign_total_with_tax is unsigned while totalDue
-          // is negative on refunds, so the raw ratio would be negative. A
-          // stamped rate must stay positive.
-          return Math.abs(ratio);
+        if (Number.isFinite(ratio) && ratio > 0) {
+          return ratio;
         }
       }
     }

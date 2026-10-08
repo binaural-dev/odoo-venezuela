@@ -23,7 +23,7 @@
             </xpath>
             <xpath expr="//field[@name='payment_ids']//field[@name='amount']" position="after">
                 <field name="foreign_amount"/>
-                <field name="foreign_rate" optional="hide"/>
+                <field name="foreign_rate" optional="hide" digits="[16, 15]"/>
             </xpath>
         </field>
     </record>

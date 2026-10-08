@@ -8,21 +8,21 @@ _logger = logging.getLogger(__name__)
 BACKUP_TABLE = "l10n_ve_igtf_migration_v17_backup"
 
 # ============================================================================
-# LÍNEA NO HOMOLOGADA -- l10n_ve_igtf es instalación NUEVA para estos
-# clientes (nunca tuvieron l10n_ve_igtf, tenían binaural_igtf/
-# binaural_base_igtf). Los pre/post-migrate.py bajo migrations/ NO se
-# ejecutan en una instalación nueva de módulo (Odoo solo los corre cuando
-# el módulo ya estaba installed y pasa a 'to upgrade' -- confirmado en
-# odoo/modules/migration.py:151-152), así que esta retirada -- que en
-# migrations/19.0.1.2.16 y 19.0.1.2.17 asumía una actualización -- se
-# repite aquí en un init hook, que sí corre en instalación nueva.
+# NON-HOMOLOGATED LINE -- l10n_ve_igtf is a FRESH install for these
+# clients (they never had l10n_ve_igtf, they had binaural_igtf/
+# binaural_base_igtf). The pre/post-migrate.py files under migrations/ do
+# NOT run on a fresh module install (Odoo only runs them when the module
+# was already installed and moves to 'to upgrade' -- confirmed in
+# odoo/modules/migration.py:151-152), so this retirement -- which in
+# migrations/19.0.1.2.16 and 19.0.1.2.17 assumed an upgrade -- is
+# repeated here in an init hook, which does run on a fresh install.
 #
-# Cubre TODOS los módulos de anticipos/IGTF que un cliente no homologado
-# puede tener instalados (confirmado por el inventario:
-# binaural_base_igtf depende de binaural_advance_payment, y
-# binaural_advance_payment_igtf es auto_install sobre binaural_igtf +
-# binaural_advance_payment -- así que estos módulos "homologados" de
-# nombre pueden estar presentes también en la línea no homologada).
+# It covers ALL the advance payments/IGTF modules that a non-homologated
+# client may have installed (confirmed by the inventory:
+# binaural_base_igtf depends on binaural_advance_payment, and
+# binaural_advance_payment_igtf is auto_install on top of binaural_igtf +
+# binaural_advance_payment -- so these modules, "homologated" by name,
+# may also be present in the non-homologated line).
 # ============================================================================
 EXCLUSIVE_COLUMNS = {
     "account_payment": ["amount_residual_from_payment"],
@@ -95,12 +95,12 @@ def _backup_and_drop_exclusive_columns(cr):
                 )
                 _logger.info("  Backed up %s row(s) from %s.%s", len(rows), table, column)
 
-            # A esta altura (pre_init_hook, antes de que l10n_ve_igtf
-            # cree su propio esquema) la columna es propiedad exclusiva
-            # de un módulo binaural_* que sigue instalado -- se puede
-            # eliminar directamente, no hay riesgo de que la recree un
-            # _auto_init de l10n_ve_igtf porque ese módulo no declara
-            # este campo.
+            # At this point (pre_init_hook, before l10n_ve_igtf creates
+            # its own schema) the column is exclusively owned by a
+            # binaural_* module that is still installed -- it can be
+            # dropped directly, there is no risk of an _auto_init of
+            # l10n_ve_igtf recreating it because that module does not
+            # declare this field.
             cr.execute(f'ALTER TABLE "{table}" DROP COLUMN "{column}"')  # noqa: S608
             _logger.info("  Dropped column %s.%s", table, column)
 
@@ -130,7 +130,7 @@ def _delete_module_views(cr, module_names):
             cr.execute("SELECT id FROM ir_ui_view WHERE inherit_id = %s", (view_id,))
             if cr.fetchall():
                 _logger.warning(
-                    "  SKIPPING delete of view %s.%s (id=%s): tiene vistas hijas.",
+                    "  SKIPPING delete of view %s.%s (id=%s): it has child views.",
                     module_name, view_name, view_id,
                 )
                 continue
@@ -158,9 +158,9 @@ def _mark_modules_to_remove(cr, module_names):
 def pre_init_hook(env):
     cr = env.cr
     _logger.info(
-        "l10n_ve_igtf pre_init_hook: retirando binaural_igtf/"
-        "binaural_base_igtf/binaural_advance_payment* (línea no "
-        "homologada, instalación nueva)"
+        "l10n_ve_igtf pre_init_hook: retiring binaural_igtf/"
+        "binaural_base_igtf/binaural_advance_payment* (non-homologated "
+        "line, fresh install)"
     )
     _ensure_backup_table(cr)
     _backup_and_drop_exclusive_columns(cr)

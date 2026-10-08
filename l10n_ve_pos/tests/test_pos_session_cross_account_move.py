@@ -11,7 +11,11 @@ Spec (venta en efectivo entre transitorias, ticket 15219):
 ``openspec/changes/cruce-venta-efectivo-entre-transitorias/specs/l10n_ve_pos/spec.md``
 """
 
+from unittest.mock import patch
+
 from odoo import fields
+from odoo.addons.point_of_sale.models.pos_config import PosConfig as CorePosConfig
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 
 from .test_pos_session_accounting_common import TestPosSessionAccountingBase
@@ -489,7 +493,7 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         )
 
     def test_cash_sale_skipped_when_journal_has_no_suspense_account(self):
-        """Sin Cuenta transitoria en el diario, el metodo cash se omite en silencio.
+        """Sin Cuenta transitoria en el diario, el metodo cash se omite con un aviso en el log.
 
         Es la misma degradacion que ya aplicaba a un metodo sin diarios de
         cruce: configuracion incompleta, no error. El cierre de sesion no
@@ -509,7 +513,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             name="OL/CROSS/CASH-NO-SUSPENSE",
         )
 
-        session._validate_cross_move()
+        with self.assertLogs("odoo.addons.l10n_ve_pos.models.pos_session", "WARNING"):
+            session._validate_cross_move()
 
         self.assertEqual(len(self._cross_moves()), 0)
 
@@ -544,7 +549,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             name="OL/CROSS/CASH-NO-DEST-SUSPENSE",
         )
 
-        session._validate_cross_move()
+        with self.assertLogs("odoo.addons.l10n_ve_pos.models.pos_session", "WARNING"):
+            session._validate_cross_move()
 
         self.assertEqual(len(self._cross_moves()), 0)
 
@@ -1031,3 +1037,117 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
         self.assertNotAlmostEqual(
             real_bank_line.amount_currency, payment.foreign_amount, places=2
         )
+
+    # ------------------------------------------------------------------
+    # Cuentas que necesita el cruce (TA 83148, H6)
+    # ------------------------------------------------------------------
+    def _clear_cross_journal_payment_accounts(self, direction):
+        """Vacia la cuenta de las lineas de pago de ``real_bank_journal``.
+
+        Se escribe sobre la linea y no sobre el diario: la restriccion de
+        ``l10n_ve_accountant`` (``_check_payment_method_line_accounts``) solo
+        mira los diarios de banco y solo cuando se escribe el diario; un
+        diario de efectivo del core ya nace con estas lineas sin cuenta.
+        """
+        journal = self.real_bank_journal
+        lines = (
+            journal.inbound_payment_method_line_ids
+            if direction == "inbound"
+            else journal.outbound_payment_method_line_ids
+        )
+        lines.write({"payment_account_id": False})
+
+    def test_open_check_requires_cross_journal_payment_accounts(self):
+        """Abrir la sesion exige la cuenta de las lineas de pago del
+        ``cross_journal``: sin ella, la diferencia de apertura del cajon
+        foraneo creaba una pata sin cuenta y la apertura reventaba con
+        ``account_move_line_check_accountable_required_fields``."""
+        self.config._check_cross_move_accounts()  # sin cruce configurado: nada que exigir
+        self._configure_cross(self.split_bank_method)
+        self.config._check_cross_move_accounts()
+        for direction in ("inbound", "outbound"):
+            with self.subTest(direction=direction), self.env.cr.savepoint() as savepoint:
+                self._clear_cross_journal_payment_accounts(direction)
+                with self.assertRaises(ValidationError) as error:
+                    self.config._check_cross_move_accounts()
+                message = str(error.exception)
+                self.assertIn(self.split_bank_method.name, message)
+                self.assertIn(self.real_bank_journal.name, message)
+                cleared, kept = (
+                    ("incoming", "outgoing") if direction == "inbound" else ("outgoing", "incoming")
+                )
+                self.assertIn(f"{cleared} payments account", message)
+                self.assertNotIn(f"{kept} payments account", message)
+                savepoint.rollback()
+
+    def test_open_check_cash_method_does_not_require_payment_accounts(self):
+        """La venta en efectivo cruza entre transitorias: este modulo no usa
+        las lineas de pago del ``cross_journal`` de un metodo de efectivo y no
+        las exige (si las usa otro modulo, como la diferencia del cajon
+        foraneo de ``binaural_pos_close``, las exige el)."""
+        self._configure_cross(self.split_cash_method)
+        self._configure_use_suspense_accounts(self.split_cash_method)
+        for direction in ("inbound", "outbound"):
+            self._clear_cross_journal_payment_accounts(direction)
+        self.config._check_cross_move_accounts()
+
+    def test_open_check_requires_suspense_accounts_for_cash(self):
+        """Un metodo de efectivo cruza entre las transitorias de sus dos
+        diarios: abrir la sesion las exige. Un metodo de banco no las usa."""
+        self._configure_cross(self.split_bank_method)
+        self.config._check_cross_move_accounts()  # banco: no exige transitorias
+
+        self._configure_cross(self.split_cash_method)
+        with self.assertRaises(ValidationError) as error:
+            self.config._check_cross_move_accounts()
+        message = str(error.exception)
+        self.assertIn(self.split_cash_method.name, message)
+        self.assertIn(self.split_cash_method.journal_id.name, message)
+        self.assertIn(self.real_bank_journal.name, message)
+
+        suspense_origin, _suspense_real = self._configure_use_suspense_accounts(
+            self.split_cash_method
+        )
+        self.config._check_cross_move_accounts()
+
+        self.real_bank_journal.suspense_account_id = False
+        with self.assertRaises(ValidationError) as error:
+            self.config._check_cross_move_accounts()
+        self.assertIn(self.real_bank_journal.name, str(error.exception))
+        self.assertNotIn(
+            self.split_cash_method.journal_id.name,
+            str(error.exception),
+            "solo se lista la cuenta que falta",
+        )
+
+    def test_check_before_creating_new_session_runs_cross_check(self):
+        """El chequeo va en ``_check_before_creating_new_session``, junto a
+        los del core (``_check_profit_loss_cash_journal``…): se ejecuta antes
+        de crear la sesion, asi que el cajero ni llega al popup de apertura."""
+        self._configure_cross(self.split_bank_method)
+        self._clear_cross_journal_payment_accounts("inbound")
+        with patch.object(CorePosConfig, "_check_before_creating_new_session", return_value=None):
+            with self.assertRaises(ValidationError):
+                self.config._check_before_creating_new_session()
+
+    def test_cross_move_without_payment_account_raises_clear_error(self):
+        """Red de seguridad para una sesion ya creada cuando se vacio la
+        cuenta: un error legible en vez del ``CheckViolation`` de SQL."""
+        self._configure_cross(self.split_bank_method)
+        session = self._new_session().with_company(self.company)
+        for direction, amount in (("inbound", 10.0), ("outbound", -10.0)):
+            with self.subTest(direction=direction), self.env.cr.savepoint() as savepoint:
+                self._clear_cross_journal_payment_accounts(direction)
+                with self.assertRaises(UserError) as error:
+                    session._create_cross_move_for(
+                        self.split_bank_method,
+                        amount=amount,
+                        foreign_amount=amount * 36.5,
+                        foreign_rate=36.5,
+                        partner=self.env["res.partner"],
+                        date=fields.Datetime.now(),
+                        ref="H6",
+                    )
+                self.assertIn(self.real_bank_journal.name, str(error.exception))
+                savepoint.rollback()
+        self.assertFalse(self._cross_moves())

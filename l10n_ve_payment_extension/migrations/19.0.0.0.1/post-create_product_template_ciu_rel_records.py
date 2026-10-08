@@ -1,19 +1,20 @@
-"""Pasa el `ciu_id` respaldado por el `pre-` a la tabla del Many2many y suelta la temporal.
+"""Moves the `ciu_id` backed up by the `pre-` into the Many2many table and drops the temporary one.
 
-Por qué: cierra la conversión Many2one → Many2many que empezó el `pre-` hermano. Solo hace algo
-    si ese `pre-` encontró un `ciu_id` que respaldar, o sea en un cliente que venga de una versión
-    anterior a la conversión; en uno que viene de 17 no hay columna temporal y esto es no-op.
-Si no corre: la columna `temp_ciu_id` queda colgada en `product_template` con los valores viejos
-    y **la relación Many2many queda vacía**: los productos pierden su actividad económica (CIU) y
-    con ella el cálculo de retención de ISLR, sin ningún error visible.
-Revertir: el dato sigue en `temp_ciu_id` hasta que este script la borra; después de eso, se
-    reconstruye desde `product_template_ciu_rel`, que es ya el destino definitivo.
+Why: closes the Many2one → Many2many conversion that the sibling `pre-` started. It only does
+    something if that `pre-` found a `ciu_id` to back up, i.e. on a client that comes from a
+    version before the conversion; on one that comes from 17 there is no temporary column and
+    this is a no-op.
+If it does not run: the `temp_ciu_id` column is left dangling in `product_template` with the old
+    values and **the Many2many relation stays empty**: products lose their economic activity
+    (CIU) and with it the ISLR withholding calculation, without any visible error.
+How to revert: the data stays in `temp_ciu_id` until this script drops it; after that, it is
+    rebuilt from `product_template_ciu_rel`, which is already the final destination.
 
-El `DELETE` va **acotado a los templates que se están migrando**. La versión original borraba
-`product_template_ciu_rel` entera sin filtro, lo que se llevaría por delante cualquier relación
-que el módulo o el usuario hubieran creado en productos ajenos a esta conversión.
+The `DELETE` is **limited to the templates being migrated**. The original version deleted the
+whole `product_template_ciu_rel` without a filter, which would wipe out any relation that the
+module or the user had created on products unrelated to this conversion.
 
-Tarea: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
+Task: https://binaural.odoo.com/odoo/action-1963/4199/action-345/82849
 """
 
 import logging
@@ -28,13 +29,14 @@ def migrate(cr, version):
         return
 
     if not util.column_exists(cr, "product_template", "temp_ciu_id"):
-        _logger.info("no hay temp_ciu_id: el pre- no encontró nada que convertir. Nada que hacer.")
+        _logger.info("there is no temp_ciu_id: the pre- found nothing to convert. Nothing to do.")
         return
 
     if not util.table_exists(cr, "product_template_ciu_rel"):
         _logger.warning(
-            "temp_ciu_id existe pero la tabla product_template_ciu_rel no: el campo ciu_ids no "
-            "llegó a crearse. Se conserva temp_ciu_id para no perder el dato y no se convierte nada."
+            "temp_ciu_id exists but the product_template_ciu_rel table does not: the ciu_ids "
+            "field was never created. temp_ciu_id is kept so the data is not lost, and nothing is "
+            "converted."
         )
         return
 
@@ -46,7 +48,7 @@ def migrate(cr, version):
          )
         """
     )
-    borradas = cr.rowcount
+    deleted = cr.rowcount
 
     cr.execute(
         """
@@ -54,16 +56,16 @@ def migrate(cr, version):
         SELECT id, temp_ciu_id FROM product_template WHERE temp_ciu_id IS NOT NULL
         """
     )
-    insertadas = cr.rowcount
+    inserted = cr.rowcount
 
     cr.execute("ALTER TABLE product_template DROP COLUMN IF EXISTS temp_ciu_id")
 
     _logger.info(
-        "ciu_id -> ciu_ids: %s relaciones creadas (%s reemplazadas)", insertadas, borradas
+        "ciu_id -> ciu_ids: %s relations created (%s replaced)", inserted, deleted
     )
-    if insertadas:
+    if inserted:
         util.add_to_migration_reports(
-            "l10n_ve_payment_extension: la actividad económica (CIU) de los productos pasó de "
-            "Many2one a Many2many: %s relaciones creadas." % insertadas,
-            category="Binaural · Contabilidad",
+            "l10n_ve_payment_extension: the economic activity (CIU) of the products changed from "
+            "Many2one to Many2many: %s relations created." % inserted,
+            category="Binaural · Accounting",
         )

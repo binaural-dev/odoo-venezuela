@@ -151,6 +151,6 @@ class TfhkaServiceBase(models.AbstractModel):
             "direccion": self._get_party_address(partner),
             "pais": partner.country_code,
             "telefono": [partner.mobile or partner.phone],
-            "notificar": "Si",
+            "notificar": "Si" if record.company_id.notify_email_tfhka else "No",
             "correo": [partner.email],
         }
