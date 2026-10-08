@@ -246,6 +246,24 @@ patch(PosOrderline.prototype, {
       return this._conv(this.priceExclNoDiscount);
     },
 
+    // Monto foráneo que se MUESTRA en la línea, con el mismo criterio que el
+    // `displayPrice` del core: con o sin impuestos según iface_tax_included y,
+    // en la línea padre de un combo, la suma de sus líneas hijas. El padre no
+    // tiene precio propio (el core reparte el precio del combo entre los
+    // hijos), así que su get_foreign_price_* vale 0 (ticket 15725). Solo es
+    // para mostrar: los totales de la orden suman get_foreign_price_* de todas
+    // las líneas y contarían el combo dos veces.
+    get_foreign_display_price() {
+      const withTax = this.config?.iface_tax_included === "total";
+      const lineAmount = (line) =>
+        withTax ? line.get_foreign_price_with_tax() : line.get_foreign_price_without_tax();
+      if (!this.combo_line_ids?.length) {
+        return lineAmount(this);
+      }
+      const total = this.combo_line_ids.reduce((sum, line) => sum + lineAmount(line), 0);
+      return this.order_id?.roundForeignMoney?.(total) ?? total;
+    },
+
     get_all_foreign_prices() {
       // Mirrors the shape older callers expected but sourced entirely from
       // local-priced core getters + a single conversion each. No double
