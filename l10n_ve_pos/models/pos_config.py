@@ -102,9 +102,13 @@ class PosConfig(models.Model):
             foreign (USD) → main (VEF): usar foreign_rate (674.93)
               USD * 674.93 = VEF ✓
 
-        En el caso foreign=VEF, main=USD:
-            compute_rate devuelve foreign_rate = foreign_inverse_rate = company_rate.
-            Ambos coinciden, cualquiera funciona.
+        En el caso foreign=VEF, main=USD la regla es la misma; solo cambian
+        las magnitudes. compute_rate devuelve:
+              pos_config.foreign_rate         = 0.001244 (inverse_company_rate)
+              pos_config.foreign_inverse_rate = 803.34   (company_rate)
+            USD * 803.34 = VEF ✓   VEF * 0.001244 = USD ✓
+        (compute_rate solo devuelve las dos tasas iguales cuando la moneda
+        foránea es la misma de la compañía.)
 
         PRECISION: ``foreign_inverse_rate`` está definido con digits=(16,15)
         para preservar los 15 dígitos de precisión de la tasa BCV.
