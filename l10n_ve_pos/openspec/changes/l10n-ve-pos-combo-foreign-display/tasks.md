@@ -2,12 +2,14 @@
 
 ## 1. Monto en divisa de los combos
 
-- [x] 1.1 `pos_order_line.js`: `get_foreign_display_price()` (criterio de
-      `displayPrice` del core; en el padre del combo, suma de las hijas)
+- [x] 1.1 `pos_order_line.js`: `get_foreign_display_price()` = `displayPrice`
+      del core convertido una vez (en el padre del combo, suma de las hijas)
 - [x] 1.2 `orderline.xml`: usar `get_foreign_display_price()` y pintarlo solo
       con `vals.price`
 - [x] 1.3 Test hoot `pos_order_line_combo_foreign.test.js` (incluido,
-      excluido, línea normal, reembolso a tasa original)
+      excluido, línea normal, reembolso a tasa original, tasa congelada,
+      conversión única sin acumular redondeos)
+- [x] 1.4 Versión 19.0.1.21.0
 
 ## 2. Verificación
 

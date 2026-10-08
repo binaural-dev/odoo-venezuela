@@ -17,15 +17,19 @@ Además, las hijas mostraban el "/ $ x" suelto, sin el precio local al lado.
 
 ## What Changes
 
-- **`pos_order_line.js`**: nuevo `get_foreign_display_price()`, que replica
-  `displayPrice` del core en divisa:
-  - usa `get_foreign_price_with_tax()` si `iface_tax_included === 'total'` y
-    `get_foreign_price_without_tax()` si no;
-  - en el padre de un combo, suma esos montos de sus `combo_line_ids`
-    (redondeado con `roundForeignMoney`).
-  Cada hija convierte por el camino central (`_conv`): tasa en vivo, tasa
-  congelada de la orden sincronizada o, en un reembolso, la tasa de la venta
-  original (`_refundOriginalRate`).
+- **`pos_order_line.js`**: nuevo `get_foreign_display_price()` = el
+  `displayPrice` del core convertido UNA sola vez (`_conv`):
+  - `displayPrice` ya usa el monto con impuestos si
+    `iface_tax_included === 'total'` y sin impuestos si no, y en el padre de un
+    combo es la suma de sus `combo_line_ids` (con su precio, descuento y lista
+    de precios vigentes);
+  - convertir el total una vez (y no sumar las hijas ya convertidas) evita
+    acumular el redondeo de cada hija: en una venta el padre cuadra con el
+    total foráneo de la orden (`localToForeign(totalDue)`), como pide la regla
+    de conversión del fichero.
+  `_conv` elige la tasa: en vivo, congelada de la orden sincronizada o, en un
+  reembolso, la de la venta original (`_refundOriginalRate`; el padre del
+  reembolso también apunta a la línea original). Siempre multiplica.
 - **`orderline.xml`**: el monto en divisa usa `get_foreign_display_price()` y
   solo se pinta donde el core pinta el precio (`vals.price`). Las hijas del
   combo y el recibo básico ya no muestran el divisa suelto.
