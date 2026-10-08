@@ -1377,3 +1377,40 @@ msgstr ""
 "Cuándo entró este documento a la cola de digitalización. Determina el "
 "orden en que el cron digitaliza los documentos encolados (el más antiguo "
 "primero)."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__vendor_series_tfhka
+msgid "Supplier Series"
+msgstr "Serie del proveedor"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__vendor_series_tfhka
+msgid ""
+"Series the supplier uses to identify their documents (separate from the "
+"document number). Sent to The Factory HKA when digitalizing IVA/ISLR "
+"retentions for this vendor bill. Leave empty if the supplier does not use "
+"a series."
+msgstr ""
+"Serie que usa el proveedor para identificar sus documentos (independiente "
+"del número del documento). Se envía a The Factory HKA al digitalizar "
+"retenciones de IVA/ISLR de esta factura de proveedor. Dejar vacío si el "
+"proveedor no usa serie."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__invoice_digital_tfhka_active
+msgid "TFHKA Digital Invoicing Active"
+msgstr "Facturación digital TFHKA activa"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_move__invoice_digital_tfhka_active
+msgid ""
+"Used to show the vendor document series field only when TFHKA "
+"digitalization is active for the company."
+msgstr ""
+"Se usa para mostrar el campo de serie del documento de proveedor solo "
+"cuando la digitalización TFHKA está activa para la compañía."
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
+msgid "Series"
+msgstr "Serie"
