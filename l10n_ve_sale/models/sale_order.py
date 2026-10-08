@@ -45,6 +45,7 @@ class SaleOrder(models.Model):
         store=True,
         readonly=False,
         tracking=True,
+        copy=False,
     )
     foreign_inverse_rate = fields.Float(
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
@@ -52,10 +53,16 @@ class SaleOrder(models.Model):
         compute="_compute_rate",
         store=True,
         readonly=False,
+        copy=False,
     )
 
     last_foreign_rate = fields.Float(copy=False)
-    manually_set_rate = fields.Boolean(default=False)
+    # copy=False: duplicating an order must always pick up the alterno rate
+    # in effect today (ticket #13998), not carry over a manually-set rate --
+    # manually_set_rate is not a user-facing "I typed this rate by hand"
+    # choice (the field isn't exposed on the client-facing view), so there is
+    # no user intent to preserve across a duplicate.
+    manually_set_rate = fields.Boolean(default=False, copy=False)
 
     total_taxed = fields.Many2one(
         "account.tax",
@@ -231,20 +238,20 @@ class SaleOrder(models.Model):
             ):
                 continue
             if (
-                not self.env.company.update_sale_order_rate_using_date_order
+                not sale.company_id.update_sale_order_rate_using_date_order
                 and not float_is_zero(
                     sale.foreign_rate,
-                    precision_rounding=self.env.company.currency_id.rounding,
+                    precision_rounding=sale.company_id.currency_id.rounding,
                 )
             ):
                 continue
-            
+
             if  sale.foreign_currency_id.id and sale.date_order:
-                
-                rate_values = Rate.compute_rate(
+
+                rate_values = Rate.with_company(sale.company_id).compute_rate(
                     sale.foreign_currency_id.id,
                     sale.date_order
-                )   
+                )
                 if rate_values.get("foreign_rate", 0) != self.foreign_rate:
                     sale.foreign_rate = rate_values.get("foreign_rate", 0) 
                 if rate_values.get("foreign_inverse_rate", 0) != self.foreign_inverse_rate:
@@ -252,8 +259,6 @@ class SaleOrder(models.Model):
             else:
                 sale.foreign_rate = 0.0
                 sale.foreign_inverse_rate = 0.0
-
-    
 
     @api.model
     def _has_significant_invoiceable_quantity(self, line):
