@@ -10,7 +10,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Contacts/Contacts",
-    "version": "1.8",
+    "version": "19.0.1.8.0",
     "depends": ["base", "contacts", "account", "l10n_ve_rate", "l10n_ve_location"],
     "data": [
         "security/ir.model.access.csv",
