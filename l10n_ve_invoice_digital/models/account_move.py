@@ -220,8 +220,45 @@ class AccountMove(models.Model):
         return bool(self.multi_currency_invoice and self.line_currency == 'USD')
 
     def generate_document_digital(self):
+        self._check_tfhka_payment_required()
         # Toda la lógica vive en la capa de servicios (tfhka.document.service).
         return self.env["tfhka.document.service"].send_document(self)
+
+    def _check_tfhka_payment_required(self):
+        """In 'cash' mode, block digitalization until the invoice is paid.
+
+        Same criteria as binaural_unidigital.AccountMove.
+        _check_unidigital_payment_required: accepts ``paid``, ``in_payment``
+        and ``reversed`` as satisfying the "paid" requirement, excludes
+        credit notes (``out_refund``), and only applies in "digitalization
+        with payment" mode (``digitalization_with_payment_tfhka``). All
+        invoices are validated together and reported in a single error
+        listing every offending invoice.
+
+        Gated here (the method that actually calls the TFHKA service)
+        because it's the single call point for both the manual "Generate
+        Digital ..." buttons and the automatic post-time call from
+        ``move.action.post.alert.wizard.action_confirm()`` -- the latter
+        already skips calling this when ``digitalization_with_payment_tfhka``
+        is active, so in practice this only ever blocks the manual path.
+        """
+        unpaid = self.filtered(
+            lambda invoice: (
+                invoice.move_type != "out_refund"
+                and invoice.company_id.digitalization_with_payment_tfhka
+                and invoice.company_id.payment_mode_tfhka == "cash"
+                and invoice.payment_state not in ("paid", "in_payment", "reversed")
+            )
+        )
+        if unpaid:
+            raise ValidationError(
+                _(
+                    "The following invoices must have their payment in "
+                    "process, be fully paid, or be reversed before they can "
+                    "be digitalized:\n%s",
+                    "\n".join(unpaid.mapped("name")),
+                )
+            )
 
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):
