@@ -13,7 +13,8 @@
 
 ## 2. Verificación
 
-- [ ] 2.1 Correr los tests hoot de `l10n_ve_pos` (no corridos: arreglo puntual, verificado en navegador)
+- [x] 2.1 Correr los tests hoot de `l10n_ve_pos`: 14/14 en verde en una BD nueva
+      (posv19-consultor, 08-oct): `odoo -d posv19_consultor -i binaural_pos_multicurrency --test-tags "/web:WebSuite.test_unit_desktop[@l10n_ve_pos/unit/pos_order_line_combo_foreign,@binaural_pos_multicurrency/unit/pos_order_line_company_price]"`
 - [x] 2.2 Navegador, caja en moneda principal: combo con impuestos incluidos y
       separados (posv19, caja 81: $ 17,00 / $ 15,00)
 - [x] 2.3 Navegador: reembolso de un combo con la tasa del día cambiada (900
