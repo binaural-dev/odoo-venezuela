@@ -2795,15 +2795,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertFalse(invoice.is_digitalized)
 
 
-    # ------------------------------------------------------------------
-    # IGTF en el payload (ticket 15701): totales va en bolívares, así que
-    # totalIGTF/totalIGTF_VES llevan el IGTF en Bs y totalesOtraMoneda lleva
-    # la divisa en totalIGTF. Además, el IGTF debe viajar en
-    # impuestosSubtotal aunque la factura no sea multimoneda.
-    # ------------------------------------------------------------------
-
     def _fake_move_with_igtf(self, igtf, multi_currency=False):
-        """Factura duck-typed con 1000 Bs + IVA 16% (tasa 40) y el IGTF dado."""
         groups = {"Subtotal": [
             {"tax_group_name": "IVA 16%", "tax_group_base_amount": 1000.0, "tax_group_amount": 160.0},
         ]}
@@ -2811,8 +2803,6 @@ class TestAccountMoveApiCalls(TransactionCase):
             {"tax_group_name": "IVA 16%", "tax_group_base_amount": 25.0, "tax_group_amount": 4.0},
         ]}
         return type("FakeMove", (), {
-            # Como un singleton de Odoo: _prepare_totals y _prepare_tax_subtotals
-            # hacen ``for record in invoice``.
             "__iter__": lambda self: iter([self]),
             "company_id": self.company,
             "multi_currency_invoice": multi_currency,
@@ -2835,7 +2825,6 @@ class TestAccountMoveApiCalls(TransactionCase):
         })()
 
     def test_201_prepare_totals_igtf_ves_company_in_bolivares(self):
-        """Compañía VES sin multimoneda: el caso reportado en el ticket."""
         self._force_company_currency(self.company, self.currency_vef)
         fake = self._fake_move_with_igtf({
             "igtf_base_amount": 400.0,
@@ -2857,7 +2846,6 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(igtf_line["valorTotalImp"], "12.0")
 
     def test_202_prepare_totals_igtf_ves_company_multi_currency(self):
-        """Compañía VES multimoneda: totalesOtraMoneda lleva el IGTF en divisa."""
         self._force_company_currency(self.company, self.currency_vef)
         fake = self._fake_move_with_igtf({
             "igtf_base_amount": 400.0,
@@ -2874,14 +2862,12 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(foreign_totals["totalIGTF_VES"], "12.0")
 
     def test_203_prepare_totals_igtf_usd_company(self):
-        """Compañía USD: igtf_* viene en USD y foreign_igtf_* en Bs."""
         fake = self._fake_move_with_igtf({
             "igtf_base_amount": 10.0,
             "igtf_amount": 0.3,
             "foreign_igtf_base_amount": 400.0,
             "foreign_igtf_amount": 12.0,
         })
-        # En compañía USD, totales se arma con las columnas foreign_* (Bs).
         fake.tax_totals.update({
             "subtotal": 25.0,
             "amount_untaxed": 25.0,

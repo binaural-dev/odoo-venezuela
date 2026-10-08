@@ -265,13 +265,6 @@ class TfhkaDocumentService(models.AbstractModel):
             currency = record.company_id.currency_id.name
             tax_totals = record.tax_totals
 
-            # l10n_ve_igtf publica ``igtf_*`` en la moneda de la factura (la de
-            # la compañía) y ``foreign_igtf_*`` en la moneda alterna. El bloque
-            # ``totales`` siempre va en bolívares, así que su IGTF es el de la
-            # cara en bolívares y totalIGTF_VES lleva ese monto en ambos
-            # bloques. Antes se enviaba igtf_amount como totalIGTF y
-            # foreign_igtf_amount como totalIGTF_VES: en compañía VES el
-            # campo "_VES" viajaba en divisa (ticket 15701).
             igtf = tax_totals.get("igtf", {}) or {}
             if currency in ("VEF", "VES"):
                 igtf_ves = igtf.get("igtf_amount", 0)
@@ -446,8 +439,6 @@ class TfhkaDocumentService(models.AbstractModel):
             if currency in ("VEF", "VES") and not multi_currency:
                 for group in base_groups:
                     tax_subtotals.append(tax_line_vals(record, group))
-                # Sin esta línea la imprenta imprime "IGTF Percibido ... Sobre
-                # 0,00" aunque totalAPagar sí sume el IGTF (ticket 15701).
                 if apply_igtf:
                     tax_subtotals.append(
                         igtf_vals(record, igtf, 'igtf_base_amount', 'igtf_amount')
