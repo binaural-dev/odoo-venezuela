@@ -1,8 +1,12 @@
 import logging
 from datetime import timedelta
 
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import TransactionCase, tagged, Form
+from lxml import etree
 from odoo import fields, Command
+from odoo.exceptions import UserError
+from odoo.exceptions import ValidationError
+from odoo.tools.misc import formatLang
 
 _logger = logging.getLogger(__name__)
 
@@ -176,14 +180,10 @@ class TestMultiCurrencyRounding(TransactionCase):
         return (abs(line.foreign_debit - exp_fd) < 0.01 and
                 abs(line.foreign_credit - exp_fc) < 0.01)
 
-    def _create_invoice(self, currency, pricelist, lines_data, move_type='out_invoice'):
-        """Crea y publica una factura.
-        lines_data: list of (qty, price_unit, [tax_records])
-        move_type: 'out_invoice' (default), 'in_invoice', 'out_refund' or 'in_refund' --
-        `in_invoice`/`out_refund` (Odoo's `is_outbound()` types) have `direction_sign == 1`,
-        the OPPOSITE of `out_invoice`/`in_refund`'s `-1`; refunds also use
-        `refund_repartition_line_ids` instead of `invoice_repartition_line_ids`.
-        """
+    def _create_invoice(self, currency, pricelist, lines_data, move_type='out_invoice', post=True):
+        """Crea (y por defecto publica) una factura.
+        lines_data: (qty, price_unit, [taxes]) con un 4to elemento opcional: el producto.
+        move_type: tipo de factura; post=False la deja en borrador."""
         is_purchase = move_type in ('in_invoice', 'in_refund')
         # Buscar o crear lista de precios en la moneda adecuada
         pl = pricelist
@@ -217,17 +217,18 @@ class TestMultiCurrencyRounding(TransactionCase):
             'pricelist_id': pl.id if pl else False,
             'invoice_line_ids': [
                 (0, 0, {
-                    'product_id': self.product.id,
+                    'product_id': (prod[0] if prod else self.product).id,
                     'name': f'L{i}',
                     'quantity': qty,
                     'price_unit': pu,
                     'account_id': line_account.id,
                     'tax_ids': [(6, 0, [t.id for t in taxes])],
                 })
-                for i, (qty, pu, taxes) in enumerate(lines_data)
+                for i, (qty, pu, taxes, *prod) in enumerate(lines_data)
             ],
         }])[0]
-        inv.action_post()
+        if post:
+            inv.action_post()
         return inv
 
     def _create_payment(self, inv, currency, bank_journal, amount):
@@ -1042,12 +1043,10 @@ class TestMultiCurrencyRounding(TransactionCase):
                     ),
                 )
 
-    def test_31_mixed_sign_lines_both_rounding_modes(self):
-        """A negative (discount/adjustment) line sharing a tax with positive lines must NET OUT,
-        not add up as if both were positive -- in BOTH rounding modes. `round_per_line` had a
-        real `abs()` bug here (fixed via `_per_line_tax_sums` summing SIGNED per-line amounts);
-        `round_globally`'s `_vef_base_for_tax`/`_grouped_tax_sums` never used `abs()` so it was
-        never at risk, but is included for completeness/regression coverage."""
+    def test_31b_two_lines_same_tax_both_rounding_modes(self):
+        """Two positive lines sharing a tax must sum their per-line tax
+        correctly in BOTH rounding modes, matching the tax computed on
+        the combined base."""
         self.env["res.currency.rate"].search([
             ("currency_id", "=", self.currency_usd.id),
             ("company_id", "=", self.company.id),
@@ -1058,43 +1057,40 @@ class TestMultiCurrencyRounding(TransactionCase):
             "inverse_company_rate": 803.34,
             "company_id": self.company.id,
         })
+        line_amounts_usd = [11.16, 4.16]
         for mode in ("round_per_line", "round_globally"):
             with self.subTest(mode=mode):
                 self.company.tax_calculation_rounding_method = mode
-                # Line A: 11.16 USD (positive). Line B: a -4.16 USD
-                # adjustment on the SAME tax -- net base is 7.00 USD, net
-                # tax must reflect that, not `tax(11.16) + tax(-4.16)`
-                # miscomputed as `tax(11.16) + tax(4.16)`.
                 inv = self._create_invoice(self.currency_usd, None, [
-                    (1, 11.16, [self.tax_16]),
-                    (1, -4.16, [self.tax_16]),
+                    (1, amt, [self.tax_16]) for amt in line_amounts_usd
                 ])
                 tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
                 product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
-                net_base_usd = sum(product_lines.mapped('amount_currency'))
-                expected_tax_usd = self.currency_usd.round(abs(net_base_usd) * 0.16)
+                line_balances_vef = [abs(b) for b in product_lines.mapped('balance')]
+                if mode == 'round_per_line':
+                    expected_tax_usd = sum(
+                        self.currency_usd.round(a * 0.16) for a in line_amounts_usd
+                    )
+                    expected_tax_vef = sum(
+                        self.currency_vef.round(b * 0.16) for b in line_balances_vef
+                    )
+                else:
+                    expected_tax_usd = self.currency_usd.round(sum(line_amounts_usd) * 0.16)
+                    expected_tax_vef = self.currency_vef.round(sum(line_balances_vef) * 0.16)
                 self.assertAlmostEqual(
                     abs(tax_line.amount_currency), expected_tax_usd, places=2,
                     msg=(
-                        f"[{mode}] With mixed-sign lines, "
-                        f"tax_line.amount_currency={tax_line.amount_currency} does not match "
-                        f"the netted base's tax ({expected_tax_usd}) -- looks like the negative "
-                        f"line's contribution was added instead of subtracted"
+                        f"[{mode}] tax_line.amount_currency={tax_line.amount_currency} does not "
+                        f"match the expected per-mode tax ({expected_tax_usd})"
                     ),
                 )
-                net_base_vef = sum(product_lines.mapped('balance'))
-                expected_tax_vef = self.currency_vef.round(abs(net_base_vef) * 0.16)
                 self.assertAlmostEqual(
                     abs(tax_line.balance), expected_tax_vef, places=2,
                     msg=(
-                        f"[{mode}] With mixed-sign lines, tax_line.balance={tax_line.balance} "
-                        f"(VEF) does not match the netted base's tax ({expected_tax_vef}) -- "
-                        f"looks like the negative line's contribution was added instead of "
-                        f"subtracted"
+                        f"[{mode}] tax_line.balance={tax_line.balance} (VEF) does not match "
+                        f"the expected per-mode tax ({expected_tax_vef})"
                     ),
                 )
-                # `amount_tax` is in the document currency (USD), same as
-                # `amount_currency` -- NOT in VEF like `expected_tax_vef`.
                 self.assertAlmostEqual(
                     abs(inv.amount_tax), abs(tax_line.amount_currency), places=2,
                     msg=f"[{mode}] inv.amount_tax (widget total, USD) inconsistent with the posted tax line",
@@ -1138,6 +1134,546 @@ class TestMultiCurrencyRounding(TransactionCase):
                         f"what it should"
                     ),
                 )
+
+    def test_33_identical_price_included_lines_always_match(self):
+        """Two identical price-included lines must post the same
+        `amount_currency` and `balance` in BOTH rounding modes, and the
+        document total must stay the typed one (2 x 12.95)."""
+        tax_16_incl = self._create_tax('IVA 16% (incluido)', 16.0)
+        tax_16_incl.price_include_override = 'tax_included'
+        self._set_usd_rate(803.34)
+        for mode in ("round_per_line", "round_globally"):
+            with self.subTest(mode=mode):
+                self.company.tax_calculation_rounding_method = mode
+                inv = self._create_invoice(self.currency_usd, None, [
+                    (1, 12.95, [tax_16_incl]),
+                    (1, 12.95, [tax_16_incl]),
+                ], move_type='in_invoice')
+                lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
+                self.assertEqual(len(lines), 2)
+                self.assertEqual(
+                    lines[0].amount_currency, lines[1].amount_currency,
+                    msg=(
+                        f"[{mode}] Two identical price-included lines posted "
+                        f"different amount_currency ({lines[0].amount_currency} "
+                        f"vs {lines[1].amount_currency})"
+                    ),
+                )
+                self.assertEqual(
+                    lines[0].balance, lines[1].balance,
+                    msg=(
+                        f"[{mode}] Two identical price-included lines posted "
+                        f"different balance ({lines[0].balance} vs "
+                        f"{lines[1].balance})"
+                    ),
+                )
+                self.assertAlmostEqual(lines[0].amount_currency, 11.16, places=2)
+                self.assertAlmostEqual(lines[0].balance, 8968.32, places=2)
+                self.assertAlmostEqual(
+                    inv.amount_total, 25.90, places=2,
+                    msg=f"[{mode}] amount_total no coincide con el total del documento",
+                )
+                self.assertAlmostEqual(abs(inv.amount_tax), 3.58, places=2)
+
+    def test_33b_tax_totals_edit_tolerance_must_be_between_0_and_1(self):
+        """The edit tolerance only accepts values between 0 and 1."""
+        for value in (-0.01, 1.01):
+            with self.subTest(value=value), self.assertRaises(ValidationError):
+                self.company.tax_totals_edit_tolerance = value
+        for value in (0.0, 0.03, 1.0):
+            self.company.tax_totals_edit_tolerance = value
+
+    def test_34_manual_tax_totals_edit_stays_consistent(self):
+        """Simulates the JS pencil flow and checks every derived field
+        (USD and VES) agrees. Maximum tolerance on purpose: this tests
+        propagation, not the tolerance gate (see test_56/57/58)."""
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.company.tax_totals_edit_tolerance = 1.0
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice')
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        self.assertEqual(len(tax_line), 1)
+        old_tax_amount_currency = tax_line.amount_currency
+        old_tax_balance = tax_line.balance
+
+        delta = 0.50
+        totals = inv.tax_totals
+        subtotal = totals['subtotals'][0]
+        tax_group = subtotal['tax_groups'][0]
+        tax_group['tax_amount_currency'] += delta
+        subtotal['tax_amount_currency'] += delta
+        totals['tax_amount_currency'] += delta
+        totals['total_amount_currency'] += delta
+
+        inv.tax_totals = totals
+
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        self.assertAlmostEqual(
+            tax_line.amount_currency, old_tax_amount_currency + delta, places=2,
+            msg="Manual tax_totals edit did not reach the real tax line's amount_currency",
+        )
+        self.assertNotAlmostEqual(
+            tax_line.balance, old_tax_balance, places=2,
+            msg="Tax line's balance (VEF) was not resynced after the manual amount_currency edit",
+        )
+        self.assertAlmostEqual(
+            abs(inv.amount_tax), abs(tax_line.amount_currency), places=2,
+            msg="inv.amount_tax (USD) disagrees with the real posted tax line after the manual edit",
+        )
+
+        fresh_totals = inv.tax_totals
+        fresh_tax_group = fresh_totals['subtotals'][0]['tax_groups'][0]
+        self.assertAlmostEqual(
+            fresh_tax_group['tax_amount_currency'], tax_line.amount_currency, places=2,
+            msg="Recomputed tax_totals (USD) disagrees with the real tax line after the manual edit",
+        )
+        self.assertAlmostEqual(
+            fresh_tax_group.get('tax_amount', 0.0), tax_line.balance, places=2,
+            msg=(
+                "l10n_ve_accountant's VES tax_amount in tax_totals disagrees with the "
+                "real tax line's balance after the manual edit -- the VES total shown "
+                "on screen would not match what was actually posted"
+            ),
+        )
+
+    def _edit_tax_totals_by(self, inv, delta):
+        """Mutates `tax_totals` the same way the pencil-edit's JS does and
+        writes it back -- returns the tax line so callers can assert."""
+        totals = inv.tax_totals
+        subtotal = totals['subtotals'][0]
+        tax_group = subtotal['tax_groups'][0]
+        tax_group['tax_amount_currency'] += delta
+        subtotal['tax_amount_currency'] += delta
+        totals['tax_amount_currency'] += delta
+        totals['total_amount_currency'] += delta
+        inv.tax_totals = totals
+        return inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+
+    def test_56_tax_totals_edit_within_company_tolerance_succeeds(self):
+        """The default tolerance (0.03) allows a small correction -- e.g. a
+        field reading 40.54 can be nudged to 40.57 or 40.51, matching what
+        the fiscal machine actually printed."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice')
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        old_amount = tax_line.amount_currency
+        tolerance = self.company.tax_totals_edit_tolerance
+        self.assertEqual(tolerance, 0.03, "Precondición: tolerancia default de la compañía.")
+
+        tax_line = self._edit_tax_totals_by(inv, tolerance)
+        self.assertAlmostEqual(
+            tax_line.amount_currency, old_amount + tolerance, places=2,
+            msg="Un ajuste EXACTAMENTE dentro de la tolerancia debió aplicarse.",
+        )
+
+    def test_57_tax_totals_edit_beyond_company_tolerance_blocked(self):
+        """A correction bigger than the company's tolerance must be
+        rejected outright -- not clamped, not silently ignored."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice')
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        old_amount = tax_line.amount_currency
+        tolerance = self.company.tax_totals_edit_tolerance
+
+        with self.assertRaises(UserError):
+            self._edit_tax_totals_by(inv, tolerance + 0.01)
+
+        tax_line.invalidate_recordset()
+        self.assertAlmostEqual(
+            tax_line.amount_currency, old_amount, places=2,
+            msg="Un ajuste que excede la tolerancia no debió aplicarse ni parcialmente.",
+        )
+
+        self.company.tax_totals_edit_tolerance = tolerance + 0.01
+        tax_line = self._edit_tax_totals_by(inv, tolerance + 0.01)
+        self.assertAlmostEqual(
+            tax_line.amount_currency, old_amount + tolerance + 0.01, places=2,
+            msg="Tras subir la tolerancia de la compañía, el mismo delta debió aplicarse.",
+        )
+
+    def test_58_tax_totals_edit_denied_for_user_without_fiscal_support_group(self):
+        """The pencil-edit isn't just readonly in the view -- the server
+        SHALL reject the write itself for a user outside
+        `group_fiscal_config_support`, even for a change within tolerance."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice')
+
+        outsider = self.env['res.users'].create({
+            'name': 'Sin permiso fiscal', 'login': 'sin_permiso_fiscal_test',
+            'group_ids': [Command.set([
+                self.env.ref('base.group_user').id,
+                self.env.ref('account.group_account_invoice').id,
+            ])],
+        })
+        self.assertFalse(
+            outsider.has_group('l10n_ve_accountant.group_fiscal_config_support'),
+            "Precondición: el usuario no debe tener el grupo de soporte fiscal.",
+        )
+
+        with self.assertRaises(UserError):
+            self._edit_tax_totals_by(inv.with_user(outsider), 0.01)
+
+    def _create_pencil_user(self, login, with_group, extra_groups=()):
+        groups = [
+            self.env.ref('base.group_user').id,
+            self.env.ref('account.group_account_invoice').id,
+        ]
+        if with_group:
+            groups.append(self.env.ref('l10n_ve_accountant.group_fiscal_config_support').id)
+        groups += [self.env.ref(xmlid).id for xmlid in extra_groups]
+        return self.env['res.users'].create({
+            'name': login, 'login': login, 'group_ids': [Command.set(groups)],
+        })
+
+    def test_58b_pencil_edit_allowed_for_user_with_fiscal_support_group(self):
+        """A user in `group_fiscal_config_support` sees the pencil enabled
+        (`can_edit_tax_totals`) and the edit within tolerance is applied."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice')
+        user = self._create_pencil_user('con_permiso_fiscal_test', with_group=True)
+        inv_user = inv.with_user(user)
+        self.assertTrue(inv_user.can_edit_tax_totals)
+        old_amount = inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency
+        tax_line = self._edit_tax_totals_by(inv_user, 0.01)
+        self.assertAlmostEqual(abs(tax_line.amount_currency), abs(old_amount) + 0.01, places=2)
+
+    def test_58c_pencil_edit_hidden_and_rejected_without_fiscal_support_group(self):
+        """Without the group the pencil is disabled in the native, alternate
+        and VES widgets, and the amount stays untouched when the write is tried."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice')
+        user = self._create_pencil_user(
+            'sin_permiso_fiscal_test_2', with_group=False,
+            extra_groups=('l10n_ve_accountant.group_foreign_currency_view_accountant',),
+        )
+        inv_user = inv.with_user(user)
+        self.assertFalse(inv_user.can_edit_tax_totals)
+        arch = etree.fromstring(inv_user.get_view(view_type='form')['arch'])
+        for widget in ('account-tax-totals-field', 'account-tax-foreign-totals-field', 'account-tax-ves-totals-field'):
+            field = arch.xpath(f"//field[@name='tax_totals'][@widget='{widget}']")
+            self.assertTrue(field, f"widget {widget} missing in the form view")
+            self.assertIn('not can_edit_tax_totals', field[0].get('readonly'), widget)
+        old_amount = inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency
+        with self.assertRaises(UserError):
+            self._edit_tax_totals_by(inv_user, 0.01)
+        self.assertEqual(inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency, old_amount)
+
+    def test_59_tax_totals_edit_resyncs_foreign_balance_and_payment_term(self):
+        """Regression for TI-15432 bug 2: a pencil-edit on `tax_totals`
+        must resync `foreign_balance` on the tax line and the
+        payment_term line that plugs it, not leave them frozen."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice', post=False)
+
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        pt_line = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
+        self.assertEqual(len(tax_line), 1)
+        self.assertEqual(len(pt_line), 1)
+
+        old_tax_foreign_balance = tax_line.foreign_balance
+        old_pt_foreign_balance = pt_line.foreign_balance
+
+        tolerance = self.company.tax_totals_edit_tolerance
+        self.assertEqual(tolerance, 0.03, "Precondición: tolerancia default de la compañía.")
+
+        delta = tolerance
+        old_tax_amount_currency = tax_line.amount_currency
+        tax_line = self._edit_tax_totals_by(inv, delta)
+        pt_line = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
+
+        self.assertAlmostEqual(
+            tax_line.amount_currency, old_tax_amount_currency + delta, places=2,
+            msg="Precondición: el monto editado no llegó a la línea de impuesto real.",
+        )
+
+        self.assertNotAlmostEqual(
+            tax_line.foreign_balance, old_tax_foreign_balance, places=2,
+            msg=(
+                "La línea de impuesto no resincronizó foreign_balance tras "
+                "la edición manual del lápiz -- el lado alterno (USD, en "
+                "esta configuración) quedó congelado en su valor pre-edición."
+            ),
+        )
+        self.assertNotAlmostEqual(
+            pt_line.foreign_balance, old_pt_foreign_balance, places=2,
+            msg=(
+                "La línea de payment_term no se reajustó tras la edición "
+                "manual -- debió recuadrar contra el nuevo foreign_balance "
+                "de la línea de impuesto."
+            ),
+        )
+
+        for line in inv.line_ids:
+            self.assertTrue(
+                self._check_foreign(line),
+                f"Línea {line.display_type}: foreign_debit/credit inconsistentes "
+                f"tras la edición manual del lápiz.",
+            )
+
+        total_foreign_debit = sum(inv.line_ids.mapped('foreign_debit'))
+        total_foreign_credit = sum(inv.line_ids.mapped('foreign_credit'))
+        self.assertAlmostEqual(
+            total_foreign_debit, total_foreign_credit, places=2,
+            msg=(
+                "El asiento quedó descuadrado en moneda alterna tras la "
+                "edición manual del lápiz (foreign_debit != foreign_credit)."
+            ),
+        )
+
+        self.assertAlmostEqual(
+            tax_line.balance, inv.company_currency_id.round(tax_line.amount_currency / inv.invoice_currency_rate),
+            places=2,
+            msg="El lado en moneda de la compañía (VEF) no debió recalcularse a partir de las líneas base.",
+        )
+
+    def test_60_tax_totals_edit_logs_chatter_message(self):
+        """Regression for TI-15432 bug 3: a manual `tax_totals` edit
+        that gets applied must log exactly one chatter message with
+        the user, tax group, and old -> new amount."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice', post=False)
+        tax_line = inv.line_ids.filtered(lambda l: l.display_type == 'tax')
+        old_amount = tax_line.amount_currency
+        messages_before = len(inv.message_ids)
+
+        delta = self.company.tax_totals_edit_tolerance
+        self._edit_tax_totals_by(inv, delta)
+
+        messages_after = inv.message_ids
+        self.assertEqual(
+            len(messages_after), messages_before + 1,
+            "La edición manual del lápiz debió dejar exactamente UN mensaje "
+            "nuevo en el chatter -- si hay más de uno, `_inverse_tax_totals` "
+            "volvió a duplicar el registro en la pasada transitoria de "
+            "`_sync_dynamic_lines` (no respeta `skip_invoice_sync`).",
+        )
+        last_message = messages_after.sorted('id', reverse=True)[0]
+        self.assertEqual(
+            last_message.author_id, self.env.user.partner_id,
+            "El mensaje del chatter no registró al usuario que hizo la edición manual.",
+        )
+        self.assertIn(self.tax_group.name, last_message.body)
+        body = str(last_message.body).replace('&nbsp;', '\N{NO-BREAK SPACE}')
+        self.assertIn(
+            formatLang(self.env, old_amount, currency_obj=inv.currency_id), body,
+            "El mensaje del chatter no menciona el monto anterior.",
+        )
+        self.assertIn(
+            formatLang(self.env, old_amount + delta, currency_obj=inv.currency_id), body,
+            "El mensaje del chatter no menciona el monto nuevo.",
+        )
+
+    def test_61_normal_line_edit_with_tax_totals_in_vals_does_not_raise(self):
+        """Regression for TI-15432 bug 2/3 follow-up: a normal line edit
+        where the webclient resends the already-recalculated `tax_totals`
+        in the same `write()` must not raise a spurious UserError."""
+        self._set_usd_rate(803.34)
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 100.0, [self.tax_16]),
+        ], move_type='in_invoice', post=False)
+        product_line = inv.line_ids.filtered(lambda l: l.display_type == 'product')
+        self.assertEqual(len(product_line), 1)
+
+        old_tax_amount = inv.line_ids.filtered(
+            lambda l: l.display_type == 'tax'
+        ).amount_currency
+        self.assertGreater(
+            inv.company_id.tax_totals_edit_tolerance, 0.0,
+            "Precondición: la compañía debe tener una tolerancia positiva.",
+        )
+
+        inv.write({'invoice_line_ids': [(1, product_line.id, {'price_unit': 200.0})]})
+        new_totals = inv.tax_totals
+        new_tax_amount = inv.line_ids.filtered(
+            lambda l: l.display_type == 'tax'
+        ).amount_currency
+        self.assertGreater(
+            abs(new_tax_amount - old_tax_amount), inv.company_id.tax_totals_edit_tolerance,
+            "Precondición: la edición debe cambiar el impuesto más que la "
+            "tolerancia -- si no, el escenario no distingue del caso trivial.",
+        )
+        inv.write({'invoice_line_ids': [(1, product_line.id, {'price_unit': 100.0})]})
+        self.assertAlmostEqual(
+            inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency,
+            old_tax_amount, places=2,
+            msg="Precondición: la reversión debió dejar el impuesto como al inicio.",
+        )
+
+        try:
+            inv.write({
+                'invoice_line_ids': [(1, product_line.id, {'price_unit': 200.0})],
+                'tax_totals': new_totals,
+            })
+        except UserError as e:
+            self.fail(
+                "Un guardado normal (edición de línea, el webclient reenvía "
+                "`tax_totals` ya recalculado) no debió lanzar UserError: "
+                f"{e}"
+            )
+
+        self.assertAlmostEqual(
+            inv.line_ids.filtered(lambda l: l.display_type == 'tax').amount_currency,
+            new_tax_amount, places=2,
+            msg="El impuesto final debió reflejar la nueva cantidad (el "
+            "guardado no debió descartar la edición real de la línea).",
+        )
+
+    def test_62_sync_dynamic_lines_reentrancy_guard_does_not_break_normal_save(self):
+        """Sanity check for the reentrancy guard added to
+        `_sync_dynamic_lines` (TI-15432) -- NOT a confirmed repro of the
+        production `RecursionError`, just proof it doesn't break a
+        normal multi-line/multi-installment save."""
+        payment_term = self.env['account.payment.term'].create({
+            'name': 'TI-15432 34/33/33',
+            'line_ids': [
+                Command.create({'value': 'percent', 'value_amount': 34, 'nb_days': 0}),
+                Command.create({'value': 'percent', 'value_amount': 33, 'nb_days': 30}),
+                Command.create({'value': 'percent', 'value_amount': 33, 'nb_days': 60}),
+            ],
+        })
+        self._set_usd_rate(803.34)
+        partner = self.env['res.partner'].create({
+            'name': 'Partner recursion test',
+            'company_id': self.company.id,
+            'property_account_receivable_id': self.acc_rec.id,
+            'property_account_payable_id': self.acc_pay.id,
+        })
+        inv = self.env['account.move'].with_context(check_move_validity=False).create({
+            'move_type': 'in_invoice',
+            'partner_id': partner.id,
+            'currency_id': self.currency_usd.id,
+            'journal_id': self.purchase_journal.id,
+            'invoice_date': fields.Date.today(),
+            'company_id': self.company.id,
+            'invoice_payment_term_id': payment_term.id,
+            'invoice_line_ids': [
+                Command.create({
+                    'product_id': self.product.id,
+                    'name': 'L0',
+                    'quantity': 1,
+                    'price_unit': 1000.0,
+                    'account_id': self.acc_exp.id,
+                    'tax_ids': [(6, 0, [self.tax_16.id])],
+                }),
+                Command.create({
+                    'product_id': self.product.id,
+                    'name': 'L1',
+                    'quantity': 2,
+                    'price_unit': 500.0,
+                    'account_id': self.acc_exp.id,
+                    'tax_ids': [(6, 0, [self.tax_31.id])],
+                }),
+            ],
+        })
+
+        pt_lines = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
+        self.assertEqual(len(pt_lines), 3, "Precondición: 3 cuotas de payment_term.")
+        product_lines = inv.line_ids.filtered(lambda l: l.display_type == 'product')
+        self.assertEqual(len(product_lines), 2, "Precondición: 2 líneas de producto.")
+
+        try:
+            product_lines[0].write({'price_unit': 1234.56})
+        except RecursionError:
+            self.fail(
+                "write() sobre una línea de producto normal lanzó "
+                "RecursionError -- la guarda de reentrancia en "
+                "`_sync_dynamic_lines` falta o está rota."
+            )
+
+        inv.invalidate_recordset()
+        td = sum(inv.line_ids.mapped('debit'))
+        tc = sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg="El asiento quedó descuadrado tras el write() que disparó la recursión.",
+        )
+        pt_lines = inv.line_ids.filtered(lambda l: l.display_type == 'payment_term')
+        self.assertEqual(
+            len(pt_lines), 3,
+            msg="El número de cuotas de payment_term cambió tras el write().",
+        )
+        for line in inv.line_ids:
+            self.assertTrue(
+                self._check_foreign(line),
+                f"Línea {line.display_type}: foreign_debit/credit inconsistentes "
+                f"tras el write() que dispara _sync_dynamic_lines.",
+            )
+
+    def test_35_unreconcile_normal_payment_updates_payment_state(self):
+        """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`
+        force-recompute: 3 separate register-payment-wizard payments, all
+        unreconciled, must bring `payment_state` back to 'not_paid'."""
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 300.0, [self.tax_16]),
+        ])
+        acc_bank_usd_real = self._get_or_create('100201', 'Bank USD (no reconcile)', 'asset_cash', reconcile=False)
+        bank_usd_real = self._create_bank_journal('BNKUR', 'Banco USD Real', self.currency_usd, acc_bank_usd_real)
+        pay_amount = inv.amount_total / 3
+        if inv.state != 'posted':
+            inv.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(inv.state, 'posted', f"Precondición: la factura debe estar posteada, no {inv.state!r}.")
+
+        payments = self.env['account.payment']
+        for _ in range(3):
+            inv.invalidate_recordset()
+            action_data = inv.action_register_payment()
+            with Form(
+                self.env["account.payment.register"].with_context(action_data["context"])
+            ) as pay_form:
+                pay_form.journal_id = bank_usd_real
+                pay_form.payment_date = fields.Date.today()
+                pay_form.save()
+                pay_form.amount = pay_amount
+            action = pay_form.record.action_create_payments()
+            payments |= self.env["account.payment"].browse(action.get("res_id"))
+
+        inv.invalidate_recordset()
+        payments.invalidate_recordset()
+        self.assertEqual(inv.payment_state, "paid")
+        self.assertEqual(
+            len(inv.matched_payment_ids), 3,
+            f"Precondición: deben estar los 3 pagos matched -- {inv.matched_payment_ids.ids}",
+        )
+
+        for pay in payments:
+            inv_receivable = inv.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+            pay_counterpart = pay.move_id.line_ids.filtered(
+                lambda l: l.account_id == inv_receivable.account_id
+            )
+            partial = inv_receivable.matched_credit_ids.filtered(
+                lambda p: p.credit_move_id in pay_counterpart
+            ) or inv_receivable.matched_debit_ids.filtered(
+                lambda p: p.debit_move_id in pay_counterpart
+            )
+            self.assertTrue(partial, f"Debe existir la conciliación factura<->pago {pay.id}.")
+            inv.with_context({}).js_remove_outstanding_partial(partial[:1].id)
+            inv.invalidate_recordset()
+
+        payments.invalidate_recordset()
+        self.assertEqual(
+            inv.payment_state, "not_paid",
+            f"payment_state quedó en {inv.payment_state!r} tras desconciliar los 3 pagos "
+            f"-- debía quedar 'not_paid'. payments.state={payments.mapped('state')}, "
+            f"inv.amount_residual={inv.amount_residual}, "
+            f"inv.matched_payment_ids={inv.matched_payment_ids.ids}, "
+            f"inv.reconciled_payment_ids={inv.reconciled_payment_ids.ids}",
+        )
 
     def _create_chained_taxes(self, suffix=""):
         """Tax A 10% (include_base_amount) followed by Tax B 5% computed on A's base + A's amount."""
@@ -2539,3 +3075,75 @@ class TestMultiCurrencyRounding(TransactionCase):
             (20.123456, 6.309876, [self.tax_16, tax_8_own]),
         ])
         self._assert_tax_group_base_matches_real_lines(inv, [self.tax_16, tax_8_own])
+
+    def test_55_new_company_defaults_to_round_per_line(self):
+        """New companies default to 'round_per_line' (stock Odoo uses
+        'round_globally'); existing companies are not touched, so a new
+        company is created instead of asserting on `self.company`."""
+        new_company = self.env['res.company'].create({'name': 'Rounding Default Co'})
+        self.assertEqual(
+            new_company.tax_calculation_rounding_method,
+            'round_per_line',
+            "New companies must default to round-per-line, not stock Odoo's"
+            " round-per-tax."
+        )
+    def test_55_unreconcile_normal_payment_updates_payment_state(self):
+        """Regression for `AccountPartialReconcile.unlink()`'s `payment_state`
+        force-recompute: 3 separate register-payment-wizard payments, all
+        unreconciled, must bring `payment_state` back to 'not_paid'."""
+        inv = self._create_invoice(self.currency_usd, None, [
+            (1, 300.0, [self.tax_16]),
+        ])
+        acc_bank_usd_real = self._get_or_create('100201', 'Bank USD (no reconcile)', 'asset_cash', reconcile=False)
+        bank_usd_real = self._create_bank_journal('BNKUR', 'Banco USD Real', self.currency_usd, acc_bank_usd_real)
+        pay_amount = inv.amount_total / 3
+        if inv.state != 'posted':
+            inv.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(inv.state, 'posted', f"Precondición: la factura debe estar posteada, no {inv.state!r}.")
+
+        payments = self.env['account.payment']
+        for _ in range(3):
+            inv.invalidate_recordset()
+            action_data = inv.action_register_payment()
+            with Form(
+                self.env["account.payment.register"].with_context(action_data["context"])
+            ) as pay_form:
+                pay_form.journal_id = bank_usd_real
+                pay_form.payment_date = fields.Date.today()
+                pay_form.save()
+                pay_form.amount = pay_amount
+            action = pay_form.record.action_create_payments()
+            payments |= self.env["account.payment"].browse(action.get("res_id"))
+
+        inv.invalidate_recordset()
+        payments.invalidate_recordset()
+        self.assertEqual(inv.payment_state, "paid")
+        self.assertEqual(
+            len(inv.matched_payment_ids), 3,
+            f"Precondición: deben estar los 3 pagos matched -- {inv.matched_payment_ids.ids}",
+        )
+
+        # Desconciliar los 3, uno por uno -- como reporta el caso real.
+        for pay in payments:
+            inv_receivable = inv.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+            pay_counterpart = pay.move_id.line_ids.filtered(
+                lambda l: l.account_id == inv_receivable.account_id
+            )
+            partial = inv_receivable.matched_credit_ids.filtered(
+                lambda p: p.credit_move_id in pay_counterpart
+            ) or inv_receivable.matched_debit_ids.filtered(
+                lambda p: p.debit_move_id in pay_counterpart
+            )
+            self.assertTrue(partial, f"Debe existir la conciliación factura<->pago {pay.id}.")
+            inv.with_context({}).js_remove_outstanding_partial(partial[:1].id)
+            inv.invalidate_recordset()
+
+        payments.invalidate_recordset()
+        self.assertEqual(
+            inv.payment_state, "not_paid",
+            f"payment_state quedó en {inv.payment_state!r} tras desconciliar los 3 pagos "
+            f"-- debía quedar 'not_paid'. payments.state={payments.mapped('state')}, "
+            f"inv.amount_residual={inv.amount_residual}, "
+            f"inv.matched_payment_ids={inv.matched_payment_ids.ids}, "
+            f"inv.reconciled_payment_ids={inv.reconciled_payment_ids.ids}",
+        )

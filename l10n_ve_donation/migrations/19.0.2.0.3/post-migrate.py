@@ -1,26 +1,26 @@
 """Post-migration for l10n_ve_donation 19.0.2.0.3.
 
-Drops stock_scrap.donation_reason (v17 column, ya migrado a tags por
-pre-migrate.py de esta misma carpeta).
+Drops stock_scrap.donation_reason (v17 column, already migrated to tags by
+pre-migrate.py in this same folder).
 
-res_company.account_stock_journal_id NO SE ELIMINA -- y no es una
-columna huérfana en absoluto: es un campo CORE de Odoo
-(stock_account/models/res_company.py, mismo nombre, mismo propósito).
-El motivo por el que l10n_ve_donation/models/stock_move.py no lo
-encontraba no era que el campo faltara en v19, sino que
-l10n_ve_donation no declaraba "stock_account" como dependencia en su
-manifest -- corregido en este mismo commit (__manifest__.py). Con esa
-dependencia agregada, el campo core está disponible sin necesidad de
-declarar nada nuevo (no se crea ningún campo, solo se corrige la
-dependencia que faltaba), y la columna física ya existente en
-res_company se reutiliza tal cual -- no hay nada que migrar ni que
-eliminar.
+res_company.account_stock_journal_id IS NOT DROPPED -- and it is not an
+orphan column at all: it is an Odoo CORE field
+(stock_account/models/res_company.py, same name, same purpose).
+The reason l10n_ve_donation/models/stock_move.py could not find it
+was not that the field was missing in v19, but that
+l10n_ve_donation did not declare "stock_account" as a dependency in its
+manifest -- fixed in this same commit (__manifest__.py). With that
+dependency added, the core field is available without having to
+declare anything new (no field is created, only the missing dependency
+is fixed), and the physical column that already exists in
+res_company is reused as is -- there is nothing to migrate or to
+drop.
 
-Nota sobre una corrección de esta misma sesión: se había señalado
-también integra-addons/binaural_subsidiary_stock/models/stock_move.py
-como afectado por el mismo problema -- FALSO POSITIVO, descartado:
-ese módulo SÍ depende de "stock_account" en su __manifest__.py, así
-que nunca tuvo el problema.
+Note on a correction from this same session:
+integra-addons/binaural_subsidiary_stock/models/stock_move.py had also
+been flagged as affected by the same problem -- FALSE POSITIVE, discarded:
+that module DOES depend on "stock_account" in its __manifest__.py, so
+it never had the problem.
 """
 
 import logging
@@ -91,11 +91,10 @@ def migrate(cr, version):
             cr.execute(sql.SQL("ALTER TABLE {} DROP COLUMN {}").format(tbl, col_id))
             _logger.info("  Dropped column %s.%s", table, col)
 
-    _logger.warning(
-        "l10n_ve_donation post-migrate: res_company.account_stock_journal_id "
-        "se DEJA intacta a propósito -- l10n_ve_donation/models/stock_move.py Y "
-        "binaural_subsidiary_stock/models/stock_move.py todavía la leen por "
-        "atributo (bug de código v19 en ambos módulos, no de esta migración). "
-        "No borrar hasta que el equipo de desarrollo corrija esas dos líneas o "
-        "reexponga el campo. Ver MIGRATION_NOTES_donation.md."
+    _logger.info(
+        "l10n_ve_donation post-migrate: res_company.account_stock_journal_id is kept "
+        "on purpose: it is the core stock_account field, read by "
+        "l10n_ve_donation/models/stock_move.py and "
+        "binaural_subsidiary_stock/models/stock_move.py. "
+        "See MIGRATION_NOTES_donation.md."
     )

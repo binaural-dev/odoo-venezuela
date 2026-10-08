@@ -55,14 +55,6 @@ dependencia, lo dejaría vacío para siempre en cualquier ND/NC de este módulo.
 - **AND** la línea de la ND incluye `product_id = <producto configurado>`
 - **AND** la línea está conciliada contra el residual de la factura
 
-#### Scenario: Factura en VEF pagada con tasa distintos si hay otros movimientos
-
-- **GIVEN** una factura en moneda de compañía (VEF) pero con líneas cuya
-  conversión extranjera deja un residual de redondeo
-- **AND** el pago es en moneda extranjera
-- **WHEN** se concilia
-- **THEN** se genera ND por el redondeo (Odoo nativo también lo hace)
-
 ### Requirement: Una Nota de Crédito se emite cuando hay pérdida cambiaria
 
 El sistema SHALL emitir una Nota de Crédito (out_refund) vinculada a la factura
@@ -383,6 +375,47 @@ contrario, para no exponer una opción sin efecto.
 - **THEN** se emite la ND/NC fiscal real, sin importar `l10n_ve_exchange_allow_note`
   del cliente
 
+### Requirement: El selector del Producto de Nota de Diferencial solo ofrece candidatos compatibles
+
+El `domain` de `res.company.l10n_ve_exchange_note_product_id` SHALL restringir
+el selector a productos de tipo Servicio cuyo impuesto de venta sea el exento
+por defecto (`exent_aliquot_sale`) Y cuyo impuesto de compra sea el exento
+por defecto (`exent_aliquot_purchase`), ambos de `l10n_ve_accountant`. Si
+cualquiera de los dos impuestos exentos no está configurado en la compañía,
+el selector SHALL NOT ofrecer ningún producto.
+
+El selector real que ve el usuario es
+`res.config.settings.l10n_ve_exchange_note_product_id` (Ajustes > Binaural
+Settings), un `related='company_id...'`. Ese campo SHALL declarar el mismo
+`domain` string de forma explícita e idéntica a la de `res.company` -- en
+Odoo 19 un related NO hereda un `domain` de tipo string de su campo de
+origen (`_related_domain`, `odoo/orm/fields_relational.py`, lo descarta
+salvo que el campo sea `inherited`); sin esa declaración explícita, el
+selector de Ajustes queda sin ningún filtro.
+
+Esta restricción es solo de UI (el `domain` está declarado como string,
+evaluado únicamente del lado del cliente web) -- no reemplaza la validación
+real de `_check_l10n_ve_exchange_note_product_id`, que sigue aplicando sobre
+cualquier valor asignado por otra vía (ORM directo, API).
+
+#### Scenario: Ambos impuestos exentos configurados
+
+- **GIVEN** la compañía tiene `exent_aliquot_sale` y `exent_aliquot_purchase` configurados
+- **WHEN** se abre el selector de `l10n_ve_exchange_note_product_id` (Ajustes o `res.company`)
+- **THEN** solo aparecen productos de tipo Servicio con AMBOS impuestos asignados
+
+#### Scenario: Falta uno de los dos impuestos exentos
+
+- **GIVEN** la compañía NO tiene `exent_aliquot_purchase` configurado (o le falta `exent_aliquot_sale`)
+- **WHEN** se abre el selector de `l10n_ve_exchange_note_product_id` (Ajustes o `res.company`)
+- **THEN** el selector no ofrece ningún producto, sin importar cuántos productos de tipo Servicio existan
+
+#### Scenario: El domain de res.config.settings no depende de la propagación automática
+
+- **GIVEN** el `domain` de `res.company.l10n_ve_exchange_note_product_id`
+- **WHEN** se compara contra el `domain` de `res.config.settings.l10n_ve_exchange_note_product_id`
+- **THEN** ambos son idénticos -- el related declara su propio string explícito
+
 ### Requirement: El widget de Conciliación Bancaria de Enterprise queda fuera de alcance a propósito
 
 El sistema SHALL NOT generar ND/NC cuando la conciliación de una factura de
@@ -410,6 +443,46 @@ la emisión de la ND/NC que si aplica al flujo del ticket.
 - **THEN** Odoo resuelve el diferencial cambiario con su propio mecanismo interno del widget
 - **AND** no se genera ninguna ND/NC de este módulo
 - **AND** esto es el comportamiento esperado, no un defecto
+
+### Requirement: Una factura en moneda de compañía pagada vía el asistente estándar no deja residual de redondeo
+
+El sistema SHALL NOT generar ND/NC cuando una factura de cliente en moneda de
+COMPAÑÍA (VEF) se liquida por completo con el asistente "Registrar Pago" en
+un diario de moneda extranjera, dejando que el asistente calcule el monto por
+defecto (sin que el usuario escriba un monto propio). Verificado empíricamente
+(trazas sobre `account.payment.move_id.line_ids`): Odoo calcula primero el
+monto de la línea contraparte del pago en moneda de COMPAÑÍA, exactamente
+igual al residual pendiente de la factura, y de ahí DERIVA el monto en moneda
+extranjera -- nunca al revés. Como la factura ya está en moneda de compañía,
+no hay ningún lado con una conversión independiente que pueda dejar un
+sobrante: `amount_residual` (y `amount_residual_currency`) quedan en 0.0
+exactos tras la conciliación, así que el motor nativo de Odoo
+(`_prepare_reconciliation_single_partial`) nunca encuentra un residual que
+corregir y `_prepare_exchange_difference_move_vals` -- el método que este
+módulo intercepta -- nunca se invoca.
+
+Esto corrige una expectativa anterior de este documento (y de su test de
+cobertura) que asumía, sin verificarlo contra el comportamiento real de Odoo,
+que este escenario simple SIEMPRE deja un residual de redondeo. Un escenario
+que sí deje un residual real para una factura en moneda de compañía (ej. vía
+un monto de pago escrito a mano que no coincide centavo a centavo, o vía el
+widget de Conciliación Bancaria de Enterprise -- ver el requirement de ese
+widget, que de todas formas nunca pasa por este módulo) queda fuera del
+alcance de este requirement, que cubre específicamente el flujo estándar del
+asistente con monto por defecto.
+
+#### Scenario: Factura en VEF pagada por completo con el asistente estándar en un diario USD
+
+- **GIVEN** una factura de cliente en moneda de compañía (VEF)
+- **AND** se liquida con el asistente "Registrar Pago" en un diario de moneda
+  extranjera (USD), aceptando el monto por defecto que calcula el asistente
+- **WHEN** se concilia
+- **THEN** la línea contraparte del pago queda con `balance` (VEF) EXACTAMENTE
+  igual al residual que tenía la factura
+- **AND** `amount_residual` de la factura queda en 0.0 exacto, sin redondeo
+  pendiente
+- **AND** no se genera ninguna ND/NC de este módulo, porque no hay ningún
+  residual que documentar
 
 ### Requirement: Compatibilidad con `l10n_ve_igtf`
 
@@ -477,6 +550,15 @@ armando una reversión (ej. una Nota de Crédito de NEGOCIO real, no
 relacionada, que también participó en cerrar la factura), NO SHALL corregir
 nada -- esa clasificación es genuina.
 
+Si al excluir las notas propias NO queda NINGUNA otra contraparte
+(`remaining_types` vacío -- por ejemplo, tras desconciliar el cruce de
+anticipo que originalmente acompañaba a la nota, dejándola como la ÚNICA
+pieza de la conciliación), la corrección NO SHALL forzar `'paid'`: una nota
+propia sola como contraparte es EXACTAMENTE la definición nativa de
+`'reversed'` del núcleo (un solo `out_refund`), así que el valor que el
+núcleo ya calculó es correcto y forzar `'paid'` ahí lo sobrescribiría con un
+valor desactualizado.
+
 Un documento marcado con `l10n_ve_exchange_diff_entry=True` cuyo `move_type`
 NO sea ni `'entry'` (asiento genérico) ni `out_invoice`/`out_refund` (nota
 propia) SHALL abortar con `UserError` explícito en vez de ignorarse en
@@ -509,6 +591,13 @@ de completar el flujo en silencio.
 - **WHEN** se recomputa `payment_state`
 - **AND** excluir la nota propia de la combinación NO cambia el resultado (la NC de negocio por sí sola ya arma la reversión)
 - **THEN** `payment_state` se queda en `'reversed'`
+
+#### Scenario: La nota propia queda sola tras desconciliar el resto -- no se fuerza 'paid'
+
+- **GIVEN** una factura cuya conciliación incluía un cruce de anticipo y su NC de diferencial
+- **AND** el cruce de anticipo se desconcilia, dejando la NC como la ÚNICA contraparte restante
+- **WHEN** se recomputa `payment_state`
+- **THEN** el sistema NO fuerza `'paid'` -- se respeta el `'reversed'` que el núcleo ya calculó, correcto para una sola nota de crédito como contraparte
 
 #### Scenario: Documento con el flag en un `move_type` inesperado aborta
 

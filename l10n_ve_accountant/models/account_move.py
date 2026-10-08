@@ -1,13 +1,14 @@
 import logging
 from collections import defaultdict
 
+from markupsafe import Markup
 from lxml import etree
 from contextlib import ExitStack, contextmanager
 from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, index_exists
 from odoo.tools.sql import drop_index
-from odoo.tools.float_utils import float_round
+from odoo.tools.float_utils import float_round, float_is_zero
 from odoo.tools.misc import formatLang
 from odoo.tools.misc import clean_context
 
@@ -222,6 +223,84 @@ class AccountMove(models.Model):
     manually_set_rate = fields.Boolean(default=False)
     last_foreign_rate = fields.Float(copy=False)
 
+    can_edit_tax_totals = fields.Boolean(
+        compute="_compute_can_edit_tax_totals",
+        help="Gates the pencil-edit on the tax_totals widget -- same "
+        "group as res.currency.edit_rate, which already gates manually "
+        "overriding an otherwise auto-computed fiscal figure.",
+    )
+
+    def _compute_can_edit_tax_totals(self):
+        can_edit = self.env.user.has_group("l10n_ve_accountant.group_fiscal_config_support")
+        for move in self:
+            move.can_edit_tax_totals = can_edit
+
+    def _inverse_tax_totals(self):
+        """Gates the pencil-edit's actual write: only
+        `group_fiscal_config_support` may change a tax group's amount,
+        and only within `company_id.tax_totals_edit_tolerance`."""
+        with self._disable_recursion({'records': self}, 'skip_invoice_sync') as disabled:
+            if disabled:
+                return super()._inverse_tax_totals()
+        pending_chatter_entries = defaultdict(list)
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            invoice_totals = move.tax_totals
+            if not invoice_totals:
+                continue
+            tolerance = move.company_id.tax_totals_edit_tolerance
+            for subtotal in invoice_totals.get('subtotals') or []:
+                for tax_group in subtotal.get('tax_groups') or []:
+                    tax_lines = move.line_ids.filtered(
+                        lambda line: line.tax_group_id.id == tax_group['id']
+                    )
+                    if not tax_lines:
+                        continue
+                    tax_group_old_amount = sum(tax_lines.mapped('amount_currency'))
+                    sign = -1 if move.is_inbound() else 1
+                    old_amount_currency = (
+                        tax_group_old_amount - tax_group.get('non_deductible_tax_amount_currency', 0.0)
+                    ) * sign
+                    delta_amount = old_amount_currency - tax_group['tax_amount_currency']
+                    if move.currency_id.is_zero(delta_amount):
+                        continue
+                    if not move.can_edit_tax_totals:
+                        raise UserError(_(
+                            "You are not allowed to manually edit the tax amount."
+                        ))
+                    if move.currency_id.compare_amounts(abs(delta_amount), tolerance) > 0:
+                        raise UserError(_(
+                            "The manually edited tax amount differs by %(diff)s from the "
+                            "computed value, which is more than the allowed tolerance of "
+                            "%(tolerance)s for %(company)s.",
+                            diff=formatLang(self.env, abs(delta_amount), currency_obj=move.currency_id),
+                            tolerance=formatLang(self.env, tolerance, currency_obj=move.currency_id),
+                            company=move.company_id.display_name,
+                        ))
+                    pending_chatter_entries[move].append((
+                        tax_group.get('group_name', ''),
+                        old_amount_currency,
+                        tax_group['tax_amount_currency'],
+                    ))
+        super()._inverse_tax_totals()
+        self.invalidate_recordset(['tax_totals'])
+        for move, entries in pending_chatter_entries.items():
+            lines = [
+                _(
+                    "%(group)s: %(old)s → %(new)s",
+                    group=group_name,
+                    old=formatLang(self.env, old_amount, currency_obj=move.currency_id),
+                    new=formatLang(self.env, new_amount, currency_obj=move.currency_id),
+                )
+                for group_name, old_amount, new_amount in entries
+            ]
+            body = Markup("<p>%s</p>%s") % (
+                _("Manual tax amount edit by %(user)s:", user=self.env.user.display_name),
+                Markup().join(Markup("<br/>%s") % line for line in lines),
+            )
+            move.message_post(body=body)
+
     vat = fields.Char(
         string="VAT",
         help="VAT of the partner",
@@ -332,6 +411,15 @@ class AccountMove(models.Model):
         currency_field='company_currency_id'
     )
 
+    company_currency_line_totals = fields.Json(
+        string="Company Currency Line Totals",
+        compute="_compute_company_currency_line_totals",
+        store=True,
+        help="Per line, in company currency: price_unit, quantity, "
+        "subtotal, subtotal_taxed, tax_amount, discount_amount, "
+        "discount_type, taxes. Dict keyed by line id (str).",
+    )
+
     @api.depends(
         'line_ids.matched_debit_ids.debit_move_id.move_id.origin_payment_id.is_matched',
         'line_ids.matched_debit_ids.debit_move_id.move_id.line_ids.amount_residual',
@@ -358,6 +446,118 @@ class AccountMove(models.Model):
                     total_residual_company += line.amount_residual
             sign = move.direction_sign
             move.amount_residual_company = -sign * total_residual_company
+
+    @api.model
+    def _prorate_company_currency_amount(self, lines, amount, currency):
+        """Split `amount` across `lines` by |balance| share, largest-remainder
+        rounded (same technique as _distribute_to_lines) so shares add up
+        exactly. Returns {line.id: share}.
+        """
+        shares = {line.id: 0.0 for line in lines}
+        if currency.is_zero(amount) or not lines:
+            return shares
+        weights = {line.id: abs(line.balance) for line in lines}
+        total_weight = sum(weights.values())
+        if currency.is_zero(total_weight):
+            return shares
+
+        sign = 1 if amount > 0 else -1
+        abs_amount = abs(amount)
+        remaining_units = round(abs_amount / currency.rounding)
+        sorted_ids = sorted(weights, key=lambda lid: -weights[lid])
+        n = len(sorted_ids)
+        for i, line_id in enumerate(sorted_ids):
+            if remaining_units <= 0:
+                break
+            if i < n - 1:
+                ratio = weights[line_id] / total_weight
+                units = round(currency.round(ratio * abs_amount) / currency.rounding)
+                units = min(units, remaining_units)
+            else:
+                units = remaining_units
+            shares[line_id] = sign * units * currency.rounding
+            remaining_units -= units
+        return shares
+
+    @api.depends(
+        "move_type",
+        "invoice_line_ids.quantity",
+        "invoice_line_ids.discount",
+        "invoice_line_ids.tax_ids",
+        "invoice_line_ids.tax_ids.price_include",
+        "invoice_line_ids.display_type",
+        "line_ids.display_type",
+        "line_ids.tax_repartition_line_id",
+        "line_ids.balance",
+    )
+    def _compute_company_currency_line_totals(self):
+        """subtotal = each product line's own balance (already exact, post
+        real-portion correction). tax_amount prorates each tax line's
+        balance across the lines carrying that tax, by |balance| share.
+        """
+        precision = self.env['decimal.precision'].precision_get('Product Price')
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                move.company_currency_line_totals = {}
+                continue
+
+            cc = move.company_currency_id
+            product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
+            tax_lines = move.line_ids.filtered('tax_repartition_line_id')
+
+            lines_by_tax = defaultdict(lambda: self.env['account.move.line'])
+            for line in product_lines:
+                for tax in line.tax_ids.flatten_taxes_hierarchy():
+                    lines_by_tax[tax] |= line
+
+            tax_balance_by_tax = defaultdict(float)
+            for tax_line in tax_lines:
+                tax_balance_by_tax[tax_line.tax_repartition_line_id.tax_id] += tax_line.balance
+
+            tax_amount_by_line_id = defaultdict(float)
+            for tax, tax_balance in tax_balance_by_tax.items():
+                shares = move._prorate_company_currency_amount(
+                    lines_by_tax.get(tax, self.env['account.move.line']), tax_balance, cc
+                )
+                for line_id, share in shares.items():
+                    tax_amount_by_line_id[line_id] += share
+
+            totals = {}
+            for line in product_lines:
+                line_sign = -1 if float_compare(
+                    line.price_subtotal, 0.0, precision_rounding=line.currency_id.rounding
+                ) < 0 else 1
+                subtotal = line_sign * abs(line.balance)
+                tax_amount = line_sign * abs(tax_amount_by_line_id.get(line.id, 0.0))
+
+                discount_percent = line.discount or 0.0
+                discount_type = 'percent'
+                denominator = line.quantity * (1 - discount_percent / 100.0)
+                price_unit = (
+                    float_round(subtotal / denominator, precision_digits=precision)
+                    if not float_is_zero(denominator, precision_digits=precision)
+                    else 0.0
+                )
+                discount_amount = cc.round(price_unit * line.quantity - subtotal)
+
+                totals[str(line.id)] = {
+                    'price_unit': price_unit,
+                    'quantity': line.quantity,
+                    'subtotal': subtotal,
+                    'subtotal_taxed': subtotal + tax_amount,
+                    'tax_amount': tax_amount,
+                    'discount_amount': discount_amount,
+                    'discount_type': discount_type,
+                    'taxes': [
+                        {
+                            'id': tax.id,
+                            'name': tax.name,
+                            'price_include': tax.price_include,
+                        }
+                        for tax in line.tax_ids
+                    ],
+                }
+            move.company_currency_line_totals = totals
 
     @api.onchange('invoice_date_display')
     def _onchange_invoice_date_display(self):
@@ -1492,6 +1692,8 @@ class AccountMove(models.Model):
                 return any_field_has_changed(tax_before, tax_lines)
             if any(line not in base_lines for line, values in base_before.items() if values['tax_ids']):
                 return any_field_has_changed(tax_before, tax_lines)
+            if any_field_has_changed(tax_before, tax_lines):
+                return 'reapply_tax_lines'
             # Nada del calculo en moneda de la compañía cambió -- pero si la
             # fecha que representa la tasa sí cambió (invoice_date en
             # facturas/notas, date en asientos -- ver
@@ -1565,14 +1767,23 @@ class AccountMove(models.Model):
                 continue
 
             blv, tlv = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_mode)
-            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=False)
+            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(
+                round_from_tax_lines=round_mode == 'reapply_tax_lines'
+            )
             AccountTax._add_accounting_data_in_base_lines_tax_details(blv, move.company_id, include_caba_tags=move.always_tax_exigible)
             AccountTax._add_accounting_data_in_base_lines_tax_details(flv, move.company_id, include_caba_tags=move.always_tax_exigible)
             tax_results = AccountTax._prepare_tax_lines(blv, move.company_id, tax_lines=tlv)
             foreign_tax_results = AccountTax._prepare_tax_lines(flv, move.company_id, tax_lines=ftlv)
 
             # ── Fix multi-currency rounding ──────────────────────────
-            if move.is_invoice(include_receipts=True) and move.currency_id != move.company_id.currency_id:
+            if (
+                round_mode != 'reapply_tax_lines'
+                and move.is_invoice(include_receipts=True)
+                and (
+                    move.currency_id != move.company_id.currency_id
+                    or any(l._price_included_split() for l in move.line_ids)
+                )
+            ):
                 rate = move.invoice_currency_rate
                 if rate:
                     cc = move.company_id.currency_id
@@ -1656,6 +1867,20 @@ class AccountMove(models.Model):
                             return value
                         return model.browse(value) if value else model
 
+                    def _price_included_tax(record_id, tax, factor):
+                        if tax.amount_type != 'percent' or not tax.price_include or tax.include_base_amount:
+                            return None
+                        line = self.env['account.move.line'].browse(record_id)
+                        split = line._price_included_split()
+                        if split is None:
+                            return None
+                        base_doc, base_vef, included_doc, included_vef = split
+                        share = tax.amount * factor / sum(line.tax_ids.mapped('amount'))
+                        return (
+                            cc.round((included_vef - base_vef) * share),
+                            move.currency_id.round((included_doc - base_doc) * share),
+                        )
+
                     def _per_line_tax_sums(tax, group_tax, factor):
                         # Fiscal-machine method: round the tax of EACH
                         # product line individually (VEF and document
@@ -1680,6 +1905,9 @@ class AccountMove(models.Model):
                         for record_id, eff_balance, eff_doc in _effective_entries(tax, group_tax):
                             line_vef = cc.round(eff_balance * (tax.amount / 100.0) * factor)
                             line_doc = move.currency_id.round(eff_doc * (tax.amount / 100.0) * factor)
+                            included_tax = _price_included_tax(record_id, tax, factor)
+                            if included_tax is not None:
+                                line_vef, line_doc = included_tax
                             vef_total += line_vef
                             doc_total += line_doc
                             per_line_amounts.append((record_id, line_vef, line_doc))
@@ -1719,7 +1947,10 @@ class AccountMove(models.Model):
                             return
                         group_tax = _get_recordset(Tax, group_tax_value)
                         factor = rep_line.factor_percent / 100.0
-                        if move.company_id.tax_calculation_rounding_method == 'round_per_line':
+                        if (
+                            move.company_id.tax_calculation_rounding_method == 'round_per_line'
+                            or (tax.price_include and not tax.include_base_amount)
+                        ):
                             new_balance, new_amount_currency = _per_line_tax_sums(tax, group_tax, factor)
                         else:
                             new_balance, new_amount_currency = _grouped_tax_sums(tax, group_tax, factor)
@@ -1810,19 +2041,22 @@ class AccountMove(models.Model):
     def _sync_dynamic_lines(self, container):
         with super()._sync_dynamic_lines(container):
             yield
-        self._distribute_final_real_portion(container['records'])
-        self._distribute_foreign_pt_residual(container['records'])
-       
+        records = container['records']
+        in_progress = self.env.cr.cache.setdefault('_dynamic_lines_in_progress', set())
+        pending = records.filtered(lambda m: m.id not in in_progress)
+        if not pending:
+            return
+        in_progress.update(pending.ids)
+        try:
+            self._distribute_final_real_portion(pending)
+            self._distribute_foreign_pt_residual(pending)
+        finally:
+            in_progress.difference_update(pending.ids)
 
     def _distribute_foreign_pt_residual(self, moves):
-        """Distributes foreign_debit/foreign_credit across payment term lines
-        proportionally to the native balance, forcing the total sum
-        of foreign_debit = total sum of foreign_credit of the entry.
-
-        Runs at the end of _sync_dynamic_lines (initial distribution)
-        and also from the write hook of AccountMoveLine when the real
-        portion adjusts the native balances of PT lines.
-        """
+        """Distributes foreign_debit/foreign_credit across payment term
+        lines proportionally to the native balance, so total
+        foreign_debit = total foreign_credit for the entry."""
         for move in moves:
             if move.state != 'draft':
                 continue
