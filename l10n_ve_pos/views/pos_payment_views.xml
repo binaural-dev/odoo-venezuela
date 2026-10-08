@@ -7,7 +7,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='pos_order_id']" position="after">
                 <field name="foreign_currency_id" column_invisible="True"/>
-                <field name="foreign_rate" optional="hide" />
+                <field name="foreign_rate" optional="hide" digits="[16, 15]" />
                 <field 
                     name="foreign_amount" 
                     sum="Foreign Amount total" 
@@ -30,7 +30,7 @@
         <field name="arch" type="xml">
             <xpath expr="//field[@name='pos_order_id']" position="after">
                 <field name="foreign_currency_id" invisible="1"/>
-                <field name="foreign_rate"/>
+                <field name="foreign_rate" digits="[16, 15]"/>
                 <field 
                     name="foreign_amount" 
                     widget="monetary" 
