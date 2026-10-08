@@ -283,287 +283,44 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         return purchase_book_lines
 
     def _determinate_resume_books(self, moves, tax_type=None):
-        resume_lines = []
+        """Devuelve [base facturas, impuesto facturas, base NC, impuesto NC].
 
-        def check_future_dates(move):
+        `_determinate_amount_taxeds` se calcula una sola vez por movimiento:
+        antes se recalculaba cuatro veces por cada fila del resumen, lo que en
+        compañías con alto volumen (POS) hacía que la descarga del libro
+        superara el tiempo límite del worker (HTTP 503).
+        """
+        resume_lines = [0.0, 0.0, 0.0, 0.0]
+        if tax_type not in (
+            "exempt_aliquot",
+            "general_aliquot",
+            "reduced_aliquot",
+            "extend_aliquot",
+            "zero_aliquot_international",
+            "general_aliquot_international",
+            "extend_aliquot_international",
+        ):
+            return resume_lines
+
+        base_key = f"tax_base_{tax_type}"
+        amount_key = f"amount_{tax_type}"
+        is_international = tax_type.endswith("_international")
+
+        for move in moves:
             if move.date < self.date_from or move.date > self.date_to:
-                return False
-            return True
+                continue
+            if not is_international and move.journal_id.is_purchase_international:
+                continue
 
-        def filter_credit_notes(move):
-            types = ["out_refund", "in_refund"]
-            return move.move_type in types
+            taxes = self._determinate_amount_taxeds(move)
+            if move.move_type in ("out_refund", "in_refund"):
+                resume_lines[2] += taxes[base_key] * -1
+                resume_lines[3] += taxes[amount_key] * -1
+            else:
+                resume_lines[0] += taxes[base_key]
+                resume_lines[1] += taxes[amount_key]
 
-        moves = moves.filtered(check_future_dates)
-        credit_notes = moves.filtered(filter_credit_notes)
-        moves -= credit_notes
-
-        if tax_type == "exempt_aliquot":
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["tax_base_exempt_aliquot"]
-                        for move in moves
-                        if not move.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["amount_exempt_aliquot"]
-                        for move in moves
-                        if not move.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["tax_base_exempt_aliquot"] * -1
-                        for note in credit_notes
-                        if not note.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["amount_exempt_aliquot"] * -1
-                        for note in credit_notes
-                        if not note.journal_id.is_purchase_international
-                    ]
-                )
-            )
-
-            return resume_lines
-        if tax_type == "general_aliquot":
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["tax_base_general_aliquot"]
-                        for move in moves
-                        if not move.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["amount_general_aliquot"]
-                        for move in moves
-                        if not move.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["tax_base_general_aliquot"] * -1
-                        for note in credit_notes
-                        if not note.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["amount_general_aliquot"] * -1
-                        for note in credit_notes
-                        if not note.journal_id.is_purchase_international
-                    ]
-                )
-            )
-
-            return resume_lines
-        if tax_type == "reduced_aliquot":
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["tax_base_reduced_aliquot"]
-                        for move in moves
-                        if not move.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["amount_reduced_aliquot"]
-                        for move in moves
-                        if not move.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["tax_base_reduced_aliquot"] * -1
-                        for note in credit_notes
-                        if not note.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["amount_reduced_aliquot"] * -1
-                        for note in credit_notes
-                        if not note.journal_id.is_purchase_international
-                    ]
-                )
-            )
-
-            return resume_lines
-        if tax_type == "extend_aliquot":
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["tax_base_extend_aliquot"]
-                        for move in moves
-                        if not move.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["amount_extend_aliquot"]
-                        for move in moves
-                        if not move.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["tax_base_extend_aliquot"] * -1
-                        for note in credit_notes
-                        if not note.journal_id.is_purchase_international
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["amount_extend_aliquot"] * -1
-                        for note in credit_notes
-                        if not note.journal_id.is_purchase_international
-                    ]
-                )
-            )
-
-            return resume_lines
-        
-        if tax_type == "zero_aliquot_international":
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["tax_base_zero_aliquot_international"]
-                        for move in moves
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["amount_zero_aliquot_international"]
-                        for move in moves
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["tax_base_zero_aliquot_international"] * -1
-                        for note in credit_notes
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["amount_zero_aliquot_international"] * -1
-                        for note in credit_notes
-                    ]
-                )
-            )
-
-            return resume_lines
-
-        if tax_type == "general_aliquot_international":
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["tax_base_general_aliquot_international"]
-                        for move in moves
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["amount_general_aliquot_international"]
-                        for move in moves
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["tax_base_general_aliquot_international"] * -1
-                        for note in credit_notes
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["amount_general_aliquot_international"] * -1
-                        for note in credit_notes
-                    ]
-                )
-            )
-
-            return resume_lines
-
-        if tax_type == "extend_aliquot_international":
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["tax_base_extend_aliquot_international"]
-                        for move in moves
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(move)["amount_extend_aliquot_international"]
-                        for move in moves
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["tax_base_extend_aliquot_international"] * -1
-                        for note in credit_notes
-                    ]
-                )
-            )
-            resume_lines.append(
-                sum(
-                    [
-                        self._determinate_amount_taxeds(note)["amount_extend_aliquot_international"] * -1
-                        for note in credit_notes
-                    ]
-                )
-            )
-
-            return resume_lines
-
-        return [0.0, 0.0, 0.0, 0.0]
+        return resume_lines
 
     def sale_book_fields(self):
         sale_groups = self._get_sale_book_field_groups()
@@ -1633,78 +1390,56 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             else self._resume_sale_book_fields(moves)
         )
 
+        # xlsxwriter no calcula las fórmulas: guarda 0 como resultado en caché.
+        # Los visores que no recalculan al abrir (LibreOffice con su
+        # configuración por defecto, vistas previas de correo/Drive, móviles)
+        # mostraban "Total Neto" y los totales del resumen en 0,00. Por eso
+        # cada fórmula se escribe junto con su valor ya calculado en Python.
+        number_format = cell_formats.get("number")
+        first_row = index_to_start + 4
+        written_rows = []
+
         for idx, resume in enumerate(resume_columns):
-            row_resume = (index_to_start + 4) + idx
+            row_resume = first_row + idx
 
             worksheet.write(row_resume, 0, idx + 1)
             worksheet.write(row_resume, 1, resume.get("name"))
 
-            total_line = 0
-            for idx_line, line in enumerate(resume.get("values")):
-                total_line = idx_line + 2
-                worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
+            values = [value or 0.0 for value in resume.get("values")]
+            for idx_line, value in enumerate(values):
+                worksheet.write(row_resume, idx_line + 2, value, number_format)
 
-            if not is_purchase:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
-
+            if resume.get("total"):
+                values = [sum(column) for column in zip(*written_rows)] or [0.0] * 4
+                for col_index, value in enumerate(values, start=2):
+                    col = utility.xl_col_to_name(col_index)
                     worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
+                        row_resume,
+                        col_index,
+                        f"=SUM({col}{first_row + 1}:{col}{row_resume})",
+                        number_format,
+                        value,
                     )
 
-            else:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
+            written_rows.append(values)
 
-                    worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
-
-            start_col_formula = 6
-                
-            column_bi_range = (
-                f"C{row_resume + 1}:{utility.xl_col_to_name(total_line - 1)}{row_resume + 1}"
-            )
-            column_df_range = (
-                f"D{row_resume + 1}:{utility.xl_col_to_name(total_line)}{row_resume + 1}"
-            )
-            imposed_formula = (
-                f"=SUMPRODUCT(--({column_bi_range}), --(MOD(COLUMN({column_bi_range}), 2)=1))"
-            )
-            debit_formula = (
-                f"=SUMPRODUCT(--({column_df_range}), --(MOD(COLUMN({column_df_range}), 2)=0))"
-            )
-
+            # Total Neto = Facturas/Notas de Débito + Notas de Crédito
+            # (las notas de crédito ya vienen en negativo).
+            excel_row = row_resume + 1
             worksheet.write_formula(
-                row_resume, start_col_formula, imposed_formula, cell_formats.get("number")
+                row_resume,
+                6,
+                f"=C{excel_row}+E{excel_row}",
+                number_format,
+                values[0] + values[2],
             )
             worksheet.write_formula(
-                row_resume, start_col_formula + 1, debit_formula, cell_formats.get("number")
-                    )
+                row_resume,
+                7,
+                f"=D{excel_row}+F{excel_row}",
+                number_format,
+                values[1] + values[3],
+            )
 
     def _get_sale_book_field_groups(self):
         company = self.company_id

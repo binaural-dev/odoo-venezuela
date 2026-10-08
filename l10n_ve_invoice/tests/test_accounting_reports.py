@@ -1045,6 +1045,58 @@ class TestAccountingReports(TransactionCase):
 
                 workbook.close()
 
+    def test_generate_book_resume_writes_total_net_values(self):
+        """Total Neto y la fila total llevan su valor calculado, no 0 en caché."""
+        move = self._create_move(
+            name="BILL/2023/NET",
+            move_type="in_invoice",
+            accounting_date=date(2023, 1, 10),
+        )
+        self.wizard.write({"report": "sale"})
+        workbook = xlsxwriter.Workbook(BytesIO(), {"in_memory": True})
+        worksheet = workbook.add_worksheet()
+        cell_formats = {"number": workbook.add_format({"num_format": "#,##0.00"})}
+        resume_lines = [
+            {"name": "L1", "values": [983148677.63, 157303788.42, -765418977.25, -122467036.36]},
+            {"name": "L2", "values": [100.0, 16.0, -40.0, -6.4]},
+            {"name": "TOTAL", "values": [0.0, 0.0, 0.0, 0.0], "total": True},
+        ]
+
+        with patch.object(type(self.wizard), "search_moves", return_value=move), patch.object(
+            type(self.wizard), "_resume_sale_book_fields", return_value=resume_lines
+        ):
+            self.wizard.generate_book_resume(worksheet, 10, workbook.add_format(), cell_formats)
+
+        first_row = 14
+        net_row = worksheet.table[first_row]
+        self.assertEqual(net_row[6].formula, "C15+E15")
+        self.assertAlmostEqual(net_row[6].value, 217729700.38, places=2)
+        self.assertAlmostEqual(net_row[7].value, 34836752.06, places=2)
+
+        total_row = worksheet.table[first_row + 2]
+        self.assertEqual(total_row[2].formula, "SUM(C15:C16)")
+        self.assertAlmostEqual(total_row[2].value, 983148777.63, places=2)
+        self.assertAlmostEqual(total_row[4].value, -765419017.25, places=2)
+        self.assertAlmostEqual(total_row[6].value, 217729760.38, places=2)
+        self.assertAlmostEqual(total_row[7].value, 34836761.66, places=2)
+        workbook.close()
+
+    def test_determinate_resume_books_computes_taxes_once_per_move(self):
+        move = self._create_move(
+            name="BILL/2023/ONCE",
+            move_type="in_invoice",
+            accounting_date=date(2023, 1, 10),
+        )
+        taxes = {"tax_base_general_aliquot": 100.0, "amount_general_aliquot": 16.0}
+
+        with patch.object(
+            type(self.wizard), "_determinate_amount_taxeds", return_value=taxes
+        ) as amount_mock:
+            result = self.wizard._determinate_resume_books(move, "general_aliquot")
+
+        self.assertEqual(result, [100.0, 16.0, 0.0, 0.0])
+        self.assertEqual(amount_mock.call_count, 1)
+
     def test_generate_sales_book_returns_xlsx(self):
         self.wizard.write({"report": "sale"})
         sale_lines = [
