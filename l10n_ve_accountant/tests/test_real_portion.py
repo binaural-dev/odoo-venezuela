@@ -4,7 +4,6 @@ from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
 from odoo.tools import float_round
-from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -2555,47 +2554,14 @@ class TestRealPortion(TransactionCase):
                 msg=f"Linea de base {price}: tax_amount = {totals['tax_amount']}, esperado {expected}"
             )
 
-    def test_34i_negative_line_blocked_by_existing_invoice_constraint(self):
-        """company_currency_line_totals deriva el signo de price_subtotal
-        (no un abs(balance) ciego) precisamente para el caso de una linea
-        con price_subtotal <= 0 dentro de una factura -- PERO
-        l10n_ve_invoice._check_price_in_zero (account_move.py) ya bloquea
-        exactamente ese escenario para cualquier factura normal (salvo
-        lineas de descuento reconocidas via _get_discount_lines(), fuera
-        de alcance aqui). Este test documenta que el caso que la deriva de
-        signo protege no es alcanzable por el flujo normal de facturacion
-        -- si algun dia esa regla de negocio se relaja, el signo ya esta
-        cubierto del lado de company_currency_line_totals.
-        """
-        self._set_usd_rate(50.0)
-
-        with self.assertRaises(UserError):
-            self.env["account.move"].with_context(
-                check_move_validity=False,
-            ).create({
-                "move_type": "out_invoice",
-                "partner_id": self.partner.id,
-                "journal_id": self.sale_journal.id,
-                "currency_id": self.currency_usd.id,
-                "date": fields.Date.today(),
-                "invoice_date": fields.Date.today(),
-                "invoice_line_ids": [
-                    Command.create({
-                        "product_id": self.product.id,
-                        "quantity": 1.0,
-                        "price_unit": 100.0,
-                        "account_id": self.acc_inc.id,
-                        "tax_ids": [(6, 0, [self.tax_16.id])],
-                    }),
-                    Command.create({
-                        "product_id": self.product.id,
-                        "quantity": 1.0,
-                        "price_unit": -20.0,
-                        "account_id": self.acc_inc.id,
-                        "tax_ids": [(6, 0, [self.tax_16.id])],
-                    }),
-                ],
-            })
+    # `test_34i_negative_line_blocked_by_existing_invoice_constraint` fue
+    # relocado a `l10n_ve_invoice/tests/test_account_move.py` (PR
+    # #1344/#1417): su propio docstring documentaba que solo verificaba
+    # `l10n_ve_invoice._check_price_in_zero`, sin ejercitar nada de
+    # `company_currency_line_totals` (la derivacion de signo mencionada
+    # nunca se afirmaba). Misma causa que `test_31` en
+    # `test_multi_currency_rounding.py`: `l10n_ve_invoice` no esta
+    # garantizado instalado al testear solo `l10n_ve_accountant`.
 
     def test_34j_company_currency_line_totals_group_tax_not_dropped(self):
         """Con un impuesto amount_type='group' (IVA 16% + IGTF 3%, ambos

@@ -8,6 +8,9 @@
                 <field name="event_date"/>
                 <field name="email"/>
                 <field name="event_type"/>
+                <field name="bounce_type" widget="badge"
+                       decoration-danger="bounce_type == 'hard'"
+                       decoration-warning="bounce_type == 'soft'"/>
                 <field name="reason" optional="hide"/>
                 <field name="active" column_invisible="True"/>
             </list>
@@ -25,6 +28,7 @@
                         <field name="email"/>
                         <field name="event_date"/>
                         <field name="event_type"/>
+                        <field name="bounce_type"/>
                         <field name="active" invisible="1"/>
                     </group>
                     <field name="reason"/>
@@ -42,10 +46,14 @@
                 <filter name="filter_bounce" string="Bounces" domain="[('event_type', '=', 'bounce')]"/>
                 <filter name="filter_smtp_error" string="SMTP Refusals" domain="[('event_type', '=', 'smtp_error')]"/>
                 <separator/>
+                <filter name="filter_hard" string="Hard (Permanent)" domain="[('bounce_type', '=', 'hard')]"/>
+                <filter name="filter_soft" string="Soft (Temporary)" domain="[('bounce_type', '=', 'soft')]"/>
+                <separator/>
                 <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
                 <group>
                     <filter name="group_by_email" string="Email" context="{'group_by': 'email'}"/>
                     <filter name="group_by_type" string="Type" context="{'group_by': 'event_type'}"/>
+                    <filter name="group_by_bounce_type" string="Severity" context="{'group_by': 'bounce_type'}"/>
                 </group>
             </search>
         </field>
