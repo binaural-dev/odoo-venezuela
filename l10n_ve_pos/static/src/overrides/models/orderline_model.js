@@ -34,11 +34,19 @@ patch(Orderline.prototype, {
       rate = this.order.init_conversion_rate;
     }
 
-    let decimal_places =
-      this.pos.currency.name === "VEF"
-        ? this.pos.currency.decimal_places
-        : this.pos.foreign_currency.decimal_places;
-
+    return this._normalize_rate(rate);
+  },
+  _normalize_rate(rate) {
+    // Con moneda base en Bolívares la conversión Bs -> divisa usa la tasa inversa
+    // (ej. 0.00114). Las líneas cargadas desde el backend (borradores retomados,
+    // devoluciones) traen la tasa de la orden en Bs/divisa (ej. 874.73), lo que
+    // hacía que el precio alterno se multiplicara en lugar de dividirse.
+    if (
+      rate > 1 &&
+      (this.pos.currency.name === "VEF" || this.pos.currency.name === "VES")
+    ) {
+      return 1 / rate;
+    }
     return rate;
   },
   get currency_rate_display() {
