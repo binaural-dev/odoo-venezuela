@@ -4,7 +4,11 @@ from odoo import _, api, fields, models
 
 _logger = logging.getLogger(__name__)
 
-# Reasons that `stock.picking._compute_allowed_reason_ids` allows for internal transfers.
+# Codigos de los motivos que `stock.picking._compute_allowed_reason_ids` permite
+# en traslados internos (rama "Internal"). Si ese compute agrega o quita un
+# motivo interno, actualizar esta tupla: la usan el dominio del campo, el de
+# Ajustes y `_get_default_internal_transfer_reason`, y
+# test_field_domain_matches_allowed_reasons_for_internal falla si divergen.
 INTERNAL_TRANSFER_REASON_CODES = ("consignment", "transfer", "other_causes")
 
 

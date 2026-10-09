@@ -64,12 +64,38 @@ class TestDispatchNote(StockAccountTestCommon):
         picking = order.picking_ids
         self.assertEqual(picking.picking_type_code, "outgoing")
         invoice = order._create_invoices()
-        invoice.action_post()
-        self.assertTrue(invoice.name)
+        # Numero explicito: en el entorno de pruebas la factura publicada
+        # puede quedar como "/" (sin serie), que la nota no debe mostrar.
+        invoice.name = "INV/TEST/73452-1"
+        # Sin este contexto l10n_ve_accountant devuelve el asistente de
+        # confirmacion y la factura queda en borrador.
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(invoice.name, "INV/TEST/73452-1")
         self.assertEqual(picking.dispatch_note_invoice_names, invoice.name)
         html = self._render(picking)
         self.assertIn("Despacho de Factura", html)
         self.assertIn(invoice.name, html)
+
+    def test_draft_invoice_and_refund_are_not_listed(self):
+        order = self.env["sale.order"].create({
+            "partner_id": self.customer.id,
+            "order_line": [(0, 0, {"product_id": self.product.id, "product_uom_qty": 2})],
+        })
+        order.action_confirm()
+        picking = order.picking_ids
+        draft = order._create_invoices()
+        self.assertEqual(draft.state, "draft")
+        self.assertFalse(picking.dispatch_note_invoice_names)
+        draft.name = "INV/TEST/73452-2"
+        draft.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(draft.state, "posted")
+        refund = draft._reverse_moves()
+        refund.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(refund.state, "posted")
+        self.assertEqual(refund.move_type, "out_refund")
+        self.assertEqual(picking.dispatch_note_invoice_names, draft.name)
+        self.assertNotIn(refund.name, picking.dispatch_note_invoice_names)
 
     def test_outgoing_picking_without_sale_has_no_invoice(self):
         picking = self._internal_picking()

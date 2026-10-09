@@ -3,9 +3,10 @@
 
     <!--
         Full copy of the core point_of_sale.PaymentScreenPaymentLines template.
-        The ONLY difference is the PriceFormatter in both branches (selected
-        and not-selected): we branch on line.payment_method_id?.is_foreign_currency
-        to render the foreign amount when the payment method is foreign.
+        Differences: the PriceFormatter in both branches (selected and
+        not-selected): we branch on line.payment_method_id?.is_foreign_currency
+        to render the foreign amount when the payment method is foreign; and
+        the layout of .payment-infos (H10, below).
 
         We had to do this instead of `t-inherit-mode="extension"` + xpath
         because the core template has TWO PriceFormatter occurrences and
@@ -13,6 +14,18 @@
         unreliably (sometimes replaces one, sometimes both, depending on
         template processing order). See engram:
           discovery/odoo-19/qweb-inherit-multi-match-trap
+
+        H10 (TA 83148): two amounts ("$ 70,00 / 56.233,80 Bs.F") do not fit
+        next to the method name in the payment column, and the core's
+        `text-truncate` on .payment-infos cut them with "…". Here the name
+        truncates and the amounts never do: .payment-infos wraps, so the
+        amounts drop to a second row (right-aligned) when they do not fit, and
+        each amount is unbreakable (the second one an inline-block) so a very
+        long pair splits at the " / " instead of being clipped. The space before
+        the "/" is a margin (ms-1): a leading space inside an inline-block is
+        collapsed away.
+        binaural_pos_multicurrency (integra) renders its own pairs here with
+        the same classes.
 
         KEEP IN SYNC with: point_of_sale/static/src/app/screens/payment_screen/
         payment_lines/payment_lines.xml — when upgrading Odoo, diff against
@@ -25,13 +38,13 @@
                 <t t-if="line.isSelected()">
                     <div t-attf-class="paymentline selected d-flex align-items-center rounded-3"
                         t-att-class="selectedLineClass(line)">
-                        <div class="payment-infos d-flex align-items-center justify-content-between flex-grow-1 px-3 py-3 text-truncate cursor-pointer fs-2" role="button" t-on-click="() => this.selectLine(line)">
-                             <span class="payment-name"><t t-esc="line.payment_method_id.name"/></span>
-                             <div class="payment-amount px-3">
+                        <div class="payment-infos d-flex flex-wrap align-items-center justify-content-between column-gap-3 flex-grow-1 overflow-hidden px-3 py-3 cursor-pointer fs-2" role="button" t-on-click="() => this.selectLine(line)">
+                             <span class="payment-name text-truncate"><t t-esc="line.payment_method_id.name"/></span>
+                             <div class="payment-amount ms-auto text-end">
                                 <!-- >>> BINAURAL: foreign currency display override <<< -->
                                 <t t-if="line.payment_method_id?.is_foreign_currency">
-                                    <PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" />
-                                    <span class="text-muted fs-3"> / <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
+                                    <span class="text-nowrap"><PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" /></span>
+                                    <span class="d-inline-block text-nowrap text-muted fs-3 ms-1">/ <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
                                 </t>
                                 <t t-else="">
                                     <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" />
@@ -155,13 +168,13 @@
                 <t t-else="">
                     <div class="paymentline d-flex align-items-center bg-view border rounded-3"
                         t-att-class="unselectedLineClass(line)">
-                         <div class="payment-infos d-flex align-items-center justify-content-between flex-grow-1 px-3 py-3 text-truncate cursor-pointer fs-2" role="button" t-on-click="() => this.selectLine(line)">
-                             <t t-esc="line.payment_method_id?.name" />
-                             <div class="payment-amount px-3">
+                         <div class="payment-infos d-flex flex-wrap align-items-center justify-content-between column-gap-3 flex-grow-1 overflow-hidden px-3 py-3 cursor-pointer fs-2" role="button" t-on-click="() => this.selectLine(line)">
+                             <span class="payment-name text-truncate"><t t-esc="line.payment_method_id?.name" /></span>
+                             <div class="payment-amount ms-auto text-end">
                                 <!-- >>> BINAURAL: foreign currency display override <<< -->
                                 <t t-if="line.payment_method_id?.is_foreign_currency">
-                                    <PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" />
-                                    <span class="text-muted fs-3"> / <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
+                                    <span class="text-nowrap"><PriceFormatter price="env.utils.formatForeignCurrency(line.get_foreign_amount())" /></span>
+                                    <span class="d-inline-block text-nowrap text-muted fs-3 ms-1">/ <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" /></span>
                                 </t>
                                 <t t-else="">
                                     <PriceFormatter price="env.utils.formatCurrency(line.getAmount())" />

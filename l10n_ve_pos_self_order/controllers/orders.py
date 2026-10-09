@@ -42,6 +42,9 @@ _PHONE_OPERATOR_CODES = ("0412", "0414", "0416", "0422", "0424", "0426")
 # Kiosko compone y envía este único string; el servidor revalida el string
 # completo en vez de confiar en el split que hizo el cliente.
 _PHONE_RE = re.compile(r"^(%s)-\d{7}$" % "|".join(_PHONE_OPERATOR_CODES))
+# Tope de los textos libres que llegan por la ruta pública de creación
+# (``name``/``street``): evita guardar valores enormes en ``res.partner``.
+_MAX_TEXT_LENGTH = 255
 
 
 def _ve_within_rate_limit(access_token):
@@ -116,30 +119,43 @@ def _ve_address_format_error(pos_config, state_id, municipality_id, street):
 
     La dirección solo es obligatoria cuando
     ``pos.config.self_ordering_require_address`` está activo (ver
-    ``models/pos_config.py``); con el flag apagado cualquier valor —incluso
-    vacío— es válido. Aplica solo a la CREACIÓN de un contacto nuevo desde el
-    Kiosko (``identify_create``), no a clientes ya existentes.
+    ``models/pos_config.py``): los mensajes de "campo faltante" dependen de ese
+    flag. La integridad de lo que SÍ llega se valida siempre, con el flag
+    activo o no, porque la ruta es pública y el cliente puede mandar cualquier
+    id: el estado debe ser de Venezuela y el municipio debe pertenecer a ese
+    estado. Aplica solo a la CREACIÓN de un contacto nuevo desde el Kiosko
+    (``identify_create``), no a clientes ya existentes.
     """
-    if not pos_config.self_ordering_require_address:
+    if pos_config.self_ordering_require_address:
+        if not state_id:
+            return _("Select the state.")
+        if not municipality_id:
+            return _("Select the municipality.")
+        if not (street or "").strip():
+            return _("Enter the street address.")
+    if not state_id and not municipality_id:
         return None
+    # Un municipio sin estado no se puede cruzar: el Kiosko nunca lo manda
+    # (al cambiar de estado limpia el municipio).
     if not state_id:
         return _("Select the state.")
+    env = pos_config.env
+    state = env["res.country.state"].sudo().browse(_ve_safe_int(state_id))
+    if not state.id or not state.exists() or state.country_id.code != "VE":
+        return _("Select a valid state and municipality.")
     if not municipality_id:
-        return _("Select the municipality.")
-    if not (street or "").strip():
-        return _("Enter the street address.")
-    state_id = _ve_safe_int(state_id)
-    municipality_id = _ve_safe_int(municipality_id)
-    if not state_id or not municipality_id:
+        return None
+    municipality = (
+        env["res.country.municipality"].sudo().browse(_ve_safe_int(municipality_id))
+    )
+    if not municipality.id or not municipality.exists():
         return _("Select a valid state and municipality.")
     # Cross-check: don't trust the client's pairing blindly — a municipality
     # (res.country.municipality) belongs to one or more states via its own
     # state_id (Many2many, l10n_ve_location).
-    municipality = pos_config.env["res.country.municipality"].sudo().browse(municipality_id)
-    if not municipality.exists() or state_id not in municipality.state_id.ids:
+    if state not in municipality.state_id:
         return _("The municipality does not belong to the selected state.")
     return None
-
 
 class L10nVePosSelfOrderController(PosSelfOrderController):
     """Kiosk customer identification by cédula/RIF for the Venezuelan Self
@@ -242,6 +258,15 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
             return {"res.partner": [], "error": phone_error}
         phone = phone.strip()
 
+        if len(name or "") > _MAX_TEXT_LENGTH or len(street or "") > _MAX_TEXT_LENGTH:
+            return {
+                "res.partner": [],
+                "error": _(
+                    "The name and the address can have at most %s characters.",
+                    _MAX_TEXT_LENGTH,
+                ),
+            }
+
         # Dedup: si la cédula ya existe, NO crear un duplicado. Devolver el
         # existente y —solo si le falta— rellenarle el teléfono (fill-only,
         # nunca sobrescribe uno que ya tenía).
@@ -278,12 +303,17 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         vals.update(address_defaults)
         # The address the customer just typed on the Kiosk overrides the
         # company fallback above — it is more specific than the box's default.
-        # Address is optional unless self_ordering_require_address (already
-        # enforced above); _ve_safe_int guards against a malformed id when it
-        # is not required, instead of raising.
+        # The ids were already validated above (VE state, municipality of
+        # that state) whether the address is required or not.
         safe_state_id = _ve_safe_int(state_id)
         safe_municipality_id = _ve_safe_int(municipality_id)
         if safe_state_id:
+            # The company's municipality/city/parish/zip belong to the
+            # company's state: keeping them next to the customer's state would
+            # persist an inconsistent address (e.g. state chosen without a
+            # municipality while the flag is off).
+            for field in ("municipality", "city_id", "parish_id", "zip"):
+                vals.pop(field, None)
             vals["state_id"] = safe_state_id
         if safe_municipality_id:
             vals["municipality"] = safe_municipality_id

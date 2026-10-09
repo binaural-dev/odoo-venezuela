@@ -13,7 +13,9 @@ rate computed at move-creation time.
 
 - GIVEN a POS payment with `include_igtf = true` and `foreign_rate = 250`
 - WHEN `_create_payment_moves` creates the payment's `account.move`
-- THEN the move has `foreign_rate = 250`, `foreign_inverse_rate = 250`, and
+- THEN the move has `foreign_inverse_rate = 250` (the payment's multiplier),
+  `foreign_rate = 1 / 250` (its inverse, the pair `l10n_ve_rate` `compute_rate` gives every move,
+  see `l10n_ve_pos` change `l10n-ve-pos-move-rate-convention`), and
   `manually_set_rate = True`
 - AND a later `write()` on the move (e.g. reconciliation) does not trigger
   `_compute_rate_for_documents` to replace that rate with the current day's

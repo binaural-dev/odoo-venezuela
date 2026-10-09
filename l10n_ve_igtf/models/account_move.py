@@ -424,10 +424,13 @@ class AccountMove(models.Model):
                  
             igtf_amount = abs(payment.calculate_igtf_for_payment(self, applied_payment_curr,  payment.currency_id ,conversion_date))
 
-        #raise UserError(igtf_amount)
         if is_igtf_journal:
             igtf_in_invoice_curr = payment.currency_id._convert(igtf_amount, self.currency_id, self.company_id, conversion_date)
-            if (base_amount_applied + igtf_in_invoice_curr) < advance_amount: ## include igtf in base
+            # Strict `<` never fires on a full reapply: both amounts come from
+            # rounded VEF<->USD conversions, so they end up EQUAL, not "less
+            # than" -- IGTF then got carved out of the CxC line instead of the
+            # advance's leftover. compare_amounts() uses rounding tolerance.
+            if self.currency_id.compare_amounts(base_amount_applied + igtf_in_invoice_curr, advance_amount) <= 0: ## include igtf in base
                 base_amount_applied = self.currency_id.round(base_amount_applied + igtf_in_invoice_curr)
                 if advance_amount > 0:
                     applied_payment_curr = payment.currency_id.round(
@@ -655,6 +658,18 @@ class AccountMove(models.Model):
 
         rp_lines_to_reconcile.reconcile()
 
+        # Force-recomputes `payment_state` on the invoice -- this
+        # reconciliation is built by hand over plain `account.move`
+        # entries (never a real `account.payment`), and that path can
+        # leave `payment_state` stuck on whatever value was stored right
+        # before this cross settled (ej. still 'partial' after
+        # `amount_residual` already reached 0), instead of picking up
+        # core's own recompute. Same lazy pattern as
+        # `account.partial.reconcile.unlink()` (`l10n_ve_accountant`).
+        self.env.add_to_compute(
+            self.env['account.move']._fields['payment_state'], self
+        )
+
         return True
     
     def js_assign_outstanding_line(self, line_id):
@@ -804,10 +819,14 @@ class AccountMove(models.Model):
 
                         factura_line = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
 
+                        # factura_line can hold more than one line (an invoice with
+                        # several due dates leaves several entries on the receivable/
+                        # payable account), so .id blows up with "Expected singleton".
+                        # With .ids and 'in' the single-line case behaves the same.
                         partial = self.env['account.partial.reconcile'].search([
                             '|',
-                            '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', partner_line.ids),
-                            '&', ('debit_move_id', '=', partner_line.ids), ('credit_move_id', '=', factura_line.id)
+                            '&', ('debit_move_id', 'in', factura_line.ids), ('credit_move_id', 'in', partner_line.ids),
+                            '&', ('debit_move_id', 'in', partner_line.ids), ('credit_move_id', 'in', factura_line.ids)
                         ])
                         bank_amount = abs(bank_line[0].amount_currency)
                         bank_amount_balance = abs(bank_line[0].balance)
@@ -881,6 +900,17 @@ class AccountMove(models.Model):
                 rec.bi_igtf = total_bi_igtf
 
     def remove_igtf_from_account_move(self, partial_id):
+        """DISEÑO INTENCIONAL, no un bug: al desconciliar un pago con IGTF, esta
+        función borra la línea de IGTF, absorbe su monto en la línea de
+        CxC/CxP y reclasifica esa línea a la cuenta de anticipo
+        (`is_advance_payment=True`). No se puede "conservar" la línea de IGTF
+        tal cual porque todavía no se sabe contra qué factura ni a qué tasa
+        se va a reaplicar el anticipo -- el IGTF se recalcula desde cero
+        cuando eso ocurre (ver `l10n-ve-igtf-advance-reapply-rate-and-split`
+        openspec), ahora con la tasa real del cruce en vez de la tasa de
+        fecha de factura. Preservar la línea aquí rompería esa regeneración
+        y reintroduciría el IGTF con tasa vieja.
+        """
 
         partial_reconcile = self.env['account.partial.reconcile'].with_company(self.company_id).sudo().browse(partial_id).exists()
         

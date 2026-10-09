@@ -244,10 +244,18 @@ Las facturas publicadas con estado de pago `not_paid` o `partial` DEBEN (MUST) e
 
 Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una línea cuyo asiento es de anticipo: `is_advance_move`, con `origin_payment_advanced_payment_id`, o cuyo pago origen tiene `is_advance_payment`), el sistema DEBE (MUST) crear un asiento de cruce ("CRUCE DE ANTICIPO") en el diario `advance_payment_igtf_journal_id` de la compañía activa, con una línea en la cuenta de anticipo y su contrapartida en la cuenta por cobrar/pagar de la factura por el mínimo entre el residual de la factura y el anticipo disponible según el widget, fechado en la fecha de conversión del widget (o en la fecha del pago cuando el pago tiene `keep_alter_value_vef`), publicarlo y conciliarlo doblemente: las líneas de anticipo contra el pago original y las líneas por cobrar/pagar contra la factura (`_reconcile_move_with_payment_difference`). DEBE (MUST) agregar la línea "IGTF" solo cuando el diario del pago es IGTF, el partner aplica IGTF según `_check_igtf_apply_improved`, el diario de la factura no es de compra internacional y el IGTF calculado con `calculate_igtf_for_payment` es mayor que cero; en ese caso, si el anticipo disponible alcanza, la base aplicada se incrementa con el IGTF convertido a la moneda del documento.
 
+Como esta conciliación se arma a mano sobre `account.move` propios (nunca un `account.payment` real), `_reconcile_move_with_payment_difference` DEBE (MUST), justo después de conciliar las líneas por cobrar/pagar, forzar el recálculo perezoso (`env.add_to_compute`) de `payment_state` en la factura -- sin esto, `payment_state` puede quedar con el valor que tenía ANTES del cruce (ej. `partial` aunque `amount_residual` ya diera 0.0) en vez de recalcularse a `paid`, porque el flujo no pasa por el camino estándar de pagos que dispara ese recálculo de forma natural.
+
 #### Scenario: Aplicación de anticipo simple
 
 - **WHEN** se aplica un anticipo sin IGTF a una factura con saldo
 - **THEN** se crea y publica un asiento de cruce por el monto aplicado y la factura queda conciliada por esa porción
+
+#### Scenario: Cruce de anticipo que salda la factura actualiza payment_state
+
+- **GIVEN** una factura con residual pendiente
+- **WHEN** se aplica un anticipo que salda la factura por completo (`_reconcile_move_with_payment_difference`)
+- **THEN** `payment_state` de la factura queda en `paid`, no en el valor que tenía antes del cruce
 
 #### Scenario: Anticipo con IGTF
 
@@ -284,6 +292,40 @@ Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una l
 
 - **WHEN** se desaplica un pago en VEF cuyo asiento no proviene de un cruce de anticipo
 - **THEN** no se altera el asiento del pago y la conciliación se elimina por el flujo nativo
+
+#### Scenario: Desconciliar un cruce de anticipo actualiza payment_state
+
+- **GIVEN** una factura conciliada por completo (o parcialmente) contra un cruce de anticipo
+- **WHEN** se desconcilia ese cruce (`js_remove_outstanding_partial` / `cancel_advance_payment_transaction`, que delega en `account.partial.reconcile.unlink()`)
+- **THEN** `payment_state` de la factura vuelve a `not_paid`, no queda congelado en `paid`/`partial`
+
+### Requirement: Reaplicación de anticipo con IGTF cierra sin residuo
+
+Cuando se desconcilia un pago con IGTF sobre una factura y luego se reaplica el anticipo resultante sobre esa misma factura, el sistema DEBE (MUST) reconocer el asiento "CRUCE DE ANTICIPO" como un pago real al decidir la tasa de conciliación (no la tasa de la fecha de la factura), y DEBE (MUST) absorber el IGTF con el sobrante del anticipo en vez de recortarlo de la línea de cuentas por cobrar/pagar, sin importar si hay o no brecha de fecha entre la factura y el pago original.
+
+En consecuencia, la factura DEBE (MUST) cerrar en estado "pagada" con `amount_residual` en cero tras la reaplicación, sin generar un diferencial cambiario ni un residuo que no corresponda a una diferencia real de pago.
+
+Adicionalmente, un pago que liquida el TOTAL de una factura en una moneda distinta a la de la compañía NO DEBE (MUST NOT) generar un asiento de diferencial cambiario cuando la única causa es el redondeo de la moneda de pago a su propia precisión (no una pérdida/ganancia cambiaria real).
+
+#### Scenario: Reaplicar un anticipo con brecha de tasa entre factura y pago
+
+- **WHEN** una factura en VEF se paga en USD con una fecha de pago distinta a la fecha de factura, se desconcilia el pago y se reaplica el mismo anticipo sobre la misma factura
+- **THEN** la factura queda "pagada" con `amount_residual` en 0,00, sin el diferencial cambiario ficticio ni el residuo del tamaño del IGTF
+
+#### Scenario: Pago completo sin brecha de fecha
+
+- **WHEN** una factura en VEF se paga en su totalidad en USD, con o sin diferencia de tasa entre la fecha de la factura y la del pago
+- **THEN** no se genera ningún asiento de diferencial cambiario espurio, y la factura cierra pagada
+
+#### Scenario: Pago parcial, subpago o sobrepago genuinos
+
+- **WHEN** el monto pagado difiere del residual de la factura por una cantidad que NO es un artefacto de redondeo de centavos (un pago a mitad de camino, un subpago o un sobrepago deliberados)
+- **THEN** la factura refleja ese estado real ('partial' o el sobrante como anticipo/vuelto), sin que la comparación de tolerancia lo confunda con redondeo
+
+#### Scenario: Cantidad decimal y precio de alta precisión
+
+- **WHEN** la factura tiene una línea con cantidad decimal y precio unitario con más de 2 decimales
+- **THEN** los tres comportamientos anteriores se sostienen igual que con montos "redondos"
 
 ### Requirement: Wizard de cancelación de cruces de anticipo
 

@@ -8,14 +8,9 @@ class ResPartner(models.Model):
         string='Allow Exchange Difference Note',
         company_dependent=True,
         default=False,
-        help="Only consulted when the company's 'Validate Customer Allows "
-             "Exchange Difference Note' setting is enabled -- with it "
-             "disabled, every customer gets a Debit/Credit Note for its "
-             "invoices' exchange difference regardless of this field. "
-             "With it enabled: if checked, this customer's invoices "
-             "settle their exchange difference with a real fiscal "
-             "Debit/Credit Note; if unchecked, they settle it with "
-             "Odoo's native generic exchange difference entry instead.",
+        help="When checked, this customer's invoices settle their exchange "
+             "difference through a Debit/Credit Note. When unchecked, "
+             "Odoo's generic exchange difference entry is used instead.",
     )
     l10n_ve_exchange_show_allow_note = fields.Boolean(
         string='Show Allow Exchange Difference Note',

@@ -68,12 +68,22 @@ class StockPicking(models.Model):
         help="Invoice numbers of the related sale order, shown in the dispatch note.",
     )
 
-    @api.depends("sale_id.invoice_ids.name")
+    @api.depends(
+        "sale_id.invoice_ids.name",
+        "sale_id.invoice_ids.state",
+        "sale_id.invoice_ids.move_type",
+    )
     def _compute_dispatch_note_invoice_names(self):
+        # Solo facturas de venta publicadas y numeradas: un borrador (o una
+        # factura sin numero asignado) se llama "/" y una nota de credito no
+        # es la factura que ampara el despacho.
         for picking in self:
-            picking.dispatch_note_invoice_names = ", ".join(
-                picking.sale_id.invoice_ids.filtered("name").mapped("name")
+            invoices = picking.sale_id.invoice_ids.filtered(
+                lambda move: move.state == "posted"
+                and move.move_type == "out_invoice"
+                and move.name not in (False, "/")
             )
+            picking.dispatch_note_invoice_names = ", ".join(invoices.mapped("name"))
 
     transfer_reason_id = fields.Many2one(
         "transfer.reason",
@@ -1115,7 +1125,10 @@ class StockPicking(models.Model):
                 if external_storage:
                     allowed_reason_ids.append(external_storage.id)
                 
-            # Internal
+            # Internal. Mantener en sincronia con INTERNAL_TRANSFER_REASON_CODES
+            # (res_company.py): el motivo por defecto de la compania solo puede
+            # ser uno de los que se permiten aqui (test_field_domain_matches_
+            # allowed_reasons_for_internal lo verifica).
             elif picking.operation_code == "internal":
                 consignment_reason = reasons.get("consignment")
                 transfer_between_warehouses_reason = reasons.get(

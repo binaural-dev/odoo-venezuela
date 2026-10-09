@@ -5,6 +5,24 @@ from odoo.exceptions import UserError, ValidationError
 class ResCompany(models.Model):
     _inherit = "res.company"
 
+    tax_calculation_rounding_method = fields.Selection(default="round_per_line")
+
+    tax_totals_edit_tolerance = fields.Float(
+        string="Tax Amount Edit Tolerance",
+        default=0.03,
+        help="Maximum amount (in the document's currency) that the "
+        "tax_totals pencil-edit may move a tax group's amount away from "
+        "its computed value, in either direction. Only enforced for users "
+        "in the 'Fiscal Config Support' group -- everyone else can't edit "
+        "the field at all.",
+    )
+
+    @api.constrains('tax_totals_edit_tolerance')
+    def _check_tax_totals_edit_tolerance(self):
+        for company in self:
+            if not 0.0 <= company.tax_totals_edit_tolerance <= 1.0:
+                raise ValidationError(_("The tax amount edit tolerance must be between 0 and 1."))
+
     taxpayer_type = fields.Selection(
         [
             ("formal", "Formal"),
@@ -91,4 +109,42 @@ class ResCompany(models.Model):
 
     indexed_default = fields.Boolean('Default indexacion',default=True)
 
-    
+    # ── Alternate-currency exchange difference ──
+    # See `account.move.line._inject_foreign_exchange_amounts` /
+    # `_create_standalone_foreign_exchange_difference_entry`. Deliberately
+    # NO dedicated accounts here: the alternate amount is added to the
+    # SAME lines/accounts Odoo's native exchange difference already uses
+    # (`income_currency_exchange_account_id`/`expense_currency_exchange_account_id`,
+    # `currency_exchange_journal_id`) -- one asiento, both currencies.
+    l10n_ve_use_foreign_exchange_diff = fields.Boolean(
+        string='Use Alternate Currency Exchange Difference',
+        default=False,
+        help="Adds the alternate currency amount to Odoo's own exchange "
+             "difference entry, or creates one just for it if company "
+             "currency matched exactly.",
+    )
+
+    @api.constrains(
+        'l10n_ve_use_foreign_exchange_diff', 'currency_exchange_journal_id',
+        'income_currency_exchange_account_id', 'expense_currency_exchange_account_id',
+    )
+    def _check_l10n_ve_use_foreign_exchange_diff_requires_config(self):
+        for company in self:
+            if not company.l10n_ve_use_foreign_exchange_diff:
+                continue
+            missing = []
+            if not company.currency_exchange_journal_id:
+                missing.append(_("Exchange Gain or Loss Journal"))
+            if not company.income_currency_exchange_account_id:
+                missing.append(_("Gain Exchange Rate Account"))
+            if not company.expense_currency_exchange_account_id:
+                missing.append(_("Loss Exchange Rate Account"))
+            if missing:
+                raise ValidationError(_(
+                    "With 'Use Alternate Currency Exchange Difference' "
+                    "enabled, configure the following (Accounting Settings "
+                    "> Default Accounts): %(missing)s.",
+                    missing=", ".join(missing),
+                ))
+
+

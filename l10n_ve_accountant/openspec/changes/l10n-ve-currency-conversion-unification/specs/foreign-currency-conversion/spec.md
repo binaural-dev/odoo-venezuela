@@ -307,6 +307,13 @@ requirement busca cerrar.
 - **AND** SHALL NOT usar el valor absoluto de la línea negativa como si
   fuera positivo
 
+> NOTA: `l10n_ve_invoice._check_price_in_zero` bloquea guardar una línea de
+> producto SUELTA de subtotal negativo (no solo cero), a menos que sea un
+> descuento reconocido por `_get_discount_lines` -- ver el requirement
+> correspondiente en `openspec/specs/l10n_ve_invoice/spec.md` (raíz). El
+> test de este escenario ya no puede construirlo de punta a punta y fue
+> repurposado para verificar el rechazo en su lugar.
+
 ### Requirement: Un impuesto encadenado (`include_base_amount`) suma su
 propio monto a la base del siguiente impuesto en la misma línea
 

@@ -2,7 +2,8 @@
 
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
-import { LT } from "@point_of_sale/app/utils/numbers";
+import { GT, LT } from "@point_of_sale/app/utils/numbers";
+import { roundPrecision } from "@web/core/utils/numbers";
 
 // Live patch for Odoo 19 PosPayment.
 //
@@ -20,11 +21,9 @@ patch(PosPayment.prototype, {
     serializeForORM(opts = {}) {
         const data = super.serializeForORM(opts);
         data["foreign_amount"] = this.foreign_amount || 0;
-        // Refund orders stamp the rate their foreign amounts were valued at
-        // (the frozen original-sale rate), not today's live rate, so the
-        // payment move frozen by pos_payment._create_payment_moves is
-        // internally consistent. Non-refund orders keep the live multiplier.
-        data["foreign_rate"] = Number(this.pos_order_id?.get_effective_foreign_multiplier?.() ?? 0);
+        // `foreign_rate` is not set here: the order sync serializes its
+        // payments without calling this method, so the rate is stamped on the
+        // order's payment commands (PosOrder._setPaymentForeignRates).
         return data;
     },
 
@@ -132,14 +131,39 @@ patch(PosPayment.prototype, {
             // primitive (exactRate is already local-per-foreign).
             const directLocal = order.foreignToLocalAtRate(mag, exactRate);
             const absDue = Math.abs(localDueBefore);
-            const fRounding =
-                Number(order._getForeignCurrencyRecord?.()?.rounding) || 0.01;
-            const tol = exactRate * fRounding; // one foreign step, in local
-            this.amount = Math.abs(directLocal - absDue) <= tol
+            // "Covers the due" is decided in the currency the cashier typed:
+            // the typed magnitude is at most one foreign step away from the
+            // due the cashier sees (the exact-rate due rounded to the foreign
+            // currency; main→foreign multiplier 1/exactRate). currency.comp
+            // rounds both operands first, so float noise right at the step
+            // (0.40000000000009 Bs for 1 cent at 40) no longer turns the
+            // boundary into a mirror (task 83148, H20).
+            const fc = order._resolveCurrencyRecord?.(order.get_foreign_currency?.())
+                ?? order.get_foreign_currency?.();
+            const fRounding = Number(fc?.rounding)
+                || Number(order._getForeignCurrencyRecord?.()?.rounding) || 0.01;
+            const dueForeign = order.localToForeignAtRate(absDue, 1 / exactRate, false);
+            const hasComp = typeof fc?.comp === "function";
+            const dueShown = hasComp
+                ? fc.round(dueForeign)
+                : roundPrecision(dueForeign, fRounding);
+            const distance = Math.abs(mag - dueShown); // magnitudes, no sign
+            // Typed amounts come in foreign steps, so the distance is a whole
+            // number of steps plus noise: half a step separates 1 from 2.
+            const coversDue = hasComp
+                ? fc.comp(distance, fRounding) !== GT
+                : distance < fRounding * 1.5;
+            this.amount = coversDue
                 ? localDueBefore // full/exact refund: snap to due, no drift
                 : sign * directLocal; // overpay/partial: mirror the tender
             return;
         }
+
+        // A refund payment carries the refund's sign even if the cashier
+        // typed a positive amount (task 83148, H1). Sales keep what was typed.
+        const sign = localTotal < 0 ? -1 : 1;
+        const signedRequested = sign < 0 && requested > 0 ? -requested : requested;
+        this.foreign_amount = signedRequested;
 
         // Convert local due to foreign ONCE (same rounding as
         // get_foreign_total_with_tax → foreign_currency.round).
@@ -174,13 +198,14 @@ patch(PosPayment.prototype, {
         if (coversDue) {
             // Payment covers the local due exactly, plus any overpay.
             // isPositive() discards float-noise "overpay" below the
-            // currency precision instead of converting it.
+            // currency precision instead of converting it. The overpay is a
+            // magnitude: it takes the sign of the due (negative on a refund).
             const overpaymentForeign = absRequested - absDue;
             const hasOverpay = hasComp
                 ? fc.isPositive(overpaymentForeign)
                 : overpaymentForeign > 0;
             const overpaymentLocal = hasOverpay
-                ? order._convertForeignOrderAmount(overpaymentForeign)
+                ? sign * order._convertForeignOrderAmount(overpaymentForeign)
                 : 0;
             this.amount = localDueBefore + overpaymentLocal;
             return;
@@ -189,6 +214,6 @@ patch(PosPayment.prototype, {
         // Partial payment: strict mathematical conversion. Refund-aware so a
         // partial refund's local (main-currency) amount is proportional to
         // the original sale's rate, not today's rate.
-        this.amount = order._convertForeignOrderAmount(requested);
+        this.amount = order._convertForeignOrderAmount(signedRequested);
     },
 });

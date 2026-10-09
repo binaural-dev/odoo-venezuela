@@ -699,11 +699,18 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         """Complemento del test anterior: una factura en VES (moneda de
         COMPAÑÍA), pagada en USD con IGTF de por medio, en fechas y tasas
         distintas. El monto adeudado en VES no tiene exposición cambiaria
-        propia, pero al conciliarla contra un pago en USD, Odoo igual
-        calcula un residual de redondeo de la conversión. El alcance de
-        este módulo es replicar CUALQUIER asiento de diferencial que Odoo
-        genere para una factura de cliente como ND/NC real -- también
-        este caso, sin excepción."""
+        propia -- y, verificado empíricamente (trazas sobre
+        `payment.move_id.line_ids`), tampoco deja NINGÚN residual de
+        redondeo al conciliarla: Odoo calcula la línea contraparte del
+        pago con `balance` (VEF) EXACTAMENTE igual al residual de la
+        factura, y de ahí deriva el monto en USD -- nunca al revés. Este
+        test antes asumía, sin verificarlo, que este escenario siempre
+        deja un residual corregible; no es así para el flujo estándar del
+        asistente con monto por defecto (ver requirement "Una factura en
+        moneda de compañía pagada vía el asistente estándar no deja
+        residual de redondeo", `openspec/specs/l10n_ve_exchange_difference/spec.md`).
+        Repurposed para documentar ese comportamiento verificado: ninguna
+        ND/NC se genera porque no hay nada que corregir."""
         yesterday = fields.Date.subtract(fields.Date.today(), days=1)
         invoice_amount = 500000.00
 
@@ -738,55 +745,16 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
             ("l10n_ve_exchange_invoice_id", "=", invoice.id),
         ])
         self.assertEqual(
-            len(notes), 1,
-            "El residual de redondeo de conciliar la factura en Bs contra un pago "
-            "en USD debió documentarse como ND/NC, igual que cualquier otro "
-            "diferencial de una factura de cliente.",
+            len(notes), 0,
+            "Una factura en moneda de compañía liquidada con el monto por "
+            "defecto del asistente de pago no deja residual de redondeo -- "
+            "no debió generarse ninguna ND/NC.",
         )
-        note_line = notes.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
-        self.assertTrue(note_line.reconciled, "La nota debió quedar cerrada por su propia conciliación.")
 
     def test_invoice_closed_by_advance_cross_and_note_does_not_end_up_reversed(self):
-        """Regresión concreta para el bloqueante "la factura cerrada vía
-        un cruce de anticipo + NC de diferencial quedaba `reversed` en
-        vez de `paid`" (revisión de seguimiento sobre `9dabb347`).
-
-        El "cruce de anticipo" real de `l10n_ve_igtf`
-        (`_reconcile_move_with_payment_difference`,
-        `l10n_ve_igtf/models/account_move.py`) concilia la factura
-        contra un `account.move` armado a mano -- `move_type='entry'`,
-        SIN `origin_payment_id` (no es un `account.payment` real, es un
-        asiento que traslada un anticipo ya existente a la cuenta por
-        cobrar). Este test no monta el flujo completo del wizard de
-        anticipos -- reproduce directo la propiedad ESTRUCTURAL que
-        importa (un `entry` sin `origin_payment_id`, conciliado por
-        `.reconcile()` contra la factura), que es exactamente lo que
-        dispara el bug sin importar por qué mecanismo de UI se llegue.
-
-        Sin este módulo, este mismo escenario (anticipo + diferencial)
-        SIEMPRE resolvía a `payment_state='paid'`, porque el asiento
-        genérico nativo de Odoo también es `move_type='entry'` -- nunca
-        introduce `'out_refund'` en la combinación de tipos que el
-        núcleo evalúa para decidir si una factura fue "revertida". La NC
-        real que este módulo emite en su lugar SÍ lo introduce -- y sin
-        la corrección de `_compute_payment_state`
-        (`l10n_ve_exchange_difference/models/account_move.py`), el
-        núcleo concluye erróneamente que la factura se revirtió.
-
-        NOTA sobre `bi_igtf`/`igtf_top_aply`: se investigó si esta
-        misma corrección también rescataba la base imponible de IGTF de
-        `l10n_ve_igtf.compute_bi_igtf` en este escenario (hipótesis
-        documentada en una versión anterior de este test y del spec).
-        Verificado EMPÍRICAMENTE que NO aplica: siempre que el bug de
-        `payment_state` puede dispararse (factura cerrada SIN ningún
-        pago real en TODO su historial de conciliación), la fórmula de
-        `compute_bi_igtf` (que reduce el tope exactamente por la
-        porción cerrada con movimientos sin línea de IGTF, y no
-        contribuye nada a `bi_igtf` desde un movimiento que tampoco
-        tiene línea de IGTF) da 0 de todas formas -- CON o SIN la
-        corrección de `payment_state`, porque nunca hay un pago real
-        del cual sacar base imponible. El único efecto real y
-        verificado de este fix es `payment_state` en sí mismo."""
+        """Regresión: factura cerrada vía cruce de anticipo (`entry` sin
+        `origin_payment_id`) + NC de diferencial debe quedar 'paid', no
+        'reversed'. Sin el fix de `_compute_payment_state`, daba 'reversed'."""
         self.currency_usd.write({
             "rate_ids": [
                 Command.create({"name": "2043-01-01", "company_rate": 1 / 40.0}),
@@ -853,4 +821,184 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
             invoice.payment_state, "paid",
             "La factura se cerró por completo (anticipo + NC de diferencial) -- "
             "debió quedar 'paid', no 'reversed'.",
+        )
+
+    def test_unreconcile_real_payment_with_synthetic_note_leaves_correct_payment_state(self):
+        """DIAGNÓSTICO: pago real (no anticipo/IGTF) que deja residual
+        documentado con ND/NC. Al desconciliar ese pago, `payment_state`
+        debe volver a 'not_paid', no quedarse en 'paid'."""
+        invoice_amount = 1000.00
+        invoice = self._create_invoice_vef(invoice_amount)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        # Pago real, mismo diario/moneda que la factura (VEF) -- sin
+        # anticipo, sin IGTF de por medio -- por 999.99, dejando 0.01 de
+        # residual para simular el "redondeo" que normalmente dispara la
+        # nota.
+        account_bank_vef = self.env["account.account"].create({
+            "name": "Banco VEF Test IGTF Own",
+            "code": "1003XIGTF",
+            "account_type": "asset_cash",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        manual_in = self.env.ref("account.account_payment_method_manual_in")
+        manual_out = self.env.ref("account.account_payment_method_manual_out")
+        bank_journal_vef = self.env["account.journal"].create({
+            "name": "Banco VEF Test IGTF Own",
+            "code": "BVEFXIGT",
+            "type": "bank",
+            "currency_id": self.currency_vef.id,
+            "company_id": self.company.id,
+            "default_account_id": account_bank_vef.id,
+            "inbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                "name": "Manual Inbound VEF Test IGTF Own",
+                "payment_method_id": manual_in.id,
+                "payment_account_id": account_bank_vef.id,
+            })],
+            "outbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                "name": "Manual Outbound VEF Test IGTF Own",
+                "payment_method_id": manual_out.id,
+                "payment_account_id": account_bank_vef.id,
+            })],
+        })
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = bank_journal_vef
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+            pay_form.amount = invoice_amount - 0.01
+        action = pay_form.record.action_create_payments()
+        payment = self.env["account.payment"].browse(action.get("res_id"))
+        self.assertFalse(payment.is_advance_payment, "Precondición: pago normal, no anticipo.")
+
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        self.assertFalse(inv_line.reconciled, "Debe quedar 0.01 de residual antes de sintetizar la nota.")
+        pre_state = invoice.payment_state
+        self.assertIn(
+            pre_state, ("partial", "not_paid"),
+            f"Estado inesperado antes de la nota: {pre_state!r}",
+        )
+
+        note = inv_line._create_exchange_difference_note(invoice, payment.move_id, 0.01)
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+
+        self.assertTrue(inv_line.reconciled, "La factura debió quedar completamente conciliada tras la nota.")
+        pre_state = invoice.payment_state
+        self.assertIn(
+            pre_state, ("paid", "in_payment"),
+            f"Estado inesperado antes de desconciliar: {pre_state!r}",
+        )
+
+        payment_line = payment.move_id.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+        partial = inv_line.matched_credit_ids.filtered(
+            lambda p: p.credit_move_id in payment_line
+        ) or inv_line.matched_debit_ids.filtered(
+            lambda p: p.debit_move_id in payment_line
+        )
+        self.assertTrue(partial, "Debe existir la conciliación factura<->pago real.")
+
+        invoice.with_context({}).js_remove_outstanding_partial(partial[:1].id)
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        note.invalidate_recordset()
+
+        self.assertEqual(
+            invoice.payment_state, "not_paid",
+            f"DIAGNÓSTICO: tras desconciliar el pago real, payment_state quedó en "
+            f"{invoice.payment_state!r} (antes {pre_state!r}) en vez de 'not_paid'. "
+            f"amount_residual={inv_line.amount_residual}, note.exists()={note.exists()}, "
+            f"note.state={note.state if note.exists() else 'N/A'}, "
+            f"note.reversal_move_ids={note.reversal_move_ids.ids if note.exists() else 'N/A'}, "
+            f"inv_line.matched_debit_ids={inv_line.matched_debit_ids.ids}, "
+            f"inv_line.matched_credit_ids={inv_line.matched_credit_ids.ids}, "
+            f"inv_line.reconciled={inv_line.reconciled}",
+        )
+
+    def test_cancel_real_payment_directly_leaves_correct_payment_state(self):
+        """Mismo escenario que el test anterior (pago real + nota), pero
+        cancelando el pago vía `action_cancel()` directo en vez del
+        widget de la factura -- los dos caminos no siempre coinciden."""
+        invoice_amount = 1000.00
+        invoice = self._create_invoice_vef(invoice_amount)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+
+        account_bank_vef = self.env["account.account"].create({
+            "name": "Banco VEF Test IGTF Own 2",
+            "code": "1004XIGTF",
+            "account_type": "asset_cash",
+            "company_ids": [Command.set([self.company.id])],
+        })
+        manual_in = self.env.ref("account.account_payment_method_manual_in")
+        manual_out = self.env.ref("account.account_payment_method_manual_out")
+        bank_journal_vef = self.env["account.journal"].create({
+            "name": "Banco VEF Test IGTF Own 2",
+            "code": "BVEFXIG2",
+            "type": "bank",
+            "currency_id": self.currency_vef.id,
+            "company_id": self.company.id,
+            "default_account_id": account_bank_vef.id,
+            "inbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                "name": "Manual Inbound VEF Test IGTF Own 2",
+                "payment_method_id": manual_in.id,
+                "payment_account_id": account_bank_vef.id,
+            })],
+            "outbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                "name": "Manual Outbound VEF Test IGTF Own 2",
+                "payment_method_id": manual_out.id,
+                "payment_account_id": account_bank_vef.id,
+            })],
+        })
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = bank_journal_vef
+            pay_form.payment_date = fields.Date.today()
+            pay_form.save()
+            pay_form.amount = invoice_amount - 0.01
+        action = pay_form.record.action_create_payments()
+        payment = self.env["account.payment"].browse(action.get("res_id"))
+        self.assertFalse(payment.is_advance_payment, "Precondición: pago normal, no anticipo.")
+
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        self.assertFalse(inv_line.reconciled, "Debe quedar 0.01 de residual antes de sintetizar la nota.")
+
+        note = inv_line._create_exchange_difference_note(invoice, payment.move_id, 0.01)
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        self.assertTrue(inv_line.reconciled, "La factura debió quedar completamente conciliada tras la nota.")
+        pre_state = invoice.payment_state
+        self.assertIn(
+            pre_state, ("paid", "in_payment"),
+            f"Estado inesperado antes de cancelar el pago: {pre_state!r}",
+        )
+
+        # LA DIFERENCIA CLAVE: cancelar el pago DIRECTO, no el botón del
+        # widget de la factura.
+        payment.action_cancel()
+        self.assertEqual(payment.state, "canceled")
+
+        self.env.cr.flush()
+        invoice.invalidate_recordset()
+        inv_line.invalidate_recordset()
+        note.invalidate_recordset()
+
+        self.assertEqual(
+            invoice.payment_state, "not_paid",
+            f"DIAGNÓSTICO (cancelar pago directo): tras cancelar el pago directamente "
+            f"(sin pasar por js_remove_outstanding_partial), payment_state quedó en "
+            f"{invoice.payment_state!r} (antes {pre_state!r}) en vez de 'not_paid'. "
+            f"amount_residual={inv_line.amount_residual}, note.exists()={note.exists()}, "
+            f"note.state={note.state if note.exists() else 'N/A'}, "
+            f"note.reversal_move_ids={note.reversal_move_ids.ids if note.exists() else 'N/A'}, "
+            f"inv_line.matched_debit_ids={inv_line.matched_debit_ids.ids}, "
+            f"inv_line.matched_credit_ids={inv_line.matched_credit_ids.ids}, "
+            f"inv_line.reconciled={inv_line.reconciled}",
         )

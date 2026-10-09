@@ -102,9 +102,13 @@ class PosConfig(models.Model):
             foreign (USD) → main (VEF): usar foreign_rate (674.93)
               USD * 674.93 = VEF ✓
 
-        En el caso foreign=VEF, main=USD:
-            compute_rate devuelve foreign_rate = foreign_inverse_rate = company_rate.
-            Ambos coinciden, cualquiera funciona.
+        En el caso foreign=VEF, main=USD la regla es la misma; solo cambian
+        las magnitudes. compute_rate devuelve:
+              pos_config.foreign_rate         = 0.001244 (inverse_company_rate)
+              pos_config.foreign_inverse_rate = 803.34   (company_rate)
+            USD * 803.34 = VEF ✓   VEF * 0.001244 = USD ✓
+        (compute_rate solo devuelve las dos tasas iguales cuando la moneda
+        foránea es la misma de la compañía.)
 
         PRECISION: ``foreign_inverse_rate`` está definido con digits=(16,15)
         para preservar los 15 dígitos de precisión de la tasa BCV.
@@ -152,6 +156,70 @@ class PosConfig(models.Model):
             return 0.0
         result = from_amount * rate
         return to_currency.round(result) if round else result
+
+    def _get_move_foreign_rate_vals(self, main_to_foreign_rate):
+        """Rates stamped on a POS move (invoice, payment move) valued at the
+        ``main_to_foreign_rate`` multiplier (company currency → foreign, the
+        same orientation as ``foreign_inverse_rate`` in
+        ``_get_pos_conversion_rate``).
+
+        Same pair ``l10n_ve_rate`` (``res.currency.rate.compute_rate``) gives
+        every other move and this config: ``foreign_inverse_rate`` is the
+        multiplier ``l10n_ve_accountant`` computes the lines' foreign amounts
+        with, and ``foreign_rate`` its inverse, the rate shown on the move and
+        read by the digital invoice and the withholdings. Holds for both
+        company currencies: 803.34 / 0.001244… with the company in Bs,
+        0.001244… / 803.34 with the company in USD. The multiplier is the
+        order's frozen one, not today's rate of this config, which is why the
+        inverse is built here instead of reading ``self.foreign_rate``.
+
+        :param main_to_foreign_rate: company currency → foreign multiplier
+        :return: ``account.move`` values; empty without a rate, so the move
+            takes the rate of its date instead of a fixed 0
+        """
+        if not main_to_foreign_rate:
+            return {}
+        return {
+            "foreign_inverse_rate": main_to_foreign_rate,
+            "foreign_rate": 1 / main_to_foreign_rate,
+            "manually_set_rate": True,
+        }
+
+    def _check_before_creating_new_session(self):
+        res = super()._check_before_creating_new_session()
+        self._check_cross_move_accounts()
+        return res
+
+    def _check_cross_move_accounts(self):
+        """Refuse to open a session whose cross moves would miss an account.
+
+        Same idea as the native ``_check_profit_loss_cash_journal``: a
+        foreign-currency method with both cross journals set will need the
+        accounts listed by ``pos.session._get_cross_move_missing_accounts``
+        (on opening, with the foreign cash drawer's opening difference, and on
+        closing). Without them the cross move used to be built with a NULL
+        ``account_id`` and the opening crashed on
+        ``account_move_line_check_accountable_required_fields``.
+        """
+        self.ensure_one()
+        # A virtual session of this config: which methods cross depends on the
+        # session (e.g. its currency), and other modules extend that per session.
+        session = self.env["pos.session"].new({"config_id": self.id})
+        missing = [
+            f"- {method.name} → {account}"
+            for method in self.payment_method_ids
+            if session._is_cross_move_eligible(method)
+            for account in session._get_cross_move_missing_accounts(method)
+        ]
+        if missing:
+            raise ValidationError(
+                _(
+                    "The session cannot be opened: the cross move of these "
+                    "payment methods needs accounts that are not set:\n%(accounts)s\n"
+                    "Set them in Accounting > Configuration > Journals.",
+                    accounts="\n".join(missing),
+                )
+            )
 
     def _action_to_open_ui(self):
         res = super()._action_to_open_ui()

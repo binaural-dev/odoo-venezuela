@@ -527,6 +527,219 @@ class TestKioskPublicRoutes(TransactionCase):
         self.assertEqual(result["res.partner"], [])
         self.assertTrue(result["error"])
 
+    def _mismatched_state_municipality(self):
+        municipality = self.env["res.country.municipality"].search([], limit=1)
+        if not municipality:
+            self.skipTest("l10n_ve_location sin municipios seed en esta BD de test")
+        other_state = self.env["res.country.state"].search(
+            [
+                ("id", "not in", municipality.state_id.ids),
+                ("country_id", "=", self.env.ref("base.ve").id),
+            ],
+            limit=1,
+        )
+        if not other_state:
+            self.skipTest("no hay otro estado VE para probar el cruce estado/municipio")
+        return other_state, municipality
+
+    def test_identify_create_address_optional_mismatched_state_rejected(self):
+        """Con el flag apagado el cruce estado/municipio también se valida:
+        la dirección es opcional, pero lo que llega no se guarda sin validar."""
+        self.assertFalse(self.config.self_ordering_require_address)
+        other_state, municipality = self._mismatched_state_municipality()
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="96969696",
+            name="Cruce Inválido Sin Flag",
+            phone="0412-9990005",
+            state_id=other_state.id,
+            municipality_id=municipality.id,
+        )
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_address_optional_non_ve_state_rejected(self):
+        self.assertFalse(self.config.self_ordering_require_address)
+        foreign_state = self.env["res.country.state"].search(
+            [("country_id.code", "!=", "VE")], limit=1
+        )
+        if not foreign_state:
+            self.skipTest("no hay estados de otro país en esta BD de test")
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="97979797",
+            name="Estado Extranjero",
+            phone="0412-9990006",
+            state_id=foreign_state.id,
+        )
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_address_optional_municipality_without_state_rejected(self):
+        self.assertFalse(self.config.self_ordering_require_address)
+        municipality = self.env["res.country.municipality"].search([], limit=1)
+        if not municipality:
+            self.skipTest("l10n_ve_location sin municipios seed en esta BD de test")
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="98989898",
+            name="Municipio Sin Estado",
+            phone="0412-9990007",
+            municipality_id=municipality.id,
+        )
+        self.assertEqual(result["res.partner"], [])
+        self.assertTrue(result["error"])
+
+    def test_identify_create_address_optional_valid_pair_is_saved(self):
+        self.assertFalse(self.config.self_ordering_require_address)
+        municipality = self.env["res.country.municipality"].search(
+            [("state_id.country_id.code", "=", "VE")], limit=1
+        )
+        if not municipality:
+            self.skipTest("l10n_ve_location sin municipios seed en esta BD de test")
+        state = municipality.state_id.filtered(lambda s: s.country_id.code == "VE")[:1]
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="99999990",
+            name="Pareo Válido Sin Flag",
+            phone="0412-9990008",
+            state_id=state.id,
+            municipality_id=municipality.id,
+        )
+        self.assertFalse(result["error"])
+        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        self.assertEqual(partner.state_id, state)
+        self.assertEqual(partner.municipality, municipality)
+
+    def _company_and_customer_addresses(self):
+        """Dirección completa de la compañía (estado A) y un estado/municipio B
+        distinto para el cliente. Registros propios, sin depender de la data
+        seed de l10n_ve_location."""
+        ve = self.env.ref("base.ve")
+        state_a, state_b = self.env["res.country.state"].create(
+            [
+                {"name": "Estado A Kiosko", "code": "KXA", "country_id": ve.id},
+                {"name": "Estado B Kiosko", "code": "KXB", "country_id": ve.id},
+            ]
+        )
+        municipality_a, municipality_b = self.env["res.country.municipality"].create(
+            [
+                {
+                    "name": "MUNICIPIO A KIOSKO",
+                    "code": "KMA",
+                    "country_id": ve.id,
+                    "state_id": [Command.set(state_a.ids)],
+                },
+                {
+                    "name": "MUNICIPIO B KIOSKO",
+                    "code": "KMB",
+                    "country_id": ve.id,
+                    "state_id": [Command.set(state_b.ids)],
+                },
+            ]
+        )
+        city_a = self.env["res.country.city"].create(
+            {"name": "Ciudad A Kiosko", "country_id": ve.id, "state_id": state_a.id}
+        )
+        parish_a = self.env["res.country.parish"].create(
+            {"name": "Parroquia A Kiosko", "code": "KPA", "municipality_id": municipality_a.id}
+        )
+        self.company.partner_id.write(
+            {
+                "country_id": ve.id,
+                "state_id": state_a.id,
+                "municipality": municipality_a.id,
+                "city_id": city_a.id,
+                "parish_id": parish_a.id,
+                "zip": "1010",
+            }
+        )
+        return state_b, municipality_b
+
+    def test_identify_create_customer_address_drops_company_locality(self):
+        state_b, municipality_b = self._company_and_customer_addresses()
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="99999989",
+            name="Otro Municipio",
+            phone="0412-9990009",
+            state_id=state_b.id,
+            municipality_id=municipality_b.id,
+            street="Calle 1",
+        )
+        self.assertFalse(result["error"])
+        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        self.assertEqual(partner.state_id, state_b)
+        self.assertEqual(partner.municipality, municipality_b)
+        self.assertFalse(partner.city_id)
+        self.assertFalse(partner.parish_id)
+        self.assertFalse(partner.zip)
+
+    def test_identify_create_state_only_does_not_keep_company_municipality(self):
+        self.assertFalse(self.config.self_ordering_require_address)
+        state_b, _municipality_b = self._company_and_customer_addresses()
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="99999988",
+            name="Solo Estado",
+            phone="0412-9990010",
+            state_id=state_b.id,
+        )
+        self.assertFalse(result["error"])
+        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        self.assertEqual(partner.state_id, state_b)
+        self.assertFalse(partner.municipality)
+        self.assertFalse(partner.city_id)
+        self.assertFalse(partner.parish_id)
+
+    def test_identify_create_without_address_keeps_company_defaults(self):
+        self._company_and_customer_addresses()
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="99999987",
+            name="Sin Dirección",
+            phone="0412-9990011",
+        )
+        self.assertFalse(result["error"])
+        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        company_partner = self.company.partner_id
+        self.assertEqual(partner.state_id, company_partner.state_id)
+        self.assertEqual(partner.municipality, company_partner.municipality)
+        self.assertEqual(partner.city_id, company_partner.city_id)
+
+    def test_identify_create_rejects_oversized_text(self):
+        for field in ("name", "street"):
+            with self.subTest(field=field):
+                kwargs = {"name": "Nombre Normal", "street": "Calle 1"}
+                kwargs[field] = "x" * 256
+                result = self._self_order(
+                    "l10n_ve_kiosk_identify_create",
+                    access_token=self.config.access_token,
+                    prefix_vat="V",
+                    vat="99999986",
+                    phone="0412-9990012",
+                    **kwargs,
+                )
+                self.assertEqual(result["res.partner"], [])
+                self.assertTrue(result["error"])
+        self.assertFalse(
+            self.env["res.partner"].search([("prefix_vat", "=", "V"), ("vat", "=", "99999986")])
+        )
+
     # -- set_phone -----------------------------------------------------------
 
     def test_set_phone_fill_only(self):
