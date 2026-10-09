@@ -1034,3 +1034,85 @@ class TestIGTFNEW(IGTFTestCommon):
 
         self._assert_move_lines_equal(payment_move, expected_lines)
 
+    def test16_remove_outstanding_partial_keeps_other_application_without_igtf_line(self):
+        """
+        Anticipo en VEF (bank_journal_bs, is_igtf=False) aplicado parcialmente
+        a DOS facturas. Al quitar SOLO la aplicación de la primera factura
+        (js_remove_outstanding_partial), la aplicación de la segunda factura
+        no debe verse afectada: el guard de remove_igtf_from_account_move
+        debe retornar antes de llegar a button_draft() cuando no hay línea
+        de IGTF, en vez de desconciliar todo el pago.
+        """
+
+        payment_amount = 1000.00
+        invoice_amount1 = 300.00
+        invoice_amount2 = 300.00
+
+        invoice1 = self._create_invoice_vef(invoice_amount1)
+        invoice1.with_context(move_action_post_alert=True).action_post()
+        invoice2 = self._create_invoice_vef(invoice_amount2)
+        invoice2.with_context(move_action_post_alert=True).action_post()
+
+        context = {'default_payment_type': 'inbound', 'default_partner_type': 'customer', 'search_default_inbound_filter': 1, 'default_move_journal_types': ('bank', 'cash'), 'display_account_trust': True, 'default_is_advance_payment': True}
+        with Form(self.env['account.payment'].with_context(
+               context
+            )) as pay_form:
+            pay_form.partner_id = self.partner
+            pay_form.journal_id = self.bank_journal_bs
+            pay_form.amount = payment_amount
+
+        payment = pay_form.save()
+        payment.action_post()
+
+        outstanding_line = payment.move_id.line_ids.filtered(
+            lambda l: l.account_id == self.advance_cust_acc and l.credit > 0
+        )
+
+        invoice1 = self.env['account.move'].browse(invoice1.id)
+        invoice1.with_context({}).js_assign_outstanding_line(outstanding_line.id)
+        invoice1 = self.env['account.move'].browse(invoice1.id)
+
+        advance = len(payment.advanced_move_ids)
+        self.assertAlmostEqual(advance, 1, 2, "Debe existir el cruce de anticipo de la primera factura")
+
+        invoice2 = self.env['account.move'].browse(invoice2.id)
+        invoice2.with_context({}).js_assign_outstanding_line(outstanding_line.id)
+        invoice2 = self.env['account.move'].browse(invoice2.id)
+
+        self.assert_invoice_values(invoice1, 0.0, 0.0, 'paid')
+        self.assert_invoice_values(invoice2, 0.0, 0.0, 'paid')
+
+        invoice1_receivable_line = invoice1.line_ids.filtered(
+            lambda l: l.account_id == self.acc_receivable and l.debit > 0
+        )
+
+        # Mismo razonamiento que en test11: el partial que conecta la factura
+        # con su cruce de anticipo cuelga de la línea de CxC de la factura,
+        # no de la línea de anticipo.
+        partial_reconcile = invoice1_receivable_line.matched_credit_ids
+
+        invoice1.with_context({}).js_remove_outstanding_partial(partial_reconcile.id)
+
+        invoice1 = self.env['account.move'].browse(invoice1.id)
+        self.assertEqual(
+            invoice1.payment_state, 'not_paid',
+            f"Tras desconciliar el cruce de anticipo de invoice1, su payment_state debe "
+            f"volver a 'not_paid', no quedar en {invoice1.payment_state!r}"
+        )
+
+        invoice2 = self.env['account.move'].browse(invoice2.id)
+        self.assertEqual(
+            invoice2.payment_state, 'paid',
+            f"La aplicación del anticipo sobre invoice2 no debe verse afectada al quitar "
+            f"la de invoice1, pero su payment_state quedó en {invoice2.payment_state!r}"
+        )
+
+        invoice2_receivable_line = invoice2.line_ids.filtered(
+            lambda l: l.account_id == self.acc_receivable and l.debit > 0
+        )
+        self.assertTrue(
+            invoice2_receivable_line.matched_credit_ids,
+            "La conciliación de invoice2 con su cruce de anticipo no debe perderse "
+            "al quitar la aplicación de invoice1."
+        )
+
