@@ -94,6 +94,14 @@ msgid "Cancel at The Factory HKA"
 msgstr "Anular en The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_document_service.py:0
+msgid "Cannot digitalize: the invoice date is more than %(days)s days old."
+msgstr ""
+"No se puede digitalizar: la fecha de la factura tiene más de %(days)s días"
+" de antigüedad."
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__payment_mode_tfhka__cash
 msgid "Cash Payment"
 msgstr "Pago de contado"
@@ -337,8 +345,8 @@ msgstr "Número de Documento TFHKA"
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/services/tfhka_document_service.py:0
 #: code:addons/l10n_ve_invoice_digital/services/tfhka_retention_service.py:0
-msgid "Document successfully digitized on %(date)s"
-msgstr "Documento digitalizado exitosamente el %(date)s"
+msgid "Document successfully digitized"
+msgstr "Documento digitalizado exitosamente"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__endpoint
