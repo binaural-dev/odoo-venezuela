@@ -3,7 +3,8 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from odoo import Command, fields
-from odoo.addons.l10n_ve_invoice_digital.services.tfhka_client import TfhkaBusinessError
+from odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin import MAX_CONNECTION_RETRIES
+from odoo.addons.l10n_ve_invoice_digital.services.tfhka_client import TfhkaBusinessError, TfhkaConnectionError
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaDataError
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
@@ -235,9 +236,11 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertIn("NIF", inv.tfhka_digitalization_error)
 
     def test_process_digitalization_error_without_tfhka_code_stays_grave_error(self):
-        # A plain UserError (401, HTTP != 200, RequestException, ...) has no
-        # .tfhka_code at all -- must default to the grave 'error' state, not
-        # crash on the getattr lookup.
+        # A plain UserError (401, HTTP != 200, ...) has no .tfhka_code at all
+        # -- must default to the grave 'error' state, not crash on the
+        # getattr lookup. A connection failure (TfhkaConnectionError) is NOT
+        # covered by this test -- it has its own requeue-and-retry path, see
+        # the test_process_digitalization_connection_* tests below.
         inv = self._create_invoice()
         inv._tfhka_enqueue_digitalization()
 
@@ -246,6 +249,56 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.assertFalse(result)
         self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    # ------------------------------------------------------------------
+    # TfhkaConnectionError: requeue-and-retry instead of grave 'error'
+    # (HD-15695 -- a connection failure must not need a human to retry it)
+    # ------------------------------------------------------------------
+
+    def test_process_digitalization_connection_error_requeues_under_cap(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        queued_at = inv.tfhka_queued_at
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=TfhkaConnectionError("Error connecting to the API: timeout")):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "queued", "A connection error must requeue, not halt the queue for a human.")
+        self.assertEqual(inv.tfhka_connection_retry_count, 1)
+        self.assertEqual(inv.tfhka_queued_at, queued_at, "FIFO position must be preserved, same as a manual retry.")
+
+    def test_process_digitalization_connection_error_escalates_to_grave_error_after_max_retries(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=TfhkaConnectionError("Error connecting to the API: timeout")):
+            for _ in range(MAX_CONNECTION_RETRIES):
+                inv.write({"tfhka_digitalization_state": "queued"})
+                result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(
+            inv.tfhka_digitalization_state, "error",
+            "After MAX_CONNECTION_RETRIES consecutive connection failures it must give up and alert a human.",
+        )
+        self.assertEqual(inv.tfhka_connection_retry_count, 0, "Counter resets so a future manual retry starts fresh.")
+
+    def test_process_digitalization_connection_error_resets_on_success(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=TfhkaConnectionError("Error connecting to the API: timeout")):
+            inv._tfhka_process_digitalization()
+        self.assertEqual(inv.tfhka_connection_retry_count, 1)
+
+        inv.write({"tfhka_digitalization_state": "queued"})
+        with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertTrue(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "success")
+        self.assertEqual(inv.tfhka_connection_retry_count, 0)
 
     # ------------------------------------------------------------------
     # _tfhka_cron_process_queue: halt-on-error guard + FIFO halt
@@ -298,6 +351,26 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.assertEqual(inv1.tfhka_digitalization_state, "success")
         self.assertEqual(inv2.tfhka_digitalization_state, "success")
+
+    def test_cron_process_queue_retries_connection_error_across_runs_without_manual_retry(self):
+        # The actual acceptance criteria from HD-15695: a connection outage
+        # must self-heal across cron ticks (simulated here by calling
+        # _tfhka_cron_process_queue() repeatedly) with nobody clicking
+        # "Retry" -- as long as it recovers before MAX_CONNECTION_RETRIES.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=TfhkaConnectionError("Error connecting to the API: timeout")):
+            for _ in range(MAX_CONNECTION_RETRIES - 1):
+                self.env["account.move"]._tfhka_cron_process_queue()
+                self.assertEqual(inv.tfhka_digitalization_state, "queued")
+
+        # Connection recovers on the next tick.
+        with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(inv.tfhka_digitalization_state, "success")
+        self.assertEqual(inv.tfhka_connection_retry_count, 0)
 
     # ------------------------------------------------------------------
     # action_tfhka_retry_digitalization / action_tfhka_generate_digital
