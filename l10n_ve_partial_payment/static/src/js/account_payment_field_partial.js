@@ -8,7 +8,10 @@ import { patch } from "@web/core/utils/patch";
 import { roundDecimals } from "@web/core/utils/numbers";
 import { usePopover } from "@web/core/popover/popover_hook";
 import { formatMonetary } from "@web/views/fields/formatters";
-import { Component, onMounted, useRef, useState } from "@odoo/owl";
+import { useService } from "@web/core/utils/hooks";
+import { useDebounced } from "@web/core/utils/timing";
+import { KeepLast } from "@web/core/utils/concurrency";
+import { Component, onMounted, onWillDestroy, useRef, useState } from "@odoo/owl";
 
 const CONTEXT_KEY = "l10n_ve_partial_paid_amount";
 
@@ -95,6 +98,7 @@ class L10nVePartialPaymentPopover extends Component {
     static template = "l10n_ve_partial_payment.PartialPaymentAmountPopover";
 
     setup() {
+        this.orm = useService("orm");
         this.inputRef = useRef("l10nVePaidAmountInput");
         // Only the raw, uninterpreted input state: `computePartialPaymentAmount`
         // is the single place that turns this into an amount/error. An
@@ -102,7 +106,25 @@ class L10nVePartialPaymentPopover extends Component {
         // from "not touched yet", which is harmless: the pure function
         // already treats empty the same way the input itself starts out,
         // i.e. as `suggestedAmount` (see `onMounted` below).
-        this.state = useState({ rawValue: "", badInput: false, error: "" });
+        // `igtfShortfall` holds the server's last `preview_advance_igtf_shortfall`
+        // response (or `null` when there's nothing to warn about / a request
+        // is in flight) -- a server-side concern, deliberately separate from
+        // the client-only `computePartialPaymentAmount` preview above.
+        this.state = useState({ rawValue: "", badInput: false, error: "", igtfShortfall: null });
+
+        // `KeepLast` drops any in-flight response once a newer request is
+        // issued, so fast typing can never let a stale RPC overwrite the
+        // alert with outdated numbers.
+        this._keepLastIgtfPreview = new KeepLast();
+        this._destroyed = false;
+        onWillDestroy(() => {
+            this._destroyed = true;
+        });
+
+        this._requestIgtfPreviewDebounced = useDebounced(
+            (amount) => this._requestIgtfPreview(amount),
+            300
+        );
 
         onMounted(() => {
             const inputEl = this.inputRef.el;
@@ -118,7 +140,49 @@ class L10nVePartialPaymentPopover extends Component {
             inputEl.value = String(this.props.suggestedAmount);
             inputEl.focus();
             inputEl.select();
+            // The input is pre-filled with `suggestedAmount` on open (never
+            // actually blank), so a user who applies without typing anything
+            // should still see the IGTF warning if it applies -- preview it
+            // once up front, same as a real keystroke would.
+            this._requestIgtfPreviewDebounced(this.props.suggestedAmount);
         });
+    }
+
+    /**
+     * Call the server's read-only IGTF-shortfall preview for `amount` and
+     * update `state.igtfShortfall` with the result.
+     *
+     * Never awaited by the "Apply" button -- this is purely advisory and
+     * must not block/delay submitting the popover.
+     *
+     * @param {number} amount
+     */
+    async _requestIgtfPreview(amount) {
+        if (!amount || amount <= 0) {
+            this.state.igtfShortfall = null;
+            return;
+        }
+        let result;
+        try {
+            result = await this._keepLastIgtfPreview.add(
+                this.orm.call(
+                    "account.move",
+                    "preview_advance_igtf_shortfall",
+                    [this.props.moveId, this.props.lineId, amount]
+                )
+            );
+        } catch {
+            // Advisory-only: a failed/aborted preview request must never
+            // surface as an error to the user, nor block "Apply".
+            return;
+        }
+        // The popover can be closed/destroyed while this RPC is in flight
+        // (e.g. the user clicked "Apply" or dismissed it) -- never write to
+        // reactive state after that point.
+        if (this._destroyed) {
+            return;
+        }
+        this.state.igtfShortfall = result && result.shortfall ? result : null;
     }
 
     get digits() {
@@ -150,6 +214,25 @@ class L10nVePartialPaymentPopover extends Component {
     }
 
     /**
+     * Human-readable warning for the current `state.igtfShortfall` (``null``
+     * while there's nothing to warn about / no response yet).
+     */
+    get igtfShortfallMessage() {
+        const shortfall = this.state.igtfShortfall;
+        if (!shortfall) {
+            return "";
+        }
+        const currencyId = shortfall.currency_id;
+        return _t(
+            "This advance doesn't have enough balance left over to also cover its IGTF: only %(realApplied)s will actually be applied to the invoice, instead of the %(requested)s entered.",
+            {
+                realApplied: formatMonetary(shortfall.real_applied, { currencyId }),
+                requested: formatMonetary(shortfall.requested, { currencyId }),
+            }
+        );
+    }
+
+    /**
      * Track the input's raw text/validity as the user types. Never writes
      * back to `inputEl.value`: this component's input is intentionally
      * uncontrolled (see `onMounted`).
@@ -158,6 +241,22 @@ class L10nVePartialPaymentPopover extends Component {
         this.state.rawValue = ev.target.value;
         this.state.badInput = ev.target.validity.badInput;
         this.state.error = "";
+        // Clear immediately rather than waiting for the debounced RPC to
+        // come back: an outdated IGTF alert left on screen while the user
+        // keeps typing a new amount would be actively misleading.
+        this.state.igtfShortfall = null;
+
+        const resolved = computePartialPaymentAmount({
+            rawValue: this.state.rawValue,
+            badInput: this.state.badInput,
+            available: this.props.amount,
+            invoiceResidual: this.props.invoiceResidual,
+            suggestedAmount: this.props.suggestedAmount,
+            digits: this.digits,
+        });
+        if (resolved.ok) {
+            this._requestIgtfPreviewDebounced(resolved.amount);
+        }
     }
 
     /**

@@ -48,13 +48,38 @@ class WizardAccountingReports(models.TransientModel):
                             )
                         )
                     )
-                    
+
                     for move in credit_notes
                 ]
             )
         )
 
         return retention_resume_lines
+
+    def _determinate_resume_sale_retention_books(self):
+        # Se usa el mismo conjunto de líneas que genera las filas RET del
+        # detalle (_search_sale_retention_lines()), en lugar de derivar el
+        # total desde `moves`, porque una retención puede pertenecer a una
+        # factura de OTRO período (filtrada por date_accounting de la
+        # retención, no por la fecha de la factura). Si se sumara a partir
+        # de `moves` (que solo trae facturas del período), el total del
+        # resumen no cuadraría con el detalle presentado al SENIAT.
+        retention_lines = self._search_sale_retention_lines()
+        credit_note_lines = retention_lines.filtered(
+            lambda line: line.move_id.move_type in ["out_refund", "in_refund"]
+        )
+        invoice_lines = retention_lines - credit_note_lines
+
+        # No se repite aquí el filtro de state == "emitted" /
+        # _check_future_retention_dates que tenía el código de compras: ya
+        # está aplicado por _get_retention_domain() al construir
+        # retention_lines, por lo que volver a filtrar sería redundante.
+        return [
+            0.0,
+            self._sum_retention_total(invoice_lines),
+            0.0,
+            self._sum_retention_total(credit_note_lines),
+        ]
 
     def _resume_sale_book_fields(self, moves):
         res_book = super()._resume_sale_book_fields(moves)
@@ -63,7 +88,7 @@ class WizardAccountingReports(models.TransientModel):
                 {
                     "name": "Total Retenciones",
                     "format": "number",
-                    "values": self._determinate_resume_retention_books(moves),
+                    "values": self._determinate_resume_sale_retention_books(),
                 }
             ]
         )
@@ -83,7 +108,7 @@ class WizardAccountingReports(models.TransientModel):
         )
         return res_book
 
-    
+
     def _get_sale_book_field_groups(self):
         sale_groups = super()._get_sale_book_field_groups()
 
@@ -92,14 +117,14 @@ class WizardAccountingReports(models.TransientModel):
             {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
             {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
         ]
-        
+
         sale_groups.append({
-            'header': 'RETENCIONES', 
+            'header': 'RETENCIONES',
             'fields': retention_fields
         })
 
         return sale_groups
-    
+
     def _fields_purchase_book_line(self, move, taxes):
         fields_purchase_book_line = super()._fields_purchase_book_line(move, taxes)
 
@@ -114,32 +139,66 @@ class WizardAccountingReports(models.TransientModel):
             )
 
         return fields_purchase_book_line
-    
+
     def _fields_sale_book_line(self, move, taxes):
         fields_sale_book_line = super()._fields_sale_book_line(move, taxes)
 
-        retention_data = self.get_retention_iva_values(move.id)
         fields_sale_book_line.update(
             {
-                "retention_date": retention_data.get("date_retention", "--"),
-                "retention_number": retention_data.get("number_retention", "--"),
-                "iva_withheld": retention_data.get("iva_retained", 0),
+                "retention_date": "--",
+                "retention_number": "--",
+                "iva_withheld": 0,
             }
         )
 
         return fields_sale_book_line
-    
+
+    def _fields_retention_book_line(self, move, retention_line):
+        taxes = self._determinate_amount_taxeds(move)
+        fields_retention_book_line = self._fields_sale_book_line(move, taxes)
+
+        for group in self._get_sale_book_field_groups():
+            for field in group.get("fields", []):
+                if (
+                    field.get("format") == "number"
+                    and field["field"] in fields_retention_book_line
+                ):
+                    fields_retention_book_line[field["field"]] = 0
+
+        retention = retention_line.retention_id
+        fields_retention_book_line.update(
+            {
+                "document_date": self._format_date(retention.date),
+                "move_type": "RET",
+                "transaction_type": "04-REG",
+                "retention_date": self._format_date(retention.date),
+                "retention_number": retention.number or "--",
+                "iva_withheld": self._sum_retention_total(retention_line),
+            }
+        )
+
+        return fields_retention_book_line
+
+    def _search_sale_retention_lines(self):
+        retention = self.env["account.retention"]
+        domain = self._get_retention_domain()
+        retention_ids = retention.search(domain)
+
+        return retention_ids.mapped("retention_line_ids").filtered(
+            lambda line: line.move_id and line.move_id.state != "cancel"
+        )
+
     def _get_purchase_book_field_groups(self):
-        purchase_groups = super()._get_purchase_book_field_groups() 
+        purchase_groups = super()._get_purchase_book_field_groups()
 
         retention_fields = [
             {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},
             {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
             {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
         ]
-        
+
         purchase_groups.append({
-            'header': 'RETENCIONES', 
+            'header': 'RETENCIONES',
             'fields': retention_fields
         })
 
@@ -167,14 +226,14 @@ class WizardAccountingReports(models.TransientModel):
         return moves
 
     def search_moves(self):
-        retention = self.env["account.retention"]
         res_moves = super().search_moves()
 
-        domain = self._get_retention_domain()
-        retention_ids = retention.search(domain)
-        moves = retention_ids.mapped("retention_line_ids.move_id")
-        moves = self._filter_retention_moves(moves)
-        res_moves |= moves
+        if self.report != "sale":
+            retention = self.env["account.retention"]
+            domain = self._get_retention_domain()
+            retention_ids = retention.search(domain)
+            moves = retention_ids.mapped("retention_line_ids.move_id")
+            res_moves |= moves
 
         return res_moves
 
@@ -198,10 +257,22 @@ class WizardAccountingReports(models.TransientModel):
                         "tax_base_general_aliquot": 0,
                     }
                 )
-            retention_data = self.get_retention_iva_values(move.get("_id"))
-            move.update(retention_data)
+
+        for retention_line in self._search_sale_retention_lines():
+            move = retention_line.move_id
+            if not move:
+                continue
+            data.append(self._fields_retention_book_line(move, retention_line))
+
+        data.sort(key=self._sale_book_line_sort_key)
 
         return data
+
+    def _sale_book_line_sort_key(self, line):
+        try:
+            return datetime.strptime(line.get("document_date", ""), "%d/%m/%Y")
+        except (TypeError, ValueError):
+            return datetime.max
 
     def parse_purchase_book_data(self):
         data = super().parse_purchase_book_data()
@@ -242,7 +313,7 @@ class WizardAccountingReports(models.TransientModel):
 
         if not ret_lines:
             return ret_vals
-        
+
         for ret_line in ret_lines:
 
             if ret_line and self._check_future_retention_dates(ret_line.retention_id.date_accounting):
@@ -260,12 +331,12 @@ class WizardAccountingReports(models.TransientModel):
 
     def _sum_retention_total(self, lines):
         is_check_currency_system = self.currency_system
-        
+
         total = 0.0
         for line in lines:
             if line.move_id.state == "cancel":
                 continue
-                
+
             retention = line.retention_id
             if (
                 self.report == "purchase"

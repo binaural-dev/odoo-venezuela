@@ -133,6 +133,35 @@ exacto (ver `js_assign_outstanding_line` /
 `l10n_ve_igtf._create_advance_payment_move`). Reproducir esa lógica fiscal
 en JS para el preview se consideró fuera de alcance.
 
+### Alerta de recorte de IGTF en anticipos (cambio de la decisión anterior)
+
+Cuando se aplica un anticipo de un diario con IGTF y ese anticipo no tiene
+saldo de sobra para cubrir también el IGTF, `l10n_ve_igtf` aplica
+intencionalmente MENOS del monto pedido a la factura (ej. se piden $2,00 y
+se aplican $1,94) — comportamiento correcto, confirmado con el consultor
+contable del cliente, que este módulo NO modifica.
+
+Lo que sí agrega este módulo es una alerta visual en el MISMO popover,
+*antes* de aplicar: un nuevo método público de solo lectura,
+`account.move.preview_advance_igtf_shortfall(line_id, paid_amount)`
+(`models/account_move.py`), replica (sin persistir nada) la fórmula exacta de
+`l10n_ve_igtf.account_move._create_advance_payment_move` /
+`prepare_igtf_payment_vals` para estimar si el monto tecleado cae en ese
+escenario, y de ser así, cuánto se aplicaría realmente. El JS (`static/src/js/account_payment_field_partial.js`) llama a este método vía RPC
+con debounce (~300ms, `useDebounced` + `KeepLast`) en cada tecleo válido —
+tanto para montos parciales como para el camino de aplicación "completa" del
+mismo popover (monto igual o mayor al residual) — y muestra el mensaje de
+alerta en el template cuando corresponde (`static/src/xml/account_payment_templates.xml`). El botón "Apply" nunca espera a este RPC.
+
+Esto actualiza/reemplaza la limitación de precisión documentada arriba
+**únicamente para este caso de recorte de IGTF**: el preview del saldo
+restante sigue siendo una estimación 100% client-side (sin cambios), pero
+ahora corre en paralelo una verificación server-side específica para avisar
+de este recorte conocido. Un test de paridad
+(`tests/test_advance_igtf_shortfall_preview.py`) aplica de verdad el pago y
+compara el residual resultante contra lo que predijo el preview, para
+blindar contra que la fórmula se desalinee con `l10n_ve_igtf` en el futuro.
+
 **Nota sobre el `.po` de este ajuste:** los 3 strings nuevos (`Amount to
 apply`, `Remaining payment balance:`, el mensaje de error de saldo pendiente
 de factura) se agregaron a mano a `i18n/es_VE.po`, no vía
