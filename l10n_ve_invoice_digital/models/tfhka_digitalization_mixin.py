@@ -248,12 +248,11 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                     self.message_post(
                         body=status_message(
                             _(
-                                "TFHKA connection failed (attempt %(count)s/%(max)s), "
-                                "will retry automatically: %(error)s"
+                                "TFHKA connection failed, retrying automatically "
+                                "(attempt %(count)s/%(max)s)."
                             ) % {
                                 "count": retry_count,
                                 "max": MAX_CONNECTION_RETRIES,
-                                "error": error,
                             },
                             "error",
                         ),
