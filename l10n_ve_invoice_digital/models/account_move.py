@@ -315,6 +315,7 @@ class AccountMove(models.Model):
         return bool(self.multi_currency_invoice and self.line_currency == 'USD')
 
     def generate_document_digital(self):
+        self._check_tfhka_payment_required()
         # Toda la lógica vive en la capa de servicios (tfhka.document.service).
         return self.env["tfhka.document.service"].send_document(self)
 
