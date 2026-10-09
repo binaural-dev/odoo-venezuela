@@ -181,16 +181,30 @@ class ResPartner(models.Model):
                     vals.get("prefix_vat"), vals.get("vat"))
             if "email" in vals and vals.get("type", "contact") == "contact":
                 self.check_duplicate_email(vals.get("email"))
-        return super(ResPartner, self).create(vals_list)
+        partners = super(ResPartner, self).create(vals_list)
+        # The check above only sees partners already in the database, so two
+        # contacts of the same batch (an import) with the same email let each
+        # other in. Once created they can see each other.
+        batch_emails = [partner.email for partner in partners if partner.email]
+        for partner in partners:
+            if partner.type == "contact" and batch_emails.count(partner.email) > 1:
+                partner.check_duplicate_email(partner.email)
+        return partners
 
     def write(self, vals):
+        # Only the contacts whose email really changes are checked: writing back
+        # the email a contact already has (e.g. a form, an import or any process
+        # that sends every field) must not fail because another partner shares it.
+        email_changed = self.browse()
+        if "email" in vals:
+            email_changed = self.filtered(lambda partner: partner.email != vals["email"])
         res = super().write(vals)
         if "prefix_vat" and "vat" in vals:
             for record in self:
                 record.check_duplicate_vat(
                     vals.get("prefix_vat"), vals.get("vat"))
         if "email" in vals:
-            for record in self:
+            for record in email_changed:
                 if record.type == "contact":
                     record.check_duplicate_email(vals.get("email"))
         return res
