@@ -65,7 +65,7 @@
                 <div class="d-flex align-items-center"
                      invisible="move_type not in ('in_invoice', 'in_refund') or not invoice_digital_tfhka_active">
                     <label for="vendor_series_tfhka" string="Series" class="oe_inline me-2"/>
-                    <field name="vendor_series_tfhka" nolabel="1" class="oe_inline"/>
+                    <field name="vendor_series_tfhka" nolabel="1" class="oe_inline" readonly="state != 'draft'"/>
                 </div>
             </xpath>
         </field>
