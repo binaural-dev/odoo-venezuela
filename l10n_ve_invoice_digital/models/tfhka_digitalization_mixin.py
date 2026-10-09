@@ -7,6 +7,7 @@ from odoo.exceptions import AccessError, UserError
 
 from ..services.tfhka_client import TFHKA_ENDPOINTS, _is_rate_limit_message
 from ..services.tfhka_service_base import TfhkaDataError
+from ..utils import status_message
 
 _logger = logging.getLogger(__name__)
 
@@ -229,7 +230,9 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 "tfhka_digitalization_error": str(error),
             })
             self.message_post(
-                body=_("TFHKA digitalization failed: %s") % error,
+                body=status_message(
+                    _("TFHKA digitalization failed: %s") % error, "error"
+                ),
             )
             return False
 
@@ -303,12 +306,15 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 "is_digitalized": True,
             })
             self.message_post(
-                body=_(
-                    "TFHKA digitalization was interrupted before Odoo could record the "
-                    "result, but the API log shows it actually succeeded (see The Factory "
-                    "HKA API Log #%s). Recovered automatically -- the document was not "
-                    "resubmitted."
-                ) % log_entry.id,
+                body=status_message(
+                    _(
+                        "TFHKA digitalization was interrupted before Odoo could record the "
+                        "result, but the API log shows it actually succeeded (see The Factory "
+                        "HKA API Log #%s). Recovered automatically -- the document was not "
+                        "resubmitted."
+                    ) % log_entry.id,
+                    "success",
+                ),
             )
             return True
 
@@ -326,14 +332,17 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 ) % {"minutes": minutes},
             })
             self.message_post(
-                body=_(
-                    "TFHKA digitalization was interrupted before Odoo could record the "
-                    "result, and no matching successful call was found in the API log "
-                    "after waiting %(minutes)s minute(s). Marked as error instead of "
-                    "being requeued automatically, since a blind retry risks submitting "
-                    "a duplicate if TFHKA actually received the original request -- "
-                    "verify directly with TFHKA before retrying."
-                ) % {"minutes": minutes},
+                body=status_message(
+                    _(
+                        "TFHKA digitalization was interrupted before Odoo could record the "
+                        "result, and no matching successful call was found in the API log "
+                        "after waiting %(minutes)s minute(s). Marked as error instead of "
+                        "being requeued automatically, since a blind retry risks submitting "
+                        "a duplicate if TFHKA actually received the original request -- "
+                        "verify directly with TFHKA before retrying."
+                    ) % {"minutes": minutes},
+                    "error",
+                ),
             )
             return True
 
