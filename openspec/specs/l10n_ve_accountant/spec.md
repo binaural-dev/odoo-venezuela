@@ -669,3 +669,12 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
 - **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta
+
+### Requirement: El widget de pagos de una factura sin guardar no busca con `NewId`
+
+`_get_all_reconciled_invoice_partials` DEBE (MUST) buscar los asientos de diferencia alterna (`l10n_ve_exchange_foreign_source_move_id`) con `_origin.id` y devolver el resultado nativo sin consultar cuando la factura aún no existe en base de datos, evitando la advertencia `Domains don't support NewId`.
+
+#### Scenario: Factura en onchange sin guardar
+
+- **WHEN** se computa el widget de pagos de una factura nueva (`NewId`)
+- **THEN** no se emite la advertencia de dominio y no se agregan parciales sintéticos

@@ -1458,17 +1458,18 @@ class AccountRetention(models.Model):
 
             if duplicate_line:
                 other_ret = duplicate_line.retention_id
-
-                # Obtener el label del campo (ej. 'Estado')
-                field_label = other_ret._fields['state'].string
+                state_field = other_ret._fields['state']
+                state_label = dict(state_field._description_selection(self.env)).get(
+                    other_ret.state, other_ret.state
+                )
 
                 raise UserError(_(
-                    "No se puede emitir este comprobante.\n\n"
-                    "La factura '%(invoice)s' ya está incluida en el comprobante '%(other_ret)s' "
+                    "This retention cannot be posted.\n\n"
+                    "The invoice '%(invoice)s' is already included in retention '%(other_ret)s' "
                     "(%(field_name)s: %(state_val)s)."
                 ) % {
                     'invoice': duplicate_line.move_id.display_name,
                     'other_ret': other_ret.display_name,
-                    'field_name': field_label,
-                    'state_val': other_ret.state,
+                    'field_name': state_field._description_string(self.env),
+                    'state_val': state_label,
                 })
