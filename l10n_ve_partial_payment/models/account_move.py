@@ -17,7 +17,7 @@ different-currency scenario (invoice/advance in USD, company in VEF) can
 leave the exchange-difference entries distributed differently than a single
 full application would. Left as follow-up refactor.
 """
-from odoo import models, _
+from odoo import api, models, _
 from odoo.exceptions import UserError
 from odoo.tools import float_compare
 from odoo.tools.misc import formatLang
@@ -85,6 +85,167 @@ class AccountMove(models.Model):
             or payment_move.origin_payment_advanced_payment_id
             or (payment_move.origin_payment_id and payment_move.origin_payment_id.is_advance_payment)
         )
+
+    @api.readonly
+    def preview_advance_igtf_shortfall(self, line_id, paid_amount):
+        """RPC-callable, read-only preview of an advance's IGTF shortfall.
+
+        Computes (without creating/writing anything) whether applying
+        ``paid_amount`` to the advance outstanding line ``line_id`` would
+        leave that advance without enough headroom to also cover its own
+        IGTF -- in which case ``l10n_ve_igtf`` carves the IGTF out of the
+        invoice's receivable/payable line instead, applying LESS than
+        ``paid_amount`` to the invoice. This is intentional, confirmed
+        behavior on the accounting side (not a bug); this method only
+        exists to warn the user about it *before* they apply.
+
+        Replicates, without calling or modifying it, the exact formula of
+        ``l10n_ve_igtf.account_move._create_advance_payment_move`` (lines
+        326-477 at the time of writing, in particular the
+        ``base_amount_applied``/``igtf_in_invoice_curr`` comparison at
+        lines 372-439) and of ``prepare_igtf_payment_vals`` (lines
+        524-577, the sign-aware adjustment of the counterpart line that
+        decides what actually reconciles against the invoice). Only
+        public methods/fields of ``l10n_ve_igtf`` are used:
+        ``account.payment.calculate_igtf_for_payment`` and
+        ``invoice_outstanding_credits_debits_widget_advance_payment``. If
+        that module's formula changes, this preview can drift out of sync
+        -- the parity test in this module's test suite
+        (``test_advance_igtf_shortfall_preview.py``) pins the two against
+        each other so such a drift fails loudly instead of silently.
+
+        Parameters
+        ----------
+        line_id : int
+            ID of the outstanding ``account.move.line`` selected from the
+            popover (same id ``js_assign_outstanding_line`` would receive).
+        paid_amount : float
+            Amount the user is about to apply, in the invoice's currency
+            (may be a genuine partial, or an amount greater than or equal
+            to the invoice's residual -- the "apply in full" case, which
+            this preview also covers by clamping to the residual the same
+            way the full-apply path does downstream).
+
+        Returns
+        -------
+        dict
+            ``{'shortfall': False}`` when there is nothing to warn about
+            (not an advance line, not an IGTF journal, enough headroom in
+            the advance, or any input that can't be resolved -- e.g. a
+            line belonging to a different company/partner's advance, which
+            simply won't be found in the widget content). Otherwise
+            ``{'shortfall': True, 'requested': <float>, 'real_applied':
+            <float>, 'igtf': <float>, 'currency_id': <int>}``, all amounts
+            in the invoice's currency.
+        """
+        self.ensure_one()
+        no_shortfall = {"shortfall": False}
+
+        widget = self.invoice_outstanding_credits_debits_widget_advance_payment or {}
+        widget_content = widget.get("content", []) if isinstance(widget, dict) else []
+
+        outstanding_line = self.env["account.move.line"].browse(line_id)
+        target_move_id = outstanding_line.move_id.id
+        matched_content = next(
+            (c for c in widget_content if c.get("move_id") == target_move_id), None
+        )
+        if not matched_content or not self._is_advance_outstanding_line(outstanding_line):
+            return no_shortfall
+
+        payment = (
+            outstanding_line.move_id.origin_payment_advanced_payment_id
+            or outstanding_line.move_id.origin_payment_id
+        )
+        if not payment:
+            return no_shortfall
+
+        is_igtf_journal = bool(
+            payment.journal_id.is_igtf
+            if (
+                self.partner_id._check_igtf_apply_improved(self.move_type)
+                and not self.journal_id.is_purchase_international
+            )
+            else False
+        )
+        if not is_igtf_journal:
+            return no_shortfall
+
+        currency = self.currency_id
+        advance_amount = matched_content.get("amount", 0.0) or 0.0
+        advance_amount_payment_curr = matched_content.get("amount_residual_currency", 0.0) or 0.0
+        conversion_date = matched_content.get("date_to_convert")
+
+        if currency.is_zero(advance_amount):
+            # Mirrors `_create_advance_payment_move`'s own `UserError` guard
+            # ("advance amount not found"): nothing meaningful to preview.
+            return no_shortfall
+
+        try:
+            requested = float(paid_amount)
+        except (TypeError, ValueError):
+            return no_shortfall
+        if float_compare(requested, 0.0, precision_rounding=currency.rounding) <= 0:
+            return no_shortfall
+
+        # The "apply in full" path (paid_amount >= residual, or no
+        # CONTEXT_KEY at all) always routes through `js_assign_outstanding_line`
+        # with the invoice's own full residual as `amount_residual`, never
+        # the literal typed amount -- clamp the same way here so the preview
+        # matches what would actually be sent downstream.
+        invoice_residual = abs(self.amount_residual)
+        effective_requested = (
+            min(requested, invoice_residual) if not currency.is_zero(invoice_residual) else requested
+        )
+
+        base_amount_applied = min(effective_requested, advance_amount)
+        applied_payment_curr = advance_amount_payment_curr
+        if advance_amount > 0:
+            applied_payment_curr = payment.currency_id.round(
+                advance_amount_payment_curr * (base_amount_applied / advance_amount)
+            )
+
+        igtf_amount = abs(
+            payment.calculate_igtf_for_payment(
+                self, applied_payment_curr, payment.currency_id, conversion_date
+            )
+        )
+        if currency.is_zero(igtf_amount):
+            return no_shortfall
+
+        igtf_in_invoice_curr = payment.currency_id._convert(
+            igtf_amount, currency, self.company_id, conversion_date
+        )
+
+        if currency.compare_amounts(base_amount_applied + igtf_in_invoice_curr, advance_amount) <= 0:
+            # Escenario A: the advance absorbs its own IGTF -- the full
+            # (clamped) requested amount still lands on the invoice.
+            return no_shortfall
+
+        # Escenario B: replicate `prepare_igtf_payment_vals`'s sign-aware
+        # adjustment of the counterpart (receivable/payable) line instead of
+        # a naive subtraction. Regardless of inbound/outbound sign, that
+        # adjustment always shrinks the counterpart line's magnitude by
+        # `igtf_amount` (in the payment's own currency) -- see the method's
+        # docstring for the line-by-line trace.
+        amount_advance_payment_curr = (
+            base_amount_applied if payment.currency_id == currency else applied_payment_curr
+        )
+        real_applied_payment_curr = amount_advance_payment_curr - igtf_amount
+        if payment.currency_id != currency:
+            real_applied = payment.currency_id._convert(
+                real_applied_payment_curr, currency, self.company_id, conversion_date
+            )
+        else:
+            real_applied = real_applied_payment_curr
+        real_applied = max(0.0, currency.round(real_applied))
+
+        return {
+            "shortfall": True,
+            "requested": requested,
+            "real_applied": real_applied,
+            "igtf": currency.round(igtf_in_invoice_curr),
+            "currency_id": currency.id,
+        }
 
     def js_assign_outstanding_line(self, line_id):
         """Reconcile ``line_id`` against ``self``, honoring a partial amount.

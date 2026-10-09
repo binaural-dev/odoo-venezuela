@@ -155,6 +155,18 @@ msgid "The amount to apply must be greater than zero."
 msgstr "El monto a aplicar debe ser mayor a cero."
 
 #. module: l10n_ve_partial_payment
+#. odoo-javascript
+#: code:addons/l10n_ve_partial_payment/static/src/js/account_payment_field_partial.js:0
+msgid ""
+"This advance doesn't have enough balance left over to also cover its "
+"IGTF: only %(realApplied)s will actually be applied to the invoice, "
+"instead of the %(requested)s entered."
+msgstr ""
+"Este anticipo no tiene saldo suficiente de sobra para cubrir además su "
+"IGTF: solo se aplicará %(realApplied)s a la factura, en vez de los "
+"%(requested)s ingresados."
+
+#. module: l10n_ve_partial_payment
 #. odoo-python
 #: code:addons/l10n_ve_partial_payment/models/account_move.py:0
 msgid "Unknown"
