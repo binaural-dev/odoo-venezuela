@@ -27,7 +27,9 @@ class AccountMoveLine(models.Model):
     _inherit = "account.move.line"
 
     def _prepare_reconciliation_amls(self, values_list, shadowed_aml_values=None):
-        """Cap the invoice line's residual in ``values_list`` to the requested amount.
+        """Cap the invoice's candidate lines in ``values_list`` to a SHARED
+        budget of the requested amount, instead of capping each one
+        independently.
 
         Only active when both ``context[CONTEXT_KEY]`` and ``context['move_id']``/
         ``context['line_id']`` are present -- these are set together by
@@ -36,6 +38,23 @@ class AccountMoveLine(models.Model):
         never touches an unrelated reconciliation (e.g. cash-basis or
         exchange-difference moves) that happens to run under the same
         ambient context later in the same request.
+
+        Capping each candidate line independently is wrong whenever the
+        invoice's payment term has more than one installment line: e.g. two
+        50 installments with a requested amount of 60 would let each one
+        independently claim ``min(60, 50) = 50``, over-applying 100 instead
+        of 60. Here a single ``remaining_amount`` budget (initialized to
+        ``abs(paid_amount)``) is shared and consumed across ALL of the
+        move's candidate lines, oldest due date first, so the total applied
+        never exceeds the requested amount.
+
+        ``remaining_amount`` is reset on every call to this hook. That is
+        correct in this flow because ``js_assign_outstanding_line`` always
+        reconciles against a SINGLE invoice per call (one currency node with
+        pending lines); if the core ever allowed splitting one payment
+        across several invoices within the same call, this accumulator
+        would need to be reconsidered (it must not be assumed to hold
+        across nodes).
 
         Parameters
         ----------
@@ -61,24 +80,45 @@ class AccountMoveLine(models.Model):
                 values_list, shadowed_aml_values=shadowed_aml_values
             )
 
-        capped_values_list = []
-        for values in values_list:
+        target_indexes = sorted(
+            (
+                i
+                for i, v in enumerate(values_list)
+                if v["aml"].move_id.id == move_id and v["aml"].id != line_id
+            ),
+            key=lambda i: (
+                values_list[i]["aml"].date_maturity or values_list[i]["aml"].date,
+                values_list[i]["aml"].id,
+            ),
+        )
+
+        remaining_amount = abs(paid_amount)
+        capped_values_list = list(values_list)
+        for i in target_indexes:
+            values = dict(values_list[i])
             aml = values["aml"]
-            if aml.move_id.id == move_id and aml.id != line_id:
-                values = dict(values)
-                original_currency_residual = values["amount_residual_currency"]
-                sign = -1.0 if original_currency_residual < 0 else 1.0
-                capped_currency_residual = sign * min(abs(paid_amount), abs(original_currency_residual))
+            currency = aml.currency_id
+            original_currency_residual = values["amount_residual_currency"]
+            sign = -1.0 if original_currency_residual < 0 else 1.0
 
-                if float_is_zero(original_currency_residual, precision_rounding=aml.currency_id.rounding):
-                    ratio = 0.0
-                else:
-                    ratio = capped_currency_residual / original_currency_residual
+            if float_is_zero(remaining_amount, precision_rounding=currency.rounding):
+                capped_currency_residual = 0.0
+            else:
+                capped_currency_residual = currency.round(
+                    sign * min(remaining_amount, abs(original_currency_residual))
+                )
+            remaining_amount -= abs(capped_currency_residual)
 
-                values["amount_residual_currency"] = capped_currency_residual
-                values["amount_residual"] = values["amount_residual"] * ratio
+            if float_is_zero(original_currency_residual, precision_rounding=currency.rounding):
+                ratio = 0.0
+            else:
+                ratio = capped_currency_residual / original_currency_residual
 
-            capped_values_list.append(values)
+            values["amount_residual_currency"] = capped_currency_residual
+            values["amount_residual"] = aml.company_currency_id.round(
+                values["amount_residual"] * ratio
+            )
+            capped_values_list[i] = values
 
         return super()._prepare_reconciliation_amls(
             capped_values_list, shadowed_aml_values=shadowed_aml_values
