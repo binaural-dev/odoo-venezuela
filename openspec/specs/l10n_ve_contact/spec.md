@@ -65,12 +65,22 @@ El sistema DEBE (MUST) rechazar, vía `check_duplicate_vat`, la existencia de ot
 
 ### Requirement: Duplicidad de email en contactos
 
-El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un `res.partner` de tipo `contact` con un email que ya tenga **cualquier** otro partner (el dominio filtra por `email` e `id`, sin filtrar por `type`): en `create` cuando los valores traen `email` y el `type` es `contact` (o no viene), y en `write` cuando traen `email`, evaluando el `type` de cada registro y después del `super().write()`. Igual que en el RIF, los flags de compañía solo determinan si la búsqueda se restringe a `company_id` o es global y qué mensaje se muestra; nunca desactivan el control.
+El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un `res.partner` de tipo `contact` con un email que ya tenga **cualquier** otro partner (el dominio filtra por `email` e `id`, sin filtrar por `type`): en `create` cuando los valores traen `email` y el `type` es `contact` (o no viene), y en `write` cuando traen `email` **distinto del que ya tiene el registro**, evaluando el `type` de cada registro y después del `super().write()`. En `create`, además, una vez creado el lote se vuelve a validar cada contacto cuyo email se repite dentro del mismo lote, porque el control previo solo ve los partners que ya existían. Igual que en el RIF, los flags de compañía solo determinan si la búsqueda se restringe a `company_id` o es global y qué mensaje se muestra; nunca desactivan el control.
 
 #### Scenario: Email repetido
 
 - **WHEN** se guarda un contacto de tipo `contact` con un email que ya tiene otro partner dentro del alcance configurado, aunque ese otro partner sea una dirección de entrega o una compañía
 - **THEN** se lanza `ValidationError`
+
+#### Scenario: Email repetido dentro del mismo lote
+
+- **WHEN** se crean en una sola llamada (por ejemplo una importación) dos contactos de tipo `contact` con el mismo email que no existía antes
+- **THEN** se lanza `ValidationError` y no se crea ninguno
+
+#### Scenario: Reescribir el mismo email
+
+- **WHEN** un `write` envía en `email` el mismo valor que ya tiene el contacto (un formulario, una importación o cualquier proceso que reenvía todos los campos), aunque otro partner ya comparta ese email por datos previos
+- **THEN** no se valida la duplicidad y el `write` se guarda
 
 #### Scenario: Dirección de entrega
 
