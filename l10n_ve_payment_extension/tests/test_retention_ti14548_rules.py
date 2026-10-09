@@ -205,10 +205,11 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         self.assertEqual(retention_1.state, "emitted")
 
         retention_2 = self._make_iva_customer_retention([dict(line_vals)], number="01234567891235")
-        with self.assertRaises(ValidationError) as e:
+        # The by-invoice duplicate check runs before the per-concept/aliquot/activity ones.
+        with self.assertRaises(UserError) as e:
             retention_2.action_post()
         msg = str(e.exception)
-        self.assertIn("was already retained at the same tax", msg)
+        self.assertIn("is already included in retention", msg)
         self.assertIn(retention_1.display_name, msg)
 
         _logger.info(
@@ -268,10 +269,11 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         line_2 = dict(line_1, invoice_amount=1.0, retention_amount=0.03,
                       foreign_invoice_amount=1.0, foreign_retention_amount=0.03)
         retention_2 = self._make_islr_customer_retention([line_2], number="01234567891235")
-        with self.assertRaises(ValidationError) as e:
+        # The by-invoice duplicate check runs before the per-concept/aliquot/activity ones.
+        with self.assertRaises(UserError) as e:
             retention_2.action_post()
         msg = str(e.exception)
-        self.assertIn("exceeds the actual base billed under that", msg)
+        self.assertIn("is already included in retention", msg)
         self.assertIn(retention_1.display_name, msg)
 
         _logger.info(
@@ -373,10 +375,11 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "date_accounting": fields.Date.today(),
             "retention_line_ids": [Command.create(dict(line_vals))],
         })
-        with self.assertRaises(ValidationError) as e:
+        # The by-invoice duplicate check runs before the per-concept/aliquot/activity ones.
+        with self.assertRaises(UserError) as e:
             retention_2.action_post()
         msg = str(e.exception)
-        self.assertIn("was already retained for the same", msg)
+        self.assertIn("is already included in retention", msg)
         self.assertIn(retention_1.display_name, msg)
 
         _logger.info(

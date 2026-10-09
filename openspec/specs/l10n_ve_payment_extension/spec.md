@@ -628,3 +628,38 @@ Al escribir `condition_withholding_id` en `res.company`, el sistema DEBE (MUST) 
 
 - **WHEN** se escribe la condición de retención en una compañía sin partner asociado
 - **THEN** la escritura se completa sin propagar el valor
+
+### Requirement: Los montos de una línea de retención de IVA de proveedor deben ser de solo lectura
+
+El sistema SHALL mostrar `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` como campos de solo lectura (con su valor preservado al guardar, vía `force_save`) en cada línea de `account.retention.line` cuando la retención (`account.retention.type`) sea de proveedor (`in_invoice`, `in_refund` o `in_debit`).
+
+Para retenciones de cliente (`out_invoice`, `out_refund`, `out_debit`) estos campos SHALL permanecer editables, sujeto solo a las reglas de `state` ya existentes.
+
+#### Scenario: Retención de proveedor
+
+- **GIVEN** una retención de IVA con `type = 'in_invoice'`
+- **WHEN** se abre su formulario
+- **THEN** `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` de cada línea SHALL aparecer de solo lectura
+
+#### Scenario: Retención de cliente
+
+- **GIVEN** una retención de IVA con `type = 'out_invoice'`
+- **WHEN** se abre su formulario
+- **THEN** `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` de cada línea SHALL seguir siendo editables (según el estado de la retención)
+
+### Requirement: Una factura no puede estar en dos comprobantes de retención del mismo tipo al emitir
+
+Al ejecutar `action_post`, el sistema DEBE (MUST) llamar a `_check_duplicate_invoices_all_states` ANTES de las validaciones específicas de `_check_duplicate_retention_lines` (ISLR por concepto, IVA por alícuota, municipal por actividad económica). Si alguna factura del comprobante ya figura en otro comprobante con el mismo `type_retention` en estado `draft` o `emitted`, DEBE (MUST) lanzar un `UserError` (mensaje en inglés con traducción al español en `i18n/es_VE.po`) indicando la factura, el otro comprobante y su estado. Los comprobantes `cancel` y los de otro `type_retention` NO bloquean. El sistema NO cancela ni elimina automáticamente ningún borrador: dos borradores sobre la misma factura pueden coexistir hasta que se intente emitir alguno.
+
+El control es por factura (sin diferenciador): en la práctica no se emiten dos retenciones del mismo tipo sobre la misma factura, y un duplicado se detecta en la primera emisión, aun cuando el otro comprobante siga en borrador (caso de la factura consolidada en otro comprobante, ticket #15531).
+
+#### Scenario: Factura consolidada en otro comprobante
+
+- **GIVEN** la factura B en la retención A (consolidada) y en su retención individual B en borrador
+- **WHEN** se emite A, o luego B
+- **THEN** se lanza un `UserError` que nombra el otro comprobante y su estado
+
+#### Scenario: Comprobante cancelado o de otro tipo
+
+- **WHEN** la otra retención con la misma factura está `cancel`, o es de otro `type_retention`
+- **THEN** no se lanza el error de duplicidad
