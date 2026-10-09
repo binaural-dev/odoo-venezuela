@@ -5,6 +5,24 @@ from odoo.exceptions import UserError, ValidationError
 class ResCompany(models.Model):
     _inherit = "res.company"
 
+    tax_calculation_rounding_method = fields.Selection(default="round_per_line")
+
+    tax_totals_edit_tolerance = fields.Float(
+        string="Tax Amount Edit Tolerance",
+        default=0.03,
+        help="Maximum amount (in the document's currency) that the "
+        "tax_totals pencil-edit may move a tax group's amount away from "
+        "its computed value, in either direction. Only enforced for users "
+        "in the 'Fiscal Config Support' group -- everyone else can't edit "
+        "the field at all.",
+    )
+
+    @api.constrains('tax_totals_edit_tolerance')
+    def _check_tax_totals_edit_tolerance(self):
+        for company in self:
+            if not 0.0 <= company.tax_totals_edit_tolerance <= 1.0:
+                raise ValidationError(_("The tax amount edit tolerance must be between 0 and 1."))
+
     taxpayer_type = fields.Selection(
         [
             ("formal", "Formal"),

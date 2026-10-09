@@ -113,7 +113,9 @@ existiendo cuando las dos transitorias sean distintas. Cambiarlo tocaría
   diario del método quedará con saldo deudor acumulado hasta que se registre.
 - **Requisito de configuración**: tanto el diario del método como el `cross_journal`
   deben tener su propia Cuenta transitoria (`suspense_account_id`):
-  - Si a alguno le falta, el método se omite en silencio y no se crea cruce.
+  - Si a alguno le falta, el método se omite y no se crea cruce (desde el change
+    `l10n-ve-pos-cross-move-accounts-check` de `l10n_ve_pos`, con un aviso en el
+    log, y la sesión ya no abre con esa configuración).
     `_is_cross_move_eligible` comprueba **las dos** cuentas cuando
     `use_suspense=True`: sin el chequeo del destino, esa pata saldría con
     `account_id = False` y el insert violaría
