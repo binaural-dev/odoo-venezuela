@@ -61,13 +61,7 @@ class PosOrder(models.Model):
     def _prepare_invoice_vals(self):
         self.ensure_one()
         res = super()._prepare_invoice_vals()
-        res.update(
-            {
-                "foreign_rate": self.foreign_currency_rate,
-                "foreign_inverse_rate": self.foreign_currency_rate,
-                "manually_set_rate": True,
-            }
-        )
+        res.update(self.config_id._get_move_foreign_rate_vals(self.foreign_currency_rate))
         return res
 
     def _amount_to_foreign(self, amount):
@@ -114,7 +108,54 @@ class PosOrder(models.Model):
                     "foreign_rate": order.foreign_currency_rate,
                 }
             )
+        # The POS serializes the payments nested in the order, so a bundle
+        # older than task 83148 (H7), or an order queued offline with it,
+        # sends them without ``foreign_rate``. Fill those with the rate their
+        # foreign amounts were valued at.
+        payments_without_rate = order.payment_ids.filtered(
+            lambda payment: not payment.is_change and not payment.foreign_rate
+        )
+        rate = order._get_payment_foreign_rate()
+        if payments_without_rate and rate:
+            payments_without_rate.write({"foreign_rate": rate})
         return res
+
+    def _get_payment_foreign_rate(self):
+        """Main → foreign multiplier the payments of this order are valued at:
+        the order's own, or the original sale's for a refund (the POS values a
+        refund's foreign amounts at the original rate, see
+        ``get_effective_foreign_multiplier``)."""
+        self.ensure_one()
+        original = self.refunded_order_id
+        if original and original.foreign_currency_rate:
+            return original.foreign_currency_rate
+        return self.foreign_currency_rate
+
+    def _process_saved_order(self, draft):
+        # Before super: it marks the order paid and creates the payment moves
+        # and the invoice, which read the foreign amounts. Runs for the POS
+        # sync and for the backend return wizard (pos.make.payment).
+        self._align_foreign_signs()
+        return super()._process_saved_order(draft)
+
+    def _align_foreign_signs(self):
+        """Give ``foreign_amount_total`` and every ``foreign_amount`` the sign
+        of their local amount, keeping the magnitude the POS sent.
+
+        POS clients still running a bundle from before task 83148 (H1) send
+        refunds with positive foreign amounts next to a negative ``amount``.
+        ``binaural_pos_close`` and the session cross moves add
+        ``foreign_amount`` as stored, so the refund counted as cash coming in:
+        a false shortage at close and a crash on
+        ``account_move_line_check_amount_currency_balance_sign`` when the net
+        of a foreign cash method was a refund.
+        """
+        for order in self:
+            if order.amount_total * order.foreign_amount_total < 0:
+                order.foreign_amount_total = -order.foreign_amount_total
+            for payment in order.payment_ids:
+                if payment.amount * payment.foreign_amount < 0:
+                    payment.foreign_amount = -payment.foreign_amount
 
     @api.model
     def get_payments_order_refund(self, order_ids):
