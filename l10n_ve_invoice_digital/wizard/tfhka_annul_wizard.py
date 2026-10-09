@@ -1,5 +1,7 @@
 from odoo import _, fields, models
 
+from ..utils import status_message
+
 
 class TfhkaAnnulWizard(models.TransientModel):
     _name = "tfhka.annul.wizard"
@@ -20,6 +22,9 @@ class TfhkaAnnulWizard(models.TransientModel):
         # ambos lados queden consistentes en una sola operacion.
         self.retention_id.action_cancel()
         self.retention_id.message_post(
-            body=_("Retention also cancelled in Odoo (accounting entries reversed) as part of the unified cancellation."),
+            body=status_message(
+                _("Retention also cancelled in Odoo (accounting entries reversed) as part of the unified cancellation."),
+                "error",
+            ),
         )
         return {"type": "ir.actions.act_window_close"}

@@ -4,6 +4,7 @@ import re
 from odoo import _, fields, models
 from odoo.tools import float_compare, float_is_zero
 
+from ..utils import status_message
 from .tfhka_service_base import TfhkaDataError
 
 _logger = logging.getLogger(__name__)
@@ -169,9 +170,8 @@ class TfhkaDocumentService(models.AbstractModel):
 
     def _register_success(self, invoice, response, document_number):
         invoice.is_digitalized = True
-        emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
         invoice.message_post(
-            body=_("Document successfully digitized on %(date)s") % {"date": emission_date},
+            body=status_message(_("Document successfully digitized"), "success"),
             message_type='comment',
         )
         num_control_tfhka = response.get("resultado").get("numeroControl")
