@@ -5,7 +5,7 @@ from datetime import timedelta
 from odoo import _, fields, models, tools
 from odoo.exceptions import AccessError, UserError
 
-from ..services.tfhka_client import TFHKA_ENDPOINTS, _is_rate_limit_message
+from ..services.tfhka_client import TFHKA_ENDPOINTS, TfhkaConnectionError, _is_rate_limit_message
 from ..services.tfhka_service_base import TfhkaDataError
 from ..utils import status_message
 
@@ -19,13 +19,20 @@ _logger = logging.getLogger(__name__)
 # instead of hammering TFHKA in a tight loop.
 RATE_LIMIT_RETRY_WAIT = 5
 
+# Intentos consecutivos tolerados ante un fallo de conexión
+# (TfhkaConnectionError -- ni siquiera se pudo contactar a TFHKA) antes de
+# rendirse y pasar a 'error' para revisión humana. El cron corre cada
+# minuto, así que esto tolera ~5 minutos de caída antes de alertar -- ver
+# HD-15695.
+MAX_CONNECTION_RETRIES = 5
+
 # TFHKA business codes that mean "problem with this document's own data"
 # (missing/malformed field, doesn't meet minimum validations) rather than a
 # grave system/integration failure. See the digital printer's error code
 # table: 203 = rejected for missing/malformed required field, 205 = doesn't
 # meet minimum validations (art. 28). Any other code (or no code at all, e.g.
-# a network/auth failure with no TFHKA business code) stays 'error' unless it
-# is a TfhkaDataError -- see _tfhka_process_digitalization.
+# an auth failure with no TFHKA business code) stays 'error' unless it is a
+# TfhkaDataError or TfhkaConnectionError -- see _tfhka_process_digitalization.
 DATA_ERROR_TFHKA_CODES = {"203", "205"}
 
 # Safety cap so one cron run can't try to drain an unbounded backlog in a
@@ -126,6 +133,15 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         help="Error message from the last failed digitalization attempt. "
              "Cleared once the document digitalizes successfully.",
     )
+    tfhka_connection_retry_count = fields.Integer(
+        string="TFHKA Connection Retry Count",
+        default=0,
+        copy=False,
+        help="Consecutive failed attempts due to a connection error. Reset "
+             "to 0 on a successful digitalization or a manual retry. Once it "
+             "reaches MAX_CONNECTION_RETRIES, the document is moved to "
+             "'error' instead of being requeued again.",
+    )
 
     def write(self, vals):
         """Stamps date_state on every tfhka_digitalization_state change --
@@ -210,9 +226,40 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 "tfhka_digitalization_state": "success",
                 "tfhka_digitalization_error": False,
                 "is_digitalized": True,
+                "tfhka_connection_retry_count": 0,
             })
             return True
         except Exception as error:
+            # A connection error (couldn't even reach TFHKA's server -- not a
+            # response of any kind) is transient by definition: requeue it so
+            # the cron picks it up again on its own next run, instead of
+            # halting the whole model's queue for a human to retry manually
+            # (see HD-15695). Only after MAX_CONNECTION_RETRIES consecutive
+            # failures does it fall through to the grave 'error' path below,
+            # same as everything else.
+            if isinstance(error, TfhkaConnectionError):
+                retry_count = self.tfhka_connection_retry_count + 1
+                if retry_count < MAX_CONNECTION_RETRIES:
+                    self.write({
+                        "tfhka_digitalization_state": "queued",
+                        "tfhka_digitalization_error": str(error),
+                        "tfhka_connection_retry_count": retry_count,
+                    })
+                    self.message_post(
+                        body=status_message(
+                            _(
+                                "TFHKA connection failed (attempt %(count)s/%(max)s), "
+                                "will retry automatically: %(error)s"
+                            ) % {
+                                "count": retry_count,
+                                "max": MAX_CONNECTION_RETRIES,
+                                "error": error,
+                            },
+                            "error",
+                        ),
+                    )
+                    return False
+
             # getattr is safe for any exception that can land here (network
             # errors, ValidationError from an empty token, plain UserError
             # for HTTP 401/non-200, TfhkaBusinessError for a TFHKA business
@@ -225,15 +272,22 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             tfhka_code = getattr(error, "tfhka_code", None)
             is_data_error = tfhka_code in DATA_ERROR_TFHKA_CODES or isinstance(error, TfhkaDataError)
             new_state = "data_error" if is_data_error else "error"
-            self.write({
+            write_vals = {
                 "tfhka_digitalization_state": new_state,
                 "tfhka_digitalization_error": str(error),
-            })
-            self.message_post(
-                body=status_message(
-                    _("TFHKA digitalization failed: %s") % error, "error"
-                ),
-            )
+            }
+            if isinstance(error, TfhkaConnectionError):
+                # Exhausted MAX_CONNECTION_RETRIES: reset the counter so a
+                # future manual retry starts counting from zero again.
+                write_vals["tfhka_connection_retry_count"] = 0
+                message = _(
+                    "TFHKA digitalization failed after %(max)s connection "
+                    "attempts: %(error)s"
+                ) % {"max": MAX_CONNECTION_RETRIES, "error": error}
+            else:
+                message = _("TFHKA digitalization failed: %s") % error
+            self.write(write_vals)
+            self.message_post(body=status_message(message, "error"))
             return False
 
     def _tfhka_recover_stuck_processing(self):
@@ -515,6 +569,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         eligible.write({
             "tfhka_digitalization_state": "queued",
             "tfhka_digitalization_error": False,
+            "tfhka_connection_retry_count": 0,
         })
 
     def action_tfhka_generate_digital(self):

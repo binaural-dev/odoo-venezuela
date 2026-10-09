@@ -975,6 +975,18 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
+msgid "TFHKA connection failed (attempt %(count)s/%(max)s), will retry automatically: %(error)s"
+msgstr "Falló la conexión con TFHKA (intento %(count)s/%(max)s), se reintentará automáticamente: %(error)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
+msgid "TFHKA digitalization failed after %(max)s connection attempts: %(error)s"
+msgstr "Falló la digitalización TFHKA tras %(max)s intentos de conexión: %(error)s"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
 msgid "TFHKA digitalization failed: %s"
 msgstr "Falló la digitalización TFHKA: %s"
 
