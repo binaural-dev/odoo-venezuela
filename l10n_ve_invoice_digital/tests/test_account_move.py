@@ -114,7 +114,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "type": "bank",
                     "currency_id": self.currency_usd.id,
                     "company_id": self.company.id,
-                    "default_account_id": acc("1021", "asset_cash", "Banco USD").id,
                 }
             )
         )
