@@ -41,21 +41,33 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
             )
 
     def test_bank_journal_without_default_account_raises_user_error(self):
-        # Odoo's own create() (_fill_missing_values -> _create_default_account)
-        # auto-generates a placeholder liquidity account whenever default_account_id
-        # is missing on a bank/cash journal, so it never actually reaches our
-        # constrains empty. skip_default_account_autofill disables only that
-        # auto-creation so the constrains can be exercised against a genuinely
-        # empty default_account_id.
+        """Regression for task 81735 Requisito 1 (code review, PR #1344):
+        Odoo's own create() (_fill_missing_values -> _create_default_account)
+        used to auto-generate a placeholder liquidity account (named after
+        the journal, e.g. "Banco P") whenever default_account_id was missing
+        on a bank journal -- so the field was never actually empty by the
+        time this constrains or the view's required="type == 'bank'" would
+        get a chance to catch it. The override of _create_default_account
+        (account_journal.py) now skips that placeholder for bank journals
+        outside chart template loading, so a plain create() without
+        default_account_id genuinely reaches this constrains empty."""
         with self.assertRaises(UserError):
-            self.env["account.journal"].sudo().with_context(
-                skip_default_account_autofill=True,
-            ).create({
+            self.env["account.journal"].sudo().create({
                 "name": "Bank No Account Test",
                 "code": "BKNOA",
                 "type": "bank",
                 "company_id": self.company.id,
             })
+
+    def test_removing_default_account_from_existing_bank_journal_raises_user_error(self):
+        """Same constrains, different path: write() never goes through
+        _create_default_account (that only runs on create()), so this
+        already worked before the override above -- kept as a separate,
+        simpler regression that doesn't depend on that override at all."""
+        journal = self._create_valid_bank_journal("BKRMA")
+
+        with self.assertRaises(UserError):
+            journal.write({"default_account_id": False})
 
     def test_manual_payment_method_line_defaults_to_journal_account(self):
         journal = self.env["account.journal"].sudo().create({

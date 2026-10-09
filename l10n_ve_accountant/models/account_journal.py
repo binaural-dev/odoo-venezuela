@@ -59,7 +59,29 @@ class AccountJournal(models.Model):
 
     @api.model
     def _create_default_account(self, company, journal_type, vals):
-        if self.env.context.get('skip_default_account_autofill'):
+        """Disable core's silent placeholder account (named after the
+        journal, auto-numbered -- e.g. "Banco P") for bank journals.
+
+        Without this, _fill_missing_values (core account_journal.py) always
+        invents one when default_account_id is missing, so it's never
+        actually empty by the time _check_default_account_id_required_for_bank
+        or the view's required="type == 'bank'" would get a chance to catch
+        it -- confirmed by reproducing it manually (task 81735, Requisito 1):
+        the field is never blank, but the account has no connection to the
+        client's real bank account. The user must pick or create the real
+        one instead.
+
+        Bypassed during chart template loading / module installation, same
+        as the other constraints in this file -- that's the one legitimate
+        case where no human is present to pick an account, and Christopher's
+        code review confirmed removing it there breaks installing the chart
+        template.
+        """
+        if (
+            journal_type == 'bank'
+            and not self.env.context.get('chart_template_load')
+            and not self.env.context.get('install_mode')
+        ):
             return False
         return super()._create_default_account(company, journal_type, vals)
 
