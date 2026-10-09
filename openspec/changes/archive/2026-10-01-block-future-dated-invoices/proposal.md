@@ -15,3 +15,4 @@ Se puede confirmar una factura, nota de crédito, nota de débito o recibo (de v
 - Specs afectadas: `l10n_ve_invoice` (nueva requirement).
 - Código: `l10n_ve_invoice/models/account_move.py`, `l10n_ve_invoice/i18n/es_VE.po`.
 - No afecta documentos de compra ya registrados con fecha pasada (el caso normal de una factura de proveedor recibida días después de emitida), ni bloquea guardar borradores -- solo bloquea confirmar con una fecha que todavía no ha llegado. Los asientos contables puros (`entry`) quedan fuera del alcance.
+- La ND/NC de diferencial cambiario (`l10n_ve_exchange_difference`) toma la fecha del pago y se confirma internamente; se excluye del guard con el contexto `l10n_ve_skip_future_date_check`, para que un pago con fecha futura no falle dentro de la conciliación. Los tests de ese módulo pasan a fechas pasadas (2000-2019) sin tasas propias.

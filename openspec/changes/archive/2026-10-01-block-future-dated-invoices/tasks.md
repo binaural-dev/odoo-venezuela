@@ -7,7 +7,7 @@
 ## 2. Manifest, traducciones y tests
 
 - [x] 2.1 Bump `l10n_ve_invoice` 19.0.1.0.23 → 19.0.1.0.24
-- [x] 2.2 Traducciones `es_VE` para las 3 etiquetas de campo y el mensaje de error
+- [x] 2.2 Traducción `es_VE` del mensaje de error (las etiquetas de campo ya vienen traducidas de `fields_get`)
 - [x] 2.3 Tests de regresión en `test_future_date_action_post.py`: factura/NC/venta y factura/NC de compra con cada uno de los 3 campos en el futuro bloquean `action_post`; recibo de venta y de compra con fecha futura también bloquean; un asiento contable (`entry`) con fecha futura NO se bloquea; fecha de hoy postea bien; borrador con fecha futura se guarda sin error; una nota de débito (mismo `account.move`, `debit_origin_id`) hereda el guard sin cambios adicionales
 
 ## 3. Verificación

@@ -900,6 +900,7 @@ msgid "Discount field shown on invoice lines: percentage or fixed amount."
 msgstr "Campo de descuento mostrado en las líneas de factura: porcentaje o importe fijo."
 
 #. module: l10n_ve_invoice
+#. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid ""
 "%(field)s (%(value)s) cannot be later than today (%(today)s) to confirm "
