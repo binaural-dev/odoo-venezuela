@@ -329,6 +329,12 @@ class AccountMove(models.Model):
         Solo corre en `action_post` -- un borrador puede guardarse con
         fecha futura, pero no confirmarse así.
         """
+        # La ND/NC de diferencial cambiario toma la fecha del pago
+        # (l10n_ve_exchange_difference) y la confirma internamente: un pago
+        # con fecha futura no debe fallar con este error dentro de la
+        # conciliación, así que esa nota pasa con este contexto.
+        if self.env.context.get("l10n_ve_skip_future_date_check"):
+            return
         today = fields.Date.context_today(self)
         field_names = ("invoice_date", "invoice_date_display", "date")
         # La etiqueta de cada campo se toma de su propio `string`, ya

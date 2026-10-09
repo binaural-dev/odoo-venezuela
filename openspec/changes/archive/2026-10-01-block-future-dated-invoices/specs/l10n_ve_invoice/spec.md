@@ -8,6 +8,8 @@ La validación solo corre en `action_post`, no como `@api.constrains` de guardad
 
 Un asiento contable (`move_type = 'entry'`) queda fuera del alcance: no tiene `invoice_date` ni `invoice_date_display` con sentido fiscal, y su `date` no se valida aquí.
 
+La nota de diferencial cambiario (ND/NC) generada por `l10n_ve_exchange_difference` toma la fecha del pago y se confirma con el contexto `l10n_ve_skip_future_date_check`, que omite este guard: un pago con fecha futura no debe fallar dentro de la conciliación.
+
 Una nota de débito (`account.debit.note`) no es un modelo distinto: es un `account.move` con `debit_origin_id`, del mismo `move_type` que su documento origen, así que pasa por el mismo `action_post` y queda cubierta por este guard sin lógica adicional.
 
 #### Scenario: Factura de venta con invoice_date futuro
