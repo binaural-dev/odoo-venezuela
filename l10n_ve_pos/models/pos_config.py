@@ -231,3 +231,40 @@ class PosConfig(models.Model):
                 _("The session must have a foreign currency or active")
             )
         return res
+
+    def check_stock_availability(self, qty_by_product):
+        """Storable products whose quantity in the order exceeds the stock on
+        hand of the PoS source location (``amount_to_zero``).
+
+        Called by the PoS before the payment screen, so the order is blocked
+        before anything is printed on the fiscal machine. On hand, not free
+        quantity: what other confirmed orders reserved does not block, the
+        order being sold has priority.
+
+        :param dict qty_by_product: ``{product_id: quantity}`` of the order.
+        :return: list of ``{"name", "requested", "available"}``.
+        """
+        self.ensure_one()
+        if not self.amount_to_zero or not qty_by_product:
+            return []
+        qty_by_product = {int(product_id): qty for product_id, qty in qty_by_product.items()}
+        location = self.picking_type_id.default_location_src_id
+        if not location:
+            # Without a source location the quantity would be computed over
+            # every internal location of the company: do not validate.
+            return []
+        products = (
+            self.env["product.product"]
+            .browse(list(qty_by_product))
+            .with_context(location=location.id)
+            .filtered("is_storable")
+        )
+        return [
+            {
+                "name": product.display_name,
+                "requested": qty_by_product[product.id],
+                "available": product.qty_available,
+            }
+            for product in products
+            if product.uom_id.compare(qty_by_product[product.id], product.qty_available) > 0
+        ]

@@ -1056,3 +1056,31 @@ msgstr "cuenta de pagos salientes"
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos
 msgid "report.l10n_ve_pos.payment_report_pos"
 msgstr ""
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "Insufficient stock"
+msgstr "Stock insuficiente"
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid ""
+"There is not enough stock in the warehouse for:\n"
+"\n"
+"%s\n"
+"\n"
+"Adjust the quantities to continue with the payment."
+msgstr ""
+"No hay stock suficiente en el almacén para:\n"
+"\n"
+"%s\n"
+"\n"
+"Ajusta las cantidades para continuar con el pago."
+
+#. module: l10n_ve_pos
+#. odoo-javascript
+#: code:addons/l10n_ve_pos/static/src/overrides/services/pos_store.js:0
+msgid "ordered %(requested)s, on hand %(available)s"
+msgstr "pedido %(requested)s, a mano %(available)s"
