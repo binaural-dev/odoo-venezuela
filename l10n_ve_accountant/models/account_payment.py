@@ -184,6 +184,29 @@ class AccountPayment(models.Model):
                 payment.currency_id == payment.company_id.foreign_currency_id
             )
 
+    @api.depends('payment_type')
+    def _compute_available_journal_ids(self):
+        """Restrict available journals to bank journals with a filled payment account.
+
+        This only depends on payment_type, but reads payment_account_id off
+        the journal's payment method lines: if a line's account is changed
+        within the same environment/transaction, available_journal_ids won't
+        recompute until the field is read fresh again (e.g. reopening the
+        form/wizard). Not adding the line accounts as extra dependencies on
+        purpose, to avoid recompute overhead on every line edit; documented
+        here as a known limitation instead.
+        """
+        super(AccountPayment, self)._compute_available_journal_ids()
+        for pay in self:
+            if pay.payment_type == 'inbound':
+                pay.available_journal_ids = pay.available_journal_ids.filtered(
+                    lambda journal: journal.type != 'bank' or journal.inbound_payment_method_line_ids.payment_account_id
+                )
+            else:
+                pay.available_journal_ids = pay.available_journal_ids.filtered(
+                    lambda journal: journal.type != 'bank' or journal.outbound_payment_method_line_ids.payment_account_id
+                )
+
     @api.model_create_multi
     def create(self, vals_list):
         """
@@ -283,7 +306,50 @@ class AccountPayment(models.Model):
                 return
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
 
+    def _get_outstanding_account(self, payment_type):
+        """Disable core's silent fallback (company.transfer_account_id or a
+        chart template account) for bank journals whose payment method line
+        has no payment_account_id configured.
+
+        Without this, create() (account_payment.py core) picks that generic
+        account instead of raising or leaving outstanding_account_id empty --
+        exactly the "silently-picked account" the task 81735 validations
+        elsewhere in this module are meant to prevent. Returning an empty
+        recordset here (instead of calling super()) leaves
+        outstanding_account_id False, which the action_post() guard below
+        turns into an explicit error at confirmation time.
+
+        Scoped to bank journals only, and only when accounting_installed is
+        False in core's create() (this method is never called by core
+        otherwise) -- doesn't affect POS, hr_expense or
+        l10n_account_withholding_tax, which set outstanding_account_id
+        directly rather than through this method (confirmed via code
+        review, PR #1344 / task 81735).
+        """
+        if self.journal_id.type == 'bank' and not self.payment_method_line_id.payment_account_id:
+            return self.env['account.account']
+        return super()._get_outstanding_account(payment_type)
+
     def action_post(self):
+        """Block confirming a bank payment that would end up with no
+        outstanding account and therefore no journal entry -- core silently
+        allows this when the full Accounting app is installed (see
+        _get_outstanding_account override above for the other half of this
+        gap, found in code review, PR #1344 / task 81735): create() then
+        skips the fallback entirely, _generate_journal_entry()'s need_move
+        filter skips payments without outstanding_account_id, and
+        _check_move_id's own constrains only fires when outstanding_account_id
+        is truthy. Must run before super() flips the state, since that
+        assignment is what triggers write()'s journal-entry generation.
+        """
+        for payment in self:
+            if payment.journal_id.type == 'bank' and not payment.outstanding_account_id:
+                raise UserError(_(
+                    "Payment method \"%(method)s\" on bank journal \"%(journal)s\" has no account "
+                    "configured; the payment cannot be confirmed without a journal entry.",
+                    method=payment.payment_method_line_id.name,
+                    journal=payment.journal_id.display_name,
+                ))
         res = super().action_post()
         # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
         self.write({"block_change_partner_after_post": True})
