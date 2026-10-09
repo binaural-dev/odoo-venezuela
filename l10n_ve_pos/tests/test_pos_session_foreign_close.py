@@ -100,6 +100,18 @@ class TestPosSessionForeignClose(TestPoSCommon):
             {"payment_method_ids": [(4, cls.cash_pm_intermediary.id)]}
         )
 
+        # Con l10n_ve_pos_igtf instalado la sesión no abre si la compañía no
+        # tiene cuenta de IGTF (action_pos_session_open). Ningún método de
+        # pago del test aplica IGTF, así que no afecta el cierre.
+        if "customer_account_igtf_id" in cls.company._fields:
+            cls.company.customer_account_igtf_id = cls.env["account.account"].create(
+                {
+                    "name": "IGTF Clientes (POS test)",
+                    "code": "X2016.IGTF",
+                    "account_type": "liability_current",
+                }
+            )
+
         cls.product_a = cls.create_product("Producto Test", cls.categ_basic, 100.0)
         cls.adjust_inventory([cls.product_a], [10])
 
@@ -122,9 +134,12 @@ class TestPosSessionForeignClose(TestPoSCommon):
                     payment_vals["amount"] * rate, 2
                 )
             payment_vals["foreign_rate"] = rate
+            # Campos que exige l10n_ve_pos_igtf cuando está instalado.
+            payment_vals.setdefault("include_igtf", False)
         data["foreign_amount_total"] = sum(p["foreign_amount"] for p in payments)
         data["foreign_currency_rate"] = rate
         data["foreign_inverse_rate"] = rate
+        data.setdefault("igtf_amount", 0.0)
         return order_data
 
     def test_close_session_intermediary_account_foreign_balance(self):
