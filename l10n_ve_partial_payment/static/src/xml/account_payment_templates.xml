@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+    <t t-name="l10n_ve_partial_payment.PartialPaymentAmountPopover">
+        <div class="o_l10n_ve_partial_payment_popover">
+            <h3 t-if="props.title" class="popover-header">
+                <t t-out="props.title"/>
+            </h3>
+            <div class="p-3">
+                <div class="input-group input-group-sm">
+                    <input type="number"
+                           step="0.01"
+                           min="0"
+                           class="form-control o_l10n_ve_partial_payment_input"
+                           t-att-placeholder="suggestedAmountFormatted"
+                           aria-label="Amount to apply"
+                           t-on-input="onAmountInput"
+                           t-ref="l10nVePaidAmountInput"/>
+                </div>
+                <div class="o_l10n_ve_partial_payment_available text-muted mt-1 text-nowrap">
+                    Available: <t t-out="props.amountFormatted"/>
+                </div>
+                <div class="o_l10n_ve_partial_payment_remaining text-muted mt-1 text-nowrap" aria-live="polite">
+                    Remaining payment balance: <t t-out="remainingPreview"/>
+                </div>
+                <div t-if="state.error" class="o_l10n_ve_partial_payment_error text-danger small mt-1" role="alert">
+                    <t t-out="state.error"/>
+                </div>
+                <div t-if="state.igtfShortfall" class="o_l10n_ve_partial_payment_igtf_shortfall text-warning small mt-1" role="alert" aria-live="polite">
+                    <t t-out="igtfShortfallMessage"/>
+                </div>
+                <div class="d-flex justify-content-end mt-2">
+                    <button class="btn btn-sm btn-primary" t-on-click="onApplyClick">
+                        Apply
+                    </button>
+                </div>
+            </div>
+        </div>
+    </t>
+
+    <t t-inherit="account.AccountPaymentField" t-inherit-mode="extension">
+        <!-- outstanding_credit_assign (account/.../account_payment.xml:33) is the
+             stable semantic class for the "Add" link; not a Bootstrap utility
+             class, so it survives a core styling update. -->
+        <xpath expr="//a[hasclass('outstanding_credit_assign')]" position="attributes">
+            <attribute name="t-on-click.prevent">(ev) => this.popoverPartialOutstanding(ev, line)</attribute>
+        </xpath>
+    </t>
+
+</templates>
