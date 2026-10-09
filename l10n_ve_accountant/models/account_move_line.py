@@ -199,31 +199,50 @@ class AccountMoveLine(models.Model):
         that double-rounding-then-amplify path entirely -- the same
         reasoning `price_subtotal` itself follows natively (tax the base
         directly, never convert a foreign delta into it).
+
+        `foreign_subtotal` itself must always be the TAX-EXCLUDED alterno
+        base, mirroring `price_subtotal` (ticket 14217). With a
+        `price_include` tax, `price_unit`/`foreign_price` already carry
+        the tax inside them, so multiplying `foreign_price` by the
+        quantity alone (the old formula) yielded the GROSS amount, not
+        the base: `foreign_subtotal` showed the same figure as
+        `foreign_price_total` instead of the net amount, and in the
+        non-USD branch that gross figure then had the native tax delta
+        added ON TOP of it, duplicating/inflating the tax in Bs.
+        `tax_ids.compute_all()`'s `total_excluded` is the correct base
+        regardless of `price_include` (it degrades to `base x quantity`
+        when there is no tax or the tax is not price-included), so it is
+        used here unconditionally whenever the line has taxes.
         """
         usd = self.env.ref("base.USD", raise_if_not_found=False)
         for line in self:
             foreign_price_unit_full_precision = line.foreign_price * (
                 1 - (line.discount / 100.0)
             )
-            foreign_subtotal = line.foreign_currency_id.round(
-                foreign_price_unit_full_precision * line.quantity
-            )
+            if line.tax_ids:
+                foreign_taxes_res = line.tax_ids.compute_all(
+                    foreign_price_unit_full_precision,
+                    quantity=line.quantity,
+                    currency=line.foreign_currency_id,
+                    product=line.product_id,
+                    partner=line.partner_id,
+                    is_refund=line.is_refund,
+                )
+                foreign_subtotal = line.foreign_currency_id.round(
+                    foreign_taxes_res["total_excluded"]
+                )
+                foreign_total_included = line.foreign_currency_id.round(
+                    foreign_taxes_res["total_included"]
+                )
+            else:
+                foreign_subtotal = line.foreign_currency_id.round(
+                    foreign_price_unit_full_precision * line.quantity
+                )
+                foreign_total_included = foreign_subtotal
             line.foreign_subtotal = foreign_subtotal
 
             if usd and line.company_id.currency_id == usd:
-                if line.tax_ids:
-                    foreign_tax_amount = line.foreign_currency_id.round(
-                        line.tax_ids.compute_all(
-                            foreign_price_unit_full_precision,
-                            quantity=line.quantity,
-                            currency=line.foreign_currency_id,
-                            product=line.product_id,
-                            partner=line.partner_id,
-                            is_refund=line.is_refund,
-                        )["total_included"]
-                    ) - foreign_subtotal
-                else:
-                    foreign_tax_amount = 0.0
+                foreign_tax_amount = foreign_total_included - foreign_subtotal
             else:
                 foreign_tax_amount = line.currency_id._convert(
                     line.price_total - line.price_subtotal,
@@ -285,8 +304,8 @@ class AccountMoveLine(models.Model):
                 and self.move_id.payment_id.is_retention:
             retention_amount = self.move_id.payment_id.retention_foreign_amount
             if self.credit:
-                return retention_amount
-            return -retention_amount
+                return -retention_amount
+            return retention_amount
 
         if not self.move_id.is_invoice(include_receipts=True):
             return self._get_non_invoice_foreign_value()

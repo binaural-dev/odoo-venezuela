@@ -239,6 +239,44 @@ class TestRetentionCreditNote(TransactionCase):
                     line.payment_concept_id = self.payment_concept
         return retention_form_edit.save()
 
+    def _assert_foreign_debit_credit_matches_debit_credit(self, payment):
+        """
+        Regression for the retention branch of `AccountMoveLine._get_foreign_value`
+        (l10n_ve_accountant): a debit line must land its foreign amount on
+        `foreign_debit` and a credit line on `foreign_credit`, mirroring plain
+        debit/credit -- not the other way around.
+        """
+        self.assertGreater(
+            payment.retention_foreign_amount,
+            0.0,
+            "retention_foreign_amount must be computed for a retention payment.",
+        )
+        for line in payment.move_id.line_ids.filtered(lambda l: l.debit or l.credit):
+            if line.debit:
+                self.assertAlmostEqual(
+                    line.foreign_debit,
+                    payment.retention_foreign_amount,
+                    places=2,
+                    msg="A debit line must carry the foreign amount on foreign_debit.",
+                )
+                self.assertEqual(
+                    line.foreign_credit,
+                    0.0,
+                    "A debit line must not carry any amount on foreign_credit.",
+                )
+            else:
+                self.assertAlmostEqual(
+                    line.foreign_credit,
+                    payment.retention_foreign_amount,
+                    places=2,
+                    msg="A credit line must carry the foreign amount on foreign_credit.",
+                )
+                self.assertEqual(
+                    line.foreign_debit,
+                    0.0,
+                    "A credit line must not carry any amount on foreign_debit.",
+                )
+
     def test_islr_payment_type_direction_supplier_invoice_and_credit_note(self):
         """
         Regla original rota: `payment_type` se inicializaba una sola vez antes
@@ -273,6 +311,9 @@ class TestRetentionCreditNote(TransactionCase):
             "Supplier retention over a credit note must create an inbound payment "
             "(opposite direction to the invoice).",
         )
+
+        self._assert_foreign_debit_credit_matches_debit_credit(invoice_line.payment_id)
+        self._assert_foreign_debit_credit_matches_debit_credit(refund_line.payment_id)
 
     def test_islr_payment_type_direction_customer_invoice_and_credit_note(self):
         invoice = self._create_move(
@@ -339,6 +380,9 @@ class TestRetentionCreditNote(TransactionCase):
             "Customer retention over a credit note must create an outbound payment "
             "(opposite direction to the invoice).",
         )
+
+        self._assert_foreign_debit_credit_matches_debit_credit(invoice_line.payment_id)
+        self._assert_foreign_debit_credit_matches_debit_credit(refund_line.payment_id)
 
     def test_iva_customer_retention_loads_credit_note_despite_negative_residual(self):
         """

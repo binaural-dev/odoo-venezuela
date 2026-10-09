@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_bcv_sync_api_key_wizard,access.bcv.sync.api.key.wizard,model_bcv_sync_api_key_wizard,base.group_system,1,1,1,0

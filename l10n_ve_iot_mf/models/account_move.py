@@ -36,9 +36,13 @@ class AccountMoveInh(models.Model):
     )
     mf_reportz = fields.Char(string="Report number Z", default=False, copy=False, tracking=True)
     
+    def _default_print_type(self):
+        return self.env.company.invoice_print_type
+
     print_type = fields.Selection(
-        related='company_id.invoice_print_type',
-        store=True
+        selection=lambda self: self.env['res.company']._fields['invoice_print_type'].selection,
+        default=_default_print_type,
+        store=True,
     )
 
     def has_printed(self, invoice_number):
@@ -68,12 +72,20 @@ class AccountMoveInh(models.Model):
         return True
 
     def report_z(self, serial, response):
-        data = response.get("data", False)
+        # El driver del IoT puede resolver el listener con un evento valido
+        # que aun no trae "data" (ACK de comando recibido, antes de que la
+        # impresora termine el Z fisico). data debe degradar a {} para no
+        # reventar con 'bool' object has no attribute 'get' — este es el
+        # crash del ticket 13283, y ocurre AQUI (implementacion raiz), no en
+        # l10n_ve_pos_mf.
+        data = response.get("data") or {}
 
         if not response.get("valid", False):
             raise ValidationError(response.get("message", "No se pudo imprimir el reporte Z"))
 
-        serial = data.get("_registeredMachineNumber")
+        # Sin data del dispositivo, el serial recibido como parametro es la
+        # unica referencia de maquina disponible.
+        serial = data.get("_registeredMachineNumber") or serial
 
         account_moves = self.env["account.move"].search(
             ["&", ("mf_serial", "=", serial), ("mf_reportz", "=", False)]
@@ -87,6 +99,9 @@ class AccountMoveInh(models.Model):
 
         for invoice in account_moves:
             invoice.write({"mf_reportz": int(_numberOfLastZReport) + 1})
+        # Contrato numerico: l10n_ve_pos_mf hace int(super().report_z(...)) + 1
+        # sobre este retorno; devolver el dict `response` reventaba con
+        # TypeError al haber ordenes POS pendientes de reportar.
         return _numberOfLastZReport
 
     def _get_z_and_add_one(self, serial):
@@ -279,7 +294,7 @@ class AccountMoveInh(models.Model):
                 [("account_move", "in", candidate_move_ids)],
                 order="id desc",
                 limit=1,
-            )
+            ) if "pos.order" in self.env.registry else False
 
             if pos_order and pos_order.payment_ids:
                 for payment in pos_order.payment_ids:

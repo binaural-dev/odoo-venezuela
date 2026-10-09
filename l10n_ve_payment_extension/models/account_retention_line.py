@@ -296,6 +296,12 @@ class AccountRetentionLine(models.Model):
         # untouched one to 0 on recompute. _origin preserves the persisted value.
         base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
         for line in self:
+            if not line._origin:
+                # Brand-new (unsaved) line: there is no persisted value to
+                # restore, so keep whatever the user/onchange just set instead
+                # of collapsing it to 0. Same guard already applied to
+                # retention_amount/foreign_retention_amount in _compute_retention_amount.
+                continue
             origin_invoice_amount = line._origin.invoice_amount
             origin_foreign_invoice_amount = line._origin.foreign_invoice_amount
             if not base_currency_is_vef:

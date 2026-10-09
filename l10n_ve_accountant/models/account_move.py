@@ -697,6 +697,7 @@ class AccountMove(models.Model):
                 'foreign_rate': rate_values.get("foreign_rate", 0),
                 'foreign_inverse_rate': rate_values.get("foreign_inverse_rate", 0),
             })
+            move.invoice_line_ids.foreign_inverse_rate = rate_values.get("foreign_inverse_rate")
             
 
     @api.depends("tax_totals")
