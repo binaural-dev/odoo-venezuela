@@ -72,8 +72,8 @@ msgstr "Incluye IGTF"
 #. odoo-python
 #: code:addons/l10n_ve_pos_igtf/models/pos_payment.py:0
 #, python-format
-msgid "Invoice payment for %s (%s) using %s"
-msgstr "Pago de factura para %s (%s) usando %s"
+msgid "Invoice payment for %(order)s (%(invoice)s) using %(method)s"
+msgstr "Pago de factura para %(order)s (%(invoice)s) usando %(method)s"
 
 #. module: l10n_ve_pos_igtf
 #: model:ir.model,name:l10n_ve_pos_igtf.model_pos_config

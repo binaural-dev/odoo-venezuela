@@ -17,6 +17,32 @@ class PosSession(models.Model):
         string="Foreign Currency",
     )
 
+    def _lock_foreign_amount(self, line, foreign_amount):
+        """
+        Permanently pin the alternate-currency (foreign) debit/credit of a POS
+        payment journal line to `foreign_amount`.
+
+        `not_foreign_recalculate` alone only protects this value while this exact
+        line record survives untouched. If the line is ever recreated (e.g. a
+        draft/repost cycle done on the move, or the move being deleted and
+        regenerated), the flag is lost and account_move_line._compute_foreign_debit_credit
+        falls back to `debit * foreign_inverse_rate`, using whatever rate is on the
+        move at that later time instead of the rate(s) of the original POS
+        payment(s) this line represents, producing a wrong "monto alterno".
+
+        Also setting `foreign_debit_adjustment`/`foreign_credit_adjustment` makes the
+        correct value durable, since the compute method honors those fields first,
+        regardless of `not_foreign_recalculate`.
+        """
+        line.not_foreign_recalculate = True
+        foreign_amount = abs(foreign_amount)
+        if line.credit > 0:
+            line.foreign_credit = foreign_amount
+            line.foreign_credit_adjustment = foreign_amount
+        if line.debit > 0:
+            line.foreign_debit = foreign_amount
+            line.foreign_debit_adjustment = foreign_amount
+
     # @override
     def _loader_params_res_company(self):
         return {
@@ -338,21 +364,11 @@ class PosSession(models.Model):
 
         for payment_method, amounts in combine_invoice_receivables.items():
             line = combine_invoice_receivable_lines[payment_method]
-            if line.credit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(amounts["foreign_amount"])
-            if line.debit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(amounts["foreign_amount"])
+            self._lock_foreign_amount(line, amounts["foreign_amount"])
 
         for payment in split_invoice_receivable_lines.keys():
             line = split_invoice_receivable_lines[payment]
-            if line.credit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(payment["foreign_amount"])
-            if line.debit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(payment["foreign_amount"])
+            self._lock_foreign_amount(line, payment["foreign_amount"])
 
         return res
 
@@ -367,22 +383,12 @@ class PosSession(models.Model):
         for payment_method, amounts in combine_receivables_bank.items():
             lines = payment_method_to_receivable_lines[payment_method]
             for line in lines:
-                if line.credit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_credit = abs(amounts["foreign_amount"])
-                if line.debit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_debit = abs(amounts["foreign_amount"])
+                self._lock_foreign_amount(line, amounts["foreign_amount"])
 
         for payment in payment_to_receivable_lines.keys():
             lines = payment_to_receivable_lines[payment]
             for line in lines:
-                if line.credit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_credit = abs(payment["foreign_amount"])
-                if line.debit > 0:
-                    line.not_foreign_recalculate = True
-                    line.foreign_debit = abs(payment["foreign_amount"])
+                self._lock_foreign_amount(line, payment["foreign_amount"])
         return res
 
     def _create_cash_statement_lines_and_cash_move_lines(self, data):
@@ -438,6 +444,8 @@ class PosSession(models.Model):
         # siempre el monto foráneo del pago, aunque no exista contrapartida,
         # para que ambos lados del cierre usen la misma fuente y no queden
         # diferencias de decimales contra el monto calculado por tasa.
+        # El monto se fija también en los campos de ajuste (ver
+        # _lock_foreign_amount) para que sobreviva si la línea se recrea.
         other_line = line.move_id.line_ids.filtered(
             lambda x: x != line and x.account_id.account_type != "asset_receivable"
         )[:1]
@@ -453,11 +461,11 @@ class PosSession(models.Model):
         ):
             line.not_foreign_recalculate = True
             line.foreign_credit = abs(foreign_amount)
-            if (
-                propagate_to_other_line
-                and other_line.foreign_debit != line.foreign_credit
-            ):
+            line.foreign_credit_adjustment = abs(foreign_amount)
+            if propagate_to_other_line:
+                other_line.not_foreign_recalculate = True
                 other_line.foreign_debit = abs(line.foreign_credit)
+                other_line.foreign_debit_adjustment = abs(line.foreign_credit)
         if (
             abs(line.debit) > 0
             and float_compare(
@@ -469,11 +477,11 @@ class PosSession(models.Model):
         ):
             line.not_foreign_recalculate = True
             line.foreign_debit = abs(foreign_amount)
-            if (
-                propagate_to_other_line
-                and other_line.foreign_credit != line.foreign_debit
-            ):
+            line.foreign_debit_adjustment = abs(foreign_amount)
+            if propagate_to_other_line:
+                other_line.not_foreign_recalculate = True
                 other_line.foreign_credit = abs(line.foreign_debit)
+                other_line.foreign_credit_adjustment = abs(line.foreign_debit)
 
     def _validate_cross_move(self):
         """This function validate cross move, the proposal of this function is the transitory account be zero"""
@@ -617,14 +625,9 @@ class PosSession(models.Model):
                 lambda line: line.account_id == pos_receivable_account
             )
 
-        for line in account_payment.move_id.line_ids:
-            if line.credit > 0 and amounts.get("foreign_amount", False):
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(amounts["foreign_amount"])
-
-            if line.debit > 0 and amounts.get("foreign_amount", False):
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(amounts["foreign_amount"])
+        if amounts.get("foreign_amount", False):
+            for line in account_payment.move_id.line_ids:
+                self._lock_foreign_amount(line, amounts["foreign_amount"])
         if account_payment.pos_payment_method_id.split_transactions:
             self._create_cross_move_payment(res)
         return res
@@ -665,13 +668,7 @@ class PosSession(models.Model):
         )
 
         for line in account_payment.move_id.line_ids:
-            if line.credit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_credit = abs(payment.foreign_amount)
-
-            if line.debit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_debit = abs(payment.foreign_amount)
+            self._lock_foreign_amount(line, payment.foreign_amount)
 
         if float_compare(amounts['amount'], 0, precision_rounding=self.currency_id.rounding) < 0:
             accounting_partner = self.env["res.partner"]._find_accounting_partner(payment.partner_id)
@@ -838,6 +835,7 @@ class PosSession(models.Model):
                             "foreign_credit": 0.0,
                             "debit": total_amount,
                             "foreign_debit": total_foreign_amount,
+                            "foreign_debit_adjustment": total_foreign_amount,
                             "not_foreign_recalculate": True,
                             "foreign_rate": foreign_rate,
                             "currency_id": currency,
@@ -856,6 +854,7 @@ class PosSession(models.Model):
                             "foreign_debit": 0.0,
                             "credit": total_amount,
                             "foreign_credit": total_foreign_amount,
+                            "foreign_credit_adjustment": total_foreign_amount,
                             "not_foreign_recalculate": True,
                             "foreign_rate": foreign_rate,
                             "currency_id": currency,
@@ -914,6 +913,7 @@ class PosSession(models.Model):
                             "foreign_credit": 0.0,
                             "debit": total_amount,
                             "foreign_debit": total_foreign_amount,
+                            "foreign_debit_adjustment": total_foreign_amount,
                             "not_foreign_recalculate": True,
                             "foreign_rate": foreign_rate,
                             "currency_id": currency,
@@ -932,6 +932,7 @@ class PosSession(models.Model):
                             "foreign_debit": 0.0,
                             "credit": total_amount,
                             "foreign_credit": total_foreign_amount,
+                            "foreign_credit_adjustment": total_foreign_amount,
                             "not_foreign_recalculate": True,
                             "foreign_rate": foreign_rate,
                             "currency_id": currency,
@@ -989,6 +990,7 @@ class PosSession(models.Model):
                             "foreign_credit": 0.0,
                             "debit": total_amount,
                             "foreign_debit": total_foreign_amount,
+                            "foreign_debit_adjustment": total_foreign_amount,
                             "not_foreign_recalculate": True,
                             "foreign_rate": foreign_rate,
                             "currency_id": currency,
@@ -1007,6 +1009,7 @@ class PosSession(models.Model):
                             "foreign_debit": 0.0,
                             "credit": total_amount,
                             "foreign_credit": total_foreign_amount,
+                            "foreign_credit_adjustment": total_foreign_amount,
                             "not_foreign_recalculate": True,
                             "foreign_rate": foreign_rate,
                             "currency_id": currency,
@@ -1066,6 +1069,7 @@ class PosSession(models.Model):
                             "foreign_credit": 0.0,
                             "debit": total_amount,
                             "foreign_debit": total_foreign_amount,
+                            "foreign_debit_adjustment": total_foreign_amount,
                             "not_foreign_recalculate": True,
                             "foreign_rate": foreign_rate,
                             "currency_id": currency,
@@ -1084,6 +1088,7 @@ class PosSession(models.Model):
                             "foreign_debit": 0.0,
                             "credit": total_amount,
                             "foreign_credit": total_foreign_amount,
+                            "foreign_credit_adjustment": total_foreign_amount,
                             "not_foreign_recalculate": True,
                             "foreign_rate": foreign_rate,
                             "currency_id": currency,
