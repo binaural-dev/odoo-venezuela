@@ -263,12 +263,17 @@ class TfhkaDocumentService(models.AbstractModel):
     def _prepare_totals(self, invoice):
         for record in invoice:
             currency = record.company_id.currency_id.name
-            totalIGTF = 0
-            totalIGTF_VES = 0
             tax_totals = record.tax_totals
 
-            totalIGTF = round(tax_totals.get("igtf", {}).get("igtf_amount", 0), 2)
-            totalIGTF_VES = round(tax_totals.get("igtf", {}).get("foreign_igtf_amount", 0), 2)
+            igtf = tax_totals.get("igtf", {}) or {}
+            if currency in ("VEF", "VES"):
+                igtf_ves = igtf.get("igtf_amount", 0)
+                igtf_foreign = igtf.get("foreign_igtf_amount", 0)
+            else:
+                igtf_ves = igtf.get("foreign_igtf_amount", 0)
+                igtf_foreign = igtf.get("igtf_amount", 0)
+            totalIGTF_VES = round(igtf_ves or 0, 2)
+            totalIGTF_foreign = round(igtf_foreign or 0, 2)
             amounts = {}
             amounts_foreign = {}
             multi_currency = record.multi_currency_invoice
@@ -366,7 +371,7 @@ class TfhkaDocumentService(models.AbstractModel):
                 "montoTotalConIVA": amounts["montoTotalConIVA"],
                 "totalDescuento": amounts["totalDescuento"],
                 "impuestosSubtotal": taxes_subtotal,
-                "totalIGTF": str(totalIGTF),
+                "totalIGTF": str(totalIGTF_VES),
                 "totalIGTF_VES": str(totalIGTF_VES),
             }
             # Cuadro de pago: el bloque formasPago solo se adjunta cuando el
@@ -393,7 +398,7 @@ class TfhkaDocumentService(models.AbstractModel):
                     "totalIVA": str(amounts_foreign["totalIVA"]),
                     "montoTotalConIVA": amounts_foreign["montoTotalConIVA"],
                     "totalDescuento": amounts_foreign["totalDescuento"],
-                    "totalIGTF": str(totalIGTF),
+                    "totalIGTF": str(totalIGTF_foreign),
                     "totalIGTF_VES": str(totalIGTF_VES),
                     "impuestosSubtotal": taxes_subtotal_foreign,
                 }
@@ -434,6 +439,10 @@ class TfhkaDocumentService(models.AbstractModel):
             if currency in ("VEF", "VES") and not multi_currency:
                 for group in base_groups:
                     tax_subtotals.append(tax_line_vals(record, group))
+                if apply_igtf:
+                    tax_subtotals.append(
+                        igtf_vals(record, igtf, 'igtf_base_amount', 'igtf_amount')
+                    )
                 return tax_subtotals, tax_subtotals_foreign
             elif multi_currency:
                 # Multimoneda: impuestos en la moneda base (groups_by_subtotal) y
