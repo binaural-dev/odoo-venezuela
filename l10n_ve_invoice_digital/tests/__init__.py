@@ -9,3 +9,4 @@ from . import test_res_config_settings
 from . import test_res_partner
 from . import test_tfhka_api_log
 from . import test_ir_sequence
+from . import test_tfhka_digitalization_mixin
