@@ -761,6 +761,7 @@ class TestAccountingReports(TransactionCase):
             "out_invoice", self.journal_sale, [self.tax_sale_16.id],
             correlative="R006",
             invoice_date_display=today - timedelta(days=90),
+            invoice_date=today - timedelta(days=90),
         )
         wizard = self._create_wizard("sale", date_from=today, date_to=today)
         moves = wizard.search_moves()

@@ -59,7 +59,7 @@ class AccountMove(models.Model):
             wizard = self.env["account.move.reversal"].with_context(
                 active_ids=self.ids,
                 active_model="account.move"
-            ).create({"date": fields.Date.today(), "journal_id": self.journal_id.id})
+            ).create({"date": fields.Date.context_today(self), "journal_id": self.journal_id.id})
             wizard.reverse_moves()
             credit_note = wizard.new_move_ids
             credit_note.action_post()
@@ -89,7 +89,7 @@ class AccountMove(models.Model):
                 move_vals = {
                     "move_type": "out_refund",
                     "journal_id": move.journal_id.id,
-                    "date": default_values.get("date", fields.Date.today()),
+                    "date": default_values.get("date", fields.Date.context_today(self)),
                     "ref": default_values.get("ref", move.ref),
                     "reversed_entry_id": move.id,
                     "partner_id": move.partner_id.id,

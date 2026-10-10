@@ -401,6 +401,7 @@ class TestExchangeNoteReversal(TransactionCase):
             [
                 *cls.env["account.journal"]._check_company_domain(cls.company),
                 ("type", "=", "bank"), ("currency_id", "=", False),
+                ("inbound_payment_method_line_ids.payment_account_id", "!=", False),
             ],
             limit=1,
         )
@@ -1134,7 +1135,7 @@ class TestExchangeNoteReversal(TransactionCase):
         wizard = self.env["account.move.reversal"].with_context(
             active_ids=note.ids,
             active_model="account.move",
-        ).create({"date": "2026-08-15", "journal_id": note.journal_id.id})
+        ).create({"date": "2026-08-01", "journal_id": note.journal_id.id})
         wizard.reverse_moves()
         reversal = wizard.new_move_ids
         self.assertEqual(len(reversal), 1)

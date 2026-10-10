@@ -2279,6 +2279,9 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
         res = super()._get_all_reconciled_invoice_partials()
+        origin_id = self._origin.id
+        if not origin_id:
+            return res
 
         # No `sudo()`: whoever can reach this (viewing the invoice's
         # "Pagos" widget) already has read access to it, and core's own
@@ -2287,7 +2290,7 @@ class AccountMove(models.Model):
         # blanket read access to every journal entry in that same company
         # -- there is no narrower ACL this would be bypassing.
         standalone_entries = self.env['account.move'].search([
-            ('l10n_ve_exchange_foreign_source_move_id', '=', self.id),
+            ('l10n_ve_exchange_foreign_source_move_id', '=', origin_id),
             ('state', '=', 'posted'),
             # A reversed entry stays `posted` by design (see
             # `account_partial_reconcile.py`, "reversed, not cancelled")

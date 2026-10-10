@@ -15,3 +15,4 @@ from . import test_ti_15211_invoice_date_timezone
 from . import test_account_move_line_fixed_discount
 from . import test_future_date_action_post
 from . import test_check_price_in_zero
+from . import test_note_dates_from_origin

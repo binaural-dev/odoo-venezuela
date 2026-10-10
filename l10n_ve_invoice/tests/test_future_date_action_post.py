@@ -7,9 +7,7 @@ from odoo.exceptions import ValidationError
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestFutureDateActionPost(TransactionCase):
-    """Ninguna de las fechas (`invoice_date`, `invoice_date_display`, `date`)
-    de una factura, nota de crédito o nota de débito -- de venta o de compra --
-    puede ser posterior a hoy al confirmarla (`action_post`)."""
+    """Posting is blocked when the invoice or rate date is in the future."""
 
     def setUp(self):
         super().setUp()
@@ -80,7 +78,7 @@ class TestFutureDateActionPost(TransactionCase):
         )
 
     def _create_move(self, move_type, journal, tax, **date_overrides):
-        today = fields.Date.today()
+        today = fields.Date.context_today(self.env["account.move"])
         vals = {
             "move_type": move_type,
             "partner_id": self.partner.id,
@@ -106,10 +104,6 @@ class TestFutureDateActionPost(TransactionCase):
 
     def test_invoice_today_posts_ok(self):
         invoice = self._create_move("out_invoice", self.journal_sale, self.tax_sale)
-        # `move_action_post_alert`: l10n_ve_accountant intercepta
-        # action_post() de out_invoice/out_refund con un wizard de
-        # confirmación salvo que este contexto ya venga marcado -- nada
-        # que ver con el guard de fecha futura que se está probando aquí.
         invoice.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(invoice.state, "posted")
 
@@ -119,15 +113,15 @@ class TestFutureDateActionPost(TransactionCase):
         self.assertEqual(bill.state, "posted")
 
     def test_invoice_date_in_future_blocks_post(self):
-        future = fields.Date.today() + timedelta(days=1)
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         invoice = self._create_move(
             "out_invoice", self.journal_sale, self.tax_sale, invoice_date=future
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
+        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
             invoice.action_post()
 
     def test_invoice_date_display_in_future_blocks_post(self):
-        future = fields.Date.today() + timedelta(days=1)
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         invoice = self._create_move(
             "out_invoice",
             self.journal_sale,
@@ -137,69 +131,89 @@ class TestFutureDateActionPost(TransactionCase):
         with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
             invoice.action_post()
 
-    def test_accounting_date_in_future_blocks_post(self):
-        future = fields.Date.today() + timedelta(days=1)
+    def test_accounting_date_in_future_is_not_blocked(self):
+        """A future accounting date is not blocked."""
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         invoice = self._create_move(
             "out_invoice", self.journal_sale, self.tax_sale, date=future
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+
+    def test_rate_date_before_invoice_date_is_allowed(self):
+        """A rate date before the invoice date is allowed."""
+        past = fields.Date.context_today(self.env["account.move"]) - timedelta(days=3)
+        invoice = self._create_move(
+            "out_invoice", self.journal_sale, self.tax_sale, invoice_date=past
+        )
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+
+    def test_rate_date_after_invoice_date_blocks_post(self):
+        today = fields.Date.context_today(self.env["account.move"])
+        invoice = self._create_move(
+            "out_invoice",
+            self.journal_sale,
+            self.tax_sale,
+            invoice_date_display=today - timedelta(days=3),
+            invoice_date=today - timedelta(days=1),
+        )
+        with self.assertRaisesRegex(ValidationError, "cannot be later than Invoice Date"):
             invoice.action_post()
 
     def test_credit_note_date_in_future_blocks_post(self):
-        future = fields.Date.today() + timedelta(days=1)
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         credit_note = self._create_move(
             "out_refund", self.journal_sale, self.tax_sale, invoice_date=future
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
+        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
             credit_note.action_post()
 
     def test_vendor_bill_date_in_future_blocks_post(self):
-        future = fields.Date.today() + timedelta(days=1)
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         bill = self._create_move(
             "in_invoice",
             self.journal_purchase,
             self.tax_purchase,
             invoice_date=future,
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
+        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
             bill.action_post()
 
     def test_vendor_refund_date_in_future_blocks_post(self):
-        future = fields.Date.today() + timedelta(days=1)
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         refund = self._create_move(
             "in_refund",
             self.journal_purchase,
             self.tax_purchase,
             invoice_date=future,
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
+        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
             refund.action_post()
 
     def test_sale_receipt_date_in_future_blocks_post(self):
-        """`out_receipt` no está en la lista explícita de 4 move_type, pero
-        tampoco es 'entry' -- `is_invoice(include_receipts=True)` lo cubre."""
-        future = fields.Date.today() + timedelta(days=1)
+        """Receipts are covered by the guard."""
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         receipt = self._create_move(
             "out_receipt", self.journal_sale, self.tax_sale, invoice_date=future
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
+        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
             receipt.action_post()
 
     def test_purchase_receipt_date_in_future_blocks_post(self):
-        future = fields.Date.today() + timedelta(days=1)
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         receipt = self._create_move(
             "in_receipt",
             self.journal_purchase,
             self.tax_purchase,
             invoice_date=future,
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
+        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
             receipt.action_post()
 
     def test_journal_entry_with_future_date_is_not_blocked(self):
-        """'entry' (asiento contable puro) es el único move_type que el
-        guard deja pasar sin revisar sus fechas."""
-        future = fields.Date.today() + timedelta(days=1)
+        """Journal entries are not checked."""
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         entry = self.env["account.move"].create(
             {
                 "move_type": "entry",
@@ -227,13 +241,12 @@ class TestFutureDateActionPost(TransactionCase):
                 ],
             }
         )
-        entry.action_post()  # No debe lanzar excepción
+        entry.action_post()
         self.assertEqual(entry.state, "posted")
 
     def test_draft_with_future_date_can_still_be_saved(self):
-        """Guardar en borrador con fecha futura no debe bloquear -- solo
-        `action_post` lo hace."""
-        future = fields.Date.today() + timedelta(days=1)
+        """Drafts with a future date can be saved."""
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         invoice = self._create_move(
             "out_invoice", self.journal_sale, self.tax_sale, invoice_date=future
         )
@@ -241,18 +254,16 @@ class TestFutureDateActionPost(TransactionCase):
         self.assertEqual(invoice.invoice_date, future)
 
     def test_debit_note_inherits_future_date_guard(self):
-        """Una nota de débito es un `account.move` normal con
-        `debit_origin_id`: el mismo `action_post` la cubre sin cambios
-        adicionales."""
+        """Debit notes go through the same guard."""
         invoice = self._create_move("out_invoice", self.journal_sale, self.tax_sale)
         invoice.with_context(move_action_post_alert=True).action_post()
 
-        future = fields.Date.today() + timedelta(days=1)
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
         debit_note = invoice.copy(
             {
                 "debit_origin_id": invoice.id,
                 "invoice_date_display": future,
             }
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than today"):
+        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
             debit_note.action_post()

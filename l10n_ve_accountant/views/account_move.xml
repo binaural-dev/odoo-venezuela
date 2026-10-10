@@ -11,7 +11,7 @@
                         name="foreign_balance" />. </div> -->
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="attributes">
-                <attribute name="readonly">state != 'draft'</attribute>
+                <attribute name="readonly">state != 'draft' or reversed_entry_id or debit_origin_id</attribute>
                 <attribute name="force_save">1</attribute>
             </xpath>
             <!-- Native label hardcodes its own string, ignoring the field's -->
@@ -22,7 +22,7 @@
                  above the whole Rate Date row, matching the ticket's order:
                  Invoice Date, Reception Date, Rate Date -->
             <xpath expr="//label[@for='invoice_date'][@invisible=&quot;move_type not in ('out_invoice', 'out_refund', 'out_receipt')&quot;]" position="before">
-                <field name="invoice_date_display" readonly="state != 'draft'" invisible="move_type == 'entry'" required="move_type in ('in_invoice', 'out_invoice', 'in_refund', 'out_refund')"/>
+                <field name="invoice_date_display" readonly="state != 'draft' or reversed_entry_id or debit_origin_id" invisible="move_type == 'entry'" required="move_type in ('in_invoice', 'out_invoice', 'in_refund', 'out_refund')"/>
             </xpath>
             <xpath expr="//div[@name='currency_div']" position="replace">
                 <div name="currency_div"

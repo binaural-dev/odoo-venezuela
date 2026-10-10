@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Localizations/Account Chart",
-    "version": "19.0.1.0.29",
+    "version": "19.0.1.0.30",
     "depends": [
         "base",
         "web",
@@ -53,6 +53,7 @@
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
         "wizard/move_action_post_alert_views.xml",
+        "wizard/account_move_reversal.xml",
     ],
     "images": ["static/description/icon.png"],
     "assets": {
