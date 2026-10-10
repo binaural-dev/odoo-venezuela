@@ -864,3 +864,13 @@ class TestStockPickingApiCalls(TransactionCase):
         self.assertFalse(picking.is_digitalized)
         self.assertEqual(picking.tfhka_digitalization_state, "data_error")
         self.assertIn("transport data", picking.tfhka_digitalization_error)
+
+    def test_disabling_dispatch_guide_clears_transport_requirement(self):
+        self.company.transport_data_required = True
+        self.company.dispatch_guide_digital_tfhka = False
+        self.assertFalse(self.company.transport_data_required)
+
+    def test_enabled_dispatch_guide_keeps_transport_requirement(self):
+        self.company.write({"transport_data_required": True, "url_tfhka": "https://fake-api.com"})
+        self.assertTrue(self.company.dispatch_guide_digital_tfhka)
+        self.assertTrue(self.company.transport_data_required)
