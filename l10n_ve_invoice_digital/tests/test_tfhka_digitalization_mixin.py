@@ -3,7 +3,8 @@ from datetime import timedelta
 from unittest.mock import patch
 
 from odoo import Command, fields
-from odoo.addons.l10n_ve_invoice_digital.services.tfhka_client import TfhkaBusinessError
+from odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin import MAX_CONNECTION_RETRIES
+from odoo.addons.l10n_ve_invoice_digital.services.tfhka_client import TfhkaBusinessError, TfhkaConnectionError
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaDataError
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
@@ -46,6 +47,17 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "digital_invoice": True,
             "sequence_id": seq.id,
         })
+        # Segundo diario digital, para probar que el encolado por diario
+        # (HD-15734) no deja que un error en uno frene al otro.
+        seq2 = self.env["ir.sequence"].create({"name": "Sec Test 2", "prefix": "INV2/", "padding": 4})
+        self.journal2 = self.env["account.journal"].create({
+            "name": "Diario Digital Test 2",
+            "code": "DDT2",
+            "type": "sale",
+            "company_id": self.company.id,
+            "digital_invoice": True,
+            "sequence_id": seq2.id,
+        })
         self.partner = self.env["res.partner"].create({
             "name": "Cliente Test",
             "vat": "J12345678",
@@ -70,7 +82,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "company_ids": [Command.link(self.company.id)],
         })
 
-    def _create_invoice(self):
+    def _create_invoice(self, journal=None):
         prod = self.env["product.product"].create({
             "name": "Prod",
             "type": "service",
@@ -80,7 +92,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         inv = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
-            "journal_id": self.journal.id,
+            "journal_id": (journal or self.journal).id,
             "invoice_date": fields.Date.today(),
             "invoice_line_ids": [(0, 0, {
                 "product_id": prod.id,
@@ -235,9 +247,11 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertIn("NIF", inv.tfhka_digitalization_error)
 
     def test_process_digitalization_error_without_tfhka_code_stays_grave_error(self):
-        # A plain UserError (401, HTTP != 200, RequestException, ...) has no
-        # .tfhka_code at all -- must default to the grave 'error' state, not
-        # crash on the getattr lookup.
+        # A plain UserError (401, HTTP != 200, ...) has no .tfhka_code at all
+        # -- must default to the grave 'error' state, not crash on the
+        # getattr lookup. A connection failure (TfhkaConnectionError) is NOT
+        # covered by this test -- it has its own requeue-and-retry path, see
+        # the test_process_digitalization_connection_* tests below.
         inv = self._create_invoice()
         inv._tfhka_enqueue_digitalization()
 
@@ -246,6 +260,56 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.assertFalse(result)
         self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    # ------------------------------------------------------------------
+    # TfhkaConnectionError: requeue-and-retry instead of grave 'error'
+    # (HD-15695 -- a connection failure must not need a human to retry it)
+    # ------------------------------------------------------------------
+
+    def test_process_digitalization_connection_error_requeues_under_cap(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        queued_at = inv.tfhka_queued_at
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=TfhkaConnectionError("Error connecting to the API: timeout")):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "queued", "A connection error must requeue, not halt the queue for a human.")
+        self.assertEqual(inv.tfhka_connection_retry_count, 1)
+        self.assertEqual(inv.tfhka_queued_at, queued_at, "FIFO position must be preserved, same as a manual retry.")
+
+    def test_process_digitalization_connection_error_escalates_to_grave_error_after_max_retries(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=TfhkaConnectionError("Error connecting to the API: timeout")):
+            for _ in range(MAX_CONNECTION_RETRIES):
+                inv.write({"tfhka_digitalization_state": "queued"})
+                result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(
+            inv.tfhka_digitalization_state, "error",
+            "After MAX_CONNECTION_RETRIES consecutive connection failures it must give up and alert a human.",
+        )
+        self.assertEqual(inv.tfhka_connection_retry_count, 0, "Counter resets so a future manual retry starts fresh.")
+
+    def test_process_digitalization_connection_error_resets_on_success(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=TfhkaConnectionError("Error connecting to the API: timeout")):
+            inv._tfhka_process_digitalization()
+        self.assertEqual(inv.tfhka_connection_retry_count, 1)
+
+        inv.write({"tfhka_digitalization_state": "queued"})
+        with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertTrue(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "success")
+        self.assertEqual(inv.tfhka_connection_retry_count, 0)
 
     # ------------------------------------------------------------------
     # _tfhka_cron_process_queue: halt-on-error guard + FIFO halt
@@ -275,6 +339,48 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual(inv1.tfhka_digitalization_state, "error")
         self.assertEqual(inv2.tfhka_digitalization_state, "queued", "The 2nd document must not be touched once the 1st halts the queue.")
 
+    # HD-15734: el encolado por diario -- un error en un diario no debe
+    # frenar la facturación de otros diarios.
+    def test_cron_process_queue_journal_scope_isolates_failure(self):
+        failing = self._create_invoice(journal=self.journal)
+        failing._tfhka_enqueue_digitalization()
+        other_journal = self._create_invoice(journal=self.journal2)
+        other_journal._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            if self.journal_id.id == failing.journal_id.id:
+                raise UserError("boom")
+            self.write({"is_digitalized": True})
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(failing.tfhka_digitalization_state, "error")
+        self.assertEqual(
+            other_journal.tfhka_digitalization_state, "success",
+            "An error in one journal must not block a different journal's queue.",
+        )
+
+    def test_cron_process_queue_multi_journal_scope_isolates_failure(self):
+        failing = self._create_invoice(journal=self.journal)
+        failing._tfhka_enqueue_digitalization()
+        other_journal = self._create_invoice(journal=self.journal2)
+        other_journal._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            if self.journal_id.id == failing.journal_id.id:
+                raise UserError("boom")
+            self.write({"is_digitalized": True})
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
+
+        self.assertEqual(failing.tfhka_digitalization_state, "error")
+        self.assertEqual(
+            other_journal.tfhka_digitalization_state, "success",
+            "An error in one journal must not block a different journal's queue (unified cron).",
+        )
+
     def test_cron_process_queue_does_nothing_while_model_has_a_data_error(self):
         data_errored = self._create_invoice()
         data_errored.write({"tfhka_digitalization_state": "data_error", "tfhka_digitalization_error": "bad field"})
@@ -298,6 +404,26 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.assertEqual(inv1.tfhka_digitalization_state, "success")
         self.assertEqual(inv2.tfhka_digitalization_state, "success")
+
+    def test_cron_process_queue_retries_connection_error_across_runs_without_manual_retry(self):
+        # The actual acceptance criteria from HD-15695: a connection outage
+        # must self-heal across cron ticks (simulated here by calling
+        # _tfhka_cron_process_queue() repeatedly) with nobody clicking
+        # "Retry" -- as long as it recovers before MAX_CONNECTION_RETRIES.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, side_effect=TfhkaConnectionError("Error connecting to the API: timeout")):
+            for _ in range(MAX_CONNECTION_RETRIES - 1):
+                self.env["account.move"]._tfhka_cron_process_queue()
+                self.assertEqual(inv.tfhka_digitalization_state, "queued")
+
+        # Connection recovers on the next tick.
+        with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(inv.tfhka_digitalization_state, "success")
+        self.assertEqual(inv.tfhka_connection_retry_count, 0)
 
     # ------------------------------------------------------------------
     # action_tfhka_retry_digitalization / action_tfhka_generate_digital

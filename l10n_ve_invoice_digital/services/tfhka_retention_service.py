@@ -1,8 +1,9 @@
 import logging
 
-from odoo import _, fields, models
+from odoo import _, models
 from odoo.exceptions import UserError
 
+from ..utils import status_message
 from .tfhka_document_service import EXEMPT_TAX_GROUPS
 from .tfhka_service_base import TfhkaSequenceMismatchError
 
@@ -103,7 +104,10 @@ class TfhkaRetentionService(models.AbstractModel):
         self.env["tfhka.api.client"].annul(company, payload, origin=retention)
         retention.write({"annulled_tfhka": True})
         retention.message_post(
-            body=_("Retention annulled in The Factory HKA. Reason: %s", reason),
+            body=status_message(
+                _("Retention annulled in The Factory HKA. Reason: %s", reason),
+                "error",
+            ),
             message_type='comment',
         )
         return True
@@ -135,14 +139,13 @@ class TfhkaRetentionService(models.AbstractModel):
         retention.is_digitalized = True
         retention.control_number_tfhka = response.get("resultado").get("numeroControl")
         retention.document_number_tfhka = str(document_number)
-        emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
         if validation_sequence:
             retention.message_post(
                 body=_("Warning accepted: The difference in sequence between Odoo and The Factory is acknowledged and accepted."),
                 message_type='comment',
             )
         retention.message_post(
-            body=_("Document successfully digitized on %(date)s") % {"date": emission_date},
+            body=status_message(_("Document successfully digitized"), "success"),
             message_type='comment',
         )
 
@@ -239,8 +242,14 @@ class TfhkaRetentionService(models.AbstractModel):
             for line in record.retention_line_ids:
                 line_document_type = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
                 series = line.move_id.name
-                document_series_ret = ''.join([c for c in series if c.isalpha()])
                 document_number_ret = str(''.join([c for c in series if c.isdigit()]))
+                # Serie capturada por el usuario (ticket helpdesk #15078) tiene
+                # prioridad; si el proveedor no maneja serie, se conserva el
+                # comportamiento anterior (inferida del nombre del documento).
+                document_series_ret = (
+                    line.move_id.vendor_series_tfhka
+                    or ''.join([c for c in series if c.isalpha()])
+                )
 
                 if record.base_currency_is_vef:
                     invoice_total = str(round(line.invoice_total, 2))

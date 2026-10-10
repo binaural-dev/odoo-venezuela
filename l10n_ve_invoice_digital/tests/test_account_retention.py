@@ -1097,6 +1097,64 @@ class TestAccumulatedRate(TransactionCase):
         self.assertTrue(details)
         self.assertEqual(details[0]["montoExento"], "50.0")
 
+    def test_47_prepare_detail_lines_uses_vendor_series_when_set(self):
+        """Ticket helpdesk #15078: si el proveedor tiene serie cargada, se
+        envia esa serie en lugar de la inferida del nombre del documento."""
+        invoice = self._create_invoice()
+        invoice.vendor_series_tfhka = "ABC"
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "05")
+        self.assertTrue(details)
+        self.assertEqual(details[0]["serieDocumento"], "ABC")
+        self.assertEqual(
+            details[0]["numeroDocumento"],
+            ''.join(c for c in invoice.name if c.isdigit()),
+        )
+
+    def test_48_prepare_detail_lines_falls_back_without_vendor_series(self):
+        """Sin serie de proveedor cargada se conserva el comportamiento
+        anterior: la serie se infiere del nombre del documento (sin
+        regresion para proveedores que no manejan serie)."""
+        invoice = self._create_invoice()
+        self.assertFalse(invoice.vendor_series_tfhka)
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "05")
+        self.assertTrue(details)
+        self.assertEqual(
+            details[0]["serieDocumento"],
+            ''.join(c for c in invoice.name if c.isalpha()),
+        )
+    # HD-15459 (seguimiento): una factura de proveedor usada por una
+    # retención ya digitalizada con TFHKA no se puede cancelar ni reabrir --
+    # la retención ya envió los montos/fecha de esa factura a TFHKA.
+    def test_hd15459_vendor_bill_blocked_when_retention_digitalized(self):
+        invoice = self._create_invoice()
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+        retention.is_digitalized = True
+
+        with self.assertRaises(UserError):
+            invoice.button_cancel()
+        with self.assertRaises(UserError):
+            invoice.button_draft()
+
+    def test_hd15459_vendor_bill_allowed_when_retention_not_digitalized(self):
+        invoice = self._create_invoice()
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+        self.assertFalse(retention.is_digitalized)
+
+        invoice.button_cancel()
+        self.assertEqual(invoice.state, "cancel")
+
     # # Retencion con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     # def test_12_generate_document_digital_subsidiary_succes(self, mock_call):
