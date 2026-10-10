@@ -2114,3 +2114,13 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/models/res_company.py:0
 msgid "The tax amount edit tolerance must be between 0 and 1."
 msgstr "La tolerancia de edición del monto de impuesto debe estar entre 0 y 1."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/wizard/account_move_reversal.py:0
+msgid ""
+"A credit note can only be issued against a single invoice. "
+"Please select one invoice at a time."
+msgstr ""
+"Una nota de crédito solo puede emitirse contra una única factura. "
+"Seleccione una factura a la vez."

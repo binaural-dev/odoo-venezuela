@@ -908,3 +908,23 @@ msgid ""
 msgstr ""
 "%(field)s (%(value)s) no puede ser posterior a hoy (%(today)s) para "
 "confirmar este documento."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"%(field)s (%(value)s) cannot be later than %(limit_field)s (%(limit)s) to "
+"confirm this document."
+msgstr ""
+"%(field)s (%(value)s) no puede ser posterior a %(limit_field)s (%(limit)s) "
+"para confirmar este documento."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_debit_note.py:0
+msgid ""
+"A debit note can only be issued against a single document. "
+"Please select one document at a time."
+msgstr ""
+"Una nota de débito solo puede emitirse contra un único documento. "
+"Seleccione un documento a la vez."

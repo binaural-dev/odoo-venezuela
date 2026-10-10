@@ -42,9 +42,13 @@ class TestIgtfNoteDebitUnit(TransactionCase):
             "is_debit": True,
             "company_id": cls.company.id,
         })
-        cls.bank_journal = cls.env["account.journal"].search(
-            [("type", "in", ("bank", "cash")), ("company_id", "=", cls.company.id)], limit=1
+        bank_journals = cls.env["account.journal"].search(
+            [("type", "in", ("bank", "cash")), ("company_id", "=", cls.company.id)]
         )
+        for journal in bank_journals.filtered("default_account_id"):
+            journal.inbound_payment_method_line_ids.payment_account_id = journal.default_account_id
+            journal.outbound_payment_method_line_ids.payment_account_id = journal.default_account_id
+        cls.bank_journal = bank_journals[:1]
         income_account = cls.env["account.account"].search(
             [("account_type", "=", "income"), ("company_ids", "in", cls.company.id)], limit=1
         )

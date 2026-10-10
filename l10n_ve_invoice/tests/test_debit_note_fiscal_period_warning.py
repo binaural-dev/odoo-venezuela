@@ -213,17 +213,15 @@ class TestDebitNoteFiscalPeriodWarning(TransactionCase):
         note._onchange_invoice_date_display()
         self.assertEqual(note.invoice_date, invoice.invoice_date)
 
-    def test_created_note_own_fiscal_date_is_wizard_date(self):
-        # `invoice_date_display` (the note's OWN declared fiscal date,
-        # what `_get_accounting_date_source` derives `date` from) must be
-        # the wizard's own `date` -- NOT silently inherited from the
-        # origin via `copy()`.
+    def test_created_note_inherits_origin_fiscal_date(self):
+        # Ticket 15594: `invoice_date_display` y `date` de la nota son los
+        # del ORIGEN, nunca los del wizard (una nota no puede fecharse
+        # distinto a la transaccion que modifica).
         bill = self._create_posted_bill(fields.Date.from_string("2026-01-15"))
-        note_date = fields.Date.from_string("2026-03-05")
         wizard = self.env["account.debit.note"].with_context(
             active_model="account.move", active_ids=[bill.id], active_id=bill.id
-        ).create({"date": note_date})
+        ).create({"date": fields.Date.from_string("2026-03-05")})
         action = wizard.create_debit()
         note = self.env["account.move"].browse(action["res_id"])
-        self.assertEqual(note.invoice_date_display, note_date)
-        self.assertEqual(note.date, note_date)
+        self.assertEqual(note.invoice_date_display, bill.invoice_date_display)
+        self.assertEqual(note.date, bill.invoice_date_display)

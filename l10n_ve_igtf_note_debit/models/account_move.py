@@ -80,9 +80,11 @@ class AccountMove(models.Model):
         )
 
         debit_note_wizard = self.env["account.debit.note"].with_context(
-            active_model="account.move", active_ids=invoice.ids
+            active_model="account.move",
+            active_ids=invoice.ids,
+            l10n_ve_note_date=payment.date,
         ).create({
-            "date": fields.Date.context_today(self),
+            "date": payment.date,
             "reason": _("IGTF Perception (%s%%) on %s") % (company.igtf_percentage, invoice.name),
             "journal_id": debit_journal.id if debit_journal else invoice.journal_id.id,
             "move_ids": [(4, invoice.id)],

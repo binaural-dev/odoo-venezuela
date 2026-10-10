@@ -1,5 +1,7 @@
+from datetime import timedelta
+
+from odoo import Command, fields
 from odoo.tests import tagged, TransactionCase
-from odoo import Command
 
 
 @tagged("post_install", "-at_install")
@@ -55,9 +57,13 @@ class TestIgtfNoteDebitService(TransactionCase):
             "is_debit": True,
             "company_id": cls.company.id,
         })
-        cls.bank_journal = cls.env["account.journal"].search(
-            [("type", "in", ("bank", "cash")), ("company_id", "=", cls.company.id)], limit=1
+        bank_journals = cls.env["account.journal"].search(
+            [("type", "in", ("bank", "cash")), ("company_id", "=", cls.company.id)]
         )
+        for journal in bank_journals.filtered("default_account_id"):
+            journal.inbound_payment_method_line_ids.payment_account_id = journal.default_account_id
+            journal.outbound_payment_method_line_ids.payment_account_id = journal.default_account_id
+        cls.bank_journal = bank_journals[:1]
 
         income_account = cls.env["account.account"].search(
             [("account_type", "=", "income"), ("company_ids", "in", cls.company.id)], limit=1
@@ -141,6 +147,25 @@ class TestIgtfNoteDebitService(TransactionCase):
         # La factura original no debe haber sido tocada por este flujo.
         self.assertFalse(self.invoice.debit_origin_id)
         self.assertIn(debit_note, self.invoice.debit_note_ids)
+
+    def test_debit_note_takes_payment_date_not_invoice_date(self):
+        """The IGTF note is dated with the payment, not with its invoice."""
+        self.company.write({
+            "igtf_note_debit_mode": "debit_note",
+            "igtf_note_debit_product_id": self.igtf_product.id,
+        })
+        today = fields.Date.context_today(self.env.user)
+        past = today - timedelta(days=10)
+        invoice = self.invoice.copy({"invoice_date_display": past, "invoice_date": past})
+        invoice.with_context(move_action_post_alert=True).action_post()
+        payment = self.payment.copy({"date": today})
+        payment.action_post()
+
+        debit_note = invoice.prepare_igtf_payment_debit_note(3.0, invoice, payment)
+
+        self.assertEqual(debit_note.date, today)
+        self.assertEqual(debit_note.invoice_date_display, today)
+        self.assertEqual(debit_note.invoice_date, today)
 
     def test_debit_note_requires_product_configured(self):
         with self.assertRaises(Exception):

@@ -191,3 +191,14 @@ ND, y un solo pago agrupado no puede repartirse limpiamente entre varias.
 - **GIVEN** dos facturas con IGTF aplicable de la misma compañía en modo `debit_note`
 - **WHEN** el usuario intenta registrar un único pago agrupado (`group_payment = True`) para ambas
 - **THEN** se lanza `UserError` explícito pidiendo desmarcar "Agrupar Pagos" y registrar el pago de cada factura por separado
+
+### Requirement: La ND de IGTF se fecha con el pago
+
+La Nota de Débito automática de IGTF SHALL tomar `date`, `invoice_date_display` e
+`invoice_date` de la fecha del pago que la origina (`payment.date`), no de la
+factura origen: el IGTF es un hecho gravable del pago.
+
+#### Scenario: Factura anterior al pago
+
+- **WHEN** se paga una factura fechada 10 días atrás y se genera la ND de IGTF
+- **THEN** la ND queda con la fecha del pago en `date`, `invoice_date_display` e `invoice_date`
