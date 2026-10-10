@@ -72,7 +72,7 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
         distintos terceros sobre la misma factura no se bloquean entre sí,
         para IVA, ISLR y municipal, en borrador o emitidos; el mismo partner
         sigue bloqueado."""
-        other_partner = self.partner_pnr_75.copy({"name": "Third party 2"})
+        other_partner = self.partner_pnr_75.copy({"name": "Third party 2", "vat": "J456"})
         for type_retention in ("iva", "islr", "municipal"):
             for other_state in ("draft", "emitted"):
                 with self.subTest(type_retention=type_retention, other_state=other_state):
