@@ -1,7 +1,7 @@
 import json
 
 from odoo import models, api, fields, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 from ..services.tfhka_document_service import VES_CURRENCY_NAMES
 
@@ -13,6 +13,18 @@ class AccountMove(models.Model):
     # other journal -- see tfhka.digitalization.mixin._tfhka_queue_scope_field
     # and HD-15734.
     _tfhka_queue_scope_field = "journal_id"
+
+    # Resetting to draft or cancelling an invoice while it's in flight with
+    # TFHKA (queued/processing) or already digitalized (success) let it be
+    # edited and re-sent with different amounts, or digitalized after being
+    # cancelled -- assigning a real control number to a document that no
+    # longer matches what TFHKA has, and in one reported case leaving a
+    # sequence mismatch that froze the whole journal's queue (see HD-15459).
+    # 'error'/'data_error' are deliberately NOT included: a failed document
+    # must still be cancellable/reopenable as the controlled way out of the
+    # queue -- see tfhka.digitalization.mixin.action_tfhka_retry_digitalization
+    # for the other way out (retry instead of giving up).
+    _TFHKA_EDIT_LOCKED_STATES = ("queued", "processing", "success")
 
     is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
     tfhka_batch_ref = fields.Char(
@@ -71,6 +83,37 @@ class AccountMove(models.Model):
         if not skip_guard:
             self._apply_payment_driven_multi_currency()
         return res
+
+    def _tfhka_locked_for_editing(self):
+        return self.filtered(
+            lambda move: move.tfhka_digitalization_state in self._TFHKA_EDIT_LOCKED_STATES
+        )
+
+    def button_draft(self):
+        locked = self._tfhka_locked_for_editing()
+        if locked:
+            raise UserError(
+                _(
+                    "Cannot reset %(names)s to draft: already queued, being sent, or already "
+                    "digitalized with TFHKA. Wait for the digitalization to finish, or annul it "
+                    "in The Factory HKA first if it already has a control number."
+                )
+                % {"names": ", ".join(locked.mapped("display_name"))}
+            )
+        return super().button_draft()
+
+    def button_cancel(self):
+        locked = self._tfhka_locked_for_editing()
+        if locked:
+            raise UserError(
+                _(
+                    "Cannot cancel %(names)s: already queued, being sent, or already digitalized "
+                    "with TFHKA. Wait for the digitalization to finish, or annul it in The Factory "
+                    "HKA first if it already has a control number."
+                )
+                % {"names": ", ".join(locked.mapped("display_name"))}
+            )
+        return super().button_cancel()
 
     def action_post(self):
         for invoice in self:
