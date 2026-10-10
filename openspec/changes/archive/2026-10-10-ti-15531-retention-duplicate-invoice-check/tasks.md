@@ -1,4 +1,4 @@
 - [x] 1. `_check_duplicate_invoices_all_states` con `type_retention`, ejecutado primero en `action_post`
 - [x] 2. Mensaje en inglés + traducción es_VE
 - [x] 3. Tests de duplicidad por tipo/estado y caso #94
-- [x] 4. `l10n_ve_accountant`: `_origin.id` + test + bump de manifest
+- [x] 4. Bump de manifest y filtro por partner (facturación a terceros)

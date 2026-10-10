@@ -649,15 +649,21 @@ Para retenciones de cliente (`out_invoice`, `out_refund`, `out_debit`) estos cam
 
 ### Requirement: Una factura no puede estar en dos comprobantes de retención del mismo tipo al emitir
 
-Al ejecutar `action_post`, el sistema DEBE (MUST) llamar a `_check_duplicate_invoices_all_states` ANTES de las validaciones específicas de `_check_duplicate_retention_lines` (ISLR por concepto, IVA por alícuota, municipal por actividad económica). Si alguna factura del comprobante ya figura en otro comprobante con el mismo `type_retention` en estado `draft` o `emitted`, DEBE (MUST) lanzar un `UserError` (mensaje en inglés con traducción al español en `i18n/es_VE.po`) indicando la factura, el otro comprobante y su estado. Los comprobantes `cancel` y los de otro `type_retention` NO bloquean. El sistema NO cancela ni elimina automáticamente ningún borrador: dos borradores sobre la misma factura pueden coexistir hasta que se intente emitir alguno.
+Al ejecutar `action_post`, el sistema DEBE (MUST) llamar a `_check_duplicate_invoices_all_states` ANTES de las validaciones específicas de `_check_duplicate_retention_lines` (ISLR por concepto, IVA por alícuota, municipal por actividad económica). Si alguna factura del comprobante ya figura en otro comprobante con el mismo `type_retention` y el mismo `partner_id` del comprobante en estado `draft` o `emitted`, DEBE (MUST) lanzar un `UserError` (mensaje en inglés con traducción al español en `i18n/es_VE.po`) indicando la factura, el otro comprobante y su estado. Los comprobantes `cancel` y los de otro `type_retention` NO bloquean. El sistema NO cancela ni elimina automáticamente ningún borrador: dos borradores sobre la misma factura pueden coexistir hasta que se intente emitir alguno.
 
-El control es por factura (sin diferenciador): en la práctica no se emiten dos retenciones del mismo tipo sobre la misma factura, y un duplicado se detecta en la primera emisión, aun cuando el otro comprobante siga en borrador (caso de la factura consolidada en otro comprobante, ticket #15531).
+El control es por factura y partner (sin diferenciador): un duplicado se detecta en la primera emisión, aun cuando el otro comprobante siga en borrador (caso de la factura consolidada en otro comprobante, ticket #15531). Comprobantes de distinto partner sobre la misma factura (facturación a cuenta de terceros, ta #65929) NO se bloquean entre sí.
 
 #### Scenario: Factura consolidada en otro comprobante
 
 - **GIVEN** la factura B en la retención A (consolidada) y en su retención individual B en borrador
 - **WHEN** se emite A, o luego B
 - **THEN** se lanza un `UserError` que nombra el otro comprobante y su estado
+
+#### Scenario: Comprobantes de terceros distintos sobre la misma factura
+
+- **GIVEN** dos comprobantes del mismo tipo con partners distintos sobre la misma factura
+- **WHEN** se emite cualquiera de ellos
+- **THEN** no se lanza el error de duplicidad
 
 #### Scenario: Comprobante cancelado o de otro tipo
 

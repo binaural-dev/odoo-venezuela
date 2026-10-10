@@ -33,10 +33,11 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
             "retention_amount": 15.0,
         })
 
-    def _create_retention(self, type_retention, invoices):
+    def _create_retention(self, type_retention, invoices, partner=None):
         return self.env["account.retention"].create({
             "type_retention": type_retention, "type": "in_invoice",
-            "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
+            "company_id": self.company.id,
+            "partner_id": (partner or self.partner_pnr_75).id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
             "retention_line_ids": [self._line_command(inv) for inv in invoices],
         })
@@ -65,6 +66,25 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
 
         current._check_duplicate_invoices_all_states()
         self.assertEqual(current.state, "draft")
+
+    def test_check_ignores_retentions_of_other_partner(self):
+        """Facturación a terceros (ta #65929): varios comprobantes de
+        distintos terceros sobre la misma factura no se bloquean entre sí,
+        para IVA, ISLR y municipal, en borrador o emitidos; el mismo partner
+        sigue bloqueado."""
+        other_partner = self.partner_pnr_75.copy({"name": "Third party 2"})
+        for type_retention in ("iva", "islr", "municipal"):
+            for other_state in ("draft", "emitted"):
+                with self.subTest(type_retention=type_retention, other_state=other_state):
+                    inv = self._post_invoice()
+                    other = self._create_retention(type_retention, inv, partner=other_partner)
+                    other.state = other_state
+                    current = self._create_retention(type_retention, inv)
+                    current._check_duplicate_invoices_all_states()
+
+                    same_partner = self._create_retention(type_retention, inv, partner=other_partner)
+                    with self.assertRaises(UserError):
+                        same_partner._check_duplicate_invoices_all_states()
 
     def test_consolidated_invoice_cannot_be_retained_twice(self):
         inv_a = self._post_invoice()
