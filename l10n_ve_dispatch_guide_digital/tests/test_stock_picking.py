@@ -875,3 +875,22 @@ class TestStockPickingApiCalls(TransactionCase):
         self.assertTrue(self.company.dispatch_guide_digital_tfhka)
         self.assertTrue(self.company.transport_data_required)
 
+    def test_prepare_transport_data_license_contact_type_number(self):
+        picking = self.create_picking()
+        picking.write({
+            "transport_driver_name": "Pedro Pérez",
+            "transport_driver_license_type": "5",
+            "transport_driver_contact": "04141234567",
+            "transport_vehicle_type": "Camión",
+            "transport_vehicle_number": "U-07",
+            "transport_vehicle_plate": "A12BC3D",
+        })
+        transport = self.DispatchGuideService._prepare_transport_data(picking)
+        self.assertEqual(transport["conductor"]["tipoLicencia"], "5to grado")
+        self.assertEqual(transport["conductor"]["infoContacto"], "04141234567")
+        self.assertEqual(transport["vehiculo"], {
+            "tipoVehiculo": "Camión",
+            "numeroTransporte": "U-07",
+            "numeroPlaca": "A12BC3D",
+        })
+

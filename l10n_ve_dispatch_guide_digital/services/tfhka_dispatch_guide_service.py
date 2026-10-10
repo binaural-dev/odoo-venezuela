@@ -20,6 +20,15 @@ TRANSPORT_INFO_FIELDS = (
     ("placaBatea", "transport_trailer_plate"),
 )
 
+# Texto enviado a TFHKA en conductor.tipoLicencia.
+DRIVER_LICENSE_LABELS = {
+    "1": "1er grado",
+    "2": "2do grado",
+    "3": "3er grado",
+    "4": "4to grado",
+    "5": "5to grado",
+}
+
 
 class TfhkaDispatchGuideService(models.AbstractModel):
     """Arma y envía las guías de despacho a TFHKA.
@@ -293,11 +302,15 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             "nombreCompleto": picking.transport_driver_name,
             "tipoIdentificacion": id_type,
             "numeroIdentificacion": id_number,
+            "tipoLicencia": DRIVER_LICENSE_LABELS.get(picking.transport_driver_license_type),
+            "infoContacto": picking.transport_driver_contact,
         }
         driver = {key: value for key, value in driver.items() if value}
         if driver:
             transport["conductor"] = driver
         vehicle = {
+            "tipoVehiculo": picking.transport_vehicle_type,
+            "numeroTransporte": picking.transport_vehicle_number,
             "numeroPlaca": picking.transport_vehicle_plate,
         }
         vehicle = {key: value for key, value in vehicle.items() if value}
