@@ -1045,6 +1045,65 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.invoice.generate_document_digital()
         _logger.info("Test passed: invoice exactly 45 days old still digitalizes.")
 
+    # HD-15459: no se puede cancelar ni reabrir a borrador una factura en
+    # vuelo o ya digitalizada con TFHKA.
+    def test_hd15459_button_cancel_blocked_while_in_flight_or_digitalized(self):
+        for state in ("queued", "processing", "success"):
+            with self.subTest(state=state):
+                invoice = self._create_invoice(
+                    products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                )
+                invoice.tfhka_digitalization_state = state
+                with self.assertRaises(UserError):
+                    invoice.button_cancel()
+
+    def test_hd15459_button_draft_blocked_while_in_flight_or_digitalized(self):
+        for state in ("queued", "processing", "success"):
+            with self.subTest(state=state):
+                invoice = self._create_invoice(
+                    products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                )
+                invoice.tfhka_digitalization_state = state
+                with self.assertRaises(UserError):
+                    invoice.button_draft()
+
+    def test_hd15459_button_cancel_allowed_after_error_or_unqueued(self):
+        for state in ("none", "error", "data_error"):
+            with self.subTest(state=state):
+                invoice = self._create_invoice(
+                    products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                )
+                invoice.tfhka_digitalization_state = state
+                invoice.button_cancel()
+                self.assertEqual(invoice.state, "cancel")
+
+    def test_hd15459_button_draft_allowed_after_error_or_unqueued(self):
+        for state in ("none", "error", "data_error"):
+            with self.subTest(state=state):
+                invoice = self._create_invoice(
+                    products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                )
+                # Odoo core's own button_draft() only accepts 'posted'/'cancel'
+                # as the starting state -- force it here instead of trusting
+                # _create_invoice()'s action_post() to land there, since an
+                # unrelated quirk of this fixture (outside HD-15459's scope)
+                # can leave it in 'draft' already.
+                invoice.state = "posted"
+                invoice.tfhka_digitalization_state = state
+                invoice.button_draft()
+                self.assertEqual(invoice.state, "draft")
+
+    def test_hd15459_button_cancel_raises_user_error_not_other_exception(self):
+        """The guard must surface as UserError (a clean dialog for the user),
+        not let some other exception type leak through."""
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.tfhka_digitalization_state = "success"
+        with self.assertRaises(UserError) as exc:
+            invoice.button_cancel()
+        self.assertIn(invoice.display_name, str(exc.exception))
+
     # # Factura con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     # def test_17_generate_document_digital_subsidiary_succes(self, mock_call):
