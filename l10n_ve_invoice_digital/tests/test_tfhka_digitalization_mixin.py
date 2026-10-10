@@ -47,6 +47,17 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "digital_invoice": True,
             "sequence_id": seq.id,
         })
+        # Segundo diario digital, para probar que el encolado por diario
+        # (HD-15734) no deja que un error en uno frene al otro.
+        seq2 = self.env["ir.sequence"].create({"name": "Sec Test 2", "prefix": "INV2/", "padding": 4})
+        self.journal2 = self.env["account.journal"].create({
+            "name": "Diario Digital Test 2",
+            "code": "DDT2",
+            "type": "sale",
+            "company_id": self.company.id,
+            "digital_invoice": True,
+            "sequence_id": seq2.id,
+        })
         self.partner = self.env["res.partner"].create({
             "name": "Cliente Test",
             "vat": "J12345678",
@@ -71,7 +82,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "company_ids": [Command.link(self.company.id)],
         })
 
-    def _create_invoice(self):
+    def _create_invoice(self, journal=None):
         prod = self.env["product.product"].create({
             "name": "Prod",
             "type": "service",
@@ -81,7 +92,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         inv = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
-            "journal_id": self.journal.id,
+            "journal_id": (journal or self.journal).id,
             "invoice_date": fields.Date.today(),
             "invoice_line_ids": [(0, 0, {
                 "product_id": prod.id,
@@ -327,6 +338,48 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.assertEqual(inv1.tfhka_digitalization_state, "error")
         self.assertEqual(inv2.tfhka_digitalization_state, "queued", "The 2nd document must not be touched once the 1st halts the queue.")
+
+    # HD-15734: el encolado por diario -- un error en un diario no debe
+    # frenar la facturación de otros diarios.
+    def test_cron_process_queue_journal_scope_isolates_failure(self):
+        failing = self._create_invoice(journal=self.journal)
+        failing._tfhka_enqueue_digitalization()
+        other_journal = self._create_invoice(journal=self.journal2)
+        other_journal._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            if self.journal_id.id == failing.journal_id.id:
+                raise UserError("boom")
+            self.write({"is_digitalized": True})
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(failing.tfhka_digitalization_state, "error")
+        self.assertEqual(
+            other_journal.tfhka_digitalization_state, "success",
+            "An error in one journal must not block a different journal's queue.",
+        )
+
+    def test_cron_process_queue_multi_journal_scope_isolates_failure(self):
+        failing = self._create_invoice(journal=self.journal)
+        failing._tfhka_enqueue_digitalization()
+        other_journal = self._create_invoice(journal=self.journal2)
+        other_journal._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            if self.journal_id.id == failing.journal_id.id:
+                raise UserError("boom")
+            self.write({"is_digitalized": True})
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
+
+        self.assertEqual(failing.tfhka_digitalization_state, "error")
+        self.assertEqual(
+            other_journal.tfhka_digitalization_state, "success",
+            "An error in one journal must not block a different journal's queue (unified cron).",
+        )
 
     def test_cron_process_queue_does_nothing_while_model_has_a_data_error(self):
         data_errored = self._create_invoice()
