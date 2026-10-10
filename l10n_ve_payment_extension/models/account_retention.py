@@ -483,6 +483,7 @@ class AccountRetention(models.Model):
         # from 20:00 local onward), making this fallback fail the very
         # constraint it's about to trigger on write() a few lines below.
         today = fields.Date.context_today(self)
+        self._check_duplicate_invoices_all_states()
         is_automated = self.env.context.get('automated_action') or self.env.context.get('cron_id')
 
         for retention in self:
@@ -591,10 +592,11 @@ class AccountRetention(models.Model):
           (move_id, economic_activity_id) combination must not repeat - in
           this retention or in any other emitted retention.
 
-        Only other retentions already in state 'emitted' are considered -
-        two drafts referencing the same invoice/differentiator can coexist
-        harmlessly as long as only one of them ever gets confirmed; the
-        conflict only matters once one side is already final.
+        Only other retentions already in state 'emitted' are considered here.
+        Note that action_post() first runs _check_duplicate_invoices_all_states,
+        which blocks any other draft/emitted retention of the same type and
+        partner over the same invoice, so this cross-retention branch is only
+        reachable for retentions of different partners (third-party invoicing).
 
         Applies to any legal document/retention type - client
         (out_invoice/out_refund/out_debit) and supplier
@@ -1441,3 +1443,38 @@ class AccountRetention(models.Model):
             res["keep_alter_value_vef"] = True
 
         return res
+
+    def _check_duplicate_invoices_all_states(self):
+        for retention in self:
+            invoices = retention.retention_line_ids.mapped('move_id')
+            if not invoices:
+                continue
+
+            duplicate_line = self.env['account.retention.line'].search([
+                ('retention_id.state', 'in', ['draft', 'emitted']),
+                ('retention_id.type_retention', '=', retention.type_retention),
+                ('retention_id', '!=', retention.id),
+                # Third-party invoicing can legitimately generate several
+                # vouchers (one per third party) over the same invoice.
+                ('retention_id.partner_id', '=', retention.partner_id.id),
+                ('move_id', 'in', invoices.ids),
+            ], limit=1)
+
+            if duplicate_line:
+                other_ret = duplicate_line.retention_id
+                state_field = other_ret._fields['state']
+                state_label = dict(state_field._description_selection(self.env)).get(
+                    other_ret.state, other_ret.state
+                )
+
+                raise UserError(_(
+                    "This retention cannot be posted.\n\n"
+                    "The invoice '%(invoice)s' is already included in retention '%(other_ret)s' "
+                    "(%(field_name)s: %(state_val)s).\n\n"
+                    "Cancel retention '%(other_ret)s' or remove the invoice from one of the two retentions."
+                ) % {
+                    'invoice': duplicate_line.move_id.display_name,
+                    'other_ret': other_ret.display_name,
+                    'field_name': state_field._description_string(self.env),
+                    'state_val': state_label,
+                })

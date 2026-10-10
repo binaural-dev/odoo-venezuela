@@ -38,3 +38,4 @@ from . import test_sale_book_retention_lines
 from . import test_municipal_retention_xlsx_report
 from . import test_retention_islr_partner_change
 from . import test_retention_duplicate_and_number_unique
+from . import test_retention_consolidated_duplicates
