@@ -9,6 +9,11 @@ from ..services.tfhka_document_service import VES_CURRENCY_NAMES
 class AccountMove(models.Model):
     _inherit = ["account.move", "tfhka.digitalization.mixin"]
 
+    # An error digitalizing one invoice must not freeze invoicing in every
+    # other journal -- see tfhka.digitalization.mixin._tfhka_queue_scope_field
+    # and HD-15734.
+    _tfhka_queue_scope_field = "journal_id"
+
     is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
     tfhka_batch_ref = fields.Char(
         copy=False,
