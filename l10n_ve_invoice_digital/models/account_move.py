@@ -61,6 +61,23 @@ class AccountMove(models.Model):
         help="Used to hide the TFHKA digitalization fields when the journal is not digital.",
     )
 
+    # --- Serie de proveedor (ticket helpdesk #15078) ---
+    # No todos los proveedores usan serie, por lo tanto el campo no es
+    # obligatorio ni tiene formato forzado: varía por proveedor.
+    vendor_series_tfhka = fields.Char(
+        string="Supplier Series",
+        help="Series the supplier uses to identify their documents (separate "
+             "from the document number). Sent to The Factory HKA when "
+             "digitalizing IVA/ISLR retentions for this vendor bill. Leave "
+             "empty if the supplier does not use a series.",
+    )
+    invoice_digital_tfhka_active = fields.Boolean(
+        related="company_id.invoice_digital_tfhka",
+        string="TFHKA Digital Invoicing Active",
+        help="Used to show the vendor document series field only when TFHKA "
+             "digitalization is active for the company.",
+    )
+
     @api.model_create_multi
     def create(self, vals_list):
         moves = super().create(vals_list)
