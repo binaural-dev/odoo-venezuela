@@ -89,6 +89,21 @@ class AccountMove(models.Model):
             lambda move: move.tfhka_digitalization_state in self._TFHKA_EDIT_LOCKED_STATES
         )
 
+    def _tfhka_vendor_bills_with_digitalized_retention(self):
+        """Vendor bills already used by a digitalized TFHKA retention (IVA/
+        ISLR) -- reopening or cancelling the bill afterward would leave that
+        retention's amounts/dates pointing at a document that no longer
+        matches what was actually sent to TFHKA. The bill itself never goes
+        through TFHKA digitalization (only sales invoices do), so this is
+        independent of ``tfhka_digitalization_state``/
+        ``_tfhka_locked_for_editing`` above, which only ever applies to
+        account.move's own digitalization."""
+        lines = self.env["account.retention.line"].search([
+            ("move_id", "in", self.ids),
+            ("retention_id.is_digitalized", "=", True),
+        ])
+        return self.browse(lines.mapped("move_id").ids)
+
     def button_draft(self):
         locked = self._tfhka_locked_for_editing()
         if locked:
@@ -99,6 +114,15 @@ class AccountMove(models.Model):
                     "in The Factory HKA first if it already has a control number."
                 )
                 % {"names": ", ".join(locked.mapped("display_name"))}
+            )
+        retention_locked = self._tfhka_vendor_bills_with_digitalized_retention()
+        if retention_locked:
+            raise UserError(
+                _(
+                    "Cannot reset %(names)s to draft: already used by a digitalized TFHKA "
+                    "retention. Annul the retention in The Factory HKA first if it needs to change."
+                )
+                % {"names": ", ".join(retention_locked.mapped("display_name"))}
             )
         return super().button_draft()
 
@@ -112,6 +136,15 @@ class AccountMove(models.Model):
                     "HKA first if it already has a control number."
                 )
                 % {"names": ", ".join(locked.mapped("display_name"))}
+            )
+        retention_locked = self._tfhka_vendor_bills_with_digitalized_retention()
+        if retention_locked:
+            raise UserError(
+                _(
+                    "Cannot cancel %(names)s: already used by a digitalized TFHKA retention. "
+                    "Annul the retention in The Factory HKA first if it needs to change."
+                )
+                % {"names": ", ".join(retention_locked.mapped("display_name"))}
             )
         return super().button_cancel()
 
