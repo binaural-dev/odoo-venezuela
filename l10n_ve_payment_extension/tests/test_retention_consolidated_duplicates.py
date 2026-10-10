@@ -33,8 +33,9 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
             "retention_amount": 15.0,
         })
 
-    def _create_retention(self, type_retention, invoices, partner=None):
+    def _create_retention(self, type_retention, invoices, partner=None, third_party=False):
         return self.env["account.retention"].create({
+            "is_third_party_retention": third_party,
             "type_retention": type_retention, "type": "in_invoice",
             "company_id": self.company.id,
             "partner_id": (partner or self.partner_pnr_75).id,
@@ -77,12 +78,16 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
             for other_state in ("draft", "emitted"):
                 with self.subTest(type_retention=type_retention, other_state=other_state):
                     inv = self._post_invoice()
-                    other = self._create_retention(type_retention, inv, partner=other_partner)
+                    other = self._create_retention(
+                        type_retention, inv, partner=other_partner, third_party=True,
+                    )
                     other.state = other_state
                     current = self._create_retention(type_retention, inv)
                     current._check_duplicate_invoices_all_states()
 
-                    same_partner = self._create_retention(type_retention, inv, partner=other_partner)
+                    same_partner = self._create_retention(
+                        type_retention, inv, partner=other_partner, third_party=True,
+                    )
                     with self.assertRaises(UserError):
                         same_partner._check_duplicate_invoices_all_states()
 
