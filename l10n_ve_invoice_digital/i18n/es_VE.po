@@ -94,6 +94,62 @@ msgid "Cancel at The Factory HKA"
 msgstr "Anular en The Factory HKA"
 
 #. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"Cannot cancel %(names)s: already queued, being sent, or already "
+"digitalized with TFHKA. Wait for the digitalization to finish, or annul "
+"it in The Factory HKA first if it already has a control number."
+msgstr ""
+"No se puede cancelar %(names)s: ya está en cola, siendo enviada, o ya fue "
+"digitalizada con TFHKA. Espere a que termine la digitalización, o "
+"anúlela primero en The Factory HKA si ya tiene número de control."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"Cannot cancel %(names)s: already used by a digitalized TFHKA retention. "
+"Annul the retention in The Factory HKA first if it needs to change."
+msgstr ""
+"No se puede cancelar %(names)s: ya está siendo usada por una retención "
+"digitalizada con TFHKA. Anule la retención en The Factory HKA primero si "
+"necesita cambiarla."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/services/tfhka_document_service.py:0
+msgid "Cannot digitalize: the invoice date is more than %(days)s days old."
+msgstr ""
+"No se puede digitalizar: la fecha de la factura tiene más de %(days)s días"
+" de antigüedad."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"Cannot reset %(names)s to draft: already queued, being sent, or already "
+"digitalized with TFHKA. Wait for the digitalization to finish, or annul "
+"it in The Factory HKA first if it already has a control number."
+msgstr ""
+"No se puede restablecer %(names)s a borrador: ya está en cola, siendo "
+"enviada, o ya fue digitalizada con TFHKA. Espere a que termine la "
+"digitalización, o anúlela primero en The Factory HKA si ya tiene número "
+"de control."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"Cannot reset %(names)s to draft: already used by a digitalized TFHKA "
+"retention. Annul the retention in The Factory HKA first if it needs to "
+"change."
+msgstr ""
+"No se puede restablecer %(names)s a borrador: ya está siendo usada por "
+"una retención digitalizada con TFHKA. Anule la retención en The Factory "
+"HKA primero si necesita cambiarla."
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__payment_mode_tfhka__cash
 msgid "Cash Payment"
 msgstr "Pago de contado"
@@ -337,8 +393,8 @@ msgstr "Número de Documento TFHKA"
 #. odoo-python
 #: code:addons/l10n_ve_invoice_digital/services/tfhka_document_service.py:0
 #: code:addons/l10n_ve_invoice_digital/services/tfhka_retention_service.py:0
-msgid "Document successfully digitized on %(date)s"
-msgstr "Documento digitalizado exitosamente el %(date)s"
+msgid "Document successfully digitized"
+msgstr "Documento digitalizado exitosamente"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_api_log__endpoint
@@ -963,6 +1019,18 @@ msgid ""
 msgstr ""
 "La autenticación en TFHKA falló: el token no es válido incluso después de "
 "actualizarlo. Por favor, verifique las credenciales."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
+msgid "TFHKA connection failed, retrying automatically (attempt %(count)s/%(max)s)."
+msgstr "Falló la conexión con TFHKA, reintentando automáticamente (intento %(count)s/%(max)s)."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/tfhka_digitalization_mixin.py:0
+msgid "TFHKA digitalization failed after %(max)s connection attempts: %(error)s"
+msgstr "Falló la digitalización TFHKA tras %(max)s intentos de conexión: %(error)s"
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
