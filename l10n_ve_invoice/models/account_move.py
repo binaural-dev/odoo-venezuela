@@ -322,7 +322,48 @@ class AccountMove(models.Model):
                         max=origin_total_all,
                     ))
 
+    def _check_dates_not_in_future(self):
+        """Block posting if the invoice date is after today or the rate date
+        is after the invoice date. Accounting date is not validated."""
+        if self.env.context.get("l10n_ve_skip_future_date_check"):
+            return
+        today = fields.Date.context_today(self)
+        labels = {
+            name: desc["string"]
+            for name, desc in self.fields_get(
+                ["invoice_date", "invoice_date_display"]
+            ).items()
+        }
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            display_date = move.invoice_date_display
+            if display_date and display_date > today:
+                raise ValidationError(
+                    _(
+                        "%(field)s (%(value)s) cannot be later than "
+                        "today (%(today)s) to confirm this document.",
+                        field=labels["invoice_date_display"],
+                        value=format_date(self.env, display_date),
+                        today=format_date(self.env, today),
+                    )
+                )
+            limit = display_date or today
+            if move.invoice_date and move.invoice_date > limit:
+                raise ValidationError(
+                    _(
+                        "%(field)s (%(value)s) cannot be later than "
+                        "%(limit_field)s (%(limit)s) to confirm this "
+                        "document.",
+                        field=labels["invoice_date"],
+                        value=format_date(self.env, move.invoice_date),
+                        limit_field=labels["invoice_date_display"],
+                        limit=format_date(self.env, limit),
+                    )
+                )
+
     def action_post(self):
+        self._check_dates_not_in_future()
 
         for record in self:
             if record.move_type in (

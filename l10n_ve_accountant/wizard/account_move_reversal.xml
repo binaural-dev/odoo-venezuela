@@ -1,0 +1,13 @@
+<odoo>
+    <record id="view_account_move_reversal_l10n_ve_accountant" model="ir.ui.view">
+        <field name="name">account.move.reversal.form.l10n.ve.accountant</field>
+        <field name="model">account.move.reversal</field>
+        <field name="inherit_id" ref="account.view_account_move_reversal"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='date']" position="attributes">
+                <attribute name="readonly">1</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
