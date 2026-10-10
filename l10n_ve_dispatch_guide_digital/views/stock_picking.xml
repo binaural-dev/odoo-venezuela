@@ -32,6 +32,46 @@
         </field>
     </record>
 
+    <!-- Una guía validada que TFHKA rechazó (Error / Data Error) debe poder
+         corregir sus datos de transporte antes de reintentar. -->
+    <record id="stock_picking_form_transport_editable_on_error" model="ir.ui.view">
+        <field name="name">stock.picking.form.transport.editable.tfhka.error</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="l10n_ve_stock_account.stock_picking_form_view_inherited"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='transport_driver_name']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_driver_vat']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_driver_license_type']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_driver_contact']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_vehicle_type']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_vehicle_brand']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_vehicle_model']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_vehicle_number']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_vehicle_plate']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+            <xpath expr="//field[@name='transport_trailer_plate']" position="attributes">
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+            </xpath>
+        </field>
+    </record>
+
     <record id="view_picking_tree_inherit_tfhka_digitalization" model="ir.ui.view">
         <field name="name">stock.picking.list.inherit.tfhka.digitalization</field>
         <field name="model">stock.picking</field>

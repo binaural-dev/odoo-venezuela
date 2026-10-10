@@ -2,7 +2,7 @@ import logging
 
 from odoo import Command, fields
 from odoo.exceptions import UserError
-from odoo.tests import TransactionCase, tagged
+from odoo.tests import Form, TransactionCase, tagged
 from unittest.mock import patch
 
 _logger = logging.getLogger(__name__)
@@ -893,3 +893,14 @@ class TestStockPickingApiCalls(TransactionCase):
             "numeroTransporte": "U-07",
             "numeroPlaca": "A12BC3D",
         })
+
+    def test_transport_editable_when_digitalization_failed(self):
+        picking = self.create_picking()
+        self.validate_picking(picking)
+        self.assertEqual(picking.state, "done")
+        form = Form(picking)
+        self.assertTrue(form._get_modifier("transport_vehicle_plate", "readonly"))
+        picking.tfhka_digitalization_state = "data_error"
+        form = Form(picking)
+        self.assertFalse(form._get_modifier("transport_vehicle_plate", "readonly"))
+        self.assertFalse(form._get_modifier("transport_driver_license_type", "readonly"))
