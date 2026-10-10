@@ -1130,6 +1130,27 @@ class TestAccumulatedRate(TransactionCase):
             details[0]["serieDocumento"],
             ''.join(c for c in invoice.name if c.isalpha()),
         )
+
+    def test_hd15078_vendor_series_readonly_after_confirm(self):
+        """Pedido de Yuliana (09/10) en el ticket helpdesk #15078: la serie
+        de proveedor se bloquea al confirmar la factura, para no reescribir
+        un valor que ya pudo haberse usado al digitalizar una retencion."""
+        invoice = self._create_invoice()
+        invoice.vendor_series_tfhka = "ABC"
+        invoice.action_post()
+
+        with Form(invoice) as invoice_form:
+            self.assertTrue(invoice_form._get_modifier("vendor_series_tfhka", "readonly"))
+            with self.assertRaises(AssertionError):
+                invoice_form.vendor_series_tfhka = "XYZ"
+
+    def test_hd15078_vendor_series_hidden_on_customer_invoices(self):
+        """La serie de proveedor (ticket helpdesk #15078) es exclusiva de
+        facturas/notas de credito de proveedor; en documentos de venta el
+        campo no debe aparecer."""
+        with Form(self.env["account.move"].with_context(default_move_type="out_invoice")) as invoice_form:
+            self.assertTrue(invoice_form._get_modifier("vendor_series_tfhka", "invisible"))
+
     # HD-15459 (seguimiento): una factura de proveedor usada por una
     # retención ya digitalizada con TFHKA no se puede cancelar ni reabrir --
     # la retención ya envió los montos/fecha de esa factura a TFHKA.

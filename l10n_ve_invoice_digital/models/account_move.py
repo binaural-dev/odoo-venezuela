@@ -66,10 +66,13 @@ class AccountMove(models.Model):
     # obligatorio ni tiene formato forzado: varía por proveedor.
     vendor_series_tfhka = fields.Char(
         string="Supplier Series",
+        copy=False,
         help="Series the supplier uses to identify their documents (separate "
              "from the document number). Sent to The Factory HKA when "
              "digitalizing IVA/ISLR retentions for this vendor bill. Leave "
-             "empty if the supplier does not use a series.",
+             "empty if the supplier does not use a series. Do not repeat the "
+             "series inside the document number: numeroDocumento is taken "
+             "from the digits of the document name as-is.",
     )
     invoice_digital_tfhka_active = fields.Boolean(
         related="company_id.invoice_digital_tfhka",

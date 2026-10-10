@@ -247,7 +247,7 @@ class TfhkaRetentionService(models.AbstractModel):
                 # prioridad; si el proveedor no maneja serie, se conserva el
                 # comportamiento anterior (inferida del nombre del documento).
                 document_series_ret = (
-                    line.move_id.vendor_series_tfhka
+                    (line.move_id.vendor_series_tfhka or '').strip()
                     or ''.join([c for c in series if c.isalpha()])
                 )
 

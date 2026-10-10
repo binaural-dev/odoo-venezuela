@@ -67,7 +67,7 @@
                  competir en tamaño con el h1 ni descuadrar el titulo. Solo en
                  facturas/notas de credito de proveedor, y solo si TFHKA esta activo
                  en la compañia. No obligatorio: no todos los proveedores usan serie. -->
-            <xpath expr="//div[@class='oe_title']/h1" position="after">
+            <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
                 <field name="invoice_digital_tfhka_active" invisible="1"/>
                 <div class="d-flex align-items-center"
                      invisible="move_type not in ('in_invoice', 'in_refund') or not invoice_digital_tfhka_active">
