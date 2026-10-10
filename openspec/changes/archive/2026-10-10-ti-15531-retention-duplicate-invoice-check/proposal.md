@@ -4,7 +4,7 @@ Una factura consolidada en otro comprobante de retención podía emitirse dos ve
 
 ## What Changes
 
-- `l10n_ve_payment_extension`: `_check_duplicate_invoices_all_states` en `action_post`, antes de las validaciones por concepto/alícuota/actividad; bloquea si la factura está en otro comprobante `draft`/`emitted` del mismo `type_retention` y mismo partner (no bloquea entre terceros distintos). Mensaje en inglés con traducción en `es_VE.po`. No se cancelan borradores.
+- `l10n_ve_payment_extension`: `_check_duplicate_invoices_all_states` en `action_post`, antes de las validaciones por concepto/alícuota/actividad; bloquea si la factura está en otro comprobante `draft`/`emitted` del mismo `type_retention`, mismo partner y mismo diferenciador (IVA alícuota, ISLR concepto, municipal actividad); no bloquea entre terceros distintos ni con diferenciador distinto. Mensaje en inglés con traducción en `es_VE.po`. No se cancelan borradores.
 - Bump `l10n_ve_payment_extension` 19.0.2.0.35 → 19.0.2.0.36.
 
 ## Impact
