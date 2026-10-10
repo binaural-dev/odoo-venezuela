@@ -1130,6 +1130,30 @@ class TestAccumulatedRate(TransactionCase):
             details[0]["serieDocumento"],
             ''.join(c for c in invoice.name if c.isalpha()),
         )
+    # HD-15459 (seguimiento): una factura de proveedor usada por una
+    # retención ya digitalizada con TFHKA no se puede cancelar ni reabrir --
+    # la retención ya envió los montos/fecha de esa factura a TFHKA.
+    def test_hd15459_vendor_bill_blocked_when_retention_digitalized(self):
+        invoice = self._create_invoice()
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+        retention.is_digitalized = True
+
+        with self.assertRaises(UserError):
+            invoice.button_cancel()
+        with self.assertRaises(UserError):
+            invoice.button_draft()
+
+    def test_hd15459_vendor_bill_allowed_when_retention_not_digitalized(self):
+        invoice = self._create_invoice()
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+        self.assertFalse(retention.is_digitalized)
+
+        invoice.button_cancel()
+        self.assertEqual(invoice.state, "cancel")
 
     # # Retencion con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)

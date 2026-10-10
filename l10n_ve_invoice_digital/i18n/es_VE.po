@@ -107,6 +107,17 @@ msgstr ""
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"Cannot cancel %(names)s: already used by a digitalized TFHKA retention. "
+"Annul the retention in The Factory HKA first if it needs to change."
+msgstr ""
+"No se puede cancelar %(names)s: ya está siendo usada por una retención "
+"digitalizada con TFHKA. Anule la retención en The Factory HKA primero si "
+"necesita cambiarla."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
 #: code:addons/l10n_ve_invoice_digital/services/tfhka_document_service.py:0
 msgid "Cannot digitalize: the invoice date is more than %(days)s days old."
 msgstr ""
@@ -125,6 +136,18 @@ msgstr ""
 "enviada, o ya fue digitalizada con TFHKA. Espere a que termine la "
 "digitalización, o anúlela primero en The Factory HKA si ya tiene número "
 "de control."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+msgid ""
+"Cannot reset %(names)s to draft: already used by a digitalized TFHKA "
+"retention. Annul the retention in The Factory HKA first if it needs to "
+"change."
+msgstr ""
+"No se puede restablecer %(names)s a borrador: ya está siendo usada por "
+"una retención digitalizada con TFHKA. Anule la retención en The Factory "
+"HKA primero si necesita cambiarla."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__res_company__payment_mode_tfhka__cash
