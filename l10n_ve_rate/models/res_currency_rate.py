@@ -60,14 +60,14 @@ class ResCurrencyRate(models.Model):
             "base.USD", raise_if_not_found=False
         )
         
-        # Obtener la moneda extranjera buscando en la compañía actual o en sus matrices
-        company_ids = self.env.company.parent_ids.ids if hasattr(self.env.company, 'parent_ids') else [self.env.company.id]
-        companies = self.env["res.company"].browse(company_ids)
-        
-        # Toma la primera moneda extranjera definida en la jerarquía (de abajo hacia arriba)
+        # La moneda extranjera propia de la sucursal tiene prioridad; si no la
+        # tiene se sube por la jerarquía (parent_path más largo = más cercana).
+        companies = self.env.company.parent_ids.sorted(
+            key=lambda c: len(c.parent_path or ""), reverse=True
+        )
         foreign_currency_id = next(
-            (comp.foreign_currency_id.id for comp in companies if comp.foreign_currency_id), 
-            False
+            (comp.foreign_currency_id.id for comp in companies if comp.foreign_currency_id),
+            False,
         )
 
         inverse_rate = (1 / rate) if rate and foreign_currency_id == base_usd_id else rate
