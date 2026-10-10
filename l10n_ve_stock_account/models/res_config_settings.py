@@ -29,4 +29,10 @@ class ResConfigSettings(models.TransientModel):
     hide_weight_field_dispatch_guide = fields.Boolean(
         related="company_id.hide_weight_field_dispatch_guide", readonly=False
     )
+    transport_data_source = fields.Selection(
+        related="company_id.transport_data_source", readonly=False
+    )
+    transport_data_required = fields.Boolean(
+        related="company_id.transport_data_required", readonly=False
+    )
     

@@ -103,6 +103,27 @@
             <xpath expr="//sheet[1]/group[1]/group[1]/field[@name='picking_type_id']" position="attributes">
                 <attribute name="domain">picking_type_domain</attribute>
             </xpath>
+            <xpath expr="//notebook/page[@name='extra']" position="after">
+                <page string="Transport" name="transport" invisible="not is_dispatch_guide">
+                    <field name="transport_data_source" invisible="1"/>
+                    <group name="transport_main">
+                        <group string="Driver" name="transport_driver">
+                            <field name="transport_driver_name" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_driver_vat" readonly="state in ('done', 'cancel')" placeholder="V12345678"/>
+                            <field name="transport_driver_license_type" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_driver_contact" readonly="state in ('done', 'cancel')"/>
+                        </group>
+                        <group string="Vehicle" name="transport_vehicle">
+                            <field name="transport_vehicle_type" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_vehicle_brand" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_vehicle_model" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_vehicle_number" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_vehicle_plate" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_trailer_plate" readonly="state in ('done', 'cancel')"/>
+                        </group>
+                    </group>
+                </page>
+            </xpath>
         </field>
     </record>
     <!-- ### ACTIONS SERVERS ### -->

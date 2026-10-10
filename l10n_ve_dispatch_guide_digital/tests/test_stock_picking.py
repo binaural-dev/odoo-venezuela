@@ -53,6 +53,9 @@ class TestStockPickingApiCalls(TransactionCase):
                 "invoice_digital_tfhka": True,
                 "dispatch_guide_digital_tfhka": True,
                 "country_id": self.env.ref("base.ve").id,
+                # Las pruebas que exigen datos de transporte lo activan
+                # explícitamente; no depender de la configuración de la base.
+                "transport_data_required": False,
             }
         )
 
@@ -760,3 +763,104 @@ class TestStockPickingApiCalls(TransactionCase):
         picking.is_digitalized = False
         picking._set_guide_number()
         self.assertFalse(picking.guide_number)
+
+
+    # ==================================================================
+    # Datos de transporte (conductor / vehículo)
+    # ==================================================================
+
+    def _set_transport_data(self, picking):
+        picking.write({
+            "transport_driver_name": "Pedro Pérez",
+            "transport_driver_vat": "V-12.345.678",
+            "transport_vehicle_brand": "Ford",
+            "transport_vehicle_model": "Cargo 1721",
+            "transport_vehicle_plate": "a12 bc3d",
+            "transport_trailer_plate": "B45EF6G",
+        })
+
+    def test_prepare_dispatch_guide_includes_driver_and_vehicle(self):
+        picking = self.create_picking()
+        self._set_transport_data(picking)
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertEqual(guide["conductor"], {
+            "nombreCompleto": "Pedro Pérez",
+            "tipoIdentificacion": "V",
+            "numeroIdentificacion": "12345678",
+        })
+        self.assertEqual(guide["vehiculo"], {"numeroPlaca": "A12BC3D"})
+
+    def test_prepare_dispatch_guide_without_transport_data(self):
+        picking = self.create_picking()
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertNotIn("conductor", guide)
+        self.assertNotIn("vehiculo", guide)
+
+    def test_prepare_transport_data_omits_empty_values(self):
+        picking = self.create_picking()
+        picking.transport_driver_name = "Pedro Pérez"
+        transport = self.DispatchGuideService._prepare_transport_data(picking)
+        self.assertEqual(transport, {"conductor": {"nombreCompleto": "Pedro Pérez"}})
+
+    def test_prepare_additional_information_with_transport_data(self):
+        picking = self.create_picking()
+        self._set_transport_data(picking)
+        info = self.DispatchGuideService._prepare_additional_information(picking)
+        self.assertEqual([item["campo"] for item in info], [
+            "direccionEntrega", "marcaVehiculo", "modeloVehiculo", "placaBatea",
+        ])
+        values = {item["campo"]: item["valor"] for item in info}
+        self.assertEqual(values["marcaVehiculo"], "Ford")
+        self.assertEqual(values["modeloVehiculo"], "Cargo 1721")
+        self.assertEqual(values["placaBatea"], "B45EF6G")
+
+    def test_delivery_address_uses_standard_address_fields(self):
+        picking = self.create_picking()
+        info = self.DispatchGuideService._prepare_additional_information(picking)
+        self.assertIn("Calle Falsa 123", info[0]["valor"])
+
+    def test_emitted_payload_includes_transport_data(self):
+        payloads = []
+
+        def capture_api(company, endpoint_key, payload, *args, **kwargs):
+            if endpoint_key == "emision":
+                payloads.append(payload)
+            return mock_api(company, endpoint_key, payload, *args, **kwargs)
+
+        picking = self.create_picking()
+        self._set_transport_data(picking)
+        with patch(TFHKA_REQUEST_PATCH, side_effect=capture_api):
+            self.DispatchGuideService.generate_document_data(picking, "5", "04")
+
+        self.assertTrue(picking.is_digitalized)
+        document = payloads[0]["documentoElectronico"]
+        self.assertEqual(document["guiaDespacho"]["conductor"]["nombreCompleto"], "Pedro Pérez")
+        self.assertEqual(document["guiaDespacho"]["vehiculo"]["numeroPlaca"], "A12BC3D")
+        fields_sent = [item["campo"] for item in document["infoAdicional"]]
+        self.assertIn("placaBatea", fields_sent)
+
+    def test_required_transport_data_blocks_validation_and_queue(self):
+        self.company.transport_data_required = True
+        picking = self.create_picking()
+        with self.assertRaises(UserError):
+            self.validate_picking(picking)
+        self.assertNotEqual(picking.tfhka_digitalization_state, "queued")
+
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_missing_transport_data_in_queue_is_data_error(self, mock_call):
+        sequence = self.env["ir.sequence"].search(
+            [("code", "=", "guide.number"), ("company_id", "=", self.company.id)]
+        )
+        sequence.write({"number_next_actual": 2})
+        self.company.transport_data_required = False
+        picking = self.create_picking()
+        self.validate_picking(picking)
+        self.assertEqual(picking.tfhka_digitalization_state, "queued")
+
+        # La compañía activa la exigencia con la guía ya en cola.
+        self.company.transport_data_required = True
+        self.env["stock.picking"]._tfhka_cron_process_queue()
+
+        self.assertFalse(picking.is_digitalized)
+        self.assertEqual(picking.tfhka_digitalization_state, "data_error")
+        self.assertIn("transport data", picking.tfhka_digitalization_error)
