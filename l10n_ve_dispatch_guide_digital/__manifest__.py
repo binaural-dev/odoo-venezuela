@@ -15,5 +15,6 @@
     "application": True,
     "data": [
         "views/stock_picking.xml",
+        "views/res_config_settings_views.xml",
     ],
 }
