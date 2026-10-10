@@ -9,4 +9,3 @@ from . import test_coverage_gaps
 from . import test_product_template
 from . import test_action_cancel
 from . import test_foreign_exchange_diff
-from . import test_reconciled_partials_new_record

@@ -592,10 +592,11 @@ class AccountRetention(models.Model):
           (move_id, economic_activity_id) combination must not repeat - in
           this retention or in any other emitted retention.
 
-        Only other retentions already in state 'emitted' are considered -
-        two drafts referencing the same invoice/differentiator can coexist
-        harmlessly as long as only one of them ever gets confirmed; the
-        conflict only matters once one side is already final.
+        Only other retentions already in state 'emitted' are considered here.
+        Note that action_post() first runs _check_duplicate_invoices_all_states,
+        which blocks any other draft/emitted retention of the same type and
+        partner over the same invoice, so this cross-retention branch is only
+        reachable for retentions of different partners (third-party invoicing).
 
         Applies to any legal document/retention type - client
         (out_invoice/out_refund/out_debit) and supplier
@@ -1453,6 +1454,9 @@ class AccountRetention(models.Model):
                 ('retention_id.state', 'in', ['draft', 'emitted']),
                 ('retention_id.type_retention', '=', retention.type_retention),
                 ('retention_id', '!=', retention.id),
+                # Third-party invoicing can legitimately generate several
+                # vouchers (one per third party) over the same invoice.
+                ('retention_id.partner_id', '=', retention.partner_id.id),
                 ('move_id', 'in', invoices.ids),
             ], limit=1)
 
@@ -1466,7 +1470,8 @@ class AccountRetention(models.Model):
                 raise UserError(_(
                     "This retention cannot be posted.\n\n"
                     "The invoice '%(invoice)s' is already included in retention '%(other_ret)s' "
-                    "(%(field_name)s: %(state_val)s)."
+                    "(%(field_name)s: %(state_val)s).\n\n"
+                    "Cancel retention '%(other_ret)s' or remove the invoice from one of the two retentions."
                 ) % {
                     'invoice': duplicate_line.move_id.display_name,
                     'other_ret': other_ret.display_name,

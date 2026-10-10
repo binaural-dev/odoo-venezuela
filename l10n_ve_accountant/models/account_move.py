@@ -2286,13 +2286,8 @@ class AccountMove(models.Model):
         # `account_move_see_all` rules grant any Billing/Accountant user
         # blanket read access to every journal entry in that same company
         # -- there is no narrower ACL this would be bypassing.
-        # A not-yet-saved move (onchange/form preview) has a NewId, which
-        # domains don't support -- it can't have standalone entries anyway.
-        origin_id = self._origin.id
-        if not origin_id:
-            return res
         standalone_entries = self.env['account.move'].search([
-            ('l10n_ve_exchange_foreign_source_move_id', '=', origin_id),
+            ('l10n_ve_exchange_foreign_source_move_id', '=', self.id),
             ('state', '=', 'posted'),
             # A reversed entry stays `posted` by design (see
             # `account_partial_reconcile.py`, "reversed, not cancelled")
