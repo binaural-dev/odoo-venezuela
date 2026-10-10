@@ -44,3 +44,11 @@ class ResConfigSettings(models.TransientModel):
         readonly=False,
         implied_group="l10n_ve_stock_account.group_dispatch_note_print",
     )
+
+    transport_data_source = fields.Selection(
+        related="company_id.transport_data_source", readonly=False
+    )
+    transport_data_required = fields.Boolean(
+        related="company_id.transport_data_required", readonly=False
+    )
+

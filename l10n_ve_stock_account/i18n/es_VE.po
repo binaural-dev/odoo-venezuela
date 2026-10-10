@@ -1366,3 +1366,139 @@ msgstr "Último día del mes"
 #: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
 msgid "transfer_ids"
 msgstr ""
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_driver_name
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_form_view_inherited
+msgid "Driver"
+msgstr "Conductor"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_driver_vat
+msgid "Driver ID Number"
+msgstr "Cédula del conductor"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__transport_data_required
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__transport_data_required
+msgid ""
+"If enabled, an outgoing dispatch guide cannot be validated without driver "
+"name, driver ID number and vehicle plate."
+msgstr ""
+"Si está activo, no se puede validar una guía de despacho de salida sin el "
+"nombre del conductor, su cédula y la placa del vehículo."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__res_company__transport_data_source__manual
+msgid "Manual"
+msgstr "Manual"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__transport_data_required
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__transport_data_required
+msgid "Require Transport Data"
+msgstr "Exigir datos de transporte"
+
+#. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+msgid ""
+"The following dispatch guides are missing transport data:\n"
+"%s"
+msgstr ""
+"A las siguientes guías de despacho les faltan datos de transporte:\n"
+"%s"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_trailer_plate
+msgid "Trailer Plate"
+msgstr "Placa de la batea"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_form_view_inherited
+msgid "Transport"
+msgstr "Transporte"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__transport_data_source
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__transport_data_source
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_data_source
+msgid "Transport Data Source"
+msgstr "Origen de los datos de transporte"
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_form_view_inherited
+msgid "Vehicle"
+msgstr "Vehículo"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_vehicle_brand
+msgid "Vehicle Brand"
+msgstr "Marca del vehículo"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_vehicle_model
+msgid "Vehicle Model"
+msgstr "Modelo del vehículo"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_vehicle_plate
+msgid "Vehicle Plate"
+msgstr "Placa del vehículo"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__transport_data_source
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__transport_data_source
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__transport_data_source
+msgid ""
+"Where the driver and vehicle data of the dispatch guide come from. 'Fleet' "
+"is only available when the Fleet app is installed."
+msgstr ""
+"De dónde salen los datos del conductor y del vehículo de la guía de "
+"despacho. 'Flota' solo está disponible si la aplicación Flota está "
+"instalada."
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__transport_driver_license_type__1
+msgid "1st Degree"
+msgstr "1er grado"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__transport_driver_license_type__2
+msgid "2nd Degree"
+msgstr "2do grado"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__transport_driver_license_type__3
+msgid "3rd Degree"
+msgstr "3er grado"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__transport_driver_license_type__4
+msgid "4th Degree"
+msgstr "4to grado"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account.selection__stock_picking__transport_driver_license_type__5
+msgid "5th Degree"
+msgstr "5to grado"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_driver_contact
+msgid "Driver Contact"
+msgstr "Contacto del conductor"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_driver_license_type
+msgid "Driver License Type"
+msgstr "Tipo de licencia"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_vehicle_number
+msgid "Transport Number"
+msgstr "Número de transporte"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_vehicle_type
+msgid "Vehicle Type"
+msgstr "Tipo de vehículo"

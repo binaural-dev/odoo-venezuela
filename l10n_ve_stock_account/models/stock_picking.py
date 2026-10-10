@@ -1,4 +1,5 @@
 import logging
+import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
@@ -9,6 +10,23 @@ from datetime import date, datetime, timedelta
 import calendar
 
 _logger = logging.getLogger(__name__)
+
+# Campos de transporte que exige la compañía cuando activa
+# "Require Transport Data".
+TRANSPORT_REQUIRED_FIELDS = (
+    "transport_driver_name",
+    "transport_driver_vat",
+    "transport_vehicle_plate",
+)
+TRANSPORT_PLATE_FIELDS = ("transport_vehicle_plate", "transport_trailer_plate")
+# Grados de la licencia de conducir venezolana.
+DRIVER_LICENSE_TYPES = [
+    ("1", "1st Degree"),
+    ("2", "2nd Degree"),
+    ("3", "3rd Degree"),
+    ("4", "4th Degree"),
+    ("5", "5th Degree"),
+]
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
@@ -119,6 +137,23 @@ class StockPicking(models.Model):
     )
     partner_required = fields.Boolean(compute='_compute_partner_required', store=True)
     
+    # Datos de transporte de la guía de despacho. Son una copia fija (la guía
+    # es un documento fiscal): se escriben a mano o los copia
+    # l10n_ve_stock_account_fleet al elegir un vehículo de Flota.
+    transport_driver_name = fields.Char(string="Driver", copy=False, tracking=True)
+    transport_driver_vat = fields.Char(string="Driver ID Number", copy=False, tracking=True)
+    transport_driver_license_type = fields.Selection(
+        DRIVER_LICENSE_TYPES, string="Driver License Type", copy=False, tracking=True
+    )
+    transport_driver_contact = fields.Char(string="Driver Contact", copy=False, tracking=True)
+    transport_vehicle_type = fields.Char(string="Vehicle Type", copy=False, tracking=True)
+    transport_vehicle_number = fields.Char(string="Transport Number", copy=False, tracking=True)
+    transport_vehicle_brand = fields.Char(string="Vehicle Brand", copy=False, tracking=True)
+    transport_vehicle_model = fields.Char(string="Vehicle Model", copy=False, tracking=True)
+    transport_vehicle_plate = fields.Char(string="Vehicle Plate", copy=False, tracking=True)
+    transport_trailer_plate = fields.Char(string="Trailer Plate", copy=False, tracking=True)
+    transport_data_source = fields.Selection(related="company_id.transport_data_source")
+
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
@@ -1372,6 +1407,7 @@ class StockPicking(models.Model):
         '''Override to set the state_guide_dispatch to 'emited' when the transfer reason is 'transfer_between_warehouses' 
         and the operational_code is internal
         '''
+        self._check_transport_data()
         for picking in self:
             if picking.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
                 picking.state_guide_dispatch = 'emited'
@@ -1384,6 +1420,51 @@ class StockPicking(models.Model):
                 partner = picking.location_dest_id.partner_id
                 if partner:
                     picking.partner_id = partner.id
+
+    # === TRANSPORT DATA ===#
+
+    @api.model
+    def _transport_normalize_vals(self, vals):
+        """Placas y cédula en mayúsculas, sin espacios, puntos ni guiones."""
+        for fname in TRANSPORT_PLATE_FIELDS:
+            if vals.get(fname):
+                vals[fname] = re.sub(r"[\s-]", "", vals[fname]).upper()
+        if vals.get("transport_driver_vat"):
+            vals["transport_driver_vat"] = re.sub(
+                r"[\s.-]", "", vals["transport_driver_vat"]
+            ).upper()
+        return vals
+
+    def _must_check_transport_data(self):
+        """True si es una guía de despacho de salida (no recepción) y la
+        compañía exige los datos de transporte."""
+        self.ensure_one()
+        return (
+            self.is_dispatch_guide
+            and self.picking_type_id.code != "incoming"
+            and self.company_id.transport_data_required
+        )
+
+    def _get_transport_missing_fields(self):
+        """Etiquetas (traducidas) de los datos obligatorios que faltan."""
+        self.ensure_one()
+        return [
+            self._fields[fname]._description_string(self.env)
+            for fname in TRANSPORT_REQUIRED_FIELDS
+            if not self[fname]
+        ]
+
+    def _check_transport_data(self):
+        errors = []
+        for picking in self.filtered(lambda p: p._must_check_transport_data()):
+            missing = picking._get_transport_missing_fields()
+            if missing:
+                errors.append("%s: %s" % (picking.name, ", ".join(missing)))
+        if errors:
+            raise UserError(
+                _("The following dispatch guides are missing transport data:\n%s")
+                % "\n".join(errors)
+            )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -1401,11 +1482,13 @@ class StockPicking(models.Model):
                 )
                 if reason:
                     vals["transfer_reason_id"] = reason.id
+        vals_list = [self._transport_normalize_vals(dict(vals)) for vals in vals_list]
         records = super().create(vals_list)
         records._assign_partner_from_location()
         return records
 
     def write(self, vals):
+        vals = self._transport_normalize_vals(dict(vals))
         res = super().write(vals)
         for picking in self:
             if picking.partner_required:
