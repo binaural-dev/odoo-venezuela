@@ -5,8 +5,9 @@ from datetime import timedelta
 from odoo import _, fields, models, tools
 from odoo.exceptions import AccessError, UserError
 
-from ..services.tfhka_client import TFHKA_ENDPOINTS, _is_rate_limit_message
+from ..services.tfhka_client import TFHKA_ENDPOINTS, TfhkaConnectionError, _is_rate_limit_message
 from ..services.tfhka_service_base import TfhkaDataError
+from ..utils import status_message
 
 _logger = logging.getLogger(__name__)
 
@@ -18,13 +19,20 @@ _logger = logging.getLogger(__name__)
 # instead of hammering TFHKA in a tight loop.
 RATE_LIMIT_RETRY_WAIT = 5
 
+# Intentos consecutivos tolerados ante un fallo de conexión
+# (TfhkaConnectionError -- ni siquiera se pudo contactar a TFHKA) antes de
+# rendirse y pasar a 'error' para revisión humana. El cron corre cada
+# minuto, así que esto tolera ~5 minutos de caída antes de alertar -- ver
+# HD-15695.
+MAX_CONNECTION_RETRIES = 5
+
 # TFHKA business codes that mean "problem with this document's own data"
 # (missing/malformed field, doesn't meet minimum validations) rather than a
 # grave system/integration failure. See the digital printer's error code
 # table: 203 = rejected for missing/malformed required field, 205 = doesn't
 # meet minimum validations (art. 28). Any other code (or no code at all, e.g.
-# a network/auth failure with no TFHKA business code) stays 'error' unless it
-# is a TfhkaDataError -- see _tfhka_process_digitalization.
+# an auth failure with no TFHKA business code) stays 'error' unless it is a
+# TfhkaDataError or TfhkaConnectionError -- see _tfhka_process_digitalization.
 DATA_ERROR_TFHKA_CODES = {"203", "205"}
 
 # Safety cap so one cron run can't try to drain an unbounded backlog in a
@@ -74,15 +82,24 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
 
     Invariant maintained by that cron (see ``_tfhka_cron_process_queue``): a given
     model never has more than one document in 'processing' and never more
-    than one in 'error' at the same time. A document in 'error' halts the
-    whole queue until a human resolves it -- the queue never skips ahead of
-    an unresolved failure. Digitalization is only ever triggered by that
-    cron step (never inline by a button or a request), so nothing else can
-    race it into moving a document to 'processing'.
+    than one in 'error' at the same time *within the same queue scope* (see
+    ``_tfhka_queue_scope_field`` below) -- a document in 'error' halts only
+    its own scope's queue until a human resolves it, never skipping ahead of
+    an unresolved failure within that scope. Digitalization is only ever
+    triggered by that cron step (never inline by a button or a request), so
+    nothing else can race it into moving a document to 'processing'.
     """
 
     _name = "tfhka.digitalization.mixin"
     _description = "TFHKA Digitalization Queue Fields"
+
+    # Field name that partitions this model's queue into independent,
+    # separately-halting sub-queues (e.g. "journal_id" on account.move: an
+    # error in one journal no longer freezes every other journal -- see
+    # HD-15734). False (the default) means a single global queue, exactly
+    # today's behavior -- account.retention and stock.picking don't override
+    # this and are completely unaffected by the scoping logic below.
+    _tfhka_queue_scope_field = False
 
     tfhka_digitalization_state = fields.Selection(
         [
@@ -124,6 +141,15 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         copy=False,
         help="Error message from the last failed digitalization attempt. "
              "Cleared once the document digitalizes successfully.",
+    )
+    tfhka_connection_retry_count = fields.Integer(
+        string="TFHKA Connection Retry Count",
+        default=0,
+        copy=False,
+        help="Consecutive failed attempts due to a connection error. Reset "
+             "to 0 on a successful digitalization or a manual retry. Once it "
+             "reaches MAX_CONNECTION_RETRIES, the document is moved to "
+             "'error' instead of being requeued again.",
     )
 
     def write(self, vals):
@@ -209,9 +235,39 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 "tfhka_digitalization_state": "success",
                 "tfhka_digitalization_error": False,
                 "is_digitalized": True,
+                "tfhka_connection_retry_count": 0,
             })
             return True
         except Exception as error:
+            # A connection error (couldn't even reach TFHKA's server -- not a
+            # response of any kind) is transient by definition: requeue it so
+            # the cron picks it up again on its own next run, instead of
+            # halting the whole model's queue for a human to retry manually
+            # (see HD-15695). Only after MAX_CONNECTION_RETRIES consecutive
+            # failures does it fall through to the grave 'error' path below,
+            # same as everything else.
+            if isinstance(error, TfhkaConnectionError):
+                retry_count = self.tfhka_connection_retry_count + 1
+                if retry_count < MAX_CONNECTION_RETRIES:
+                    self.write({
+                        "tfhka_digitalization_state": "queued",
+                        "tfhka_digitalization_error": str(error),
+                        "tfhka_connection_retry_count": retry_count,
+                    })
+                    self.message_post(
+                        body=status_message(
+                            _(
+                                "TFHKA connection failed, retrying automatically "
+                                "(attempt %(count)s/%(max)s)."
+                            ) % {
+                                "count": retry_count,
+                                "max": MAX_CONNECTION_RETRIES,
+                            },
+                            "error",
+                        ),
+                    )
+                    return False
+
             # getattr is safe for any exception that can land here (network
             # errors, ValidationError from an empty token, plain UserError
             # for HTTP 401/non-200, TfhkaBusinessError for a TFHKA business
@@ -224,22 +280,62 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             tfhka_code = getattr(error, "tfhka_code", None)
             is_data_error = tfhka_code in DATA_ERROR_TFHKA_CODES or isinstance(error, TfhkaDataError)
             new_state = "data_error" if is_data_error else "error"
-            self.write({
+            write_vals = {
                 "tfhka_digitalization_state": new_state,
                 "tfhka_digitalization_error": str(error),
-            })
-            self.message_post(
-                body=_("TFHKA digitalization failed: %s") % error,
-            )
+            }
+            if isinstance(error, TfhkaConnectionError):
+                # Exhausted MAX_CONNECTION_RETRIES: reset the counter so a
+                # future manual retry starts counting from zero again.
+                write_vals["tfhka_connection_retry_count"] = 0
+                message = _(
+                    "TFHKA digitalization failed after %(max)s connection "
+                    "attempts: %(error)s"
+                ) % {"max": MAX_CONNECTION_RETRIES, "error": error}
+            else:
+                message = _("TFHKA digitalization failed: %s") % error
+            self.write(write_vals)
+            self.message_post(body=status_message(message, "error"))
             return False
 
-    def _tfhka_recover_stuck_processing(self):
-        """Called on a single document found in 'processing' at the start
-        of a cron tick (see _tfhka_cron_process_queue). A healthy attempt is never
-        observed here: one cron tick always resolves 'processing' to
-        'success'/'error' before it ends, so the only way a fresh tick can
-        find one is a previous run that got interrupted mid-flight (Odoo
-        killed, e.g. hitting limit_time_cron while waiting on TFHKA).
+    def _tfhka_queue_scope_domains(self, states):
+        """Partitions this model's queue into independent scopes (see
+        ``_tfhka_queue_scope_field``).
+
+        Returns a list of ``(scope_key, domain_leg)`` pairs, one per distinct
+        value of ``_tfhka_queue_scope_field`` that currently has at least one
+        document in ``states`` -- so an idle journal with nothing queued
+        doesn't get its own pointless empty pass. ``domain_leg`` is the extra
+        domain to AND onto any search/search_count to stay within that scope;
+        ``scope_key`` is a hashable value identifying it (a journal id, or
+        ``False``).
+
+        When the model defines no scope field, returns a single
+        ``[(False, [])]`` -- one scope covering the whole model, with an
+        empty (no-op) domain leg, i.e. today's behavior unchanged byte for
+        byte for account.retention/stock.picking.
+        """
+        field = self._tfhka_queue_scope_field
+        if not field:
+            return [(False, [])]
+        groups = self._read_group(
+            [("tfhka_digitalization_state", "in", states)],
+            groupby=[field],
+        )
+        return [
+            (value.id if value else False, [(field, "=", value.id if value else False)])
+            for (value,) in groups
+        ] or [(False, [])]
+
+    def _tfhka_recover_stuck_processing(self, domain_extra=None):
+        """Called at the start of a cron tick, once per queue scope (see
+        _tfhka_cron_process_queue) -- ``domain_extra`` restricts it to that
+        scope; ``None``/empty means the whole model (today's behavior for
+        models with no scope field). A healthy attempt is never observed
+        here: one cron tick always resolves 'processing' to 'success'/'error'
+        before it ends, so the only way a fresh tick can find one is a
+        previous run that got interrupted mid-flight (Odoo killed, e.g.
+        hitting limit_time_cron while waiting on TFHKA).
 
         A record can only be found here if a *previous* run was interrupted:
         this cron job never overlaps with itself (ir.cron's row lock), and
@@ -261,15 +357,15 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         past the grace period gets resolved before a fresh one halts the
         loop -- order matters here, not just cosmetics.
 
-        Returns True if it's safe to keep processing this model's queue this
+        Returns True if it's safe to keep processing this scope's queue this
         run (every stuck record was resolved, or there were none), False if
         at least one record is still within its grace period and was left
-        untouched -- the caller must halt this model's queue for this run
+        untouched -- the caller must halt this scope's queue for this run
         without even checking the error/data_error guard, so as not to
         advance past a document that may still be legitimately in flight.
         """
         stuck = self.search(
-            [("tfhka_digitalization_state", "=", "processing")],
+            [("tfhka_digitalization_state", "=", "processing")] + (domain_extra or []),
             order="date_state asc",
         )
         for record in stuck:
@@ -303,12 +399,15 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 "is_digitalized": True,
             })
             self.message_post(
-                body=_(
-                    "TFHKA digitalization was interrupted before Odoo could record the "
-                    "result, but the API log shows it actually succeeded (see The Factory "
-                    "HKA API Log #%s). Recovered automatically -- the document was not "
-                    "resubmitted."
-                ) % log_entry.id,
+                body=status_message(
+                    _(
+                        "TFHKA digitalization was interrupted before Odoo could record the "
+                        "result, but the API log shows it actually succeeded (see The Factory "
+                        "HKA API Log #%s). Recovered automatically -- the document was not "
+                        "resubmitted."
+                    ) % log_entry.id,
+                    "success",
+                ),
             )
             return True
 
@@ -326,14 +425,17 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 ) % {"minutes": minutes},
             })
             self.message_post(
-                body=_(
-                    "TFHKA digitalization was interrupted before Odoo could record the "
-                    "result, and no matching successful call was found in the API log "
-                    "after waiting %(minutes)s minute(s). Marked as error instead of "
-                    "being requeued automatically, since a blind retry risks submitting "
-                    "a duplicate if TFHKA actually received the original request -- "
-                    "verify directly with TFHKA before retrying."
-                ) % {"minutes": minutes},
+                body=status_message(
+                    _(
+                        "TFHKA digitalization was interrupted before Odoo could record the "
+                        "result, and no matching successful call was found in the API log "
+                        "after waiting %(minutes)s minute(s). Marked as error instead of "
+                        "being requeued automatically, since a blind retry risks submitting "
+                        "a duplicate if TFHKA actually received the original request -- "
+                        "verify directly with TFHKA before retrying."
+                    ) % {"minutes": minutes},
+                    "error",
+                ),
             )
             return True
 
@@ -360,31 +462,40 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         calling cron is bound to: account.move, account.retention or
         stock.picking).
 
-        Queue lock: if this model already has a document in 'error' or
-        'data_error', nothing is processed -- that document must be resolved
-        (retried successfully) before the rest of this model's queue can
-        advance. Same halt applies, even earlier, if a document is still
-        within its stuck-processing grace period (see
+        Runs once per queue scope (see ``_tfhka_queue_scope_field`` /
+        ``_tfhka_queue_scope_domains``) -- for account.move that's once per
+        journal; for models with no scope field it's a single pass over the
+        whole model, exactly as before HD-15734.
+
+        Queue lock: if a scope already has a document in 'error' or
+        'data_error', nothing in that scope is processed -- that document
+        must be resolved (retried successfully) before the rest of *that
+        scope's* queue can advance. Same halt applies, even earlier, if a
+        document is still within its stuck-processing grace period (see
         _tfhka_recover_stuck_processing) -- it may still be legitimately in
-        flight, so nothing else for this model is touched this run either.
+        flight, so nothing else in that scope is touched this run either.
+        Other scopes (other journals) are untouched by any of this.
         """
-        if not self._tfhka_recover_stuck_processing():
-            return
-        if self.search_count([("tfhka_digitalization_state", "in", ("error", "data_error"))]):
-            return
-        queued = self.search(
-            [("tfhka_digitalization_state", "=", "queued")],
-            order="tfhka_queued_at asc, id asc",
-            limit=QUEUE_BATCH_SIZE,
-        )
-        for record in queued:
-            success = record._tfhka_process_digitalization()
-            # Commit right after each document so its result is visible in
-            # Odoo immediately, instead of only once the whole batch (up to
-            # QUEUE_BATCH_SIZE documents) finishes processing.
-            self._tfhka_commit()
-            if not success:
-                break  # halt this model's queue here; resumes once retried successfully
+        for _scope_key, domain_extra in self._tfhka_queue_scope_domains(
+            ("queued", "processing", "error", "data_error")
+        ):
+            if not self._tfhka_recover_stuck_processing(domain_extra):
+                continue
+            if self.search_count([("tfhka_digitalization_state", "in", ("error", "data_error"))] + domain_extra):
+                continue
+            queued = self.search(
+                [("tfhka_digitalization_state", "=", "queued")] + domain_extra,
+                order="tfhka_queued_at asc, id asc",
+                limit=QUEUE_BATCH_SIZE,
+            )
+            for record in queued:
+                success = record._tfhka_process_digitalization()
+                # Commit right after each document so its result is visible in
+                # Odoo immediately, instead of only once the whole batch (up to
+                # QUEUE_BATCH_SIZE documents) finishes processing.
+                self._tfhka_commit()
+                if not success:
+                    break  # halt this scope's queue here; resumes once retried successfully
 
     def _tfhka_cron_process_queue_multi(self, model_names):
         """Entry point for the single unified cron: drains every model's
@@ -393,61 +504,70 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         one model's entire backlog before starting the next -- otherwise
         a large backlog in one model (e.g. account.move) would starve the
         others for this whole run, since they'd never get a turn until it
-        finished. A model drops out of the rotation once its own queue is
-        empty or halts on an error; the run ends once every model has
-        dropped out, or after QUEUE_BATCH_SIZE rounds.
+        finished. The rotation is actually over *(model, queue scope)* pairs,
+        not bare models (see ``_tfhka_queue_scope_field``): account.move
+        contributes one entry per journal that currently has work, each
+        halting independently, instead of one entry for the whole model --
+        an error in one journal no longer starves every other journal's
+        turn (HD-15734). Models with no scope field (account.retention,
+        stock.picking) still contribute exactly one entry, unchanged. A
+        (model, scope) pair drops out of the rotation once its own queue is
+        empty or halts on an error; the run ends once every pair has dropped
+        out, or after QUEUE_BATCH_SIZE rounds.
 
         ``model_names`` may include models that don't exist in this registry
         or never inherited this mixin (e.g. stock.picking when the dispatch
         guide module isn't installed) -- those are silently skipped, so the
         same call works regardless of which optional modules are present.
 
-        Each model still halts independently on its own first error, exactly
-        like ``_tfhka_cron_process_queue``, it just does so without blocking
-        the other models' turns in this same run. Same isolation applies to
-        a model whose stuck-processing recovery leaves a document untouched
-        within its grace period (see ``_tfhka_recover_stuck_processing``) --
-        only that model is added to ``halted``.
+        Each (model, scope) pair still halts independently on its own first
+        error, exactly like ``_tfhka_cron_process_queue``, it just does so
+        without blocking any other pair's turn in this same run. Same
+        isolation applies to a scope whose stuck-processing recovery leaves
+        a document untouched within its grace period (see
+        ``_tfhka_recover_stuck_processing``) -- only that pair is added to
+        ``halted``.
         """
         models = []
-        halted = set()
         for model_name in model_names:
             if model_name not in self.env.registry:
                 continue
             model = self.env[model_name]
             if not hasattr(model, "_tfhka_process_digitalization"):
                 continue
-            if not model._tfhka_recover_stuck_processing():
-                halted.add(model._name)
             models.append(model)
 
-        queues = {}
+        halted = set()  # {(model_name, scope_key), ...}
+        queues = {}  # {(model_name, scope_key): recordset}
         for model in models:
-            if model._name in halted:
-                continue
-            if model.search_count([("tfhka_digitalization_state", "in", ("error", "data_error"))]):
-                halted.add(model._name)
-                continue
-            queues[model._name] = model.search(
-                [("tfhka_digitalization_state", "=", "queued")],
-                order="tfhka_queued_at asc, id asc",
-                limit=QUEUE_BATCH_SIZE,
-            )
+            for scope_key, domain_extra in model._tfhka_queue_scope_domains(
+                ("queued", "processing", "error", "data_error")
+            ):
+                key = (model._name, scope_key)
+                if not model._tfhka_recover_stuck_processing(domain_extra):
+                    halted.add(key)
+                    continue
+                if model.search_count([("tfhka_digitalization_state", "in", ("error", "data_error"))] + domain_extra):
+                    halted.add(key)
+                    continue
+                queue = model.search(
+                    [("tfhka_digitalization_state", "=", "queued")] + domain_extra,
+                    order="tfhka_queued_at asc, id asc",
+                    limit=QUEUE_BATCH_SIZE,
+                )
+                if queue:
+                    queues[key] = queue
 
         max_len = max((len(queue) for queue in queues.values()), default=0)
         for index in range(max_len):
-            for model in models:
-                name = model._name
-                if name in halted:
-                    continue
-                queue = queues.get(name)
-                if not queue or index >= len(queue):
+            for key, queue in list(queues.items()):
+                if key in halted or index >= len(queue):
                     continue
                 record = queue[index]
                 success = record._tfhka_process_digitalization()
                 self._tfhka_commit()
                 if not success:
-                    halted.add(name)  # halt only this model; others keep going
+                    halted.add(key)  # halt only this (model, scope) pair; others keep going
 
     def _tfhka_digitalization_alert_data(self, model_names):
         """Records currently blocking their model's queue (state in ('error',
@@ -506,6 +626,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
         eligible.write({
             "tfhka_digitalization_state": "queued",
             "tfhka_digitalization_error": False,
+            "tfhka_connection_retry_count": 0,
         })
 
     def action_tfhka_generate_digital(self):

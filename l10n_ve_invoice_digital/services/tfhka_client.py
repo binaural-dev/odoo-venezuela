@@ -46,6 +46,18 @@ class TfhkaBusinessError(UserError):
         self.tfhka_code = tfhka_code
 
 
+class TfhkaConnectionError(UserError):
+    """UserError levantado cuando ni siquiera se pudo contactar al servidor
+    de TFHKA (timeout, DNS, conexión rechazada, ...) -- un fallo de
+    transporte, no una respuesta (de negocio o de validación) de TFHKA.
+
+    A diferencia de ``TfhkaBusinessError``/``TfhkaDataError``, esto es, por
+    definición, transitorio: ``tfhka.digitalization.mixin`` lo reintenta
+    solo (vuelve el documento a 'queued' en vez de 'error') en vez de cortar
+    el encolado y esperar una intervención humana -- ver HD-15695.
+    """
+
+
 class TfhkaApiClient(models.AbstractModel):
     """Cliente HTTP de la API de The Factory HKA.
 
@@ -201,7 +213,7 @@ class TfhkaApiClient(models.AbstractModel):
         except requests.exceptions.RequestException as e:
             _logger.error("Error connecting to the API: %s", e)
             self._log_call(company, endpoint, payload, origin, None, str(e), False)
-            raise UserError(_("Error connecting to the API: %(error)s") % {"error": e})
+            raise TfhkaConnectionError(_("Error connecting to the API: %(error)s") % {"error": e})
 
     # ------------------------------------------------------------------
     # Endpoints
