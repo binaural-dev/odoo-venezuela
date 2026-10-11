@@ -73,6 +73,9 @@ export function toDriverOrder(payload) {
         fiscal_code: String(line.tax ?? "0").replace(/^t/i, "") || "0",
         product_code: line.code || "",
         product_name: line.name || "PRODUCTO",
+        // Descuento por monto sobre el ítem (`q-`): facturas en otra moneda,
+        // para que la MF sume el monto del asiento en la moneda de la compañía.
+        discount_amount: Number(line.discount_amount || 0),
     }));
 
     const payments = (payload.payment_lines || []).map((payment) => ({

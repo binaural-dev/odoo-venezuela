@@ -4,6 +4,7 @@ import unicodedata
 
 from odoo import _, api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.tools import float_round
 
 _logger = logging.getLogger(__name__)
 
@@ -130,6 +131,50 @@ class AccountMoveInh(models.Model):
         self.ensure_one()
         return self.company_id.mf_flag_21 or "00"
 
+    def _mf_in_other_currency(self):
+        """Factura en una moneda distinta a la de la compañía (compañía en Bs,
+        factura en USD): la máquina fiscal trabaja en la moneda de la compañía
+        y los montos del documento hay que llevarlos a ella."""
+        self.ensure_one()
+        return bool(self.currency_id) and self.currency_id != self.company_currency_id
+
+    def _mf_company_rate(self):
+        """Tasa moneda de la factura → moneda de la compañía con la que quedó
+        contabilizada (multiplicador)."""
+        self.ensure_one()
+        if self.amount_total:
+            return abs(self.amount_total_signed) / self.amount_total
+        return 1 / self.invoice_currency_rate if self.invoice_currency_rate else 0.0
+
+    @api.model
+    def _mf_company_item(self, amount, quantity, rounding=0.01):
+        """Unitario y descuento por monto (`q-`) de un ítem cuyo monto en la
+        moneda de la compañía es `amount` y su cantidad `quantity` (magnitudes).
+
+        La MF arma el ítem como unitario (2 decimales) × cantidad; el asiento
+        valora la línea sin redondear el unitario. El unitario se redondea
+        hacia ARRIBA al céntimo y el exceso se descuenta sobre el ítem, para
+        que la MF imprima el mismo monto que el asiento
+        (5 × $ 2,32 a 803,34 = 9.318,74 → 5 × 1.863,75 − 0,01).
+
+        KEEP IN SYNC WITH: binaural_pos_multicurrency_mf (integra-addons)
+        static/src/utils/mf_company_amounts.js :: mfCompanyItem
+        """
+        amount = float_round(amount or 0.0, precision_rounding=rounding)
+        quantity = quantity or 0.0
+        if amount <= 0 or quantity <= 0:
+            return {"price_unit": 0.0, "discount_amount": 0.0}
+        # Se quita el ruido de coma flotante antes de subir al céntimo.
+        steps = float_round(
+            float_round(amount / quantity / rounding, precision_digits=6),
+            precision_digits=0,
+            rounding_method="UP",
+        )
+        price_unit = float_round(max(steps, 1) * rounding, precision_rounding=rounding)
+        item_amount = float_round(price_unit * quantity, precision_rounding=rounding)
+        discount = float_round(item_amount - amount, precision_rounding=rounding)
+        return {"price_unit": price_unit, "discount_amount": max(discount, 0.0)}
+
     def _mf_build_payment_lines(self, absolute=False):
         """Construye las líneas de pago para la máquina fiscal desde el
         widget de pagos de la factura.
@@ -143,6 +188,9 @@ class AccountMoveInh(models.Model):
         if not payments:
             payment_lines.append({"amount": 0, "payment_method": "01"})
             return payment_lines
+
+        if self._mf_in_other_currency():
+            return self._mf_build_company_payment_lines(payments["content"], absolute=absolute)
 
         for payment in payments["content"]:
             journal_id = self.env["account.journal"].search(
@@ -160,6 +208,45 @@ class AccountMoveInh(models.Model):
 
         return payment_lines
 
+    def _mf_build_company_payment_lines(self, content, absolute=False):
+        """Pagos de una factura en otra moneda, en la moneda de la compañía.
+
+        El widget trae lo conciliado en la moneda de la factura: se lleva a la
+        compañía a la tasa de la factura, la misma de las líneas del documento
+        fiscal. La diferencia en cambio no es un pago y no se envía. Si la
+        factura quedó pagada completa, el último pago absorbe el redondeo para
+        que la suma sea el total de la factura en la moneda de la compañía.
+        """
+        self.ensure_one()
+        company_currency = self.company_currency_id
+        rate = self._mf_company_rate()
+        payment_lines = []
+        paid_currency = 0.0
+        for payment in content:
+            if payment.get("is_exchange"):
+                continue
+            journal = self.env["account.journal"].search(
+                [("name", "=", payment["journal_name"])], limit=1
+            )
+            amount_currency = payment["amount"]
+            paid_currency += amount_currency
+            amount = company_currency.round(amount_currency * rate)
+            payment_lines.append(
+                {
+                    "amount": abs(amount) if absolute else amount,
+                    "payment_method": journal["payment_method"] or "01",
+                }
+            )
+        if not payment_lines:
+            return [{"amount": 0, "payment_method": "01"}]
+        if self.currency_id.is_zero(paid_currency - self.amount_total):
+            total = abs(self.amount_total_signed)
+            others = sum(abs(line["amount"]) for line in payment_lines[:-1])
+            last = payment_lines[-1]
+            sign = -1 if last["amount"] < 0 else 1
+            last["amount"] = sign * company_currency.round(total - others)
+        return payment_lines
+
     def _mf_build_invoice_lines(self):
         """Construye las líneas de producto para la máquina fiscal.
 
@@ -168,6 +255,9 @@ class AccountMoveInh(models.Model):
         formateo/redondeo final lo hace el driver Web Serial.
         """
         self.ensure_one()
+        if self._mf_in_other_currency():
+            return self._mf_build_company_invoice_lines()
+
         invoice_lines = []
         vef_id = self.env.ref("base.VEF").id
 
@@ -183,12 +273,77 @@ class AccountMoveInh(models.Model):
                     "price_unit": price_vef,
                     "quantity": line.quantity,
                     "code": False,
-                    "name": f"[{line.product_id.default_code}] {self._normalize_product_name(line.product_id.name)}"
-                    if line.product_id
-                    else self._normalize_product_name(line.name),
+                    "name": self._mf_line_name(line),
                 }
             )
 
+        return invoice_lines
+
+    def _mf_line_name(self, line):
+        if line.product_id:
+            return (
+                f"[{line.product_id.default_code}] "
+                f"{self._normalize_product_name(line.product_id.name)}"
+            )
+        return self._normalize_product_name(line.name)
+
+    def _mf_build_company_invoice_lines(self):
+        """Líneas de una factura en otra moneda, en la moneda de la compañía.
+
+        Igual que con las facturas en Bs (que mandan `price_unit` tal cual), el
+        precio lleva o no el IVA según el impuesto, que se configura alineado
+        con el tipo de tasa de la MF: con impuesto excluido va la base de la
+        línea (su `balance` del asiento) y la MF le suma el IVA; con impuesto
+        incluido va el total con IVA y la MF lo separa. El descuento % ya está
+        en esos montos.
+        """
+        self.ensure_one()
+        company_currency = self.company_currency_id
+        rounding = company_currency.rounding
+        rate = self._mf_company_rate()
+        invoice_lines = []
+        excluded_tax = False
+        for line in self.invoice_line_ids:
+            tax = line.tax_ids[:1]
+            if tax.price_include:
+                amount = company_currency.round(abs(line.price_total) * rate)
+            else:
+                amount = abs(line.balance)
+                excluded_tax = excluded_tax or bool(tax)
+            invoice_lines.append(
+                {
+                    "tax": tax.fiscal_code if tax else 0,
+                    "quantity": line.quantity,
+                    "code": False,
+                    "name": self._mf_line_name(line),
+                    "_amount": amount,
+                    "_negative": line.price_subtotal < 0,
+                }
+            )
+
+        # Con todos los impuestos incluidos, la suma de los ítems es el total
+        # del documento: la última línea absorbe el redondeo de convertir cada
+        # total por separado.
+        positive = [vals for vals in invoice_lines if vals["_amount"] and not vals["_negative"]]
+        if positive and not excluded_tax and not any(v["_negative"] for v in invoice_lines):
+            diff = company_currency.round(
+                abs(self.amount_total_signed) - sum(v["_amount"] for v in positive)
+            )
+            if diff and positive[-1]["_amount"] + diff > 0:
+                positive[-1]["_amount"] = company_currency.round(positive[-1]["_amount"] + diff)
+
+        for vals in invoice_lines:
+            amount = vals.pop("_amount")
+            negative = vals.pop("_negative")
+            quantity = abs(vals["quantity"] or 0.0)
+            if negative:
+                item = self._mf_company_item(amount, 1, rounding)
+                vals["price_unit"] = -item["price_unit"] / quantity if quantity else 0.0
+                continue
+            item = self._mf_company_item(amount, quantity, rounding)
+            vals["price_unit"] = item["price_unit"]
+            if item["discount_amount"]:
+                vals["discount_amount"] = item["discount_amount"]
         return invoice_lines
 
     def _mf_build_base_payload(self):
