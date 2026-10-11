@@ -1,7 +1,7 @@
 from unittest.mock import patch
 
 from odoo import Command, fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 REQUEST_PATCH = "odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request"
@@ -264,6 +264,102 @@ class TestTfhkaBatchService(TransactionCase):
         inv._tfhka_enqueue_digitalization()
         with self.assertRaises(UserError):
             self.batch_service.create_batch(inv)
+
+    # ------------------------------------------------------------------
+    # Integridad de secuencia (ticket #15557): el lote no debe saltarse un
+    # hueco de facturas sin digitalizar que la vía individual sí bloquea.
+    # ------------------------------------------------------------------
+
+    @patch(REQUEST_PATCH)
+    def test_create_batch_rejects_gap_with_earlier_undigitalized_invoice(self, mock_request):
+        mock_request.side_effect = _mock_api(last_document_number=0)
+        inv_a = self._create_invoice()
+        inv_b = self._create_invoice()
+
+        # inv_a (anterior real de inv_b en la secuencia) nunca entró a cola
+        # ("none"): batchear solo inv_b, dejando el hueco afuera, debe
+        # bloquear igual que action_tfhka_generate_digital() lo haría.
+        with self.assertRaises(ValidationError) as e:
+            self.batch_service.create_batch(inv_b)
+        self.assertIn(inv_a.name, str(e.exception))
+        self.assertEqual(inv_b.tfhka_digitalization_state, "none")
+        self.assertFalse(inv_b.tfhka_batch_ref)
+
+    @patch(REQUEST_PATCH)
+    def test_create_batch_rejects_internal_gap_between_selected_invoices(self, mock_request):
+        mock_request.side_effect = _mock_api(last_document_number=0)
+        inv_a = self._create_invoice()
+        inv_b = self._create_invoice()
+        inv_c = self._create_invoice()
+
+        # inv_b queda fuera de la selección: inv_a + inv_c tienen un hueco
+        # interno que ningún chequeo contra "el predecesor real" vería (el
+        # predecesor real de inv_a es ninguno, así que esa parte pasa). El
+        # mensaje nombra inv_c (quien se está encolando) y inv_a (su
+        # "anterior" dentro del lote, ya que inv_b fue excluida) -- igual que
+        # _tfhka_check_sequence_gap no puede nombrar una factura que nunca
+        # estuvo en la selección, solo constata que los números no son
+        # consecutivos.
+        with self.assertRaises(ValidationError) as e:
+            self.batch_service.create_batch(inv_a + inv_c)
+        self.assertIn("numbering gap", str(e.exception))
+        self.assertIn(inv_c.name, str(e.exception))
+        self.assertIn(inv_a.name, str(e.exception))
+        self.assertEqual(inv_a.tfhka_digitalization_state, "none")
+        self.assertEqual(inv_c.tfhka_digitalization_state, "none")
+        self.assertFalse(inv_a.tfhka_batch_ref)
+
+    @patch(REQUEST_PATCH)
+    def test_create_batch_allows_when_previous_already_queued(self, mock_request):
+        mock_request.side_effect = _mock_api(last_document_number=0)
+        inv_a = self._create_invoice()
+        inv_b = self._create_invoice()
+        inv_a._tfhka_enqueue_digitalization()
+
+        # inv_a ya entró a cola (no está en "none"): el hueco no bloquea el
+        # batch de inv_b, igual que no bloquearía la vía individual. Que
+        # inv_a todavía no se haya EMITIDO de verdad no es un bloqueo -- ver
+        # test_create_batch_second_batch_starts_after_first_pending_reservation
+        # para como se evita el choque de numeración sin bloquear nada.
+        self.batch_service.create_batch(inv_b)
+
+        self.assertEqual(inv_b.tfhka_digitalization_state, "queued")
+
+    @patch(REQUEST_PATCH)
+    def test_create_batch_second_batch_starts_after_first_pending_reservation(self, mock_request):
+        # Caso real reportado: un primer lote reserva un rango en TFHKA pero
+        # sus facturas siguen sin emitirse (todavía "queued", el cron no las
+        # procesó) -- el "último documento" que reporta TFHKA no avanzó
+        # todavía. Un segundo lote para facturas posteriores debe poder
+        # encolarse igual, sin esperar, calculando su propio inicio a partir
+        # de lo que Odoo ya sabe que está reservado (no solo de lo que TFHKA
+        # ya emitió) para no chocar con la reserva pendiente del primero.
+        mock_request.side_effect = _mock_api(last_document_number=0)
+        inv_a = self._create_invoice()
+        inv_b = self._create_invoice()
+        inv_c = self._create_invoice()
+
+        self.batch_service.create_batch(inv_a + inv_b)
+        self.assertEqual(inv_a.tfhka_batch_document_number, 1)
+        self.assertEqual(inv_b.tfhka_batch_document_number, 2)
+        self.assertEqual(inv_b.tfhka_digitalization_state, "queued")
+
+        # mock_request sigue reportando last_document_number=0 (nada se
+        # emitió de verdad todavía) -- sin el fix, el segundo lote
+        # recalcularía start=1 y chocaría con la reserva de inv_a/inv_b.
+        self.batch_service.create_batch(inv_c)
+
+        self.assertEqual(inv_c.tfhka_batch_document_number, 3)
+        self.assertEqual(inv_c.tfhka_digitalization_state, "queued")
+
+        assign_calls = [
+            call for call in mock_request.call_args_list
+            if call.args[1] == "asignar_numeraciones"
+        ]
+        self.assertEqual(len(assign_calls), 2)
+        second_detail = assign_calls[1].args[2]["detalleAsignacion"][0]
+        self.assertEqual(second_detail["numeroDocumentoInicio"], "3")
+        self.assertEqual(second_detail["numeroDocumentoFin"], "3")
 
     # ------------------------------------------------------------------
     # Agrupación por serie + falla parcial en una selección multi-grupo
