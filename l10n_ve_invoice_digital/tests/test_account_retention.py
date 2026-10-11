@@ -1,5 +1,5 @@
 from odoo.tests import TransactionCase, tagged
-from datetime import date, timedelta
+from datetime import timedelta
 from odoo.exceptions import UserError
 from odoo import Command, fields
 from unittest.mock import patch, MagicMock
@@ -158,8 +158,8 @@ class TestAccumulatedRate(TransactionCase):
             'partner_id': self.partner.id,
             'move_type': 'in_invoice',
             'journal_id': self.purchase_journal.id,
-            'invoice_date': date.today(),
-            'invoice_date_display': date.today(),
+            'invoice_date': fields.Date.context_today(self.env.user),
+            'invoice_date_display': fields.Date.context_today(self.env.user),
             'currency_id': self.company.currency_id.id,
             'invoice_line_ids': [(0, 0, {
                 'name': 'Servicio Nuevo',

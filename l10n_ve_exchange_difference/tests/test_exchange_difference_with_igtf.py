@@ -626,6 +626,29 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         self.assertEqual(note.invoice_line_ids.account_id, self.company.income_currency_exchange_account_id)
         self.assertEqual(note.date, fields.Date.today())
 
+    def test_exchange_difference_note_with_future_payment_date_is_posted(self):
+        """Un pago con fecha futura genera la nota de diferencial con esa
+        fecha: el guard de fechas futuras se omite solo para estas notas
+        automaticas."""
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        tomorrow = fields.Date.add(fields.Date.today(), days=1)
+        invoice = self._create_invoice_usd(1000.00, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = tomorrow
+            pay_form.save()
+        pay_form.record.action_create_payments()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertEqual(len(note), 1)
+        self.assertEqual(note.state, "posted")
+        self.assertEqual(note.date, tomorrow)
+
     def test_igtf_base_computation_correct_with_exchange_note_present(self):
         """Regresión para `l10n_ve_igtf.models.account_move.compute_bi_igtf`
         (`l10n_ve_igtf/models/account_move.py`): el campo que identifica

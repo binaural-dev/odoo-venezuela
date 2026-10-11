@@ -1,14 +1,14 @@
 from datetime import timedelta
 
 from odoo import fields
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestNoteDatesFromOrigin(TransactionCase):
-    """Credit/debit notes inherit document date and rate date from their
-    origin; the wizards cannot change them nor target several invoices."""
+    """Credit/debit notes keep the origin's rate date, take a document date
+    between the origin's and today (default today) and target one invoice."""
 
     def setUp(self):
         super().setUp()
@@ -64,34 +64,79 @@ class TestNoteDatesFromOrigin(TransactionCase):
     def _ctx(self, moves):
         return {"active_model": "account.move", "active_ids": moves.ids, "active_id": moves[:1].id}
 
-    def test_credit_note_ignores_wizard_date(self):
-        invoice = self._invoice()
-        wizard = self.env["account.move.reversal"].with_context(**self._ctx(invoice)).create({
-            "date": self.doc_date - timedelta(days=1),
-            "journal_id": invoice.journal_id.id,
-        })
-        note = self.env["account.move"].browse(wizard.refund_moves()["res_id"])
-        self.assertEqual(note.invoice_date_display, invoice.invoice_date_display)
-        self.assertEqual(note.invoice_date, invoice.invoice_date)
-        self.assertEqual(note.date, invoice.invoice_date_display)
+    def _today(self):
+        return fields.Date.context_today(self.env["account.move"])
 
-    def test_credit_note_wizard_default_date_is_origin_date(self):
-        invoice = self._invoice()
-        wizard = self.env["account.move.reversal"].with_context(**self._ctx(invoice)).create({
+    def _credit_wizard(self, invoice, **vals):
+        return self.env["account.move.reversal"].with_context(**self._ctx(invoice)).create({
             "journal_id": invoice.journal_id.id,
+            **vals,
         })
-        self.assertEqual(wizard.date, invoice.invoice_date_display)
 
-    def test_debit_note_ignores_wizard_date(self):
-        invoice = self._invoice()
-        wizard = self.env["account.debit.note"].with_context(**self._ctx(invoice)).create({
-            "date": self.doc_date - timedelta(days=1),
+    def _debit_wizard(self, invoice, **vals):
+        return self.env["account.debit.note"].with_context(**self._ctx(invoice)).create({
             "copy_lines": True,
+            **vals,
         })
-        note = self.env["account.move"].browse(wizard.create_debit()["res_id"])
-        self.assertEqual(note.invoice_date_display, invoice.invoice_date_display)
+
+    def test_wizards_default_date_is_today(self):
+        invoice = self._invoice()
+        self.assertEqual(self._credit_wizard(invoice).date, self._today())
+        self.assertEqual(self._debit_wizard(invoice).date, self._today())
+
+    def test_credit_note_takes_wizard_date_and_origin_rate_date(self):
+        invoice = self._invoice()
+        note_date = self.doc_date + timedelta(days=1)
+        wizard = self._credit_wizard(invoice, date=note_date)
+        note = self.env["account.move"].browse(wizard.refund_moves()["res_id"])
+        self.assertEqual(note.invoice_date_display, note_date)
+        self.assertEqual(note.date, note_date)
         self.assertEqual(note.invoice_date, invoice.invoice_date)
-        self.assertEqual(note.date, invoice.invoice_date_display)
+
+    def test_debit_note_takes_wizard_date_and_origin_rate_date(self):
+        invoice = self._invoice()
+        note_date = self.doc_date + timedelta(days=1)
+        note = self.env["account.move"].browse(self._debit_wizard(invoice, date=note_date).create_debit()["res_id"])
+        self.assertEqual(note.invoice_date_display, note_date)
+        self.assertEqual(note.date, note_date)
+        self.assertEqual(note.invoice_date, invoice.invoice_date)
+
+    def test_note_on_origin_date_is_allowed(self):
+        invoice = self._invoice()
+        wizard = self._credit_wizard(invoice, date=self.doc_date)
+        note = self.env["account.move"].browse(wizard.refund_moves()["res_id"])
+        self.assertEqual(note.invoice_date_display, self.doc_date)
+
+    def test_credit_note_wizard_rejects_date_before_origin(self):
+        invoice = self._invoice()
+        wizard = self._credit_wizard(invoice, date=self.doc_date - timedelta(days=1))
+        with self.assertRaisesRegex(ValidationError, "earlier than the date of the original"):
+            wizard.refund_moves()
+
+    def test_credit_note_wizard_rejects_future_date(self):
+        invoice = self._invoice()
+        wizard = self._credit_wizard(invoice, date=self._today() + timedelta(days=1))
+        with self.assertRaisesRegex(ValidationError, "later than today"):
+            wizard.refund_moves()
+
+    def test_debit_note_wizard_rejects_date_before_origin(self):
+        invoice = self._invoice()
+        wizard = self._debit_wizard(invoice, date=self.doc_date - timedelta(days=1))
+        with self.assertRaisesRegex(ValidationError, "earlier than the date of the original"):
+            wizard.create_debit()
+
+    def test_debit_note_wizard_rejects_future_date(self):
+        invoice = self._invoice()
+        wizard = self._debit_wizard(invoice, date=self._today() + timedelta(days=1))
+        with self.assertRaisesRegex(ValidationError, "later than today"):
+            wizard.create_debit()
+
+    def test_posting_note_edited_before_origin_is_blocked(self):
+        invoice = self._invoice()
+        note = self.env["account.move"].browse(self._credit_wizard(invoice).refund_moves()["res_id"])
+        note.invoice_date_display = self.doc_date - timedelta(days=1)
+        with self.assertRaisesRegex(ValidationError, "earlier than the date of the original"):
+            note.action_post()
 
     def test_credit_note_wizard_rejects_multiple_invoices(self):
         invoices = self._invoice() | self._invoice()

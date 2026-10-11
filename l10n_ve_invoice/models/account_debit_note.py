@@ -28,8 +28,6 @@ class AccountDebitNote(models.TransientModel):
             self.env.context['active_ids']
         ) if self.env.context.get('active_model') == 'account.move' else self.env['account.move']
         self._l10n_ve_check_single_document(moves)
-        if len(moves) == 1 and 'date' in fields_list:
-            res['date'] = moves.invoice_date_display or moves.date
         return res
 
     @api.model
@@ -44,6 +42,7 @@ class AccountDebitNote(models.TransientModel):
     def create_debit(self):
         self.ensure_one()
         self._l10n_ve_check_single_document(self.move_ids)
+        self.move_ids._l10n_ve_check_note_date(self.date)
         return super().create_debit()
 
     @api.depends('journal_type')
@@ -105,19 +104,17 @@ class AccountDebitNote(models.TransientModel):
         explicit decision to apply this to both directions and fix the
         onchange at its root instead.
 
-        `invoice_date_display` (document date) and `invoice_date` (rate
-        date) are BOTH carried over from the origin, never taken from the
-        wizard: a Note is the same transaction as its origin and cannot be
-        dated differently. The wizard's `date` is read-only for the same
-        reason. Context `l10n_ve_note_date` overrides both (IGTF notes).
+        The rate date (`invoice_date`) is always carried over from the
+        origin. The document date (`invoice_date_display`) is the wizard's
+        `date` (today by default), validated in `create_debit` to lie
+        between the origin's document date and today.
         """
         default_values = super()._prepare_default_values(move)
         if move.is_invoice(include_receipts=True):
-            override_date = self.env.context.get('l10n_ve_note_date')
-            document_date = override_date or move.invoice_date_display or move.date
+            document_date = self.date or move.date
             default_values.update({
                 'date': document_date,
                 'invoice_date_display': document_date,
-                'invoice_date': document_date if override_date else move.invoice_date or document_date,
+                'invoice_date': move.invoice_date or move.invoice_date_display or move.date,
             })
         return default_values

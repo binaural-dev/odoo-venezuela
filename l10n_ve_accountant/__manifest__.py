@@ -53,7 +53,6 @@
         "wizard/invoices_details.xml",
         "wizard/payment_report.xml",
         "wizard/move_action_post_alert_views.xml",
-        "wizard/account_move_reversal.xml",
     ],
     "images": ["static/description/icon.png"],
     "assets": {

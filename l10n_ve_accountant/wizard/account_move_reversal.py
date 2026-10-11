@@ -1,4 +1,4 @@
-from odoo import _, api, fields, models
+from odoo import _, api, models
 from odoo.exceptions import UserError
 
 
@@ -21,27 +21,24 @@ class AccountMoveReversal(models.TransientModel):
             self.env.context["active_ids"]
         ) if self.env.context.get("active_model") == "account.move" else self.env["account.move"]
         self._l10n_ve_check_single_invoice(moves)
-        if len(moves) == 1 and moves.is_invoice(include_receipts=True) and "date" in fields_list:
-            res["date"] = moves.invoice_date_display or moves.date
         return res
 
     def _prepare_default_reversal(self, move):
         values = super()._prepare_default_reversal(move)
         if move.is_invoice(include_receipts=True):
-            # The credit note is the same transaction as its origin: document
-            # date (`invoice_date_display`) and rate date (`invoice_date`) are
-            # carried over, never taken from the wizard.
-            document_date = move.invoice_date_display or move.date
+            # The credit note is the same transaction as its origin: the
+            # rate date (`invoice_date`) is always the origin's, while the
+            # document date (`invoice_date_display`) is the wizard's date,
+            # validated in `reverse_moves` to lie between the origin's date
+            # and today.
             values.update({
-                "date": document_date,
-                "invoice_date_display": document_date,
-                "invoice_date": move.invoice_date or document_date,
-                "invoice_date_due": document_date,
-                "auto_post": "at_date" if document_date > fields.Date.context_today(self) else "no",
+                "invoice_date_display": self.date,
+                "invoice_date": move.invoice_date or move.invoice_date_display or move.date,
             })
         return values
 
     def reverse_moves(self, is_modify=False):
         self.ensure_one()
         self._l10n_ve_check_single_invoice(self.move_ids)
+        self.move_ids._l10n_ve_check_note_date(self.date)
         return super().reverse_moves(is_modify=is_modify)

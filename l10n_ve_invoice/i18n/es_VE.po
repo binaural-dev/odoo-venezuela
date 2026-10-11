@@ -928,3 +928,13 @@ msgid ""
 msgstr ""
 "Una nota de débito solo puede emitirse contra un único documento. "
 "Seleccione un documento a la vez."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"%(field)s (%(value)s) cannot be earlier than the date of the original "
+"document %(origin)s (%(origin_date)s)."
+msgstr ""
+"%(field)s (%(value)s) no puede ser anterior a la fecha del documento "
+"original %(origin)s (%(origin_date)s)."

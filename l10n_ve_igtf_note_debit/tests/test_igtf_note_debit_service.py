@@ -1,6 +1,4 @@
-from datetime import timedelta
-
-from odoo import Command, fields
+from odoo import Command
 from odoo.tests import tagged, TransactionCase
 
 
@@ -148,24 +146,20 @@ class TestIgtfNoteDebitService(TransactionCase):
         self.assertFalse(self.invoice.debit_origin_id)
         self.assertIn(debit_note, self.invoice.debit_note_ids)
 
-    def test_debit_note_takes_payment_date_not_invoice_date(self):
-        """The IGTF note is dated with the payment, not with its invoice."""
+    def test_generated_debit_note_may_skip_future_date_guard(self):
+        """The skip context is honored only for the automatic IGTF note."""
         self.company.write({
             "igtf_note_debit_mode": "debit_note",
             "igtf_note_debit_product_id": self.igtf_product.id,
         })
-        today = fields.Date.context_today(self.env.user)
-        past = today - timedelta(days=10)
-        invoice = self.invoice.copy({"invoice_date_display": past, "invoice_date": past})
-        invoice.with_context(move_action_post_alert=True).action_post()
-        payment = self.payment.copy({"date": today})
+        self.invoice.with_context(move_action_post_alert=True).action_post()
+        payment = self.payment.copy()
         payment.action_post()
 
-        debit_note = invoice.prepare_igtf_payment_debit_note(3.0, invoice, payment)
+        debit_note = self.invoice.prepare_igtf_payment_debit_note(3.0, self.invoice, payment)
 
-        self.assertEqual(debit_note.date, today)
-        self.assertEqual(debit_note.invoice_date_display, today)
-        self.assertEqual(debit_note.invoice_date, today)
+        self.assertTrue(debit_note._l10n_ve_allows_future_date())
+        self.assertFalse(self.invoice._l10n_ve_allows_future_date())
 
     def test_debit_note_requires_product_configured(self):
         with self.assertRaises(Exception):

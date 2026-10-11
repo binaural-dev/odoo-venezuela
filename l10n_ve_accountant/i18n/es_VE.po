@@ -2124,3 +2124,19 @@ msgid ""
 msgstr ""
 "Una nota de crédito solo puede emitirse contra una única factura. "
 "Seleccione una factura a la vez."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "The note date (%(value)s) cannot be later than today (%(today)s)."
+msgstr "La fecha de la nota (%(value)s) no puede ser posterior a hoy (%(today)s)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"The note date (%(value)s) cannot be earlier than the date of the original "
+"document %(origin)s (%(origin_date)s)."
+msgstr ""
+"La fecha de la nota (%(value)s) no puede ser anterior a la fecha del "
+"documento original %(origin)s (%(origin_date)s)."
