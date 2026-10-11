@@ -147,3 +147,11 @@ class TestNoteDatesFromOrigin(TransactionCase):
         invoices = self._invoice() | self._invoice()
         with self.assertRaises(UserError):
             self.env["account.debit.note"].with_context(**self._ctx(invoices)).default_get(["date"])
+
+    def test_posting_note_with_rate_date_different_from_origin_is_blocked(self):
+        invoice = self._invoice()
+        note = self.env["account.move"].browse(self._credit_wizard(invoice).refund_moves()["res_id"])
+        note.invoice_date = invoice.invoice_date - timedelta(days=1)
+        with self.assertRaisesRegex(ValidationError, "must be equal to the one of the original"):
+            note.action_post()
+

@@ -38,9 +38,12 @@ La nota (NC o ND) es la misma transacción que su origen:
   (`invoice_date`, `invoice_date_display`) y el mismo guard de `action_post`. Separarlos obliga a
   mergear dos PRs que se pisan y a rehacer a mano las correcciones del otro; por eso se mantienen en
   esta rama.
-- **El guard vive solo en `action_post`.** No se limita la creación ni se bloquea `_post`: la UI
-  confirma por `action_post` y los llamadores directos a `_post` (asistente "Confirm Entries" con
-  `force_post`, procesos internos, cron) lo hacen de forma intencional.
+- **El guard corre en `action_post` y en los dos caminos de UI que confirman con `_post`:** la acción
+  "Confirm Entries" (`action_validate_moves_with_confirmation`) y el asistente `validate.account.move`
+  (`validate_move`, con o sin "Force"). `_post` en sí no se bloquea: los llamadores internos directos
+  (donación, reverso de IGTF, cron) lo hacen de forma intencional.
+- **La tasa (`invoice_date`) de toda nota es la del origen:** readonly en los dos campos `invoice_date`
+  del formulario (ventas y compras, "Rate Date") y validada igual al origen al confirmar.
 - **`invoice_date <= invoice_date_display` siempre**, también en compras.
 - **La exención del guard es solo para notas automáticas** (diferencial cambiario e IGTF) y exige
   contexto + marca del documento (`_l10n_ve_allows_future_date`). Esas marcas no están en formularios
@@ -51,11 +54,19 @@ La nota (NC o ND) es la misma transacción que su origen:
 
 ## Pendientes conocidos (fuera de este PR)
 
-- Los tests de `l10n_ve_invoice_digital` (`TestAccountMoveApiCalls`, `TestAccumulatedRate`,
-  `TestStockPickingApiCalls`) fallan en `setUp` desde la migración a Odoo 19, antes de llegar a
-  cualquier fecha: `account.account` sin `company_id`/`deprecated`, diario bancario sin cuentas en sus
-  métodos de pago, impuestos sin `tax_group_id`/`country_id`, producto sin impuesto de compra, país
-  fiscal y `account_move_line_check_accountable_required_fields`. Requieren un ticket propio. En este
-  PR solo se cambió `Date.today()` por `context_today` en esos tests.
-- `_post(soft=False)` desde "Confirm Entries" (`force_post`) no pasa por el guard (ver Decisiones).
+- `l10n_ve_stock_account` (`stock_location.py`) llama a `stock.location.get_warehouse()`, método que
+  define `l10n_ve_donation`, sin depender de ese módulo: con `l10n_ve_invoice_digital` instalado sin
+  donación, los tests de stock picking fallan con `AttributeError`. Los tests de digital se ejecutan
+  instalando también `l10n_ve_donation`. Falta declarar la dependencia o mover el método (ticket aparte).
 - Verificación manual 3.1 del ticket con la vertical.
+
+## Tests de l10n_ve_invoice_digital (arreglados en este PR)
+
+Estaban rotos desde la migración a Odoo 19. Se ajustaron los fixtures (`account.account` con
+`company_ids`, diario bancario con cuentas en sus métodos de pago, grupo de impuestos, país fiscal de
+la compañía, impuesto de compra, diarios de retenciones, concepto de pago en el producto, `account_id`
+en las líneas de factura, `uom_po_id`/`stock.move.name`/`type='product'` ya inexistentes, correlativo
+distinto por factura) y se corrigió un bug de producción: `l10n_ve_invoice_digital/models/stock_picking.py`
+leía `move_ids_without_package`, campo que ya no existe en Odoo 19 (ahora `move_ids`). Las fechas usan
+`context_today`.
+

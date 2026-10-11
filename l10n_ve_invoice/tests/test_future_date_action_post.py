@@ -282,3 +282,33 @@ class TestFutureDateActionPost(TransactionCase):
         )
         with self.assertRaisesRegex(ValidationError, "later than today"):
             invoice.with_context(l10n_ve_skip_future_date_check=True).action_post()
+
+    def test_confirm_entries_action_validates_the_dates(self):
+        """"Confirm Entries" (list/kanban) posts through `_post`: it must not
+        bypass the guard, even when `date` is today and only the rate date is
+        in the future (core would not ask for confirmation)."""
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
+        invoice = self._create_move(
+            "out_invoice", self.journal_sale, self.tax_sale, invoice_date=future
+        )
+        with self.assertRaisesRegex(ValidationError, "later than Invoice Date"):
+            invoice.action_validate_moves_with_confirmation()
+        self.assertEqual(invoice.state, "draft")
+
+    def test_confirm_entries_wizard_force_post_validates_the_dates(self):
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
+        invoice = self._create_move(
+            "out_invoice",
+            self.journal_sale,
+            self.tax_sale,
+            invoice_date=future,
+            invoice_date_display=future,
+            date=future,
+        )
+        wizard = self.env["validate.account.move"].create(
+            {"move_ids": [(6, 0, invoice.ids)], "force_post": True}
+        )
+        with self.assertRaisesRegex(ValidationError, "later than today"):
+            wizard.validate_move()
+        self.assertEqual(invoice.state, "draft")
+

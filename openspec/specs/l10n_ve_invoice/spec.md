@@ -478,7 +478,7 @@ Además, una nota de crédito o de débito (`reversed_entry_id` o `debit_origin_
 
 Sin zona horaria (cron o usuarios de integración sin `tz`), `context_today` usa UTC; entre las 20:00 y las 24:00 de Caracas puede aceptarse un documento fechado "mañana" local. Es una limitación conocida.
 
-El guard vive SOLO en `action_post`, a propósito: no se limita la creación ni se bloquea el nivel bajo (`_post`), porque la interfaz confirma por `action_post` y todo llamador directo a `_post` (asistente "Confirm Entries" con `force_post`, procesos internos, cron) lo hace de forma intencional.
+El guard corre en `action_post` y también antes de los dos caminos de la interfaz que confirman con `_post` sin pasar por `action_post`: la acción "Confirm Entries" de lista y kanban (`action_validate_moves_with_confirmation`) y el botón "Confirm" del asistente `validate.account.move` (incluida la casilla "Force"). No se limita la creación ni se bloquea `_post` en sí: los llamadores internos directos a `_post` (donación, reverso de IGTF, cron) lo hacen de forma intencional. Sin este cubrimiento, una factura con `invoice_date_display` de hoy e `invoice_date` de mañana se confirmaría desde la lista sin ningún aviso, porque el núcleo solo pide confirmación cuando `date` es futura.
 
 La exención `l10n_ve_skip_future_date_check` existe solo para notas generadas automáticamente a partir de un pago (diferencial cambiario e IGTF). El contexto por sí solo no basta: el guard solo lo respeta si `_l10n_ve_allows_future_date()` devuelve `True` para el documento. Ese método devuelve `False` por defecto y lo sobreescriben `l10n_ve_exchange_difference` (notas con `l10n_ve_exchange_diff_entry` y `l10n_ve_exchange_payment_id`) y `l10n_ve_igtf_note_debit` (ND con `l10n_ve_igtf_note_debit_origin`, `origin_payment_to_pay_igtf` y `debit_origin_id`). Esas marcas no se exponen en ninguna vista de formulario ni las escribe un `onchange`.
 
@@ -541,3 +541,14 @@ La exención `l10n_ve_skip_future_date_check` existe solo para notas generadas a
 
 - **WHEN** se confirma una ND/NC de diferencial cambiario o una ND de IGTF con el contexto de exención
 - **THEN** el guard no la bloquea
+
+#### Scenario: Confirm Entries no esquiva el guard
+
+- **WHEN** se confirma desde la lista, el kanban o el asistente "Confirm Entries" (con o sin "Force") un borrador cuya fecha no cumple las reglas del guard
+- **THEN** se lanza el mismo error de validación y el documento sigue en borrador
+
+#### Scenario: Tasa de una nota distinta a la de su origen
+
+- **WHEN** se confirma una nota de crédito o de débito cuyo `invoice_date` (tasa) es distinto al de su documento origen
+- **THEN** se lanza un error de validación, también en notas de proveedor
+

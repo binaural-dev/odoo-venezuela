@@ -22,7 +22,7 @@ class TestProductCompanyEditRestriction(TransactionCase):
                 # the write()-level tests below exercise the company_id guard
                 # itself instead of failing earlier on the base ACL.
                 self.env.ref("product.group_product_manager").id,
-            ])],
+            ] + self._fiscal_config_group_ids())],
         })
         self.template = self.env["product.template"].create({
             "name": "Product Company Edit Restriction",
@@ -35,6 +35,13 @@ class TestProductCompanyEditRestriction(TransactionCase):
         # later write() within this same test transaction (this has no
         # effect outside tests, where each request is its own transaction).
         self.env.cr.precommit.run()
+
+    def _fiscal_config_group_ids(self):
+        """Copying a product reads `economic.activity` when
+        `l10n_ve_accountant` is installed: the restricted user needs read
+        access to the fiscal configuration."""
+        group = self.env.ref("l10n_ve_accountant.group_fiscal_config_user", raise_if_not_found=False)
+        return group.ids if group else []
 
     def _create_other_company(self):
         """A company with default sale/purchase taxes: `l10n_ve_accountant`
