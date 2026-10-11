@@ -62,6 +62,16 @@ La nota (NC o ND) es la misma transacción que su origen:
 - **Combos:** exentos de la regla de un solo impuesto en `l10n_ve_stock`, como en `l10n_ve_accountant`
   y el núcleo de Odoo 19 (oculta y vacía sus impuestos; viven en las líneas de los componentes).
 
+- **Los arreglos de `l10n_ve_stock` y `l10n_ve_invoice_digital/models/stock_picking.py` no llevan ticket propio:**
+  son consecuencia directa del análisis para que los tickets 15450 y 15594 funcionen y sus tests pasen
+  (combos exentos de la regla de un impuesto; `move_ids_without_package` -> `move_ids`). Se rastrean con esos
+  mismos tickets.
+- **Orígenes con fecha futura:** no existen datos con ese error. El guard se aplica para prevenirlos, ya que
+  antes se podían crear; al llevarse al código principal es correcto que bloquee lo que debe bloquear. La
+  regla `origen <= fecha de la nota <= hoy` no se relaja para ese caso.
+- **Auto-post:** el cron `_autopost_draft_entries` confirma con `_post` los borradores con `auto_post` activo;
+  no pasa por el guard (caso borde: requiere editar `date` y activar el auto-post).
+
 ## Pendientes conocidos (fuera de este PR)
 
 - `l10n_ve_stock_account` (`stock_location.py`) llama a `stock.location.get_warehouse()`, método que
@@ -72,8 +82,6 @@ La nota (NC o ND) es la misma transacción que su origen:
   confirma una factura de proveedor con `invoice_date` (tasa) de hoy e `invoice_date_display` de hoy-10, lo que
   la regla `invoice_date <= invoice_date_display` bloquea. Se ajustará en un ticket posterior; el CI no corre
   ese módulo.
-- Dar ticket propio a los arreglos de producción que salieron de hacer pasar los tests: combos exentos en
-  `l10n_ve_stock` y `move_ids_without_package` -> `move_ids` en `l10n_ve_invoice_digital`.
 - Al desplegar: una NC/ND en borrador con tasa distinta a la del origen ya no se puede confirmar y su tasa es
   de solo lectura; hay que borrarla y recrearla. Avisar a soporte.
 - Verificación manual 3.1 del ticket con la vertical y validación funcional en staging de 15450 y 15594.
