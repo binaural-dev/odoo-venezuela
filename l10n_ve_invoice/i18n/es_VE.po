@@ -938,3 +938,13 @@ msgid ""
 msgstr ""
 "%(field)s (%(value)s) debe ser igual a la del documento original "
 "%(origin)s (%(origin_date)s)."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"The accounting date (%(date)s) of a note cannot be earlier than its "
+"%(field)s (%(value)s)."
+msgstr ""
+"La fecha contable (%(date)s) de una nota no puede ser anterior a su "
+"%(field)s (%(value)s)."
