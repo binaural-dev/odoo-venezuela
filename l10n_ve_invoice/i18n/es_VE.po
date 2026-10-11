@@ -933,8 +933,8 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid ""
-"%(field)s (%(value)s) cannot be earlier than the date of the original "
-"document %(origin)s (%(origin_date)s)."
+"%(field)s (%(value)s) must be equal to the one of the original document "
+"%(origin)s (%(origin_date)s)."
 msgstr ""
-"%(field)s (%(value)s) no puede ser anterior a la fecha del documento "
-"original %(origin)s (%(origin_date)s)."
+"%(field)s (%(value)s) debe ser igual a la del documento original "
+"%(origin)s (%(origin_date)s)."

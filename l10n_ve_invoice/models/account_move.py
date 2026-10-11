@@ -361,18 +361,21 @@ class AccountMove(models.Model):
                     )
                 )
             origin = move.reversed_entry_id or move.debit_origin_id
-            origin_date = origin and (origin.invoice_date_display or origin.date)
-            if display_date and origin_date and display_date < origin_date:
-                raise ValidationError(
-                    _(
-                        "%(field)s (%(value)s) cannot be earlier than the date "
-                        "of the original document %(origin)s (%(origin_date)s).",
-                        field=labels["invoice_date_display"],
-                        value=format_date(self.env, display_date),
-                        origin=origin.display_name,
-                        origin_date=format_date(self.env, origin_date),
+            if origin and origin.is_invoice(include_receipts=True):
+                if display_date:
+                    origin._l10n_ve_check_note_date(display_date)
+                origin_rate_date = origin.invoice_date or origin.invoice_date_display
+                if move.invoice_date and origin_rate_date and move.invoice_date != origin_rate_date:
+                    raise ValidationError(
+                        _(
+                            "%(field)s (%(value)s) must be equal to the one of the "
+                            "original document %(origin)s (%(origin_date)s).",
+                            field=labels["invoice_date"],
+                            value=format_date(self.env, move.invoice_date),
+                            origin=origin.display_name,
+                            origin_date=format_date(self.env, origin_rate_date),
+                        )
                     )
-                )
             limit = display_date or today
             if move.invoice_date and move.invoice_date > limit:
                 raise ValidationError(
@@ -386,6 +389,12 @@ class AccountMove(models.Model):
                         limit=format_date(self.env, limit),
                     )
                 )
+
+    def action_validate_moves_with_confirmation(self):
+        """The list/kanban action "Confirm Entries" posts through `_post`
+        without going through `action_post`: validate the same dates first."""
+        self.filtered(lambda m: m.state == "draft" and m.line_ids)._check_dates_not_in_future()
+        return super().action_validate_moves_with_confirmation()
 
     def action_post(self):
         self._check_dates_not_in_future()
