@@ -40,8 +40,9 @@ class TestNoteDatesFromOrigin(TransactionCase):
             "list_price": 100,
             "taxes_id": [(6, 0, [self.tax.id])],
         })
-        self.doc_date = fields.Date.today() - timedelta(days=3)
-        self.rate_date = fields.Date.today() - timedelta(days=5)
+        today = fields.Date.context_today(self.env["account.move"])
+        self.doc_date = today - timedelta(days=3)
+        self.rate_date = today - timedelta(days=5)
 
     def _invoice(self):
         invoice = self.env["account.move"].create({
@@ -140,12 +141,12 @@ class TestNoteDatesFromOrigin(TransactionCase):
 
     def test_credit_note_wizard_rejects_multiple_invoices(self):
         invoices = self._invoice() | self._invoice()
-        with self.assertRaises(UserError):
+        with self.assertRaisesRegex(UserError, "single invoice"):
             self.env["account.move.reversal"].with_context(**self._ctx(invoices)).default_get(["date"])
 
     def test_debit_note_wizard_rejects_multiple_invoices(self):
         invoices = self._invoice() | self._invoice()
-        with self.assertRaises(UserError):
+        with self.assertRaisesRegex(UserError, "single document"):
             self.env["account.debit.note"].with_context(**self._ctx(invoices)).default_get(["date"])
 
     def test_posting_note_with_rate_date_different_from_origin_is_blocked(self):
@@ -154,4 +155,10 @@ class TestNoteDatesFromOrigin(TransactionCase):
         note.invoice_date = invoice.invoice_date - timedelta(days=1)
         with self.assertRaisesRegex(ValidationError, "must be equal to the one of the original"):
             note.action_post()
+
+    def test_note_accounting_date_cannot_be_earlier_than_its_invoice_date(self):
+        invoice = self._invoice()
+        note = self.env["account.move"].browse(self._credit_wizard(invoice).refund_moves()["res_id"])
+        with self.assertRaisesRegex(ValidationError, "accounting date .* cannot be earlier"):
+            note.date = note.invoice_date_display - timedelta(days=1)
 

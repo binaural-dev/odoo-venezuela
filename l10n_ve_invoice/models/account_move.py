@@ -322,6 +322,30 @@ class AccountMove(models.Model):
                         max=origin_total_all,
                     ))
 
+    @api.constrains("date", "invoice_date_display")
+    def _check_note_accounting_date(self):
+        """The accounting date of a credit/debit note cannot be earlier than
+        its own document date (`invoice_date_display`), which in turn cannot be
+        earlier than the one of its origin (`_l10n_ve_check_note_date`,
+        `_check_dates_not_in_future`). Checked on save so that editing `date`
+        directly (list multi-edit, quick edit, RPC) cannot go around it."""
+        for move in self:
+            if not (move.reversed_entry_id or move.debit_origin_id):
+                continue
+            if not move.is_invoice(include_receipts=True):
+                continue
+            if move.date and move.invoice_date_display and move.date < move.invoice_date_display:
+                label = move.fields_get(["invoice_date_display"])["invoice_date_display"]["string"]
+                raise ValidationError(
+                    _(
+                        "The accounting date (%(date)s) of a note cannot be earlier "
+                        "than its %(field)s (%(value)s).",
+                        date=format_date(self.env, move.date),
+                        field=label,
+                        value=format_date(self.env, move.invoice_date_display),
+                    )
+                )
+
     def _l10n_ve_allows_future_date(self):
         """Whether this document may skip the date checks of
         `_check_dates_not_in_future` when the caller asks for it through the

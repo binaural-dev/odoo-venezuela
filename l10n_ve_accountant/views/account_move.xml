@@ -16,7 +16,7 @@
             </xpath>
             <!-- Core has a second `invoice_date` (purchases, "Bill Date"): same rule,
                  and the same "Rate Date" label the sales one gets below. -->
-            <xpath expr="(//field[@name='invoice_date'])[2]" position="attributes">
+            <xpath expr="//field[@name='invoice_date'][@invisible=&quot;move_type not in ('in_invoice', 'in_refund', 'in_receipt')&quot;]" position="attributes">
                 <attribute name="readonly">state != 'draft' or reversed_entry_id or debit_origin_id</attribute>
                 <attribute name="force_save">1</attribute>
             </xpath>

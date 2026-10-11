@@ -44,7 +44,13 @@ La nota (NC o ND) es la misma transacción que su origen:
   (donación, reverso de IGTF, cron) lo hacen de forma intencional.
 - **La tasa (`invoice_date`) de toda nota es la del origen:** readonly en los dos campos `invoice_date`
   del formulario (ventas y compras, "Rate Date") y validada igual al origen al confirmar.
-- **`invoice_date <= invoice_date_display` siempre**, también en compras.
+- **`invoice_date <= invoice_date_display` siempre**, también en compras: aunque ningún ticket lo pida para
+  compras, impedir facturas con fecha futura es el criterio correcto y la validación no debe depender del
+  tipo de documento.
+- **Una nota por factura:** regla contable venezolana (una nota ligada a una factura y no a N facturas);
+  difiere del núcleo, que crea una nota por cada factura seleccionada.
+- **`date` de una nota:** constraint de guardado `_check_note_accounting_date` (no puede ser anterior a su
+  `invoice_date_display`, que a su vez no puede ser anterior al del origen).
 - **La exención del guard es solo para notas automáticas** (diferencial cambiario e IGTF) y exige
   contexto + marca del documento (`_l10n_ve_allows_future_date`). Esas marcas no están en formularios
   ni en `onchange`.
@@ -58,7 +64,15 @@ La nota (NC o ND) es la misma transacción que su origen:
   define `l10n_ve_donation`, sin depender de ese módulo: con `l10n_ve_invoice_digital` instalado sin
   donación, los tests de stock picking fallan con `AttributeError`. Los tests de digital se ejecutan
   instalando también `l10n_ve_donation`. Falta declarar la dependencia o mover el método (ticket aparte).
-- Verificación manual 3.1 del ticket con la vertical.
+- `l10n_ve_payment_extension/tests/test_retention_lifecycle.py::test_15_accounting_date_multi_invoice_uses_latest_date`
+  confirma una factura de proveedor con `invoice_date` (tasa) de hoy e `invoice_date_display` de hoy-10, lo que
+  la regla `invoice_date <= invoice_date_display` bloquea. Se ajustará en un ticket posterior; el CI no corre
+  ese módulo.
+- Dar ticket propio a los arreglos de producción que salieron de hacer pasar los tests: combos exentos en
+  `l10n_ve_stock` y `move_ids_without_package` -> `move_ids` en `l10n_ve_invoice_digital`.
+- Al desplegar: una NC/ND en borrador con tasa distinta a la del origen ya no se puede confirmar y su tasa es
+  de solo lectura; hay que borrarla y recrearla. Avisar a soporte.
+- Verificación manual 3.1 del ticket con la vertical y validación funcional en staging de 15450 y 15594.
 
 ## Tests de l10n_ve_invoice_digital (arreglados en este PR)
 
