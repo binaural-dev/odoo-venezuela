@@ -55,15 +55,26 @@ class TfhkaServiceBase(models.AbstractModel):
     # Fecha/hora de emisión
     # ------------------------------------------------------------------
 
-    def _get_emission_datetime(self, record):
-        """``now`` en la zona horaria del usuario, con fallback a Caracas.
+    def _localize(self, naive_utc_dt, record):
+        """Convierte un ``Datetime`` naive en UTC (como devuelve
+        ``fields.Datetime.now()`` o cualquier campo ``Datetime`` normal) a la
+        zona horaria del usuario, con fallback a Caracas.
 
-        ``fields.Datetime.now()`` devuelve un naive en UTC: hay que localizarlo
-        antes de convertir, o ``astimezone`` lo interpretaría como hora local
-        del servidor y la hora de emisión saldría desplazada.
+        Hay que localizarlo antes de convertir, o ``astimezone`` interpretaría
+        el naive como hora local del servidor y el resultado saldría
+        desplazado.
         """
         tz = timezone(record.env.user.tz or TFHKA_DEFAULT_TZ)
-        return utc.localize(fields.Datetime.now()).astimezone(tz)
+        return utc.localize(naive_utc_dt).astimezone(tz)
+
+    def _get_emission_datetime(self, record):
+        """``now`` en la zona horaria del usuario. Usado por defecto por
+        ``tfhka.retention.service``, que no tiene (ni necesita) un campo
+        propio al que anclar la emisión; ``tfhka.document.service`` la
+        sobreescribe para anclarla a la fecha/hora de la factura -- ver
+        ``_get_emission_datetime`` ahí.
+        """
+        return self._localize(fields.Datetime.now(), record)
 
     # ------------------------------------------------------------------
     # Identificación del sujeto (comprador / sujeto retenido)
