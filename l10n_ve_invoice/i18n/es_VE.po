@@ -903,21 +903,21 @@ msgstr "Campo de descuento mostrado en las líneas de factura: porcentaje o impo
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid ""
-"%(field)s (%(value)s) cannot be later than today (%(today)s) to confirm "
-"this document."
+"%(document)s: %(field)s (%(value)s) cannot be later than today (%(today)s) "
+"to confirm this document."
 msgstr ""
-"%(field)s (%(value)s) no puede ser posterior a hoy (%(today)s) para "
-"confirmar este documento."
+"%(document)s: %(field)s (%(value)s) no puede ser posterior a hoy "
+"(%(today)s) para confirmar este documento."
 
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid ""
-"%(field)s (%(value)s) cannot be later than %(limit_field)s (%(limit)s) to "
-"confirm this document."
+"%(document)s: %(field)s (%(value)s) cannot be later than %(limit_field)s "
+"(%(limit)s) to confirm this document."
 msgstr ""
-"%(field)s (%(value)s) no puede ser posterior a %(limit_field)s (%(limit)s) "
-"para confirmar este documento."
+"%(document)s: %(field)s (%(value)s) no puede ser posterior a "
+"%(limit_field)s (%(limit)s) para confirmar este documento."
 
 #. module: l10n_ve_invoice
 #. odoo-python
@@ -933,11 +933,11 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid ""
-"%(field)s (%(value)s) must be equal to the one of the original document "
-"%(origin)s (%(origin_date)s)."
+"%(document)s: %(field)s (%(value)s) must be equal to the one of the "
+"original document %(origin)s (%(origin_date)s)."
 msgstr ""
-"%(field)s (%(value)s) debe ser igual a la del documento original "
-"%(origin)s (%(origin_date)s)."
+"%(document)s: %(field)s (%(value)s) debe ser igual a la del documento "
+"original %(origin)s (%(origin_date)s)."
 
 #. module: l10n_ve_invoice
 #. odoo-python

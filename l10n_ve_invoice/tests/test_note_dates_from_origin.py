@@ -162,3 +162,9 @@ class TestNoteDatesFromOrigin(TransactionCase):
         with self.assertRaisesRegex(ValidationError, "accounting date .* cannot be earlier"):
             note.date = note.invoice_date_display - timedelta(days=1)
 
+    def test_debit_note_accounting_date_cannot_be_earlier_than_its_invoice_date(self):
+        invoice = self._invoice()
+        note = self.env["account.move"].browse(self._debit_wizard(invoice).create_debit()["res_id"])
+        with self.assertRaisesRegex(ValidationError, "accounting date .* cannot be earlier"):
+            note.date = note.invoice_date_display - timedelta(days=1)
+
