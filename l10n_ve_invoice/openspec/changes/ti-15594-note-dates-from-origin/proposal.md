@@ -51,6 +51,10 @@ La nota (NC o ND) es la misma transacción que su origen:
   difiere del núcleo, que crea una nota por cada factura seleccionada.
 - **`date` de una nota:** constraint de guardado `_check_note_accounting_date` (no puede ser anterior a su
   `invoice_date_display`, que a su vez no puede ser anterior al del origen).
+- **Los mensajes del guard nombran el documento** (`display_name`): un lote de "Confirm Entries" se aborta
+  completo si un borrador no cumple, y el error debe decir cuál.
+- **La igualdad de tasa con el origen no aplica a las notas automáticas** (`_l10n_ve_allows_future_date`): la nota
+  de diferencial lleva la fecha de tasa del pago; si se confirmara de nuevo a mano no debe bloquearla.
 - **La exención del guard es solo para notas automáticas** (diferencial cambiario e IGTF) y exige
   contexto + marca del documento (`_l10n_ve_allows_future_date`). Esas marcas no están en formularios
   ni en `onchange`.

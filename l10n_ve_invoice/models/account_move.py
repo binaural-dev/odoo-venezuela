@@ -377,8 +377,9 @@ class AccountMove(models.Model):
             if display_date and display_date > today:
                 raise ValidationError(
                     _(
-                        "%(field)s (%(value)s) cannot be later than "
+                        "%(document)s: %(field)s (%(value)s) cannot be later than "
                         "today (%(today)s) to confirm this document.",
+                        document=move.display_name,
                         field=labels["invoice_date_display"],
                         value=format_date(self.env, display_date),
                         today=format_date(self.env, today),
@@ -389,11 +390,18 @@ class AccountMove(models.Model):
                 if display_date:
                     origin._l10n_ve_check_note_date(display_date)
                 origin_rate_date = origin.invoice_date or origin.invoice_date_display
-                if move.invoice_date and origin_rate_date and move.invoice_date != origin_rate_date:
+                # Automatic notes (exchange difference) carry the payment's rate date.
+                if (
+                    move.invoice_date
+                    and origin_rate_date
+                    and move.invoice_date != origin_rate_date
+                    and not move._l10n_ve_allows_future_date()
+                ):
                     raise ValidationError(
                         _(
-                            "%(field)s (%(value)s) must be equal to the one of the "
+                            "%(document)s: %(field)s (%(value)s) must be equal to the one of the "
                             "original document %(origin)s (%(origin_date)s).",
+                            document=move.display_name,
                             field=labels["invoice_date"],
                             value=format_date(self.env, move.invoice_date),
                             origin=origin.display_name,
@@ -404,9 +412,10 @@ class AccountMove(models.Model):
             if move.invoice_date and move.invoice_date > limit:
                 raise ValidationError(
                     _(
-                        "%(field)s (%(value)s) cannot be later than "
+                        "%(document)s: %(field)s (%(value)s) cannot be later than "
                         "%(limit_field)s (%(limit)s) to confirm this "
                         "document.",
+                        document=move.display_name,
                         field=labels["invoice_date"],
                         value=format_date(self.env, move.invoice_date),
                         limit_field=labels["invoice_date_display"],

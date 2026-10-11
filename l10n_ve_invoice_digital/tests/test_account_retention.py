@@ -244,7 +244,7 @@ class TestAccumulatedRate(TransactionCase):
         })
     
     def _create_retention(self, type_retention, account_move, number = "20250600000002", subsidiary = None):
-        retention_date = fields.Date.today()
+        retention_date = fields.Date.context_today(self.env.user)
         retention = self.env["account.retention"].create(
             {   
                 "number": number,
