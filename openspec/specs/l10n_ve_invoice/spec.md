@@ -242,7 +242,7 @@ El campo `entry_in_period` DEBE (MUST) indicar si un documento entra en el perí
 
 El wizard `account.debit.note` DEBE (MUST) exponer `l10n_ve_out_of_fiscal_period_warning` (booleano, solo advertencia -- nunca bloquea la creación), verdadero cuando entre las facturas de proveedor (`in_invoice`) seleccionadas (`move_ids`) alguna tiene su `invoice_date_display` en un mes/año distinto al de la fecha de la Nota de Débito elegida en el wizard (`date`). La comparación usa `invoice_date_display` de la factura origen -- su fecha fiscal real -- y no `date` (fecha contable, que solo se DERIVA de `invoice_date_display` vía `_get_accounting_date_source` de `l10n_ve_accountant` y puede quedar posterior si el documento se contabiliza después de emitido). Documentos de venta (`out_invoice`/`out_refund`) nunca disparan la advertencia.
 
-Desde el ticket 15594 la fecha del wizard es de solo lectura y viene del documento origen, por lo que con el flujo normal de la interfaz la advertencia ya no se activa; el campo se conserva por compatibilidad.
+Desde el ticket 15594 la fecha del wizard sigue siendo editable (por defecto hoy) pero solo admite fechas entre la del documento origen y hoy; la advertencia aplica dentro de ese rango.
 
 #### Scenario: Nota de Débito de proveedor en el mismo período que la factura
 
@@ -259,30 +259,50 @@ Desde el ticket 15594 la fecha del wizard es de solo lectura y viene del documen
 - **WHEN** la factura de proveedor fue emitida (`invoice_date_display`) en un mes pero contabilizada (`date`) en otro, y la Nota de Débito se fecha en el mes de emisión
 - **THEN** `l10n_ve_out_of_fiscal_period_warning` es falso, porque la comparación usa `invoice_date_display`, no `date`
 
-### Requirement: La Nota de Débito hereda las fechas de su documento origen
+### Requirement: Fechas de la Nota de Débito respecto a su documento origen
 
-Al crear una Nota de Débito (`account.debit.note.create_debit`, `_prepare_default_values`), el sistema DEBE (MUST) tomar del documento origen, y nunca del wizard, las tres fechas de la nota: `invoice_date_display` (fecha del documento), `invoice_date` (la "Fecha de Tasa" redefinida por `l10n_ve_accountant`/`l10n_ve_invoice`, usada solo para el cálculo de tasa de cambio) y `date` (fecha contable, igual a `invoice_date_display` del origen, con `move.date` como resguardo). Una Nota de Débito es la misma transacción que su origen: fecharla distinto genera un diferencial cambiario espurio y una fecha contable anterior al documento que modifica.
+Una Nota de Débito es la misma transacción que su origen. Al crearla (`account.debit.note.create_debit`, `_prepare_default_values`), el sistema DEBE (MUST):
 
-Aplica a cualquier documento facturable (`is_invoice(include_receipts=True)`), de cliente y de proveedor. Una Nota de Débito se emite contra UN solo documento: el wizard DEBE (MUST) lanzar `UserError` si recibe más de un documento, tanto en `default_get` como en `create_debit`. El campo `date` del wizard es siempre de solo lectura y `default_get` lo inicializa con la fecha del documento origen; el wizard no agrega campos propios para esto.
+- Tomar `invoice_date` (la "Fecha de Tasa" redefinida por `l10n_ve_accountant`/`l10n_ve_invoice`) siempre del documento origen, nunca del wizard.
+- Tomar `invoice_date_display` y `date` de la fecha del wizard (`date`), que por defecto es hoy (`fields.Date.context_today`) y es editable.
+- Validar con `account.move._l10n_ve_check_note_date` (definido en `l10n_ve_accountant`) que esa fecha no sea anterior a `invoice_date_display` del origen (con `date` como resguardo) ni posterior a hoy; de lo contrario lanza `ValidationError`.
+- Emitirse contra UN solo documento: `UserError` si el wizard recibe más de uno, tanto en `default_get` como en `create_debit`.
 
-#### Scenario: La Nota de Débito conserva fecha de documento, fecha de tasa y fecha contable del origen
+Aplica a cualquier documento facturable (`is_invoice(include_receipts=True)`), de cliente y de proveedor. Ticket #15594.
 
-- **WHEN** se crea una Nota de Débito sobre una factura, aunque el wizard se cree con una fecha distinta (por ejemplo, un día antes)
-- **THEN** `invoice_date_display`, `invoice_date` y `date` de la nota son iguales a los de la factura origen
+#### Scenario: Fecha de la nota entre el origen y hoy
+
+- **WHEN** se crea una Nota de Débito con una fecha entre la del documento origen y hoy, ambas inclusive
+- **THEN** `invoice_date_display` y `date` de la nota son esa fecha e `invoice_date` es la del origen
+
+#### Scenario: Fecha por defecto del wizard
+
+- **WHEN** se abre el wizard de Nota de Débito
+- **THEN** `date` es hoy según la zona horaria del usuario
+
+#### Scenario: Fecha anterior al origen
+
+- **WHEN** la fecha del wizard es anterior a la fecha del documento origen
+- **THEN** `create_debit` lanza `ValidationError` y no se crea ninguna nota
+
+#### Scenario: Fecha futura
+
+- **WHEN** la fecha del wizard es posterior a hoy
+- **THEN** `create_debit` lanza `ValidationError` y no se crea ninguna nota
 
 #### Scenario: Wizard sobre varias facturas
 
 - **WHEN** se abre o ejecuta el wizard de Nota de Débito con más de un documento seleccionado
 - **THEN** se lanza `UserError` y no se crea ninguna nota
 
-### Requirement: Fechas de la nota bloqueadas en el formulario
+### Requirement: Fecha de tasa de la nota bloqueada en el formulario
 
-En el formulario de `account.move`, los campos `invoice_date_display` y `invoice_date` DEBEN (MUST) ser de solo lectura cuando el documento tiene `reversed_entry_id` o `debit_origin_id` (ver `l10n_ve_accountant`), para que no puedan alterarse y dejar de corresponder con el documento origen.
+En el formulario de `account.move`, `invoice_date` (fecha de tasa) DEBE (MUST) ser de solo lectura cuando el documento tiene `reversed_entry_id` o `debit_origin_id` (ver `l10n_ve_accountant`). `invoice_date_display` sigue editable en borrador, con las mismas cotas que el wizard (origen..hoy), validadas al confirmar.
 
 #### Scenario: Nota en borrador
 
 - **WHEN** se abre en borrador una Nota de Crédito o de Débito creada desde su wizard
-- **THEN** "Fecha de factura" y "Fecha de tasa" se muestran de solo lectura
+- **THEN** la "Fecha de tasa" se muestra de solo lectura y la fecha del documento es editable
 
 ### Requirement: Próxima cuota por vencer
 
@@ -448,11 +468,21 @@ La validación solo corre en `action_post`, no como `@api.constrains` de guardad
 
 Un asiento contable (`move_type = 'entry'`) queda fuera del alcance: no tiene `invoice_date` ni `invoice_date_display` con sentido fiscal, y su `date` no se valida aquí.
 
-La nota de diferencial cambiario (ND/NC) generada por `l10n_ve_exchange_difference` toma la fecha del pago y se confirma con el contexto `l10n_ve_skip_future_date_check`, que omite este guard: un pago con fecha futura no debe fallar dentro de la conciliación.
+La nota de diferencial cambiario (ND/NC) generada por `l10n_ve_exchange_difference` toma la fecha del pago y se confirma con el contexto `l10n_ve_skip_future_date_check`, que omite este guard: un pago con fecha futura no debe fallar dentro de la conciliación. El contexto por sí solo no basta (se puede enviar por RPC): el guard solo lo respeta para documentos que `_l10n_ve_allows_future_date()` autoriza, método que devuelve `False` por defecto y que `l10n_ve_exchange_difference` (notas con `l10n_ve_exchange_payment_id`) y `l10n_ve_igtf_note_debit` (ND de IGTF) sobreescriben para sus notas automáticas.
 
 Una nota de débito (`account.debit.note`) no es un modelo distinto: es un `account.move` con `debit_origin_id`, del mismo `move_type` que su documento origen, así que pasa por el mismo `action_post` y queda cubierta por este guard sin lógica adicional.
 
-#### Scenario: Factura de venta con invoice_date posterior a invoice_date_display
+Además, una nota de crédito o de débito (`reversed_entry_id` o `debit_origin_id`) NO se confirma si su `invoice_date_display` es anterior a la fecha del documento origen (`invoice_date_display`, con `date` como resguardo). Esto cubre la edición de la fecha en el borrador de la nota (ticket #15594).
+
+`invoice_date` (fecha de tasa) DEBE (MUST) ser siempre menor o igual a `invoice_date_display`. Es una decisión funcional: aplica también a compras, donde la fecha de tasa tiene por defecto hoy; quien registre una factura de proveedor con fecha de documento anterior debe ajustar la fecha de tasa para confirmarla.
+
+Sin zona horaria (cron o usuarios de integración sin `tz`), `context_today` usa UTC; entre las 20:00 y las 24:00 de Caracas puede aceptarse un documento fechado "mañana" local. Es una limitación conocida.
+
+El guard vive SOLO en `action_post`, a propósito: no se limita la creación ni se bloquea el nivel bajo (`_post`), porque la interfaz confirma por `action_post` y todo llamador directo a `_post` (asistente "Confirm Entries" con `force_post`, procesos internos, cron) lo hace de forma intencional.
+
+La exención `l10n_ve_skip_future_date_check` existe solo para notas generadas automáticamente a partir de un pago (diferencial cambiario e IGTF). El contexto por sí solo no basta: el guard solo lo respeta si `_l10n_ve_allows_future_date()` devuelve `True` para el documento. Ese método devuelve `False` por defecto y lo sobreescriben `l10n_ve_exchange_difference` (notas con `l10n_ve_exchange_diff_entry` y `l10n_ve_exchange_payment_id`) y `l10n_ve_igtf_note_debit` (ND con `l10n_ve_igtf_note_debit_origin`, `origin_payment_to_pay_igtf` y `debit_origin_id`). Esas marcas no se exponen en ninguna vista de formulario ni las escribe un `onchange`.
+
+#### Scenario: Factura de venta con invoice_date_display posterior a hoy
 
 - **WHEN** se confirma una factura de venta cuyo `invoice_date_display` es posterior a hoy
 - **THEN** se lanza un error de validación indicando que esa fecha no puede ser posterior a hoy
@@ -491,3 +521,23 @@ Una nota de débito (`account.debit.note`) no es un modelo distinto: es un `acco
 
 - **WHEN** se confirma un documento con `invoice_date_display` hoy o anterior e `invoice_date` no posterior a `invoice_date_display`
 - **THEN** la confirmación procede con normalidad
+
+#### Scenario: Nota confirmada con fecha anterior a su origen
+
+- **WHEN** se edita en borrador una nota de crédito o de débito con `invoice_date_display` anterior al del origen y se confirma
+- **THEN** se lanza un error de validación indicando la fecha del documento original
+
+#### Scenario: invoice_date posterior a invoice_date_display
+
+- **WHEN** se confirma un documento cuyo `invoice_date` es posterior a su `invoice_date_display`
+- **THEN** se lanza un error de validación
+
+#### Scenario: El contexto de exención no basta
+
+- **WHEN** se confirma una factura común con fecha futura y el contexto `l10n_ve_skip_future_date_check=True`
+- **THEN** el guard sigue bloqueándola, porque `_l10n_ve_allows_future_date()` es `False`
+
+#### Scenario: Nota automática con exención
+
+- **WHEN** se confirma una ND/NC de diferencial cambiario o una ND de IGTF con el contexto de exención
+- **THEN** el guard no la bloquea

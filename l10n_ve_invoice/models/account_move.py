@@ -322,11 +322,21 @@ class AccountMove(models.Model):
                         max=origin_total_all,
                     ))
 
+    def _l10n_ve_allows_future_date(self):
+        """Whether this document may skip the date checks of
+        `_check_dates_not_in_future` when the caller asks for it through the
+        context `l10n_ve_skip_future_date_check`. The context alone is never
+        enough (it can be sent through RPC): the document must also identify
+        itself as one of the automatic notes dated after a payment, which the
+        modules that generate them declare by overriding this method."""
+        self.ensure_one()
+        return False
+
     def _check_dates_not_in_future(self):
-        """Block posting if the invoice date is after today or the rate date
+        """Block posting if the invoice date is after today (or, for notes, before
+        the origin's date) or the rate date
         is after the invoice date. Accounting date is not validated."""
-        if self.env.context.get("l10n_ve_skip_future_date_check"):
-            return
+        skip_requested = self.env.context.get("l10n_ve_skip_future_date_check")
         today = fields.Date.context_today(self)
         labels = {
             name: desc["string"]
@@ -337,6 +347,8 @@ class AccountMove(models.Model):
         for move in self:
             if not move.is_invoice(include_receipts=True):
                 continue
+            if skip_requested and move._l10n_ve_allows_future_date():
+                continue
             display_date = move.invoice_date_display
             if display_date and display_date > today:
                 raise ValidationError(
@@ -346,6 +358,19 @@ class AccountMove(models.Model):
                         field=labels["invoice_date_display"],
                         value=format_date(self.env, display_date),
                         today=format_date(self.env, today),
+                    )
+                )
+            origin = move.reversed_entry_id or move.debit_origin_id
+            origin_date = origin and (origin.invoice_date_display or origin.date)
+            if display_date and origin_date and display_date < origin_date:
+                raise ValidationError(
+                    _(
+                        "%(field)s (%(value)s) cannot be earlier than the date "
+                        "of the original document %(origin)s (%(origin_date)s).",
+                        field=labels["invoice_date_display"],
+                        value=format_date(self.env, display_date),
+                        origin=origin.display_name,
+                        origin_date=format_date(self.env, origin_date),
                     )
                 )
             limit = display_date or today

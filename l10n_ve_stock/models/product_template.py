@@ -157,7 +157,10 @@ class ProductTemplate(models.Model):
         return records
 
     def _validate_single_sale_tax(self):
-        for product in self:
+        # Combo products are exempt, as in `l10n_ve_accountant` (FIX-061) and
+        # core: a combo carries no taxes of its own (core hides and clears
+        # them), the taxes live on the lines of its component products.
+        for product in self.filtered(lambda p: p.type != "combo"):
             taxes_by_company = defaultdict(int)
             for tax in product.taxes_id.sudo():
                 taxes_by_company[tax.company_id] += 1

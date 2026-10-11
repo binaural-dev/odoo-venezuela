@@ -192,13 +192,11 @@ ND, y un solo pago agrupado no puede repartirse limpiamente entre varias.
 - **WHEN** el usuario intenta registrar un único pago agrupado (`group_payment = True`) para ambas
 - **THEN** se lanza `UserError` explícito pidiendo desmarcar "Agrupar Pagos" y registrar el pago de cada factura por separado
 
-### Requirement: La ND de IGTF se fecha con el pago
+### Requirement: La ND de IGTF se confirma aunque el guard de fecha futura esté activo
 
-La Nota de Débito automática de IGTF SHALL tomar `date`, `invoice_date_display` e
-`invoice_date` de la fecha del pago que la origina (`payment.date`), no de la
-factura origen: el IGTF es un hecho gravable del pago.
+La Nota de Débito automática de IGTF se fecha con el día de hoy (su cálculo es en VEF), aunque difiera de la fecha del pago, y se confirma con el contexto `l10n_ve_skip_future_date_check`. El guard de `l10n_ve_invoice` solo respeta ese contexto para documentos que `_l10n_ve_allows_future_date()` autoriza; este módulo la sobreescribe para la ND con `l10n_ve_igtf_note_debit_origin`, `origin_payment_to_pay_igtf` y `debit_origin_id`.
 
-#### Scenario: Factura anterior al pago
+#### Scenario: ND de IGTF generada
 
-- **WHEN** se paga una factura fechada 10 días atrás y se genera la ND de IGTF
-- **THEN** la ND queda con la fecha del pago en `date`, `invoice_date_display` e `invoice_date`
+- **WHEN** se paga una factura y se genera la ND de IGTF
+- **THEN** la ND se confirma y `_l10n_ve_allows_future_date()` devuelve `True` solo para ella

@@ -117,7 +117,7 @@ class TestFutureDateActionPost(TransactionCase):
         invoice = self._create_move(
             "out_invoice", self.journal_sale, self.tax_sale, invoice_date=future
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
+        with self.assertRaisesRegex(ValidationError, "later than Invoice Date"):
             invoice.action_post()
 
     def test_invoice_date_display_in_future_blocks_post(self):
@@ -166,7 +166,7 @@ class TestFutureDateActionPost(TransactionCase):
         credit_note = self._create_move(
             "out_refund", self.journal_sale, self.tax_sale, invoice_date=future
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
+        with self.assertRaisesRegex(ValidationError, "later than Invoice Date"):
             credit_note.action_post()
 
     def test_vendor_bill_date_in_future_blocks_post(self):
@@ -177,7 +177,7 @@ class TestFutureDateActionPost(TransactionCase):
             self.tax_purchase,
             invoice_date=future,
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
+        with self.assertRaisesRegex(ValidationError, "later than Invoice Date"):
             bill.action_post()
 
     def test_vendor_refund_date_in_future_blocks_post(self):
@@ -188,7 +188,7 @@ class TestFutureDateActionPost(TransactionCase):
             self.tax_purchase,
             invoice_date=future,
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
+        with self.assertRaisesRegex(ValidationError, "later than Invoice Date"):
             refund.action_post()
 
     def test_sale_receipt_date_in_future_blocks_post(self):
@@ -197,7 +197,7 @@ class TestFutureDateActionPost(TransactionCase):
         receipt = self._create_move(
             "out_receipt", self.journal_sale, self.tax_sale, invoice_date=future
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
+        with self.assertRaisesRegex(ValidationError, "later than Invoice Date"):
             receipt.action_post()
 
     def test_purchase_receipt_date_in_future_blocks_post(self):
@@ -208,7 +208,7 @@ class TestFutureDateActionPost(TransactionCase):
             self.tax_purchase,
             invoice_date=future,
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
+        with self.assertRaisesRegex(ValidationError, "later than Invoice Date"):
             receipt.action_post()
 
     def test_journal_entry_with_future_date_is_not_blocked(self):
@@ -265,5 +265,20 @@ class TestFutureDateActionPost(TransactionCase):
                 "invoice_date_display": future,
             }
         )
-        with self.assertRaisesRegex(ValidationError, "cannot be later than"):
+        with self.assertRaisesRegex(ValidationError, "later than today"):
             debit_note.action_post()
+
+    def test_skip_context_alone_does_not_bypass_the_guard(self):
+        """The context is not a permission: only documents that identify
+        themselves as automatic notes (hook `_l10n_ve_allows_future_date`)
+        may skip the check."""
+        future = fields.Date.context_today(self.env["account.move"]) + timedelta(days=1)
+        invoice = self._create_move(
+            "out_invoice",
+            self.journal_sale,
+            self.tax_sale,
+            invoice_date=future,
+            invoice_date_display=future,
+        )
+        with self.assertRaisesRegex(ValidationError, "later than today"):
+            invoice.with_context(l10n_ve_skip_future_date_check=True).action_post()

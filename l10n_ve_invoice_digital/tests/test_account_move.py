@@ -233,8 +233,8 @@ class TestAccountMoveApiCalls(TransactionCase):
             "foreign_inverse_rate": foreign_inverse_rate,
             "manually_set_rate": True,
             "invoice_line_ids": invoice_lines,
-            "invoice_date": fields.Date.today(),
-            "invoice_date_display": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
+            "invoice_date_display": fields.Date.context_today(self.env.user),
             "journal_id": self.journal.id,
             "correlative": 1,
         }
