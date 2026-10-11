@@ -30,3 +30,32 @@ La nota (NC o ND) es la misma transacción que su origen:
 ## Non-goals
 
 - `l10n_ve_out_of_fiscal_period_warning` se conserva sin cambios.
+
+
+## Decisiones
+
+- **15594 viaja junto con 15450.** Ambos tickets cambian las mismas fechas de las notas
+  (`invoice_date`, `invoice_date_display`) y el mismo guard de `action_post`. Separarlos obliga a
+  mergear dos PRs que se pisan y a rehacer a mano las correcciones del otro; por eso se mantienen en
+  esta rama.
+- **El guard vive solo en `action_post`.** No se limita la creación ni se bloquea `_post`: la UI
+  confirma por `action_post` y los llamadores directos a `_post` (asistente "Confirm Entries" con
+  `force_post`, procesos internos, cron) lo hacen de forma intencional.
+- **`invoice_date <= invoice_date_display` siempre**, también en compras.
+- **La exención del guard es solo para notas automáticas** (diferencial cambiario e IGTF) y exige
+  contexto + marca del documento (`_l10n_ve_allows_future_date`). Esas marcas no están en formularios
+  ni en `onchange`.
+- **La fecha de la ND de IGTF no cambia** (hoy; su cálculo es en VEF).
+- **Combos:** exentos de la regla de un solo impuesto en `l10n_ve_stock`, como en `l10n_ve_accountant`
+  y el núcleo de Odoo 19 (oculta y vacía sus impuestos; viven en las líneas de los componentes).
+
+## Pendientes conocidos (fuera de este PR)
+
+- Los tests de `l10n_ve_invoice_digital` (`TestAccountMoveApiCalls`, `TestAccumulatedRate`,
+  `TestStockPickingApiCalls`) fallan en `setUp` desde la migración a Odoo 19, antes de llegar a
+  cualquier fecha: `account.account` sin `company_id`/`deprecated`, diario bancario sin cuentas en sus
+  métodos de pago, impuestos sin `tax_group_id`/`country_id`, producto sin impuesto de compra, país
+  fiscal y `account_move_line_check_accountable_required_fields`. Requieren un ticket propio. En este
+  PR solo se cambió `Date.today()` por `context_today` en esos tests.
+- `_post(soft=False)` desde "Confirm Entries" (`force_post`) no pasa por el guard (ver Decisiones).
+- Verificación manual 3.1 del ticket con la vertical.
