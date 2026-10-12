@@ -1,5 +1,6 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools import format_date
 
 import logging
 
@@ -295,6 +296,22 @@ class AccountPayment(models.Model):
             if not bool(payment.other_rate):
                 return
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
+
+    @api.constrains("date")
+    def _check_date_not_in_future(self):
+        """A payment cannot be dated after today (user's timezone), whether it
+        is created from the payment form, from the register-payment wizard or
+        by any other flow."""
+        today = fields.Date.context_today(self)
+        for payment in self:
+            if payment.date and payment.date > today:
+                raise ValidationError(
+                    _(
+                        "The payment date (%(date)s) cannot be later than today (%(today)s).",
+                        date=format_date(self.env, payment.date),
+                        today=format_date(self.env, today),
+                    )
+                )
 
     def action_post(self):
         res = super().action_post()
