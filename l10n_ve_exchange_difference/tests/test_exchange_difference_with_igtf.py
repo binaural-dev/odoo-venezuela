@@ -418,14 +418,14 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         swap entre ellas sea detectable."""
         self.currency_usd.write({
             "rate_ids": [
-                Command.create({"name": "2041-01-01", "company_rate": 1 / 36.0}),
-                Command.create({"name": "2041-08-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2014-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2014-08-01", "company_rate": 1 / 40.0}),
             ],
         })
 
-        invoice_1 = self._create_invoice_usd(100.0, date="2041-01-01")
+        invoice_1 = self._create_invoice_usd(100.0, date="2014-01-01")
         invoice_1.with_context(move_action_post_alert=True).action_post()
-        invoice_2 = self._create_invoice_usd(500.0, date="2041-01-01")
+        invoice_2 = self._create_invoice_usd(500.0, date="2014-01-01")
         invoice_2.with_context(move_action_post_alert=True).action_post()
         invoices = invoice_1 | invoice_2
 
@@ -434,7 +434,7 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         ctx = dict(action["context"], active_model="account.move.line", active_ids=lines_to_pay.ids)
         with Form(self.env["account.payment.register"].with_context(ctx)) as pay_form:
             pay_form.journal_id = self.bank_journal_usd
-            pay_form.payment_date = "2041-08-01"
+            pay_form.payment_date = "2014-08-01"
             pay_form.group_payment = True
             pay_form.save()
         payment_wizard = pay_form.record
@@ -493,8 +493,8 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         aunque ambas compartan el mismo `payment.move_id`."""
         self.currency_usd.write({
             "rate_ids": [
-                Command.create({"name": "2042-01-01", "company_rate": 1 / 36.0}),
-                Command.create({"name": "2042-06-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2015-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2015-06-01", "company_rate": 1 / 40.0}),
             ],
         })
 
@@ -507,14 +507,14 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         with Form(self.env["account.payment"].with_context(context)) as pay_form:
             pay_form.partner_id = self.partner
             pay_form.journal_id = self.bank_journal_usd
-            pay_form.date = "2042-06-01"
+            pay_form.date = "2015-06-01"
             pay_form.amount = advance_amount
         advance_payment = pay_form.save()
         advance_payment.action_post()
 
-        invoice_1 = self._create_invoice_usd(100.0, date="2042-01-01")
+        invoice_1 = self._create_invoice_usd(100.0, date="2015-01-01")
         invoice_1.with_context(move_action_post_alert=True).action_post()
-        invoice_2 = self._create_invoice_usd(500.0, date="2042-01-01")
+        invoice_2 = self._create_invoice_usd(500.0, date="2015-01-01")
         invoice_2.with_context(move_action_post_alert=True).action_post()
 
         outstanding_line = advance_payment.move_id.line_ids.filtered(
@@ -757,12 +757,12 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         'reversed'. Sin el fix de `_compute_payment_state`, daba 'reversed'."""
         self.currency_usd.write({
             "rate_ids": [
-                Command.create({"name": "2043-01-01", "company_rate": 1 / 40.0}),
-                Command.create({"name": "2043-08-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2016-01-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2016-08-01", "company_rate": 1 / 36.0}),
             ],
         })
 
-        invoice = self._create_invoice_usd(1000.00, date="2043-01-01")
+        invoice = self._create_invoice_usd(1000.00, date="2016-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
@@ -775,7 +775,7 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
             "move_type": "entry",
             "journal_id": self.journal_anticipo.id,
             "partner_id": self.partner.id,
-            "date": "2043-08-01",
+            "date": "2016-08-01",
             "currency_id": self.currency_usd.id,
             "line_ids": [
                 Command.create({
