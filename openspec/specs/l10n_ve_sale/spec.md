@@ -341,15 +341,6 @@ En el formulario de la orden, la columna `tax_ids` de las líneas DEBE (MUST) es
 - **WHEN** cualquier usuario edita una línea de producto en el formulario de la orden
 - **THEN** la celda de impuestos no es editable
 
-### Requirement: Página de moneda alterna por grupo
-
-La página "Foreign currency" del formulario de la orden (tasas y totales alternos con el widget de totales de `l10n_ve_accountant`) DEBE (MUST) mostrarse solo a los usuarios del grupo `l10n_ve_sale.group_foreign_currency_view_sales`.
-
-#### Scenario: Usuario con el grupo
-
-- **WHEN** un usuario del grupo "Foreign Currency View Sales" abre una orden
-- **THEN** ve la página con `foreign_rate` y los totales en moneda alterna
-
 ### Requirement: Grupo que fija la lista de precios como solo lectura
 
 Para los usuarios del grupo `l10n_ve_sale.pricelist_sale_order_group` ("Hide pricelist (sale)"), el campo `pricelist_id` de la orden DEBE (MUST) mostrarse en solo lectura; para el resto es editable mientras la orden está en borrador.
@@ -390,3 +381,12 @@ Para los usuarios del grupo `l10n_ve_sale.contact_filter_sale_order_group` ("Hid
 
 - **WHEN** un usuario del grupo abre una orden
 - **THEN** el selector de filtro de contacto no se muestra, aunque el filtrado por defecto (`customer`) sigue aplicándose al dominio del cliente
+
+### Requirement: Sin página "Foreign currency" ni grupo de visibilidad en la orden
+
+El formulario de `sale.order` NO DEBE (MUST NOT) incluir la página `foreign_currency` ni el widget `account-tax-foreign-totals-field`, y el grupo `l10n_ve_sale.group_foreign_currency_view_sales` NO DEBE (MUST NOT) existir (eliminados por ti-83943). La tasa alterna y los montos en moneda alterna siguen disponibles en las líneas, en las vistas de lista y pivot.
+
+#### Scenario: Formulario de orden con moneda alterna configurada
+
+- **WHEN** se obtiene el formulario de `sale.order` en una compañía con `foreign_currency_id`
+- **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)

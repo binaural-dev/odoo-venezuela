@@ -579,11 +579,6 @@ msgid "Foreign Currency "
 msgstr "Moneda alterna"
 
 #. module: l10n_ve_accountant
-#: model:res.groups,name:l10n_ve_accountant.group_foreign_currency_view_accountant
-msgid "Foreign Currency View Accountant"
-msgstr "Visualizar moneda extranjera en facturación"
-
-#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_debit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_debit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_debit

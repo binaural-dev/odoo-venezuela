@@ -1356,12 +1356,11 @@ class TestMultiCurrencyRounding(TransactionCase):
         ], move_type='in_invoice')
         user = self._create_pencil_user(
             'sin_permiso_fiscal_test_2', with_group=False,
-            extra_groups=('l10n_ve_accountant.group_foreign_currency_view_accountant',),
         )
         inv_user = inv.with_user(user)
         self.assertFalse(inv_user.can_edit_tax_totals)
         arch = etree.fromstring(inv_user.get_view(view_type='form')['arch'])
-        for widget in ('account-tax-totals-field', 'account-tax-foreign-totals-field', 'account-tax-ves-totals-field'):
+        for widget in ('account-tax-totals-field', 'account-tax-ves-totals-field'):
             field = arch.xpath(f"//field[@name='tax_totals'][@widget='{widget}']")
             self.assertTrue(field, f"widget {widget} missing in the form view")
             self.assertIn('not can_edit_tax_totals', field[0].get('readonly'), widget)
