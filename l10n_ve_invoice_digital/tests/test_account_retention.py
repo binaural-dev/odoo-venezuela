@@ -1,5 +1,5 @@
 from odoo.tests import TransactionCase, tagged
-from datetime import date, timedelta
+from datetime import timedelta
 from odoo.exceptions import UserError
 from odoo import Command, fields
 from unittest.mock import patch, MagicMock
@@ -44,9 +44,9 @@ class TestAccumulatedRate(TransactionCase):
             })
 
         self.expense_account = self.env['account.account'].search([
-            ('company_id', '=', self.company.id),
+            ('company_ids', 'in', self.company.id),
             ('account_type', '=', 'expense'),
-            ('deprecated', '=', False)
+            ('active', '=', True)
         ], limit=1)
 
         if not self.expense_account:
@@ -54,15 +54,15 @@ class TestAccumulatedRate(TransactionCase):
                 'name': 'Test Expense Account',
                 'code': '600000',
                 'account_type': 'expense',
-                'company_id': self.company.id,
+                'company_ids': [(6, 0, [self.company.id])],
                 'reconcile': False,
             })
 
         # Cuenta de pasivo (para partner)
         self.payable_account = self.env['account.account'].search([
-            ('company_id', '=', self.company.id),
+            ('company_ids', 'in', self.company.id),
             ('account_type', '=', 'liability_payable'),
-            ('deprecated', '=', False)
+            ('active', '=', True)
         ], limit=1)
 
         if not self.payable_account:
@@ -70,9 +70,40 @@ class TestAccumulatedRate(TransactionCase):
                 'name': 'Test Payable Account',
                 'code': '200000',
                 'account_type': 'liability_payable',
-                'company_id': self.company.id,
+                'company_ids': [(6, 0, [self.company.id])],
                 'reconcile': True,
             })
+
+        # Diarios de retenciones (l10n_ve_payment_extension los exige en la compañía)
+        retention_account = self.env['account.account'].create({
+            'name': 'Retenciones por pagar',
+            'code': '210099',
+            'account_type': 'liability_current',
+            'company_ids': [(6, 0, [self.company.id])],
+            'reconcile': True,
+        })
+        retention_journal = self.env['account.journal'].with_context(
+            chart_template_load=True
+        ).create({
+            'name': 'Retenciones',
+            'code': 'RETN',
+            'type': 'bank',
+            'company_id': self.company.id,
+            'default_account_id': retention_account.id,
+        })
+        for line in (
+            retention_journal.inbound_payment_method_line_ids
+            | retention_journal.outbound_payment_method_line_ids
+        ).filtered(lambda l: not l.payment_account_id):
+            line.payment_account_id = retention_account
+        self.company.write({
+            'iva_supplier_retention_journal_id': retention_journal.id,
+            'iva_customer_retention_journal_id': retention_journal.id,
+            'islr_supplier_retention_journal_id': retention_journal.id,
+            'islr_customer_retention_journal_id': retention_journal.id,
+            'municipal_supplier_retention_journal_id': retention_journal.id,
+            'municipal_customer_retention_journal_id': retention_journal.id,
+        })
 
         self.type_person = self.env['type.person'].create({
             'name': 'No Juridica',
@@ -138,11 +169,30 @@ class TestAccumulatedRate(TransactionCase):
             'line_payment_concept_ids': [(4, self.line_concept.id, 0)]
         })
 
+        tax_country = self.env.ref('base.ve')
+        self.company.account_fiscal_country_id = tax_country
+        tax_group = self.env['account.tax.group'].create({
+            'name': 'IVA',
+            'company_id': self.company.id,
+            'country_id': tax_country.id,
+        })
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': self.company.id,
             'amount': 16,
             'amount_type': 'percent',
             'type_tax_use': 'sale',
+        })
+        self.tax_iva16_purchase = self.env['account.tax'].create({
+            'name': 'IVA 16% compras',
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': self.company.id,
+            'amount': 16,
+            'amount_type': 'percent',
+            'type_tax_use': 'purchase',
         })
 
         self.product = self.env['product.product'].create({
@@ -151,6 +201,8 @@ class TestAccumulatedRate(TransactionCase):
             'list_price': 100,
             'barcode': '123456789',
             'taxes_id': [(6, 0, [self.tax_iva16.id])],
+            'supplier_taxes_id': [(6, 0, [self.tax_iva16_purchase.id])],
+            'payment_concept': self.payment_concept.id,
         })
 
     def _create_invoice(self):
@@ -158,8 +210,8 @@ class TestAccumulatedRate(TransactionCase):
             'partner_id': self.partner.id,
             'move_type': 'in_invoice',
             'journal_id': self.purchase_journal.id,
-            'invoice_date': date.today(),
-            'invoice_date_display': date.today(),
+            'invoice_date': fields.Date.context_today(self.env.user),
+            'invoice_date_display': fields.Date.context_today(self.env.user),
             'currency_id': self.company.currency_id.id,
             'invoice_line_ids': [(0, 0, {
                 'name': 'Servicio Nuevo',
@@ -167,7 +219,7 @@ class TestAccumulatedRate(TransactionCase):
                 'price_unit': 300,
                 'product_id': self.product.id,
                 'account_id': self.expense_account.id,
-                'tax_ids': [(6, 0, [self.tax_iva16.id])],
+                'tax_ids': [(6, 0, [self.tax_iva16_purchase.id])],
             })]
         })
 
@@ -192,7 +244,7 @@ class TestAccumulatedRate(TransactionCase):
         })
     
     def _create_retention(self, type_retention, account_move, number = "20250600000002", subsidiary = None):
-        retention_date = fields.Date.today()
+        retention_date = fields.Date.context_today(self.env.user)
         retention = self.env["account.retention"].create(
             {   
                 "number": number,
@@ -210,7 +262,6 @@ class TestAccumulatedRate(TransactionCase):
                             "foreign_retention_amount": 100,
                             "invoice_amount": 100,
                             "foreign_invoice_amount": 100,
-                            "retention_amount": 100,
                             "foreign_currency_rate": 1.0,
                             "name": "Retencion ISLR",
                             "move_id": account_move.id,

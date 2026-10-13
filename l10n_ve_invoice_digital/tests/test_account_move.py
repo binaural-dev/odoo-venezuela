@@ -32,7 +32,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         # ───────────────────────────────────────────────────── helpers
         def acc(code, ttype, name, recon=False):
             a = Account.search(
-                [("code", "=", code), ("company_id", "=", self.company.id)], limit=1
+                [("code", "=", code), ("company_ids", "in", self.company.id)], limit=1
             )
             if not a:
                 a = Account.create(
@@ -41,7 +41,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                         "code": code,
                         "account_type": ttype,
                         "reconcile": recon,
-                        "company_id": self.company.id,
+                        "company_ids": [(6, 0, [self.company.id])],
                     }
                 )
             return a
@@ -107,7 +107,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 [("type", "=", "bank"), ("currency_id", "=", self.currency_usd.id)],
                 limit=1,
             )
-            or Journal.create(
+            or Journal.with_context(chart_template_load=True).create(
                 {
                     "name": "Banco USD",
                     "code": "BNKUS",
@@ -117,6 +117,12 @@ class TestAccountMoveApiCalls(TransactionCase):
                 }
             )
         )
+        bank_account = acc("1102", "asset_cash", "Banco USD")
+        for line in (
+            self.bank_journal_usd.inbound_payment_method_line_ids
+            | self.bank_journal_usd.outbound_payment_method_line_ids
+        ).filtered(lambda l: not l.payment_account_id):
+            line.payment_account_id = bank_account
         self.bank_journal_usd.write({"is_igtf": True})
 
         # ➡️ Diario puente para “cruce anticipo + IGTF”
@@ -170,11 +176,30 @@ class TestAccountMoveApiCalls(TransactionCase):
         })
 
         # Crear impuesto IVA 16%
+        tax_country = self.env.ref('base.ve')
+        self.company.account_fiscal_country_id = tax_country
+        tax_group = self.env['account.tax.group'].create({
+            'name': 'IVA',
+            'company_id': self.company.id,
+            'country_id': tax_country.id,
+        })
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': self.company.id,
             'amount': 16,
             'amount_type': 'percent',
             'type_tax_use': 'sale',
+        })
+        self.tax_iva16_purchase = self.env['account.tax'].create({
+            'name': 'IVA 16% compras',
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': self.company.id,
+            'amount': 16,
+            'amount_type': 'percent',
+            'type_tax_use': 'purchase',
         })
 
         # Crear el producto
@@ -184,6 +209,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             'list_price': 100,
             'barcode': '123456789',
             'taxes_id': [(6, 0, [self.tax_iva16.id])],
+            'supplier_taxes_id': [(6, 0, [self.tax_iva16_purchase.id])],
         })
 
     def _create_invoice(
@@ -195,6 +221,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             ref = "Test Invoice",
             foreign_rate=38,
             foreign_inverse_rate=38,
+            correlative=1,
         ):
         """Helper function to create an invoice with given parameters.
         Args:
@@ -208,6 +235,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "product_id": product["product_id"],
                     "quantity": product.get("quantity", 1),
                     "price_unit": product["price_unit"],
+                    "account_id": self.acc_income.id,
                     "tax_ids": product.get("tax_ids", []),
                 }
             )
@@ -233,10 +261,10 @@ class TestAccountMoveApiCalls(TransactionCase):
             "foreign_inverse_rate": foreign_inverse_rate,
             "manually_set_rate": True,
             "invoice_line_ids": invoice_lines,
-            "invoice_date": fields.Date.today(),
-            "invoice_date_display": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
+            "invoice_date_display": fields.Date.context_today(self.env.user),
             "journal_id": self.journal.id,
-            "correlative": 1,
+            "correlative": correlative,
         }
 
         # Solo para notas de crédito
@@ -817,7 +845,8 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "price_unit": 1,
                     "tax_ids": [self.tax_iva16.id],
                 }
-            ]
+            ],
+            correlative=2,
         )
         
         with self.assertRaises(UserError) as e:        
