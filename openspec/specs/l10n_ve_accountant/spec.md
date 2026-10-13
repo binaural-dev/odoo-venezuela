@@ -748,3 +748,17 @@ El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_c
 
 - **WHEN** se obtiene el formulario de `account.move` en una compañía con `foreign_currency_id`
 - **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
+
+### Requirement: No se puede confirmar un pago con importe cero
+
+`account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.
+
+#### Scenario: Confirmar un pago con importe 0.0
+
+- **WHEN** se confirma desde la vista de pagos un pago cuyo importe es 0.0
+- **THEN** se lanza un `UserError` y el pago permanece en borrador
+
+#### Scenario: Confirmar un pago con importe mayor a cero
+
+- **WHEN** se confirma un pago con importe mayor a cero
+- **THEN** el pago se confirma con normalidad

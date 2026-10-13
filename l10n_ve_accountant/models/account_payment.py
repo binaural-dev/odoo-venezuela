@@ -314,6 +314,11 @@ class AccountPayment(models.Model):
                 )
 
     def action_post(self):
+        for payment in self:
+            if payment.currency_id.is_zero(payment.amount):
+                raise UserError(
+                    _("You cannot confirm a payment with an amount of 0.0.")
+                )
         res = super().action_post()
         # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
         self.write({"block_change_partner_after_post": True})

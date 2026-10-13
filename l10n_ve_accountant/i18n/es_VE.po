@@ -2152,3 +2152,9 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/wizard/account_payment_register.py:0
 msgid "The payment date (%(date)s) cannot be later than today (%(today)s)."
 msgstr "La fecha del pago (%(date)s) no puede ser posterior a hoy (%(today)s)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_payment.py:0
+msgid "You cannot confirm a payment with an amount of 0.0."
+msgstr "No puede confirmar un pago con un importe de 0.0."
