@@ -730,5 +730,5 @@ formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15
 #### Scenario: Asistente de registrar pago con fecha futura
 
 - **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
-- **THEN** se lanza un error de validación antes de crear ningún pago
+- **THEN** se lanza un error de validación antes de crear ningún pago 
 
