@@ -221,8 +221,14 @@ class TfhkaRetentionService(models.AbstractModel):
             for line in record.retention_line_ids:
                 line_document_type = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
                 series = line.move_id.name
-                document_series_ret = ''.join([c for c in series if c.isalpha()])
                 document_number_ret = str(''.join([c for c in series if c.isdigit()]))
+                # Serie capturada por el usuario (ticket helpdesk #15078) tiene
+                # prioridad; si el proveedor no maneja serie, se conserva el
+                # comportamiento anterior (inferida del nombre del documento).
+                document_series_ret = (
+                    line.move_id.vendor_series_tfhka
+                    or ''.join([c for c in series if c.isalpha()])
+                )
 
                 if record.base_currency_is_vef:
                     invoice_total = str(round(line.invoice_total, 2))
