@@ -25,6 +25,11 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "url_tfhka": "https://api.tfhka.com",
             "token_auth_tfhka": "token_fake",
             "country_id": self.env.ref("base.ve").id,
+            # l10n_ve_tax requires this for tax_totals, which some flows
+            # (e.g. creating a second company, see
+            # test_cron_process_queue_error_in_one_company_does_not_halt_another)
+            # end up recomputing even on invoices with no taxes at all.
+            "currency_foreign_id": self.env.ref("base.VEF").id,
         })
 
         seq = self.env["ir.sequence"].create({"name": "Sec Test", "prefix": "INV/", "padding": 4})
@@ -116,6 +121,21 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual(inv.tfhka_digitalization_state, "error")
         self.assertIn("Some business error", inv.tfhka_digitalization_error)
 
+    def test_process_digitalization_treats_silent_noop_as_error(self):
+        # Fix bloqueante: generate_document_digital() puede retornar sin
+        # excepcion y sin digitalizar nada (p.ej. tfhka.document.service
+        # devuelve sin enviar cuando no logra determinar un tipo de
+        # documento TFHKA). Eso nunca debe registrarse como 'success'.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, lambda self: None):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertFalse(inv.is_digitalized)
+
     def test_process_digitalization_refuses_record_not_queued(self):
         # Defensive guard: only ever called by the cron on a document it
         # just fetched as 'queued'. Any other state must not trigger a real
@@ -170,6 +190,55 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.assertEqual(inv1.tfhka_digitalization_state, "success")
         self.assertEqual(inv2.tfhka_digitalization_state, "success")
+
+    def test_cron_process_queue_error_in_one_company_does_not_halt_another(self):
+        # Fix bloqueante: el halt-on-error es por compania -- un documento
+        # en error de la Compania A no debe detener la cola de la Compania B.
+        #
+        # El documento de la otra compania se queda en 'draft' a proposito
+        # (nunca se postea): este test solo verifica el scoping por
+        # company_id de las busquedas del cron -- no necesita una compania
+        # contable completa (plan de cuentas, impuestos, multi-moneda), y
+        # postear ahi dispara maquinaria de facturacion VE no relacionada
+        # con lo que se esta probando.
+        errored = self._create_invoice()
+        errored.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+
+        other_company = self.env["res.company"].create({"name": "Otra Compania TFHKA Test"})
+        other_seq = self.env["ir.sequence"].create(
+            {"name": "Sec Test Other", "prefix": "OTH/", "padding": 4}
+        )
+        other_journal = self.env["account.journal"].create({
+            "name": "Diario Digital Otra Compania",
+            "code": "ODT",
+            "type": "sale",
+            "company_id": other_company.id,
+            "sequence_id": other_seq.id,
+        })
+        other_partner = self.env["res.partner"].create({
+            "name": "Cliente Otra Compania",
+            "company_id": other_company.id,
+        })
+        other_invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "company_id": other_company.id,
+            "partner_id": other_partner.id,
+            "journal_id": other_journal.id,
+            "invoice_date": fields.Date.today(),
+        })
+        other_invoice._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(
+            errored.tfhka_digitalization_state, "error",
+            "La compania con el error no debe verse afectada.",
+        )
+        self.assertEqual(
+            other_invoice.tfhka_digitalization_state, "success",
+            "El error de otra compania no debe detener esta cola.",
+        )
 
     # ------------------------------------------------------------------
     # action_tfhka_retry_digitalization / action_tfhka_generate_digital
@@ -231,7 +300,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         # backdating it must happen in its own call afterwards.
         inv.write({"date_state": fields.Datetime.now() - timedelta(minutes=2)})
 
-        self.env["account.move"]._tfhka_recover_stuck_processing()
+        self.env["account.move"]._tfhka_recover_stuck_processing(self.company)
 
         self.assertEqual(inv.tfhka_digitalization_state, "error")
         self.assertTrue(inv.tfhka_digitalization_error)
@@ -242,7 +311,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         inv.write({"tfhka_digitalization_state": "processing"})
         inv.write({"date_state": fields.Datetime.now() - timedelta(seconds=59)})
 
-        resolved = self.env["account.move"]._tfhka_recover_stuck_processing()
+        resolved = self.env["account.move"]._tfhka_recover_stuck_processing(self.company)
 
         self.assertFalse(resolved)
         self.assertEqual(inv.tfhka_digitalization_state, "processing")
@@ -281,7 +350,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "response_payload": json.dumps({"resultado": {"numeroControl": "00-00099999"}}),
         })
 
-        self.env["account.move"]._tfhka_recover_stuck_processing()
+        self.env["account.move"]._tfhka_recover_stuck_processing(self.company)
 
         self.assertEqual(inv.tfhka_digitalization_state, "success")
         self.assertTrue(inv.is_digitalized)
@@ -307,7 +376,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "response_payload": "{}",
         })
 
-        self.env["account.move"]._tfhka_recover_stuck_processing()
+        self.env["account.move"]._tfhka_recover_stuck_processing(self.company)
 
         self.assertEqual(inv.tfhka_digitalization_state, "error")
 
@@ -318,7 +387,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         fresh = self._create_invoice()
         fresh.write({"tfhka_digitalization_state": "processing"})
 
-        resolved = self.env["account.move"]._tfhka_recover_stuck_processing()
+        resolved = self.env["account.move"]._tfhka_recover_stuck_processing(self.company)
 
         self.assertFalse(resolved)
         self.assertEqual(old.tfhka_digitalization_state, "error")

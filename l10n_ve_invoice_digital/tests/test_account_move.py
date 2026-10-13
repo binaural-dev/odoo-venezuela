@@ -2804,12 +2804,111 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(invoice.tfhka_digitalization_state, "none")
 
     # ------------------------------------------------------------------
+    # tfhka.document.service._prepare_totals(): IGTF en totales/subtotales
+    # de impuestos, con y sin multi-moneda (restaurados de #1444, borrados
+    # al resolver el conflicto de merge contra 17.0).
+    # ------------------------------------------------------------------
+
+    def _fake_move_with_igtf(self, igtf, multi_currency=False):
+        groups = {"Subtotal": [
+            {"tax_group_name": "IVA 16%", "tax_group_base_amount": 1000.0, "tax_group_amount": 160.0},
+        ]}
+        foreign_groups = {"Subtotal": [
+            {"tax_group_name": "IVA 16%", "tax_group_base_amount": 25.0, "tax_group_amount": 4.0},
+        ]}
+        return type("FakeMove", (), {
+            "__iter__": lambda self: iter([self]),
+            "company_id": self.company,
+            "multi_currency_invoice": multi_currency,
+            "show_payment_box": False,
+            "foreign_rate": 40.0,
+            "invoice_line_ids": self.env["account.move.line"],
+            "tax_totals": {
+                "subtotal": 1000.0,
+                "amount_untaxed": 1000.0,
+                "amount_total": 1160.0,
+                "amount_total_igtf": 1160.0 + igtf["igtf_amount"],
+                "foreign_subtotal": 25.0,
+                "foreign_amount_untaxed": 25.0,
+                "foreign_amount_total": 29.0,
+                "foreign_amount_total_igtf": 29.0 + igtf["foreign_igtf_amount"],
+                "groups_by_subtotal": groups,
+                "groups_by_foreign_subtotal": foreign_groups,
+                "igtf": dict(igtf, apply_igtf=True, name="3.0 %"),
+            },
+        })()
+
+    def test_201_prepare_totals_igtf_ves_company_in_bolivares(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 400.0,
+            "igtf_amount": 12.0,
+            "foreign_igtf_base_amount": 10.0,
+            "foreign_igtf_amount": 0.3,
+        })
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertFalse(foreign_totals)
+        igtf_line = next(
+            (t for t in totals["impuestosSubtotal"] if t["codigoTotalImp"] == "IGTF"), None
+        )
+        self.assertTrue(igtf_line, "el IGTF debe viajar en impuestosSubtotal sin multimoneda")
+        self.assertEqual(igtf_line["baseImponibleImp"], "400.0")
+        self.assertEqual(igtf_line["valorTotalImp"], "12.0")
+
+    def test_202_prepare_totals_igtf_ves_company_multi_currency(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 400.0,
+            "igtf_amount": 12.0,
+            "foreign_igtf_base_amount": 10.0,
+            "foreign_igtf_amount": 0.3,
+        }, multi_currency=True)
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertEqual(foreign_totals["totalIGTF"], "0.3")
+        self.assertEqual(foreign_totals["totalIGTF_VES"], "12.0")
+
+    def test_203_prepare_totals_igtf_usd_company(self):
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 10.0,
+            "igtf_amount": 0.3,
+            "foreign_igtf_base_amount": 400.0,
+            "foreign_igtf_amount": 12.0,
+        })
+        fake.tax_totals.update({
+            "subtotal": 25.0,
+            "amount_untaxed": 25.0,
+            "amount_total": 29.0,
+            "amount_total_igtf": 29.3,
+            "foreign_subtotal": 1000.0,
+            "foreign_amount_untaxed": 1000.0,
+            "foreign_amount_total": 1160.0,
+            "foreign_amount_total_igtf": 1172.0,
+            "groups_by_subtotal": fake.tax_totals["groups_by_foreign_subtotal"],
+            "groups_by_foreign_subtotal": fake.tax_totals["groups_by_subtotal"],
+        })
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertEqual(foreign_totals["totalIGTF"], "0.3")
+        self.assertEqual(foreign_totals["totalIGTF_VES"], "12.0")
+
+    # ------------------------------------------------------------------
     # action_tfhka_generate_digital(): el documento anterior en la
     # numeracion del diario debe estar 'queued' o 'success' antes de poder
     # mandar este a digitalizar.
     # ------------------------------------------------------------------
 
-    def test_201_action_generate_digital_blocks_when_previous_not_queued(self):
+    def test_205_action_generate_digital_blocks_when_previous_not_queued(self):
         self.company.digitalization_with_payment_tfhka = True
         self.company.payment_mode_tfhka = "credit"
         inv1 = self._create_invoice(
@@ -2824,7 +2923,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertIn(inv1.name, str(e.exception))
         self.assertEqual(inv2.tfhka_digitalization_state, "none")
 
-    def test_202_action_generate_digital_allows_when_previous_queued(self):
+    def test_206_action_generate_digital_allows_when_previous_queued(self):
         self.company.digitalization_with_payment_tfhka = True
         self.company.payment_mode_tfhka = "credit"
         inv1 = self._create_invoice(
@@ -2839,7 +2938,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv2.action_tfhka_generate_digital()
         self.assertEqual(inv2.tfhka_digitalization_state, "queued")
 
-    def test_203_action_generate_digital_allows_when_previous_success(self):
+    def test_207_action_generate_digital_allows_when_previous_success(self):
         self.company.digitalization_with_payment_tfhka = True
         self.company.payment_mode_tfhka = "credit"
         inv1 = self._create_invoice(
@@ -2853,7 +2952,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv2.action_tfhka_generate_digital()
         self.assertEqual(inv2.tfhka_digitalization_state, "queued")
 
-    def test_204_action_generate_digital_blocks_when_previous_errored(self):
+    def test_208_action_generate_digital_blocks_when_previous_errored(self):
         self.company.digitalization_with_payment_tfhka = True
         self.company.payment_mode_tfhka = "credit"
         inv1 = self._create_invoice(
@@ -2867,4 +2966,39 @@ class TestAccountMoveApiCalls(TransactionCase):
         with self.assertRaises(ValidationError):
             inv2.action_tfhka_generate_digital()
         self.assertEqual(inv2.tfhka_digitalization_state, "none")
+
+    def test_209_action_generate_digital_allows_when_previous_processing(self):
+        # Fix bloqueante: 'processing' es un estado transitorio sano (el cron
+        # esta enviando el documento anterior en este mismo instante), no un
+        # fallo -- no debe bloquear el encolado del siguiente documento.
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.write({"tfhka_digitalization_state": "processing"})
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "queued")
+
+    def test_210_validate_previous_document_queued_noop_without_payment_first_mode(self):
+        # Fix bloqueante: la validacion de orden solo aplica en modo
+        # "digitalizacion con pago" -- en modo normal no hay nada que
+        # verificar (los documentos se encolan automaticamente al postear,
+        # en orden cronologico estricto).
+        self.company.digitalization_with_payment_tfhka = False
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        # No debe levantar ValidationError pese a que inv1 esta en error,
+        # porque la validacion ni siquiera corre fuera de modo pago-primero.
+        inv2._tfhka_validate_previous_document_queued()
 
