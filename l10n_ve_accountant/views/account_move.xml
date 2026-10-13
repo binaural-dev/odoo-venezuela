@@ -11,8 +11,17 @@
                         name="foreign_balance" />. </div> -->
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="attributes">
-                <attribute name="readonly">state != 'draft'</attribute>
+                <attribute name="readonly">state != 'draft' or reversed_entry_id or debit_origin_id</attribute>
                 <attribute name="force_save">1</attribute>
+            </xpath>
+            <!-- Core has a second `invoice_date` (purchases, "Bill Date"): same rule,
+                 and the same "Rate Date" label the sales one gets below. -->
+            <xpath expr="//field[@name='invoice_date'][@invisible=&quot;move_type not in ('in_invoice', 'in_refund', 'in_receipt')&quot;]" position="attributes">
+                <attribute name="readonly">state != 'draft' or reversed_entry_id or debit_origin_id</attribute>
+                <attribute name="force_save">1</attribute>
+            </xpath>
+            <xpath expr="//label[@for='invoice_date'][@invisible=&quot;move_type not in ('in_invoice', 'in_refund', 'in_receipt')&quot;]" position="attributes">
+                <attribute name="string">Rate Date</attribute>
             </xpath>
             <!-- Native label hardcodes its own string, ignoring the field's -->
             <xpath expr="//label[@for='invoice_date'][@invisible=&quot;move_type not in ('out_invoice', 'out_refund', 'out_receipt')&quot;]" position="attributes">

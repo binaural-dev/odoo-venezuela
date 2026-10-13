@@ -6,3 +6,4 @@ from . import res_company
 from . import res_config_settings
 from . import account_debit_note
 from . import ir_actions_report
+from . import validate_account_move

@@ -123,12 +123,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 [("type", "=", "bank"), ("currency_id", "=", self.currency_usd.id)],
                 limit=1,
             )
-            # O19: l10n_ve_accountant._check_payment_method_line_accounts exige
-            # cuenta en cada línea de método de pago de un diario bancario. Odoo
-            # las autocrea sin payment_account_id y sin plan de cuentas cargado no
-            # hay de dónde resolverla, así que se usa el mismo escape que la
-            # propia restricción contempla para el bootstrap.
-            or Journal.with_context(install_mode=True).create(
+            or Journal.with_context(install_mode=True, chart_template_load=True).create(
                 {
                     "name": "Banco USD",
                     "code": "BNKUS",
@@ -138,6 +133,12 @@ class TestAccountMoveApiCalls(TransactionCase):
                 }
             )
         )
+        bank_account = acc("1102", "asset_cash", "Banco USD")
+        for line in (
+            self.bank_journal_usd.inbound_payment_method_line_ids
+            | self.bank_journal_usd.outbound_payment_method_line_ids
+        ).filtered(lambda l: not l.payment_account_id):
+            line.payment_account_id = bank_account
         self.bank_journal_usd.write({"is_igtf": True})
 
         # ➡️ Diario puente para “cruce anticipo + IGTF”
@@ -190,18 +191,34 @@ class TestAccountMoveApiCalls(TransactionCase):
             'street': 'Calle Falsa 123',
         })
 
-        # El mapeo de TFHKA usa el nombre del GRUPO de impuesto, que en el
-        # plan de cuentas venezolano real es "IVA 16%" / "Exento".
-        self.tax_group = self.env['account.tax.group'].create({
-            'name': 'IVA 16%',
+        # Crear impuesto IVA 16%
+        tax_country = self.env.ref('base.ve')
+        self.company.account_fiscal_country_id = tax_country
+
+        tax_group = self.env['account.tax.group'].create({
+            'name': 'IVA',
+            'company_id': self.company.id,
+            'country_id': tax_country.id,
         })
-        
+
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': self.company.id,
             'amount': 16,
             'amount_type': 'percent',
             'type_tax_use': 'sale',
             'tax_group_id': self.tax_group.id,
+        })
+        self.tax_iva16_purchase = self.env['account.tax'].create({
+            'name': 'IVA 16% compras',
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': self.company.id,
+            'amount': 16,
+            'amount_type': 'percent',
+            'type_tax_use': 'purchase',
         })
 
         # Crear el producto
@@ -211,6 +228,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             'list_price': 100,
             'barcode': '123456789',
             'taxes_id': [Command.set([self.tax_iva16.id])],
+            'supplier_taxes_id': [Command.set([self.tax_iva16_purchase.id])],
         })
 
     def _next_correlative(self):
@@ -227,6 +245,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             ref = "Test Invoice",
             foreign_rate=38,
             foreign_inverse_rate=38,
+            correlative=1,
             currency_id=None,
             foreign_currency_id=None,
             do_post=True,
@@ -248,6 +267,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "product_id": product["product_id"],
                     "quantity": product.get("quantity", 1),
                     "price_unit": product["price_unit"],
+                    "account_id": self.acc_income.id,
                     "tax_ids": product.get("tax_ids", []),
                     "account_id": self.acc_income.id, 
                 }
@@ -274,12 +294,10 @@ class TestAccountMoveApiCalls(TransactionCase):
             "foreign_inverse_rate": foreign_inverse_rate,
             "manually_set_rate": True,
             "invoice_line_ids": invoice_lines,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
+            "invoice_date_display": fields.Date.context_today(self.env.user),
             "journal_id": self.journal.id,
-            # O19: l10n_ve_invoice._check_correlative prohibe repetir el
-            # numero de control entre facturas confirmadas, asi que cada
-            # factura del fixture necesita el suyo.
-            "correlative": self._next_correlative(),
+            "correlative": self._next_correlative() if correlative == 1 else correlative,
         }
 
         # Solo para notas de crédito
@@ -948,6 +966,43 @@ class TestAccountMoveApiCalls(TransactionCase):
             _logger.error(e.exception)
 
         _logger.info("Test passed: code 200 error, UserError raised as expected.")
+
+    # Validacion de factura sin digitalizar
+    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
+    def test_15_generate_document_digital_has_not_been_digitized_error(self, mock_call):
+
+        self.invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ]
+        )
+
+        self.env['move.action.post.alert.wizard'].create({
+            'move_id': self.invoice.id
+        }).action_confirm()
+
+        invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ],
+            correlative=2,
+        )
+        
+        with self.assertRaises(UserError) as e:        
+            self.env['move.action.post.alert.wizard'].create({
+                'move_id': invoice.id
+            }).action_confirm()
+
+            _logger.info(e.exception)
+        _logger.info("Test passed: ")
 
     # Validacion de fecha
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)

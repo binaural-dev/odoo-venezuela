@@ -6,7 +6,7 @@ from lxml import etree
 from contextlib import ExitStack, contextmanager
 from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare, index_exists
+from odoo.tools import float_compare, format_date, index_exists
 from odoo.tools.sql import drop_index
 from odoo.tools.float_utils import float_round, float_is_zero
 from odoo.tools.misc import formatLang
@@ -577,6 +577,29 @@ class AccountMove(models.Model):
             if move.invoice_date_display and move.is_sale_document(include_receipts=True):
                 move.invoice_date = move.invoice_date_display
 
+
+    def _l10n_ve_check_note_date(self, note_date):
+        """A Credit/Debit Note is the same transaction as its origin, so its
+        document date (`invoice_date_display`) must fall between the
+        origin's own document date and today. `self` are the origin
+        documents the note is issued against."""
+        today = fields.Date.context_today(self)
+        for origin in self.filtered(lambda m: m.is_invoice(include_receipts=True)):
+            origin_date = origin.invoice_date_display or origin.date
+            if note_date > today:
+                raise ValidationError(_(
+                    "The note date (%(value)s) cannot be later than today (%(today)s).",
+                    value=format_date(self.env, note_date),
+                    today=format_date(self.env, today),
+                ))
+            if origin_date and note_date < origin_date:
+                raise ValidationError(_(
+                    "The note date (%(value)s) cannot be earlier than the date "
+                    "of the original document %(origin)s (%(origin_date)s).",
+                    value=format_date(self.env, note_date),
+                    origin=origin.display_name,
+                    origin_date=format_date(self.env, origin_date),
+                ))
 
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -2312,6 +2335,9 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
         res = super()._get_all_reconciled_invoice_partials()
+        origin_id = self._origin.id
+        if not origin_id:
+            return res
 
         # No `sudo()`: whoever can reach this (viewing the invoice's
         # "Pagos" widget) already has read access to it, and core's own
@@ -2320,7 +2346,7 @@ class AccountMove(models.Model):
         # blanket read access to every journal entry in that same company
         # -- there is no narrower ACL this would be bypassing.
         standalone_entries = self.env['account.move'].search([
-            ('l10n_ve_exchange_foreign_source_move_id', '=', self.id),
+            ('l10n_ve_exchange_foreign_source_move_id', '=', origin_id),
             ('state', '=', 'posted'),
             # A reversed entry stays `posted` by design (see
             # `account_partial_reconcile.py`, "reversed, not cancelled")
