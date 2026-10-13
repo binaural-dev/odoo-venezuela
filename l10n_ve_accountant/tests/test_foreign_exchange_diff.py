@@ -1,5 +1,3 @@
-import importlib.util
-import os
 from datetime import timedelta
 from unittest.mock import patch
 
@@ -1315,26 +1313,32 @@ class TestForeignExchangeDiff(TransactionCase):
         with self.assertRaises(ValidationError):
             self.company.l10n_ve_use_foreign_exchange_diff = True
 
-    def test_migration_enables_only_fully_configured_companies(self):
-        path = os.path.join(
-            os.path.dirname(os.path.dirname(__file__)),
-            "migrations", "19.0.1.0.31", "post-enable_foreign_exchange_diff.py",
-        )
-        spec = importlib.util.spec_from_file_location("migration_enable_foreign_exchange_diff", path)
-        module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(module)
+    def test_explicit_activation_without_chart_and_config_raises(self):
+        """Only the *default* is skipped on creation: explicitly enabling
+        the check without journal/accounts must fail, chart or not."""
+        with self.assertRaises(ValidationError):
+            self.env["res.company"].create({
+                "name": "No Chart Explicit Co",
+                "l10n_ve_use_foreign_exchange_diff": True,
+            })
+        company = self.env["res.company"].create({"name": "No Chart Default Co"})
+        company.l10n_ve_use_foreign_exchange_diff = False
+        with self.assertRaises(ValidationError):
+            company.l10n_ve_use_foreign_exchange_diff = True
 
-        configured = self.company
-        unconfigured = self.env["res.company"].create({"name": "Unconfigured Alt Diff Co"})
-        self.env.cr.execute(
-            "UPDATE res_company SET l10n_ve_use_foreign_exchange_diff = FALSE WHERE id IN %s",
-            ((configured.id, unconfigured.id),),
-        )
-        module.migrate(self.env.cr, "19.0.1.0.30")
-        configured.invalidate_recordset()
-        unconfigured.invalidate_recordset()
-        self.assertTrue(configured.l10n_ve_use_foreign_exchange_diff)
-        self.assertFalse(unconfigured.l10n_ve_use_foreign_exchange_diff)
+    def test_chart_load_disables_flag_when_chart_has_no_exchange_config(self):
+        """`account.chart.template._load` revalidates at the end: a chart
+        that leaves the exchange journal/accounts empty cannot keep the
+        flag on."""
+        company = self.env["res.company"].create({"name": "Chart Without Exchange Co"})
+        self.assertTrue(company.l10n_ve_use_foreign_exchange_diff)
+        template_model = self.env["account.chart.template"]
+        with patch(
+            "odoo.addons.account.models.chart_template.AccountChartTemplate._load",
+            return_value=None,
+        ):
+            template_model._load("generic_coa", company, False)
+        self.assertFalse(company.l10n_ve_use_foreign_exchange_diff)
 
     def test_payment_wizard_indexed_check_visible_only_when_to_agreed(self):
         view = self.env["account.payment.register"].get_view(view_type="form")
