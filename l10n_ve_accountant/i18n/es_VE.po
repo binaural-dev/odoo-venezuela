@@ -2026,20 +2026,14 @@ msgstr "Documento de Origen (Diferencial Cambiario en Moneda Alterna)"
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid ""
-"The exchange difference entry Odoo creates natively at
-"
-"                                    reconciliation time also carries the alternate currency amount
-"
-"                                    on its own lines. If only the alternate currency shows a
-"
+"The exchange difference entry Odoo creates natively at\n"
+"                                    reconciliation time also carries the alternate currency amount\n"
+"                                    on its own lines. If only the alternate currency shows a\n"
 "                                    difference, the same kind of entry is still created for it."
 msgstr ""
-"El asiento de diferencial cambiario que Odoo crea de forma nativa al
-"
-"                                    conciliar también lleva el monto en moneda alterna
-"
-"                                    en sus propias líneas. Si solo la moneda alterna muestra una
-"
+"El asiento de diferencial cambiario que Odoo crea de forma nativa al\n"
+"                                    conciliar también lleva el monto en moneda alterna\n"
+"                                    en sus propias líneas. Si solo la moneda alterna muestra una\n"
 "                                    diferencia, igual se crea este mismo tipo de asiento para ella."
 
 #. module: l10n_ve_accountant
