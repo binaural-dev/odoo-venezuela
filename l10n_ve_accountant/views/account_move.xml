@@ -167,6 +167,11 @@
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_unit']"
                 position="after">
                 <field name="foreign_price" readonly="1" optional="hide"/>
+                <field name="technical_price_unit" column_invisible="True"/>
+            </xpath>
+            <xpath expr="//page/field[@name='invoice_line_ids']/form//field[@name='price_unit']"
+                position="after">
+                <field name="technical_price_unit" invisible="1"/>
             </xpath>
             <xpath expr="//page/field[@name='invoice_line_ids']/list/field[@name='price_subtotal']"
                 position="after">
