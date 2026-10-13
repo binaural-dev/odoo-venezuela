@@ -77,6 +77,35 @@ class TestTransportFleet(TransactionCase):
         self.assertEqual(picking.transport_vehicle_plate, "A12BC3D")
         self.assertEqual(picking.transport_driver_name, "Pedro Pérez Conductor")
 
+    def test_write_removing_vehicle_clears_transport_data(self):
+        picking = self._create_picking(transport_vehicle_id=self.vehicle.id)
+        picking.write({"transport_vehicle_id": False})
+        self.assertFalse(picking.transport_vehicle_plate)
+        self.assertFalse(picking.transport_vehicle_brand)
+        self.assertFalse(picking.transport_vehicle_model)
+        self.assertFalse(picking.transport_vehicle_type)
+        self.assertFalse(picking.transport_driver_name)
+        self.assertFalse(picking.transport_driver_vat)
+        self.assertFalse(picking.transport_driver_license_type)
+        self.assertFalse(picking.transport_driver_contact)
+
+    def test_write_removing_trailer_clears_trailer_plate(self):
+        picking = self._create_picking(transport_trailer_id=self.trailer.id)
+        picking.write({"transport_trailer_id": False})
+        self.assertFalse(picking.transport_trailer_plate)
+
+    def test_onchange_removing_vehicle_clears_transport_data(self):
+        with Form(self.env["stock.picking"]) as form:
+            form.picking_type_id = self.picking_type
+            form.partner_id = self.partner
+            form.transfer_reason_id = self.reason_other_causes
+            form.other_causes_transfer_reason = "Prueba Flota"
+            form.transport_vehicle_id = self.vehicle
+            self.assertEqual(form.transport_vehicle_plate, "A12BC3D")
+            form.transport_vehicle_id = self.env["fleet.vehicle"]
+            self.assertFalse(form.transport_vehicle_plate)
+            self.assertFalse(form.transport_driver_name)
+
     def test_explicit_driver_overrides_fleet(self):
         picking = self._create_picking(
             transport_vehicle_id=self.vehicle.id,
