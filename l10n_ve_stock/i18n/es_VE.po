@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Odoo Server 19.0+e-20260702\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-09-21 17:56+0000\n"
-"PO-Revision-Date: 2026-09-21 17:56+0000\n"
+"POT-Creation-Date: 2026-09-22 14:21+0000\n"
+"PO-Revision-Date: 2026-09-22 14:21+0000\n"
 "Last-Translator: \n"
 "Language-Team: \n"
 "MIME-Version: 1.0\n"
@@ -211,8 +211,8 @@ msgid ""
 "Automatic transfer for physical location relocation: from %(source)s to "
 "%(destination)s."
 msgstr ""
-"Transferencia automática por reubicación de ubicación física: de "
-"%(source)s a %(destination)s."
+"Transferencia automática por reubicación de ubicación física: de %(source)s "
+"a %(destination)s."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location_line__available_qty
@@ -656,8 +656,8 @@ msgid ""
 "Marks the transfers automatically generated when a product's physical "
 "location changes."
 msgstr ""
-"Marca las transferencias generadas automáticamente al cambiar la "
-"ubicación física de un producto."
+"Marca las transferencias generadas automáticamente al cambiar la ubicación "
+"física de un producto."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking_alter_location__max_quantity
@@ -1058,6 +1058,12 @@ msgid "Show Physical Locations"
 msgstr ""
 
 #. module: l10n_ve_stock
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_product__show_physical_relocation_reserved_warning
+#: model:ir.model.fields,field_description:l10n_ve_stock.field_product_template__show_physical_relocation_reserved_warning
+msgid "Show Physical Relocation Reserved Warning"
+msgstr "Mostrar Aviso de Reserva por Reubicación Física"
+
+#. module: l10n_ve_stock
 #: model:res.groups,name:l10n_ve_stock.group_show_standard_price
 msgid "Show standard price on the product form view"
 msgstr "Mostrar costo en la vista del producto"
@@ -1071,6 +1077,19 @@ msgid ""
 "validados (estado 'Hecho'). Un pedido de compra o venta confirmado, sin la "
 "transferencia asociada validada todavía, no cuenta como movimiento."
 msgstr ""
+
+#. module: l10n_ve_stock
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock.product_template_form_view_from_binaural_stock
+msgid ""
+"Some of the stock in the location(s) being replaced is reserved. The\n"
+"                    automatic internal transfer will only move the freely available\n"
+"                    quantity to the new location; if there is no available quantity, no\n"
+"                    transfer will be generated."
+msgstr ""
+"Parte del stock en la(s) ubicación(es) que se está(n) reemplazando está "
+"reservado. La transferencia interna automática solo moverá la cantidad "
+"disponible libre a la nueva ubicación; si no hay cantidad disponible, no "
+"se generará ninguna transferencia."
 
 #. module: l10n_ve_stock
 #: model:ir.model.fields,field_description:l10n_ve_stock.field_stock_picking__source_physical_address
