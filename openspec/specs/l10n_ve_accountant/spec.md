@@ -719,3 +719,17 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 - **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
 - **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
 
+
+### Requirement: No se puede confirmar un pago con importe cero
+
+`account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.
+
+#### Scenario: Confirmar un pago con importe 0.0
+
+- **WHEN** se confirma desde la vista de pagos un pago cuyo importe es 0.0
+- **THEN** se lanza un `UserError` y el pago permanece en borrador
+
+#### Scenario: Confirmar un pago con importe mayor a cero
+
+- **WHEN** se confirma un pago con importe mayor a cero
+- **THEN** el pago se confirma con normalidad
