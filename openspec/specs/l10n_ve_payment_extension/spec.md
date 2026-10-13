@@ -646,3 +646,36 @@ Para retenciones de cliente (`out_invoice`, `out_refund`, `out_debit`) estos cam
 - **GIVEN** una retención de IVA con `type = 'out_invoice'`
 - **WHEN** se abre su formulario
 - **THEN** `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` de cada línea SHALL seguir siendo editables (según el estado de la retención)
+
+### Requirement: Una factura no puede estar en dos comprobantes de retención del mismo tipo, partner y diferenciador al emitir
+
+Al ejecutar `action_post`, el sistema DEBE (MUST) llamar a `_check_duplicate_invoices_all_states` ANTES de las validaciones específicas de `_check_duplicate_retention_lines`. Si alguna factura del comprobante ya figura en otro comprobante en estado `draft` o `emitted` con el mismo `type_retention`, el mismo `partner_id` y el mismo diferenciador, DEBE (MUST) lanzar un `UserError` (mensaje en inglés con traducción al español en `i18n/es_VE.po`) indicando la factura, el otro comprobante y su estado. El diferenciador es: IVA, la alícuota (`aliquot`); ISLR, el concepto de pago (`payment_concept_id`); municipal, la actividad económica (`economic_activity_id`). Los comprobantes `cancel` y los de otro `type_retention` NO bloquean. El sistema NO cancela ni elimina automáticamente ningún borrador: dos borradores sobre la misma factura pueden coexistir hasta que se intente emitir alguno.
+
+La misma factura PUEDE (MAY) estar en varios comprobantes del mismo tipo y partner cuando el diferenciador es distinto (por ejemplo, ISLR de conceptos distintos o IVA de alícuotas distintas). El duplicado se detecta en la primera emisión, aun cuando el otro comprobante siga en borrador (caso de la factura consolidada en otro comprobante, ticket #15531). Comprobantes de distinto partner sobre la misma factura (facturación a cuenta de terceros, ta #65929) NO se bloquean entre sí por este control; entre ellos siguen aplicando las reglas de `_check_duplicate_retention_lines` (ISLR por base acumulada por concepto, IVA por alícuota, municipal por actividad). En particular, el IVA de terceros a la misma alícuota sigue bloqueado por `_check_iva_duplicate_lines` (preexistente, #1303) cuando el otro comprobante ya está emitido.
+
+Decisión de diseño (responsable de la vertical, por exigencia de la gerencia): el bloqueo aplica solo con misma factura, mismo tipo de retención, mismo partner y mismo diferenciador.
+
+En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el bloqueo deja una nota en el chatter del comprobante y `action_post` devuelve `False`, igual que el resto de las validaciones.
+
+#### Scenario: Factura consolidada en otro comprobante
+
+- **GIVEN** la factura B en la retención A (consolidada) y en su retención individual B en borrador, con el mismo diferenciador
+- **WHEN** se emite A, o luego B
+- **THEN** se lanza un `UserError` que nombra el otro comprobante y su estado
+
+#### Scenario: Misma factura con distinto diferenciador
+
+- **GIVEN** dos comprobantes del mismo tipo y partner sobre la misma factura, con alícuota (IVA), concepto (ISLR) o actividad (municipal) distintos
+- **WHEN** se emite cualquiera de ellos
+- **THEN** no se lanza el error de duplicidad
+
+#### Scenario: Comprobantes de terceros distintos sobre la misma factura
+
+- **GIVEN** dos comprobantes del mismo tipo con partners distintos sobre la misma factura
+- **WHEN** se emite cualquiera de ellos
+- **THEN** no se lanza el error de duplicidad por factura (sí aplican las reglas por concepto/alícuota/actividad contra los ya emitidos)
+
+#### Scenario: Comprobante cancelado o de otro tipo
+
+- **WHEN** la otra retención con la misma factura está `cancel`, o es de otro `type_retention`
+- **THEN** no se lanza el error de duplicidad

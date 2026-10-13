@@ -67,6 +67,46 @@ Al crear un `account.move` de tipo `out_refund` o `in_refund` con `reversed_entr
 - **WHEN** se crea una nota de débito con `debit_origin_id`
 - **THEN** su tasa no se copia del documento de origen
 
+### Requirement: Fechas de la Nota de Crédito respecto a su documento origen
+
+Al crear una Nota de Crédito con `account.move.reversal` (`_prepare_default_reversal`) sobre un documento facturable (`is_invoice(include_receipts=True)`), de cliente o de proveedor, el sistema DEBE (MUST):
+
+- Tomar `invoice_date` (fecha de tasa) siempre del documento origen, nunca del wizard.
+- Tomar `invoice_date_display` y `date` de la fecha del wizard, que por defecto es hoy (`fields.Date.context_today`) y es editable.
+- Validar con `account.move._l10n_ve_check_note_date` que esa fecha no sea anterior a `invoice_date_display` del origen (con `date` como resguardo) ni posterior a hoy; `reverse_moves` lanza `ValidationError` en caso contrario.
+- Emitirse contra UNA sola factura: `default_get` y `reverse_moves` lanzan `UserError` cuando reciben más de un documento facturable.
+
+Ticket #15594.
+
+#### Scenario: Nota de Crédito con fecha entre el origen y hoy
+
+- **WHEN** se revierte una factura con una fecha de wizard entre la de la factura y hoy
+- **THEN** la nota queda con `invoice_date_display` y `date` iguales a esa fecha e `invoice_date` igual al de la factura
+
+#### Scenario: Fecha por defecto del wizard
+
+- **WHEN** se abre el wizard de reversión
+- **THEN** `date` es hoy según la zona horaria del usuario
+
+#### Scenario: Fecha anterior al origen o futura
+
+- **WHEN** la fecha del wizard es anterior a la del origen o posterior a hoy
+- **THEN** `reverse_moves` lanza `ValidationError`
+
+#### Scenario: Wizard sobre varias facturas
+
+- **WHEN** se abre o ejecuta el wizard de reversión con más de una factura seleccionada
+- **THEN** se lanza `UserError`
+
+### Requirement: Fecha de tasa de la nota bloqueada en el formulario
+
+En el formulario de `account.move`, `invoice_date` (fecha de tasa) DEBE (MUST) ser de solo lectura cuando `reversed_entry_id` o `debit_origin_id` están definidos, además de la regla previa de solo lectura fuera de borrador. `invoice_date_display` permanece editable en borrador.
+
+#### Scenario: Edición de las fechas de una nota
+
+- **WHEN** un usuario abre en borrador una nota con `reversed_entry_id` o `debit_origin_id`
+- **THEN** la fecha de tasa no es editable y la fecha del documento sí
+
 ### Requirement: Trazabilidad del cambio manual de tasa
 
 Cuando un documento con `manually_set_rate` activo se crea o modifica con una `foreign_rate` distinta de la tasa vigente (o de la última tasa registrada en `last_foreign_rate`), el sistema DEBE (MUST) publicar un mensaje en el chatter indicando la tasa anterior y la nueva.
@@ -749,3 +789,13 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
 - **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta
+
+### Requirement: El widget de pagos no falla con registros sin guardar
+
+`_get_all_reconciled_invoice_partials` DEBE (MUST) devolver el resultado del núcleo sin consultar los asientos de diferencial en moneda alterna cuando el registro no tiene id de base de datos (`self._origin.id` vacío, por ejemplo un `account.move` nuevo en el formulario).
+
+#### Scenario: Factura nueva sin guardar
+
+- **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
+- **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
+
