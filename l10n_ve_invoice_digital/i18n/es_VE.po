@@ -430,6 +430,7 @@ msgstr ""
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__error
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__error
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__stock_picking__tfhka_digitalization_state__error
 msgid "Error"
 msgstr "Error"
 
@@ -712,6 +713,7 @@ msgstr "No hay registros en el historial de la API de The Factory HKA"
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__none
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__none
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__stock_picking__tfhka_digitalization_state__none
 msgid "Not Digitalized"
 msgstr "Sin Digitalizar"
 
@@ -782,12 +784,14 @@ msgstr "Código de forma de pago"
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__processing
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__processing
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__stock_picking__tfhka_digitalization_state__processing
 msgid "Processing"
 msgstr "En Proceso"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__queued
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__queued
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__stock_picking__tfhka_digitalization_state__queued
 msgid "Queued"
 msgstr "En Cola"
 
@@ -971,17 +975,20 @@ msgstr "Estado de Digitalización TFHKA"
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__success
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__success
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__stock_picking__tfhka_digitalization_state__success
 msgid "Digitalized"
 msgstr "Digitalizado"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__data_error
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_retention__tfhka_digitalization_state__data_error
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__stock_picking__tfhka_digitalization_state__data_error
 msgid "Data Error"
 msgstr "Error de Datos"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__account_move__tfhka_digitalization_state__not_applicable
+#: model:ir.model.fields.selection,name:l10n_ve_invoice_digital.selection__stock_picking__tfhka_digitalization_state__not_applicable
 msgid "Not Applicable"
 msgstr "No Aplica"
 
