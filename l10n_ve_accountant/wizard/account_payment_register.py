@@ -267,6 +267,12 @@ class AccountPaymentRegister(models.TransientModel):
 
         return payment_vals
 
+    def action_create_payments(self):
+        for wizard in self:
+            if float_compare(wizard.amount, 0.0, precision_rounding=wizard.currency_id.rounding) == 0:
+                raise UserError(_("The amount to pay cannot be 0.0."))
+        return super().action_create_payments()
+
     def _create_payments(self):
         """
         Pass the indexation conversion date via context instead of a stored field on

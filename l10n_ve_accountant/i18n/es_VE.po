@@ -1788,6 +1788,22 @@ msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente public
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/wizard/account_payment_register.py:0
+msgid "The amount to pay cannot be 0.0."
+msgstr "El importe a pagar no puede ser 0.0."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"You cannot reset to draft an alternate currency exchange difference journal "
+"entry."
+msgstr ""
+"No se puede regresar a borrador un asiento de diferencial cambiario en "
+"moneda alterna."
+
+#. module: l10n_ve_accountant
+#. odoo-python
 #: code:addons/l10n_ve_accountant/models/product_template.py:0
 #, python-format
 msgid ""
