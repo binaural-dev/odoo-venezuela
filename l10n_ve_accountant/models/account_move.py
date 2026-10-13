@@ -2313,7 +2313,7 @@ class AccountMove(models.Model):
         # blanket read access to every journal entry in that same company
         # -- there is no narrower ACL this would be bypassing.
         standalone_entries = self.env['account.move'].search([
-            ('l10n_ve_exchange_foreign_source_move_id', '=', self.id),
+            ('l10n_ve_exchange_foreign_source_move_id', '=', origin_id),
             ('state', '=', 'posted'),
             # A reversed entry stays `posted` by design (see
             # `account_partial_reconcile.py`, "reversed, not cancelled")

@@ -56,6 +56,31 @@ class WizardAccountingReports(models.TransientModel):
 
         return retention_resume_lines
 
+    def _determinate_resume_sale_retention_books(self):
+        # Se usa el mismo conjunto de líneas que genera las filas RET del
+        # detalle (_search_sale_retention_lines()), en lugar de derivar el
+        # total desde `moves`, porque una retención puede pertenecer a una
+        # factura de OTRO período (filtrada por date_accounting de la
+        # retención, no por la fecha de la factura). Si se sumara a partir
+        # de `moves` (que solo trae facturas del período), el total del
+        # resumen no cuadraría con el detalle presentado al SENIAT.
+        retention_lines = self._search_sale_retention_lines()
+        credit_note_lines = retention_lines.filtered(
+            lambda line: line.move_id.move_type in ["out_refund", "in_refund"]
+        )
+        invoice_lines = retention_lines - credit_note_lines
+
+        # No se repite aquí el filtro de state == "emitted" /
+        # _check_future_retention_dates que tenía el código de compras: ya
+        # está aplicado por _get_retention_domain() al construir
+        # retention_lines, por lo que volver a filtrar sería redundante.
+        return [
+            0.0,
+            self._sum_retention_total(invoice_lines),
+            0.0,
+            self._sum_retention_total(credit_note_lines),
+        ]
+
     def _resume_sale_book_fields(self, moves):
         res_book = super()._resume_sale_book_fields(moves)
         res_book.extend(
@@ -63,7 +88,7 @@ class WizardAccountingReports(models.TransientModel):
                 {
                     "name": "Total Retenciones",
                     "format": "number",
-                    "values": self._determinate_resume_retention_books(moves),
+                    "values": self._determinate_resume_sale_retention_books(),
                 }
             ]
         )
@@ -115,9 +140,30 @@ class WizardAccountingReports(models.TransientModel):
 
         return fields_purchase_book_line
     
+    def _fields_sale_book_line(self, move, taxes):
+        fields_sale_book_line = super()._fields_sale_book_line(move, taxes)
+
+        fields_sale_book_line.update(
+            {
+                "retention_date": "--",
+                "retention_number": "--",
+                "iva_withheld": 0,
+            }
+        )
+
+        return fields_sale_book_line
+
     def _fields_retention_book_line(self, move, retention_line):
         taxes = self._determinate_amount_taxeds(move)
         fields_retention_book_line = self._fields_sale_book_line(move, taxes)
+
+        for group in self._get_sale_book_field_groups():
+            for field in group.get("fields", []):
+                if (
+                    field.get("format") == "number"
+                    and field["field"] in fields_retention_book_line
+                ):
+                    fields_retention_book_line[field["field"]] = 0
 
         retention = retention_line.retention_id
         fields_retention_book_line.update(
@@ -125,15 +171,6 @@ class WizardAccountingReports(models.TransientModel):
                 "document_date": self._format_date(retention.date),
                 "move_type": "RET",
                 "transaction_type": "04-REG",
-                "total_sales": 0,
-                "total_sales_iva": 0,
-                "total_sales_not_iva": 0,
-                "amount_reduced_aliquot": 0,
-                "amount_general_aliquot": 0,
-                "amount_extend_aliquot": 0,
-                "tax_base_reduced_aliquot": 0,
-                "tax_base_general_aliquot": 0,
-                "tax_base_extend_aliquot": 0,
                 "retention_date": self._format_date(retention.date),
                 "retention_number": retention.number or "--",
                 "iva_withheld": self._sum_retention_total(retention_line),
@@ -169,7 +206,7 @@ class WizardAccountingReports(models.TransientModel):
 
     def _get_retention_domain(self):
         is_purchase = self.report == "purchase"
-        field_date = "date"
+        field_date = "date" if is_purchase else "date_accounting"
         move_type = (
             ["out_invoice", "out_refund"] if not is_purchase else ["in_invoice", "in_refund"]
         )

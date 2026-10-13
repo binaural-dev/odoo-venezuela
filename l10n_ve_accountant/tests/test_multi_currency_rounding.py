@@ -217,14 +217,14 @@ class TestMultiCurrencyRounding(TransactionCase):
             'pricelist_id': pl.id if pl else False,
             'invoice_line_ids': [
                 (0, 0, {
-                    'product_id': self.product.id,
+                    'product_id': (prod[0] if prod else self.product).id,
                     'name': f'L{i}',
                     'quantity': qty,
                     'price_unit': pu,
                     'account_id': line_account.id,
                     'tax_ids': [(6, 0, [t.id for t in taxes])],
                 })
-                for i, (qty, pu, taxes) in enumerate(lines_data)
+                for i, (qty, pu, taxes, *prod) in enumerate(lines_data)
             ],
         }])[0]
         if post:

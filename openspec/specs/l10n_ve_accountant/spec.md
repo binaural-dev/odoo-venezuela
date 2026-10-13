@@ -671,14 +671,23 @@ El sistema DEBE (MUST) corregir el redondeo por línea (`round_per_line`) única
 - **WHEN** se compara el resultado entre `round_per_line` y `round_globally`
 - **THEN** el resultado es idéntico en ambos modos
 
-### Requirement: `round_per_line` es la configuración esperada para compañías venezolanas (hallazgo de configuración, no implementado)
+### Requirement: Una compañía nueva nace con `round_per_line`; una compañía ya existente al instalar/actualizar el módulo NO se migra
 
-La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El default de Odoo 19 es `round_globally`, y este módulo NO fuerza `round_per_line` en ningún dato de instalación (`data/res_company_data.xml` no toca `tax_calculation_rounding_method`). Esto queda documentado como hallazgo pendiente de decisión de negocio (forzarlo vía dato de instalación, o documentarlo como paso manual de configuración post-instalación), NO como un cambio de código de este cierre.
+La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El sistema DEBE (MUST) usar `'round_per_line'` como valor por defecto de `tax_calculation_rounding_method` en `res.company` (sobreescribiendo el default `'round_globally'` heredado de `account`) para cualquier compañía CREADA después de instalar/actualizar `l10n_ve_accountant`.
 
 Este default NO DEBE (SHALL NOT) migrar retroactivamente compañías que ya existían al momento de instalar o actualizar el módulo: la columna ya fue poblada por `account` antes de que este default cargue en el registro, y una actualización de módulo no re-ejecuta el default sobre filas existentes. Este alcance -- solo compañías nuevas, sin migración retroactiva de las existentes -- es una decisión de negocio: por petición de los superiores, el encargado de la vertical (Saul Ortega) mantiene este alcance, no es un gap pendiente de resolver.
 
-- **WHEN** se crea o instala una compañía con la localización venezolana
-- **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente
+#### Scenario: Compañía nueva creada con el módulo ya instalado
+
+- **GIVEN** `l10n_ve_accountant` instalado
+- **WHEN** se crea una nueva `res.company` sin declarar `tax_calculation_rounding_method` explícitamente
+- **THEN** su `tax_calculation_rounding_method` SHALL ser `'round_per_line'`
+
+#### Scenario: Compañía ya existente al instalar o actualizar el módulo
+
+- **GIVEN** una compañía ya existente con `tax_calculation_rounding_method = 'round_globally'`
+- **WHEN** se instala o actualiza `l10n_ve_accountant`
+- **THEN** su valor SHALL permanecer sin cambios (`round_globally`), sin ninguna migración automática
 
 ### Requirement: Desglose por línea de factura en moneda de la compañía
 
@@ -700,3 +709,13 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
 - **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta
+
+### Requirement: El widget de pagos no falla con registros sin guardar
+
+`_get_all_reconciled_invoice_partials` DEBE (MUST) devolver el resultado del núcleo sin consultar los asientos de diferencial en moneda alterna cuando el registro no tiene id de base de datos (`self._origin.id` vacío, por ejemplo un `account.move` nuevo en el formulario).
+
+#### Scenario: Factura nueva sin guardar
+
+- **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
+- **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
+
