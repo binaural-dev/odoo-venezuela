@@ -20,7 +20,3 @@ class PosOrder(models.Model):
         res["foreign_igtf_amount"] = ui_paymentline.get("foreign_igtf_amount", 0)
         
         return res
-
-    def _create_invoice(self, move_vals):
-        res = super()._create_invoice(move_vals)
-        return res
