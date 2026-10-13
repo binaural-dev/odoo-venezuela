@@ -4,6 +4,13 @@ from odoo import _, api, fields, models
 
 _logger = logging.getLogger(__name__)
 
+# Codigos de los motivos que `stock.picking._compute_allowed_reason_ids` permite
+# en traslados internos (rama "Internal"). Si ese compute agrega o quita un
+# motivo interno, actualizar esta tupla: la usan el dominio del campo, el de
+# Ajustes y `_get_default_internal_transfer_reason`, y
+# test_field_domain_matches_allowed_reasons_for_internal falla si divergen.
+INTERNAL_TRANSFER_REASON_CODES = ("consignment", "transfer", "other_causes")
+
 
 class ResCompany(models.Model):
     _inherit = "res.company"
@@ -46,3 +53,11 @@ class ResCompany(models.Model):
         help="If enabled, the weight field will be hidden in the dispatch guide.",
     )
 
+    internal_transfer_reason_id = fields.Many2one(
+        "transfer.reason",
+        string="Default Internal Transfer Reason",
+        domain=[("code", "in", INTERNAL_TRANSFER_REASON_CODES)],
+        help="Reason prefilled on new internal transfers. It can be changed per transfer.",
+    )
+
+    group_dispatch_note_print = fields.Boolean(string="Print Dispatch Note")

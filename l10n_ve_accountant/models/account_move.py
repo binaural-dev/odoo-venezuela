@@ -1390,6 +1390,29 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
+    def _is_subject_to_credit_limit(self):
+        """Whether this move must be validated against the partner's credit limit.
+
+        Only documents that *increase* the customer's receivable are checked.
+        Excluded on purpose:
+
+        - ``out_refund``: credit notes reduce the receivable.
+        - ``entry``: payments, advances and IVA/ISLR withholding vouchers, all of
+          which either reduce the receivable or do not affect it.
+        - ``in_*``: vendor documents do not touch the customer's receivable.
+
+        Blocking those made it impossible to collect from a customer that was
+        already over the limit, which is the opposite of what the limit is for.
+
+        The ``skip_credit_limit_check`` context key bypasses the check for flows
+        that carry an explicit authorization (e.g. a manually unlocked sale
+        order). It is opt-in and never set by default.
+        """
+        self.ensure_one()
+        if self.env.context.get("skip_credit_limit_check"):
+            return False
+        return self.move_type in ("out_invoice", "out_receipt")
+
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
@@ -1404,7 +1427,7 @@ class AccountMove(models.Model):
                         'context': {'default_move_id': move.id},
                     }
 
-        for invoice in self:
+        for invoice in self.filtered(lambda move: move._is_subject_to_credit_limit()):
             if (
                 invoice.company_id.account_use_credit_limit
                 and invoice.partner_id.use_partner_credit_limit
@@ -1637,6 +1660,13 @@ class AccountMove(models.Model):
             grouping_key = AccountTax._prepare_base_line_grouping_key(fake_base_line)
             if line.move_id.is_invoice(include_receipts=True):
                 extra_fields = ['price_unit', 'quantity', 'discount']
+                # discount_fixed (l10n_ve_invoice, opcional -- este modulo no
+                # depende de ese) tambien cambia la base de la linea y debe
+                # disparar el re-balanceo igual que discount (%); sin esto,
+                # escribirlo solo no refresca balance/amount_currency y
+                # quedan desincronizados de price_subtotal.
+                if 'discount_fixed' in line._fields:
+                    extra_fields.append('discount_fixed')
             else:
                 extra_fields = ['amount_currency']
             return list(grouping_key.keys()) + extra_fields
@@ -2203,7 +2233,9 @@ class AccountMove(models.Model):
                 tax_line.balance = correct_balance
 
         non_pt = move.line_ids.filtered(
-            lambda l: l.display_type not in ('payment_term', 'cogs')
+            lambda l: l.display_type not in (
+                'payment_term', 'cogs', 'line_section', 'line_subsection', 'line_note',
+            )
         )
         if not non_pt:
             return
@@ -2232,6 +2264,7 @@ class AccountMove(models.Model):
                 return
             target_lines = move.line_ids.filtered(
                 lambda l: not l.tax_repartition_line_id
+                and l.display_type not in ('line_section', 'line_subsection', 'line_note')
             )
             self._distribute_to_lines(target_lines, remaining, cc)
             move.real_portion_amount = cc.round(

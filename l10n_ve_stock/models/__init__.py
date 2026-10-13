@@ -1,6 +1,8 @@
 from . import (
     res_company,
     res_config_settings,
+    stock_picking_alter_location,
+    stock_picking_alter_location_line,
     product_category,
     product_product,
     product_template,
