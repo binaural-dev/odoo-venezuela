@@ -1,5 +1,18 @@
 from odoo import api, fields, models
 
+# Campos que copia _transport_values_from_fleet(vehicle=...). Se usan tanto
+# para completarlos como para vaciarlos cuando se quita el vehículo.
+TRANSPORT_VEHICLE_FIELDS = (
+    "transport_vehicle_plate",
+    "transport_vehicle_brand",
+    "transport_vehicle_model",
+    "transport_driver_name",
+    "transport_driver_vat",
+    "transport_driver_license_type",
+    "transport_driver_contact",
+    "transport_vehicle_type",
+)
+
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
@@ -69,19 +82,27 @@ class StockPicking(models.Model):
     @api.model
     def _transport_complete_vals(self, vals):
         """Para create/write por API o importación: completa los datos de
-        texto que no vengan explícitos. setdefault respeta lo que el usuario
-        ya corrigió en el formulario (el onchange los envía en vals)."""
-        vehicle_id = vals.get("transport_vehicle_id")
-        trailer_id = vals.get("transport_trailer_id")
-        if not (vehicle_id or trailer_id):
-            return vals
+        texto que no vengan explícitos, o los vacía si el vehículo/batea se
+        quitan explícitamente (vals trae la clave en False/None). setdefault
+        respeta lo que el usuario ya corrigió en el formulario (el onchange
+        los envía en vals)."""
         Vehicle = self.env["fleet.vehicle"]
-        fleet_vals = self._transport_values_from_fleet(
-            vehicle=Vehicle.browse(vehicle_id) if vehicle_id else None,
-            trailer=Vehicle.browse(trailer_id) if trailer_id else None,
-        )
-        for key, value in fleet_vals.items():
-            vals.setdefault(key, value)
+        if "transport_vehicle_id" in vals:
+            vehicle_id = vals["transport_vehicle_id"]
+            if vehicle_id:
+                fleet_vals = self._transport_values_from_fleet(vehicle=Vehicle.browse(vehicle_id))
+            else:
+                fleet_vals = dict.fromkeys(TRANSPORT_VEHICLE_FIELDS, False)
+            for key, value in fleet_vals.items():
+                vals.setdefault(key, value)
+        if "transport_trailer_id" in vals:
+            trailer_id = vals["transport_trailer_id"]
+            if trailer_id:
+                fleet_vals = self._transport_values_from_fleet(trailer=Vehicle.browse(trailer_id))
+            else:
+                fleet_vals = {"transport_trailer_plate": False}
+            for key, value in fleet_vals.items():
+                vals.setdefault(key, value)
         return vals
 
     @api.constrains("transport_vehicle_id", "transport_trailer_id", "company_id")
@@ -92,17 +113,23 @@ class StockPicking(models.Model):
 
     @api.onchange("transport_vehicle_id")
     def _onchange_transport_vehicle_id(self):
-        for picking in self.filtered("transport_vehicle_id"):
-            picking.update(
-                picking._transport_values_from_fleet(vehicle=picking.transport_vehicle_id)
-            )
+        for picking in self:
+            if picking.transport_vehicle_id:
+                picking.update(
+                    picking._transport_values_from_fleet(vehicle=picking.transport_vehicle_id)
+                )
+            else:
+                picking.update(dict.fromkeys(TRANSPORT_VEHICLE_FIELDS, False))
 
     @api.onchange("transport_trailer_id")
     def _onchange_transport_trailer_id(self):
-        for picking in self.filtered("transport_trailer_id"):
-            picking.update(
-                picking._transport_values_from_fleet(trailer=picking.transport_trailer_id)
-            )
+        for picking in self:
+            if picking.transport_trailer_id:
+                picking.update(
+                    picking._transport_values_from_fleet(trailer=picking.transport_trailer_id)
+                )
+            else:
+                picking.transport_trailer_plate = False
 
     @api.model_create_multi
     def create(self, vals_list):
