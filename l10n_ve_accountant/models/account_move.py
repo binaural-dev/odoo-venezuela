@@ -1390,6 +1390,14 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
+    def _check_draftable(self):
+        """Alternate currency exchange difference entries (native or
+        standalone) work like Odoo's own exchange difference entry: they can
+        never be reset to draft."""
+        if self.filtered('l10n_ve_exchange_foreign_diff_entry'):
+            raise UserError(_('You cannot reset to draft an alternate currency exchange difference journal entry.'))
+        return super()._check_draftable()
+
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
@@ -2139,6 +2147,7 @@ class AccountMove(models.Model):
                     pt.write({
                         'foreign_debit': new_fd,
                         'foreign_credit': new_fc,
+                        'foreign_balance': new_fd - new_fc,
                         'not_foreign_recalculate': True,
                     })
 

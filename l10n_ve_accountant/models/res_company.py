@@ -118,7 +118,7 @@ class ResCompany(models.Model):
     # `currency_exchange_journal_id`) -- one asiento, both currencies.
     l10n_ve_use_foreign_exchange_diff = fields.Boolean(
         string='Use Alternate Currency Exchange Difference',
-        default=False,
+        default=True,
         help="Adds the alternate currency amount to Odoo's own exchange "
              "difference entry, or creates one just for it if company "
              "currency matched exactly.",
@@ -129,8 +129,16 @@ class ResCompany(models.Model):
         'income_currency_exchange_account_id', 'expense_currency_exchange_account_id',
     )
     def _check_l10n_ve_use_foreign_exchange_diff_requires_config(self):
+        # Loading a chart of accounts writes the exchange journal and the
+        # gain/loss accounts in separate steps: the config is incomplete
+        # until it finishes, so it can't be validated in the middle of it.
+        if self.env.context.get('chart_template_load'):
+            return
         for company in self:
-            if not company.l10n_ve_use_foreign_exchange_diff:
+            # Enabled by default: a company without a chart of accounts yet
+            # (just created) cannot have these configured, so it is only
+            # validated once its accounting setup exists.
+            if not company.l10n_ve_use_foreign_exchange_diff or not company.chart_template:
                 continue
             missing = []
             if not company.currency_exchange_journal_id:

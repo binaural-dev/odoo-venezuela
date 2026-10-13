@@ -66,6 +66,9 @@ class IGTFTestCommon(TransactionCase):
                 "foreign_currency_id": self.currency_usd.id,
                 "taxpayer_type":'special',
                 "country_id": 28,
+                # These tests cover the native/IGTF flow; the alternate
+                # currency exchange difference (on by default) has its own tests.
+                "l10n_ve_use_foreign_exchange_diff": False,
             }
         )
         

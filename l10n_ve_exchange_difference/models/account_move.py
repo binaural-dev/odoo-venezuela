@@ -67,6 +67,16 @@ class AccountMove(models.Model):
             )
         )
 
+    def _check_draftable(self):
+        """Exchange difference Debit/Credit Notes (and their automatic
+        reversals) work like Odoo's own exchange difference entry: they
+        can never be reset to draft."""
+        if self.filtered(
+            lambda m: m.l10n_ve_exchange_diff_entry and m.move_type in ('out_invoice', 'out_refund')
+        ):
+            raise UserError(_('You cannot reset to draft an exchange difference Debit/Credit Note.'))
+        return super()._check_draftable()
+
     def _is_exchange_debit_note(self):
         """True if this document is an exchange difference Debit Note
         issued by this module -- never a native Odoo generic entry tagged
