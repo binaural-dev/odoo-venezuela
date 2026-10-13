@@ -52,6 +52,21 @@ class AccountMove(models.Model):
              "difference note per installment.",
     )
 
+
+    def _l10n_ve_allows_future_date(self):
+        """Exchange difference notes are generated automatically from a
+        payment and take its date, which can be a future one, so they may
+        skip the date guard when the caller requests it."""
+        self.ensure_one()
+        return bool(
+            super()._l10n_ve_allows_future_date()
+            or (
+                self.l10n_ve_exchange_diff_entry
+                and self.l10n_ve_exchange_payment_id
+                and self.is_invoice()
+            )
+        )
+
     def _is_exchange_debit_note(self):
         """True if this document is an exchange difference Debit Note
         issued by this module -- never a native Odoo generic entry tagged

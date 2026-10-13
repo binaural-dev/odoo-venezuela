@@ -50,22 +50,50 @@ class TestStockPickingApiCalls(TransactionCase):
             'name': 'Test Category',
         })
         
+        # Impuestos: l10n_ve_accountant exige impuesto de venta y de compra
+        company = self.env.company
+        tax_country = self.env.ref('base.ve')
+        company.account_fiscal_country_id = tax_country
+        tax_group = self.env['account.tax.group'].create({
+            'name': 'IVA',
+            'company_id': company.id,
+            'country_id': tax_country.id,
+        })
+        tax_vals = {
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': company.id,
+            'amount': 16,
+            'amount_type': 'percent',
+        }
+        tax_sale = self.env['account.tax'].create(
+            dict(tax_vals, name='IVA 16% ventas', type_tax_use='sale')
+        )
+        tax_purchase = self.env['account.tax'].create(
+            dict(tax_vals, name='IVA 16% compras', type_tax_use='purchase')
+        )
+        tax_ids = {
+            'taxes_id': [(6, 0, [tax_sale.id])],
+            'supplier_taxes_id': [(6, 0, [tax_purchase.id])],
+        }
+
         # Crear producto consumible
         self.product_consumable = self.ProductProduct.create({
             'name': 'Producto Consumible',
             'type': 'consu',
             'categ_id': self.product_category.id,
             'uom_id': self.uom_unit.id,
-            'uom_po_id': self.uom_unit.id,
+            **tax_ids,
         })
         
         # Crear producto almacenable
         self.product_storable = self.ProductProduct.create({
             'name': 'Producto Almacenable',
-            'type': 'product',
+            'type': 'consu',
+            'is_storable': True,
             'categ_id': self.product_category.id,
             'uom_id': self.uom_unit.id,
-            'uom_po_id': self.uom_unit.id,
+            **tax_ids,
         })
         
         # Crear partner (cliente)
@@ -135,7 +163,6 @@ class TestStockPickingApiCalls(TransactionCase):
             'picking_type_id': type,
             'is_dispatch_guide': True,
             'move_ids': [(0, 0, {
-                'name': self.product_storable.name,
                 'product_id': self.product_storable.id,
                 'product_uom_qty': 10,
                 'product_uom': self.uom_unit.id,
