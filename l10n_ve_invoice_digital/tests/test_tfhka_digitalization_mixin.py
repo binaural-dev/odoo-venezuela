@@ -7,6 +7,8 @@ from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
 GENERATE_DIGITAL_PATCH = "odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.generate_document_digital"
+RECOVER_STUCK_PATCH = "odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove._tfhka_recover_stuck_processing"
+BATCH_SIZE_PATCH = "odoo.addons.l10n_ve_invoice_digital.models.account_move.TFHKA_QUEUE_BATCH_SIZE"
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "tfhka_digitalization_mixin")
@@ -238,6 +240,101 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual(
             other_invoice.tfhka_digitalization_state, "success",
             "El error de otra compania no debe detener esta cola.",
+        )
+
+    def test_cron_process_queue_continues_after_unrelated_exception_in_one_company(self):
+        # Fix bloqueante (segunda ronda de revision): una excepcion NO
+        # relacionada con TFHKA (p.ej. un error de infraestructura) al
+        # procesar una compania no debe tumbar el tick completo -- las
+        # demas compañias deben seguir procesandose.
+        failing_company = self.company
+        stuck_invoice = self._create_invoice()
+        stuck_invoice._tfhka_enqueue_digitalization()
+
+        other_company = self.env["res.company"].create({"name": "Otra Compania TFHKA Test 3"})
+        other_seq = self.env["ir.sequence"].create(
+            {"name": "Sec Test Other 3", "prefix": "OTH3/", "padding": 4}
+        )
+        other_journal = self.env["account.journal"].create({
+            "name": "Diario Digital Otra Compania 3",
+            "code": "ODT3",
+            "type": "sale",
+            "company_id": other_company.id,
+            "sequence_id": other_seq.id,
+        })
+        other_partner = self.env["res.partner"].create({
+            "name": "Cliente Otra Compania 3", "company_id": other_company.id,
+        })
+        other_invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "company_id": other_company.id,
+            "partner_id": other_partner.id,
+            "journal_id": other_journal.id,
+            "invoice_date": fields.Date.today(),
+        })
+        other_invoice._tfhka_enqueue_digitalization()
+
+        original_recover = type(self.env["account.move"])._tfhka_recover_stuck_processing
+
+        def recover_or_raise(self_record, company):
+            if company.id == failing_company.id:
+                raise RuntimeError("simulated infra failure unrelated to TFHKA")
+            return original_recover(self_record, company)
+
+        with patch(RECOVER_STUCK_PATCH, recover_or_raise), \
+             patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(
+            stuck_invoice.tfhka_digitalization_state, "queued",
+            "La compania que lanzo la excepcion queda sin procesar este tick, pero no debe fallar el commit.",
+        )
+        self.assertEqual(
+            other_invoice.tfhka_digitalization_state, "success",
+            "La excepcion de una compania no debe impedir procesar la cola de otra.",
+        )
+
+    def test_cron_process_queue_caps_total_documents_shared_across_companies(self):
+        # Fix bloqueante (segunda ronda de revision): TFHKA_QUEUE_BATCH_SIZE
+        # es un presupuesto GLOBAL por tick, no un cupo independiente por
+        # compania -- con el budget patcheado a 1 y dos companias con un
+        # documento encolado cada una, a lo sumo 1 debe procesarse en total.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        other_company = self.env["res.company"].create({"name": "Otra Compania TFHKA Test 4"})
+        other_seq = self.env["ir.sequence"].create(
+            {"name": "Sec Test Other 4", "prefix": "OTH4/", "padding": 4}
+        )
+        other_journal = self.env["account.journal"].create({
+            "name": "Diario Digital Otra Compania 4",
+            "code": "ODT4",
+            "type": "sale",
+            "company_id": other_company.id,
+            "sequence_id": other_seq.id,
+        })
+        other_partner = self.env["res.partner"].create({
+            "name": "Cliente Otra Compania 4", "company_id": other_company.id,
+        })
+        other_invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "company_id": other_company.id,
+            "partner_id": other_partner.id,
+            "journal_id": other_journal.id,
+            "invoice_date": fields.Date.today(),
+        })
+        other_invoice._tfhka_enqueue_digitalization()
+
+        with patch(BATCH_SIZE_PATCH, 1), \
+             patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        processed = (inv + other_invoice).filtered(
+            lambda move: move.tfhka_digitalization_state == "success"
+        )
+        self.assertEqual(
+            len(processed), 1,
+            "El presupuesto de 1 documento debe repartirse entre companias, no aplicarse por compania.",
         )
 
     # ------------------------------------------------------------------

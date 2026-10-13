@@ -1,4 +1,5 @@
 import json
+import logging
 import re
 from datetime import timedelta
 
@@ -6,6 +7,8 @@ from odoo import models, api, fields, tools, _
 from odoo.exceptions import UserError, ValidationError
 
 from ..services.tfhka_client import TFHKA_ENDPOINTS
+
+_logger = logging.getLogger(__name__)
 
 # Safety cap so one cron run can't try to drain an unbounded backlog in a
 # single transaction (risking hitting limit_time_cron on a long queue).
@@ -338,23 +341,28 @@ class AccountMove(models.Model):
 
     def _tfhka_validate_previous_document_queued(self):
         """Hard block: the previous posted document in this journal's own
-        numbering (by sequence_number -- the counter TFHKA actually uses,
-        see tfhka_document_service.send_document) must already be
-        'queued', 'processing' or 'success' before this one can be sent to
-        the queue. Only meaningful in "digitalization with payment" mode
-        -- the only mode where a human chooses, via this button, which
-        document to enqueue next; in normal mode documents are enqueued
-        automatically at posting, in strict chronological order, so
-        there's nothing retroactive to check, and this validation does not
-        apply. 'processing' is accepted (not a blocker): it's the cron
-        actively sending the previous document right now, not a failure.
+        numbering (by name) must already be 'queued', 'processing' or
+        'success' before this one can be sent to the queue. Runs
+        regardless of mode: in "digitalization with payment" mode this
+        button is the only entry point to the queue, so it's the only
+        place that can stop an out-of-order invoice before it reaches
+        'queued'; in normal mode documents are usually enqueued
+        automatically at posting (in order), so this is normally a no-op
+        there too -- but posting doesn't always go through
+        move.action.post.alert.wizard (e.g. l10n_ve_donation posts a
+        reversal directly), which can leave a document at 'none'
+        indefinitely with no other guard before this manual button.
+        'processing' is accepted (not a blocker): it's the cron actively
+        sending the previous document right now, not a failure.
         TFHKA requires strictly consecutive numbering, so letting a later
         document jump the queue ahead of an unsent earlier one would risk
-        submitting them out of order.
+        submitting them out of order. Compared by name (not
+        sequence_number) because name orders correctly across a
+        sequence_prefix reset (e.g. the yearly reset in 'INV/2024/9999' vs
+        'INV/2025/0001'), while sequence_number resets to 0 and would
+        silently stop matching the previous year's documents.
         """
         self.ensure_one()
-        if not self.company_id.digitalization_with_payment_tfhka:
-            return
         previous = self.env["account.move"].search(
             [
                 ("id", "!=", self.id),
@@ -362,9 +370,9 @@ class AccountMove(models.Model):
                 ("journal_id", "=", self.journal_id.id),
                 ("move_type", "=", self.move_type),
                 ("state", "=", "posted"),
-                ("sequence_number", "<", self.sequence_number),
+                ("name", "<", self.name),
             ],
-            order="sequence_number desc",
+            order="name desc",
             limit=1,
         )
         if previous and previous.tfhka_digitalization_state not in (
@@ -453,6 +461,15 @@ class AccountMove(models.Model):
         where Odoo's test framework forbids cr.commit()/rollback()."""
         if not tools.config["test_enable"]:
             self.env.cr.commit()  # pylint: disable=invalid-commit
+
+    def _tfhka_rollback(self):
+        """Rolls back the current transaction -- except under the test
+        runner, where Odoo's test framework forbids cr.commit()/rollback()
+        (it wraps each test in its own savepoint; a real rollback here
+        would destroy that savepoint and poison every test that runs
+        afterwards in the same transaction)."""
+        if not tools.config["test_enable"]:
+            self.env.cr.rollback()  # pylint: disable=invalid-commit
 
     def _tfhka_enqueue_digitalization(self):
         """Enqueue: call this instead of generate_document_digital() directly.
@@ -621,11 +638,35 @@ class AccountMove(models.Model):
         TFHKA's "last number + 1" invariant is scoped per company, so the
         queue is processed independently per company: an error in one
         company must never halt digitalization for every other company in
-        the database (see _tfhka_process_queue_for_company)."""
-        for company in self.env["res.company"].search([]):
-            self._tfhka_process_queue_for_company(company)
+        the database (see _tfhka_process_queue_for_company).
 
-    def _tfhka_process_queue_for_company(self, company):
+        Two cross-company safety nets a single-company view can't provide
+        on its own:
+        - An exception from one company (anything not already turned into
+          a per-document 'error' by _tfhka_process_digitalization, e.g. a
+          transient DB error) must not abort the whole tick -- caught here,
+          with a rollback to clear Postgres' aborted-transaction state
+          before moving on to the next company.
+        - TFHKA_QUEUE_BATCH_SIZE is a single budget shared across every
+          company this tick, not a per-company allowance -- otherwise a
+          tick's total work (and HTTP calls) scales with the number of
+          companies, reintroducing the long-running-tick risk the constant
+          exists to prevent.
+        """
+        remaining = TFHKA_QUEUE_BATCH_SIZE
+        for company in self.env["res.company"].search([]):
+            if remaining <= 0:
+                break
+            try:
+                remaining -= self._tfhka_process_queue_for_company(company, limit=remaining)
+            except Exception as error:
+                self._tfhka_rollback()
+                _logger.error(
+                    "TFHKA queue processing failed for company %s (id=%s): %s",
+                    company.name, company.id, error,
+                )
+
+    def _tfhka_process_queue_for_company(self, company, limit=TFHKA_QUEUE_BATCH_SIZE):
         """Queue lock, scoped to a single company: if there is already a
         document of this company in 'error', nothing of this company is
         processed -- that document must be resolved (retried successfully)
@@ -633,29 +674,36 @@ class AccountMove(models.Model):
         applies, even earlier, if a document of this company is still
         within its stuck-processing grace period (see
         _tfhka_recover_stuck_processing).
+
+        Returns the number of documents attempted (success or failure), so
+        the caller can enforce a single cap shared across every company
+        processed this tick (see _tfhka_cron_process_queue).
         """
         if not self._tfhka_recover_stuck_processing(company):
-            return
+            return 0
         if self.search_count([
             ("tfhka_digitalization_state", "=", "error"),
             ("company_id", "=", company.id),
         ]):
-            return
+            return 0
         queued = self.search(
             [
                 ("tfhka_digitalization_state", "=", "queued"),
                 ("company_id", "=", company.id),
             ],
             order="tfhka_queued_at asc, id asc",
-            limit=TFHKA_QUEUE_BATCH_SIZE,
+            limit=limit,
         )
+        processed = 0
         for record in queued:
             success = record._tfhka_process_digitalization()
+            processed += 1
             # Commit right after each document so its result is visible in
             # Odoo immediately, instead of only once the whole batch finishes.
             self._tfhka_commit()
             if not success:
                 break  # halt this company's queue; resumes once retried successfully
+        return processed
 
     def action_tfhka_retry_digitalization(self):
         """Button shown when state is 'error' (see the views). Only

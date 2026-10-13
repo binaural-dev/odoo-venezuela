@@ -2984,11 +2984,14 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv2.action_tfhka_generate_digital()
         self.assertEqual(inv2.tfhka_digitalization_state, "queued")
 
-    def test_210_validate_previous_document_queued_noop_without_payment_first_mode(self):
-        # Fix bloqueante: la validacion de orden solo aplica en modo
-        # "digitalizacion con pago" -- en modo normal no hay nada que
-        # verificar (los documentos se encolan automaticamente al postear,
-        # en orden cronologico estricto).
+    def test_210_validate_previous_document_queued_also_blocks_in_normal_mode(self):
+        # Fix bloqueante (segunda ronda de revision): un guard que
+        # desactivaba esta validacion fuera de modo "digitalizacion con
+        # pago" fue revertido -- el posteo normal no siempre pasa por el
+        # wizard que auto-encola (p.ej. l10n_ve_donation postea una
+        # reversion con action_post() directo), así que un documento puede
+        # quedar en 'none' indefinidamente sin otro guard antes de este
+        # boton manual. La validacion debe correr sin importar el modo.
         self.company.digitalization_with_payment_tfhka = False
         inv1 = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
@@ -2998,7 +3001,6 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv2 = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        # No debe levantar ValidationError pese a que inv1 esta en error,
-        # porque la validacion ni siquiera corre fuera de modo pago-primero.
-        inv2._tfhka_validate_previous_document_queued()
+        with self.assertRaises(ValidationError):
+            inv2._tfhka_validate_previous_document_queued()
 
