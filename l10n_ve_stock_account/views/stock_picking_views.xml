@@ -116,18 +116,18 @@
                     <field name="transport_data_source" invisible="1"/>
                     <group name="transport_main">
                         <group string="Driver" name="transport_driver">
-                            <field name="transport_driver_name" readonly="state in ('done', 'cancel')"/>
-                            <field name="transport_driver_vat" readonly="state in ('done', 'cancel')" placeholder="V12345678"/>
-                            <field name="transport_driver_license_type" readonly="state in ('done', 'cancel')"/>
-                            <field name="transport_driver_contact" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_driver_name" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'"/>
+                            <field name="transport_driver_vat" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'" placeholder="V12345678"/>
+                            <field name="transport_driver_license_type" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'"/>
+                            <field name="transport_driver_contact" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'"/>
                         </group>
                         <group string="Vehicle" name="transport_vehicle">
-                            <field name="transport_vehicle_type" readonly="state in ('done', 'cancel')"/>
-                            <field name="transport_vehicle_brand" readonly="state in ('done', 'cancel')"/>
-                            <field name="transport_vehicle_model" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_vehicle_type" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'"/>
+                            <field name="transport_vehicle_brand" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'"/>
+                            <field name="transport_vehicle_model" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'"/>
                             <field name="transport_vehicle_number" readonly="state in ('done', 'cancel')"/>
-                            <field name="transport_vehicle_plate" readonly="state in ('done', 'cancel')"/>
-                            <field name="transport_trailer_plate" readonly="state in ('done', 'cancel')"/>
+                            <field name="transport_vehicle_plate" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'"/>
+                            <field name="transport_trailer_plate" readonly="state in ('done', 'cancel') or transport_data_source == 'fleet'"/>
                         </group>
                     </group>
                 </page>
