@@ -1,7 +1,8 @@
 from collections import defaultdict
 from datetime import timedelta
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
+from odoo.tools import format_date
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -110,6 +111,21 @@ class AccountPaymentRegister(models.TransientModel):
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(
                 payment.foreign_rate
             )
+
+    @api.constrains("payment_date")
+    def _check_payment_date_not_in_future(self):
+        """Same rule as `account.payment`: reject it in the wizard, before
+        any payment is created."""
+        today = fields.Date.context_today(self)
+        for wizard in self:
+            if wizard.payment_date and wizard.payment_date > today:
+                raise ValidationError(
+                    _(
+                        "The payment date (%(date)s) cannot be later than today (%(today)s).",
+                        date=format_date(self.env, wizard.payment_date),
+                        today=format_date(self.env, today),
+                    )
+                )
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):
