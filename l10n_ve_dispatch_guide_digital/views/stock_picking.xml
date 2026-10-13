@@ -40,34 +40,34 @@
         <field name="inherit_id" ref="l10n_ve_stock_account.stock_picking_form_view_inherited"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='transport_driver_name']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_driver_vat']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_driver_license_type']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_driver_contact']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_vehicle_type']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_vehicle_brand']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_vehicle_model']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_vehicle_number']" position="attributes">
                 <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_vehicle_plate']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_trailer_plate']" position="attributes">
-                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">transport_data_source == 'fleet' or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
         </field>
     </record>
