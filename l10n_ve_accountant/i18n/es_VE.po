@@ -2128,3 +2128,8 @@ msgid ""
 msgstr ""
 "La fecha de la nota (%(value)s) no puede ser anterior a la fecha del "
 "documento original %(origin)s (%(origin_date)s)."
+
+#. module: l10n_ve_accountant
+#: code:addons/l10n_ve_accountant/models/account_payment.py:0
+msgid "You cannot confirm a payment with an amount of 0.0."
+msgstr "No puede confirmar un pago con un importe de 0.0."
