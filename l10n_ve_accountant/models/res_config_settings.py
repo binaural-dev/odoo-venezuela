@@ -7,6 +7,10 @@ class ResConfigSettings(models.TransientModel):
 
     unique_tax = fields.Boolean(related="company_id.unique_tax", readonly=False)
 
+    tax_totals_edit_tolerance = fields.Float(
+        related="company_id.tax_totals_edit_tolerance", readonly=False
+    )
+
     show_discount_on_moves = fields.Boolean(
         related="company_id.show_discount_on_moves", readonly=False
     )

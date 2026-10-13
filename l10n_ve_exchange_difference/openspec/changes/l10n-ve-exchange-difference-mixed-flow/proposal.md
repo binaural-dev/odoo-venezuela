@@ -71,6 +71,40 @@ antes de esta feature.
   real en `cr.precommit` (una sola vez por compañía), que corre después de
   que todos los `write()` pendientes de la transacción ya se aplicaron.
 
+## Ajuste post-implementación (tarea 82677)
+
+Ref. tarea Binaural: https://binaural.odoo.com/odoo/action-341/82677
+("Ajuste a la Tarea de Flujo Mixto de Diferencia en Cambio"), relacionada con
+la tarea 81554 de este mismo change.
+
+1. El selector `l10n_ve_exchange_note_product_id` (Ajustes > Diferencial
+   Cambiario) listaba CUALQUIER producto de tipo Servicio -- ahora su
+   `domain` también exige que el producto tenga asignado el impuesto exento
+   de venta (`exent_aliquot_sale`) y el de compra (`exent_aliquot_purchase`)
+   configurados en la compañía (`l10n_ve_accountant`), igual que ya exigía el
+   texto de ayuda del campo. El `domain` está declarado como STRING (no como
+   lista) para poder referenciar esos dos campos de la propia compañía --
+   Odoo solo evalúa esa forma del lado del cliente, nunca la aplica en el
+   servidor (el `write()` directo sigue sin restricción; la validación real
+   la sigue haciendo `_check_l10n_ve_exchange_note_product_id`, sin cambios).
+2. El texto de ayuda de `res.partner.l10n_ve_exchange_allow_note` se
+   simplificó -- ya no repite la mecánica del toggle de compañía (eso ya lo
+   explica el propio ajuste de compañía), solo el efecto directo sobre las
+   facturas del cliente.
+3. **Fix de revisión (mismo PR)**: el `domain` del punto 1 se había
+   declarado solo en `res.company.l10n_ve_exchange_note_product_id`. El
+   selector real que ve el usuario en Ajustes es
+   `res.config.settings.l10n_ve_exchange_note_product_id`, un
+   `related='company_id...'` sin `domain` propio -- y en Odoo 19 un related
+   NO hereda un `domain` de tipo string de su campo de origen
+   (`_related_domain`, `odoo/orm/fields_relational.py`: lo descarta salvo
+   que el campo sea `inherited`). El selector de Ajustes quedaba sin ningún
+   filtro (regresión detectada en la revisión de `pastor-binaural`). Fix:
+   se declaró el mismo `domain` string, explícito, en el related de
+   `res_config_settings.py`. Test nuevo que compara ambos domains
+   (`res.company` y `res.config.settings`) para que no vuelva a
+   desincronizarse en silencio.
+
 ## Impact
 
 - **Capability**: `exchange-difference-note` (extendida, no nueva).

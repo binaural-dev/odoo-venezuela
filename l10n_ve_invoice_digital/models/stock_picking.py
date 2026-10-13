@@ -195,7 +195,7 @@ class StockPicking(models.Model):
         line_number = 1
         for record in self:
             if record.sale_id and record.transfer_reason_id.code == "sale":
-                for move_line in record.move_ids_without_package:
+                for move_line in record.move_ids:
                     sale_line = move_line.sale_line_id
 
                     tax_mapping = {
@@ -231,7 +231,7 @@ class StockPicking(models.Model):
                     })
                     line_number += 1
             else:
-                for line in record.move_ids_without_package:
+                for line in record.move_ids:
                     item_details.append({
                         "numeroLinea": str(line_number),
                         "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",

@@ -1069,6 +1069,12 @@ class TestForeignExchangeDiff(TransactionCase):
         self.assertTrue(partials, "The real payment reconciliation must still be there")
         self.assertFalse(any(p['partial_id'] is False for p in partials))
 
+    def test_get_all_reconciled_invoice_partials_unsaved_record_returns_core_result(self):
+        """An unsaved record (NewId, e.g. in a form) has no database id to
+        search by, so the override must return core's result untouched."""
+        move = self.env["account.move"].new({"move_type": "out_invoice"})
+        self.assertFalse(move._get_all_reconciled_invoice_partials())
+
     def test_get_all_reconciled_invoice_partials_excludes_reversed_standalone_entry(self):
         """Once the standalone entry is reversed, its synthetic row must
         disappear from the "Pagos" widget data -- fixed this session

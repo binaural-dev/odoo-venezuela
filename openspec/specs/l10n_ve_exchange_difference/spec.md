@@ -375,6 +375,47 @@ contrario, para no exponer una opción sin efecto.
 - **THEN** se emite la ND/NC fiscal real, sin importar `l10n_ve_exchange_allow_note`
   del cliente
 
+### Requirement: El selector del Producto de Nota de Diferencial solo ofrece candidatos compatibles
+
+El `domain` de `res.company.l10n_ve_exchange_note_product_id` SHALL restringir
+el selector a productos de tipo Servicio cuyo impuesto de venta sea el exento
+por defecto (`exent_aliquot_sale`) Y cuyo impuesto de compra sea el exento
+por defecto (`exent_aliquot_purchase`), ambos de `l10n_ve_accountant`. Si
+cualquiera de los dos impuestos exentos no está configurado en la compañía,
+el selector SHALL NOT ofrecer ningún producto.
+
+El selector real que ve el usuario es
+`res.config.settings.l10n_ve_exchange_note_product_id` (Ajustes > Binaural
+Settings), un `related='company_id...'`. Ese campo SHALL declarar el mismo
+`domain` string de forma explícita e idéntica a la de `res.company` -- en
+Odoo 19 un related NO hereda un `domain` de tipo string de su campo de
+origen (`_related_domain`, `odoo/orm/fields_relational.py`, lo descarta
+salvo que el campo sea `inherited`); sin esa declaración explícita, el
+selector de Ajustes queda sin ningún filtro.
+
+Esta restricción es solo de UI (el `domain` está declarado como string,
+evaluado únicamente del lado del cliente web) -- no reemplaza la validación
+real de `_check_l10n_ve_exchange_note_product_id`, que sigue aplicando sobre
+cualquier valor asignado por otra vía (ORM directo, API).
+
+#### Scenario: Ambos impuestos exentos configurados
+
+- **GIVEN** la compañía tiene `exent_aliquot_sale` y `exent_aliquot_purchase` configurados
+- **WHEN** se abre el selector de `l10n_ve_exchange_note_product_id` (Ajustes o `res.company`)
+- **THEN** solo aparecen productos de tipo Servicio con AMBOS impuestos asignados
+
+#### Scenario: Falta uno de los dos impuestos exentos
+
+- **GIVEN** la compañía NO tiene `exent_aliquot_purchase` configurado (o le falta `exent_aliquot_sale`)
+- **WHEN** se abre el selector de `l10n_ve_exchange_note_product_id` (Ajustes o `res.company`)
+- **THEN** el selector no ofrece ningún producto, sin importar cuántos productos de tipo Servicio existan
+
+#### Scenario: El domain de res.config.settings no depende de la propagación automática
+
+- **GIVEN** el `domain` de `res.company.l10n_ve_exchange_note_product_id`
+- **WHEN** se compara contra el `domain` de `res.config.settings.l10n_ve_exchange_note_product_id`
+- **THEN** ambos son idénticos -- el related declara su propio string explícito
+
 ### Requirement: El widget de Conciliación Bancaria de Enterprise queda fuera de alcance a propósito
 
 El sistema SHALL NOT generar ND/NC cuando la conciliación de una factura de
@@ -593,3 +634,27 @@ Se logra con:
 - **THEN** el runtime guard detecta que `'aml'` no existe
 - **AND** lanza `UserError` explícito ANTES de stashear None
 - **AND** la reconciliación falla ruidoso, no silenciosamente
+
+### Requirement: La ND/NC de diferencial no se bloquea por la fecha futura de un pago
+
+La ND/NC de diferencial toma como fecha (`invoice_date`, `invoice_date_display`, `date`) la fecha del pago. Al confirmarla, el sistema DEBE (MUST) pasar el contexto `l10n_ve_skip_future_date_check=True` a `action_post()`, de modo que el guard de `l10n_ve_invoice` que impide confirmar documentos con fecha futura no se aplique a esta nota. Un pago con fecha futura NO DEBE (MUST NOT) fallar dentro de la conciliación con un error de fecha de documento que el usuario no puede relacionar con el pago.
+
+#### Scenario: Pago con fecha futura sobre factura en divisa
+
+- **WHEN** se registra un pago con fecha posterior a hoy sobre una factura en divisa y se genera la ND/NC de diferencial
+- **THEN** la nota se confirma con la fecha del pago, sin el error de fecha futura
+
+#### Scenario: Tests de aislamiento de tasas
+
+- **WHEN** los tests de esta capa necesitan fechas sin tasas propias
+- **THEN** usan fechas pasadas (años 2000-2019), no futuras, para no chocar con el guard de fecha futura de `l10n_ve_invoice`
+
+#### Scenario: Fixtures de test independientes de otros módulos
+
+- **WHEN** los tests de esta capa necesitan un diario de banco en la moneda de la compañía
+- **THEN** solo reutilizan uno existente si su método de pago entrante tiene `payment_account_id`; de lo contrario crean el suyo, para no depender de diarios de la plantilla contable (p. ej. al instalar `account_asset`)
+
+#### Scenario: Reversión por el wizard estándar
+
+- **WHEN** una nota de diferencial se revierte con el wizard estándar
+- **THEN** la reversión no debe tener `invoice_date` (tasa) posterior a su `invoice_date_display`; el test usa la misma fecha de la nota original
