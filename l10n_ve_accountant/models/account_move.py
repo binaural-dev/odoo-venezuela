@@ -582,6 +582,13 @@ class AccountMove(models.Model):
 
         return res
 
+    def button_update_prices_from_pricelist(self):
+        """The button applies the pricelist to every line, including the manual
+        prices that _compute_price_unit protects (task 84438)."""
+        return super(
+            AccountMove, self.with_context(force_price_recomputation=True)
+        ).button_update_prices_from_pricelist()
+
     @api.constrains("invoice_line_ids")
     def _check_taxes_id(self):
         for moves in self:
