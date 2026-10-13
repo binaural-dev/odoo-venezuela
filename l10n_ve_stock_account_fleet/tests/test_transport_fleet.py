@@ -92,7 +92,7 @@ class TestTransportFleet(TransactionCase):
         self.assertEqual(picking.transport_vehicle_plate, "A12BC3D")
         self.assertEqual(picking.transport_driver_name, "Pedro Pérez Conductor")
 
-    def test_onchange_fills_form_and_driver_can_be_changed(self):
+    def test_onchange_fills_form_and_fields_are_locked(self):
         with Form(self.env["stock.picking"]) as form:
             form.picking_type_id = self.picking_type
             form.partner_id = self.partner
@@ -105,10 +105,28 @@ class TestTransportFleet(TransactionCase):
             self.assertEqual(form.transport_driver_name, "Pedro Pérez Conductor")
             form.transport_trailer_id = self.trailer
             self.assertEqual(form.transport_trailer_plate, "B45EF6G")
+            # Con origen "Flota", los campos que se completan solos quedan
+            # bloqueados: no se puede corregir el conductor a mano.
+            self.assertTrue(form._get_modifier("transport_driver_name", "readonly"))
+            self.assertTrue(form._get_modifier("transport_vehicle_plate", "readonly"))
+            self.assertTrue(form._get_modifier("transport_trailer_plate", "readonly"))
+        picking = form.record
+        self.assertEqual(picking.transport_driver_name, "Pedro Pérez Conductor")
+        self.assertEqual(picking.transport_vehicle_plate, "A12BC3D")
+
+    def test_manual_source_leaves_fields_editable(self):
+        self.company.transport_data_source = "manual"
+        with Form(self.env["stock.picking"]) as form:
+            form.picking_type_id = self.picking_type
+            form.partner_id = self.partner
+            form.transfer_reason_id = self.reason_other_causes
+            form.other_causes_transfer_reason = "Prueba Manual"
+            self.assertFalse(form._get_modifier("transport_driver_name", "readonly"))
             form.transport_driver_name = "Juan González"
+            form.transport_vehicle_plate = "Z99ZZ99"
         picking = form.record
         self.assertEqual(picking.transport_driver_name, "Juan González")
-        self.assertEqual(picking.transport_vehicle_plate, "A12BC3D")
+        self.assertEqual(picking.transport_vehicle_plate, "Z99ZZ99")
 
     def test_vehicle_without_driver(self):
         vehicle = self.env["fleet.vehicle"].create({
