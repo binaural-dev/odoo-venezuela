@@ -211,7 +211,12 @@ patch(PosStore.prototype, {
         }
 
         let amount = vef_base ? el.price : el.get_foreign_unit_price()
-        const taxes = el.get_taxes()
+        // get_taxes() no aplica la posicion fiscal (devuelve tax_ids u
+        // opcionalmente los de la ficha del producto tal cual). Para la
+        // impresora fiscal necesitamos el impuesto ya mapeado por la
+        // posicion fiscal de la orden (igual que hacen get_all_prices()
+        // y get_all_foreign_prices() para los totales).
+        const taxes = el._getProductTaxesAfterFiscalPosition()
         const fiscalCode = taxes.length > 0
           ? (String(taxes[0]?.fiscal_code || "").replace(/^t/i, "") || "0")
           : "0"
