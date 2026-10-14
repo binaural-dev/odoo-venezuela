@@ -212,3 +212,24 @@ class TestTransportFleet(TransactionCase):
         })
         with self.assertRaises(ValidationError):
             self.vehicle.future_driver_id = company_contact
+
+    def test_vehicle_with_company_driver_blocks_picking(self):
+        # Simula un vehiculo guardado antes de que existiera la validacion
+        # de Flota (o con datos cargados directo en la base): el driver_id
+        # queda apuntando a una empresa sin pasar por el constrains.
+        company_contact = self.env["res.partner"].create({
+            "name": "Empresa Vieja Flota",
+            "is_company": True,
+        })
+        vehicle = self.env["fleet.vehicle"].create({
+            "model_id": self.model.id,
+            "license_plate": "E99ZZ99",
+            "company_id": self.company.id,
+        })
+        self.env.cr.execute(
+            "UPDATE fleet_vehicle SET driver_id = %s WHERE id = %s",
+            (company_contact.id, vehicle.id),
+        )
+        vehicle.invalidate_recordset()
+        with self.assertRaises(ValidationError):
+            self._create_picking(transport_vehicle_id=vehicle.id)
