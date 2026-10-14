@@ -136,3 +136,16 @@ msgstr "Tipo de licencia"
 #, python-format
 msgid "The driver of a vehicle must be a person, not a company: '%s'."
 msgstr "El conductor de un vehículo debe ser una persona, no una empresa: '%s'."
+
+#. module: l10n_ve_stock_account_fleet
+#. odoo-python
+#: code:addons/l10n_ve_stock_account_fleet/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The vehicle '%(vehicle)s' has a company as its driver in Fleet "
+"('%(driver)s'). Fix the driver in Fleet before using this vehicle in a "
+"dispatch guide."
+msgstr ""
+"El vehículo '%(vehicle)s' tiene una empresa como conductor en Flota "
+"('%(driver)s'). Corrija el conductor en Flota antes de usar este vehículo "
+"en una guía de despacho."
