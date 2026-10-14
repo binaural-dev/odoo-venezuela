@@ -1,4 +1,4 @@
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import Form, TransactionCase, tagged
 
 
@@ -191,3 +191,24 @@ class TestTransportFleet(TransactionCase):
         self.driver.mobile = "04141234567"
         picking = self._create_picking(transport_vehicle_id=self.vehicle.id)
         self.assertEqual(picking.transport_driver_contact, "04141234567")
+
+    def test_company_as_driver_is_rejected(self):
+        company_contact = self.env["res.partner"].create({
+            "name": "Transportes Prueba C.A.",
+            "is_company": True,
+        })
+        with self.assertRaises(ValidationError):
+            self.env["fleet.vehicle"].create({
+                "model_id": self.model.id,
+                "license_plate": "D12EFG3",
+                "driver_id": company_contact.id,
+                "company_id": self.company.id,
+            })
+
+    def test_company_as_future_driver_is_rejected(self):
+        company_contact = self.env["res.partner"].create({
+            "name": "Transportes Prueba C.A.",
+            "is_company": True,
+        })
+        with self.assertRaises(ValidationError):
+            self.vehicle.future_driver_id = company_contact
