@@ -38,6 +38,53 @@ class TestResPartner(TransactionCase):
                 "country_id": self.env.ref("base.ve").id,
             })
 
+    def test_duplicate_email_in_same_batch(self):
+        with self.assertRaises(ValidationError):
+            self.env["res.partner"].create([
+                {
+                    "name": "Batch A",
+                    "prefix_vat": "J",
+                    "vat": "900000001",
+                    "email": "batch@example.com",
+                    "country_id": self.env.ref("base.ve").id,
+                },
+                {
+                    "name": "Batch B",
+                    "prefix_vat": "J",
+                    "vat": "900000002",
+                    "email": "batch@example.com",
+                    "country_id": self.env.ref("base.ve").id,
+                },
+            ])
+
+    def test_write_same_email_on_already_duplicated_partners(self):
+        other = self.env["res.partner"].create({
+            "name": "Shares email",
+            "prefix_vat": "J",
+            "vat": "900000003",
+            "email": "shared@example.com",
+            "country_id": self.env.ref("base.ve").id,
+        })
+        # Data that already came duplicated (e.g. an old import).
+        self.env.cr.execute(
+            "UPDATE res_partner SET email = %s WHERE id = %s",
+            ("shared@example.com", self.partner.id),
+        )
+        self.partner.invalidate_recordset(["email"])
+        self.partner.write({"email": "shared@example.com", "phone": "02125550000"})
+        self.assertEqual(self.partner.email, other.email)
+
+    def test_write_new_duplicated_email(self):
+        self.env["res.partner"].create({
+            "name": "Owner",
+            "prefix_vat": "J",
+            "vat": "900000004",
+            "email": "owner@example.com",
+            "country_id": self.env.ref("base.ve").id,
+        })
+        with self.assertRaises(ValidationError):
+            self.partner.write({"email": "owner@example.com"})
+
     def test_check_vat_invalid_characters(self):
         self.partner.vat = "12A34"
         with self.assertRaises(MissingError):
