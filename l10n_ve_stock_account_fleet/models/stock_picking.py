@@ -1,4 +1,5 @@
-from odoo import api, fields, models
+from odoo import _, api, fields, models
+from odoo.exceptions import ValidationError
 
 # Campos que copia _transport_values_from_fleet(vehicle=...). Se usan tanto
 # para completarlos como para vaciarlos cuando se quita el vehículo.
@@ -110,6 +111,28 @@ class StockPicking(models.Model):
         # stock.picking no activa _check_company_auto: sin esto, por API o
         # importación se podría asignar un vehículo de otra compañía.
         self._check_company(["transport_vehicle_id", "transport_trailer_id"])
+
+    @api.constrains("transport_vehicle_id", "transport_trailer_id")
+    def _check_transport_vehicle_driver_is_not_company(self):
+        # Chequea driver_id.is_company directamente: un vehiculo guardado
+        # antes de que fleet_vehicle.py validara esto (o con la cedula del
+        # conductor mal cargada, sin reflejar que es_company) igual no debe
+        # poder usarse en una guia.
+        for picking in self:
+            for fname in ("transport_vehicle_id", "transport_trailer_id"):
+                vehicle = picking[fname]
+                if vehicle and vehicle.driver_id and vehicle.driver_id.is_company:
+                    raise ValidationError(
+                        _(
+                            "The vehicle '%(vehicle)s' has a company as its "
+                            "driver in Fleet ('%(driver)s'). Fix the driver in "
+                            "Fleet before using this vehicle in a dispatch guide."
+                        )
+                        % {
+                            "vehicle": vehicle.display_name,
+                            "driver": vehicle.driver_id.name,
+                        }
+                    )
 
     @api.onchange("transport_vehicle_id")
     def _onchange_transport_vehicle_id(self):
