@@ -173,6 +173,12 @@ vacío en vez de `move`.
 
 ## § open_reconcile_view (Reconciled Items)
 
+> Actualización (ticket 15726): el asiento standalone se busca contra TODA
+> la cadena de liquidación (factura, pago, asiento nativo vía
+> `_all_reconciled_lines`), no solo contra el documento desde el que se abre
+> la vista; y desde el propio asiento standalone se traen sus documentos
+> origen y sus cadenas.
+
 El `open_reconcile_view` del core solo incluye líneas con
 `matched_debit_ids`/`matched_credit_ids` — el asiento standalone nunca
 reconcilia contra nada por diseño, así que nunca aparecería ahí aunque sea
