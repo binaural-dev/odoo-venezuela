@@ -5,11 +5,18 @@
 ### Requirement: Un toggle de empresa activa el diferencial cambiario alterno
 
 `res.company` SHALL exponer `l10n_ve_use_foreign_exchange_diff` (booleano,
-por defecto `False`). Mientras esté activo, el sistema SHALL exigir
-configuradas las mismas cuentas y diario que el diferencial cambiario nativo
-de Odoo (`income_currency_exchange_account_id`,
+por defecto `True`; las compañías ya existentes conservan el valor que
+tenían, no se activa por migración). Mientras esté activo, el sistema SHALL
+exigir configuradas las mismas cuentas y diario que el diferencial cambiario
+nativo de Odoo (`income_currency_exchange_account_id`,
 `expense_currency_exchange_account_id`, `currency_exchange_journal_id`) — y
-SHALL bloquear la activación con un error claro si falta alguna.
+SHALL bloquear la activación explícita con un error claro si falta alguna.
+
+El valor por defecto NO se valida al crear la compañía ni mientras se carga
+un plan de cuentas (la configuración se escribe en pasos separados). Al
+terminar la carga (`account.chart.template._load`) se revalida: si el plan
+no dejó configurados diario y cuentas, el toggle se desactiva y se registra
+un warning.
 
 #### Scenario: Activar el toggle sin cuentas nativas configuradas
 
