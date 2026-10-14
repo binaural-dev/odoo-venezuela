@@ -8,6 +8,12 @@
             <xpath expr="//field[@name='driver_id']" position="before">
                 <field name="is_trailer"/>
             </xpath>
+            <xpath expr="//field[@name='driver_id']" position="attributes">
+                <attribute name="domain">['&amp;', ('is_company', '=', False), '|', ('company_id', '=', False), ('company_id', '=', company_id)]</attribute>
+            </xpath>
+            <xpath expr="//field[@name='future_driver_id']" position="attributes">
+                <attribute name="domain">[('is_company', '=', False)]</attribute>
+            </xpath>
         </field>
     </record>
 
