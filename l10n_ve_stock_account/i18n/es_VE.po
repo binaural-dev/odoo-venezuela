@@ -1355,6 +1355,17 @@ msgstr ""
 "%s"
 
 #. module: l10n_ve_stock_account
+#. odoo-python
+#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The driver's ID number '%s' belongs to a company, government entity or "
+"communal council (prefix '%s'), not a person."
+msgstr ""
+"La cédula del conductor '%s' pertenece a una empresa, ente gubernamental o "
+"consejo comunal (prefijo '%s'), no a una persona."
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__transport_trailer_plate
 msgid "Trailer Plate"
 msgstr "Placa de la batea"
