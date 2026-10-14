@@ -3,6 +3,7 @@ import logging
 from datetime import timedelta
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
@@ -870,6 +871,121 @@ class TestForeignBalance(TransactionCase):
         self._assert_non_payment_term_lines_convert(
             invoice.line_ids, invoice.date, "invoice_two_products_per_line"
         )
+
+    def _assert_foreign_balance_matches_debit_credit(self, lines, label):
+        """`foreign_balance` (stored) must always equal foreign_debit -
+        foreign_credit on every line, e.g. the receivable line after the
+        payment term residual distribution rewrote its debit/credit."""
+        for line in lines:
+            self.assertAlmostEqual(
+                line.foreign_balance, line.foreign_debit - line.foreign_credit, places=2,
+                msg=(
+                    f"{label}: foreign_balance desfasado en {line.display_type} '{line.name}' "
+                    f"(debit={line.foreign_debit}, credit={line.foreign_credit}, "
+                    f"balance={line.foreign_balance})"
+                ),
+            )
+
+    def test_invoice_foreign_balance_matches_debit_credit_after_pt_residual(self):
+        """La distribución del residuo en la CxC reescribe foreign_debit; el
+        saldo alterno (foreign_balance) debe quedar coherente con él."""
+        self._set_usd_rate(402.3343)
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id, "quantity": 1.0, "price_unit": 23200.0,
+                    "account_id": self.account_income.id, "tax_ids": [(6, 0, [self.test_tax.id])],
+                }),
+                Command.create({
+                    "product_id": self.product.id, "quantity": 1.0, "price_unit": 56200.0,
+                    "account_id": self.account_income.id, "tax_ids": [(6, 0, [self.test_tax.id])],
+                }),
+            ],
+        })
+        self._assert_foreign_balance_matches_debit_credit(invoice.line_ids, "draft")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        invoice.invalidate_recordset()
+        invoice.line_ids.invalidate_recordset()
+        self._assert_foreign_balance_matches_debit_credit(invoice.line_ids, "posted")
+
+    def test_usd_invoice_rate_803_34_foreign_balance_matches_debit_credit(self):
+        """Escenario del ticket (factura en USD, tasa 803,34, dos líneas de
+        12,9456 con IVA 16% incluido): el saldo alterno de cada línea debe
+        coincidir con su débito/crédito alterno. Regresión: con el código
+        actual este escenario ya cuadra; el desfase se reproduce en
+        `test_invoice_foreign_balance_matches_debit_credit_after_pt_residual`."""
+        self._set_usd_rate(803.34)
+        tax_included = self.env["account.tax"].create({
+            "name": "IVA 16% incluido", "amount": 16, "amount_type": "percent",
+            "type_tax_use": "sale", "company_id": self.company.id,
+            "tax_group_id": self.test_tax_group.id, "price_include_override": "tax_included",
+        })
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": fields.Date.today(),
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id, "quantity": 1.0, "price_unit": 12.9456,
+                    "account_id": self.account_income.id, "tax_ids": [(6, 0, tax_included.ids)],
+                })
+                for _i in range(2)
+            ],
+        })
+        self._assert_foreign_balance_matches_debit_credit(invoice.line_ids, "draft")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        invoice.invalidate_recordset()
+        invoice.line_ids.invalidate_recordset()
+        self._assert_foreign_balance_matches_debit_credit(invoice.line_ids, "posted")
+        self._assert_foreign_balance_squares(invoice.line_ids, "usd_invoice_803_34")
+
+    def test_payment_register_wizard_rejects_zero_amount(self):
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product.id, "quantity": 1.0, "price_unit": 100.0,
+                "account_id": self.account_income.id,
+            })],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self.env["account.payment.register"].with_context(
+            active_model="account.move", active_ids=invoice.ids,
+        ).create({"amount": 0.0})
+        with self.assertRaises(UserError):
+            wizard.action_create_payments()
+        self.assertFalse(invoice.payment_ids)
+
+    def test_payment_register_wizard_accepts_non_zero_amount(self):
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product.id, "quantity": 1.0, "price_unit": 100.0,
+                "account_id": self.account_income.id,
+            })],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        wizard = self.env["account.payment.register"].with_context(
+            active_model="account.move", active_ids=invoice.ids,
+        ).create({"amount": 10.0})
+        wizard.action_create_payments()
+        invoice.invalidate_recordset()
+        self.assertIn(invoice.payment_state, ("partial", "in_payment", "paid"))
 
     def test_vendor_invoice_foreign_balance(self):
         """ Prueba el cuadre de foreign_balance en factura de proveedor (in_invoice) """

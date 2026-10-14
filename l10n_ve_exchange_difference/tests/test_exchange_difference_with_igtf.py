@@ -418,14 +418,14 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         swap entre ellas sea detectable."""
         self.currency_usd.write({
             "rate_ids": [
-                Command.create({"name": "2041-01-01", "company_rate": 1 / 36.0}),
-                Command.create({"name": "2041-08-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2014-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2014-08-01", "company_rate": 1 / 40.0}),
             ],
         })
 
-        invoice_1 = self._create_invoice_usd(100.0, date="2041-01-01")
+        invoice_1 = self._create_invoice_usd(100.0, date="2014-01-01")
         invoice_1.with_context(move_action_post_alert=True).action_post()
-        invoice_2 = self._create_invoice_usd(500.0, date="2041-01-01")
+        invoice_2 = self._create_invoice_usd(500.0, date="2014-01-01")
         invoice_2.with_context(move_action_post_alert=True).action_post()
         invoices = invoice_1 | invoice_2
 
@@ -434,7 +434,7 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         ctx = dict(action["context"], active_model="account.move.line", active_ids=lines_to_pay.ids)
         with Form(self.env["account.payment.register"].with_context(ctx)) as pay_form:
             pay_form.journal_id = self.bank_journal_usd
-            pay_form.payment_date = "2041-08-01"
+            pay_form.payment_date = "2014-08-01"
             pay_form.group_payment = True
             pay_form.save()
         payment_wizard = pay_form.record
@@ -493,8 +493,8 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         aunque ambas compartan el mismo `payment.move_id`."""
         self.currency_usd.write({
             "rate_ids": [
-                Command.create({"name": "2042-01-01", "company_rate": 1 / 36.0}),
-                Command.create({"name": "2042-06-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2015-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2015-06-01", "company_rate": 1 / 40.0}),
             ],
         })
 
@@ -507,14 +507,14 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         with Form(self.env["account.payment"].with_context(context)) as pay_form:
             pay_form.partner_id = self.partner
             pay_form.journal_id = self.bank_journal_usd
-            pay_form.date = "2042-06-01"
+            pay_form.date = "2015-06-01"
             pay_form.amount = advance_amount
         advance_payment = pay_form.save()
         advance_payment.action_post()
 
-        invoice_1 = self._create_invoice_usd(100.0, date="2042-01-01")
+        invoice_1 = self._create_invoice_usd(100.0, date="2015-01-01")
         invoice_1.with_context(move_action_post_alert=True).action_post()
-        invoice_2 = self._create_invoice_usd(500.0, date="2042-01-01")
+        invoice_2 = self._create_invoice_usd(500.0, date="2015-01-01")
         invoice_2.with_context(move_action_post_alert=True).action_post()
 
         outstanding_line = advance_payment.move_id.line_ids.filtered(
@@ -625,6 +625,29 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         self.assertAlmostEqual(note.invoice_line_ids.price_unit, 10294.40, places=2)
         self.assertEqual(note.invoice_line_ids.account_id, self.company.income_currency_exchange_account_id)
         self.assertEqual(note.date, fields.Date.today())
+
+    def test_exchange_difference_note_with_future_payment_date_is_posted(self):
+        """Un pago con fecha futura genera la nota de diferencial con esa
+        fecha: el guard de fechas futuras se omite solo para estas notas
+        automaticas."""
+        yesterday = fields.Date.subtract(fields.Date.today(), days=1)
+        tomorrow = fields.Date.add(fields.Date.today(), days=1)
+        invoice = self._create_invoice_usd(1000.00, date=yesterday)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.bank_journal_usd
+            pay_form.payment_date = tomorrow
+            pay_form.save()
+        pay_form.record.action_create_payments()
+
+        note = self.env["account.move"].search([
+            ("l10n_ve_exchange_diff_entry", "=", True),
+            ("l10n_ve_exchange_invoice_id", "=", invoice.id),
+        ])
+        self.assertEqual(len(note), 1)
+        self.assertEqual(note.state, "posted")
+        self.assertEqual(note.date, tomorrow)
 
     def test_igtf_base_computation_correct_with_exchange_note_present(self):
         """Regresión para `l10n_ve_igtf.models.account_move.compute_bi_igtf`
@@ -757,12 +780,12 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
         'reversed'. Sin el fix de `_compute_payment_state`, daba 'reversed'."""
         self.currency_usd.write({
             "rate_ids": [
-                Command.create({"name": "2043-01-01", "company_rate": 1 / 40.0}),
-                Command.create({"name": "2043-08-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2016-01-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2016-08-01", "company_rate": 1 / 36.0}),
             ],
         })
 
-        invoice = self._create_invoice_usd(1000.00, date="2043-01-01")
+        invoice = self._create_invoice_usd(1000.00, date="2016-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
@@ -775,7 +798,7 @@ class TestExchangeDifferenceWithIGTF(TransactionCase):
             "move_type": "entry",
             "journal_id": self.journal_anticipo.id,
             "partner_id": self.partner.id,
-            "date": "2043-08-01",
+            "date": "2016-08-01",
             "currency_id": self.currency_usd.id,
             "line_ids": [
                 Command.create({
