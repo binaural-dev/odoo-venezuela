@@ -123,6 +123,7 @@ class AccountMoveRetention(models.Model):
                     lambda l: l.state != "emitted"
                 )
             ):
+                move._sync_islr_retention_base()
                 move._validate_islr_retention()
                 retention = move._create_supplier_retention("islr")
                 retention.action_post()
@@ -186,6 +187,26 @@ class AccountMoveRetention(models.Model):
             raise UserError(_("The partner must have a type of person"))
         if sum_invoice_amount <= 0:
             raise UserError(_("The amount of the retention must be greater than zero."))
+
+    def _sync_islr_retention_base(self):
+        """
+        Take the taxable base of the ISLR lines in the company currency from their base in the
+        foreign currency (Bs).
+
+        When the company currency is not VEF the invoice form only shows the base in Bs, so a base
+        edited there by the user did not update the hidden base in the company currency, and the
+        retention payment was posted with the retention of the whole invoice in that currency.
+        """
+        self.ensure_one()
+        if self.company_id.currency_id == self.env.ref("base.VEF"):
+            return
+        for line in self.retention_islr_line_ids.filtered(lambda rl: rl.state != "cancel"):
+            rate = line.foreign_currency_rate or self.foreign_rate
+            if not rate or not line.foreign_invoice_amount:
+                continue
+            invoice_amount = line.foreign_invoice_amount / rate
+            if self.company_id.currency_id.compare_amounts(invoice_amount, line.invoice_amount):
+                line.invoice_amount = invoice_amount
 
     @api.model
     def _check_retention_vs_move(self, islr_retention_lines):
