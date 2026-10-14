@@ -61,6 +61,12 @@ class AccountMoveLine(models.Model):
     international_purchase_exent_product = fields.Boolean(string="International Purchase Exent Product")
     is_purchase_international = fields.Boolean(related="move_id.journal_id.is_purchase_international")
 
+    technical_price_unit = fields.Float(
+        copy=False,
+        help="Technical field for price computation: last unit price computed "
+        "from the product or the pricelist.",
+    )
+
     def _get_foreign_rate_date(self):
         """Fecha con la que se busca la tasa para convertir montos de esta linea.
 
@@ -131,6 +137,36 @@ class AccountMoveLine(models.Model):
             and l.account_id.account_type == "asset_receivable"
         ):
             line.name = line.move_id.name
+        return res
+
+    def _has_manual_price(self):
+        """The unit price is not the last one computed from the product or the
+        pricelist: it was typed by hand or came from another document (reversed
+        invoice, sale order, synchronization). technical_price_unit is not
+        copied, so a line created or copied with a price is flagged as manual.
+        """
+        self.ensure_one()
+        currency = (
+            self.currency_id
+            or self.move_id.currency_id
+            or self.company_id.currency_id
+            or self.env.company.currency_id
+        )
+        return bool(currency.compare_amounts(self.technical_price_unit, self.price_unit))
+
+    def _compute_price_unit(self):
+        """account_invoice_pricelist adds `quantity` as a trigger, so changing
+        the quantity reset the price to the pricelist one even when it was typed
+        by hand or came from the reversed invoice (task 84438). Same rule as
+        Odoo's sale.order.line: a manual price is only recomputed with
+        force_price_recomputation ("Update prices" button).
+        """
+        lines = self
+        if not self.env.context.get("force_price_recomputation"):
+            lines = self.filtered(lambda line: not line._has_manual_price())
+        res = super(AccountMoveLine, lines)._compute_price_unit()
+        for line in lines:
+            line.technical_price_unit = line.price_unit
         return res
 
     @api.depends(

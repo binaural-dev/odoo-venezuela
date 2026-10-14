@@ -1,6 +1,6 @@
 from odoo.tests import TransactionCase, tagged, Form
-from datetime import date
-from odoo.exceptions import UserError, ValidationError
+from datetime import timedelta, date
+from odoo.exceptions import UserError
 from odoo import Command, fields
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaSequenceMismatchError
 from unittest.mock import patch, MagicMock
@@ -17,6 +17,85 @@ class TestAccumulatedRate(TransactionCase):
         self.company = self.env.ref("base.main_company")
         self.env.user.tz = "America/Caracas"
 
+        self.purchase_journal = self.env['account.journal'].search([
+            ('company_id', '=', self.company.id),
+            ('type', '=', 'purchase')
+        ], limit=1)
+
+        if not self.purchase_journal:
+            self.purchase_journal = self.env['account.journal'].create({
+                'name': 'Purchase Journal',
+                'code': 'PURCH',
+                'type': 'purchase',
+                'company_id': self.company.id,
+            })
+
+        self.expense_account = self.env['account.account'].search([
+            ('company_ids', 'in', self.company.id),
+            ('account_type', '=', 'expense'),
+            ('active', '=', True)
+        ], limit=1)
+
+        if not self.expense_account:
+            self.expense_account = self.env['account.account'].create({
+                'name': 'Test Expense Account',
+                'code': '600000',
+                'account_type': 'expense',
+                'company_ids': [(6, 0, [self.company.id])],
+                'reconcile': False,
+            })
+
+        # Cuenta de pasivo (para partner)
+        self.payable_account = self.env['account.account'].search([
+            ('company_ids', 'in', self.company.id),
+            ('account_type', '=', 'liability_payable'),
+            ('active', '=', True)
+        ], limit=1)
+
+        if not self.payable_account:
+            self.payable_account = self.env['account.account'].create({
+                'name': 'Test Payable Account',
+                'code': '200000',
+                'account_type': 'liability_payable',
+                'company_ids': [(6, 0, [self.company.id])],
+                'reconcile': True,
+            })
+
+        # Diarios de retenciones (l10n_ve_payment_extension los exige en la compañía)
+        retention_account = self.env['account.account'].create({
+            'name': 'Retenciones por pagar',
+            'code': '210099',
+            'account_type': 'liability_current',
+            'company_ids': [(6, 0, [self.company.id])],
+            'reconcile': True,
+        })
+        retention_journal = self.env['account.journal'].with_context(
+            chart_template_load=True
+        ).create({
+            'name': 'Retenciones',
+            'code': 'RETN',
+            'type': 'bank',
+            'company_id': self.company.id,
+            'default_account_id': retention_account.id,
+        })
+        for line in (
+            retention_journal.inbound_payment_method_line_ids
+            | retention_journal.outbound_payment_method_line_ids
+        ).filtered(lambda l: not l.payment_account_id):
+            line.payment_account_id = retention_account
+        self.company.write({
+            'iva_supplier_retention_journal_id': retention_journal.id,
+            'iva_customer_retention_journal_id': retention_journal.id,
+            'islr_supplier_retention_journal_id': retention_journal.id,
+            'islr_customer_retention_journal_id': retention_journal.id,
+            'municipal_supplier_retention_journal_id': retention_journal.id,
+            'municipal_customer_retention_journal_id': retention_journal.id,
+        })
+
+        self.type_person = self.env['type.person'].create({
+            'name': 'No Juridica',
+        })
+        
         # En una base sin datos de demo el VEF viene inactivo y sin ninguna tasa
         # cargada. Sin esto el foreign_rate de la factura queda en 0 (lo calcula
         # _compute_rate contra res.currency.rate, no lo toma del valor que se le
@@ -29,6 +108,7 @@ class TestAccumulatedRate(TransactionCase):
             "company_rate": 2.0,
             "company_id": self.company.id,
         })
+
 
         iva_sequence = self.env["ir.sequence"].create({
             "name": "Secuencia de iva para proveedores",

@@ -692,7 +692,10 @@ class AccountMoveLine(models.Model):
                     'l10n_ve_exchange_invoice_id': invoice.id,
                     'l10n_ve_exchange_payment_id': payment.id,
                 })
-                note.with_context(move_action_post_alert=True).action_post()
+                note.with_context(
+                    move_action_post_alert=True,
+                    l10n_ve_skip_future_date_check=True,
+                ).action_post()
             else:
                 # `account_id` ya viene fijado arriba en `line_vals`
                 # (rama `is_credit_note` -> cuenta de PÉRDIDA) -- sin
@@ -765,6 +768,7 @@ class AccountMoveLine(models.Model):
                 note.with_context(
                     move_action_post_alert=True,
                     l10n_ve_skip_refund_origin_validation=True,
+                    l10n_ve_skip_future_date_check=True,
                 ).action_post()
 
         note_line = note.line_ids.filtered(lambda l: l.account_type == 'asset_receivable')
