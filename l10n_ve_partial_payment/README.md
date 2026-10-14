@@ -175,6 +175,28 @@ navegador (popover completo en español, incluido el mensaje de error nuevo).
 Si se vuelve a regenerar el `.po` completo con `trans_export` más adelante,
 confirmar que esos 3 msgid sobrevivan intactos.
 
+### Sugerencia y bloque informativo con IGTF
+
+Con un anticipo de un diario con IGTF (y un partner al que aplica), el IGTF se
+cobra ENCIMA del monto aplicado y se descuenta del mismo anticipo (consumo =
+monto + IGTF). Por eso el popover ya no sugiere simplemente
+`min(disponible, residual)`: `account.move.get_partial_popover_data(line_id)`
+(una sola llamada RPC que reemplaza a `can_apply_partial_payment` en el JS)
+devuelve `allowed`, `igtf_applies`, `igtf_rate` y `suggested_amount`, que con
+IGTF es el mayor monto que cabe en el anticipo sin recorte (ej. anticipo 51,50
+con IGTF 3 % y factura 100: se sugiere 50,00, no 51,50), verificado contra la
+misma fórmula de `l10n_ve_igtf` (incluido el tope de IGTF cuando la factura ya
+pagó parte). Si el residual de la factura es el límite, se sugiere el residual.
+
+Solo cuando aplica IGTF, el popover muestra un bloque informativo "Se aplica a
+la factura / IGTF (x %) / Total que consume el anticipo" (estimación inmediata
+en el cliente, sobrescrita por el valor del servidor
+`account.move.preview_advance_igtf`, que reemplaza a
+`preview_advance_igtf_shortfall`) y el "Saldo restante del pago" pasa a ser
+disponible - total consumido. Teclear un monto mayor a la sugerencia sigue
+siendo válido (escenario de recorte): solo se muestra la alerta existente.
+Sin IGTF el popover queda exactamente igual que antes.
+
 ### Pendiente (fuera de este corte, no de la tarea)
 
 - Tests automatizados del Motor server-side: agregados (23 tests, 98% de
