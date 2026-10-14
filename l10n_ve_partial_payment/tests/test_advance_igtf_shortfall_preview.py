@@ -5,7 +5,7 @@ from .test_partial_payment_common import PartialPaymentTestCommon
 
 @tagged("post_install", "-at_install", "l10n_ve_partial_payment")
 class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
-    """Coverage for ``account_move.preview_advance_igtf_shortfall``.
+    """Coverage for ``account_move.preview_advance_igtf``.
 
     Every scenario here uses USD invoices/advances through
     ``bank_journal_usd`` (``is_igtf: True``), the combination that actually
@@ -20,6 +20,12 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         payment = self._create_advance_payment(self.bank_journal_usd, amount)
         return self._outstanding_line_for_payment(payment, self.advance_cust_acc)
 
+    def _preview(self, invoice, line, amount):
+        """Call the preview as a user allowed to use partial payments."""
+        return invoice.with_user(self.user_with_group).preview_advance_igtf(
+            line.id, amount
+        )
+
     # -- 1. Enough headroom in the advance: no shortfall ---------------------
 
     def test_advance_with_surplus_has_no_shortfall(self):
@@ -30,9 +36,14 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
         line = self._advance_line(150.00)
 
-        result = invoice.preview_advance_igtf_shortfall(line.id, 50.00)
+        result = self._preview(invoice, line, 50.00)
 
-        self.assertEqual(result, {"shortfall": False})
+        self.assertTrue(result["applies"])
+        self.assertFalse(result["shortfall"])
+        self.assertAlmostEqual(result["applied_to_invoice"], 50.00, places=2)
+        self.assertAlmostEqual(result["igtf"], 1.50, places=2)
+        self.assertAlmostEqual(result["total_consumed"], 51.50, places=2)
+        self.assertAlmostEqual(result["percentage"], self.company.igtf_percentage)
 
     # -- 2. Exact-amount advance, same example as the functional spec --------
 
@@ -45,12 +56,14 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
         line = self._advance_line(2.00)
 
-        result = invoice.preview_advance_igtf_shortfall(line.id, 2.00)
+        result = self._preview(invoice, line, 2.00)
 
         self.assertTrue(result["shortfall"])
         self.assertAlmostEqual(result["requested"], 2.00, places=2)
-        self.assertAlmostEqual(result["real_applied"], 1.94, places=2)
+        self.assertAlmostEqual(result["applied_to_invoice"], 1.94, places=2)
         self.assertAlmostEqual(result["igtf"], 0.06, places=2)
+        # Scenario B: the whole advance is consumed.
+        self.assertAlmostEqual(result["total_consumed"], 2.00, places=2)
         self.assertEqual(result["currency_id"], invoice.currency_id.id)
 
     # -- 3. Parity: the preview must match what actually gets applied --------
@@ -68,14 +81,48 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         line = self._advance_line(2.00)
 
         residual_before = abs(invoice.amount_residual)
-        preview = invoice.preview_advance_igtf_shortfall(line.id, 2.00)
+        preview = self._preview(invoice, line, 2.00)
         self.assertTrue(preview["shortfall"])
 
         self._apply_partial(invoice, line, 2.00)
         invoice = self.env["account.move"].browse(invoice.id)
 
         applied = residual_before - abs(invoice.amount_residual)
-        self.assertAlmostEqual(applied, preview["real_applied"], places=2)
+        self.assertAlmostEqual(applied, preview["applied_to_invoice"], places=2)
+
+    def test_parity_scenario_a_amounts_match_entries(self):
+        """Scenario A really applied: applied/igtf/total_consumed and the
+        advance's leftover must match the preview."""
+        invoice = self._create_invoice_usd(100.00)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        line = self._advance_line(51.50)
+        advance_before = abs(line.amount_residual_currency)
+        residual_before = abs(invoice.amount_residual)
+
+        preview = self._preview(invoice, line, 50.00)
+        self.assertFalse(preview["shortfall"])
+
+        self._apply_partial(invoice, line, 50.00)
+        invoice = self.env["account.move"].browse(invoice.id)
+        line.invalidate_recordset()
+
+        self.assertAlmostEqual(
+            residual_before - abs(invoice.amount_residual),
+            preview["applied_to_invoice"], places=2,
+        )
+        self.assertAlmostEqual(
+            advance_before - abs(line.amount_residual_currency),
+            preview["total_consumed"], places=2,
+        )
+        igtf_account = self.company.customer_account_igtf_id
+        igtf_lines = self.env["account.move.line"].search([
+            ("account_id", "=", igtf_account.id),
+            ("partner_id", "=", self.partner.id),
+            ("parent_state", "=", "posted"),
+        ])
+        self.assertAlmostEqual(
+            sum(abs(l.amount_currency) for l in igtf_lines), preview["igtf"], places=2
+        )
 
     # -- 4. No IGTF journal: no shortfall -------------------------------------
 
@@ -85,9 +132,9 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         invoice = self._create_invoice_usd(2.00)
         invoice.with_context(move_action_post_alert=True).action_post()
 
-        result = invoice.preview_advance_igtf_shortfall(line.id, 2.00)
+        result = self._preview(invoice, line, 2.00)
 
-        self.assertEqual(result, {"shortfall": False})
+        self.assertEqual(result, {"applies": False})
 
     def test_non_advance_line_has_no_shortfall(self):
         invoice = self._create_invoice_usd(100.00)
@@ -95,9 +142,9 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         payment = self._create_plain_payment(self.bank_journal_usd, 100.00)
         line = self._outstanding_line_for_payment(payment, self.acc_receivable)
 
-        result = invoice.preview_advance_igtf_shortfall(line.id, 50.00)
+        result = self._preview(invoice, line, 50.00)
 
-        self.assertEqual(result, {"shortfall": False})
+        self.assertEqual(result, {"applies": False})
 
     # -- 5. Requested amount exceeds the advance's own balance ----------------
 
@@ -111,10 +158,10 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
         line = self._advance_line(2.00)
 
-        result = invoice.preview_advance_igtf_shortfall(line.id, 10.00)
+        result = self._preview(invoice, line, 10.00)
 
         self.assertTrue(result["shortfall"])
-        self.assertAlmostEqual(result["real_applied"], 1.94, places=2)
+        self.assertAlmostEqual(result["applied_to_invoice"], 1.94, places=2)
 
     # -- 6. Full-application path (amount >= invoice residual) ---------------
 
@@ -129,10 +176,10 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
         line = self._advance_line(2.00)
 
-        result = invoice.preview_advance_igtf_shortfall(line.id, 999999.00)
+        result = self._preview(invoice, line, 999999.00)
 
         self.assertTrue(result["shortfall"])
-        self.assertAlmostEqual(result["real_applied"], 1.94, places=2)
+        self.assertAlmostEqual(result["applied_to_invoice"], 1.94, places=2)
 
     # -- 7. Unrelated company/partner advance ---------------------------------
 
@@ -159,6 +206,23 @@ class TestAdvanceIgtfShortfallPreview(PartialPaymentTestCommon):
         finally:
             self.partner = other_partner_backup
 
-        result = invoice.preview_advance_igtf_shortfall(other_line.id, 2.00)
+        result = self._preview(invoice, other_line, 2.00)
 
-        self.assertEqual(result, {"shortfall": False})
+        self.assertEqual(result, {"applies": False})
+
+    def test_partial_payments_disabled_returns_no_preview(self):
+        """With the company flag off the preview does not apply at all."""
+        invoice = self._create_invoice_usd(100.00)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        line = self._advance_line(150.00)
+        self.company.partial_pay_from_outstanding = False
+
+        self.assertEqual(self._preview(invoice, line, 50.00), {"applies": False})
+
+    def test_invalid_amount_returns_no_preview(self):
+        invoice = self._create_invoice_usd(100.00)
+        invoice.with_context(move_action_post_alert=True).action_post()
+        line = self._advance_line(150.00)
+
+        self.assertEqual(self._preview(invoice, line, 0.0), {"applies": False})
+        self.assertEqual(self._preview(invoice, line, "abc"), {"applies": False})
