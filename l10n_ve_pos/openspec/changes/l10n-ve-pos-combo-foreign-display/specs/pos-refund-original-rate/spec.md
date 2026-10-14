@@ -7,16 +7,18 @@
 El sistema SHALL mostrar, en la línea padre de un combo, como monto en divisa
 la suma de los montos de sus líneas hijas convertida una sola vez: con impuestos si
 `pos.config.iface_tax_included` es `'total'` y sin impuestos en caso
-contrario, igual que el precio local que muestra el core. Las líneas hijas no
-SHALL mostrar monto en divisa, porque el core tampoco les muestra el precio
-local. Los totales foráneos de la orden no SHALL cambiar.
+contrario, igual que el precio local que muestra el core. Cada línea hija SHALL
+mostrar su parte del precio, en la moneda de la caja y en divisa, como una
+línea normal (el core no les pinta precio). Los totales foráneos de la orden
+no SHALL cambiar.
 
 #### Scenario: Combo con impuestos incluidos
 
 - **GIVEN** un PdV con `iface_tax_included = 'total'`
 - **WHEN** se agrega un combo cuyas hijas valen 464 Bs y 216 Bs con impuestos,
   a 0,025 $/Bs
-- **THEN** la línea padre muestra $ 17,00 y las hijas no muestran monto en divisa
+- **THEN** la línea padre muestra $ 17,00 y las hijas su parte: Bs 464,00 /
+  $ 11,60 y Bs 216,00 / $ 5,40
 
 #### Scenario: Combo con impuestos separados
 
