@@ -30,6 +30,13 @@ Además, las hijas mostraban el "/ $ x" suelto, sin el precio local al lado.
   `_conv` elige la tasa: en vivo, congelada de la orden sincronizada o, en un
   reembolso, la de la venta original (`_refundOriginalRate`; el padre del
   reembolso también apunta a la línea original). Siempre multiplica.
+- **`components/orderline/orderline.js`** (nuevo): parche de
+  `Orderline.lineScreenValues`. El core deja sin precio a las hijas del combo
+  (`price: !line.combo_parent_id && ...`). Con el `t-if="vals.price"` de la
+  plantilla, las hijas se quedaban sin ningún monto; antes del fix mostraban
+  solo el "/ $ x" suelto. Ahora cada hija muestra su parte del precio
+  (`displayPrice`, o "Free" con descuento del 100 %) y, por la plantilla, su
+  monto secundario, como una línea normal. El recibo básico sigue sin precios.
 - **`orderline.xml`**: el monto en divisa usa `get_foreign_display_price()` y
   solo se pinta donde el core pinta el precio (`vals.price`). Las hijas del
   combo y el recibo básico ya no muestran el divisa suelto.

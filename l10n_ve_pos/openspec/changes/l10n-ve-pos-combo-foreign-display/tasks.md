@@ -10,6 +10,10 @@
       excluido, línea normal, reembolso a tasa original, tasa congelada,
       conversión única sin acumular redondeos)
 - [x] 1.4 Versión 19.0.1.21.0
+- [x] 1.5 `components/orderline/orderline.js`: las hijas del combo muestran su
+      parte del precio en las dos monedas (antes del fix tenían el "/ $"
+      suelto; con el `t-if` se quedaron sin precio), con su test hoot
+      `orderline_combo_child_price.test.js`
 
 ## 2. Verificación
 
@@ -21,6 +25,9 @@
       en el cliente): el padre muestra $ 17,00 a la tasa original
 - [x] 2.4 Navegador: ticket screen (orden sincronizada a tasa congelada) y
       pantalla de pago
+- [x] 2.6 Navegador (posv19, 14-oct): hijas en caja VES (Bs 8.033,40 / $ 10,00
+      y Bs 4.016,70 / $ 5,00) y en caja USD ($ 8,62 / Bs 6.925,34 y $ 4,63 /
+      Bs 3.719,17)
 - [x] 2.5 Navegador, todas las cajas de posv19 (1, 4, Kiosko, VES, USD x2,
       EUR): cada monto cuadra con su conversión multiplicando
 
