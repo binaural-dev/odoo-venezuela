@@ -1,5 +1,5 @@
 from odoo import Command
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -72,6 +72,16 @@ class TestTransportData(TransactionCase):
 
         picking.write({"transport_vehicle_plate": "zz 99-zz9"})
         self.assertEqual(picking.transport_vehicle_plate, "ZZ99ZZ9")
+
+    def test_company_vat_as_driver_is_rejected(self):
+        for prefix in ("J", "G", "C"):
+            with self.assertRaises(ValidationError):
+                self._create_guide(transport_driver_vat=f"{prefix}123456789")
+
+    def test_person_vat_as_driver_is_allowed(self):
+        for prefix in ("V", "E", "P"):
+            picking = self._create_guide(transport_driver_vat=f"{prefix}12345678")
+            self.assertEqual(picking.transport_driver_vat, f"{prefix}12345678")
 
     def test_required_transport_data_blocks_validation(self):
         self.company.transport_data_required = True

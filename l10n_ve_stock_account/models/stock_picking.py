@@ -19,6 +19,9 @@ TRANSPORT_REQUIRED_FIELDS = (
     "transport_vehicle_plate",
 )
 TRANSPORT_PLATE_FIELDS = ("transport_vehicle_plate", "transport_trailer_plate")
+# Prefijos de cédula/RIF que identifican una empresa, un ente publico o un
+# consejo comunal (no una persona): no tiene sentido como conductor.
+TRANSPORT_DRIVER_VAT_COMPANY_PREFIXES = ("J", "G", "C")
 # Grados de la licencia de conducir venezolana.
 DRIVER_LICENSE_TYPES = [
     ("1", "1st Degree"),
@@ -1434,6 +1437,20 @@ class StockPicking(models.Model):
                 r"[\s.-]", "", vals["transport_driver_vat"]
             ).upper()
         return vals
+
+    @api.constrains("transport_driver_vat")
+    def _check_transport_driver_vat_is_not_company(self):
+        for picking in self:
+            vat = picking.transport_driver_vat
+            if vat and vat[0] in TRANSPORT_DRIVER_VAT_COMPANY_PREFIXES:
+                raise ValidationError(
+                    _(
+                        "The driver's ID number '%s' belongs to a company, "
+                        "government entity or communal council (prefix '%s'), "
+                        "not a person."
+                    )
+                    % (vat, vat[0])
+                )
 
     def _must_check_transport_data(self):
         """True si es una guía de despacho de salida (no recepción) y la
