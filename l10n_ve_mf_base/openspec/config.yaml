@@ -1,0 +1,11 @@
+schema: spec-driven
+context: |
+  Módulo: l10n_ve_mf_base (src/odoo-venezuela)
+  Tech stack: Odoo 19.0, JavaScript (OWL), Web Serial API
+  Dominio: Capa base de la máquina fiscal venezolana por Web Serial.
+    SerialConnection (transporte RS232 sobre Web Serial) y TfhkaDriver
+    (protocolo TFHKA). Consumido por l10n_ve_pos_mf (POS) y
+    l10n_ve_account_mf (backend).
+  Nota de hardware: en cajas con varios dispositivos Web Serial en la misma
+    pestaña (balanza, pinpad de Megasoft, máquina fiscal), la selección de
+    puerto debe ser por identidad USB (VID/PID), no posicional.

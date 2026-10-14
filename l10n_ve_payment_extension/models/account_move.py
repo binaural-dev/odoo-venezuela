@@ -296,7 +296,7 @@ class AccountMoveRetention(models.Model):
     def _compute_currency_fields(self):
         for retention in self:
             retention.base_currency_is_vef = (
-                self.env.company.currency_id == self.env.ref("base.VEF")
+                self.env.company.currency_id.is_venezuelan_bolivar()
             )
 
     def write(self, vals):
