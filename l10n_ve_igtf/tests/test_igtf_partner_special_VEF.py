@@ -1116,3 +1116,117 @@ class TestIGTFNEW(IGTFTestCommon):
             "al quitar la aplicación de invoice1."
         )
 
+
+    # ------------------------------------------------------------------
+    # Regresión: facturas a cuotas (2+ líneas de CxC) en compute_bi_igtf
+    # ------------------------------------------------------------------
+
+    def _create_payment_term_2_installments(self):
+        """Plazo de pago de 2 cuotas (30% / 70%) a distintos vencimientos."""
+        return self.env['account.payment.term'].create({
+            'name': 'IGTF test 30/70',
+            'line_ids': [
+                Command.create({
+                    'value': 'percent', 'value_amount': 30.0,
+                    'delay_type': 'days_after', 'nb_days': 15,
+                }),
+                Command.create({
+                    'value': 'percent', 'value_amount': 70.0,
+                    'delay_type': 'days_after', 'nb_days': 45,
+                }),
+            ],
+        })
+
+    def _create_invoice_vef_with_term(self, amount, payment_term=None):
+        """Factura VEF posteada; con `payment_term` genera una línea de CxC por cuota."""
+        invoice = self._create_invoice_vef(amount)
+        if payment_term:
+            invoice.invoice_payment_term_id = payment_term
+        invoice.with_context(move_action_post_alert=True).action_post()
+        return invoice
+
+    def _pay_from_invoice_vef(self, invoice, amount, full=False):
+        """Pago real (línea de banco) por el flujo de la factura, diario VEF sin IGTF.
+
+        Con cuotas, el asistente propone por defecto solo la siguiente y el
+        `Form` pisa el monto (`installments_mode` es invisible y no se puede
+        escribir ahí). Con `full=True` se crea el asistente por ORM con
+        `installments_mode='full'`.
+        """
+        if full:
+            wizard = self.env['account.payment.register'].with_context(
+                **invoice.action_register_payment()['context'],
+            ).create({
+                'journal_id': self.bank_journal_bs.id,
+                'installments_mode': 'full',
+                'amount': amount,
+            })
+            action = wizard.action_create_payments()
+            return self.env['account.payment'].browse(action.get('res_id'))
+        with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
+            pay_form.journal_id = self.bank_journal_bs
+            pay_form.save()
+            pay_form.amount = amount
+            pay_form.save()
+        action = pay_form.record.action_create_payments()
+        return self.env['account.payment'].browse(action.get('res_id'))
+
+    def test17_invoice_two_installments_partial_payment_computes_igtf_base(self):
+        """
+        Factura con plazo de pago de 2 cuotas (2 líneas de CxC) y pago parcial
+        real por un diario sin IGTF. Antes del fix, compute_bi_igtf usaba
+        factura_line.id sobre ambas líneas y lanzaba 'Expected singleton'.
+        Sin línea de IGTF no hay base: bi_igtf = 0 y el tope baja por el pago.
+        """
+        payment_amount = 400.00
+        invoice = self._create_invoice_vef_with_term(
+            1000.00, self._create_payment_term_2_installments())
+
+        receivable_lines = invoice.line_ids.filtered(
+            lambda l: l.account_id == self.acc_receivable)
+        self.assertEqual(len(receivable_lines), 2,
+                         "La factura a 2 cuotas debe tener 2 líneas de CxC")
+
+        # No debe lanzar 'Expected singleton'
+        self._pay_from_invoice_vef(invoice, payment_amount)
+
+        invoice = self.env['account.move'].browse(invoice.id)
+        percentage = self.company.igtf_percentage / 100
+        expected_top = (abs(invoice.amount_total_signed) - payment_amount) * percentage
+        self.assertEqual(invoice.payment_state, 'partial')
+        self.assertAlmostEqual(invoice.bi_igtf, 0.0, 2)
+        self.assertAlmostEqual(invoice.igtf_top_aply, expected_top, 2,
+                               "El tope IGTF debe descontar lo pagado sin IGTF")
+
+    def test18_invoice_two_installments_full_payment_computes_igtf_base(self):
+        """Factura a 2 cuotas pagada completa (cruza ambas líneas de CxC)."""
+        invoice = self._create_invoice_vef_with_term(
+            1000.00, self._create_payment_term_2_installments())
+        self.assertEqual(
+            len(invoice.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)), 2)
+
+        self._pay_from_invoice_vef(invoice, 1000.00, full=True)
+
+        invoice = self.env['account.move'].browse(invoice.id)
+        self.assertIn(invoice.payment_state, ('paid', 'in_payment'))
+        self.assertAlmostEqual(invoice.bi_igtf, 0.0, 2)
+        self.assertAlmostEqual(invoice.igtf_top_aply, 0.0, 2)
+
+    def test19_invoice_single_installment_control_same_result(self):
+        """
+        Control: factura de 1 sola cuota (1 línea de CxC) con el mismo pago
+        parcial que test17 da el mismo resultado que antes del fix.
+        """
+        payment_amount = 400.00
+        invoice = self._create_invoice_vef_with_term(1000.00)
+        self.assertEqual(
+            len(invoice.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)), 1)
+
+        self._pay_from_invoice_vef(invoice, payment_amount)
+
+        invoice = self.env['account.move'].browse(invoice.id)
+        percentage = self.company.igtf_percentage / 100
+        expected_top = (abs(invoice.amount_total_signed) - payment_amount) * percentage
+        self.assertEqual(invoice.payment_state, 'partial')
+        self.assertAlmostEqual(invoice.bi_igtf, 0.0, 2)
+        self.assertAlmostEqual(invoice.igtf_top_aply, expected_top, 2)
