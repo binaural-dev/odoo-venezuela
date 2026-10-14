@@ -757,9 +757,12 @@ class AccountMoveLine(models.Model):
             
             line.amount_residual = residual
             line.amount_residual_currency = residual_currency
-            # Para determinar si está conciliado, usamos una tolerancia mínima 
-            # en lugar de un cero absoluto, o comparamos directamente.
-            line.reconciled = (line.amount_residual == 0.0 and line.amount_residual_currency == 0.0)
+            # Los montos no se redondean (l10n_ve_rate), así que pueden quedar residuales
+            # microscópicos: se usa la misma tolerancia del core en vez de un cero absoluto.
+            line.reconciled = (
+                comp_curr.is_zero(line.amount_residual)
+                and foreign_curr.is_zero(line.amount_residual_currency)
+            )
 
 
     @api.onchange('amount_currency', 'currency_id','foreign_inverse_rate')
