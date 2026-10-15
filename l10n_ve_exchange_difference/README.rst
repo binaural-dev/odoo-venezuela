@@ -92,6 +92,31 @@ Cómo funciona
    diferencial, que de todas formas queda etiquetado
    (``l10n_ve_exchange_diff_entry``) para identificarlo.
 
+6. **El cruce de la nota se hace solo en Bs (0 USD).** La nota es un
+   documento en moneda de la compañía. Al cerrarla contra una línea que
+   todavía tiene saldo en moneda extranjera (liquidación parcial: factura
+   de 100 USD pagada con 40 USD, o pago de 100 USD aplicado a una factura
+   de 40 USD), el motor nativo de Odoo le inventaba a la nota un
+   equivalente en USD y conciliaba en USD, de modo que el cruce consumía
+   saldo en USD y "Cantidad por pagar" bajaba de más (a veces la nota
+   quedaba con dos cruces). Ahora ese cierre se hace solo en Bs, igual
+   que el asiento nativo de diferencial: el saldo en USD de la línea
+   queda intacto y su saldo en Bs baja exactamente el importe de la nota.
+   Se activa únicamente mientras se cierra la propia línea de la nota
+   (clave de contexto propia ``l10n_ve_exchange_closing_note_line_id``) y
+   solo si la línea contraparte conserva saldo en Bs tras el cruce. Con
+   aplicación completa el resultado es el mismo de antes (0 USD).
+
+7. **Widget "Pagado/Revertido" de la factura.** Cada nota viva ligada a la
+   factura se muestra como UNA fila en Bs, con el estilo del asiento
+   nativo de diferencial y la leyenda "Nota por Diferencial <número>" (en
+   vez de una fila de pago normal con USD). Se agrega una fila por nota
+   (no por cruce), incluidas las Notas de Débito que se cierran contra la
+   línea del pago. Las notas revertidas no se listan. Cada fila de la
+   nota lleva además ``is_exchange_note`` y ``exchange_note_name`` en
+   ``invoice_payments_widget`` para que otros módulos puedan
+   identificarla.
+
 Configuración
 """""""""""""
 
@@ -117,6 +142,16 @@ Configuración
 Limitaciones
 """"""""""""
 
+* Las notas históricas que ya fueron conciliadas con USD (antes de este
+  cambio) NO se migran; solo las nuevas notas se cierran en Bs.
+* El PDF de la factura deja de listar la nota como "Pagado el" (igual que
+  el asiento nativo de diferencial, que se excluye por ``is_exchange``).
+* Los módulos de máquina fiscal (``l10n_ve_account_mf`` /
+  ``l10n_ve_iot_mf``) recorren el contenido del widget como formas de pago
+  sin filtrar ``is_exchange``: antes recibían la nota como USD x tasa y
+  ahora llega en Bs sin convertir. **Pendiente de decisión funcional**; la
+  bandera ``is_exchange_note`` permite filtrarla.
+* Se mantiene la restricción de una nota por pareja (factura, pago).
 * Solo cubre documentos de **cliente** con ``move_type in
   ('out_invoice', 'out_refund')`` -- incluye Notas de Débito de cliente
   nativas, ya que Odoo las trata como ``out_invoice``. Facturas de

@@ -1,6 +1,6 @@
 {
     'name': 'Venezuela - Diferencial cambiario como Notas de Débito/Crédito',
-    'version': '19.0.0.0.6',
+    'version': '19.0.0.0.7',
     'category': 'Accounting/Localizations',
     'summary': 'Document exchange-rate differences on customer invoices as real fiscal Debit/Credit Notes',
     'description': """
@@ -63,6 +63,11 @@ might use is ready in advance):
         'views/res_config_settings_views.xml',
         'views/res_partner_views.xml',
     ],
+    'assets': {
+        'web.assets_backend': [
+            'l10n_ve_exchange_difference/static/src/xml/account_payment_templates.xml',
+        ],
+    },
     'installable': True,
     'auto_install': False,
     'license': 'LGPL-3',

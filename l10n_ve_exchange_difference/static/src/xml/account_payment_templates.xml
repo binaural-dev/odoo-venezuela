@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+    <t t-inherit="account.AccountPaymentField" t-inherit-mode="extension">
+        <!-- Anchored on the structural `t-if` of the exchange row, not on its text. -->
+        <xpath expr="//td[@t-if='line.is_exchange']/i/span[last()]" position="replace">
+            <span t-if="line.is_exchange_note"> Exchange Difference Note <t t-out="line.exchange_note_name"/></span>
+            <span t-else=""> Exchange Difference</span>
+        </xpath>
+    </t>
+</templates>
