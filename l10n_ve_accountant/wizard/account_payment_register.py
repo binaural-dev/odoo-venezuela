@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError
+from odoo.tools import float_compare
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -71,7 +72,7 @@ class AccountPaymentRegister(models.TransientModel):
         store=True,
     )
     base_currency_is_vef = fields.Boolean(
-        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF")
+        default=lambda self: self.env.company.currency_id.is_venezuelan_bolivar()
     )
 
     indexaxion_payment_mode = fields.Selection(
@@ -250,6 +251,12 @@ class AccountPaymentRegister(models.TransientModel):
                     )
 
         return payment_vals
+
+    def action_create_payments(self):
+        for wizard in self:
+            if float_compare(wizard.amount, 0.0, precision_rounding=wizard.currency_id.rounding) == 0:
+                raise UserError(_("The amount to pay cannot be 0.0."))
+        return super().action_create_payments()
 
     def _create_payments(self):
         """

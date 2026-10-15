@@ -77,7 +77,10 @@ adicional: el campo `apply_one_cross_move` queda eliminado del modelo, de la
 vista y de `_load_pos_data_fields`.
 
 Un método que no cumpla alguna de esas condiciones SHALL omitirse en silencio,
-sin lanzar excepción.
+sin lanzar excepción. Las cuentas que el cruce usa se exigen al abrir la
+sesión por tipo de método (banco: líneas de pago del `cross_journal`;
+efectivo: la transitoria del diario del método y la del `cross_journal`): ver
+el change `l10n-ve-pos-cross-move-accounts-check`.
 
 #### Scenario: Método en divisa con ambos diarios configurados
 

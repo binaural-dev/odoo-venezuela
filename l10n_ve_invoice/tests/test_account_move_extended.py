@@ -165,7 +165,16 @@ class TestAccountMoveExtended(TransactionCase):
                 }
             )
 
-    def test_price_in_zero_ignores_section_and_note(self):
+    def test_price_in_zero_ignores_layout_lines(self):
+        """Sections, SUBSECTIONS and notes carry no price and must never
+        trip the guard.
+
+        `line_subsection` is the display_type Odoo 19 added alongside the
+        existing two. It was missing from the guard's exclusion tuple, so
+        a subsection -- price_unit = 0 by definition -- was read as a
+        product line and made invoicing impossible for any document that
+        used one (seen on quote S11508 at CDD Las Mercedes).
+        """
         invoice = self.env["account.move"].create(
             {
                 "move_type": "out_invoice",
@@ -180,6 +189,15 @@ class TestAccountMoveExtended(TransactionCase):
                         {
                             "display_type": "line_section",
                             "name": "Section",
+                            "price_unit": 0,
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "display_type": "line_subsection",
+                            "name": "Subsection",
                             "price_unit": 0,
                         },
                     ),
@@ -205,7 +223,60 @@ class TestAccountMoveExtended(TransactionCase):
                 ],
             }
         )
-        self.assertTrue(invoice, "Invoice with section and note should be created")
+        self.assertTrue(
+            invoice, "Invoice with section, subsection and note should be created"
+        )
+
+    def test_action_post_does_not_demand_a_tax_on_layout_lines(self):
+        """`action_post()` requires a tax on every product line. A
+        subsection has no tax and cannot have one, so it must be skipped
+        there too -- otherwise fixing `_check_price_in_zero` alone just
+        moves the block from creating the invoice to validating it."""
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": self.journal_sale.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "display_type": "line_section",
+                            "name": "Section",
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "display_type": "line_subsection",
+                            "name": "Subsection",
+                        },
+                    ),
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 100,
+                            "tax_ids": [(6, 0, [self.tax_sale.id])],
+                        },
+                    ),
+                ],
+            }
+        )
+
+        # l10n_ve_accountant.action_post() returns the post-alert wizard
+        # for out_invoice/out_refund unless this context key is set, so
+        # without it the invoice just stays draft and proves nothing.
+        # Same key the l10n_ve_invoice_digital suite uses.
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        self.assertEqual(invoice.state, "posted")
 
     # --- _compute_is_debit_journal ---
 
@@ -422,6 +493,100 @@ class TestAccountMoveExtended(TransactionCase):
                     "invoice_date_display": fields.Date.today(),
                     "correlative": "00055",
                 }
+            )
+
+    def _create_vendor_bill(self, partner, correlative, post=False):
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "in_invoice",
+                "partner_id": partner.id,
+                "journal_id": self.journal_purchase.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
+                "correlative": correlative,
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 100,
+                            "tax_ids": [(6, 0, [self.tax_purchase.id])],
+                        },
+                    )
+                ],
+            }
+        )
+        if post:
+            invoice.action_post()
+        return invoice
+
+    def test_vendor_bill_duplicate_correlative_same_partner(self):
+        self._create_vendor_bill(self.partner, "00060", post=True)
+
+        with self.assertRaises(ValidationError):
+            self._create_vendor_bill(self.partner, "00060", post=True)
+
+    def test_vendor_bill_duplicate_correlative_different_partners(self):
+        other_partner = self.env["res.partner"].create(
+            {
+                "name": "Other Vendor",
+                "property_account_receivable_id": self.account_receivable.id,
+                "property_account_payable_id": self.account_payable.id,
+            }
+        )
+        self._create_vendor_bill(self.partner, "00061", post=True)
+
+        try:
+            self._create_vendor_bill(other_partner, "00061", post=True)
+        except ValidationError:
+            self.fail(
+                "_check_correlative() must not consider vendor bills from "
+                "a different vendor as duplicates"
+            )
+
+    def test_vendor_bill_duplicate_correlative_not_posted(self):
+        self._create_vendor_bill(self.partner, "00062", post=False)
+
+        try:
+            self._create_vendor_bill(self.partner, "00062", post=False)
+        except ValidationError:
+            self.fail(
+                "_check_correlative() must only compare against posted "
+                "vendor bills"
+            )
+
+    def test_correlative_not_duplicated_across_sale_and_purchase(self):
+        invoice = self.env["account.move"].create(
+            {
+                "move_type": "out_invoice",
+                "partner_id": self.partner.id,
+                "journal_id": self.journal_sale.id,
+                "invoice_date": fields.Date.today(),
+                "invoice_date_display": fields.Date.today(),
+                "correlative": "00063",
+                "invoice_line_ids": [
+                    (
+                        0,
+                        0,
+                        {
+                            "product_id": self.product.id,
+                            "quantity": 1,
+                            "price_unit": 100,
+                        },
+                    )
+                ],
+            }
+        )
+        invoice.action_post()
+
+        try:
+            self._create_vendor_bill(self.partner, "00063", post=True)
+        except ValidationError:
+            self.fail(
+                "_check_correlative() must not consider a sale invoice and "
+                "a vendor bill sharing the same correlative as duplicates"
             )
 
     # --- is_valid_to_sequence ---

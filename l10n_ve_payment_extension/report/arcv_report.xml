@@ -98,7 +98,7 @@
 					    <span class="tal">Teléfono: </span>
 					    <span class="fw tal" t-out="res_company.partner_id.phone"/><br/>
 					    <span class="tal">RIF: </span>
-					    <span t-out="res_company.partner_id.vat"/>
+					    <span t-out="(res_company.partner_id.prefix_vat or '') + (res_company.partner_id.vat or '')"/>
 					</td>
 					<td style="text-align: left;border: 1px solid black;padding-left: 10px;" colspan="6">
 					    <span class="tal">Nombre o Razón Social:</span><br/>

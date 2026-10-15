@@ -1,0 +1,24 @@
+<odoo>
+    <record id="view_partner_form_inherit_l10n_ve_exchange" model="ir.ui.view">
+        <field name="name">res.partner.form.inherit.l10n_ve_exchange</field>
+        <field name="model">res.partner</field>
+        <!-- inherit_id es base.view_partner_form, no un id de account:
+             el tab "Contabilidad"/"Invoicing" (page[@name='accounting'])
+             lo agrega el propio account (views/partner_view.xml) como
+             OTRA vista que también hereda de base.view_partner_form, no
+             como un view id propio invocable por ref(). Como account es
+             dependencia de este módulo, su vista ya está aplicada al
+             árbol combinado antes que la nuestra, así que el xpath de
+             abajo encuentra el grupo sin problema. -->
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@name='accounting']//group[@name='general']" position="inside">
+                <field name="l10n_ve_exchange_show_allow_note" invisible="1"/>
+                <field name="l10n_ve_exchange_allow_note"
+                       string="Allow Exchange Difference Note"
+                       groups="account.group_account_manager"
+                       invisible="not l10n_ve_exchange_show_allow_note"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>

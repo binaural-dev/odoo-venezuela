@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="action_dispatch_note" model="ir.actions.report">
+        <field name="name">Dispatch Note</field>
+        <field name="model">stock.picking</field>
+        <field name="report_type">qweb-pdf</field>
+        <field name="report_name">l10n_ve_stock_account.dispatch_note_template</field>
+        <field name="report_file">l10n_ve_stock_account.dispatch_note_template</field>
+        <field name="attachment">((object.name).replace('/','_') + '.pdf')</field>
+        <field name="paperformat_id" ref="l10n_ve_stock_account.dispatch_note_paperformat"/>
+        <field name="binding_model_id" ref="stock.model_stock_picking"/>
+        <field name="binding_type">report</field>
+        <field name="group_ids" eval="[(4, ref('l10n_ve_stock_account.group_dispatch_note_print'))]"/>
+        <field name="print_report_name">((object.name).replace('/','_') + '.pdf')</field>
+    </record>
+
+    <template id="dispatch_note_template">
+            <t t-call="web.html_container">
+                <t t-foreach="docs" t-as="picking">
+                    <div class="article" style="" t-att-data-oe-model="picking and picking._name" t-att-data-oe-id="picking and picking.id" t-att-data-oe-lang="picking and picking.env.context.get('lang')">
+                        <link rel="stylesheet" type="text/css" href="/web/static/lib/bootstrap/dist/css/bootstrap.css"/>
+                        <div class="page">
+                            <style>
+                                thead > tr{
+                                    margin-bottom: 3px;
+                                }
+                                th{
+                                    vertical-align: middle;
+                                }
+                                .col-xs-7,
+                                .col-xs-4{
+                                    padding:0px !important;
+                                }
+                                .class_number td{
+                                    width: 15%;
+                                    padding:0px 0px;
+                                }
+                                .row_1,.hide_border {
+                                    border: 1px solid white;
+                                }
+                                .picking_line > td >span {
+                                    line-height: 0!important;
+                                    margin: 0 !important;
+                                    padding:0 !important;
+                                }
+                                .lines_table tr{
+                                    overflow: hidden;
+                                    height: 19px;
+                                    white-space: nowrap;
+                                }
+                            </style>
+
+                            <section id="segmento_2" style="font-size:14px;">
+                                <table name="table_picking_number" class="table table-borderless class_number">
+                                    <!-- membrete -->
+                                    <tr class="hide_border">
+                                        <td colspan="5">
+                                            <img t-if="picking.company_id.logo" 
+                                                t-att-src="image_data_uri(picking.company_id.logo)" 
+                                                style="max-height:95pt;max-width: 150px;" 
+                                                alt="Company Logo"/>
+                                        </td>
+                                        <td colspan="5" style="font-weight:bold;position: relative;font-size:16px !important;">
+                                            <div style="position: absolute; bottom: 0; right: 0; text-align: right;">
+                                                <t t-if="picking.picking_type_code != 'outgoing'">
+                                                    <span>Tipo de transferencia: <span t-field="picking.picking_type_code"/></span> 
+                                                </t>
+                                                <t t-else="">
+                                                    Despacho de Factura:
+                                                    <t t-if="picking.sale_id">
+                                                        <t t-out="picking.dispatch_note_invoice_names"/>
+                                                    </t>
+                                                </t>
+                                            </div>
+                                        </td>
+                                    </tr>
+
+                                    <!--fila 1-->
+                                    <tr class="row_1 text-nowrap">
+                                        <td colspan="6" class="fw-bold">
+                                            <span t-field="picking.company_id.name"/>
+                                        </td>
+                                        <td colspan="4" class="text-end">
+                                            <strong>Nro de movimiento:</strong> <span t-field="picking.name"/>
+                                        </td>
+                                    </tr>
+                                    <!--fila 2-->
+                                    <tr class="hide_border">
+                                        <td colspan="5" name="td_vat">
+                                            <strong>RIF:</strong> <span t-field="picking.company_id.company_registry"/>
+                                        </td>
+                                        <td colspan="5" class="text-end">
+                                            <strong>Fecha de Emisión: </strong> 
+                                            <span t-field="picking.scheduled_date" t-field-options="{'format': 'dd/MM/YYYY'}"/>
+                                        </td>
+                                    </tr>
+
+                                    <!--fila 3-->
+                                    <tr>
+                                        <td class="hide_border" colspan="6">
+                                            <span>
+                                                <span t-field="picking.company_id.street"/>
+                                                <span t-field="picking.company_id.street2"/>
+                                                <t t-if="picking.company_id.state_id">
+                                                    / Estado: <span t-field="picking.company_id.state_id.name"/> 
+                                                </t>
+                                                <t t-if="picking.company_id.city">
+                                                    / Ciudad: <span t-field="picking.company_id.city"/>    
+                                                </t>
+                                            </span>
+                                        </td>
+                                        <td class="hide_border" colspan="1"/>
+                                        <td class="hide_border text-end" colspan="3">
+                                            <span><strong>Estado:</strong> <span t-field="picking.state"/></span> 
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="hide_border" colspan="5">
+                                            <strong>Telf:</strong>
+                                            <span t-field="picking.company_id.phone"/>
+                                        </td>
+
+                                        <td class="hide_border text-end" colspan="5">
+                                            <strong>Razón Social:</strong>
+                                            <span t-field="picking.partner_id.name"/>
+                                        </td>
+                                    </tr>
+                                    <t t-if="picking.picking_type_code == 'internal'">
+                                        <tr>
+                                            <td class="hide_border" colspan="10">
+                                                <span><strong>Desde:</strong> <span t-field="picking.location_id"/> <strong>Hasta:</strong> <span t-field="picking.location_dest_id"/></span> 
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </table>
+                            </section>
+                            <br/>
+                            <section id="segmento_3">
+                                <table name="table_product" class="table table-borderless table-sm" style="font-size:14px;">
+                                    <thead class="text-uppercase">
+                                        <th style="text-align:center;border: 1px solid black; width:50px;">Código
+                                        </th>
+                                        <th class="col-3" style="text-align:left;border: 1px solid black;padding-left: 10px; width:520px;">
+                                            Nombre del artículo
+                                        </th>
+                                        <th style="text-align:center;border: 1px solid black; width:20px;">
+                                            Unidad
+                                        </th>
+                                        <th style="text-align:center;border: 1px solid black; width:20px;">
+                                            Cant.
+                                        </th>
+                                    </thead>
+                                    <tbody class="hide_border" style="font-size:14px;">
+                                        <t t-foreach="picking.move_ids" t-as="line">
+                                            <tr >
+                                                <td class="text-center">
+                                                    <span t-field="line.product_id.default_code"/>
+                                                </td>
+                                                <td class="text-start">
+                                                    <span t-out="line.product_id.name[0:35]"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-field="line.product_uom"/>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span t-out="line.product_uom_qty" t-options='{"widget": "float", "precision": 2}' t-if="picking.state != 'done'"/>
+                                                    <span t-out="line.quantity" t-options='{"widget": "float", "precision": 2}' t-else=""/>
+                                                </td>
+                                            </tr>
+                                        </t>
+                                    </tbody>
+                                </table>
+                            </section>
+                            <div style="width:100%;margin-top:20px"></div>
+                            <section id="segmento_4" style="font-size:13px;">
+                                
+                                
+                            </section>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </template>
+</odoo>

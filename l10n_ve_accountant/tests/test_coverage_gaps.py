@@ -109,7 +109,7 @@ class TestCoverageGaps(TransactionCase):
     def _create_invoice(self, currency=None, price=100.0, tax=True):
         currency = currency or self.currency_vef
         tax_ids = [(6, 0, [self.tax_16.id])] if tax else [(5, 0, 0)]
-        return self.env["account.move"].with_context(
+        invoice = self.env["account.move"].with_context(
             check_move_validity=False,
         ).create({
             "move_type": "out_invoice",
@@ -126,6 +126,30 @@ class TestCoverageGaps(TransactionCase):
                 }),
             ],
         })
+        self._assert_company_currency_line_totals(invoice)
+        return invoice
+
+    def _assert_company_currency_line_totals(self, move):
+        """company_currency_line_totals debe cuadrar exacto con
+        line_ids.balance, linea por linea (no un agregado). Llamada desde
+        _create_invoice: toda factura creada por las ~60 pruebas de este
+        archivo queda verificada contra el nuevo campo sin tener que
+        tocar cada test uno por uno."""
+        product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
+        if not product_lines:
+            return
+
+        totals = move.company_currency_line_totals or {}
+        for line in product_lines:
+            self.assertIn(str(line.id), totals)
+            self.assertAlmostEqual(
+                abs(totals[str(line.id)]['subtotal']), abs(line.balance), places=2
+            )
+
+        tax_lines = move.line_ids.filtered('tax_repartition_line_id')
+        sum_tax_amount = sum(abs(t['tax_amount']) for t in totals.values())
+        sum_tax_balance = sum(abs(l.balance) for l in tax_lines)
+        self.assertAlmostEqual(sum_tax_amount, sum_tax_balance, places=2)
 
     # ═══════════════════════════════════════════════════════════════
     # account_tax.py - _prepare_foreign_base_line_for_taxes_computation
@@ -443,20 +467,24 @@ class TestCoverageGaps(TransactionCase):
         self.assertIsInstance(result, dict)
 
     # ═══════════════════════════════════════════════════════════════
-    # account_move_line.py - _compute_price_unit_ves / _compute_ves_currency_id
+    # account_move.py - _compute_company_currency_line_totals
     # ═══════════════════════════════════════════════════════════════
 
-    def test_18_price_unit_ves(self):
-        """_compute_price_unit_ves: verifica computo en USD y VEF."""
+    def test_18_company_currency_line_totals(self):
+        """_compute_company_currency_line_totals: presente en USD, y
+        coincide con los propios montos nativos cuando la factura ya esta
+        en la moneda de la compañia (tasa 1)."""
         inv_usd = self._create_invoice(self.currency_usd, 200.0)
         line_usd = inv_usd.line_ids.filtered(lambda l: l.display_type == 'product')
         if line_usd:
-            self.assertIsNotNone(line_usd.price_unit_ves)
+            totals = inv_usd.company_currency_line_totals.get(str(line_usd.id))
+            self.assertIsNotNone(totals)
 
         inv_vef = self._create_invoice(self.currency_vef, 200.0)
         line_vef = inv_vef.line_ids.filtered(lambda l: l.display_type == 'product')
         if line_vef:
-            self.assertAlmostEqual(line_vef.price_unit_ves, 200.0, places=2)
+            totals = inv_vef.company_currency_line_totals.get(str(line_vef.id))
+            self.assertAlmostEqual(totals['price_unit'], 200.0, places=2)
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - get_view

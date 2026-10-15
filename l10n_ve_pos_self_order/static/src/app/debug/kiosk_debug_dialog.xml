@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_self_order.KioskDebugDialog">
+        <Dialog title="dialogTitle" size="'md'">
+            <div class="d-flex flex-column gap-2">
+                <!-- El módulo fiscal inyecta ANTES de este botón su badge de estado
+                     de conexión y los botones de máquina fiscal (t-inherit). -->
+                <button type="button" class="btn btn-secondary text-start o_kiosk_debug_view_orders"
+                        t-on-click="onOpenOrders" t-att-disabled="state.busy">
+                    Orders (create invoice / print)…
+                </button>
+                <button type="button" class="btn btn-outline-primary text-start"
+                        t-on-click="onFlushQueue" t-att-disabled="state.busy">
+                    Retry pending order registration
+                    <span t-if="pendingCount" class="badge text-bg-warning ms-2"
+                          t-esc="pendingCount"/>
+                </button>
+                <button type="button" class="btn btn-outline-danger text-start"
+                        t-on-click="onRetryFailed" t-att-disabled="state.busy">
+                    Retry FAILED orders (rejected by the server)
+                    <span t-if="failedCount" class="badge text-bg-danger ms-2"
+                          t-esc="failedCount"/>
+                </button>
+
+                <div t-if="state.message" class="alert alert-info mb-0 mt-2 py-2"
+                     t-esc="state.message" role="status"/>
+            </div>
+            <t t-set-slot="footer">
+                <button type="button" class="btn btn-primary" t-on-click="() => props.close()">
+                    Close
+                </button>
+            </t>
+        </Dialog>
+    </t>
+</templates>

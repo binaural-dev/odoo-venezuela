@@ -181,6 +181,55 @@ class TestIgtfWizardAmounts(TestIndexedPayments):
             "foreign_amount_total_igtf must never be negative on a credit note.",
         )
 
+    def test_foreign_igtf_amount_is_percentage_of_base_for_vef_invoice(self):
+        """tax_totals['igtf']['foreign_igtf_amount'] (the '(sugerido)' row
+        rendered by TaxVesTotalsField) must be the IGTF percentage applied to
+        the base, not the base/total itself. Regression guard for ticket
+        81043: the QWeb template was reading foreign_igtf_base_amount (the
+        total invoice amount) instead of foreign_igtf_amount (the 3%) in
+        that row."""
+        invoice = self._create_vef_invoice(amount=1000.0)
+
+        igtf_totals = invoice.tax_totals["igtf"]
+        base = igtf_totals["foreign_igtf_base_amount"]
+        amount = igtf_totals["foreign_igtf_amount"]
+        percentage = self.company.igtf_percentage / 100
+
+        self.assertAlmostEqual(
+            amount, base * percentage, places=2,
+            msg="foreign_igtf_amount must equal foreign_igtf_base_amount * igtf_percentage.",
+        )
+        self.assertNotAlmostEqual(
+            amount, base, places=2,
+            msg="foreign_igtf_amount must NOT equal the base/total -- that's the "
+            "bug where the suggested IGTF showed the full invoice total.",
+        )
+
+    def test_foreign_igtf_amount_is_percentage_of_base_for_foreign_currency_invoice(self):
+        """Same guarantee as above, but for the exact scenario reported in
+        ticket 81043: an invoice booked in a foreign currency (USD) after a
+        currency recalculation, where company currency is VEF. The
+        '(sugerido)' amount must still be 3% of the base, never the base
+        itself."""
+        self._set_rate(self.currency_usd, self.invoice_date, 40.0)
+
+        invoice = self._create_foreign_invoice(self.currency_usd, amount=100.0)
+
+        igtf_totals = invoice.tax_totals["igtf"]
+        base = igtf_totals["foreign_igtf_base_amount"]
+        amount = igtf_totals["foreign_igtf_amount"]
+        percentage = self.company.igtf_percentage / 100
+
+        self.assertAlmostEqual(
+            amount, base * percentage, places=2,
+            msg="foreign_igtf_amount must equal foreign_igtf_base_amount * igtf_percentage.",
+        )
+        self.assertNotAlmostEqual(
+            amount, base, places=2,
+            msg="foreign_igtf_amount must NOT equal the base/total -- that's the "
+            "bug where the suggested IGTF showed the full invoice total.",
+        )
+
     def test_destination_account_id_domain_customer_uses_receivable(self):
         """A non-advance payment to a customer must offer receivable accounts
         (Por Cobrar), not payable ones -- the two branches were swapped

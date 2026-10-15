@@ -156,12 +156,17 @@ Cuando el flag de compañía `not_allow_scrap_more_than_what_was_manufactured` e
 
 ### Requirement: Bloqueo de validación con stock insuficiente
 
-Cuando el flag de compañía `not_allow_negative_stock_movement` está activo, `button_validate` de `stock.picking` DEBE (MUST) ejecutar primero `super().button_validate()` y, si el resultado no es el asistente de backorder (`stock.backorder.confirmation`), verificar con `_check_stock_availability_for_pickings` que la cantidad a mover no deje la existencia en negativo, para finalmente volver a invocar `super().button_validate()`. La verificación DEBE (MUST) considerar únicamente el caso de un solo traslado cuyo `picking_type_id.code` sea `internal` u `outgoing` (al comparar un recordset de tipos de operación contra la lista, la validación se omite silenciosamente cuando se validan varios traslados a la vez), agrupar las líneas de movimiento por producto, lote y ubicación origen, contabilizar solo líneas de productos `consu` con cantidad hecha mayor a cero, y comparar el total agrupado contra el `qty_available` del producto en el contexto de esa ubicación y lote. Como la comprobación corre después de que `super()` ya aplicó los movimientos, el `qty_available` consultado ya viene descontado y la cantidad a mover se resta por segunda vez.
+Cuando el flag de compañía `not_allow_negative_stock_movement` está activo, `_pre_action_done_hook` de `stock.picking` DEBE (MUST) invocar `_check_stock_availability_for_pickings` antes de devolver el control a `super()._pre_action_done_hook()`, es decir antes de que el core de `stock.picking` aplique los movimientos (`_action_done`). Esto garantiza que la verificación se ejecuta contra el `qty_available` todavía intacto, sin descontar la cantidad del traslado que se está validando. La verificación DEBE (MUST) considerar únicamente el caso de un solo traslado cuyo `picking_type_id.code` sea `internal` u `outgoing` (al comparar un recordset de tipos de operación contra la lista, la validación se omite silenciosamente cuando se validan varios traslados a la vez), agrupar las líneas de movimiento por producto, lote y ubicación origen, contabilizar solo líneas de productos `consu` con cantidad hecha mayor a cero, y comparar el total agrupado contra el `qty_available` del producto en el contexto de esa ubicación y lote. La comparación es estrictamente `qty_available - total_qty_to_move < 0`, por lo que un traslado que deja la existencia en exactamente cero está permitido; solo se bloquea cuando el resultado sería negativo.
 
 #### Scenario: Salida que deja stock negativo
 
 - **WHEN** se valida un solo traslado de salida cuyas cantidades superan la existencia en la ubicación origen y el flag está activo
-- **THEN** se lanza un error de validación listando los productos (y lotes) con stock insuficiente y la transacción se revierte
+- **THEN** se lanza un error de validación listando los productos (y lotes) con stock insuficiente, sin que el picking llegue a aplicar el movimiento ni a quedar en estado `done`, y el `qty_available` de origen queda sin modificar
+
+#### Scenario: Traslado interno que agota el origen exactamente
+
+- **WHEN** se valida un traslado interno moviendo toda la cantidad disponible en la ubicación origen y el flag está activo
+- **THEN** el picking se valida y queda en estado `done`, y el `qty_available` de la ubicación origen queda en cero
 
 #### Scenario: Validación de varios traslados a la vez
 
