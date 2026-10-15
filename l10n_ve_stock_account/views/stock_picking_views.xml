@@ -16,6 +16,14 @@
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
+            <header position="inside">
+                <button
+                    string="Print Dispatch Note"
+                    name="%(l10n_ve_stock_account.action_dispatch_note)d"
+                    groups="l10n_ve_stock_account.group_dispatch_note_print"
+                    type="action"
+                    class="oe_highlight"/>
+            </header>
             <xpath expr="//field[@name='location_id']" position="after">
                 <field name="order_is_consignment" invisible="1"/> 
             </xpath>
@@ -27,7 +35,7 @@
             </xpath>
             <xpath expr="//form//group//group//field[@name='partner_id']" position="attributes">
                 <attribute name="required">partner_required or is_dispatch_guide</attribute> 
-                <attribute name="readonly">order_is_consignment or partner_required or is_donation</attribute>
+                <attribute name="readonly">state == 'done' or order_is_consignment or partner_required</attribute>
             </xpath>
             <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="before">
                 <field name="is_return" invisible="1"/>
@@ -60,11 +68,10 @@
                 <field name="show_other_causes_transfer_reason" invisible="1"/>
                 <field name="is_consignment" />
                 <field name="allowed_reason_ids" invisible="1" />
-                <field name="is_donation" readonly="is_donation" force_save="1"/>
                 <field 
                     name="transfer_reason_id"
                     invisible="operation_code != 'outgoing'"
-                    readonly="is_donation or state == 'done'"/>
+                    readonly="state == 'done'"/>
                 <field
                     name="other_causes_transfer_reason"
                     invisible="not show_other_causes_transfer_reason"
@@ -75,7 +82,7 @@
                 <field 
                     name="guide_number"
                     readonly="1"
-                    invisible="not dispatch_guide_controls and is_donation"/>
+                    invisible="not dispatch_guide_controls"/>
                 <field name="is_return" readonly="1"/>
             </xpath>
             <xpath expr="//field[@name='picking_type_id']" position="after">

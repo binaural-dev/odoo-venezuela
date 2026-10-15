@@ -46,19 +46,32 @@
                                 </div>
                             </div>
                             <div class="o_setting_left_pane">
-                                <field name="sequence_validation_tfhka"/>
-                            </div>
-                            <div class="o_setting_right_pane">
-                                <label for="sequence_validation_tfhka"/>
-                                <div class="text-muted">
-                                    Validation of sequences between Odoo and The Factory
-                                </div>
-                            </div>
-                            <div class="o_setting_left_pane">
                                 <field name="digitalization_with_payment_tfhka"/>
                             </div>
                             <div class="o_setting_right_pane">
                                 <label for="digitalization_with_payment_tfhka"/>
+                            </div>
+                            <div class="o_setting_box" invisible="not digitalization_with_payment_tfhka">
+                                <field name="payment_mode_tfhka" widget="radio" class="oe_inline"/>
+                            </div>
+                            <!-- Facturación por lotes: reserva un rango de numeración vía
+                                 /AsignarNumeraciones y habilita la acción "Generate TFHKA
+                                 Digitalization Batch" en la lista de facturas. Depende de
+                                 "Digital invoicing with payment registration" (ver
+                                 res.config.settings, onchange + set_values):
+                                 el lote encola directo, sin pasar por el filtro
+                                 "not payment-driven" del encolado normal, así que solo
+                                 tiene sentido bajo ese modo. -->
+                            <div class="o_setting_box" invisible="not digitalization_with_payment_tfhka">
+                                <div class="o_setting_left_pane">
+                                    <field name="batch_invoicing_tfhka"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="batch_invoicing_tfhka"/>
+                                    <div class="text-muted">
+                                        Allows grouping posted invoices into a TFHKA digitalization batch (esLote).
+                                    </div>
+                                </div>
                             </div>
                             <!-- Multi-moneda: toggle maestro que habilita el checkbox
                                  por factura. Solo visible si invoice_digital_tfhka está activo. -->
@@ -70,6 +83,17 @@
                                     <label for="multi_currency_invoice_tfhka"/>
                                     <div class="text-muted">
                                         Allows marking individual invoices as multi-currency (mixed VES/USD) for digitalization.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="o_setting_box">
+                                <div class="o_setting_left_pane">
+                                    <field name="notify_email_tfhka"/>
+                                </div>
+                                <div class="o_setting_right_pane">
+                                    <label for="notify_email_tfhka"/>
+                                    <div class="text-muted">
+                                        When enabled, The Factory HKA will send the digitalized document to the customer by email. When disabled, the email will be sent directly from Odoo.
                                     </div>
                                 </div>
                             </div>

@@ -1,6 +1,7 @@
 from odoo.tests import  Form ,TransactionCase
 import random
 from odoo import fields, Command
+from odoo.tools.float_utils import float_round
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -20,8 +21,21 @@ class RetentionTestCommon(TransactionCase):
         self.currency_usd.rounding = 0.01
         self.currency_usd.decimal_places = 2
         self.currency_vef.decimal_places = 2
+        # VEF es la moneda de la compañía: su propia serie de tasas debe
+        # mantenerse en 1.0 para que la normalización de company_rate/
+        # inverse_company_rate (introducida en el core de Odoo 19, que
+        # divide la tasa cruda entre la última tasa registrada para la
+        # moneda de la compañía) no arrastre la tasa histórica de
+        # semilla (5.864 al 2010-01-01) y desvirtúe el cálculo de la
+        # tasa foránea usada por las retenciones.
         self.currency_vef.write({
-            
+            'rate_ids': [
+                Command.create({'rate': 1.0, 'name': fields.Date.today()}),
+                Command.create({
+                    'rate': 1.0,
+                    'name': fields.Date.subtract(fields.Date.today(), days=1),
+                }),
+            ],
             'active':True
         })
 
@@ -499,9 +513,35 @@ class RetentionTestCommon(TransactionCase):
                 line.product_id = self.product_islr_iva_one
                 line.quantity = 1
                 line.price_unit = amount
-        
-        inv = inv_form_edit.save() 
 
-        
+        inv = inv_form_edit.save()
+
+
         return inv
-    
+
+    def _prepare_invoice_for_retention(self, invoice):
+        invoice.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
+
+    def _create_iva_retention(self, invoice):
+        today = fields.Date.today()
+        return self.env["account.retention"].create({
+            "type_retention": "iva",
+            "type": "in_invoice",
+            "company_id": self.company.id,
+            "partner_id": self.partner_pnr_75.id,
+            "date": today,
+            "date_accounting": today,
+            "retention_line_ids": [
+                Command.create({
+                    "move_id": invoice.id,
+                    "name": "IVA Retention Line",
+                    "invoice_total": invoice.amount_total,
+                    "invoice_amount": invoice.amount_untaxed,
+                    "retention_amount": float_round(invoice.amount_untaxed * 0.16, precision_rounding=0.01),
+                    "foreign_currency_rate": 1.0,
+                    "foreign_invoice_amount": invoice.amount_untaxed,
+                    "foreign_retention_amount": float_round(invoice.amount_untaxed * 0.16, precision_rounding=0.01),
+                })
+            ],
+        })
+

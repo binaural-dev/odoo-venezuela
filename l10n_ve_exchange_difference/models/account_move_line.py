@@ -5,6 +5,44 @@ from odoo.exceptions import UserError
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
+    def _skip_foreign_compute(self):
+        """Exchange difference Debit/Credit Notes behave like Odoo's own
+        exchange difference entry: they never carry alternate currency
+        amounts (`foreign_debit`/`foreign_credit` stay 0.0). The alternate
+        currency difference, if any, lives in its own entry."""
+        if self._is_exchange_note_line():
+            return True
+        return super()._skip_foreign_compute()
+
+    def _is_exchange_note_line(self):
+        move = self.move_id
+        return bool(move.l10n_ve_exchange_diff_entry and move.move_type in ('out_invoice', 'out_refund'))
+
+    def _zero_foreign_amounts_on_exchange_notes(self):
+        """Other flows (payment term / tax line sync in `l10n_ve_accountant`)
+        write `foreign_balance` directly, bypassing the compute -- so the
+        invariant is enforced here, on whatever was just written."""
+        to_zero = self.filtered(
+            lambda l: l._is_exchange_note_line()
+            and (l.foreign_debit or l.foreign_credit or l.foreign_balance)
+        )
+        if to_zero:
+            super(AccountMoveLine, to_zero).write({
+                'foreign_debit': 0.0, 'foreign_credit': 0.0, 'foreign_balance': 0.0,
+            })
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines._zero_foreign_amounts_on_exchange_notes()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if any(f in vals for f in ('foreign_debit', 'foreign_credit', 'foreign_balance', 'move_id')):
+            self._zero_foreign_amounts_on_exchange_notes()
+        return res
+
     def reconcile(self):
         """When reconciling customer invoices (`out_invoice`/`out_refund`)
         whose company has the exchange difference Debit/Credit Note flow
@@ -26,7 +64,28 @@ class AccountMoveLine(models.Model):
         `_prepare_exchange_difference_move_vals` only receives the
         line(s) needing a fix, not the counterpart they were reconciled
         against.
+
+        Retention payments are excluded WITHOUT any hard dependency on
+        the module that implements them (`l10n_ve_payment_extension`):
+        that module reconciles a retention against the invoice's
+        receivable line with `l10n_ve_exchange_is_retention_reconcile=True`
+        in context (`account_retention.py::_reconcile_all_payments`) -- an
+        EXPLICIT, module-owned key set for exactly this purpose, not the
+        generic native `no_exchange_difference` key. That native key is
+        also set on the SAME call (to suppress Odoo's own generic entry)
+        but is deliberately NOT read here: it is a widely reused Odoo
+        core convention, and this module itself sets it elsewhere for an
+        unrelated reason (closing its own note's receivable line, see
+        `_create_exchange_difference_note` below) -- relying on it here
+        would misidentify ANY future caller that legitimately sets
+        `no_exchange_difference` for a different reason as a retention.
+        Coordinated purely via this context key (no shared dependency in
+        either direction): `l10n_ve_payment_extension` sets it without
+        depending on this module, and this module reads it without
+        depending on that one.
         """
+        if self.env.context.get('l10n_ve_exchange_is_retention_reconcile'):
+            return super().reconcile()
         invoice_lines = self.filtered(
             lambda l: (
                 l.account_type == 'asset_receivable'
@@ -227,6 +286,7 @@ class AccountMoveLine(models.Model):
                 and not invoice.debit_origin_id
                 and not invoice.reversed_entry_id
                 and not getattr(invoice, 'l10n_ve_igtf_note_debit_origin', False)
+                and company_of_line._l10n_ve_exchange_note_allowed_for_partner(invoice.partner_id)
             )
             residual = amounts.get('amount_residual')
             if (
@@ -670,7 +730,10 @@ class AccountMoveLine(models.Model):
                     'l10n_ve_exchange_invoice_id': invoice.id,
                     'l10n_ve_exchange_payment_id': payment.id,
                 })
-                note.with_context(move_action_post_alert=True).action_post()
+                note.with_context(
+                    move_action_post_alert=True,
+                    l10n_ve_skip_future_date_check=True,
+                ).action_post()
             else:
                 # `account_id` ya viene fijado arriba en `line_vals`
                 # (rama `is_credit_note` -> cuenta de PÉRDIDA) -- sin
@@ -743,6 +806,7 @@ class AccountMoveLine(models.Model):
                 note.with_context(
                     move_action_post_alert=True,
                     l10n_ve_skip_refund_origin_validation=True,
+                    l10n_ve_skip_future_date_check=True,
                 ).action_post()
 
         note_line = note.line_ids.filtered(lambda l: l.account_type == 'asset_receivable')

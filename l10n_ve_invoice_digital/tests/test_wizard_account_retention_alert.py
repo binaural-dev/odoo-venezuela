@@ -49,6 +49,8 @@ class TestAccountRetentionAlertWizard(TransactionCase):
             "move_id": retention.id,
         })
         wizard.action_confirm()
+        self.assertEqual(retention.tfhka_digitalization_state, "queued")
+        self.env["account.retention"]._tfhka_cron_process_queue_multi(["account.retention"])
         self.assertTrue(retention.is_digitalized)
 
     def test_02_wizard_action_cancel(self):

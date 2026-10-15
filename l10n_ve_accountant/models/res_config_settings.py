@@ -7,6 +7,10 @@ class ResConfigSettings(models.TransientModel):
 
     unique_tax = fields.Boolean(related="company_id.unique_tax", readonly=False)
 
+    tax_totals_edit_tolerance = fields.Float(
+        related="company_id.tax_totals_edit_tolerance", readonly=False
+    )
+
     show_discount_on_moves = fields.Boolean(
         related="company_id.show_discount_on_moves", readonly=False
     )
@@ -95,6 +99,10 @@ class ResConfigSettings(models.TransientModel):
     indexaxion_payment_mode = fields.Selection(related="company_id.indexaxion_payment_mode", readonly=False)
 
     indexed_default = fields.Boolean(related="company_id.indexed_default", readonly=False)
+
+    l10n_ve_use_foreign_exchange_diff = fields.Boolean(
+        related="company_id.l10n_ve_use_foreign_exchange_diff", readonly=False
+    )
 
     @api.onchange('indexaxion_payment_mode','index_payment_in_wizard')
     def _onchange_indexaxion_payment_mode(self):

@@ -241,7 +241,14 @@
                         <tbody class="tbody">
 
                             <t t-foreach="docs_by_page" t-as="line">
-                                <t t-if="line.display_type not in ['line_note', 'line_section']">
+                                <!--
+                                    'line_subsection' is the display_type Odoo 19
+                                    added to the layout family. Without it here a
+                                    subsection passed the filter and printed as a
+                                    data row (account, RIF, 0,00) in the middle of
+                                    the document.
+                                -->
+                                <t t-if="line.display_type not in ['line_note', 'line_section', 'line_subsection']">
 
                                     <t t-set="line" t-value="line.with_context(lang=lang)" />
 

@@ -56,7 +56,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             [("code", "=", "guide.number"), ("company_id", "=", company.id)]
         ).number_next_actual
 
-        if document_number != current_number and company.sequence_validation_tfhka:
+        if document_number != current_number:
             raise UserError(
                 _(
                     "The document sequence in Odoo (%(odoo_seq)s) does not match the sequence "
@@ -92,7 +92,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
 
         payload["documentoElectronico"].update(self._prepare_extra_payload_values(picking))
 
-        response = self.env["tfhka.api.client"].emit(picking.company_id, payload)
+        response = self.env["tfhka.api.client"].emit(picking.company_id, payload, origin=picking)
 
         if response:
             self._register_success(picking, response)

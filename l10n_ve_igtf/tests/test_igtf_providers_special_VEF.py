@@ -137,7 +137,7 @@ class TestIGTFNEW(IGTFTestCommon):
       
         invoice = self.env['account.move'].browse(invoice.id)
         self.assert_invoice_values(invoice, 600, 418.0, 'partial')
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         
         expected_lines = [
@@ -172,7 +172,7 @@ class TestIGTFNEW(IGTFTestCommon):
         invoice = self.env['account.move'].browse(invoice.id)
         invoice.with_context({}).js_assign_outstanding_line(outstanding_line.id)
         invoice = self.env['account.move'].browse(invoice.id)
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         
         expected_lines = [
@@ -205,7 +205,7 @@ class TestIGTFNEW(IGTFTestCommon):
         payment = self.env['account.payment'].browse(action.get('res_id'))
         invoice = self.env['account.move'].browse(invoice.id)
         
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         expected_lines = [
             {'account': self.account_bank_eur, 'debit': 0.0, 'credit': 236415.00},
@@ -237,7 +237,7 @@ class TestIGTFNEW(IGTFTestCommon):
         payment = self.env['account.payment'].browse(action.get('res_id'))
         invoice = self.env['account.move'].browse(invoice.id)
         
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         expected_lines = [
             {'account': self.account_bank_usd, 'debit': 0.0, 'credit': 468353.28},
@@ -269,7 +269,7 @@ class TestIGTFNEW(IGTFTestCommon):
         payment = self.env['account.payment'].browse(action.get('res_id'))
         invoice = self.env['account.move'].browse(invoice.id)
         
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         expected_lines = [
             {'account': self.account_bank_eur, 'debit': 0.0, 'credit': 472830.00},
@@ -302,7 +302,7 @@ class TestIGTFNEW(IGTFTestCommon):
         payment = self.env['account.payment'].browse(action.get('res_id'))
         invoice = self.env['account.move'].browse(invoice.id)
         
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         expected_lines = [
             {'account': self.account_bank_usd, 'debit': 0.0, 'credit': 390294.40},
@@ -340,7 +340,7 @@ class TestIGTFNEW(IGTFTestCommon):
         advance = len(payment.advanced_move_ids)
         self.assertAlmostEqual(advance, 1, 2, "Debe existir asiento de residual")
         
-        residual_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        residual_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         outstanding_line = residual_advance.line_ids.filtered(
             lambda l: l.account_id == self.advance_supp_acc and l.credit > 0
         )
@@ -369,7 +369,7 @@ class TestIGTFNEW(IGTFTestCommon):
         invoice_2.with_context({}).js_assign_outstanding_line(outstanding_line.id)
 
        
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         expected_lines = [
             {'account': self.advance_supp_acc, 'amount_currency': -412.00},
@@ -407,7 +407,7 @@ class TestIGTFNEW(IGTFTestCommon):
         advance = len(payment.advanced_move_ids)
         self.assertAlmostEqual(advance, 1, 2, "Debe existir asiento de residual")
         
-        residual_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        residual_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         outstanding_line = residual_advance.line_ids.filtered(
             lambda l: l.account_id == self.advance_supp_acc and l.credit > 0
         )
@@ -435,7 +435,7 @@ class TestIGTFNEW(IGTFTestCommon):
         invoice_2.with_context({}).js_assign_outstanding_line(outstanding_line.id)
 
        
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         expected_lines = [
             {'account': self.advance_supp_acc, 'amount_currency': -412.00},
@@ -660,7 +660,7 @@ class TestIGTFNEW(IGTFTestCommon):
         invoice = self.env['account.move'].browse(invoice.id)
         invoice.with_context({}).js_assign_outstanding_line(outstanding_line.id)
         invoice = self.env['account.move'].browse(invoice.id)
-        cross_move_advance = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move_advance = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
         
         
         expected_lines = [
@@ -671,15 +671,26 @@ class TestIGTFNEW(IGTFTestCommon):
         self._assert_move_lines_equal(cross_move_advance, expected_lines)
         
         invoice_receivable_line = invoice.line_ids.filtered(
-            lambda l: l.account_id == self.acc_payable and l.debit > 0
+            lambda l: l.account_id == self.acc_payable and l.credit > 0
         )
 
-        partial_reconcile = outstanding_line.matched_debit_ids.filtered(
-            lambda p: p.debit_move_id == invoice_receivable_line
-        )
+        # outstanding_line vive en la cuenta de anticipo; su contraparte
+        # conciliada es la linea del cruce en esa MISMA cuenta, no la
+        # linea de CxP de la factura (cuenta distinta). El partial que
+        # realmente conecta la factura con el cruce cuelga de
+        # invoice_receivable_line (cuenta de CxP, lado credito en una
+        # factura de proveedor).
+        partial_reconcile = invoice_receivable_line.matched_debit_ids
 
         invoice.with_context({}).js_remove_outstanding_partial(partial_reconcile.id)
-        
+
+        invoice = self.env['account.move'].browse(invoice.id)
+        self.assertEqual(
+            invoice.payment_state, 'not_paid',
+            f"Tras desconciliar el cruce de anticipo, payment_state debe volver a "
+            f"'not_paid', no quedar en {invoice.payment_state!r}"
+        )
+
     def test12_payment_from_invoice_with_igtf_journal_desconciliation(self):
         
         invoice_amount = float(2691.20)
@@ -1055,7 +1066,7 @@ class TestIGTFNEW(IGTFTestCommon):
 
         invoice.with_context({}).js_assign_outstanding_line(outstanding_line.id)
 
-        cross_move = self.env['account.move'].search([], order='id desc', limit=1)
+        cross_move = self.env['account.move'].search([('l10n_ve_exchange_foreign_diff_entry', '=', False)], order='id desc', limit=1)
 
         expected_lines = [
             {'account': self.acc_payable, 'debit': 600.00},

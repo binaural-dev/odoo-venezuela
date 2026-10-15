@@ -1,13 +1,47 @@
+import json
+
 from odoo import models, api, fields, _
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 
 from ..services.tfhka_document_service import VES_CURRENCY_NAMES
 
 
 class AccountMove(models.Model):
-    _inherit = "account.move"
+    _inherit = ["account.move", "tfhka.digitalization.mixin"]
+
+    # An error digitalizing one invoice must not freeze invoicing in every
+    # other journal -- see tfhka.digitalization.mixin._tfhka_queue_scope_field
+    # and HD-15734.
+    _tfhka_queue_scope_field = "journal_id"
+
+    # Resetting to draft or cancelling an invoice while it's in flight with
+    # TFHKA (queued/processing) or already digitalized (success) let it be
+    # edited and re-sent with different amounts, or digitalized after being
+    # cancelled -- assigning a real control number to a document that no
+    # longer matches what TFHKA has, and in one reported case leaving a
+    # sequence mismatch that froze the whole journal's queue (see HD-15459).
+    # 'error'/'data_error' are deliberately NOT included: a failed document
+    # must still be cancellable/reopenable as the controlled way out of the
+    # queue -- see tfhka.digitalization.mixin.action_tfhka_retry_digitalization
+    # for the other way out (retry instead of giving up).
+    _TFHKA_EDIT_LOCKED_STATES = ("queued", "processing", "success")
 
     is_digitalized = fields.Boolean(default=False, copy=False, tracking=True)
+    tfhka_batch_ref = fields.Char(
+        copy=False,
+        tracking=True,
+        string="TFHKA Batch Reference",
+        help="Identifies the TFHKA digitalization batch this invoice belongs to. "
+             "Only set when the invoice was assigned via 'Generate TFHKA "
+             "Digitalization Batch'.",
+    )
+    tfhka_batch_document_number = fields.Integer(
+        copy=False,
+        string="TFHKA Batch Document Number",
+        help="Document number reserved for this invoice within its batch (via "
+             "/AsignarNumeraciones). When set, it replaces the normal 'last "
+             "document + 1' calculation at emission time.",
+    )
     show_digital_invoice = fields.Boolean(compute="_compute_invisible_check", copy=False)
     show_digital_debit_note = fields.Boolean(string="Show Digital Note Debit", compute="_compute_invisible_check", copy=False)
     show_digital_credit_note = fields.Boolean(string="Show Digital Note Credit", compute="_compute_invisible_check", copy=False)
@@ -25,6 +59,26 @@ class AccountMove(models.Model):
         related="journal_id.digital_invoice",
         string="Journal Is Digital",
         help="Used to hide the TFHKA digitalization fields when the journal is not digital.",
+    )
+
+    # --- Serie de proveedor (ticket helpdesk #15078) ---
+    # No todos los proveedores usan serie, por lo tanto el campo no es
+    # obligatorio ni tiene formato forzado: varía por proveedor.
+    vendor_series_tfhka = fields.Char(
+        string="Supplier Series",
+        copy=False,
+        help="Series the supplier uses to identify their documents (separate "
+             "from the document number). Sent to The Factory HKA when "
+             "digitalizing IVA/ISLR retentions for this vendor bill. Leave "
+             "empty if the supplier does not use a series. Do not repeat the "
+             "series inside the document number: numeroDocumento is taken "
+             "from the digits of the document name as-is.",
+    )
+    invoice_digital_tfhka_active = fields.Boolean(
+        related="company_id.invoice_digital_tfhka",
+        string="TFHKA Digital Invoicing Active",
+        help="Used to show the vendor document series field only when TFHKA "
+             "digitalization is active for the company.",
     )
 
     @api.model_create_multi
@@ -49,6 +103,70 @@ class AccountMove(models.Model):
         if not skip_guard:
             self._apply_payment_driven_multi_currency()
         return res
+
+    def _tfhka_locked_for_editing(self):
+        return self.filtered(
+            lambda move: move.tfhka_digitalization_state in self._TFHKA_EDIT_LOCKED_STATES
+        )
+
+    def _tfhka_vendor_bills_with_digitalized_retention(self):
+        """Vendor bills already used by a digitalized TFHKA retention (IVA/
+        ISLR) -- reopening or cancelling the bill afterward would leave that
+        retention's amounts/dates pointing at a document that no longer
+        matches what was actually sent to TFHKA. The bill itself never goes
+        through TFHKA digitalization (only sales invoices do), so this is
+        independent of ``tfhka_digitalization_state``/
+        ``_tfhka_locked_for_editing`` above, which only ever applies to
+        account.move's own digitalization."""
+        lines = self.env["account.retention.line"].search([
+            ("move_id", "in", self.ids),
+            ("retention_id.is_digitalized", "=", True),
+        ])
+        return self.browse(lines.mapped("move_id").ids)
+
+    def button_draft(self):
+        locked = self._tfhka_locked_for_editing()
+        if locked:
+            raise UserError(
+                _(
+                    "Cannot reset %(names)s to draft: already queued, being sent, or already "
+                    "digitalized with TFHKA. Wait for the digitalization to finish, or annul it "
+                    "in The Factory HKA first if it already has a control number."
+                )
+                % {"names": ", ".join(locked.mapped("display_name"))}
+            )
+        retention_locked = self._tfhka_vendor_bills_with_digitalized_retention()
+        if retention_locked:
+            raise UserError(
+                _(
+                    "Cannot reset %(names)s to draft: already used by a digitalized TFHKA "
+                    "retention. Annul the retention in The Factory HKA first if it needs to change."
+                )
+                % {"names": ", ".join(retention_locked.mapped("display_name"))}
+            )
+        return super().button_draft()
+
+    def button_cancel(self):
+        locked = self._tfhka_locked_for_editing()
+        if locked:
+            raise UserError(
+                _(
+                    "Cannot cancel %(names)s: already queued, being sent, or already digitalized "
+                    "with TFHKA. Wait for the digitalization to finish, or annul it in The Factory "
+                    "HKA first if it already has a control number."
+                )
+                % {"names": ", ".join(locked.mapped("display_name"))}
+            )
+        retention_locked = self._tfhka_vendor_bills_with_digitalized_retention()
+        if retention_locked:
+            raise UserError(
+                _(
+                    "Cannot cancel %(names)s: already used by a digitalized TFHKA retention. "
+                    "Annul the retention in The Factory HKA first if it needs to change."
+                )
+                % {"names": ", ".join(retention_locked.mapped("display_name"))}
+            )
+        return super().button_cancel()
 
     def action_post(self):
         for invoice in self:
@@ -96,6 +214,91 @@ class AccountMove(models.Model):
                     % {"invoice_date": last_invoice.invoice_date_display}
                 )
 
+    def _tfhka_is_eligible_for_digitalization(self):
+        """True when this move should be queued for normal digitalization:
+        digital journal, not already digitalized, and not in "digitalization
+        with payment" mode (driven by payment reconciliation instead -- see
+        ``digitalization_with_payment_tfhka``). Extracted from
+        ``_tfhka_enqueue_eligible_for_digitalization`` so
+        ``_tfhka_should_mark_not_applicable`` can reason about the same
+        criteria without duplicating them."""
+        self.ensure_one()
+        return (
+            not self.is_digitalized
+            and self.journal_id.digital_invoice
+            and not self.company_id.digitalization_with_payment_tfhka
+        )
+
+    def _tfhka_should_mark_not_applicable(self):
+        """True only for the exact case this state exists for: the company
+        uses TFHKA, this move is a type that would normally be a candidate
+        (out_invoice/out_refund), but its journal doesn't have digital
+        invoicing enabled. Deliberately narrower than "not eligible" -- an
+        already-digitalized move must never be marked 'not_applicable'.
+
+        Applies regardless of ``digitalization_with_payment_tfhka``: that
+        mode only changes *how* an eligible move gets enqueued (manually via
+        ``action_tfhka_generate_digital`` instead of automatically at
+        posting), it does not bypass the digital-journal requirement -- the
+        manual button itself is hidden without one too (see
+        ``_compute_invisible_check``, which guards ``show_digital_invoice``
+        on the same ``journal_id.digital_invoice`` check). A non-digital
+        journal is a dead end either way."""
+        self.ensure_one()
+        return (
+            self.company_id.invoice_digital_tfhka
+            and self.move_type in ("out_invoice", "out_refund")
+            and not self.journal_id.digital_invoice
+        )
+
+    def _tfhka_enqueue_eligible_for_digitalization(self):
+        """Enqueues each eligible move for TFHKA digitalization (queue
+        processed by cron, see ``tfhka.digitalization.mixin``), and marks as
+        ``not_applicable`` any move that will never be digitalized because
+        its journal isn't digital (see ``_tfhka_should_mark_not_applicable``)
+        -- otherwise it would sit in ``'none'`` forever, indistinguishable
+        from "not posted yet".
+
+        Called from ``move.action.post.alert.wizard.action_confirm()`` and
+        from ``third.party.move.action.post.alert.wizard`` (in
+        ``binaural_third_party_invoice_digital``) right after posting --
+        the latter is why this lives on the move itself rather than inline
+        in the base wizard: it lets that module reuse the same eligibility
+        check (and now the same ``not_applicable`` marking) to also enqueue
+        Third Party child invoices once they get posted alongside their
+        parent, a flow the base wizard never sees since it only ever
+        receives the parent invoice.
+        """
+        not_applicable = self.filtered(
+            lambda record: record.tfhka_digitalization_state == "none"
+            and record._tfhka_should_mark_not_applicable()
+        )
+        if not_applicable:
+            not_applicable.write({"tfhka_digitalization_state": "not_applicable"})
+
+        eligible = self.filtered(lambda record: record._tfhka_is_eligible_for_digitalization())
+        eligible._tfhka_enqueue_digitalization()
+
+    def _tfhka_reconcile_success_from_log(self, log_entry):
+        """See ``tfhka.digitalization.mixin._tfhka_recover_stuck_processing``:
+        replays ``tfhka.document.service._register_success`` using the
+        response TFHKA already gave us for the interrupted attempt, instead
+        of resubmitting. ``document_number`` is read back from the original
+        *request* (not recomputed) because, in normal mode, it was TFHKA's
+        own last-number-at-the-time plus one -- recomputing it now would give
+        a different (wrong) number, since TFHKA's counter already moved past
+        it once this document was accepted."""
+        self.ensure_one()
+        response = json.loads(log_entry.response_payload)
+        request_payload = json.loads(log_entry.request_payload)
+        document_number = (
+            request_payload.get("documentoElectronico", {})
+            .get("encabezado", {})
+            .get("identificacionDocumento", {})
+            .get("numeroDocumento")
+        )
+        self.env["tfhka.document.service"]._register_success(self, response, document_number)
+
     def _is_eligible_for_tfhka(self):
         """Check if the invoice should process TFHKA logic."""
         self.ensure_one()
@@ -119,6 +322,146 @@ class AccountMove(models.Model):
                     "Only journals with digital invoicing enabled are allowed for this operation. "
                     "Please check the company configuration or select a valid digital journal."
                 ))
+
+    def action_tfhka_generate_digital(self):
+        """Override: in "digitalization with payment" mode this button is the
+        ONLY entry point to the queue (see _tfhka_is_eligible_for_digitalization,
+        always False in that mode), so it's the only place that can stop a
+        sequence gap or an un-queued predecessor before the document reaches
+        'queued'. Validated BEFORE calling super() (the mixin's write to the
+        queue) so a failure here never touches tfhka_digitalization_state."""
+        for move in self:
+            move._tfhka_validate_sequence_before_queue()
+        self._check_tfhka_payment_required()
+        return super().action_tfhka_generate_digital()
+
+    def _check_tfhka_payment_required(self):
+        """In 'cash' mode, block digitalization until the invoice is paid.
+
+        Same criteria as binaural_unidigital.AccountMove.
+        _check_unidigital_payment_required: accepts ``paid``, ``in_payment``
+        and ``reversed`` as satisfying the "paid" requirement, excludes
+        credit notes (``out_refund``), and only applies in "digitalization
+        with payment" mode (``digitalization_with_payment_tfhka``) -- the
+        exact TFHKA analog of ``unidigital_invoice_payment_register``. All
+        invoices are validated together and reported in a single error
+        listing every offending invoice.
+
+        Only called from ``action_tfhka_generate_digital()``: in payment
+        mode that's the sole entry point to the queue (see the docstring
+        above), so gating it there is enough -- the normal/automatic flow
+        never enqueues while this mode is active (see
+        ``_tfhka_is_eligible_for_digitalization``).
+        """
+        unpaid = self.filtered(
+            lambda invoice: (
+                invoice.move_type != "out_refund"
+                and invoice.company_id.digitalization_with_payment_tfhka
+                and invoice.company_id.payment_mode_tfhka == "cash"
+                and invoice.payment_state not in ("paid", "in_payment", "reversed")
+            )
+        )
+        if unpaid:
+            raise ValidationError(
+                _(
+                    "The following invoices must have their payment in "
+                    "process, be fully paid, or be reversed before they can "
+                    "be digitalized:\n%s",
+                    "\n".join(unpaid.mapped("name")),
+                )
+            )
+
+    def _tfhka_validate_sequence_before_queue(self):
+        """Sequence guard exclusive to "digitalization with payment" mode
+        (company_id.digitalization_with_payment_tfhka). No-op in normal mode:
+        there, invoices are enqueued automatically at posting time, in strict
+        chronological order, so this guard has nothing retroactive to check."""
+        self.ensure_one()
+        if not self.company_id.digitalization_with_payment_tfhka:
+            return
+        previous = self._tfhka_find_previous_queue_document()
+        self._tfhka_check_sequence_gap(previous)
+        self._tfhka_check_previous_document_queued(previous)
+
+    def _tfhka_sibling_sequence_journals(self):
+        """Journals whose moves are numbered under the exact same ir.sequence
+        as this move's own journal (for this move_type) -- normally just
+        ``self.journal_id`` alone, but some setups intentionally share one
+        sequence across two journals (e.g. an invoicing split where both
+        report to TFHKA under the same numbering stream/series). TFHKA's
+        strictly-consecutive-numbering requirement applies to that shared
+        stream, not to Odoo's journal_id, so the "previous document" search
+        must span every journal drawing from the same sequence -- this is
+        what makes the sequence guard work the same way whether the
+        sequence is exclusive to one journal or shared across several."""
+        self.ensure_one()
+        journal = self.journal_id
+        sequence_field = (
+            "refund_sequence_id"
+            if self.move_type == "out_refund" and journal.refund_sequence_id
+            else "sequence_id"
+        )
+        sequence = journal[sequence_field]
+        if not sequence:
+            return journal
+        return self.env["account.journal"].search([
+            ("company_id", "=", self.company_id.id),
+            (sequence_field, "=", sequence.id),
+        ])
+
+    def _tfhka_find_previous_queue_document(self):
+        """The posted move immediately before this one (by name) among every
+        journal sharing this move's numbering sequence -- see
+        _tfhka_sibling_sequence_journals(). Same domain/order pattern as
+        _tfhka_validate_invoice_date (above) and binaural_unidigital.
+        AccountMove._check_previous_invoice_digitalized, broadened from a
+        single journal_id to the sibling-journal set."""
+        self.ensure_one()
+        return self.env["account.move"].search(
+            [
+                ("id", "!=", self.id),
+                ("company_id", "=", self.company_id.id),
+                ("journal_id", "in", self._tfhka_sibling_sequence_journals().ids),
+                ("move_type", "=", self.move_type),
+                ("state", "=", "posted"),
+                ("name", "<", self.name),
+            ],
+            order="name desc",
+            limit=1,
+        )
+
+    def _tfhka_check_sequence_gap(self, previous):
+        """Hard block: this move's sequence_number must be exactly one more
+        than its predecessor's (see _tfhka_find_previous_queue_document).
+        Computed directly instead of trusting account.move.made_sequence_gap
+        -- that field is maintained per journal_id, so it can't see a gap (or
+        can false-positive) when two journals share one sequence, and isn't
+        reliably populated for moves created outside the normal posting flow
+        that triggers _inverse_name(). No override wizard -- the gap must be
+        resolved in Odoo (fix the irregularity, e.g. a cancelled document
+        that ate a number) before digitalizing; TFHKA requires strictly
+        consecutive numbering."""
+        self.ensure_one()
+        if previous and self.sequence_number != previous.sequence_number + 1:
+            raise ValidationError(_(
+                "Cannot queue %(name)s for digitalization: there is a numbering gap "
+                "between it and the previous document, %(previous_name)s. Fix the "
+                "sequence irregularity in Odoo first."
+            ) % {"name": self.name, "previous_name": previous.name})
+
+    def _tfhka_check_previous_document_queued(self, previous):
+        """Hard block: the previous document in this numbering sequence (see
+        _tfhka_find_previous_queue_document) must have entered the
+        digitalization queue at least once -- 'none' is the only mark of
+        "never pressed the button"; queued/processing/success/error/
+        data_error/not_applicable already went through the queue once and
+        don't block."""
+        self.ensure_one()
+        if previous and previous.tfhka_digitalization_state == "none":
+            raise ValidationError(_(
+                "Cannot queue %(name)s for digitalization: the previous document, "
+                "%(previous_name)s, is not digitalized or queued yet."
+            ) % {"name": self.name, "previous_name": previous.name})
 
     # --- MULTI-MONEDA ---
     # Flag por factura: habilita el selector de moneda de línea.
@@ -366,6 +709,30 @@ class AccountMove(models.Model):
                     }
                 )
 
+    @api.constrains('name')
+    def _check_name_has_no_unresolved_placeholder(self):
+        """Red de seguridad: un ``name`` con un marcador de secuencia sin
+        interpolar (p. ej. ``FCON/%(range_year)s/00000059``) significa que
+        alguna ruta de código armó el nombre a mano en vez de pedirle el
+        siguiente valor a ``ir.sequence`` (``get_next_char``/``next_by_id``,
+        que sí interpolan). Se valida acá, en vez de solo en ``action_post``,
+        porque esta corrupción puede ocurrir después de postear (p. ej. la
+        sincronización de secuencia de TFHKA en
+        ``tfhka.document.service._register_success``, que corre post-post).
+        """
+        for move in self:
+            if move.name and "%(" in move.name:
+                raise ValidationError(
+                    _(
+                        "Cannot set '%(name)s' as the document number: it still contains "
+                        "an unresolved sequence placeholder. This usually means the name "
+                        "was built by hand instead of asking the journal's sequence for "
+                        "the next value -- use ir.sequence.get_next_char() instead of "
+                        "concatenating the raw prefix."
+                    )
+                    % {"name": move.name}
+                )
+
     def copy_data(self, default=None):
         """Propaga la configuración multi-moneda a notas de crédito y débito.
 
@@ -386,17 +753,13 @@ class AccountMove(models.Model):
                 data.setdefault("pricelist_id", move.pricelist_id.id)
         return data_list
 
-    # Resuelve si esta factura debe tratarse como multi-moneda.
-    # Es el flag de la factura y solo el flag: el ajuste de compañía
-    # (multi_currency_invoice_tfhka) únicamente muestra el campo, y la presencia
-    # de una tasa (foreign_rate) no convierte el documento en bimoneda.
-    def is_invoice_multi_currency_enabled(self):
-        self.ensure_one()
-        return bool(self.multi_currency_invoice)
-
     def generate_document_digital(self):
         # Toda la lógica vive en la capa de servicios (tfhka.document.service).
         return self.env["tfhka.document.service"].send_document(self)
+
+    def action_tfhka_create_batch(self):
+        # Toda la lógica vive en la capa de servicios (tfhka.batch.service).
+        return self.env["tfhka.batch.service"].create_batch(self)
 
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):

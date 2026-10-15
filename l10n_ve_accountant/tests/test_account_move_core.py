@@ -585,3 +585,82 @@ class TestAccountMoveCore(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         # tax_totals debe contener las claves del override
         self.assertIn('formatted_base_amount_currency_ves', invoice.tax_totals or {})
+
+    # ═══════════════════════════════════════════════════════════════
+    # _compute_rate: depends on both invoice_date and date (helpdesk fix)
+    # ═══════════════════════════════════════════════════════════════
+
+    def _set_usd_rate(self, date, inverse_rate):
+        self.env["res.currency.rate"].create({
+            "name": date, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": inverse_rate, "company_id": self.company.id,
+        })
+
+    def _create_simple_purchase_invoice(self, currency=None, price=100.0, invoice_date=None):
+        currency = currency or self.currency_vef
+        invoice_date = invoice_date or fields.Date.today()
+        return self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "currency_id": currency.id,
+            "invoice_date": invoice_date,
+            "date": invoice_date,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": price,
+                    "account_id": self.acc_exp.id,
+                    "tax_ids": [(6, 0, [])],
+                }),
+            ],
+        })
+
+    def test_26_compute_rate_purchase_date_only_change(self):
+        """_compute_rate: para documentos que no son de venta (is_sale=False),
+        `_compute_rate_for_documents` busca la tasa con `date` (fecha contable),
+        no con `invoice_date`. Antes del fix, `_compute_rate` solo dependía de
+        `invoice_date`, así que cambiar únicamente `date` nunca disparaba el
+        recompute y `foreign_rate` quedaba obsoleto. Este test comprueba la
+        solución: cambiar solo `date` SÍ debe actualizar `foreign_rate`."""
+        old_date = fields.Date.to_date("2025-01-15")
+        new_date = fields.Date.to_date("2025-06-15")
+        self._set_usd_rate(old_date, 50.0)
+        self._set_usd_rate(new_date, 150.0)
+
+        invoice = self._create_simple_purchase_invoice(
+            self.currency_vef, 100.0, invoice_date=old_date
+        )
+        self.assertAlmostEqual(invoice.foreign_rate, 50.0, places=4)
+
+        # Cambia SOLO `date`, sin tocar `invoice_date`.
+        invoice.write({"date": new_date})
+        invoice.invalidate_recordset()
+
+        self.assertEqual(invoice.invoice_date, old_date)
+        self.assertEqual(invoice.date, new_date)
+        self.assertAlmostEqual(
+            invoice.foreign_rate, 150.0, places=4,
+            msg="foreign_rate debe seguir la nueva `date`, no quedar congelado "
+                "con la tasa de la `invoice_date` original.",
+        )
+
+    def test_27_compute_rate_sale_invoice_date_change_not_regressed(self):
+        """_compute_rate: para documentos de venta, el recompute ya
+        dependía correctamente de `invoice_date`. Confirma que agregar
+        `date` al `@api.depends` no rompe ese comportamiento existente."""
+        old_date = fields.Date.to_date("2025-01-15")
+        new_date = fields.Date.to_date("2025-06-15")
+        self._set_usd_rate(old_date, 50.0)
+        self._set_usd_rate(new_date, 150.0)
+
+        invoice = self._create_simple_invoice(self.currency_vef, 100.0)
+        invoice.write({"invoice_date": old_date})
+        invoice.invalidate_recordset()
+        self.assertAlmostEqual(invoice.foreign_rate, 50.0, places=4)
+
+        invoice.write({"invoice_date": new_date})
+        invoice.invalidate_recordset()
+        self.assertAlmostEqual(invoice.foreign_rate, 150.0, places=4)

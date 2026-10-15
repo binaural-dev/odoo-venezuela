@@ -522,11 +522,23 @@ class AccountPaymentAndIgtf(models.Model):
 
                 if float_compare(rec.igtf_amount, 0.0, precision_digits=precision) > 0.0:
                     base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
-                    if self._is_same_within_rounding(amount, base_residual, comp_curr):
+                    # Comparing only in VEF misses a full payment on a VEF
+                    # invoice paid in foreign currency: converting the debt to
+                    # USD and back leaves a few-bolivar leftover from rounding,
+                    # not a real difference. Also compare in the PAYMENT
+                    # currency to catch that case and force the exact residual.
+                    base_residual_in_payment_curr = comp_curr._convert(
+                        base_residual, currency, rec.company_id, conversion_date,
+                    )
+                    same_in_company_currency = self._is_same_within_rounding(amount, base_residual, comp_curr)
+                    same_in_payment_currency = self._is_same_within_rounding(
+                        abs(credit_line), base_residual_in_payment_curr, currency,
+                    )
+                    if same_in_company_currency or same_in_payment_currency:
                         amount = base_residual
                     if not write_off_line_vals:
-                        
-                        
+
+
                         vals[1].update({"amount_currency": credit_line, "balance": -amount})
                     else:
                         if conversion_date != rec.date: 
@@ -634,7 +646,16 @@ class AccountPaymentAndIgtf(models.Model):
 
                 if float_compare(rec.igtf_amount, 0.0, precision_digits=precision) > 0.0:
                     base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
-                    if self._is_same_within_rounding(amount, base_residual, comp_curr):
+                    # See the matching comment in `_prepare_inbound_move_line_igtf_vals`:
+                    # also compare in the payment currency, not just VEF.
+                    base_residual_in_payment_curr = comp_curr._convert(
+                        base_residual, currency, rec.company_id, conversion_date,
+                    )
+                    same_in_company_currency = self._is_same_within_rounding(amount, base_residual, comp_curr)
+                    same_in_payment_currency = self._is_same_within_rounding(
+                        abs(debit_line), base_residual_in_payment_curr, currency,
+                    )
+                    if same_in_company_currency or same_in_payment_currency:
                         amount = base_residual
                     if not write_off_line_vals:
 

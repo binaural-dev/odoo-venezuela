@@ -260,6 +260,23 @@ class TestExchangeNoteReversal(TransactionCase):
         })
         cls.company.l10n_ve_exchange_use_nd_nc = True
 
+        # `_check_l10n_ve_exchange_use_nd_nc_requires_config` (res_company.py)
+        # defiere su chequeo final a `cr.precommit` -- necesario para no dar
+        # un falso positivo mientras el toggle y el producto/pricelist se
+        # escriben en llamadas `write()` separadas (ver su propio docstring).
+        # Ese callback pendiente solo se descarga cuando algo llama
+        # `cr.flush()` (p.ej. `self.assertRaises` -- SÍ sobreescrito por Odoo
+        # para hacer flush; `assertRaisesRegex` NO). Sin este flush explícito
+        # acá, el callback queda dormido en `cr.precommit` durante TODA la
+        # clase -- hasta el primer test que use `assertRaises` plano, que
+        # puede ya haber corrompido a propósito el estado de la compañía por
+        # SQL directo (ej. `test_missing_note_pricelist_raises_user_error_defense_in_depth`)
+        # para ejercitar el guard en tiempo de conciliación. El chequeo
+        # dormido entonces lee ESE estado ajeno y revienta con
+        # `ValidationError` antes de que el bloque bajo prueba de ESE test
+        # siquiera se ejecute, enmascarando el `UserError` esperado.
+        cls.env.cr.flush()
+
         # Diario de venta EXPLÍCITO -- NO se busca "cualquier diario
         # `type='sale'`" (bug real confirmado: esa búsqueda, sin excluir
         # `is_debit`, podía encontrar el propio `debit_note_journal`
@@ -384,6 +401,7 @@ class TestExchangeNoteReversal(TransactionCase):
             [
                 *cls.env["account.journal"]._check_company_domain(cls.company),
                 ("type", "=", "bank"), ("currency_id", "=", False),
+                ("inbound_payment_method_line_ids.payment_account_id", "!=", False),
             ],
             limit=1,
         )
@@ -704,23 +722,23 @@ class TestExchangeNoteReversal(TransactionCase):
             "active": True,
             "rate_ids": [
                 Command.create({
-                    "name": "2038-01-01",
+                    "name": "2011-01-01",
                     "company_rate": 1 / 40.0,
                 }),
                 Command.create({
-                    "name": "2038-08-01",
+                    "name": "2011-08-01",
                     "company_rate": 1 / 36.0,
                 }),
             ],
         })
 
-        invoice = self._create_invoice("2038-01-01")
+        invoice = self._create_invoice("2011-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2038-08-01"
+            pay_form.payment_date = "2011-08-01"
             pay_form.indexed_default = False
             pay_form.save()
         payment_wizard = pay_form.record
@@ -795,17 +813,17 @@ class TestExchangeNoteReversal(TransactionCase):
             "active": True,
             "rate_ids": [
                 Command.create({
-                    "name": "2034-01-01",
+                    "name": "2007-01-01",
                     "company_rate": 1 / 40.0,
                 }),
                 Command.create({
-                    "name": "2034-08-01",
+                    "name": "2007-08-01",
                     "company_rate": 1 / 36.0,
                 }),
             ],
         })
 
-        invoice = self._create_invoice_company_currency("2034-01-01")
+        invoice = self._create_invoice_company_currency("2007-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
@@ -817,7 +835,7 @@ class TestExchangeNoteReversal(TransactionCase):
             # usuario que cambia ese campo en el formulario para pagar en
             # dólares una factura emitida en bolívares.
             pay_form.currency_id = self.usd
-            pay_form.payment_date = "2034-08-01"
+            pay_form.payment_date = "2007-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         self.assertEqual(payment_wizard.currency_id, self.usd)
@@ -1117,7 +1135,7 @@ class TestExchangeNoteReversal(TransactionCase):
         wizard = self.env["account.move.reversal"].with_context(
             active_ids=note.ids,
             active_model="account.move",
-        ).create({"date": "2026-08-15", "journal_id": note.journal_id.id})
+        ).create({"date": "2026-08-01", "journal_id": note.journal_id.id})
         wizard.reverse_moves()
         reversal = wizard.new_move_ids
         self.assertEqual(len(reversal), 1)
@@ -1465,23 +1483,23 @@ class TestExchangeNoteReversal(TransactionCase):
             "active": True,
             "rate_ids": [
                 Command.create({
-                    "name": "2027-01-01",
+                    "name": "2000-01-01",
                     "company_rate": 1 / 40.0,
                 }),
                 Command.create({
-                    "name": "2027-08-01",
+                    "name": "2000-08-01",
                     "company_rate": 1 / 36.0,
                 }),
             ],
         })
 
-        invoice = self._create_invoice("2027-01-01")
+        invoice = self._create_invoice("2000-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2027-08-01"
+            pay_form.payment_date = "2000-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
@@ -1521,19 +1539,19 @@ class TestExchangeNoteReversal(TransactionCase):
         self.assertTrue(note._is_exchange_credit_note())
         self.assertFalse(note._is_exchange_debit_note())
 
-        # Fechada el día del PAGO (2027-08-01), no el día en que corre el
+        # Fechada el día del PAGO (2000-08-01), no el día en que corre el
         # test (`context_today()`).
-        self.assertEqual(note.date, fields.Date.from_string("2027-08-01"))
+        self.assertEqual(note.date, fields.Date.from_string("2000-08-01"))
         self.assertEqual(note.l10n_ve_exchange_payment_id, payment.move_id)
 
         # `invoice_date_display` (la fecha que se IMPRIME en el
         # documento) también debe quedar en la fecha del pago -- sin
         # setearla explícito, Odoo la deja en blanco y el reporte impreso
         # cae al día en que se corre/imprime (HOY), no al de la nota.
-        self.assertEqual(note.invoice_date_display, fields.Date.from_string("2027-08-01"))
+        self.assertEqual(note.invoice_date_display, fields.Date.from_string("2000-08-01"))
 
         # `foreign_rate` de la NC debe reflejar la tasa a la fecha DEL
-        # PAGO (2027-08-01), NO la de la factura -- sin el override en
+        # PAGO (2000-08-01), NO la de la factura -- sin el override en
         # `_create_exchange_difference_note`, `l10n_ve_accountant`
         # (`account_move.create()`) hereda `foreign_rate` de
         # `reversed_entry_id` incondicionalmente para cualquier
@@ -1542,7 +1560,7 @@ class TestExchangeNoteReversal(TransactionCase):
         # (que sí calcula su propia tasa natural, porque nace de
         # `debit_origin_id`, no de `reversed_entry_id`).
         expected_rate_values = self.env["res.currency.rate"].compute_rate(
-            self.usd.id, fields.Date.from_string("2027-08-01"),
+            self.usd.id, fields.Date.from_string("2000-08-01"),
         )
         self.assertAlmostEqual(
             note.foreign_rate, expected_rate_values.get("foreign_rate", 0), places=6,
@@ -1577,23 +1595,23 @@ class TestExchangeNoteReversal(TransactionCase):
             "active": True,
             "rate_ids": [
                 Command.create({
-                    "name": "2029-01-01",
+                    "name": "2002-01-01",
                     "company_rate": 1 / 36.0,
                 }),
                 Command.create({
-                    "name": "2029-08-01",
+                    "name": "2002-08-01",
                     "company_rate": 1 / 40.0,
                 }),
             ],
         })
 
-        invoice = self._create_invoice("2029-01-01")
+        invoice = self._create_invoice("2002-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
         inv_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
 
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2029-08-01"
+            pay_form.payment_date = "2002-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
@@ -1624,7 +1642,7 @@ class TestExchangeNoteReversal(TransactionCase):
         self.assertEqual(note.move_type, "out_invoice")
         self.assertEqual(note.debit_origin_id, invoice)
 
-        # Numerada con el AÑO DE SU PROPIA FECHA (2029, la del pago), no
+        # Numerada con el AÑO DE SU PROPIA FECHA (2002, la del pago), no
         # el de hoy: `cls.debit_note_sequence` (`setUpClass`) NO tiene
         # `use_date_range=True` -- justo el caso donde
         # `ir.sequence.next_by_id(sequence_date=...)` por sí solo NO
@@ -1633,8 +1651,8 @@ class TestExchangeNoteReversal(TransactionCase):
         # `datetime.now()` salvo que la fecha venga por contexto
         # `ir_sequence_date`, ver `_compute_name_by_sequence`).
         self.assertTrue(
-            note.name.startswith("NDDIFT/2029/"),
-            f"La ND debió numerarse con el año de su propia fecha (2029), "
+            note.name.startswith("NDDIFT/2002/"),
+            f"La ND debió numerarse con el año de su propia fecha (2002), "
             f"no el de hoy. name={note.name!r}",
         )
 
@@ -1648,9 +1666,9 @@ class TestExchangeNoteReversal(TransactionCase):
         self.assertTrue(note._is_exchange_debit_note())
         self.assertFalse(note._is_exchange_credit_note())
 
-        # Fechada el día del PAGO (2029-08-01), no el día en que corre el
+        # Fechada el día del PAGO (2002-08-01), no el día en que corre el
         # test.
-        self.assertEqual(note.date, fields.Date.from_string("2029-08-01"))
+        self.assertEqual(note.date, fields.Date.from_string("2002-08-01"))
         self.assertEqual(note.l10n_ve_exchange_payment_id, payment.move_id)
 
         # La ND de GANANCIA debe acreditar la cuenta de ganancia cambiaria
@@ -1673,22 +1691,22 @@ class TestExchangeNoteReversal(TransactionCase):
             "active": True,
             "rate_ids": [
                 Command.create({
-                    "name": "2030-01-01",
+                    "name": "2003-01-01",
                     "company_rate": 1 / 36.0,
                 }),
                 Command.create({
-                    "name": "2030-08-01",
+                    "name": "2003-08-01",
                     "company_rate": 1 / 40.0,
                 }),
             ],
         })
 
-        invoice = self._create_invoice("2030-01-01")
+        invoice = self._create_invoice("2003-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
 
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2030-08-01"
+            pay_form.payment_date = "2003-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
@@ -1781,16 +1799,16 @@ class TestExchangeNoteReversal(TransactionCase):
         self.usd.write({
             "active": True,
             "rate_ids": [
-                Command.create({"name": "2044-01-01", "company_rate": 1 / 36.0}),
-                Command.create({"name": "2044-08-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2017-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2017-08-01", "company_rate": 1 / 40.0}),
             ],
         })
-        invoice = self._create_invoice("2044-01-01")
+        invoice = self._create_invoice("2017-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
 
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2044-08-01"
+            pay_form.payment_date = "2017-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
@@ -1837,16 +1855,16 @@ class TestExchangeNoteReversal(TransactionCase):
         self.usd.write({
             "active": True,
             "rate_ids": [
-                Command.create({"name": "2045-01-01", "company_rate": 1 / 40.0}),
-                Command.create({"name": "2045-08-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2018-01-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2018-08-01", "company_rate": 1 / 36.0}),
             ],
         })
-        invoice = self._create_invoice("2045-01-01")
+        invoice = self._create_invoice("2018-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
 
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2045-08-01"
+            pay_form.payment_date = "2018-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
@@ -1892,16 +1910,16 @@ class TestExchangeNoteReversal(TransactionCase):
         self.usd.write({
             "active": True,
             "rate_ids": [
-                Command.create({"name": "2046-01-01", "company_rate": 1 / 36.0}),
-                Command.create({"name": "2046-08-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2019-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2019-08-01", "company_rate": 1 / 40.0}),
             ],
         })
-        invoice = self._create_invoice("2046-01-01")
+        invoice = self._create_invoice("2019-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
 
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2046-08-01"
+            pay_form.payment_date = "2019-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
@@ -2100,16 +2118,16 @@ class TestExchangeNoteReversal(TransactionCase):
         self.usd.write({
             "active": True,
             "rate_ids": [
-                Command.create({"name": "2029-01-01", "company_rate": 1 / 36.0}),
-                Command.create({"name": "2029-08-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2002-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2002-08-01", "company_rate": 1 / 40.0}),
             ],
         })
-        invoice = self._create_invoice("2029-01-01")
+        invoice = self._create_invoice("2002-01-01")
         invoice.with_context(move_action_post_alert=True).action_post()
 
         with Form.from_action(self.env, invoice.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2029-08-01"
+            pay_form.payment_date = "2002-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
 
@@ -2647,16 +2665,16 @@ class TestExchangeNoteReversal(TransactionCase):
             "active": True,
             "rate_ids": [
                 Command.create({
-                    "name": "2031-01-01",
+                    "name": "2004-01-01",
                     "company_rate": 1 / 36.0,
                 }),
                 Command.create({
-                    "name": "2031-08-01",
+                    "name": "2004-08-01",
                     "company_rate": 1 / 40.0,
                 }),
             ],
         })
-        invoice_debit = self._create_invoice("2031-01-01")
+        invoice_debit = self._create_invoice("2004-01-01")
         invoice_debit.with_context(move_action_post_alert=True).action_post()
         self.assertNotEqual(
             invoice_debit.journal_id, debit_journal,
@@ -2665,7 +2683,7 @@ class TestExchangeNoteReversal(TransactionCase):
 
         with Form.from_action(self.env, invoice_debit.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2031-08-01"
+            pay_form.payment_date = "2004-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
@@ -2684,9 +2702,9 @@ class TestExchangeNoteReversal(TransactionCase):
             "La Nota de Débito de diferencial debió usar el diario dedicado.",
         )
         self.assertTrue(
-            note_debit.name.startswith("NDDIFT/2031/"),
+            note_debit.name.startswith("NDDIFT/2004/"),
             f"La ND debió numerarse con la secuencia dedicada y el año de su "
-            f"propia fecha (2031). name={note_debit.name!r}",
+            f"propia fecha (2004). name={note_debit.name!r}",
         )
 
         # Rama de Nota de Crédito (tasa de la factura MAYOR que la del
@@ -2696,16 +2714,16 @@ class TestExchangeNoteReversal(TransactionCase):
             "active": True,
             "rate_ids": [
                 Command.create({
-                    "name": "2032-01-01",
+                    "name": "2005-01-01",
                     "company_rate": 1 / 40.0,
                 }),
                 Command.create({
-                    "name": "2032-08-01",
+                    "name": "2005-08-01",
                     "company_rate": 1 / 36.0,
                 }),
             ],
         })
-        invoice_credit = self._create_invoice("2032-01-01")
+        invoice_credit = self._create_invoice("2005-01-01")
         invoice_credit.with_context(move_action_post_alert=True).action_post()
 
         # `number_next_actual` de la secuencia de FACTURAS del diario,
@@ -2719,7 +2737,7 @@ class TestExchangeNoteReversal(TransactionCase):
 
         with Form.from_action(self.env, invoice_credit.action_register_payment()) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2032-08-01"
+            pay_form.payment_date = "2005-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         action = payment_wizard.action_create_payments()
@@ -2815,17 +2833,17 @@ class TestExchangeNoteReversal(TransactionCase):
             "active": True,
             "rate_ids": [
                 Command.create({
-                    "name": "2035-01-01",
+                    "name": "2008-01-01",
                     "company_rate": 1 / 40.0,
                 }),
                 Command.create({
-                    "name": "2035-08-01",
+                    "name": "2008-08-01",
                     "company_rate": 1 / 36.0,
                 }),
             ],
         })
 
-        invoice = self._create_invoice("2035-01-01", journal=journal_without_nc_sequence)
+        invoice = self._create_invoice("2008-01-01", journal=journal_without_nc_sequence)
         invoice.with_context(move_action_post_alert=True).action_post()
         self.assertFalse(
             invoice.journal_id.refund_sequence_id,
@@ -2842,7 +2860,7 @@ class TestExchangeNoteReversal(TransactionCase):
             invoice.with_user(accountant).action_register_payment(),
         ) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2035-08-01"
+            pay_form.payment_date = "2008-08-01"
             pay_form.save()
         payment_wizard = pay_form.record
         with self.assertRaises(UserError) as ctx:
@@ -3085,7 +3103,7 @@ class TestExchangeNoteReversal(TransactionCase):
         entry_1 = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
-            "date": "2033-01-01",
+            "date": "2006-01-01",
             "line_ids": [
                 (0, 0, {
                     "account_id": receivable.id,
@@ -3111,7 +3129,7 @@ class TestExchangeNoteReversal(TransactionCase):
         entry_2 = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
-            "date": "2033-08-01",
+            "date": "2006-08-01",
             "line_ids": [
                 (0, 0, {
                     "account_id": receivable.id,
@@ -3410,14 +3428,14 @@ class TestExchangeNoteReversal(TransactionCase):
         self.usd.write({
             "active": True,
             "rate_ids": [
-                Command.create({"name": "2035-01-01", "company_rate": 1 / 36.0}),
-                Command.create({"name": "2035-08-01", "company_rate": 1 / 40.0}),
+                Command.create({"name": "2008-01-01", "company_rate": 1 / 36.0}),
+                Command.create({"name": "2008-08-01", "company_rate": 1 / 40.0}),
             ],
         })
 
-        invoice_1 = self._create_invoice("2035-01-01")
+        invoice_1 = self._create_invoice("2008-01-01")
         invoice_1.with_context(move_action_post_alert=True).action_post()
-        invoice_2 = self._create_invoice("2035-01-01")
+        invoice_2 = self._create_invoice("2008-01-01")
         with Form(invoice_2) as inv_form_edit:
             with inv_form_edit.invoice_line_ids.edit(0) as line:
                 line.price_unit = 500.0
@@ -3430,7 +3448,7 @@ class TestExchangeNoteReversal(TransactionCase):
         ctx = dict(action["context"], active_model="account.move.line", active_ids=lines_to_pay.ids)
         with Form(self.env["account.payment.register"].with_context(ctx)) as pay_form:
             pay_form.journal_id = self.usd_bank_journal
-            pay_form.payment_date = "2035-08-01"
+            pay_form.payment_date = "2008-08-01"
             pay_form.group_payment = True
             pay_form.save()
         payment_wizard = pay_form.record
@@ -3955,7 +3973,7 @@ class TestExchangeNoteReversal(TransactionCase):
         entry_1 = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
-            "date": "2033-01-01",
+            "date": "2006-01-01",
             "line_ids": [
                 (0, 0, {
                     "account_id": receivable.id, "partner_id": partner.id,
@@ -3970,7 +3988,7 @@ class TestExchangeNoteReversal(TransactionCase):
         entry_2 = self.env["account.move"].create({
             "move_type": "entry",
             "journal_id": self.sale_journal.id,
-            "date": "2033-08-01",
+            "date": "2006-08-01",
             "line_ids": [
                 (0, 0, {
                     "account_id": receivable.id, "partner_id": partner.id,
