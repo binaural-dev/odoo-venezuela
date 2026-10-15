@@ -623,6 +623,30 @@ class TestProductTemplate(TransactionCase):
             {other_company_tax.id, self.tax_sale_1.id},
         )
 
+    # ═══════════════════════════════════════════════════════════════
+    # TA 83868: company without a chart_template yet (fresh CI base, or
+    # a new client installing the localization) must not block install.
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_31_create_no_taxes_company_without_chart_template(self):
+        """Compañía sin chart_template (plan de cuentas aún no cargado) y
+        sin defaults de impuesto: crear producto sin taxes NO debe lanzar
+        UserError -- el producto queda sin impuesto, a la espera de que el
+        core cargue el plan real más tarde."""
+        fresh_company = self.env["res.company"].create({
+            "name": "Fresh Company No Chart TA-83868",
+        })
+        self.assertFalse(fresh_company.chart_template)
+        product = self.env["product.product"].with_company(fresh_company).create({
+            "name": "Test No Chart Template",
+            "type": "service",
+            "company_id": fresh_company.id,
+            "taxes_id": [(5, 0, 0)],
+            "supplier_taxes_id": [(5, 0, 0)],
+        })
+        self.assertEqual(len(product.taxes_id), 0)
+        self.assertEqual(len(product.supplier_taxes_id), 0)
+
     def test_30_write_batch_two_combos_one_with_tax_one_without(self):
         """Follow-up #5 (task 81303, second scenario): two combo products,
         one already carrying a valid tax and the other with none, both
