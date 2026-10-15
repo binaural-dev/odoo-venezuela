@@ -196,3 +196,47 @@ class TestMoveActionPostAlertWizard(TransactionCase):
         entry._tfhka_enqueue_eligible_for_digitalization()
 
         self.assertEqual(entry.tfhka_digitalization_state, "none")
+
+    # ------------------------------------------------------------------
+    # Draft-invoice digitalization bug: a move that action_post() doesn't
+    # actually post must never be enqueued (nor marked not_applicable).
+    # ------------------------------------------------------------------
+
+    def test_wizard_confirm_does_not_enqueue_when_move_is_not_actually_posted(self):
+        # Reproduces the Third Party billing bug without depending on that
+        # module: patches the base action_post() to behave like it does when
+        # child invoices are still in draft -- returning an action instead of
+        # posting the parent. The base wizard's action_confirm() ignores
+        # action_post()'s return value, so move_id.state is the only
+        # reliable signal that the move was actually confirmed.
+        inv = self._create_invoice(post=False)
+        wizard = self.env['move.action.post.alert.wizard'].create({'move_id': inv.id})
+
+        with patch(
+            'odoo.addons.account.models.account_move.AccountMove.action_post',
+            lambda self: {'type': 'ir.actions.act_window'},
+        ):
+            wizard.action_confirm()
+
+        self.assertEqual(inv.state, "draft")
+        self.assertEqual(inv.tfhka_digitalization_state, "none")
+        self.assertFalse(inv.tfhka_queued_at)
+
+    def test_eligible_for_digitalization_requires_posted_state(self):
+        inv = self._create_invoice(post=False)
+
+        self.assertFalse(inv._tfhka_is_eligible_for_digitalization())
+
+        inv.action_post()
+
+        self.assertTrue(inv._tfhka_is_eligible_for_digitalization())
+
+    def test_should_mark_not_applicable_requires_posted_state(self):
+        self.journal.digital_invoice = False
+        inv = self._create_invoice(post=False)
+
+        self.assertFalse(inv._tfhka_should_mark_not_applicable())
+
+        inv.action_post()
+
+        self.assertTrue(inv._tfhka_should_mark_not_applicable())

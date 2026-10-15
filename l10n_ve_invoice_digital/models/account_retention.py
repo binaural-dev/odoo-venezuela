@@ -24,6 +24,13 @@ class AccountRetention(models.Model):
              "rely on the caller's context surviving that long.",
     )
 
+    def _tfhka_is_confirmed(self):
+        """See ``tfhka.digitalization.mixin._tfhka_is_confirmed`` and
+        ``account.move._tfhka_is_confirmed``: the cron's safety net against
+        digitalizing a document that never actually got confirmed."""
+        self.ensure_one()
+        return self.state == "posted"
+
     def generate_document_digital(self):
         self.ensure_one()
         # document_type/account_retention_alert used to be passed in by each
