@@ -10,7 +10,7 @@
                 <field name="indexaxion_payment_mode" invisible="1"/>
                 <field name="base_currency_is_vef" invisible="1"/>
 
-                <field name="indexed_default" readonly= "indexaxion_payment_mode != 'to_agreed' or company_currency_id == currency_id" invisible="not can_edit_wizard or can_group_payments"/>
+                <field name="indexed_default" readonly="company_currency_id == currency_id" invisible="indexaxion_payment_mode != 'to_agreed' or not can_edit_wizard or can_group_payments"/>
 
                 <label for="foreign_rate" />
                 <div name="foreign_currency_div" class="o_row">

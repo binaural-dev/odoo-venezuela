@@ -118,27 +118,51 @@ class ResCompany(models.Model):
     # `currency_exchange_journal_id`) -- one asiento, both currencies.
     l10n_ve_use_foreign_exchange_diff = fields.Boolean(
         string='Use Alternate Currency Exchange Difference',
-        default=False,
+        default=True,
         help="Adds the alternate currency amount to Odoo's own exchange "
              "difference entry, or creates one just for it if company "
              "currency matched exactly.",
     )
+
+    def _l10n_ve_foreign_exchange_diff_missing_config(self):
+        """Names of the exchange difference settings this company lacks."""
+        self.ensure_one()
+        missing = []
+        if not self.currency_exchange_journal_id:
+            missing.append(_("Exchange Gain or Loss Journal"))
+        if not self.income_currency_exchange_account_id:
+            missing.append(_("Gain Exchange Rate Account"))
+        if not self.expense_currency_exchange_account_id:
+            missing.append(_("Loss Exchange Rate Account"))
+        return missing
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        # Enabled by default: a company just created cannot have the
+        # exchange journal/accounts yet (the chart of accounts creates them
+        # later), so the default alone is not validated. An explicit
+        # activation (flag in vals) is.
+        if any('l10n_ve_use_foreign_exchange_diff' not in vals for vals in vals_list):
+            companies = super(ResCompany, self.with_context(l10n_ve_skip_exchange_diff_check=True)).create(vals_list)
+            # Back to the caller's context: the skip only covers the creation.
+            return companies.with_env(self.env)
+        return super().create(vals_list)
 
     @api.constrains(
         'l10n_ve_use_foreign_exchange_diff', 'currency_exchange_journal_id',
         'income_currency_exchange_account_id', 'expense_currency_exchange_account_id',
     )
     def _check_l10n_ve_use_foreign_exchange_diff_requires_config(self):
+        # Loading a chart of accounts writes the exchange journal and the
+        # gain/loss accounts in separate steps: the config is incomplete
+        # until it finishes, so it can't be validated in the middle of it
+        # (`account.chart.template._load` revalidates it at the end).
+        if self.env.context.get('chart_template_load') or self.env.context.get('l10n_ve_skip_exchange_diff_check'):
+            return
         for company in self:
             if not company.l10n_ve_use_foreign_exchange_diff:
                 continue
-            missing = []
-            if not company.currency_exchange_journal_id:
-                missing.append(_("Exchange Gain or Loss Journal"))
-            if not company.income_currency_exchange_account_id:
-                missing.append(_("Gain Exchange Rate Account"))
-            if not company.expense_currency_exchange_account_id:
-                missing.append(_("Loss Exchange Rate Account"))
+            missing = company._l10n_ve_foreign_exchange_diff_missing_config()
             if missing:
                 raise ValidationError(_(
                     "With 'Use Alternate Currency Exchange Difference' "
