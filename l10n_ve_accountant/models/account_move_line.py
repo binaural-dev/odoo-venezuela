@@ -177,6 +177,11 @@ class AccountMoveLine(models.Model):
         """Set foreign_debit/credit from a signed value."""
         self.foreign_debit = abs(value) if value > 0 else 0.0
         self.foreign_credit = abs(value) if value < 0 else 0.0
+        # `foreign_debit/credit` depend on `foreign_balance` (and vice versa):
+        # when this runs because `foreign_balance` was just written, the ORM
+        # does not re-trigger it, leaving it a cent off from the debit/credit
+        # fixed here. Force it to be recomputed from them.
+        self.env.add_to_compute(self._fields["foreign_balance"], self)
 
     def _get_non_invoice_foreign_value(self):
         """Foreign value (signed) for non-invoice entries."""
@@ -353,6 +358,7 @@ class AccountMoveLine(models.Model):
         with super()._sync_invoice(container):
             yield
 
+        self._fix_price_included_base_per_line(container['records'])
         self._apply_product_real_portion(container['records'])
 
     @api.onchange('amount_currency', 'currency_id')
@@ -399,6 +405,56 @@ class AccountMoveLine(models.Model):
                     line.balance = rounded_balance + adjustment
                 else:
                     line.balance = rounded_balance
+
+    def _price_included_split(self):
+        """Returns (base_currency, base_company, included_currency,
+        included_company) of a product line whose taxes are all flat
+        percentage price-included, or None for any other line."""
+        self.ensure_one()
+        move = self.move_id
+        taxes = self.tax_ids
+        if self.display_type != 'product' or not move.is_invoice(include_receipts=True):
+            return None
+        if not taxes or any(
+            t.amount_type != 'percent' or not t.price_include or t.include_base_amount
+            for t in taxes
+        ):
+            return None
+        total_rate = sum(taxes.mapped('amount')) / 100.0
+        if total_rate <= -1.0:
+            return None
+        raw_included = (
+            self.price_unit * self.quantity
+            * (1 - (self.discount or 0.0) / 100.0) * move.direction_sign
+        )
+        raw_excluded = raw_included / (1 + total_rate)
+        currency = self.currency_id
+        cc = move.company_currency_id
+        rate = 1.0 if currency == cc else (self.currency_rate or 1.0)
+        return (
+            currency.round(raw_excluded),
+            cc.round(raw_excluded / rate),
+            currency.round(raw_included),
+            cc.round(raw_included / rate),
+        )
+
+    @api.model
+    def _fix_price_included_base_per_line(self, lines):
+        """Recomputes each product line's price-included base on its own
+        (core's `round_globally` sums ALL same-tax lines first, so
+        identical lines can post different amounts). Scoped to simple
+        flat percentage price-included taxes only."""
+        for line in lines:
+            if line.move_id.state != 'draft':
+                continue
+            split = line._price_included_split()
+            if split is None:
+                continue
+            new_amount_currency, new_balance = split[0], split[1]
+            if not line.currency_id.is_zero(new_amount_currency - line.amount_currency):
+                line.amount_currency = new_amount_currency
+            if not line.move_id.company_currency_id.is_zero(new_balance - line.balance):
+                line.balance = new_balance
 
     @api.model
     def _apply_product_real_portion(self, lines):
@@ -887,21 +943,6 @@ class AccountMoveLine(models.Model):
 
     def open_reconcile_view(self):
         action = super().open_reconcile_view()
-        # Matched on either linked move; only the "closing" line (same
-        # account type as the receivable/payable settled) belongs here.
-        # Ver openspec: design-notes.md § open_reconcile_view (Reconciled Items)
-        extra_lines = self.env['account.move.line'].search([
-            '|',
-            ('move_id.l10n_ve_exchange_foreign_source_move_id', 'in', self.move_id.ids),
-            ('move_id.l10n_ve_exchange_foreign_payment_move_id', 'in', self.move_id.ids),
-            ('account_id.account_type', 'in', ('asset_receivable', 'liability_payable')),
-            ('parent_state', '=', 'posted'),
-            # A reversed entry stays `posted` by design -- exclude it, the
-            # settlement it was tracking is gone.
-            ('move_id.reversal_move_ids', '=', False),
-        ])
-        if not extra_lines:
-            return action
 
         # Parsed defensively: core builds a single `[('id', 'in', ids)]`
         # leaf today, but nothing guarantees that shape survives a patch.
@@ -915,6 +956,47 @@ class AccountMoveLine(models.Model):
                     and isinstance(leaf[2], (list, tuple, set))
                 ):
                     existing_ids.update(leaf[2])
+
+        # Every document involved in the settlement chain, not only the one
+        # this view was opened from: core already walks the full chain
+        # (`_all_reconciled_lines`), so the standalone entry must be matched
+        # against all of it -- invoice, payment, native exchange entry --
+        # and not just `self.move_id`.
+        related_moves = self.move_id | self.browse(existing_ids).move_id
+        # Opened FROM the standalone entry itself (it never reconciles):
+        # pull in the documents it was produced by, and their chains.
+        standalone = self.move_id.filtered('l10n_ve_exchange_foreign_diff_entry')
+        origin_moves = (
+            standalone.l10n_ve_exchange_foreign_source_move_id
+            | standalone.l10n_ve_exchange_foreign_payment_move_id
+        )
+        if origin_moves:
+            origin_lines = origin_moves.line_ids.filtered(
+                lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+            )
+            chain = origin_lines._all_reconciled_lines().filtered(
+                lambda l: l.matched_debit_ids or l.matched_credit_ids
+            )
+            existing_ids |= set(chain.ids)
+            related_moves |= origin_moves | chain.move_id
+
+        # Matched on either linked move; only the "closing" line (same
+        # account type as the receivable/payable settled) belongs here.
+        # Ver openspec: design-notes.md § open_reconcile_view (Reconciled Items)
+        extra_lines = self.env['account.move.line'].search([
+            '|',
+            ('move_id.l10n_ve_exchange_foreign_source_move_id', 'in', related_moves.ids),
+            ('move_id.l10n_ve_exchange_foreign_payment_move_id', 'in', related_moves.ids),
+            ('account_id.account_type', 'in', ('asset_receivable', 'liability_payable')),
+            ('parent_state', '=', 'posted'),
+            # A reversed entry stays `posted` by design -- exclude it, the
+            # settlement it was tracking is gone.
+            ('move_id.reversal_move_ids', '=', False),
+        ])
+        if not extra_lines:
+            if existing_ids:
+                action['domain'] = [('id', 'in', list(existing_ids))]
+            return action
 
         action['domain'] = [('id', 'in', list(existing_ids | set(extra_lines.ids)))]
         return action

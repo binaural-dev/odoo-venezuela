@@ -500,6 +500,15 @@ class AccountRetention(models.Model):
         is_automated = self.env.context.get('automated_action') or self.env.context.get('cron_id')
 
         for retention in self:
+            try:
+                retention._check_duplicate_invoices_all_states()
+            except UserError as e:
+                if is_automated:
+                    retention.message_post(body=str(e))
+                    return False
+                raise
+
+        for retention in self:
             retention._check_duplicate_retention_lines()
 
             retention_amounts_by_move = defaultdict(float)
@@ -605,10 +614,13 @@ class AccountRetention(models.Model):
           (move_id, economic_activity_id) combination must not repeat - in
           this retention or in any other emitted retention.
 
-        Only other retentions already in state 'emitted' are considered -
-        two drafts referencing the same invoice/differentiator can coexist
-        harmlessly as long as only one of them ever gets confirmed; the
-        conflict only matters once one side is already final.
+        Only other retentions already in state 'emitted' are considered here.
+        Note that action_post() first runs _check_duplicate_invoices_all_states,
+        which blocks any other draft/emitted retention of the same type and
+        partner over the same invoice with the same differentiator (aliquot,
+        payment concept or economic activity), so a conflict in this
+        cross-retention branch can only come from retentions of different
+        partners (third-party invoicing).
 
         Applies to any legal document/retention type - client
         (out_invoice/out_refund/out_debit) and supplier
@@ -1499,3 +1511,54 @@ class AccountRetention(models.Model):
             res["keep_alter_value_vef"] = True
 
         return res
+
+    def _check_duplicate_invoices_all_states(self):
+        """
+        Block posting when another draft/emitted retention of the same type
+        and partner already retains the same invoice with the same
+        differentiator: IVA same aliquot, ISLR same payment concept,
+        municipal same economic activity. The same invoice with a different
+        differentiator is allowed in several retentions.
+        """
+        differentiator_by_type = {
+            'iva': 'aliquot',
+            'islr': 'payment_concept_id',
+            'municipal': 'economic_activity_id',
+        }
+        for retention in self:
+            differentiator = differentiator_by_type.get(retention.type_retention)
+            duplicate_line = self.env['account.retention.line']
+            for line in retention.retention_line_ids.filtered('move_id'):
+                domain = [
+                    ('retention_id.state', 'in', ['draft', 'emitted']),
+                    ('retention_id.type_retention', '=', retention.type_retention),
+                    ('retention_id', '!=', retention.id),
+                    # Third-party invoicing can legitimately generate several
+                    # vouchers (one per third party) over the same invoice.
+                    ('retention_id.partner_id', '=', retention.partner_id.id),
+                    ('move_id', '=', line.move_id.id),
+                ]
+                if differentiator:
+                    value = line[differentiator]
+                    domain.append((differentiator, '=', getattr(value, 'id', value)))
+                duplicate_line = self.env['account.retention.line'].search(domain, limit=1)
+                if duplicate_line:
+                    break
+
+            if duplicate_line:
+                other_ret = duplicate_line.retention_id
+                state_field = other_ret._fields['state']
+                state_label = dict(state_field._description_selection(self.env)).get(
+                    other_ret.state, other_ret.state
+                )
+
+                raise UserError(self.env._(
+                    "This retention cannot be posted.\n\n"
+                    "The invoice '%(invoice)s' is already included in retention '%(other_ret)s' "
+                    "(%(field_name)s: %(state_val)s).\n\n"
+                    "Cancel retention '%(other_ret)s' or remove the invoice from one of the two retentions.",
+                    invoice=duplicate_line.move_id.display_name,
+                    other_ret=other_ret.display_name,
+                    field_name=state_field._description_string(self.env),
+                    state_val=state_label,
+                ))

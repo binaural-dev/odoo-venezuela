@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "1.2",
+    "version": "1.3",
     "depends": ["base", "l10n_ve_base"],
     "data": [
         "views/res_config_settings.xml",

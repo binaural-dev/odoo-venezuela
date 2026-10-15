@@ -1,11 +1,12 @@
 import logging
 from collections import defaultdict
 
+from markupsafe import Markup
 from lxml import etree
 from contextlib import ExitStack, contextmanager
 from odoo import _, api, fields, models,Command
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare, index_exists
+from odoo.tools import float_compare, format_date, index_exists
 from odoo.tools.sql import drop_index
 from odoo.tools.float_utils import float_round, float_is_zero
 from odoo.tools.misc import formatLang
@@ -221,6 +222,84 @@ class AccountMove(models.Model):
 
     manually_set_rate = fields.Boolean(default=False)
     last_foreign_rate = fields.Float(copy=False)
+
+    can_edit_tax_totals = fields.Boolean(
+        compute="_compute_can_edit_tax_totals",
+        help="Gates the pencil-edit on the tax_totals widget -- same "
+        "group as res.currency.edit_rate, which already gates manually "
+        "overriding an otherwise auto-computed fiscal figure.",
+    )
+
+    def _compute_can_edit_tax_totals(self):
+        can_edit = self.env.user.has_group("l10n_ve_accountant.group_fiscal_config_support")
+        for move in self:
+            move.can_edit_tax_totals = can_edit
+
+    def _inverse_tax_totals(self):
+        """Gates the pencil-edit's actual write: only
+        `group_fiscal_config_support` may change a tax group's amount,
+        and only within `company_id.tax_totals_edit_tolerance`."""
+        with self._disable_recursion({'records': self}, 'skip_invoice_sync') as disabled:
+            if disabled:
+                return super()._inverse_tax_totals()
+        pending_chatter_entries = defaultdict(list)
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            invoice_totals = move.tax_totals
+            if not invoice_totals:
+                continue
+            tolerance = move.company_id.tax_totals_edit_tolerance
+            for subtotal in invoice_totals.get('subtotals') or []:
+                for tax_group in subtotal.get('tax_groups') or []:
+                    tax_lines = move.line_ids.filtered(
+                        lambda line: line.tax_group_id.id == tax_group['id']
+                    )
+                    if not tax_lines:
+                        continue
+                    tax_group_old_amount = sum(tax_lines.mapped('amount_currency'))
+                    sign = -1 if move.is_inbound() else 1
+                    old_amount_currency = (
+                        tax_group_old_amount - tax_group.get('non_deductible_tax_amount_currency', 0.0)
+                    ) * sign
+                    delta_amount = old_amount_currency - tax_group['tax_amount_currency']
+                    if move.currency_id.is_zero(delta_amount):
+                        continue
+                    if not move.can_edit_tax_totals:
+                        raise UserError(_(
+                            "You are not allowed to manually edit the tax amount."
+                        ))
+                    if move.currency_id.compare_amounts(abs(delta_amount), tolerance) > 0:
+                        raise UserError(_(
+                            "The manually edited tax amount differs by %(diff)s from the "
+                            "computed value, which is more than the allowed tolerance of "
+                            "%(tolerance)s for %(company)s.",
+                            diff=formatLang(self.env, abs(delta_amount), currency_obj=move.currency_id),
+                            tolerance=formatLang(self.env, tolerance, currency_obj=move.currency_id),
+                            company=move.company_id.display_name,
+                        ))
+                    pending_chatter_entries[move].append((
+                        tax_group.get('group_name', ''),
+                        old_amount_currency,
+                        tax_group['tax_amount_currency'],
+                    ))
+        super()._inverse_tax_totals()
+        self.invalidate_recordset(['tax_totals'])
+        for move, entries in pending_chatter_entries.items():
+            lines = [
+                _(
+                    "%(group)s: %(old)s → %(new)s",
+                    group=group_name,
+                    old=formatLang(self.env, old_amount, currency_obj=move.currency_id),
+                    new=formatLang(self.env, new_amount, currency_obj=move.currency_id),
+                )
+                for group_name, old_amount, new_amount in entries
+            ]
+            body = Markup("<p>%s</p>%s") % (
+                _("Manual tax amount edit by %(user)s:", user=self.env.user.display_name),
+                Markup().join(Markup("<br/>%s") % line for line in lines),
+            )
+            move.message_post(body=body)
 
     vat = fields.Char(
         string="VAT",
@@ -498,6 +577,29 @@ class AccountMove(models.Model):
             if move.invoice_date_display and move.is_sale_document(include_receipts=True):
                 move.invoice_date = move.invoice_date_display
 
+
+    def _l10n_ve_check_note_date(self, note_date):
+        """A Credit/Debit Note is the same transaction as its origin, so its
+        document date (`invoice_date_display`) must fall between the
+        origin's own document date and today. `self` are the origin
+        documents the note is issued against."""
+        today = fields.Date.context_today(self)
+        for origin in self.filtered(lambda m: m.is_invoice(include_receipts=True)):
+            origin_date = origin.invoice_date_display or origin.date
+            if note_date > today:
+                raise ValidationError(_(
+                    "The note date (%(value)s) cannot be later than today (%(today)s).",
+                    value=format_date(self.env, note_date),
+                    today=format_date(self.env, today),
+                ))
+            if origin_date and note_date < origin_date:
+                raise ValidationError(_(
+                    "The note date (%(value)s) cannot be earlier than the date "
+                    "of the original document %(origin)s (%(origin_date)s).",
+                    value=format_date(self.env, note_date),
+                    origin=origin.display_name,
+                    origin_date=format_date(self.env, origin_date),
+                ))
 
     @api.model
     def search_read(self, domain=None, fields=None, offset=0, limit=None, order=None):
@@ -1288,6 +1390,17 @@ class AccountMove(models.Model):
                     ):
                         line.account_id = move.journal_id.default_account_id
 
+    def _check_draftable(self):
+        """Alternate currency exchange difference entries (native or
+        standalone) work like Odoo's own exchange difference entry: they can
+        never be reset to draft. This guard was missing from the original
+        implementation: by their nature (generated by the reconciliation, not
+        typed by the user) breaking the reconciliation is what reverses them,
+        not a manual draft."""
+        if self.filtered('l10n_ve_exchange_foreign_diff_entry'):
+            raise UserError(_('You cannot reset to draft an alternate currency exchange difference journal entry.'))
+        return super()._check_draftable()
+
     def action_post(self):
         if not self.env.context.get("move_action_post_alert"):
             for move in self:
@@ -1590,6 +1703,8 @@ class AccountMove(models.Model):
                 return any_field_has_changed(tax_before, tax_lines)
             if any(line not in base_lines for line, values in base_before.items() if values['tax_ids']):
                 return any_field_has_changed(tax_before, tax_lines)
+            if any_field_has_changed(tax_before, tax_lines):
+                return 'reapply_tax_lines'
             # Nada del calculo en moneda de la compañía cambió -- pero si la
             # fecha que representa la tasa sí cambió (invoice_date en
             # facturas/notas, date en asientos -- ver
@@ -1663,14 +1778,23 @@ class AccountMove(models.Model):
                 continue
 
             blv, tlv = move._get_rounded_base_and_tax_lines(round_from_tax_lines=round_mode)
-            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(round_from_tax_lines=False)
+            flv, ftlv = move._get_rounded_foreign_base_and_tax_lines(
+                round_from_tax_lines=round_mode == 'reapply_tax_lines'
+            )
             AccountTax._add_accounting_data_in_base_lines_tax_details(blv, move.company_id, include_caba_tags=move.always_tax_exigible)
             AccountTax._add_accounting_data_in_base_lines_tax_details(flv, move.company_id, include_caba_tags=move.always_tax_exigible)
             tax_results = AccountTax._prepare_tax_lines(blv, move.company_id, tax_lines=tlv)
             foreign_tax_results = AccountTax._prepare_tax_lines(flv, move.company_id, tax_lines=ftlv)
 
             # ── Fix multi-currency rounding ──────────────────────────
-            if move.is_invoice(include_receipts=True) and move.currency_id != move.company_id.currency_id:
+            if (
+                round_mode != 'reapply_tax_lines'
+                and move.is_invoice(include_receipts=True)
+                and (
+                    move.currency_id != move.company_id.currency_id
+                    or any(l._price_included_split() for l in move.line_ids)
+                )
+            ):
                 rate = move.invoice_currency_rate
                 if rate:
                     cc = move.company_id.currency_id
@@ -1754,6 +1878,20 @@ class AccountMove(models.Model):
                             return value
                         return model.browse(value) if value else model
 
+                    def _price_included_tax(record_id, tax, factor):
+                        if tax.amount_type != 'percent' or not tax.price_include or tax.include_base_amount:
+                            return None
+                        line = self.env['account.move.line'].browse(record_id)
+                        split = line._price_included_split()
+                        if split is None:
+                            return None
+                        base_doc, base_vef, included_doc, included_vef = split
+                        share = tax.amount * factor / sum(line.tax_ids.mapped('amount'))
+                        return (
+                            cc.round((included_vef - base_vef) * share),
+                            move.currency_id.round((included_doc - base_doc) * share),
+                        )
+
                     def _per_line_tax_sums(tax, group_tax, factor):
                         # Fiscal-machine method: round the tax of EACH
                         # product line individually (VEF and document
@@ -1778,6 +1916,9 @@ class AccountMove(models.Model):
                         for record_id, eff_balance, eff_doc in _effective_entries(tax, group_tax):
                             line_vef = cc.round(eff_balance * (tax.amount / 100.0) * factor)
                             line_doc = move.currency_id.round(eff_doc * (tax.amount / 100.0) * factor)
+                            included_tax = _price_included_tax(record_id, tax, factor)
+                            if included_tax is not None:
+                                line_vef, line_doc = included_tax
                             vef_total += line_vef
                             doc_total += line_doc
                             per_line_amounts.append((record_id, line_vef, line_doc))
@@ -1817,7 +1958,10 @@ class AccountMove(models.Model):
                             return
                         group_tax = _get_recordset(Tax, group_tax_value)
                         factor = rep_line.factor_percent / 100.0
-                        if move.company_id.tax_calculation_rounding_method == 'round_per_line':
+                        if (
+                            move.company_id.tax_calculation_rounding_method == 'round_per_line'
+                            or (tax.price_include and not tax.include_base_amount)
+                        ):
                             new_balance, new_amount_currency = _per_line_tax_sums(tax, group_tax, factor)
                         else:
                             new_balance, new_amount_currency = _grouped_tax_sums(tax, group_tax, factor)
@@ -1908,19 +2052,22 @@ class AccountMove(models.Model):
     def _sync_dynamic_lines(self, container):
         with super()._sync_dynamic_lines(container):
             yield
-        self._distribute_final_real_portion(container['records'])
-        self._distribute_foreign_pt_residual(container['records'])
-       
+        records = container['records']
+        in_progress = self.env.cr.cache.setdefault('_dynamic_lines_in_progress', set())
+        pending = records.filtered(lambda m: m.id not in in_progress)
+        if not pending:
+            return
+        in_progress.update(pending.ids)
+        try:
+            self._distribute_final_real_portion(pending)
+            self._distribute_foreign_pt_residual(pending)
+        finally:
+            in_progress.difference_update(pending.ids)
 
     def _distribute_foreign_pt_residual(self, moves):
-        """Distributes foreign_debit/foreign_credit across payment term lines
-        proportionally to the native balance, forcing the total sum
-        of foreign_debit = total sum of foreign_credit of the entry.
-
-        Runs at the end of _sync_dynamic_lines (initial distribution)
-        and also from the write hook of AccountMoveLine when the real
-        portion adjusts the native balances of PT lines.
-        """
+        """Distributes foreign_debit/foreign_credit across payment term
+        lines proportionally to the native balance, so total
+        foreign_debit = total foreign_credit for the entry."""
         for move in moves:
             if move.state != 'draft':
                 continue
@@ -2003,6 +2150,7 @@ class AccountMove(models.Model):
                     pt.write({
                         'foreign_debit': new_fd,
                         'foreign_credit': new_fc,
+                        'foreign_balance': new_fd - new_fc,
                         'not_foreign_recalculate': True,
                     })
 
@@ -2166,6 +2314,9 @@ class AccountMove(models.Model):
         """
         self.ensure_one()
         res = super()._get_all_reconciled_invoice_partials()
+        origin_id = self._origin.id
+        if not origin_id:
+            return res
 
         # No `sudo()`: whoever can reach this (viewing the invoice's
         # "Pagos" widget) already has read access to it, and core's own
@@ -2174,7 +2325,7 @@ class AccountMove(models.Model):
         # blanket read access to every journal entry in that same company
         # -- there is no narrower ACL this would be bypassing.
         standalone_entries = self.env['account.move'].search([
-            ('l10n_ve_exchange_foreign_source_move_id', '=', self.id),
+            ('l10n_ve_exchange_foreign_source_move_id', '=', origin_id),
             ('state', '=', 'posted'),
             # A reversed entry stays `posted` by design (see
             # `account_partial_reconcile.py`, "reversed, not cancelled")
