@@ -242,6 +242,12 @@ msgid "Exchange Difference Debit Note Sequence (Customer Invoices)"
 msgstr "Secuencia de Nota de Débito de Diferencial Cambiario"
 
 #. module: l10n_ve_exchange_difference
+#. odoo-javascript
+#: code:addons/l10n_ve_exchange_difference/static/src/xml/account_payment_templates.xml:0
+msgid "Exchange Difference Note"
+msgstr "Nota por Diferencial"
+
+#. module: l10n_ve_exchange_difference
 #. odoo-python
 #: code:addons/l10n_ve_exchange_difference/models/res_company.py:0
 msgid "Exchange Difference Note Pricelist"

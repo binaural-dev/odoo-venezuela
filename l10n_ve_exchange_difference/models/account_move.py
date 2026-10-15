@@ -77,6 +77,77 @@ class AccountMove(models.Model):
             raise UserError(_('You cannot reset to draft an exchange difference Debit/Credit Note.'))
         return super()._check_draftable()
 
+    def _get_all_reconciled_invoice_partials(self):
+        """Shows each live exchange difference note of this invoice as ONE
+        row (company currency, `is_exchange=True`) in the "Paid/Reversed"
+        widget, like the native exchange difference entry.
+
+        The rows the core builds from the invoice's own partials are
+        dropped for our notes (a note can have several crossings, and a
+        debit note closes against the PAYMENT line, so it never shows up
+        among the invoice's partials). One row per note, with a real
+        `partial_id` (the accountant JS only patches rows with
+        `partial_id === false`).
+        """
+        self.ensure_one()
+        res = super()._get_all_reconciled_invoice_partials()
+        origin_id = self._origin.id
+        if not origin_id or not isinstance(res, list):
+            return res
+        res = [row for row in res if not row['aml']._is_exchange_note_line()]
+        notes = self.env['account.move'].search([
+            ('l10n_ve_exchange_invoice_id', '=', origin_id),
+            ('l10n_ve_exchange_diff_entry', '=', True),
+            ('move_type', 'in', ('out_invoice', 'out_refund')),
+            ('state', '=', 'posted'),
+            # Reversals are flagged and linked to the invoice too, but they
+            # are not notes of their own: never listed.
+            ('l10n_ve_exchange_original_id', '=', False),
+            ('reversal_move_ids', '=', False),
+        ], order='id')
+        for note in notes:
+            note_line = note.line_ids.filtered(lambda l: l.account_type == 'asset_receivable')[:1]
+            partials = note_line.matched_debit_ids | note_line.matched_credit_ids
+            if not partials:
+                continue
+            res.append({
+                'aml_id': note_line.id,
+                'partial_id': min(partials.ids),
+                'amount': abs(note.amount_total_signed),
+                'currency': note.company_id.currency_id,
+                'aml': note_line,
+                'is_exchange': True,
+            })
+        return res
+
+    @api.depends('move_type', 'line_ids.amount_residual')
+    def _compute_payments_widget_reconciled_info(self):
+        """Flags the widget rows that belong to our exchange difference
+        notes (`is_exchange_note`, `exchange_note_name`) so the widget
+        template, and other modules (fiscal printer, PDF), can tell them
+        apart from payments and from the native exchange entry."""
+        res = super()._compute_payments_widget_reconciled_info()
+        for move in self:
+            widget = move.invoice_payments_widget
+            if not widget:
+                continue
+            content = widget.get('content') or []
+            note_ids = {row['move_id'] for row in content if row.get('is_exchange')}
+            notes = {
+                note.id: note
+                for note in self.env['account.move'].browse(note_ids)
+                if note.l10n_ve_exchange_diff_entry and note.move_type in ('out_invoice', 'out_refund')
+            }
+            if not notes:
+                continue
+            for row in content:
+                note = notes.get(row['move_id'])
+                if note:
+                    row['is_exchange_note'] = True
+                    row['exchange_note_name'] = note.name
+            move.invoice_payments_widget = dict(widget, content=content)
+        return res
+
     def _is_exchange_debit_note(self):
         """True if this document is an exchange difference Debit Note
         issued by this module -- never a native Odoo generic entry tagged
