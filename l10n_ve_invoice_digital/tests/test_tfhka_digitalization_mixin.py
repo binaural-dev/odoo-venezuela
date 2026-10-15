@@ -6,7 +6,7 @@ from odoo import Command, fields
 from odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin import MAX_CONNECTION_RETRIES
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_client import TfhkaBusinessError, TfhkaConnectionError
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaDataError
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 GENERATE_DIGITAL_PATCH = "odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.generate_document_digital"
@@ -102,7 +102,12 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
                 "tax_ids": [Command.set([self.tax_iva16.id])],
             })],
         })
-        inv.action_post()
+        # l10n_ve_accountant.action_post() shows the confirmation wizard
+        # instead of posting out_invoice/out_refund unless this context flag
+        # is set (normally set by that wizard's action_confirm()) -- plain
+        # action_post() would silently leave the move in draft, which
+        # _tfhka_is_confirmed() would then (correctly) reject as unconfirmed.
+        inv.with_context(move_action_post_alert=True).action_post()
         return inv
 
     # ------------------------------------------------------------------
@@ -652,3 +657,158 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         alerts = self.env["account.move"].with_user(portal_user)._tfhka_digitalization_alert_data(["account.move"])
 
         self.assertEqual(alerts, [])
+
+    # ------------------------------------------------------------------
+    # _tfhka_fetch_queued: the cron's own safety net against digitalizing
+    # a document that was never actually confirmed (draft-invoice bug).
+    # ------------------------------------------------------------------
+
+    def test_fetch_queued_pulls_out_unconfirmed_document(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.state = "draft"  # should never happen once enqueued, but simulates stale/corrupt data
+
+        result = self.env["account.move"]._tfhka_fetch_queued([])
+
+        self.assertNotIn(inv, result)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertIn("not confirmed", inv.tfhka_digitalization_error)
+
+    def test_fetch_queued_keeps_confirmed_documents(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        result = self.env["account.move"]._tfhka_fetch_queued([])
+
+        self.assertIn(inv, result)
+        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+
+    def test_cron_process_queue_does_not_digitalize_unconfirmed_document(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.state = "draft"
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        mock_generate.assert_not_called()
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    def test_cron_process_queue_multi_does_not_digitalize_unconfirmed_document(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.state = "draft"
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
+
+        mock_generate.assert_not_called()
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    # ------------------------------------------------------------------
+    # Savepoint isolation: an unexpected exception (outside the failures
+    # _tfhka_process_digitalization/_tfhka_reconcile_stuck_processing
+    # already handle) must not abort the whole queue run.
+    # ------------------------------------------------------------------
+
+    def test_process_digitalization_safe_catches_unexpected_exception(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin."
+            "TfhkaDigitalizationMixin._tfhka_process_digitalization",
+            side_effect=RuntimeError("unexpected db error"),
+        ):
+            result = inv._tfhka_process_digitalization_safe()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertIn("unexpected db error", inv.tfhka_digitalization_error)
+
+    def test_reconcile_stuck_processing_safe_catches_unexpected_exception(self):
+        inv = self._create_invoice()
+        inv.write({
+            "tfhka_digitalization_state": "processing",
+            "date_state": fields.Datetime.now() - timedelta(minutes=5),
+        })
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin."
+            "TfhkaDigitalizationMixin._tfhka_reconcile_stuck_processing",
+            side_effect=RuntimeError("boom sql"),
+        ):
+            result = inv._tfhka_reconcile_stuck_processing_safe()
+
+        self.assertTrue(result, "Resolved (as error) -- nothing left in 'processing' to keep halting on.")
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertIn("boom sql", inv.tfhka_digitalization_error)
+
+    def test_recover_stuck_processing_one_failure_does_not_abort_the_others(self):
+        stuck1 = self._create_invoice()
+        stuck1.write({
+            "tfhka_digitalization_state": "processing",
+            "date_state": fields.Datetime.now() - timedelta(minutes=5),
+        })
+        stuck2 = self._create_invoice()
+        stuck2.write({
+            "tfhka_digitalization_state": "processing",
+            "date_state": fields.Datetime.now() - timedelta(minutes=5),
+        })
+
+        def fake_reconcile(self):
+            if self.id == stuck1.id:
+                raise RuntimeError("boom")
+            self.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "resolved fine"})
+            return True
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin."
+            "TfhkaDigitalizationMixin._tfhka_reconcile_stuck_processing",
+            fake_reconcile,
+        ):
+            result = self.env["account.move"]._tfhka_recover_stuck_processing()
+
+        self.assertTrue(result)
+        self.assertEqual(stuck1.tfhka_digitalization_state, "error")
+        self.assertIn("boom", stuck1.tfhka_digitalization_error)
+        self.assertEqual(stuck2.tfhka_digitalization_state, "error")
+        self.assertEqual(stuck2.tfhka_digitalization_error, "resolved fine")
+
+    # ------------------------------------------------------------------
+    # Unicidad de numero (red de seguridad): dos diarios que comparten
+    # secuencia no deben dejar a dos facturas digitalizadas con el mismo
+    # name en la misma compania.
+    # ------------------------------------------------------------------
+
+    def test_unique_name_constraint_blocks_cross_journal_duplicate(self):
+        inv1 = self._create_invoice(journal=self.journal)
+        inv1.write({"tfhka_digitalization_state": "success"})
+        inv2 = self._create_invoice(journal=self.journal2)
+
+        with self.assertRaises(ValidationError):
+            inv2.write({"name": inv1.name, "tfhka_digitalization_state": "success"})
+
+    def test_unique_name_constraint_ignores_non_digitalized_documents(self):
+        # Non-regression: two plain (never digitalized) documents sharing a
+        # name shouldn't happen under Odoo's own per-journal sequence, but
+        # this constraint is scoped to digitalization and must not react to
+        # it either way.
+        inv1 = self._create_invoice(journal=self.journal)
+        inv2 = self._create_invoice(journal=self.journal2)
+
+        inv2.write({"name": inv1.name})  # does not raise
+
+        self.assertEqual(inv1.name, inv2.name)
+
+    def test_unique_name_constraint_ignores_different_move_type(self):
+        inv1 = self._create_invoice(journal=self.journal)
+        inv1.write({"tfhka_digitalization_state": "success"})
+        refund = self.env["account.move"].create({
+            "move_type": "out_refund",
+            "journal_id": self.journal.id,
+            "partner_id": self.partner.id,
+            "name": inv1.name,
+        })
+
+        refund.write({"tfhka_digitalization_state": "success"})  # does not raise

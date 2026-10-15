@@ -216,15 +216,22 @@ class AccountMove(models.Model):
 
     def _tfhka_is_eligible_for_digitalization(self):
         """True when this move should be queued for normal digitalization:
-        digital journal, not already digitalized, and not in "digitalization
-        with payment" mode (driven by payment reconciliation instead -- see
-        ``digitalization_with_payment_tfhka``). Extracted from
+        posted, digital journal, not already digitalized, and not in
+        "digitalization with payment" mode (driven by payment reconciliation
+        instead -- see ``digitalization_with_payment_tfhka``). Extracted from
         ``_tfhka_enqueue_eligible_for_digitalization`` so
         ``_tfhka_should_mark_not_applicable`` can reason about the same
-        criteria without duplicating them."""
+        criteria without duplicating them.
+
+        ``state == 'posted'`` is required here, not just in the wizard that
+        normally calls this: a caller further down the chain (e.g. a Third
+        Party child invoice enqueued once its parent posts) could otherwise
+        slip a still-draft move into the queue, which the cron would then
+        digitalize and number as if it had been confirmed."""
         self.ensure_one()
         return (
-            not self.is_digitalized
+            self.state == "posted"
+            and not self.is_digitalized
             and self.journal_id.digital_invoice
             and not self.company_id.digitalization_with_payment_tfhka
         )
@@ -243,13 +250,28 @@ class AccountMove(models.Model):
         manual button itself is hidden without one too (see
         ``_compute_invisible_check``, which guards ``show_digital_invoice``
         on the same ``journal_id.digital_invoice`` check). A non-digital
-        journal is a dead end either way."""
+        journal is a dead end either way.
+
+        ``state == 'posted'`` for the same reason as
+        ``_tfhka_is_eligible_for_digitalization``: a still-draft move must
+        not be marked 'not_applicable' before it's even confirmed."""
         self.ensure_one()
         return (
-            self.company_id.invoice_digital_tfhka
+            self.state == "posted"
+            and self.company_id.invoice_digital_tfhka
             and self.move_type in ("out_invoice", "out_refund")
             and not self.journal_id.digital_invoice
         )
+
+    def _tfhka_is_confirmed(self):
+        """See ``tfhka.digitalization.mixin._tfhka_is_confirmed``: the cron's
+        own safety net, independent of ``_tfhka_is_eligible_for_digitalization``
+        (which only runs once, at enqueue time). A queued move that is
+        somehow still in draft when the cron gets to it -- old/corrupt data,
+        or a future enqueue path that forgets the check above -- must not be
+        digitalized or numbered as if it had been confirmed."""
+        self.ensure_one()
+        return self.state == "posted"
 
     def _tfhka_enqueue_eligible_for_digitalization(self):
         """Enqueues each eligible move for TFHKA digitalization (queue
@@ -731,6 +753,37 @@ class AccountMove(models.Model):
                         "concatenating the raw prefix."
                     )
                     % {"name": move.name}
+                )
+
+    @api.constrains('name', 'tfhka_digitalization_state')
+    def _check_tfhka_unique_name(self):
+        """Red de seguridad: dos diarios que comparten la misma secuencia de
+        numeración (p. ej. un diario de facturación a terceros configurado
+        sobre la secuencia del diario padre) pueden dejar a TFHKA asignando
+        el mismo ``name`` a dos facturas distintas de la misma compañía. Odoo
+        ya evita duplicados dentro de un mismo diario; esto cubre el caso que
+        se le escapa, entre diarios. Acotado a documentos que pasaron por la
+        digitalización -- no es una regla general de numeración de facturas,
+        es la red de seguridad propia de este módulo."""
+        for move in self:
+            if move.tfhka_digitalization_state == "none" or not move.name or move.name == "/":
+                continue
+            duplicate = self.search([
+                ("id", "!=", move.id),
+                ("company_id", "=", move.company_id.id),
+                ("move_type", "=", move.move_type),
+                ("name", "=", move.name),
+                ("tfhka_digitalization_state", "!=", "none"),
+                ("state", "!=", "cancel"),
+            ], limit=1)
+            if duplicate:
+                raise ValidationError(
+                    _(
+                        "'%(name)s' is already used by another digitalized document "
+                        "(#%(other_id)s) in this company. This usually means two "
+                        "journals share the same numbering sequence."
+                    )
+                    % {"name": move.name, "other_id": duplicate.id}
                 )
 
     def copy_data(self, default=None):
