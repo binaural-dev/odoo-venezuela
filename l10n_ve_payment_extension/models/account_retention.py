@@ -1013,14 +1013,18 @@ class AccountRetention(models.Model):
         if not payments:
             return
 
-        ctx = dict(self.env.context, bypass_retention_lock=True, force_delete=True)
+        # The payment guard (bypass_retention_lock) is the CALLER's
+        # decision, not this helper's: action_cancel()/the resync flow pass
+        # it in the context, while a plain action_draft() on an emitted
+        # retention must keep being blocked by account.payment.action_draft().
+        payments = payments.with_env(self.env)
         lines = payments.mapped("move_id.line_ids")
         if lines:
-            lines.with_context(ctx).remove_move_reconcile()
+            lines.with_context(force_delete=True).remove_move_reconcile()
 
         for payment in payments:
             if payment.state != 'draft':
-                payment.with_context(ctx).action_draft()
+                payment.action_draft()
 
     def action_cancel(self):
         for rec in self:
@@ -1030,7 +1034,7 @@ class AccountRetention(models.Model):
             if rec.payment_ids:
                 ctx = dict(self.env.context, bypass_retention_lock=True,force_delete=True)
 
-                rec._unreconcile_and_draft_payments(rec.payment_ids)
+                rec.with_context(ctx)._unreconcile_and_draft_payments(rec.payment_ids)
 
                 rec.payment_ids.with_context(ctx).action_cancel()
                 rec.payment_ids.with_context(ctx).write({'retention_id': False, 'is_retention': False, 'payment_type_retention': False, 'retention_ref': False})
