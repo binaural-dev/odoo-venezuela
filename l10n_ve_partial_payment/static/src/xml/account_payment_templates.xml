@@ -26,7 +26,20 @@
                 <div t-if="state.error" class="o_l10n_ve_partial_payment_error text-danger small mt-1" role="alert">
                     <t t-out="state.error"/>
                 </div>
-                <div t-if="state.igtfShortfall" class="o_l10n_ve_partial_payment_igtf_shortfall text-warning small mt-1" role="alert" aria-live="polite">
+                <div t-if="igtfBreakdown" class="o_l10n_ve_partial_payment_igtf_breakdown text-muted small" aria-live="polite">
+                    <hr class="o_l10n_ve_partial_payment_igtf_separator my-2 opacity-25"/>
+                    <div class="o_l10n_ve_partial_payment_igtf_applied text-nowrap">
+                        Applied to the invoice: <t t-out="formatAmount(igtfBreakdown.applied)"/>
+                    </div>
+                    <div class="o_l10n_ve_partial_payment_igtf_amount text-nowrap">
+                        <t t-out="igtfLabel"/>: <t t-out="formatAmount(igtfBreakdown.igtf)"/>
+                    </div>
+                    <div class="o_l10n_ve_partial_payment_igtf_total text-nowrap">
+                        Total consumed from the advance: <t t-out="formatAmount(igtfBreakdown.total)"/>
+                    </div>
+                    <hr class="o_l10n_ve_partial_payment_igtf_separator my-2 opacity-25"/>
+                </div>
+                <div t-if="igtfShortfallMessage" class="o_l10n_ve_partial_payment_igtf_shortfall text-warning small mt-1" role="alert" aria-live="polite">
                     <t t-out="igtfShortfallMessage"/>
                 </div>
                 <div class="d-flex justify-content-end mt-2">

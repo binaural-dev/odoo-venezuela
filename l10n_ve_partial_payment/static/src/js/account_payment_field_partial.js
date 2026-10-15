@@ -39,7 +39,10 @@ const CONTEXT_KEY = "l10n_ve_partial_paid_amount";
  *   lesser of ``available``/``invoiceResidual``), used when the input is
  *   left/cleared empty.
  * @param {number} params.digits - currency decimal precision to round to.
- * @returns {{ok: true, amount: number, remaining: number}
+ * @param {number} [params.igtfRate=0] - IGTF percentage charged ON TOP of the
+ *   amount and consumed from the same advance (0 when no IGTF applies, in
+ *   which case the result is identical to the one without IGTF support).
+ * @returns {{ok: true, amount: number, igtf: number, total: number, remaining: number}
  *   | {ok: false, error: string}}
  */
 export function computePartialPaymentAmount({
@@ -49,6 +52,7 @@ export function computePartialPaymentAmount({
     invoiceResidual,
     suggestedAmount,
     digits,
+    igtfRate = 0,
 }) {
     if (badInput) {
         return { ok: false, error: _t("Enter a valid amount.") };
@@ -70,9 +74,16 @@ export function computePartialPaymentAmount({
     }
 
     const roundedAmount = roundDecimals(amount, digits);
+    // Client-side IGTF estimate (the server value overrides it when it
+    // arrives): the IGTF goes on top of the amount and is consumed from the
+    // same advance.
+    const igtf = igtfRate ? roundDecimals((roundedAmount * igtfRate) / 100, digits) : 0;
+    const total = roundDecimals(roundedAmount + igtf, digits);
     return {
         ok: true,
         amount: roundedAmount,
+        igtf,
+        total,
         // Client-side estimate only, good enough for a live preview: exact
         // in the simple case (invoice and payment share a currency, no
         // IGTF involved), but can read slightly differently than what the
@@ -85,7 +96,7 @@ export function computePartialPaymentAmount({
         // `amount` and this subtraction can otherwise print a cent-sized
         // negative (e.g. "-0.01") right at the boundary where the typed
         // amount equals `available`.
-        remaining: Math.max(0, roundDecimals(available - roundedAmount, digits)),
+        remaining: Math.max(0, roundDecimals(available - total, digits)),
     };
 }
 
@@ -106,11 +117,12 @@ class L10nVePartialPaymentPopover extends Component {
         // from "not touched yet", which is harmless: the pure function
         // already treats empty the same way the input itself starts out,
         // i.e. as `suggestedAmount` (see `onMounted` below).
-        // `igtfShortfall` holds the server's last `preview_advance_igtf_shortfall`
-        // response (or `null` when there's nothing to warn about / a request
-        // is in flight) -- a server-side concern, deliberately separate from
-        // the client-only `computePartialPaymentAmount` preview above.
-        this.state = useState({ rawValue: "", badInput: false, error: "", igtfShortfall: null });
+        // `igtfPreview` holds the server's last `preview_advance_igtf`
+        // response (or `null`) -- a server-side concern, deliberately
+        // separate from the client-only `computePartialPaymentAmount`
+        // estimate above. It is NOT cleared while typing (avoids flicker):
+        // it is only used while its `requested` matches the current amount.
+        this.state = useState({ rawValue: "", badInput: false, error: "", igtfPreview: null });
 
         // `KeepLast` drops any in-flight response once a newer request is
         // issued, so fast typing can never let a stale RPC overwrite the
@@ -149,8 +161,8 @@ class L10nVePartialPaymentPopover extends Component {
     }
 
     /**
-     * Call the server's read-only IGTF-shortfall preview for `amount` and
-     * update `state.igtfShortfall` with the result.
+     * Call the server's read-only IGTF preview for `amount` and store the
+     * result in `state.igtfPreview`.
      *
      * Never awaited by the "Apply" button -- this is purely advisory and
      * must not block/delay submitting the popover.
@@ -158,18 +170,21 @@ class L10nVePartialPaymentPopover extends Component {
      * @param {number} amount
      */
     async _requestIgtfPreview(amount) {
+        if (!this.props.igtfApplies) {
+            return;
+        }
         if (!amount || amount <= 0) {
-            this.state.igtfShortfall = null;
+            this.state.igtfPreview = null;
             return;
         }
         let result;
         try {
             result = await this._keepLastIgtfPreview.add(
-                this.orm.call(
-                    "account.move",
-                    "preview_advance_igtf_shortfall",
-                    [this.props.moveId, this.props.lineId, amount]
-                )
+                this.orm.call("account.move", "preview_advance_igtf", [
+                    this.props.moveId,
+                    this.props.lineId,
+                    amount,
+                ])
             );
         } catch {
             // Advisory-only: a failed/aborted preview request must never
@@ -182,7 +197,7 @@ class L10nVePartialPaymentPopover extends Component {
         if (this._destroyed) {
             return;
         }
-        this.state.igtfShortfall = result && result.shortfall ? result : null;
+        this.state.igtfPreview = result && result.applies ? result : null;
     }
 
     get digits() {
@@ -194,40 +209,97 @@ class L10nVePartialPaymentPopover extends Component {
         return formatMonetary(this.props.suggestedAmount, { currencyId: this.props.currencyId });
     }
 
-    /**
-     * Text for the "Remaining payment balance" preview line: exactly what
-     * "Apply" would submit right now, or an em-dash when the current input
-     * would be rejected (see `computePartialPaymentAmount`).
-     */
-    get remainingPreview() {
-        const resolved = computePartialPaymentAmount({
+    /** What "Apply" would do for the input's current text (see the pure function). */
+    get resolvedAmount() {
+        return computePartialPaymentAmount({
             rawValue: this.state.rawValue,
             badInput: this.state.badInput,
             available: this.props.amount,
             invoiceResidual: this.props.invoiceResidual,
             suggestedAmount: this.props.suggestedAmount,
             digits: this.digits,
+            igtfRate: this.props.igtfApplies ? this.props.igtfRate : 0,
         });
-        return resolved.ok
-            ? formatMonetary(resolved.remaining, { currencyId: this.props.currencyId })
-            : "—";
     }
 
     /**
-     * Human-readable warning for the current `state.igtfShortfall` (``null``
-     * while there's nothing to warn about / no response yet).
+     * Server preview, only while it refers to the amount currently resolved
+     * (a stale response for a previous amount is ignored, not cleared).
+     */
+    get currentIgtfPreview() {
+        const preview = this.state.igtfPreview;
+        const resolved = this.resolvedAmount;
+        if (!this.props.igtfApplies || !preview || !resolved.ok) {
+            return null;
+        }
+        const tolerance = 0.5 * Math.pow(10, -this.digits);
+        return Math.abs(preview.requested - resolved.amount) < tolerance ? preview : null;
+    }
+
+    /**
+     * IGTF breakdown for the informational block (``null`` when IGTF doesn't
+     * apply or the input is invalid): client estimate, overridden by the
+     * server value when available.
+     */
+    get igtfBreakdown() {
+        const resolved = this.resolvedAmount;
+        if (!this.props.igtfApplies || !resolved.ok) {
+            return null;
+        }
+        const preview = this.currentIgtfPreview;
+        return {
+            applied: preview ? preview.applied_to_invoice : resolved.amount,
+            igtf: preview ? preview.igtf : resolved.igtf,
+            total: preview ? preview.total_consumed : resolved.total,
+        };
+    }
+
+    get igtfLabel() {
+        return _t("IGTF (%(rate)s%)", { rate: roundDecimals(this.props.igtfRate, 2) });
+    }
+
+    formatAmount(value) {
+        return formatMonetary(value, { currencyId: this.props.currencyId });
+    }
+
+    /**
+     * Text for the "Remaining payment balance" preview line: exactly what
+     * "Apply" would submit right now, or an em-dash when the current input
+     * would be rejected (see `computePartialPaymentAmount`). With IGTF, the
+     * balance is the available amount minus the TOTAL consumed (amount +
+     * IGTF), using the server value when it exists.
+     */
+    get remainingPreview() {
+        const resolved = this.resolvedAmount;
+        if (!resolved.ok) {
+            return "—";
+        }
+        let remaining = resolved.remaining;
+        const breakdown = this.igtfBreakdown;
+        if (breakdown) {
+            remaining = Math.max(
+                0,
+                roundDecimals(this.props.amount - breakdown.total, this.digits)
+            );
+        }
+        return formatMonetary(remaining, { currencyId: this.props.currencyId });
+    }
+
+    /**
+     * Human-readable warning for the server's shortfall (``""`` while
+     * there's nothing to warn about / no matching response yet).
      */
     get igtfShortfallMessage() {
-        const shortfall = this.state.igtfShortfall;
-        if (!shortfall) {
+        const preview = this.currentIgtfPreview;
+        if (!preview || !preview.shortfall) {
             return "";
         }
-        const currencyId = shortfall.currency_id;
+        const currencyId = preview.currency_id;
         return _t(
             "This advance doesn't have enough balance left over to also cover its IGTF: only %(realApplied)s will actually be applied to the invoice, instead of the %(requested)s entered.",
             {
-                realApplied: formatMonetary(shortfall.real_applied, { currencyId }),
-                requested: formatMonetary(shortfall.requested, { currencyId }),
+                realApplied: formatMonetary(preview.applied_to_invoice, { currencyId }),
+                requested: formatMonetary(preview.requested, { currencyId }),
             }
         );
     }
@@ -241,21 +313,14 @@ class L10nVePartialPaymentPopover extends Component {
         this.state.rawValue = ev.target.value;
         this.state.badInput = ev.target.validity.badInput;
         this.state.error = "";
-        // Clear immediately rather than waiting for the debounced RPC to
-        // come back: an outdated IGTF alert left on screen while the user
-        // keeps typing a new amount would be actively misleading.
-        this.state.igtfShortfall = null;
-
-        const resolved = computePartialPaymentAmount({
-            rawValue: this.state.rawValue,
-            badInput: this.state.badInput,
-            available: this.props.amount,
-            invoiceResidual: this.props.invoiceResidual,
-            suggestedAmount: this.props.suggestedAmount,
-            digits: this.digits,
-        });
+        // The previous server preview is kept (no flicker) but ignored while
+        // it doesn't match the typed amount (see `currentIgtfPreview`);
+        // an invalid amount drops it.
+        const resolved = this.resolvedAmount;
         if (resolved.ok) {
             this._requestIgtfPreviewDebounced(resolved.amount);
+        } else {
+            this.state.igtfPreview = null;
         }
     }
 
@@ -283,6 +348,7 @@ class L10nVePartialPaymentPopover extends Component {
             invoiceResidual: this.props.invoiceResidual,
             suggestedAmount: this.props.suggestedAmount,
             digits: this.digits,
+            igtfRate: this.props.igtfApplies ? this.props.igtfRate : 0,
         });
 
         if (!resolved.ok) {
@@ -327,18 +393,18 @@ patch(AccountPaymentField.prototype, {
             return;
         }
 
-        // Single source of truth on the server (company flag + group) --
-        // see account_move.py:can_apply_partial_payment. Without this check
-        // here, a disabled/unauthorized click would still show the amount
-        // input and silently apply the full amount on submit, which is
-        // confusing even though it's not incorrect (the server gate in
-        // js_assign_outstanding_line holds either way).
-        const allowed = await this.orm.call(
+        // Single round-trip to the server for everything the popover needs:
+        // the gate (company flag + group, see
+        // account_move.py:get_partial_popover_data), whether an IGTF is
+        // charged on top, and the suggested amount (which, with IGTF, is
+        // the largest amount that fits in the advance together with its IGTF).
+        // Plain args: [ids, line_id] (nesting them in another array is a bug).
+        const popoverData = await this.orm.call(
             this.props.record.resModel,
-            "can_apply_partial_payment",
-            [info.moveId]
+            "get_partial_popover_data",
+            [info.moveId, line.id]
         );
-        if (!allowed) {
+        if (!popoverData.allowed) {
             return this.assignOutstandingCredit(info.moveId, line.id);
         }
 
@@ -347,9 +413,8 @@ patch(AccountPaymentField.prototype, {
         // `this.props.record.data.currency_id`: on the invoice record that's
         // a `{id, display_name}` object in Odoo 19, not a plain id.
         const currencyId = target.currency_id;
-        const digits = getCurrency(currencyId)?.digits?.[1] ?? 2;
         const invoiceResidual = Math.abs(this.props.record.data.amount_residual);
-        const suggestedAmount = roundDecimals(Math.min(target.amount, invoiceResidual), digits);
+        const suggestedAmount = popoverData.suggested_amount;
 
         this.l10nVePartialPaymentPopover.open(anchorEl, {
             title: _t("Enter the amount to apply"),
@@ -359,6 +424,8 @@ patch(AccountPaymentField.prototype, {
             amountFormatted: target.amount_formatted,
             invoiceResidual,
             suggestedAmount,
+            igtfApplies: popoverData.igtf_applies,
+            igtfRate: popoverData.igtf_rate,
             currencyId,
             _onOutstandingCreditAssign: this._onOutstandingCreditAssign.bind(this),
         });

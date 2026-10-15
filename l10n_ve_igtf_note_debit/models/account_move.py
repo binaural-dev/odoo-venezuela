@@ -509,12 +509,12 @@ class AccountMove(models.Model):
                     amount_base_payment = 0.0
                     if bank_line and partner_line:
 
-                        factura_line = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
+                        factura_lines = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
 
                         partial = self.env['account.partial.reconcile'].search([
                             '|',
-                            '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', partner_line.ids),
-                            '&', ('debit_move_id', '=', partner_line.ids), ('credit_move_id', '=', factura_line.id)
+                            '&', ('debit_move_id', 'in', factura_lines.ids), ('credit_move_id', 'in', partner_line.ids),
+                            '&', ('debit_move_id', 'in', partner_line.ids), ('credit_move_id', 'in', factura_lines.ids)
                         ])
                         bank_amount = abs(bank_line[0].amount_currency)
                         bank_amount_balance = abs(bank_line[0].balance)

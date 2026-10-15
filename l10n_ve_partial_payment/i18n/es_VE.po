@@ -171,3 +171,21 @@ msgstr ""
 #: code:addons/l10n_ve_partial_payment/models/account_move.py:0
 msgid "Unknown"
 msgstr "Desconocido"
+
+#. module: l10n_ve_partial_payment
+#. odoo-javascript
+#: code:addons/l10n_ve_partial_payment/static/src/xml/account_payment_templates.xml:0
+msgid "Applied to the invoice:"
+msgstr "Se aplica a la factura:"
+
+#. module: l10n_ve_partial_payment
+#. odoo-javascript
+#: code:addons/l10n_ve_partial_payment/static/src/js/account_payment_field_partial.js:0
+msgid "IGTF (%(rate)s%)"
+msgstr "IGTF (%(rate)s%)"
+
+#. module: l10n_ve_partial_payment
+#. odoo-javascript
+#: code:addons/l10n_ve_partial_payment/static/src/xml/account_payment_templates.xml:0
+msgid "Total consumed from the advance:"
+msgstr "Total que consume el anticipo:"
