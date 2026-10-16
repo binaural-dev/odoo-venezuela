@@ -358,8 +358,10 @@ class TestRetentionLifecycle(RetentionTestCommon):
         # before posting removes any ambiguity about ordering).
         old_date = fields.Date.today() - timedelta(days=10)
         new_date = fields.Date.today()
-        old_invoice.invoice_date_display = old_date
-        new_invoice.invoice_date_display = new_date
+        # invoice_date (rate date) must not be later than invoice_date_display
+        # (l10n_ve_invoice guard, ti-15450), so both are set to the same day.
+        old_invoice.write({"invoice_date": old_date, "invoice_date_display": old_date})
+        new_invoice.write({"invoice_date": new_date, "invoice_date_display": new_date})
         old_invoice.action_post()
         new_invoice.action_post()
 
