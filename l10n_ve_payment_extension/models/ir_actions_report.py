@@ -20,4 +20,19 @@ class IrActionsReport(models.Model):
                     raise ValidationError(
                         _("You cannot download a withholding slip in draft status. ")
                     )
-        return super()._render_qweb_pdf(report_ref, res_ids, data)
+            if retention_ids and all(
+                retention.type_retention == "municipal" for retention in retention_ids
+            ):
+                self = self.with_context(municipal_voucher_portrait=True)
+        return super(IrActionsReport, self)._render_qweb_pdf(report_ref, res_ids, data)
+
+    def get_paperformat(self):
+        """Municipal vouchers are printed in portrait; IVA/ISLR keep landscape."""
+        if (
+            self.env.context.get("municipal_voucher_portrait")
+            and self.report_name == "l10n_ve_payment_extension.retention_voucher_template"
+        ):
+            return self.env.ref(
+                "l10n_ve_payment_extension.paper_format_retention_municipal_voucher"
+            )
+        return super().get_paperformat()

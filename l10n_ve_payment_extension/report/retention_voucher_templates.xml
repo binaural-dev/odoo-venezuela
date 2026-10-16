@@ -721,6 +721,118 @@
     </template>
 
 
+    <template id="report_municipal_customer">
+        <t t-set="muni" t-value="municipal_data[retention.id]"/>
+        <t t-set="tax_auth" t-value="muni['tax_auth']"/>
+        <!-- Formato vertical. wkhtmltopdf no soporta flexbox: la grilla se arma con
+             tablas y las clases de Bootstrap se usan para texto, bordes y espaciado. -->
+        <style>
+            .mun-voucher { font-size: 12px; color: #000; }
+            .mun-voucher .mun-strip { width: 100%; border: 1px solid #dee2e6; border-collapse: collapse; }
+            .mun-voucher .mun-strip td { width: 33.33%; padding: 4px 6px; vertical-align: top; border-left: 1px solid #dee2e6; }
+            .mun-voucher .mun-strip td:first-child { border-left: 0; }
+            .mun-voucher .mun-lines th, .mun-voucher .mun-lines td { font-size: 12px; padding: 4px 5px; vertical-align: middle; text-align: center; border: 1px solid #000; }
+            .mun-voucher .mun-sign { width: 100%; page-break-inside: avoid; }
+            .mun-voucher .mun-sign td { width: 40%; text-align: center; vertical-align: bottom; }
+            .mun-voucher .mun-sign .mun-line { border-top: 1px solid #000; padding-top: 6px; }
+        </style>
+        <div class="mun-voucher">
+            <h3 t-if="retention.state == 'cancel'" style="position:absolute;left:65px;top:250px;font-size:200px !important;opacity: 0.1;">ANULADA</h3>
+
+            <!--Logo-->
+            <div style="margin-bottom:8px; min-height:90px">
+                <t t-set="mun_logo" t-value="res_company.logo or tax_auth.tax_authorities_logo"/>
+                <img t-if="mun_logo" style="max-height:150px; max-width:240px;"
+                     t-att-src="image_data_uri(mun_logo)"/>
+            </div>
+
+            <!--Titulo y subtitulo-->
+            <div class="text-center" style="text-align:center; font-size:19.5px; font-weight:bold; line-height:1.25; margin-bottom:15px;">
+                COMPROBANTE DE RETENCIÓN IMPUESTO ACTIVIDADES ECONÓMICAS <t t-out="(tax_auth.tax_authorities_name or '').upper()"/>
+                <br/>
+                AGENTE DE RETENCIÓN
+            </div>
+            <div class="text-center" style="text-align:center; font-size:12px; line-height:1.25; margin-bottom:25px;">
+                <div t-if="tax_auth.text_header_1_municipal_retention" t-out="tax_auth.text_header_1_municipal_retention"/>
+                <div t-if="tax_auth.text_header_2_municipal_retention" t-out="tax_auth.text_header_2_municipal_retention"/>
+            </div>
+
+            <!--Comprobante, fechas y periodo fiscal-->
+            <table class="mun-strip" style="margin-bottom:12px;">
+                <tr>
+                    <td>
+                        <div class="fw-bold">COMPROBANTE</div>
+                        <div t-out="retention.number"/>
+                    </td>
+                    <td>
+                        <div><span class="fw-bold">FECHA DE EMISIÓN O TRANSACCIÓN: </span><span t-out="retention.date_accounting.strftime('%d/%m/%Y')"/></div>
+                        <div t-if="not retention.company_id.hide_issue_date_of_municipal_withholding_receipt">
+                            <span class="fw-bold">FECHA DE ENTREGA: </span><span t-out="retention.date_emision.strftime('%d/%m/%Y') if retention.date_emision else '--'"/>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="fw-bold">PERIODO FISCAL</div>
+                        <div><span class="fw-bold">Año: </span><span t-out="retention.date_accounting.year"/>&#160;&#160;<span class="fw-bold">Mes: </span><span t-out="retention.date_accounting.month"/></div>
+                    </td>
+                </tr>
+            </table>
+            <hr style="margin:8px 0 12px 0;"/>
+
+            <!--Agente de retencion-->
+            <div style="font-size:15px; font-weight:bold; margin-bottom:6px;">AGENTE DE RETENCIÓN</div>
+            <div><span class="fw-bold">RAZÓN SOCIAL: </span><span t-out="res_company.name"/></div>
+            <div><span class="fw-bold">RIF: </span><span t-out="(res_company.partner_id.prefix_vat or '') + (res_company.partner_id.vat or '')"/></div>
+            <div><span class="fw-bold">DIRECCIÓN FISCAL: </span><span t-out="res_company.street or ''"/></div>
+            <div><span class="fw-bold">NÚMERO DE LICENCIA DE ACTIVIDADES ECONÓMICAS: </span><span t-out="tax_auth.economic_activity_number or ''"/></div>
+
+            <!--Contribuyente-->
+            <div style="font-size:15px; font-weight:bold; margin:25px 0 6px 0;">CONTRIBUYENTE</div>
+            <div><span class="fw-bold">RAZÓN SOCIAL: </span><span t-out="retention.partner_id.name"/></div>
+            <div><span class="fw-bold">RIF: </span><span t-out="(retention.partner_id.prefix_vat or '') + (retention.partner_id.vat or '')"/></div>
+            <div><span class="fw-bold">DIRECCIÓN FISCAL: </span><span t-out="retention.partner_id.street or ''"/></div>
+
+            <!--Datos de la transaccion-->
+            <div style="font-size:15px; font-weight:bold; margin:25px 0 6px 0;">DATOS DE LA TRANSACCIÓN</div>
+            <table class="mun-lines" style="width:100%; border-collapse:collapse;">
+                <thead>
+                    <tr>
+                        <th t-foreach="muni['columns']" t-as="column" t-out="column"/>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr t-foreach="muni['display_rows']" t-as="row">
+                        <td t-foreach="row" t-as="cell" t-out="cell"/>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="8" class="fw-bold" style="text-align:right">Total Retenido:</td>
+                        <td class="fw-bold" t-out="muni['total_display']"/>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <!--Firmas-->
+            <table class="mun-sign" style="margin-top:50px;">
+                <tr>
+                    <td>
+                        <div style="height:90px">
+                            <img style="max-height:90px; max-width:200px" t-if="retention.get_signature()"
+                                 t-att-src="'data:image/png;base64,%s' % retention.get_signature()"/>
+                        </div>
+                        <div class="mun-line">Firma del Agente de Retención</div>
+                    </td>
+                    <td style="width:20%"></td>
+                    <td>
+                        <div style="height:90px"></div>
+                        <div class="mun-line">Firma del Beneficiario</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
+    </template>
+
+
     <template id="retention_voucher_template">
         <t t-call="web.html_container">
             <t t-foreach="docs" t-as="retention">
@@ -728,6 +840,9 @@
                     <div class="page">
                         <t t-if="retention.type_retention == 'iva'">
                             <t t-call="l10n_ve_payment_extension.report_iva_customer"/>
+                        </t>
+                        <t t-elif="retention.type_retention == 'municipal'">
+                            <t t-call="l10n_ve_payment_extension.report_municipal_customer"/>
                         </t>
                         <t t-else="">
                             <t t-call="l10n_ve_payment_extension.report_islr_customer"/>
