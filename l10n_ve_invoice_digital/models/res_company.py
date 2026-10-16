@@ -164,11 +164,16 @@ class ResCompany(models.Model):
         No debe impedir guardar el token si falla: el token ya se obtuvo (lo
         de arriba ya corrió), que el import de series tropiece (compañía sin
         series registradas todavía, error transitorio de red) no es motivo
-        para abortar la generación del token."""
+        para abortar la generación del token.
+
+        ``sudo()`` porque tfhka.serie es de solo lectura para todos los
+        usuarios (ver ir.model.access.csv) -- nadie la crea ni la edita a
+        mano, solo este sync, sin importar qué usuario haya generado el
+        token."""
         self.ensure_one()
         try:
             numberings = self.env["tfhka.api.client"].list_numberings(self)
-            self.env["tfhka.serie"]._sync_from_tfhka(self, numberings)
+            self.env["tfhka.serie"].sudo()._sync_from_tfhka(self, numberings)
         except Exception:
             _logger.exception(
                 "TFHKA: no se pudieron sincronizar las series tras generar el token."

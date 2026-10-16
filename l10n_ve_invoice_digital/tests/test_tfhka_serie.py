@@ -1,3 +1,4 @@
+from odoo.exceptions import AccessError
 from odoo.tests import TransactionCase, tagged
 
 
@@ -38,16 +39,38 @@ class TestTfhkaSerie(TransactionCase):
             1,
         )
 
-    def test_03_sync_ignores_no_aplica_and_empty_series(self):
+    def test_03_sync_includes_no_aplica_but_ignores_empty_series(self):
+        # "NO APLICA" se sincroniza como una serie más (un diario puede
+        # elegirla explícitamente para decir "sin serie") -- lo único que se
+        # descarta es una serie realmente vacía/sin nombre.
         numberings = [
-            {"serie": "NO APLICA", "prefijo": "00", "estado": "True"},
+            {"serie": "NO APLICA", "titulo": "NUMERACIÓN DE 1 A 100000", "tipoDocumento": "TODOS",
+             "prefijo": "00", "desde": "1", "hasta": "100000", "correlativo": "2672", "estado": "True"},
             {"serie": "", "prefijo": "", "estado": "True"},
             {"serie": None, "prefijo": "", "estado": "True"},
         ]
 
         self.env["tfhka.serie"]._sync_from_tfhka(self.company, numberings)
 
-        self.assertFalse(self.env["tfhka.serie"].search([("company_id", "=", self.company.id)]))
+        series = self.env["tfhka.serie"].search([("company_id", "=", self.company.id)])
+        self.assertEqual(series.mapped("name"), ["NO APLICA"])
+
+    def test_03b_sync_stores_full_numbering_detail(self):
+        numberings = [
+            {"serie": "NO APLICA", "titulo": "NUMERACIÓN DE 1 A 100000", "tipoDocumento": "TODOS",
+             "prefijo": "00", "desde": "1", "hasta": "100000", "correlativo": "2672", "estado": "True"},
+        ]
+
+        self.env["tfhka.serie"]._sync_from_tfhka(self.company, numberings)
+
+        serie = self.env["tfhka.serie"].search([("name", "=", "NO APLICA"), ("company_id", "=", self.company.id)])
+        self.assertEqual(serie.title, "NUMERACIÓN DE 1 A 100000")
+        self.assertEqual(serie.document_type, "TODOS")
+        self.assertEqual(serie.prefix, "00")
+        self.assertEqual(serie.number_from, "1")
+        self.assertEqual(serie.number_to, "100000")
+        self.assertEqual(serie.correlative, "2672")
+        self.assertEqual(serie.status, "True")
 
     def test_04_sync_dedupes_same_serie_across_document_types(self):
         # TFHKA puede devolver la misma serie varias veces (una fila por
@@ -70,3 +93,44 @@ class TestTfhkaSerie(TransactionCase):
         self.env["tfhka.serie"]._sync_from_tfhka(self.company, [])
 
         self.assertFalse(self.env["tfhka.serie"].search([("company_id", "=", self.company.id)]))
+
+    # ------------------------------------------------------------------
+    # Solo lectura para todos: la sincronización (que usa sudo()) es la
+    # única forma de crear/editar una serie, nunca un usuario a mano.
+    # ------------------------------------------------------------------
+
+    def _create_user(self, login, group_xmlid):
+        return self.env["res.users"].create({
+            "name": login,
+            "login": login,
+            "group_ids": [(6, 0, [self.env.ref(group_xmlid).id])],
+        })
+
+    def test_06_regular_user_cannot_create_serie(self):
+        user = self._create_user("tfhka_serie_user_test", "base.group_user")
+        with self.assertRaises(AccessError):
+            self.env["tfhka.serie"].with_user(user).create({
+                "name": "A", "company_id": self.company.id,
+            })
+
+    def test_07_regular_user_cannot_write_serie(self):
+        serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
+        user = self._create_user("tfhka_serie_user_test2", "base.group_user")
+        with self.assertRaises(AccessError):
+            serie.with_user(user).write({"prefix": "X-"})
+
+    def test_08_regular_user_cannot_unlink_serie(self):
+        serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
+        user = self._create_user("tfhka_serie_user_test3", "base.group_user")
+        with self.assertRaises(AccessError):
+            serie.with_user(user).unlink()
+
+    def test_09_tfhka_admin_also_cannot_write_serie(self):
+        # El grupo administrativo propio del módulo tampoco puede -- la
+        # única forma de cambiar una serie es que vuelva a sincronizarse.
+        serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
+        admin_user = self._create_user(
+            "tfhka_serie_admin_test", "l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin"
+        )
+        with self.assertRaises(AccessError):
+            serie.with_user(admin_user).write({"prefix": "X-"})

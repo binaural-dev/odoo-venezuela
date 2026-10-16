@@ -4,9 +4,14 @@
         <field name="name">tfhka.serie.list</field>
         <field name="model">tfhka.serie</field>
         <field name="arch" type="xml">
-            <list string="TFHKA Series">
+            <list string="TFHKA Series" create="false" edit="false" delete="false" import="false">
                 <field name="name"/>
+                <field name="title"/>
+                <field name="document_type"/>
                 <field name="prefix"/>
+                <field name="number_from"/>
+                <field name="number_to"/>
+                <field name="correlative"/>
                 <field name="status"/>
                 <field name="company_id" groups="base.group_multi_company"/>
             </list>
@@ -23,7 +28,8 @@
             </p>
             <p>
                 Series are synchronized from the TFHKA API every time the
-                authentication token is generated (Settings &gt; The Factory HKA).
+                authentication token is generated (Settings &gt; The Factory HKA) --
+                this list is read-only, series can't be created or edited by hand.
                 Assign one to each sale journal that needs to send a series to TFHKA.
             </p>
         </field>

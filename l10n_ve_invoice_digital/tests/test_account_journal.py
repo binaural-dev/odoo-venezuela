@@ -75,6 +75,34 @@ class TestAccountJournal(TransactionCase):
 
         self.assertEqual(self.journal._get_tfhka_series(), "A")
 
+    def test_07b_get_tfhka_series_empty_when_serie_is_no_aplica(self):
+        self.company.group_sales_invoicing_series = True
+        no_aplica = self.env["tfhka.serie"].create({
+            "name": self.env["tfhka.serie"].NO_APLICA, "company_id": self.company.id,
+        })
+        self.journal.tfhka_serie_id = no_aplica.id
+
+        self.assertEqual(self.journal._get_tfhka_series(), "")
+
+    def test_07c_no_aplica_counts_as_empty_for_the_only_one_warning(self):
+        no_aplica = self.env["tfhka.serie"].create({
+            "name": self.env["tfhka.serie"].NO_APLICA, "company_id": self.company.id,
+        })
+        self.journal.digital_invoice = True
+        self.journal.tfhka_serie_id = no_aplica.id
+
+        other_journal = self.env["account.journal"].create({
+            "name": "Otro Diario",
+            "code": "OTR",
+            "type": "sale",
+            "company_id": self.company.id,
+            "digital_invoice": True,
+        })
+
+        self.assertTrue(
+            any("TFHKA series" in (m or "") for m in other_journal.message_ids.mapped("body"))
+        )
+
     def test_08_tfhka_serie_id_unique_per_journal(self):
         serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
         self.journal.tfhka_serie_id = serie.id

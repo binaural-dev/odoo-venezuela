@@ -39,21 +39,34 @@ class AccountJournal(models.Model):
         ),
     ]
 
+    def _tfhka_serie_is_empty(self):
+        """True si este diario, a efectos de TFHKA, no manda serie: ni
+        tfhka_serie_id vacío ni explícitamente "NO APLICA" cuentan como una
+        serie real (ver _get_tfhka_series(), que trata ambos casos igual)."""
+        self.ensure_one()
+        return (
+            not self.tfhka_serie_id
+            or self.tfhka_serie_id.name == self.env["tfhka.serie"].NO_APLICA
+        )
+
     def _find_other_journal_without_tfhka_serie(self):
         """Otro diario de facturación digital de la misma compañía que
-        también esté sin tfhka_serie_id, si lo hay. No es obligatorio asignar
-        una serie (ver _get_tfhka_series()), pero más de un diario mandando
-        serie vacía a TFHKA los deja indistinguibles entre sí del mismo modo
-        que si compartieran serie -- de ahí el aviso (no bloqueante, ver
+        también mande serie vacía a TFHKA (sin tfhka_serie_id, o con
+        "NO APLICA"), si lo hay. No es obligatorio asignar una serie (ver
+        _get_tfhka_series()), pero más de un diario mandando serie vacía los
+        deja indistinguibles entre sí del mismo modo que si compartieran
+        serie -- de ahí el aviso (no bloqueante, ver
         _onchange_tfhka_serie_id_empty_warning / write() / create())."""
         self.ensure_one()
-        if self.tfhka_serie_id or not self.digital_invoice:
+        if not self.digital_invoice or not self._tfhka_serie_is_empty():
             return self.browse()
         return self.search([
             ("id", "!=", self.id),
             ("company_id", "=", self.company_id.id),
             ("digital_invoice", "=", True),
+            "|",
             ("tfhka_serie_id", "=", False),
+            ("tfhka_serie_id.name", "=", self.env["tfhka.serie"].NO_APLICA),
         ], limit=1)
 
     @api.onchange("tfhka_serie_id", "digital_invoice")
@@ -100,11 +113,18 @@ class AccountJournal(models.Model):
         no tenga que derivarla del prefijo de una secuencia no relacionada.
 
         Vacío si la compañía no factura por series (TFHKA acepta serie vacía
-        para sistemas centralizados, ver el instructivo técnico de su API)."""
+        para sistemas centralizados, ver el instructivo técnico de su API),
+        si el diario no tiene serie asignada, o si la serie asignada es
+        "NO APLICA" -- esa es la forma en que TFHKA representa "sin serie" en
+        /ConsultaNumeraciones, pero no es un valor que se le pueda reenviar
+        tal cual en /Emision."""
         self.ensure_one()
         if not self.company_id.group_sales_invoicing_series:
             return ""
-        return self.tfhka_serie_id.name or ""
+        name = self.tfhka_serie_id.name or ""
+        if name == self.env["tfhka.serie"].NO_APLICA:
+            return ""
+        return name
 
     def _compute_digital_invoice_lock(self):
         """Compute if the journal has digital invoices and lock the field with readonly attr.
