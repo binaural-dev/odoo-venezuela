@@ -312,23 +312,31 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             return False
 
     def _tfhka_process_digitalization_safe(self):
-        """Wraps ``_tfhka_process_digitalization`` in its own savepoint.
+        """Wraps ``_tfhka_process_digitalization`` in a broad try/except so
+        an unexpected exception (a DB error, a bug in a future change) can't
+        propagate straight out of the cron loop and abort the whole batch's
+        transaction, leaving every other queued document untouched without
+        even a visible error on this one.
 
-        That method already catches every TFHKA/business failure it knows
-        about and records a proper error state for each, but an unexpected
-        exception outside that (a DB error, a bug in a future change) would
-        otherwise propagate straight out of the cron loop, aborting the
-        whole batch's transaction and leaving every other queued document
-        untouched without even a visible error on this one -- see the
-        connection-error incident this same day, where exactly that kind of
-        uncaught exception (mid stuck-processing recovery) halted an entire
-        run. The savepoint ensures this document's own failed attempt rolls
-        back cleanly, without touching whatever the rest of the batch
-        already committed."""
+        Deliberately NOT wrapped in ``self.env.cr.savepoint()`` (unlike
+        ``_tfhka_reconcile_stuck_processing_safe`` below) -- the protected
+        method's very first action is ``_tfhka_commit()``, a real
+        ``cr.commit()``. Committing destroys any open savepoint; the
+        ``RELEASE SAVEPOINT`` on exit would then fail with
+        ``InvalidSavepointSpecification`` ('savepoint ... does not exist'),
+        itself a raw DB error that poisons the transaction and surfaces as
+        'current transaction is aborted, commands ignored until end of
+        transaction block' on the very next query -- including this
+        except's own recovery write, crashing the whole cron run. That
+        commit already gives this one document its own durability boundary
+        (that's its purpose -- see its docstring), so there is nothing
+        left uncommitted here for a savepoint to protect anyway: an
+        exception after it just leaves the document in 'processing', the
+        same interrupted-run case ``_tfhka_reconcile_stuck_processing``
+        already exists to recover on the next cron tick."""
         self.ensure_one()
         try:
-            with self.env.cr.savepoint():
-                return self._tfhka_process_digitalization()
+            return self._tfhka_process_digitalization()
         except Exception as error:
             _logger.exception(
                 "TFHKA: unexpected error digitalizing %s #%s -- marking as "

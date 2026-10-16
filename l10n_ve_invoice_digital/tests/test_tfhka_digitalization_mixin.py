@@ -706,9 +706,12 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual(inv.tfhka_digitalization_state, "error")
 
     # ------------------------------------------------------------------
-    # Savepoint isolation: an unexpected exception (outside the failures
+    # Error isolation: an unexpected exception (outside the failures
     # _tfhka_process_digitalization/_tfhka_reconcile_stuck_processing
-    # already handle) must not abort the whole queue run.
+    # already handle) must not abort the whole queue run. Only the
+    # reconcile side uses a real savepoint for this -- see
+    # _tfhka_process_digitalization_safe's docstring for why a savepoint
+    # there is actively incompatible with _tfhka_commit().
     # ------------------------------------------------------------------
 
     def test_process_digitalization_safe_catches_unexpected_exception(self):
