@@ -70,7 +70,7 @@ class TestMunicipalRetentionPdf(RetentionTestCommon):
         retention = self._create_municipal_retention()
         retention.state = "emitted"
         html = self._render(retention)
-        self.assertIn("ACTIVIDADES ECONOMICAS", html)
+        self.assertIn("ACTIVIDADES ECONÓMICAS", html)
         self.assertNotIn("COMPROBANTE DE RETENCIÓN DE ISLR", html)
         _logger.info("========= test_01 passed =========")
 
@@ -79,7 +79,7 @@ class TestMunicipalRetentionPdf(RetentionTestCommon):
         iva = self._create_iva_retention()
         (municipal | iva).write({"state": "emitted"})
         html = self._render(iva | municipal)
-        self.assertIn("ACTIVIDADES ECONOMICAS", html)
+        self.assertIn("ACTIVIDADES ECONÓMICAS", html)
         self.assertIn("COMPROBANTE DE RETENCIÓN DEL IMPUESTO AL VALOR AGREGADO", html)
         _logger.info("========= test_02 passed =========")
 
@@ -100,11 +100,11 @@ class TestMunicipalRetentionPdf(RetentionTestCommon):
         retention.state = "emitted"
         self.company.hide_issue_date_of_municipal_withholding_receipt = False
         html = self._render(retention)
-        self.assertIn("FECHA DE EMISIÓN O TRANSACCION", html)
+        self.assertIn("FECHA DE EMISIÓN O TRANSACCIÓN", html)
         self.assertIn("FECHA DE ENTREGA", html)
         self.company.hide_issue_date_of_municipal_withholding_receipt = True
         html = self._render(retention)
-        self.assertIn("FECHA DE EMISIÓN O TRANSACCION", html)
+        self.assertIn("FECHA DE EMISIÓN O TRANSACCIÓN", html)
         self.assertNotIn("FECHA DE ENTREGA", html)
         _logger.info("========= test_04 passed =========")
 
