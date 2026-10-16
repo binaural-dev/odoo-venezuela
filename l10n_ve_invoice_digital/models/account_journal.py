@@ -192,15 +192,19 @@ class AccountJournal(models.Model):
         verdad (``tfhka_serie_id.name``), para que ``tfhka.document.service``
         no tenga que derivarla del prefijo de una secuencia no relacionada.
 
-        Vacío si la compañía no factura por series (TFHKA acepta serie vacía
-        para sistemas centralizados, ver el instructivo técnico de su API),
-        si el diario no tiene serie asignada, o si la serie asignada es
+        Deliberadamente independiente de ``company.group_sales_invoicing_series``
+        -- ese flag controla la numeración legacy por secuencia
+        (``l10n_ve_invoice``'s ``get_sequence()``), un mecanismo no
+        relacionado; acoplarlos significaba que desactivar la numeración
+        legacy apagaba también la serie enviada a TFHKA (unidigital, en
+        ``binaural_unidigital``, tampoco los acopla).
+
+        Vacío si el diario no tiene serie asignada, o si la serie asignada es
         "NO APLICA" -- esa es la forma en que TFHKA representa "sin serie" en
         /ConsultaNumeraciones, pero no es un valor que se le pueda reenviar
-        tal cual en /Emision."""
+        tal cual en /Emision. TFHKA acepta serie vacía para sistemas
+        centralizados (ver el instructivo técnico de su API)."""
         self.ensure_one()
-        if not self.company_id.group_sales_invoicing_series:
-            return ""
         name = self.tfhka_serie_id.name or ""
         if name == self.env["tfhka.serie"].NO_APLICA:
             return ""

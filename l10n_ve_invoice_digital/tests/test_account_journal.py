@@ -55,27 +55,23 @@ class TestAccountJournal(TransactionCase):
     # _get_tfhka_series / tfhka_serie_id
     # ------------------------------------------------------------------
 
-    def test_05_get_tfhka_series_empty_when_company_does_not_invoice_by_series(self):
+    def test_05_get_tfhka_series_independent_of_company_invoicing_by_series(self):
         self.company.group_sales_invoicing_series = False
         serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
         self.journal.tfhka_serie_id = serie.id
 
-        self.assertEqual(self.journal._get_tfhka_series(), "")
+        self.assertEqual(self.journal._get_tfhka_series(), "A")
 
     def test_06_get_tfhka_series_empty_when_no_serie_assigned(self):
-        self.company.group_sales_invoicing_series = True
-
         self.assertEqual(self.journal._get_tfhka_series(), "")
 
     def test_07_get_tfhka_series_returns_assigned_serie_name(self):
-        self.company.group_sales_invoicing_series = True
         serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
         self.journal.tfhka_serie_id = serie.id
 
         self.assertEqual(self.journal._get_tfhka_series(), "A")
 
     def test_07b_get_tfhka_series_empty_when_serie_is_no_aplica(self):
-        self.company.group_sales_invoicing_series = True
         no_aplica = self.env["tfhka.serie"].create({
             "name": self.env["tfhka.serie"].NO_APLICA, "company_id": self.company.id,
         })
