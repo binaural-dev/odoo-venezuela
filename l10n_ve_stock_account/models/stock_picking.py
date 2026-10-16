@@ -1194,6 +1194,16 @@ class StockPicking(models.Model):
                     picking.is_consignment_readonly = True
                 else:
                     picking.is_consignment_readonly = False
+                    # Sin una razon valida, el respaldo generico de abajo tomaba la
+                    # primera permitida (consignacion) en almacenes que no lo son:
+                    # se usa la de la compania o, si no hay, traslado entre almacenes.
+                    if picking.transfer_reason_id.id not in allowed_reason_ids:
+                        default_reason = picking._get_default_internal_transfer_reason(
+                            picking.picking_type_id, picking.company_id, picking.location_dest_id
+                        )
+                        picking.transfer_reason_id = (
+                            default_reason or transfer_between_warehouses_reason
+                        )
 
             # Force update of transfer_reason_id field to avoid inconsistencies
             if allowed_reason_ids:

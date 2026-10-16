@@ -86,10 +86,15 @@ class TestDefaultInternalTransferReason(StockAccountTestCommon):
         )
         self.assertEqual(picking.transfer_reason_id, self.reason_other)
 
-    def test_create_without_default_keeps_existing_behavior(self):
+    def test_create_without_default_falls_back_to_transfer_between_warehouses(self):
+        """Without a company default the allowed-reasons compute used to pick the first
+        allowed reason (consignment) for any internal transfer."""
+        self._skip_if_dispatch_note_installed()
         self.company.internal_transfer_reason_id = False
         picking = self.Picking.create(self._vals(self.internal_type))
-        self.assertFalse(picking.transfer_reason_id)
+        self.env.flush_all()
+        self.assertEqual(picking.transfer_reason_id, self.reason_between_wh)
+        self.assertFalse(picking.is_consignment)
 
     def test_non_internal_picking_ignores_default(self):
         self.company.internal_transfer_reason_id = self.reason_between_wh
@@ -101,7 +106,8 @@ class TestDefaultInternalTransferReason(StockAccountTestCommon):
         self._skip_if_dispatch_note_installed()
         self.company.internal_transfer_reason_id = self.reason_sale
         picking = self.Picking.create(self._vals(self.internal_type))
-        self.assertFalse(picking.transfer_reason_id)
+        self.env.flush_all()
+        self.assertEqual(picking.transfer_reason_id, self.reason_between_wh)
         new = self.Picking.new(
             {"picking_type_id": self.internal_type.id, "company_id": self.company.id}
         )
@@ -197,3 +203,42 @@ class TestDefaultInternalTransferReason(StockAccountTestCommon):
             )
         )
         self.assertTrue(doc.xpath("//h2[contains(., 'Dispatch Guide Settings')]"))
+
+    def _reception_steps(self):
+        """Validates a three-step reception and returns its quality and storage steps."""
+        self.warehouse.reception_steps = "three_steps"
+        product = self.env["product.product"].create({"name": "Steps 84380", "is_storable": True})
+        vendors = self.env.ref("stock.stock_location_suppliers")
+        receipt = self.Picking.create({
+            "picking_type_id": self.warehouse.in_type_id.id,
+            "location_id": vendors.id,
+            "location_dest_id": self.warehouse.wh_input_stock_loc_id.id,
+            "company_id": self.company.id,
+            "move_ids": [(0, 0, {
+                "product_id": product.id, "product_uom_qty": 2,
+                "location_id": vendors.id, "location_dest_id": self.warehouse.wh_input_stock_loc_id.id,
+            })],
+        })
+        receipt.action_confirm()
+        steps = self.Picking
+        picking = receipt
+        for _step in range(2):
+            picking.move_ids.quantity = 2
+            picking.button_validate()
+            picking = picking.move_ids.move_dest_ids.picking_id
+            self.env.flush_all()
+            steps |= picking
+        return steps
+
+    def test_reception_steps_without_default_get_transfer_between_warehouses(self):
+        self._skip_if_dispatch_note_installed()
+        self.company.internal_transfer_reason_id = False
+        steps = self._reception_steps()
+        self.assertEqual(steps.picking_type_id, self.warehouse.qc_type_id | self.warehouse.store_type_id)
+        self.assertEqual(steps.transfer_reason_id, self.reason_between_wh)
+
+    def test_reception_steps_use_the_company_default(self):
+        self._skip_if_dispatch_note_installed()
+        self.company.internal_transfer_reason_id = self.reason_other
+        steps = self._reception_steps()
+        self.assertEqual(steps.transfer_reason_id, self.reason_other)

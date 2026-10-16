@@ -6,6 +6,20 @@ import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 
 patch(PosStore.prototype, {
+  /**
+   * The VAT PartnerList leaves for the customer it creates (newPartnerVat) is
+   * the default of that form and is consumed here, so it never reaches a
+   * later one.
+   */
+  editPartnerContext(partner) {
+    const context = { ...super.editPartnerContext(...arguments) };
+    if (this.newPartnerVat) {
+      context.default_vat = this.newPartnerVat;
+      this.newPartnerVat = false;
+    }
+    return context;
+  },
+
   async pay() {
     const order = this.getOrder();
     // Bloquea el paso a la pantalla de pago si hay líneas con cantidad en 0:
