@@ -140,8 +140,12 @@ class TestAccountMoveApiCalls(TransactionCase):
         serie = self.env['tfhka.serie'].search([('name', '=', 'A'), ('company_id', '=', self.company.id)])
         self.assertTrue(serie)
         self.assertEqual(serie.prefix, 'A-')
-        # "NO APLICA" no es una serie elegible por un diario.
-        self.assertFalse(self.env['tfhka.serie'].search([('name', '=', 'NO APLICA')]))
+        # "NO APLICA" se sincroniza como una serie más -- un diario puede
+        # elegirla explícitamente para decir "sin serie" (ver
+        # tfhka.serie.NO_APLICA / account.journal._get_tfhka_series()).
+        self.assertTrue(
+            self.env['tfhka.serie'].search([('name', '=', 'NO APLICA'), ('company_id', '=', self.company.id)])
+        )
 
     @patch('requests.post')
     def test_11_generate_token_tfhka_series_sync_failure_does_not_block_token(self, mock_post):

@@ -27,9 +27,14 @@ class AccountRetention(models.Model):
     def _tfhka_is_confirmed(self):
         """See ``tfhka.digitalization.mixin._tfhka_is_confirmed`` and
         ``account.move._tfhka_is_confirmed``: the cron's safety net against
-        digitalizing a document that never actually got confirmed."""
+        digitalizing a document that never actually got confirmed.
+
+        Unlike account.move, a confirmed retention's terminal state is
+        'emitted', not 'posted' -- action_post() (l10n_ve_payment_extension)
+        ends with ``self.write({"state": "emitted"})``; 'posted' is never a
+        value account.retention.state actually takes."""
         self.ensure_one()
-        return self.state == "posted"
+        return self.state == "emitted"
 
     def generate_document_digital(self):
         self.ensure_one()

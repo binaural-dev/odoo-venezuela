@@ -102,7 +102,12 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
                 "tax_ids": [Command.set([self.tax_iva16.id])],
             })],
         })
-        inv.action_post()
+        # l10n_ve_accountant.action_post() shows the confirmation wizard
+        # instead of posting out_invoice/out_refund unless this context flag
+        # is set (normally set by that wizard's action_confirm()) -- plain
+        # action_post() would silently leave the move in draft, which
+        # _tfhka_is_confirmed() would then (correctly) reject as unconfirmed.
+        inv.with_context(move_action_post_alert=True).action_post()
         return inv
 
     # ------------------------------------------------------------------

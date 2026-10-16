@@ -93,7 +93,12 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             })],
         })
         if post:
-            inv.action_post()
+            # l10n_ve_accountant.action_post() shows the confirmation wizard
+            # instead of posting out_invoice/out_refund unless this context
+            # flag is set (normally set by that same wizard's
+            # action_confirm()) -- plain action_post() would silently leave
+            # the move in draft here.
+            inv.with_context(move_action_post_alert=True).action_post()
         return inv
 
     # ------------------------------------------------------------------
@@ -227,7 +232,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
 
         self.assertFalse(inv._tfhka_is_eligible_for_digitalization())
 
-        inv.action_post()
+        inv.with_context(move_action_post_alert=True).action_post()
 
         self.assertTrue(inv._tfhka_is_eligible_for_digitalization())
 
@@ -237,7 +242,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
 
         self.assertFalse(inv._tfhka_should_mark_not_applicable())
 
-        inv.action_post()
+        inv.with_context(move_action_post_alert=True).action_post()
 
         self.assertTrue(inv._tfhka_should_mark_not_applicable())
 
@@ -248,11 +253,16 @@ class TestMoveActionPostAlertWizard(TransactionCase):
     # ------------------------------------------------------------------
 
     def test_posting_allowed_when_journal_invoices_by_series_without_tfhka_serie(self):
-        # Asignar una serie no es obligatorio: un diario de una compañía que
-        # factura por series puede seguir sin tfhka_serie_id -- manda serie
-        # vacía a TFHKA, no se bloquea el posteo.
+        # Asignar una serie TFHKA no es obligatorio: un diario de una
+        # compañía que factura por series puede seguir sin tfhka_serie_id --
+        # manda serie vacía a TFHKA, no se bloquea el posteo. series_
+        # correlative_sequence_id sigue siendo necesario para el campo
+        # 'correlative' (mecanismo de l10n_ve_invoice, no de TFHKA).
         self.journal.digital_invoice = True
         self.company.group_sales_invoicing_series = True
+        self.journal.series_correlative_sequence_id = self.env['ir.sequence'].create({
+            'name': 'Correlativo Serie A', 'padding': 4,
+        }).id
 
         inv = self._create_invoice(post=True)
 
@@ -261,6 +271,9 @@ class TestMoveActionPostAlertWizard(TransactionCase):
     def test_posting_allowed_when_journal_has_tfhka_serie(self):
         self.journal.digital_invoice = True
         self.company.group_sales_invoicing_series = True
+        self.journal.series_correlative_sequence_id = self.env['ir.sequence'].create({
+            'name': 'Correlativo Serie A', 'padding': 4,
+        }).id
         serie = self.env['tfhka.serie'].create({'name': 'A', 'company_id': self.company.id})
         self.journal.tfhka_serie_id = serie.id
 
