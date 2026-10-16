@@ -141,6 +141,43 @@ class TestAccountJournal(TransactionCase):
             )
         )
 
+    def test_08c_sharing_serie_allowed_for_debit_note_journal(self):
+        # is_debit es de l10n_ve_invoice, dependencia real de este modulo --
+        # no hace falta mockear nada, se usa el campo directo.
+        serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
+        self.journal.tfhka_serie_id = serie.id
+        debit_journal = self.env["account.journal"].create({
+            "name": "Diario Notas de Debito",
+            "code": "NDB",
+            "type": "sale",
+            "company_id": self.company.id,
+            "is_debit": True,
+        })
+
+        debit_journal.tfhka_serie_id = serie.id  # no debe lanzar
+
+        self.assertEqual(debit_journal.tfhka_serie_id, serie)
+        self.assertTrue(
+            any(
+                "shares its TFHKA series" in (m or "")
+                for m in debit_journal.message_ids.mapped("body")
+            )
+        )
+
+    def test_08d_sharing_serie_still_blocked_without_any_exception(self):
+        serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
+        self.journal.tfhka_serie_id = serie.id
+        other_journal = self.env["account.journal"].create({
+            "name": "Otro Diario",
+            "code": "OTR",
+            "type": "sale",
+            "company_id": self.company.id,
+            "is_debit": False,
+        })
+
+        with self.assertRaises(ValidationError):
+            other_journal.tfhka_serie_id = serie.id
+
     def test_09_two_journals_without_serie_do_not_conflict(self):
         # NULL no cuenta como duplicado para la restricción unique() -- dos
         # diarios sin serie asignada deben poder coexistir sin problema.

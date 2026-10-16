@@ -33,16 +33,23 @@ class AccountJournal(models.Model):
 
     def _tfhka_serie_sharing_is_allowed(self, other):
         """True si ``self`` y ``other`` pueden compartir ``tfhka_serie_id``
-        sin bloquearse -- solo cuando uno de los dos es el diario de
-        facturación a terceros (``is_third_party_invoice_journal``, del
-        módulo opcional ``binaural_third_party_invoice``): una factura de
-        terceros se emite bajo la identidad fiscal del diario padre, así que
-        comparten serie a propósito. ``getattr`` con default porque ese
-        módulo no es una dependencia de este -- si no está instalado, el
-        campo no existe y nunca se considera "permitido"."""
+        sin bloquearse. Dos casos, cada uno porque el diario en cuestión
+        emite documentos bajo la identidad fiscal de otro diario a
+        propósito, no por error de configuración:
+
+        - Uno de los dos es el diario de facturación a terceros
+          (``is_third_party_invoice_journal``, del módulo opcional
+          ``binaural_third_party_invoice`` -- ``getattr`` con default porque
+          ese módulo no es dependencia de este; si no está instalado, el
+          campo no existe y nunca cuenta como "permitido").
+        - Uno de los dos es el diario de notas de débito (``is_debit``, de
+          ``l10n_ve_invoice`` -- esa sí es dependencia de este módulo, así
+          que se lee directo, sin getattr)."""
         return bool(
             getattr(self, "is_third_party_invoice_journal", False)
             or getattr(other, "is_third_party_invoice_journal", False)
+            or self.is_debit
+            or other.is_debit
         )
 
     def _find_other_journal_sharing_tfhka_serie(self):
@@ -59,9 +66,9 @@ class AccountJournal(models.Model):
 
     @api.constrains("tfhka_serie_id")
     def _check_tfhka_serie_id_not_shared(self):
-        """Dos diarios no pueden compartir la misma serie TFHKA -- salvo que
-        uno de los dos sea el diario de facturación a terceros (ver
-        _tfhka_serie_sharing_is_allowed), en cuyo caso solo se avisa (no
+        """Dos diarios no pueden compartir la misma serie TFHKA -- salvo las
+        excepciones de _tfhka_serie_sharing_is_allowed (facturación a
+        terceros, notas de débito), en cuyo caso solo se avisa (no
         bloqueante, ver _onchange_tfhka_serie_id_warning / write() /
         create()). Reemplaza un ``unique()`` de ``_sql_constraints``: una
         restricción SQL no puede tener esta excepción."""
@@ -73,7 +80,7 @@ class AccountJournal(models.Model):
                         "This TFHKA series is already assigned to "
                         "'%(other)s'. Two journals can't share the same "
                         "series unless one of them is the third-party "
-                        "invoicing journal."
+                        "invoicing journal or the debit note journal."
                     )
                     % {"other": other.display_name}
                 )
@@ -111,9 +118,10 @@ class AccountJournal(models.Model):
     @api.onchange("tfhka_serie_id", "digital_invoice")
     def _onchange_tfhka_serie_id_warning(self):
         """Aviso no bloqueante en el formulario -- no impide guardar. Dos
-        casos, en este orden: comparte una serie no vacía (permitido solo
-        para facturación a terceros, ver _check_tfhka_serie_id_not_shared),
-        o queda sin serie y otro diario también."""
+        casos, en este orden: comparte una serie no vacía (permitido para
+        las excepciones de _tfhka_serie_sharing_is_allowed, ver
+        _check_tfhka_serie_id_not_shared), o queda sin serie y otro diario
+        también."""
         for journal in self:
             shared_with = journal._find_other_journal_sharing_tfhka_serie()
             if shared_with and journal._tfhka_serie_sharing_is_allowed(shared_with):
@@ -124,7 +132,8 @@ class AccountJournal(models.Model):
                             "This journal shares its TFHKA series with "
                             "'%(other)s'. Make sure that's intentional -- "
                             "usually only the third-party invoicing journal "
-                            "and its parent journal should share one."
+                            "or the debit note journal should share one with "
+                            "its parent journal."
                         )
                         % {"other": shared_with.display_name},
                     }
@@ -156,7 +165,8 @@ class AccountJournal(models.Model):
                             "This journal shares its TFHKA series with "
                             "'%(other)s'. Make sure that's intentional -- "
                             "usually only the third-party invoicing journal "
-                            "and its parent journal should share one."
+                            "or the debit note journal should share one with "
+                            "its parent journal."
                         )
                         % {"other": shared_with.display_name},
                         "warning",
