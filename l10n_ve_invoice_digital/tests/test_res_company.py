@@ -116,3 +116,48 @@ class TestAccountMoveApiCalls(TransactionCase):
         ):
             with self.assertRaises(ValidationError):
                 self.company._handle_tfhka_response(mock_response, {"usuario": "u", "clave": "p"})
+
+    # ------------------------------------------------------------------
+    # Sincronización de tfhka.serie al generar el token (sin botón aparte)
+    # ------------------------------------------------------------------
+
+    @patch('requests.post')
+    def test_10_generate_token_tfhka_syncs_series(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"codigo": 200, "mensaje": "ok", "token": "tok123"}
+        mock_post.return_value = mock_response
+
+        with patch.object(
+            type(self.env['tfhka.api.client']), 'list_numberings',
+            return_value=[
+                {"serie": "NO APLICA", "prefijo": "00", "estado": "True"},
+                {"serie": "A", "prefijo": "A-", "estado": "True"},
+            ],
+        ):
+            self.company.generate_token_tfhka()
+
+        serie = self.env['tfhka.serie'].search([('name', '=', 'A'), ('company_id', '=', self.company.id)])
+        self.assertTrue(serie)
+        self.assertEqual(serie.prefix, 'A-')
+        # "NO APLICA" se sincroniza como una serie más -- un diario puede
+        # elegirla explícitamente para decir "sin serie" (ver
+        # tfhka.serie.NO_APLICA / account.journal._get_tfhka_series()).
+        self.assertTrue(
+            self.env['tfhka.serie'].search([('name', '=', 'NO APLICA'), ('company_id', '=', self.company.id)])
+        )
+
+    @patch('requests.post')
+    def test_11_generate_token_tfhka_series_sync_failure_does_not_block_token(self, mock_post):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {"codigo": 200, "mensaje": "ok", "token": "tok123"}
+        mock_post.return_value = mock_response
+
+        with patch.object(
+            type(self.env['tfhka.api.client']), 'list_numberings',
+            side_effect=RuntimeError("boom"),
+        ):
+            self.company.generate_token_tfhka()  # no debe propagar la excepcion
+
+        self.assertEqual(self.company.token_auth_tfhka, "tok123")
