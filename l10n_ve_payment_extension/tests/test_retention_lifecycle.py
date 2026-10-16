@@ -347,8 +347,6 @@ class TestRetentionLifecycle(RetentionTestCommon):
             amount=100, partner=self.partner_pnr_75,
             out_invoice="in_invoice", journal=self.purchase_journal,
         )
-        self._prepare_invoice_for_retention(old_invoice)
-        self._prepare_invoice_for_retention(new_invoice)
         # The accounting-date-vs-invoice check compares against
         # invoice_date_display (not invoice_date): invoice_date_display
         # defaults to "today" on creation and is never auto-synced from
@@ -356,10 +354,16 @@ class TestRetentionLifecycle(RetentionTestCommon):
         # here, and before action_post (nothing on the model prevents
         # editing it after posting, but keeping both invoices' dates fixed
         # before posting removes any ambiguity about ordering).
+        # invoice_date (the rate date) is set to the same date because
+        # l10n_ve_invoice._check_dates_not_in_future rejects, on action_post,
+        # a rate date later than the invoice date. The rate is pinned after
+        # the dates, since changing invoice_date can recompute it.
         old_date = fields.Date.today() - timedelta(days=10)
         new_date = fields.Date.today()
-        old_invoice.invoice_date_display = old_date
-        new_invoice.invoice_date_display = new_date
+        old_invoice.write({"invoice_date": old_date, "invoice_date_display": old_date})
+        new_invoice.write({"invoice_date": new_date, "invoice_date_display": new_date})
+        self._prepare_invoice_for_retention(old_invoice)
+        self._prepare_invoice_for_retention(new_invoice)
         old_invoice.action_post()
         new_invoice.action_post()
 

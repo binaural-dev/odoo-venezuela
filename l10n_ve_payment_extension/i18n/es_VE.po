@@ -3272,9 +3272,112 @@ msgid "Invoice %s already has a posted ISLR retention. You cannot create another
 msgstr "La factura %s ya tiene una retención de ISLR publicada. No se puede crear otra."
 
 #. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"Invoice %(invoice)s cannot be modified: retention"
+" %(retention)s groups several invoices (%(invoices)s)."
+" Cancel retention %(retention)s manually first."
+msgstr ""
+"No se puede modificar la factura %(invoice)s: la retención"
+" %(retention)s agrupa varias facturas (%(invoices)s)."
+" Cancele la retención %(retention)s manualmente primero."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"Invoice %(invoice)s cannot be modified: retention"
+" %(retention)s's accounting date (%(date)s) falls within a"
+" locked period (%(locks)s)."
+msgstr ""
+"No se puede modificar la factura %(invoice)s: la fecha contable de la"
+" retención %(retention)s (%(date)s) cae dentro de un período bloqueado"
+" (%(locks)s)."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "Invoice %s cannot be modified: it is already paid or in payment."
+msgstr "No se puede modificar la factura %s: ya está pagada o en proceso de pago."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid ""
+"Could not re-emit retention %(retention)s for invoice %(invoice)s after"
+" recalculating it against its current data - open the retention for"
+" details."
+msgstr ""
+"No se pudo reemitir la retención %(retention)s de la factura %(invoice)s"
+" después de recalcularla contra sus datos actuales; abra la retención"
+" para más detalles."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Recalculate Retentions"
+msgstr "Recalcular Retenciones"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid ""
+"This invoice has an emitted withholding retention. Cancelling it will "
+"also cancel that retention and its accounting entries. Are you sure you "
+"want to continue?"
+msgstr ""
+"Esta factura tiene una retención emitida. Al cancelarla, también se "
+"cancelará esa retención y sus asientos contables. ¿Seguro que desea "
+"continuar?"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension
+msgid ""
+"Warning: this retention's declared base/amount no longer match its "
+"invoice's current data. Recalculate it from the invoice (button "
+"\"Recalculate Retentions\") to bring it up to date."
+msgstr ""
+"Advertencia: la base/monto declarado de esta retención ya no coincide "
+"con los datos actuales de su factura. Recalcúlela desde la factura "
+"(botón \"Recalcular Retenciones\") para actualizarla."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_payment_view_form_l10n_ve_payment_extension
+msgid ""
+"Warning: this payment's linked withholding retention no longer matches "
+"its invoice's current data. Recalculate it from the invoice (button "
+"\"Recalculate Retentions\") to bring it up to date."
+msgstr ""
+"Advertencia: la retención asociada a este pago ya no coincide con los "
+"datos actuales de su factura. Recalcúlela desde la factura (botón "
+"\"Recalcular Retenciones\") para actualizarla."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__has_pending_retention_to_cancel
+msgid "Has Pending Retention To Cancel"
+msgstr "Tiene retención pendiente de cancelar"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__retention_resync_pending
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_resync_pending
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__retention_resync_pending
+msgid "Retention Resync Pending"
+msgstr "Recálculo de retención pendiente"
+
+#. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
 msgid "Warning: You have ISLR retentions to aproved"
 msgstr "Advertencia: Tiene retenciones del ISLR por aprobar"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid ""
+"Warning: this invoice's withholding retentions no longer match its current "
+"data. Use the \"Recalculate Retentions\" button to bring them up to date."
+msgstr ""
+"Advertencia: las retenciones de esta factura ya no coinciden con sus datos "
+"actuales. Use el botón \"Recalcular Retenciones\" para actualizarlas."
 
 #. module: l10n_ve_payment_extension
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__generate_islr_retention
