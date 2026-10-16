@@ -975,9 +975,34 @@ msgid "This TFHKA series is already registered for this company."
 msgstr "Esta serie TFHKA ya está registrada para esta compañía."
 
 #. module: l10n_ve_invoice_digital
-#: model:ir.model.constraint,message:l10n_ve_invoice_digital.constraint_account_journal_tfhka_serie_id_uniq
-msgid "This TFHKA series is already assigned to another journal."
-msgstr "Esta serie TFHKA ya está asignada a otro diario."
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
+msgid ""
+"This TFHKA series is already assigned to '%(other)s'. Two journals can't "
+"share the same series unless one of them is the third-party invoicing "
+"journal or the debit note journal."
+msgstr ""
+"Esta serie TFHKA ya está asignada a '%(other)s'. Dos diarios no pueden "
+"compartir la misma serie a menos que uno de los dos sea el diario de "
+"facturación a terceros o el diario de notas de débito."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
+msgid "Shared TFHKA series"
+msgstr "Serie TFHKA compartida"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
+msgid ""
+"This journal shares its TFHKA series with '%(other)s'. Make sure that's "
+"intentional -- usually only the third-party invoicing journal or the "
+"debit note journal should share one with its parent journal."
+msgstr ""
+"Este diario comparte su serie TFHKA con '%(other)s'. Asegurate de que sea "
+"intencional -- normalmente solo el diario de facturación a terceros o el "
+"diario de notas de débito deberían compartir una con su diario padre."
 
 #. module: l10n_ve_invoice_digital
 #. odoo-python

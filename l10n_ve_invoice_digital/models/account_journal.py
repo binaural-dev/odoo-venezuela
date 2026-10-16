@@ -31,13 +31,59 @@ class AccountJournal(models.Model):
              "journal in the company is also without one.",
     )
 
-    _sql_constraints = [
-        (
-            "tfhka_serie_id_uniq",
-            "unique(tfhka_serie_id)",
-            "This TFHKA series is already assigned to another journal.",
-        ),
-    ]
+    def _tfhka_serie_sharing_is_allowed(self, other):
+        """True si ``self`` y ``other`` pueden compartir ``tfhka_serie_id``
+        sin bloquearse. Dos casos, cada uno porque el diario en cuestión
+        emite documentos bajo la identidad fiscal de otro diario a
+        propósito, no por error de configuración:
+
+        - Uno de los dos es el diario de facturación a terceros
+          (``is_third_party_invoice_journal``, del módulo opcional
+          ``binaural_third_party_invoice`` -- ``getattr`` con default porque
+          ese módulo no es dependencia de este; si no está instalado, el
+          campo no existe y nunca cuenta como "permitido").
+        - Uno de los dos es el diario de notas de débito (``is_debit``, de
+          ``l10n_ve_invoice`` -- esa sí es dependencia de este módulo, así
+          que se lee directo, sin getattr)."""
+        return bool(
+            getattr(self, "is_third_party_invoice_journal", False)
+            or getattr(other, "is_third_party_invoice_journal", False)
+            or self.is_debit
+            or other.is_debit
+        )
+
+    def _find_other_journal_sharing_tfhka_serie(self):
+        """Otro diario de la misma compañía que ya use esta misma
+        ``tfhka_serie_id`` (no vacía), si lo hay."""
+        self.ensure_one()
+        if not self.tfhka_serie_id:
+            return self.browse()
+        return self.search([
+            ("id", "!=", self.id),
+            ("company_id", "=", self.company_id.id),
+            ("tfhka_serie_id", "=", self.tfhka_serie_id.id),
+        ], limit=1)
+
+    @api.constrains("tfhka_serie_id")
+    def _check_tfhka_serie_id_not_shared(self):
+        """Dos diarios no pueden compartir la misma serie TFHKA -- salvo las
+        excepciones de _tfhka_serie_sharing_is_allowed (facturación a
+        terceros, notas de débito), en cuyo caso solo se avisa (no
+        bloqueante, ver _onchange_tfhka_serie_id_warning / write() /
+        create()). Reemplaza un ``unique()`` de ``_sql_constraints``: una
+        restricción SQL no puede tener esta excepción."""
+        for journal in self:
+            other = journal._find_other_journal_sharing_tfhka_serie()
+            if other and not journal._tfhka_serie_sharing_is_allowed(other):
+                raise ValidationError(
+                    _(
+                        "This TFHKA series is already assigned to "
+                        "'%(other)s'. Two journals can't share the same "
+                        "series unless one of them is the third-party "
+                        "invoicing journal or the debit note journal."
+                    )
+                    % {"other": other.display_name}
+                )
 
     def _tfhka_serie_is_empty(self):
         """True si este diario, a efectos de TFHKA, no manda serie: ni
@@ -70,12 +116,30 @@ class AccountJournal(models.Model):
         ], limit=1)
 
     @api.onchange("tfhka_serie_id", "digital_invoice")
-    def _onchange_tfhka_serie_id_empty_warning(self):
-        """Aviso no bloqueante en el formulario -- no impide guardar, solo
-        avisa que ya hay otro diario sin serie."""
+    def _onchange_tfhka_serie_id_warning(self):
+        """Aviso no bloqueante en el formulario -- no impide guardar. Dos
+        casos, en este orden: comparte una serie no vacía (permitido para
+        las excepciones de _tfhka_serie_sharing_is_allowed, ver
+        _check_tfhka_serie_id_not_shared), o queda sin serie y otro diario
+        también."""
         for journal in self:
-            other = journal._find_other_journal_without_tfhka_serie()
-            if other:
+            shared_with = journal._find_other_journal_sharing_tfhka_serie()
+            if shared_with and journal._tfhka_serie_sharing_is_allowed(shared_with):
+                return {
+                    "warning": {
+                        "title": _("Shared TFHKA series"),
+                        "message": _(
+                            "This journal shares its TFHKA series with "
+                            "'%(other)s'. Make sure that's intentional -- "
+                            "usually only the third-party invoicing journal "
+                            "or the debit note journal should share one with "
+                            "its parent journal."
+                        )
+                        % {"other": shared_with.display_name},
+                    }
+                }
+            other_empty = journal._find_other_journal_without_tfhka_serie()
+            if other_empty:
                 return {
                     "warning": {
                         "title": _("More than one journal without a TFHKA series"),
@@ -84,17 +148,33 @@ class AccountJournal(models.Model):
                             "series. Both will send an empty series to TFHKA -- "
                             "consider assigning one to this journal."
                         )
-                        % {"other": other.display_name},
+                        % {"other": other_empty.display_name},
                     }
                 }
 
-    def _warn_tfhka_serie_id_empty(self):
-        """Mismo aviso que el onchange, pero como nota en el chatter -- para
-        que quede un rastro visible también cuando el diario se crea o edita
-        fuera del formulario (API, import, script)."""
+    def _warn_tfhka_serie_id(self):
+        """Mismos avisos que el onchange, pero como nota en el chatter --
+        para que quede un rastro visible también cuando el diario se crea o
+        edita fuera del formulario (API, import, script)."""
         for journal in self:
-            other = journal._find_other_journal_without_tfhka_serie()
-            if other:
+            shared_with = journal._find_other_journal_sharing_tfhka_serie()
+            if shared_with and journal._tfhka_serie_sharing_is_allowed(shared_with):
+                journal.message_post(
+                    body=status_message(
+                        _(
+                            "This journal shares its TFHKA series with "
+                            "'%(other)s'. Make sure that's intentional -- "
+                            "usually only the third-party invoicing journal "
+                            "or the debit note journal should share one with "
+                            "its parent journal."
+                        )
+                        % {"other": shared_with.display_name},
+                        "warning",
+                    ),
+                )
+                continue
+            other_empty = journal._find_other_journal_without_tfhka_serie()
+            if other_empty:
                 journal.message_post(
                     body=status_message(
                         _(
@@ -102,7 +182,7 @@ class AccountJournal(models.Model):
                             "'%(other)s' already doesn't have one either. Both "
                             "will send an empty series to TFHKA."
                         )
-                        % {"other": other.display_name},
+                        % {"other": other_empty.display_name},
                         "warning",
                     ),
                 )
@@ -167,12 +247,16 @@ class AccountJournal(models.Model):
                         )
                     )
         res = super().write(vals)
-        if "tfhka_serie_id" in vals or "digital_invoice" in vals:
-            self._warn_tfhka_serie_id_empty()
+        if (
+            "tfhka_serie_id" in vals
+            or "digital_invoice" in vals
+            or "is_third_party_invoice_journal" in vals
+        ):
+            self._warn_tfhka_serie_id()
         return res
 
     @api.model_create_multi
     def create(self, vals_list):
         journals = super().create(vals_list)
-        journals.filtered(lambda j: j.digital_invoice)._warn_tfhka_serie_id_empty()
+        journals.filtered(lambda j: j.digital_invoice or j.tfhka_serie_id)._warn_tfhka_serie_id()
         return journals
