@@ -8,6 +8,9 @@ What:
        declares: account.move.is_pos_cross_move, pos.payment.method.apply_one_cross_move,
        pos.config.allow_sales_on_order and product.template.pos_sale_on_order. If any POS or
        product had "sale on order" enabled, the migration report says so.
+    3. Removes l10n_ve_pos.product_template_form_pos_view: its defining XML file is gone
+       from this module, but the ir.ui.view row survives in the DB with the old arch,
+       referencing a field no module declares anymore.
 
 Why:
     1. In v17 each order froze its rate in foreign_inverse_rate, which l10n_ve_rate documents as
@@ -22,9 +25,14 @@ Why:
        "sale on order" (selling in POS without stock) disappears. The ORM deletes those columns
        at the end of the -u all. The flags are only a trail, but "sale on order" is a feature
        the store stops having, and Product decides on it (D-04).
+    3. Any later module that inherits product.template's form (e.g. binaural_foreign_cost)
+       revalidates the full combined view when it loads its own, and fails on the dangling
+       field unless the stale view is gone before that happens.
 
 If it does not run: invoices and refunds of v17 orders come out at rate 0 or today's rate, and the
-    stores that sold on order lose it without notice.
+    stores that sold on order lose it without notice. A later module in the graph that extends
+    product.template's form (e.g. binaural_foreign_cost) also fails to load, since -u all
+    revalidates the combined view against the orphaned field.
 
 How to revert: empty foreign_currency_rate on the migrated orders. The v17 value it replaces was the
     same rate rounded to the foreign currency decimals. The backup changes nothing.
@@ -102,3 +110,5 @@ def migrate(cr, version):
             f"{counts.get('pos_sale_on_order', 0)} products. Backed up in {BACKUP}.",
             category="Binaural · Sales",
         )
+
+    util.remove_view(cr, xml_id="l10n_ve_pos.product_template_form_pos_view", silent=True)
