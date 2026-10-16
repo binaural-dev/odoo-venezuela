@@ -15,4 +15,8 @@ from . import test_purchase_book_igtf_usd_provider_formal
 from . import test_common_sale_book_igtf_usd_partner_formal
 from . import test_sale_book_igtf_usd_partner_formal
 from . import test_igtf_wizard_amounts
-from . import test_igtf_zero_amount_payment
+from . import test_outstanding_widget_amount
+
+from . import test_remove_igtf_without_igtf_line
+
+from . import test_unreconcile_advance_cross

@@ -18,7 +18,7 @@ class AccountPaymentAndIgtf(models.Model):
         "account.move",
         "origin_payment_advanced_payment_id",
         string="Asientos de Anticipo",
-        domain="[('move_type', '=', 'entry'), ('state', 'not in', ('draft', 'cancel'))]",
+        domain=[('move_type', '=', 'entry'), ('state', 'not in', ('draft', 'cancel'))],
         help="Anticipos (account.move) aplicados a este pago.",
         copy=False,
     )
