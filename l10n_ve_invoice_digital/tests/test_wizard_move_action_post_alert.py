@@ -240,3 +240,40 @@ class TestMoveActionPostAlertWizard(TransactionCase):
         inv.action_post()
 
         self.assertTrue(inv._tfhka_should_mark_not_applicable())
+
+    # ------------------------------------------------------------------
+    # Validación temprana: diario que factura por series sin serie TFHKA
+    # asignada no debe poder confirmarse (antes solo se descubría dentro
+    # de get_sequence()/_get_series(), ya en pleno posteo o digitalización).
+    # ------------------------------------------------------------------
+
+    def test_posting_allowed_when_journal_invoices_by_series_without_tfhka_serie(self):
+        # Asignar una serie no es obligatorio: un diario de una compañía que
+        # factura por series puede seguir sin tfhka_serie_id -- manda serie
+        # vacía a TFHKA, no se bloquea el posteo.
+        self.journal.digital_invoice = True
+        self.company.group_sales_invoicing_series = True
+
+        inv = self._create_invoice(post=True)
+
+        self.assertEqual(inv.state, 'posted')
+
+    def test_posting_allowed_when_journal_has_tfhka_serie(self):
+        self.journal.digital_invoice = True
+        self.company.group_sales_invoicing_series = True
+        serie = self.env['tfhka.serie'].create({'name': 'A', 'company_id': self.company.id})
+        self.journal.tfhka_serie_id = serie.id
+
+        inv = self._create_invoice(post=True)
+
+        self.assertEqual(inv.state, 'posted')
+
+    def test_posting_allowed_without_series_invoicing(self):
+        # Non-regression: compañías que no facturan por series no deben
+        # verse afectadas por esta validación.
+        self.journal.digital_invoice = True
+        self.company.group_sales_invoicing_series = False
+
+        inv = self._create_invoice(post=True)
+
+        self.assertEqual(inv.state, 'posted')

@@ -309,4 +309,16 @@ class TfhkaApiClient(models.AbstractModel):
             if not approves:
                 raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
-            return
+    def list_numberings(self, company, origin=None):
+        """POST /ConsultaNumeraciones sin filtros: trae todas las numeraciones
+        (series) que la compañía ya tiene registradas en TFHKA.
+
+        A diferencia de ``query_numbering`` (que valida UNA serie puntual
+        durante la emisión y levanta ``UserError`` si falta o está agotada),
+        esto no valida nada -- es una simple lectura, usada para sincronizar
+        ``tfhka.serie`` después de generar el token. Devuelve la lista cruda
+        de ``numeraciones`` tal cual la entrega TFHKA (vacía si la compañía
+        todavía no registró ninguna vía /AsignarNumeraciones)."""
+        payload = {"serie": "", "tipoDocumento": "", "prefix": ""}
+        response = self._request(company, "consulta_numeraciones", payload, origin=origin)
+        return (response or {}).get("numeraciones", [])

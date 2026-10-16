@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.4.9",
+    "version": "19.0.1.4.10",
     "depends": [
         "account",
         "l10n_ve_igtf",
@@ -33,6 +33,7 @@
         "wizard/account_retention_alert_views.xml",
         "wizard/tfhka_annul_wizard_views.xml",
         "views/account_journal.xml",
+        "views/tfhka_serie_views.xml",
         "views/payment_method_tfhka.xml",
         "views/currency_views.xml",
         "views/tfhka_api_log_views.xml",

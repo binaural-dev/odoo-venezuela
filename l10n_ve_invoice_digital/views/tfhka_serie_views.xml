@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_tfhka_serie_list" model="ir.ui.view">
+        <field name="name">tfhka.serie.list</field>
+        <field name="model">tfhka.serie</field>
+        <field name="arch" type="xml">
+            <list string="TFHKA Series">
+                <field name="name"/>
+                <field name="prefix"/>
+                <field name="status"/>
+                <field name="company_id" groups="base.group_multi_company"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_tfhka_serie" model="ir.actions.act_window">
+        <field name="name">TFHKA Series</field>
+        <field name="res_model">tfhka.serie</field>
+        <field name="view_mode">list</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                No TFHKA series registered yet
+            </p>
+            <p>
+                Series are synchronized from the TFHKA API every time the
+                authentication token is generated (Settings &gt; The Factory HKA).
+                Assign one to each sale journal that needs to send a series to TFHKA.
+            </p>
+        </field>
+    </record>
+
+    <menuitem id="menu_tfhka_serie"
+              name="TFHKA Series"
+              parent="account.menu_finance_configuration"
+              action="action_tfhka_serie"
+              sequence="92"/>
+</odoo>
