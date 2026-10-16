@@ -7,6 +7,20 @@ import { ConnectionLostError } from "@web/core/network/rpc";
 import { _t } from "@web/core/l10n/translation";
 
 patch(PosStore.prototype, {
+  /**
+   * The VAT PartnerList leaves for the customer it creates (newPartnerVat) is
+   * the default of that form and is consumed here, so it never reaches a
+   * later one.
+   */
+  editPartnerContext(partner) {
+    const context = { ...super.editPartnerContext(...arguments) };
+    if (this.newPartnerVat) {
+      context.default_vat = this.newPartnerVat;
+      this.newPartnerVat = false;
+    }
+    return context;
+  },
+
   async pay() {
     if (!(await this._checkOrderBeforePayment(this.getOrder()))) {
       return;
