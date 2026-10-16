@@ -545,13 +545,24 @@ class AccountMoveLine(models.Model):
         # saldría aquí sin crear una nueva NI conciliar nada -- el
         # residual quedaría sin ningún documento que lo respalde.
 
-        existing_note = self.env['account.move'].search([
+        # Un mismo parcial puede dejar diferencial en la factura Y en el
+        # pago (sobrepago): para la línea del pago `invoice_line` es la
+        # contraparte, así que ambas notas comparten (factura, pago,
+        # cuota). Solo cuenta como existente la que cierra contra ESTA
+        # línea (`self`), como el nativo, que da un ajuste por cada línea.
+        candidates = self.env['account.move'].search([
             ('l10n_ve_exchange_invoice_id', '=', invoice.id),
             ('l10n_ve_exchange_payment_id', '=', payment.id),
             ('l10n_ve_exchange_line_id', 'in', [invoice_line.id, False]),
             ('state', '!=', 'cancel'),
             ('reversal_move_ids', '=', False),
-        ], order='id desc', limit=1)
+        ], order='id desc')
+
+        def _closes_against_self(note):
+            note_line = note.line_ids.filtered(lambda l: l.account_type == 'asset_receivable')
+            return self in (note_line.matched_debit_ids.debit_move_id | note_line.matched_credit_ids.credit_move_id)
+
+        existing_note = candidates.filtered(_closes_against_self)[:1]
         if existing_note:
             return existing_note
 
