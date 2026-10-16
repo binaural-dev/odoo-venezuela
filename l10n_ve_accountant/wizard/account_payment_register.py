@@ -2,7 +2,7 @@ from collections import defaultdict
 from datetime import timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import format_date
+from odoo.tools import format_date, float_compare
 import logging
 _logger = logging.getLogger(__name__)
 

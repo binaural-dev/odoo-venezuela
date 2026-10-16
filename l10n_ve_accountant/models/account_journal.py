@@ -1,4 +1,4 @@
-from odoo.exceptions import UserError, ValidationError
+from odoo.exceptions import UserError
 from odoo import api, models, _, fields
 
 
@@ -9,17 +9,46 @@ class AccountJournal(models.Model):
 
     is_purchase_international = fields.Boolean(string="International purchase",default=False)
 
-    @api.depends('default_account_id')
     def _compute_inbound_payment_method_line_ids(self):
         super()._compute_inbound_payment_method_line_ids()
         self._fill_payment_account_id_from_default()
 
-    @api.depends('default_account_id')
     def _compute_outbound_payment_method_line_ids(self):
         super()._compute_outbound_payment_method_line_ids()
         self._fill_payment_account_id_from_default()
 
+    @api.onchange('default_account_id')
+    def _onchange_default_account_id_fill_payment_accounts(self):
+        self._fill_payment_account_id_from_default()
+
     def _fill_payment_account_id_from_default(self):
+        """Autofill payment_account_id on payment method lines using default_account_id.
+
+        Deliberately NOT wired via an extra @api.depends('default_account_id')
+        on the two compute overrides above (which only keep the NATIVE
+        depends, type/currency_id, by not redeclaring @api.depends at all):
+        those native computes do Command.clear() + recreate-defaults-only
+        every time they fire (see core account_journal.py). That's fine for
+        the native trigger (type/currency_id changing on create, or a real
+        type change) but destructive if re-triggered by editing
+        default_account_id alone on an already-saved journal with extra
+        manual payment method lines -- it would unlink/delete those extra
+        lines and any account.payment already using them (confirmed: found
+        by code review, PR #1344 / task 81735).
+
+        The compute overrides above still call this synchronously right
+        after super() -- needed so a fresh create() with default_account_id
+        already in vals fills accounts before Odoo's nested flush validates
+        _check_payment_method_line_accounts below (that validation runs
+        mid-create, before create()'s own post-super() code would get a
+        chance to run otherwise).
+
+        Also called from create()/write() below (defensive, e.g. an o2m
+        write on the payment method lines outside of a type/currency_id
+        change) and from the onchange above (immediate UI feedback before
+        saving). Idempotent -- only fills lines that don't already have an
+        account -- so calling it from all these points is safe.
+        """
         for journal in self:
             if journal.type != 'bank' or not journal.default_account_id:
                 continue
@@ -30,7 +59,29 @@ class AccountJournal(models.Model):
 
     @api.model
     def _create_default_account(self, company, journal_type, vals):
-        if self.env.context.get('skip_default_account_autofill'):
+        """Disable core's silent placeholder account (named after the
+        journal, auto-numbered -- e.g. "Banco P") for bank journals.
+
+        Without this, _fill_missing_values (core account_journal.py) always
+        invents one when default_account_id is missing, so it's never
+        actually empty by the time _check_default_account_id_required_for_bank
+        or the view's required="type == 'bank'" would get a chance to catch
+        it -- confirmed by reproducing it manually (task 81735, Requisito 1):
+        the field is never blank, but the account has no connection to the
+        client's real bank account. The user must pick or create the real
+        one instead.
+
+        Bypassed during chart template loading / module installation, same
+        as the other constraints in this file -- that's the one legitimate
+        case where no human is present to pick an account, and Christopher's
+        code review confirmed removing it there breaks installing the chart
+        template.
+        """
+        if (
+            journal_type == 'bank'
+            and not self.env.context.get('chart_template_load')
+            and not self.env.context.get('install_mode')
+        ):
             return False
         return super()._create_default_account(company, journal_type, vals)
 
@@ -38,8 +89,8 @@ class AccountJournal(models.Model):
     def _check_default_account_id_required_for_bank(self):
         for journal in self:
             if journal.type == 'bank' and not journal.default_account_id:
-                raise ValidationError(
-                    _("Los diarios de tipo Banco requieren una cuenta contable por defecto (Cuenta Bancaria).")
+                raise UserError(
+                    _("Bank journals require a default account (Bank Account).")
                 )
 
     @api.model_create_multi
@@ -48,7 +99,9 @@ class AccountJournal(models.Model):
         for vals in vals_list:
             self._validate_support_user_group(vals)
 
-        return super().create(vals_list)
+        journals = super().create(vals_list)
+        journals._fill_payment_account_id_from_default()
+        return journals
 
     @api.constrains('inbound_payment_method_line_ids', 'outbound_payment_method_line_ids')
     def _check_payment_method_line_accounts(self):
@@ -72,7 +125,7 @@ class AccountJournal(models.Model):
                     ))
 
                 all_lines = journal.inbound_payment_method_line_ids | journal.outbound_payment_method_line_ids
-                if not all_lines.mapped('payment_account_id'):
+                if any(not line.payment_account_id for line in all_lines):
                     raise UserError(_("All payment methods must have an assigned account."))
 
     @api.constrains('is_purchase_international')
@@ -85,7 +138,7 @@ class AccountJournal(models.Model):
                 ]
 
                 if self.search_count(domain) > 0:
-                    raise ValidationError(
+                    raise UserError(
                         _("An International Purchase Journal is already enabled. Only one is allowed.")
                     )
 
@@ -94,7 +147,10 @@ class AccountJournal(models.Model):
         for record in self:
             if "type" in vals:
                 record._validate_support_user_group(vals)
-        return super().write(vals)
+        res = super().write(vals)
+        if {'default_account_id', 'type'} & vals.keys():
+            self._fill_payment_account_id_from_default()
+        return res
 
     def _validate_support_user_group(self, vals):
         user = self.env.user

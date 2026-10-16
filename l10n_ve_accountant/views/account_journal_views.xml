@@ -18,7 +18,7 @@
         <field name="inherit_id" ref="account.view_account_journal_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='default_account_id']" position="attributes">
-                <attribute name="required">type == 'bank' or (id and type in ('bank', 'cash', 'credit'))</attribute>
+                <attribute name="required">type == 'bank'</attribute>
             </xpath>
         </field>
     </record>
