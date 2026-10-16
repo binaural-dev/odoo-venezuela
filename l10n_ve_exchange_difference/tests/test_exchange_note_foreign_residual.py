@@ -371,3 +371,17 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
         self.assertTrue(self.company.currency_id.is_zero(payment_line.amount_residual))
         self.assertTrue(self.eur.is_zero(payment_line.amount_residual_currency))
 
+
+    def test_widget_usd_overpayment_on_vef_invoice_settles_both_sides(self):
+        """Pago en USD mayor que la factura en VEF, cruzado desde el widget: un mismo parcial deja diferencial
+        en la línea de la factura (NC de redondeo) y en la del pago (ND). Cada uno debe emitir su nota,
+        como el asiento nativo, que lo cierra en un solo asiento con las dos líneas."""
+        invoice = self._create_invoice_company_currency("2026-08-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        payment = self._unreconciled_payment(200.0, "2026-01-01")
+        self._cross_from_widget(invoice, payment)
+        self.assertTrue(self.company.currency_id.is_zero(invoice.amount_residual))
+        payment_line = self._receivable(payment.move_id)
+        self.assertAlmostEqual(payment_line.amount_residual_currency, -88.89, places=2)
+        self.assertAlmostEqual(payment_line.amount_residual, -88.89 * 40.0, places=2)
+        self._assert_notes_closed(invoice)
