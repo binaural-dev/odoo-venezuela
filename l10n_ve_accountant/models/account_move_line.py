@@ -197,6 +197,11 @@ class AccountMoveLine(models.Model):
         """Set foreign_debit/credit from a signed value."""
         self.foreign_debit = abs(value) if value > 0 else 0.0
         self.foreign_credit = abs(value) if value < 0 else 0.0
+        # `foreign_debit/credit` depend on `foreign_balance` (and vice versa):
+        # when this runs because `foreign_balance` was just written, the ORM
+        # does not re-trigger it, leaving it a cent off from the debit/credit
+        # fixed here. Force it to be recomputed from them.
+        self.env.add_to_compute(self._fields["foreign_balance"], self)
 
     def _get_non_invoice_foreign_value(self):
         """Foreign value (signed) for non-invoice entries."""
@@ -958,21 +963,6 @@ class AccountMoveLine(models.Model):
 
     def open_reconcile_view(self):
         action = super().open_reconcile_view()
-        # Matched on either linked move; only the "closing" line (same
-        # account type as the receivable/payable settled) belongs here.
-        # Ver openspec: design-notes.md § open_reconcile_view (Reconciled Items)
-        extra_lines = self.env['account.move.line'].search([
-            '|',
-            ('move_id.l10n_ve_exchange_foreign_source_move_id', 'in', self.move_id.ids),
-            ('move_id.l10n_ve_exchange_foreign_payment_move_id', 'in', self.move_id.ids),
-            ('account_id.account_type', 'in', ('asset_receivable', 'liability_payable')),
-            ('parent_state', '=', 'posted'),
-            # A reversed entry stays `posted` by design -- exclude it, the
-            # settlement it was tracking is gone.
-            ('move_id.reversal_move_ids', '=', False),
-        ])
-        if not extra_lines:
-            return action
 
         # Parsed defensively: core builds a single `[('id', 'in', ids)]`
         # leaf today, but nothing guarantees that shape survives a patch.
@@ -986,6 +976,47 @@ class AccountMoveLine(models.Model):
                     and isinstance(leaf[2], (list, tuple, set))
                 ):
                     existing_ids.update(leaf[2])
+
+        # Every document involved in the settlement chain, not only the one
+        # this view was opened from: core already walks the full chain
+        # (`_all_reconciled_lines`), so the standalone entry must be matched
+        # against all of it -- invoice, payment, native exchange entry --
+        # and not just `self.move_id`.
+        related_moves = self.move_id | self.browse(existing_ids).move_id
+        # Opened FROM the standalone entry itself (it never reconciles):
+        # pull in the documents it was produced by, and their chains.
+        standalone = self.move_id.filtered('l10n_ve_exchange_foreign_diff_entry')
+        origin_moves = (
+            standalone.l10n_ve_exchange_foreign_source_move_id
+            | standalone.l10n_ve_exchange_foreign_payment_move_id
+        )
+        if origin_moves:
+            origin_lines = origin_moves.line_ids.filtered(
+                lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+            )
+            chain = origin_lines._all_reconciled_lines().filtered(
+                lambda l: l.matched_debit_ids or l.matched_credit_ids
+            )
+            existing_ids |= set(chain.ids)
+            related_moves |= origin_moves | chain.move_id
+
+        # Matched on either linked move; only the "closing" line (same
+        # account type as the receivable/payable settled) belongs here.
+        # Ver openspec: design-notes.md § open_reconcile_view (Reconciled Items)
+        extra_lines = self.env['account.move.line'].search([
+            '|',
+            ('move_id.l10n_ve_exchange_foreign_source_move_id', 'in', related_moves.ids),
+            ('move_id.l10n_ve_exchange_foreign_payment_move_id', 'in', related_moves.ids),
+            ('account_id.account_type', 'in', ('asset_receivable', 'liability_payable')),
+            ('parent_state', '=', 'posted'),
+            # A reversed entry stays `posted` by design -- exclude it, the
+            # settlement it was tracking is gone.
+            ('move_id.reversal_move_ids', '=', False),
+        ])
+        if not extra_lines:
+            if existing_ids:
+                action['domain'] = [('id', 'in', list(existing_ids))]
+            return action
 
         action['domain'] = [('id', 'in', list(existing_ids | set(extra_lines.ids)))]
         return action

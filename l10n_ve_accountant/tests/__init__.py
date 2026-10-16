@@ -10,4 +10,5 @@ from . import test_product_template
 from . import test_action_cancel
 from . import test_credit_limit_scope
 from . import test_reversal_foreign_rate
+from . import test_account_journal_bank_account
 from . import test_foreign_exchange_diff

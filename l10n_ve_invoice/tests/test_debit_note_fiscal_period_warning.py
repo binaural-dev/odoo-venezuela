@@ -100,6 +100,7 @@ class TestDebitNoteFiscalPeriodWarning(TransactionCase):
                 "move_type": "out_invoice",
                 "partner_id": self.partner.id,
                 "invoice_date": fields.Date.from_string("2026-01-15"),
+                "invoice_date_display": fields.Date.from_string("2026-01-15"),
                 "date": fields.Date.from_string("2026-01-15"),
                 "invoice_line_ids": [
                     (0, 0, {"product_id": self.product.id, "quantity": 1, "price_unit": 100})
@@ -160,6 +161,7 @@ class TestDebitNoteFiscalPeriodWarning(TransactionCase):
                 "move_type": "out_invoice",
                 "partner_id": self.partner.id,
                 "invoice_date": fields.Date.from_string("2026-01-15"),
+                "invoice_date_display": fields.Date.from_string("2026-01-15"),
                 "date": fields.Date.from_string("2026-01-15"),
                 "invoice_line_ids": [
                     (0, 0, {
@@ -191,6 +193,7 @@ class TestDebitNoteFiscalPeriodWarning(TransactionCase):
                 "move_type": "out_invoice",
                 "partner_id": self.partner.id,
                 "invoice_date": fields.Date.from_string("2026-01-15"),
+                "invoice_date_display": fields.Date.from_string("2026-01-15"),
                 "date": fields.Date.from_string("2026-01-15"),
                 "invoice_line_ids": [
                     (0, 0, {

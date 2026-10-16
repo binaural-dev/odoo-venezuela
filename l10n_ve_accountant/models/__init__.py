@@ -1,4 +1,5 @@
 from . import res_company
+from . import account_chart_template
 from . import account_move_line
 from . import account_move
 from . import account_tax
@@ -12,4 +13,5 @@ from . import tax_unit
 from . import res_currency
 from . import res_config_settings
 from . import account_journal
+from . import account_payment_method_line
 from . import product_template

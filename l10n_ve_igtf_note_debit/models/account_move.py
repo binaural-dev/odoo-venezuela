@@ -39,6 +39,20 @@ class AccountMove(models.Model):
     )
 
   
+
+    def _l10n_ve_allows_future_date(self):
+        """The IGTF debit note is generated automatically from a payment, so
+        it may skip the date guard when the caller requests it."""
+        self.ensure_one()
+        return bool(
+            super()._l10n_ve_allows_future_date()
+            or (
+                self.l10n_ve_igtf_note_debit_origin
+                and self.origin_payment_to_pay_igtf
+                and self.debit_origin_id
+            )
+        )
+
     def prepare_igtf_payment_debit_note(self, igtf_amount_company_curr, invoice, payment):
 
         self.ensure_one()
@@ -107,7 +121,10 @@ class AccountMove(models.Model):
                 "tax_ids": [(6, 0, product_taxes.ids)],
             })],
         })
-        debit_note.with_context(move_action_post_alert=True).action_post()
+        debit_note.with_context(
+            move_action_post_alert=True,
+            l10n_ve_skip_future_date_check=True,
+        ).action_post()
         return debit_note
 
    
