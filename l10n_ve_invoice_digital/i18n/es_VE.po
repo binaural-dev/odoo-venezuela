@@ -858,9 +858,152 @@ msgid "Sequence Validation Tfhka"
 msgstr "Validación de secuencia Tfhka"
 
 #. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_serie__name
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_move_form_inherit
 msgid "Series"
 msgstr "Serie"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.actions.act_window,help:l10n_ve_invoice_digital.action_tfhka_serie
+msgid ""
+"Series are synchronized from the TFHKA API every time the\n"
+"                authentication token is generated (Settings > The Factory HKA) --\n"
+"                this list is read-only, series can't be created or edited by hand.\n"
+"                Assign one to each sale journal that needs to send a series to TFHKA."
+msgstr ""
+"Las series se sincronizan desde la API de TFHKA cada vez que se\n"
+"                genera el token de autenticación (Ajustes > The Factory HKA) --\n"
+"                esta lista es de solo lectura, las series no se pueden crear ni editar a mano.\n"
+"                Asignale una a cada diario de venta que necesite enviar una serie a TFHKA."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_account_journal__tfhka_serie_id
+msgid ""
+"Series sent to TFHKA for documents on this journal. Synchronized from the "
+"TFHKA API (Settings > The Factory HKA > Generate Token). Optional: a "
+"journal without one sends an empty series to TFHKA. You'll get a "
+"(non-blocking) warning if another digital-invoice journal in the company "
+"is also without one."
+msgstr ""
+"Serie que se le manda a TFHKA para los documentos de este diario. Se "
+"sincroniza desde la API de TFHKA (Ajustes > The Factory HKA > Generar "
+"Token). Opcional: un diario sin serie manda una serie vacía a TFHKA. Vas a "
+"ver un aviso (no bloqueante) si otro diario de facturación digital de la "
+"compañía tampoco tiene una."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_serie__status
+msgid "Status in TFHKA"
+msgstr "Estado en TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_serie__title
+msgid "Title"
+msgstr "Título"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_tfhka_serie__title
+msgid "TFHKA's own description of this numbering range (titulo)."
+msgstr "Descripción que TFHKA le da a este rango de numeración (titulo)."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_serie__document_type
+msgid "Document Type"
+msgstr "Tipo de Documento"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_tfhka_serie__document_type
+msgid "Document type this range applies to (tipoDocumento)."
+msgstr "Tipo de documento al que aplica este rango (tipoDocumento)."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_serie__prefix
+msgid "Prefix"
+msgstr "Prefijo"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_serie__number_from
+msgid "Range Start"
+msgstr "Inicio del Rango"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_tfhka_serie__number_from
+msgid "First document number in this range (desde)."
+msgstr "Primer número de documento de este rango (desde)."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_serie__number_to
+msgid "Range End"
+msgstr "Fin del Rango"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_tfhka_serie__number_to
+msgid "Last document number in this range (hasta)."
+msgstr "Último número de documento de este rango (hasta)."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_tfhka_serie__correlative
+msgid "Current Correlative"
+msgstr "Correlativo Actual"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,help:l10n_ve_invoice_digital.field_tfhka_serie__correlative
+msgid "Next document number TFHKA will assign in this range (correlativo)."
+msgstr "Próximo número de documento que TFHKA asignará en este rango (correlativo)."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model,name:l10n_ve_invoice_digital.model_tfhka_serie
+msgid "TFHKA Document Series"
+msgstr "Series de Documento TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.actions.act_window,name:l10n_ve_invoice_digital.action_tfhka_serie
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_journal__tfhka_serie_id
+#: model:ir.ui.menu,name:l10n_ve_invoice_digital.menu_tfhka_serie
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_tfhka_serie_list
+msgid "TFHKA Series"
+msgstr "Series TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model_terms:ir.actions.act_window,help:l10n_ve_invoice_digital.action_tfhka_serie
+msgid "No TFHKA series registered yet"
+msgstr "Todavía no hay series TFHKA registradas"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.constraint,message:l10n_ve_invoice_digital.constraint_tfhka_serie_name_company_uniq
+msgid "This TFHKA series is already registered for this company."
+msgstr "Esta serie TFHKA ya está registrada para esta compañía."
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.constraint,message:l10n_ve_invoice_digital.constraint_account_journal_tfhka_serie_id_uniq
+msgid "This TFHKA series is already assigned to another journal."
+msgstr "Esta serie TFHKA ya está asignada a otro diario."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
+msgid "More than one journal without a TFHKA series"
+msgstr "Más de un diario sin serie TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
+msgid ""
+"'%(other)s' is already configured without a TFHKA series. Both will send "
+"an empty series to TFHKA -- consider assigning one to this journal."
+msgstr ""
+"'%(other)s' ya está configurado sin serie TFHKA. Ambos van a enviar una "
+"serie vacía a TFHKA -- considerá asignarle una a este diario."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_journal.py:0
+msgid ""
+"This journal has no TFHKA series assigned, and '%(other)s' already "
+"doesn't have one either. Both will send an empty series to TFHKA."
+msgstr ""
+"Este diario no tiene serie TFHKA asignada, y '%(other)s' tampoco tiene "
+"una. Ambos van a enviar una serie vacía a TFHKA."
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__show_digital_invoice
