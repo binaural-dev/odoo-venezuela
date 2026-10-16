@@ -1,8 +1,7 @@
-from psycopg2 import IntegrityError
+from unittest.mock import patch
 
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
-from odoo.tools import mute_logger
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "account_journal")
@@ -113,8 +112,34 @@ class TestAccountJournal(TransactionCase):
             "company_id": self.company.id,
         })
 
-        with self.assertRaises(IntegrityError), mute_logger("odoo.sql_db"):
+        with self.assertRaises(ValidationError):
             other_journal.tfhka_serie_id = serie.id
+
+    def test_08b_sharing_serie_allowed_for_third_party_journal(self):
+        # binaural_third_party_invoice no es dependencia de este modulo, asi
+        # que se simula "es el diario de facturacion a terceros" mockeando
+        # el helper en vez de depender de ese campo opcional.
+        serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
+        self.journal.tfhka_serie_id = serie.id
+        other_journal = self.env["account.journal"].create({
+            "name": "Otro Diario",
+            "code": "OTR",
+            "type": "sale",
+            "company_id": self.company.id,
+        })
+
+        with patch.object(
+            type(other_journal), "_tfhka_serie_sharing_is_allowed", return_value=True
+        ):
+            other_journal.tfhka_serie_id = serie.id  # no debe lanzar
+
+        self.assertEqual(other_journal.tfhka_serie_id, serie)
+        self.assertTrue(
+            any(
+                "shares its TFHKA series" in (m or "")
+                for m in other_journal.message_ids.mapped("body")
+            )
+        )
 
     def test_09_two_journals_without_serie_do_not_conflict(self):
         # NULL no cuenta como duplicado para la restricción unique() -- dos
@@ -162,9 +187,28 @@ class TestAccountJournal(TransactionCase):
             "digital_invoice": True,
         })
 
-        result = other_journal._onchange_tfhka_serie_id_empty_warning()
+        result = other_journal._onchange_tfhka_serie_id_warning()
 
         self.assertIn("warning", result)
+
+    def test_13b_onchange_warns_about_shared_serie_without_blocking(self):
+        serie = self.env["tfhka.serie"].create({"name": "A", "company_id": self.company.id})
+        self.journal.tfhka_serie_id = serie.id
+        other_journal = self.env["account.journal"].new({
+            "name": "Otro Diario",
+            "code": "OTR",
+            "type": "sale",
+            "company_id": self.company.id,
+            "tfhka_serie_id": serie.id,
+        })
+
+        with patch.object(
+            type(other_journal), "_tfhka_serie_sharing_is_allowed", return_value=True
+        ):
+            result = other_journal._onchange_tfhka_serie_id_warning()
+
+        self.assertIn("warning", result)
+        self.assertIn("shares its TFHKA series", result["warning"]["message"])
 
     def test_11_second_non_digital_journal_without_serie_is_fine(self):
         self.journal.digital_invoice = True
