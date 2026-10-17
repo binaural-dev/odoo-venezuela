@@ -1618,6 +1618,13 @@ class AccountMove(models.Model):
             rate=rate,
         )
 # Unbalanced Lines Synchronization
+    @api.model
+    def _get_base_line_sync_extra_fields(self):
+        """Invoice line fields whose change forces `_sync_tax_lines` to
+        resynchronize the journal items. Extend it from other modules that
+        alter the line amounts through a field of their own."""
+        return ['price_unit', 'quantity', 'discount']
+
     @contextmanager
     def _sync_tax_lines(self, container):
         AccountTax = self.env['account.tax']
@@ -1638,7 +1645,7 @@ class AccountMove(models.Model):
         def get_base_line_tracked_fields(line):
             grouping_key = AccountTax._prepare_base_line_grouping_key(fake_base_line)
             if line.move_id.is_invoice(include_receipts=True):
-                extra_fields = ['price_unit', 'quantity', 'discount']
+                extra_fields = self._get_base_line_sync_extra_fields()
             else:
                 extra_fields = ['amount_currency']
             return list(grouping_key.keys()) + extra_fields
