@@ -15,7 +15,8 @@ class AccountMoveLine(models.Model):
         return super()._skip_foreign_compute()
 
     def _is_exchange_note_line(self):
-        return self.move_id._is_exchange_difference_note_document()
+        move = self.move_id[:1]
+        return bool(move) and move._is_exchange_difference_note_document()
 
     def _zero_foreign_amounts_on_exchange_notes(self):
         """Other flows (payment term / tax line sync in `l10n_ve_accountant`)
@@ -176,7 +177,11 @@ class AccountMoveLine(models.Model):
             res = super()._prepare_reconciliation_single_partial(
                 debit_values, credit_values, shadowed_aml_values=shadowed_aml_values,
             )
-            if self.env.context.get('l10n_ve_exchange_closing_note'):
+            # Solo si el parcial es de la nota: el contexto sigue vivo en conciliaciones anidadas
+            # (p. ej. asientos de caja de impuestos) donde ninguna línea es de nota.
+            if self.env.context.get('l10n_ve_exchange_closing_note') and (
+                debit_values['aml']._is_exchange_note_line() or credit_values['aml']._is_exchange_note_line()
+            ):
                 self._l10n_ve_neutralize_foreign_amount_of_note_partial(
                     res, debit_values, credit_values, residual_currency_before,
                 )

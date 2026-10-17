@@ -385,3 +385,22 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
         self.assertAlmostEqual(payment_line.amount_residual_currency, -88.89, places=2)
         self.assertAlmostEqual(payment_line.amount_residual, -88.89 * 40.0, places=2)
         self._assert_notes_closed(invoice)
+
+    def test_closing_note_context_does_not_touch_partials_without_a_note_line(self):
+        """El contexto de cierre de nota sigue vivo en conciliaciones anidadas (p. ej. asientos de caja de
+        impuestos). Si ninguna línea del parcial es de una nota, no se pone en 0 el monto en divisa."""
+        invoice = self._create_invoice("2026-08-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        payment = self._unreconciled_payment(100.0, "2026-08-01")
+        invoice_line = self._receivable(invoice)
+        (invoice_line + self._receivable(payment.move_id)).with_context(
+            l10n_ve_exchange_closing_note=True,
+        ).reconcile()
+        partial = invoice_line.matched_debit_ids | invoice_line.matched_credit_ids
+        self.assertAlmostEqual(partial.debit_amount_currency or partial.credit_amount_currency, 100.0, places=2)
+        self.assertTrue(self.usd.is_zero(invoice_line.amount_residual_currency))
+        self.assertEqual(invoice.payment_state, "paid")
+
+    def test_is_exchange_note_line_without_move_is_false(self):
+        """Una línea sin asiento no es de nota (antes devolvía False; el `ensure_one()` la hacía reventar)."""
+        self.assertFalse(self.env["account.move.line"].new()._is_exchange_note_line())
