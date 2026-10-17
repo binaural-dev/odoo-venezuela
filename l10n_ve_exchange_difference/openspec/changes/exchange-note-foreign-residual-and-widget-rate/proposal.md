@@ -120,9 +120,8 @@ tomada, con ejemplos y valores en el change `outstanding-widget-applies-shown-am
   cliente y al libro de ventas. Con tasas que suben el diferencial cae del lado del PAGO, así que la ND se
   concilia con el excedente del pago: el pago extingue las dos cuentas por cobrar (factura + ND). Se evaluó que
   solo el diferencial del lado de la factura emitiera nota (el del pago al asiento nativo) y se DESCARTÓ,
-  porque eliminaría la ND por alza de tasa. Las notas llevan el impuesto EXENTO (decisión explícita: el producto
-  de la nota debe ser exento, `_check_l10n_ve_exchange_note_product_id`), de modo que no generan ni reducen IVA
-  por sí mismas; si se quisiera, es un cambio aparte (replicar los impuestos de la factura de origen).
+  porque eliminaría la ND por alza de tasa. Las notas llevan el impuesto EXENTO POR DISEÑO: el producto de la nota
+  debe tener el impuesto de venta exento por defecto (`_check_l10n_ve_exchange_note_product_id`).
   Cubierto por `test_rate_rise_at_collection_emits_a_debit_note_that_the_payment_settles_with_the_invoice`.
 - Acoplado a Odoo 19.0-20260710: `_prepare_reconciliation_single_partial`,
   `_prepare_move_line_residual_amounts` y la estructura de `partial_values` son
