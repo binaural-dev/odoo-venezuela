@@ -119,7 +119,22 @@ el pago completo con una ND de 400 Bs).
   pago): no se modifica en este cambio.
 - Otras suposiciones de línea única, anteriores a este cambio, en el flujo de
   anticipos (`l10n_ve_igtf` y `l10n_ve_igtf_note_debit`: `factura_line.amount_residual`,
-  `receivable_payable_line.id`, `lines_to_match...[:1]`): ticket aparte.
+  `receivable_payable_line.id`, `lines_to_match...[:1]`). Limitación conocida, sin ticket:
+  - **Bug reproducido** (no causado por este cambio): con `igtf_note_debit_mode = debit_note`, una
+    factura con 2 o más cuotas por cobrar, un cliente al que le aplica IGTF y un pago YA
+    registrado en un diario IGTF, cruzarlo desde el widget lanza
+    `ValueError: Expected singleton: account.move.line(...)` (las líneas son las cuotas) en
+    `l10n_ve_igtf_note_debit/models/account_move.py:js_assign_outstanding_line`, que filtra
+    las líneas por cobrar no conciliadas y las trata como un solo registro
+    (`receivable_payable_line.account_id`); el resto de la función (`receivable_payable_line.id`,
+    `lines_to_match`) hace la misma suposición, así que no se arregla en una línea.
+  - **Por qué no ocurre en el uso actual:** exige todas las condiciones a la vez (varias cuotas, modo
+    `debit_note`, cliente con IGTF, diario IGTF y un pago previo cruzado desde el widget). Registrar el
+    pago desde el asistente de la factura es otro camino y funciona con varias cuotas
+    (`test_invoice_with_two_installments_computes_bi_igtf`). No se ha reportado en uso.
+  - **Criterio funcional:** ese cruce no es un flujo esperado para facturas a cuotas con IGTF.
+  - **Si algún día se vuelve un flujo esperado** hay que decidir antes qué cuota recibe el pago y cómo
+    se reparte el IGTF entre las cuotas; hoy no hay una regla de negocio definida para eso.
 - La interacción con el flujo de notas de diferencial cambiario está en el
   change `exchange-note-foreign-residual-and-widget-rate` de
   `l10n_ve_exchange_difference`.
