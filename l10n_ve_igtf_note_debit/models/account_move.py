@@ -758,7 +758,7 @@ class AccountMove(models.Model):
         line.remove_move_reconcile()
         if counterpart_move.origin_payment_advanced_payment_id:
             advance_payment = counterpart_move.origin_payment_advanced_payment_id
-            counterpart_move.button_draft()
+            counterpart_move.with_context(move_action_cancel_advance_payment=True).button_draft()
             counterpart_move.write({'origin_payment_advanced_payment_id': False})
             counterpart_move.with_context(
                 move_action_cancel_advance_payment=True

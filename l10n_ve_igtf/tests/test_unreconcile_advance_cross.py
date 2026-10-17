@@ -1,4 +1,5 @@
 from odoo import Command
+from odoo.exceptions import UserError
 from odoo.tests import tagged
 
 from .common_currency import CurrencyFixtureCommon
@@ -21,10 +22,12 @@ class TestUnreconcileAdvanceCross(CurrencyFixtureCommon):
             "account_type": "liability_current", "company_ids": [Command.set([self.company.id])],
         })
 
-    def _cross_entry(self, payment, post):
+    def _cross_entry(self, payment, post, advance=False):
         """Asiento de cruce de anticipo ligado a `payment` (100 Bs: CxC cliente
-        contra la cuenta de anticipo), publicado o en borrador."""
+        contra la cuenta de anticipo), publicado o en borrador. `advance` lo marca `is_advance_move`,
+        como los cruces reales."""
         entry = self.env["account.move"].create({
+            "is_advance_move": advance,
             "move_type": "entry",
             "journal_id": self.misc_journal.id,
             "date": "2026-08-01",
@@ -102,3 +105,74 @@ class TestUnreconcileAdvanceCross(CurrencyFixtureCommon):
         self.assertEqual(payment.move_id.state, "posted", "El pago origen no debe cancelarse")
         self.assertFalse(partial.exists())
         self.assertEqual(invoice.payment_state, "not_paid")
+
+    def test_cross_entry_cannot_be_reset_to_draft_or_cancelled_by_its_own_buttons(self):
+        """Los botones propios del cruce no lo deshacen: solo la desconciliación desde la factura o el pago origen."""
+        invoice, payment, payment_line, partial = self._paid_invoice_with_payment()
+        cross = self._cross_entry(payment, post=True, advance=True)
+        with self.assertRaises(UserError):
+            cross.button_draft()
+        with self.assertRaises(UserError):
+            cross.button_cancel()
+        self.assertEqual(cross.state, "posted")
+
+    def test_cancelled_cross_entry_cannot_be_reposted_without_origin_payment(self):
+        """Al desconciliar desde la factura el cruce se cancela y se desliga del pago; ya no puede volver a
+        borrador ni publicarse sin pago origen (`is_advance_move` sobrevive a la cancelación)."""
+        invoice = self._invoice("2026-08-01", 100.0)
+        payment_line = self._outstanding_line(self.bank["VEF"], 100.0, self.vef, "2026-08-01")
+        payment = payment_line.move_id.origin_payment_id
+        cross = self._cross_entry(payment, post=True, advance=True)
+        cross_line = cross.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+        invoice_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        (invoice_line + cross_line).reconcile()
+        partial = cross_line.matched_debit_ids | cross_line.matched_credit_ids
+
+        invoice.js_remove_outstanding_partial(partial.id)
+
+        self.assertEqual(cross.state, "cancel")
+        self.assertFalse(cross.origin_payment_advanced_payment_id)
+        self.assertTrue(cross.is_advance_move)
+        with self.assertRaises(UserError):
+            cross.button_draft()
+
+    def test_cross_entry_without_origin_payment_cannot_be_posted(self):
+        payment_line = self._outstanding_line(self.bank["VEF"], 100.0, self.vef, "2026-08-01")
+        payment = payment_line.move_id.origin_payment_id
+        cross = self._cross_entry(payment, post=False, advance=True)
+        cross.origin_payment_advanced_payment_id = False
+        with self.assertRaises(UserError):
+            cross.action_post()
+        cross.origin_payment_advanced_payment_id = payment
+        cross.action_post()
+        self.assertEqual(cross.state, "posted")
+
+    def test_cancelling_the_origin_payment_cancels_its_draft_cross_entries(self):
+        """Un cruce que quedó en borrador ligado al pago se cancela y se desliga junto con el pago origen."""
+        payment_line = self._outstanding_line(self.bank["VEF"], 100.0, self.vef, "2026-08-01")
+        payment = payment_line.move_id.origin_payment_id
+        draft_cross = self._cross_entry(payment, post=False, advance=True)
+
+        payment.action_cancel()
+
+        self.assertEqual(payment.state, "canceled")
+        self.assertEqual(draft_cross.state, "cancel")
+        self.assertFalse(draft_cross.origin_payment_advanced_payment_id)
+
+    def test_remove_igtf_runs_the_cross_entry_through_its_managed_path(self):
+        """`remove_igtf_from_account_move` traga cualquier error de `button_draft`/`button_cancel` y devuelve
+        False. Con un cruce marcado debe completar el camino gestionado (devuelve True, cruce cancelado y
+        desligado), no fallar en silencio contra la guarda de sus botones."""
+        invoice = self._invoice("2026-08-01", 100.0)
+        payment_line = self._outstanding_line(self.bank["VEF"], 100.0, self.vef, "2026-08-01")
+        payment = payment_line.move_id.origin_payment_id
+        cross = self._cross_entry(payment, post=True, advance=True)
+        cross_line = cross.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+        invoice_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        (invoice_line + cross_line).reconcile()
+        partial = cross_line.matched_debit_ids | cross_line.matched_credit_ids
+
+        self.assertTrue(invoice.remove_igtf_from_account_move(partial.id))
+
+        self.assertEqual(cross.state, "cancel")
+        self.assertFalse(cross.origin_payment_advanced_payment_id)
