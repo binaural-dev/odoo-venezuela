@@ -39,6 +39,8 @@ class TestRemoveIgtfWithoutIgtfLine(CurrencyFixtureCommon):
         self.assertEqual(len(self._partials(payment_move)), 2, "No debe desconciliar ningún parcial")
 
     def test_vef_payment_is_not_touched(self):
+        """Pago en VEF: sale por la salida anticipada ya existente (VEF sin cruce de anticipo), no por la rama
+        de "sin línea de IGTF"; esa la cubre el test del pago en USD. Se conserva como regresión."""
         invoice_1, invoice_2, payment_move = self._pay_two_invoices(self.bank["VEF"], self.vef, 3600.0)
         partials = self._partials(payment_move)
         partial_1 = partials.filtered(lambda p: invoice_1.line_ids & (p.debit_move_id | p.credit_move_id))

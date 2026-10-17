@@ -1088,15 +1088,17 @@ class AccountMove(models.Model):
         if crosses:
             raise UserError(_(
                 "The advance payment cross entry %s cannot be reset to draft or cancelled by itself. "
-                "Unreconcile it from the invoice, or reset to draft or cancel its origin payment."
-            ) % ', '.join(crosses.mapped('display_name')))
+                "Unreconcile it from the invoice, or reset to draft or cancel its origin payment.",
+                ', '.join(crosses.mapped('display_name')),
+            ))
 
     def _post(self, soft=True):
         orphans = self.filtered(lambda m: m._is_advance_cross() and not m.origin_payment_advanced_payment_id)
         if orphans:
             raise UserError(_(
-                "The advance payment cross entry %s has no origin payment, so it cannot be posted."
-            ) % ', '.join(orphans.mapped('display_name')))
+                "The advance payment cross entry %s has no origin payment, so it cannot be posted.",
+                ', '.join(orphans.mapped('display_name')),
+            ))
         return super()._post(soft=soft)
 
     def button_cancel(self):

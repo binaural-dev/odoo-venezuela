@@ -444,6 +444,12 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
         self.assertAlmostEqual(payment_line.amount_residual_currency, -88.89, places=2)
         self.assertAlmostEqual(payment_line.amount_residual, -88.89 * 40.0, places=2)
         self._assert_notes_closed(invoice)
+        notes = self._notes(invoice)
+        self.assertEqual(len(notes), 2, "Una nota por cada línea con diferencial (factura y pago)")
+        credit_note = notes.filtered(lambda n: n.move_type == "out_refund")
+        debit_note = notes.filtered(lambda n: n.move_type == "out_invoice")
+        self.assertAlmostEqual(credit_note.amount_total, 0.04, places=2, msg="NC de redondeo del lado de la factura")
+        self.assertAlmostEqual(debit_note.amount_total, 444.44, places=2, msg="ND del lado del pago")
 
     def test_closing_note_context_does_not_touch_partials_without_a_note_line(self):
         """El contexto de cierre de nota sigue vivo en conciliaciones anidadas (p. ej. asientos de caja de
@@ -463,3 +469,71 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
     def test_is_exchange_note_line_without_move_is_false(self):
         """Una línea sin asiento no es de nota (antes devolvía False; el `ensure_one()` la hacía reventar)."""
         self.assertFalse(self.env["account.move.line"].new()._is_exchange_note_line())
+
+    def _use_rising_rates(self):
+        """Tasas crecientes, como en la economía venezolana: enero 36, agosto 40 Bs/$."""
+        for rate in self.usd.rate_ids:
+            if str(rate.name) == "2026-01-01":
+                rate.company_rate = 1 / 36.0
+            elif str(rate.name) == "2026-08-01":
+                rate.company_rate = 1 / 40.0
+        self.env.invalidate_all()
+
+    def _rising_rates_invoice_and_payment(self, amount):
+        """Factura de $100 del 01-08 (4.000 Bs a 40) y pago en Bs anterior, del 01-01 (a 36 vale $amount/36)."""
+        self._use_rising_rates()
+        invoice = self._create_invoice("2026-08-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        payment = self._unreconciled_payment(
+            amount, "2026-01-01", currency=self.company.currency_id, journal=self.vef_bank_journal,
+        )
+        return invoice, payment
+
+    def test_rising_rates_widget_values_a_bs_payment_at_the_invoice_date(self):
+        """Pago de 3.600 Bs del 01-01 (36) sobre una factura de $100 del 01-08 (40): el widget lo valora a la tasa
+        de la factura (3.600/40 = $90), aplica lo mostrado y la factura queda parcial con $10 (400 Bs), sin notas.
+        Es la decisión funcional documentada en la openspec de `l10n_ve_igtf`."""
+        invoice, payment = self._rising_rates_invoice_and_payment(3600.0)
+        shown, applied = self._cross_from_widget(invoice, payment)
+        self.assertAlmostEqual(shown, 90.0, places=2)
+        self.assertAlmostEqual(applied, 90.0, places=2)
+        self.assertEqual(invoice.payment_state, "partial")
+        self.assertAlmostEqual(self._receivable(invoice).amount_residual_currency, 10.0, places=2)
+        self.assertAlmostEqual(self._receivable(invoice).amount_residual, 400.0, places=2)
+        self.assertTrue(self.company.currency_id.is_zero(self._receivable(payment.move_id).amount_residual))
+        self.assertFalse(self._notes(invoice), "El widget no genera diferencial en este caso")
+
+    def test_rising_rates_manual_reconcile_keeps_the_native_valuation(self):
+        """Mismas líneas conciliadas a mano desde apuntes: valoración nativa (fecha del pago, 3.600/36 = $100); la
+        factura queda pagada y la diferencia de 400 Bs sale como una NC. Lo que no cambia este PR."""
+        invoice, payment = self._rising_rates_invoice_and_payment(3600.0)
+        (self._receivable(invoice) + self._receivable(payment.move_id)).reconcile()
+        self.assertEqual(invoice.payment_state, "paid")
+        notes = self._notes(invoice)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes.move_type, "out_refund")
+        self.assertAlmostEqual(notes.amount_total, 400.0, places=2)
+        self.assertTrue(self.company.currency_id.is_zero(self._receivable(payment.move_id).amount_residual))
+
+    def test_rising_rates_widget_with_a_payment_worth_exactly_the_invoice(self):
+        """Pago de 4.000 Bs del 01-01: a la tasa de la factura (40) vale justo $100; el widget lo consume
+        completo, sin notas."""
+        invoice, payment = self._rising_rates_invoice_and_payment(4000.0)
+        shown, applied = self._cross_from_widget(invoice, payment)
+        self.assertAlmostEqual(shown, 100.0, places=2)
+        self.assertAlmostEqual(applied, 100.0, places=2)
+        self.assertEqual(invoice.payment_state, "paid")
+        self.assertTrue(self.company.currency_id.is_zero(self._receivable(payment.move_id).amount_residual))
+        self.assertFalse(self._notes(invoice))
+
+    def test_rising_rates_manual_reconcile_of_a_bigger_payment_leaves_credit_and_a_note(self):
+        """Pago de 4.000 Bs conciliado a mano: nativo valora a la tasa del pago ($111,11), la factura queda
+        pagada, al pago le sobran 400 Bs y se emite una NC de 400 Bs."""
+        invoice, payment = self._rising_rates_invoice_and_payment(4000.0)
+        (self._receivable(invoice) + self._receivable(payment.move_id)).reconcile()
+        self.assertEqual(invoice.payment_state, "paid")
+        self.assertAlmostEqual(self._receivable(payment.move_id).amount_residual, -400.0, places=2)
+        notes = self._notes(invoice)
+        self.assertEqual(len(notes), 1)
+        self.assertEqual(notes.move_type, "out_refund")
+        self.assertAlmostEqual(notes.amount_total, 400.0, places=2)
