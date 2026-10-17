@@ -11,13 +11,13 @@
 
 ## 2. Tests
 
-- [x] 2.1 `l10n_ve_igtf/tests/test_outstanding_widget_amount.py` (fixture común `common_currency.py`, solo requiere `l10n_ve_igtf`; moneda base VEF).
+- [x] 2.1 `l10n_ve_igtf/tests/test_outstanding_widget_amount.py` (fixture común `common_currency.py`, solo requiere `l10n_ve_igtf`; moneda base VEF), incluida la factura en VEF pagada con JPY (0 decimales) y KWD (3 decimales).
 - [x] 2.2 `l10n_ve_igtf/tests/test_remove_igtf_without_igtf_line.py` (pago USD y VEF sin línea de IGTF no se tocan; desconciliar un parcial deja pagada la otra factura).
 - [x] 2.3 `l10n_ve_igtf/tests/test_unreconcile_advance_cross.py` (cruce sin publicar, publicado, y parcial del propio cruce: el asiento origen nunca se cancela).
 - [x] 2.3b `test_unreconcile_advance_cross.py`: botones propios bloqueados, cruce cancelado no vuelve a publicarse, `remove_igtf_from_account_move` completa el camino gestionado, y cancelar el pago cancela sus cruces en borrador.
 - [x] 2.4 `l10n_ve_igtf_note_debit/tests`: la ND de IGTF (pago en USD) conserva la tasa del pago, con control; y `compute_bi_igtf` con dos cuotas.
 
-## 3. Verificación manual
+## 3. Verificación manual (fuera del alcance de la implementación: se hace en la instancia de pruebas)
 
 - [ ] 3.1 Cruce desde el widget con pagos en VEF, USD y una tercera moneda: lo aplicado coincide con lo mostrado.
 - [ ] 3.2 Pago USD aplicado a dos facturas: desconciliar una desde el widget deja la otra pagada y el pago publicado.

@@ -56,6 +56,10 @@ interacción con estas notas) se documenta en el change
   - `_l10n_ve_exchange_note_for_partial` devuelve las notas de la cuota de la
     factura que cruza el parcial (más las anteriores sin línea), así romper un
     parcial revierte solo la nota de su cuota.
+- La guarda de duplicados de `_create_exchange_difference_note` solo reconoce como existente la nota que
+  cierra contra la MISMA línea (`self`): un mismo parcial puede dejar diferencial en la factura y en el pago
+  (sobrepago), ambos con la misma llave (factura, pago, cuota), y cada línea debe emitir su nota, como el
+  nativo, que emite un ajuste por línea.
 - Widget de pagos de la factura: las ND/NC de diferencial se devuelven como filas de
   diferencial (`is_exchange`), igual que el asiento nativo, en moneda de la compañía y con el
   monto en Bs del parcial (`_get_all_reconciled_invoice_partials`). El parcial de la nota lleva
@@ -104,6 +108,14 @@ tomada, con ejemplos y valores en el change `outstanding-widget-applies-shown-am
 - Sin migración: son correcciones hacia adelante; las notas ya emitidas no se
   tocan (documentos publicados, posiblemente de períodos cerrados).
 
+- Filtrar `is_exchange` en los consumidores de `invoice_payments_widget` (`l10n_ve_iot_mf`,
+  `l10n_ve_account_mf`, las fechas de pago de `l10n_ve_invoice`, `l10n_ve_payment_extension`,
+  `l10n_ve_invoice_digital`, comisiones): no se trata en este change. Hoy esos consumidores ya reciben estas
+  filas (notas del lado de la factura y diferencial nativo) sin distinguirlas.
+- El IVA de las notas: llevan el impuesto exento por diseño (`_check_l10n_ve_exchange_note_product_id`).
+- Las verificaciones manuales de la sección 3 de `tasks.md`: se hacen en la instancia de pruebas, no forman
+  parte de la implementación.
+
 ## Riesgos y compatibilidad
 - **Notas antiguas sin línea (`l10n_ve_exchange_line_id` vacío) y la guarda de duplicados:** una nota emitida
   antes de este cambio que cierra contra la línea de un pago se reconoce como existente para cualquier cuota.
@@ -136,9 +148,6 @@ tomada, con ejemplos y valores en el change `outstanding-widget-applies-shown-am
   solo las de esa cuota (y las anteriores sin línea, por par factura/pago). Si un
   mismo pago cruza varias cuotas, cada una conserva su propia nota aunque todas
   dejen su residual del lado del pago.
-- **Posible cambio en el PDF de la factura (por lectura del core, no probado):** con
-  `is_exchange=True` el reporte nativo (`account/views/report_invoice.xml`,
-  `payment_vals['is_exchange'] == 0`) no imprimiría las notas como líneas "Paid on", igual
-  que el diferencial nativo. La máquina fiscal (`l10n_ve_iot_mf`, `l10n_ve_account_mf`) sigue leyendo
-  esas filas y respeta `currency_id`: ahora recibe los Bs exactos de la nota.
-
+- **PDF de la factura:** el reporte nativo (`account/views/report_invoice.xml`) solo imprime las filas con
+  `payment_vals['is_exchange'] == 0` (verificado por lectura de la plantilla), así que las notas, marcadas
+  `is_exchange`, no se imprimen como líneas "Paid on", igual que el diferencial nativo.

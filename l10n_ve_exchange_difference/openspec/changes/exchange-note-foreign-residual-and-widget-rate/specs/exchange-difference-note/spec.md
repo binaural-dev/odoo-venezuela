@@ -27,6 +27,12 @@ moneda de la compañía.
 - **WHEN** la línea cerrada está en moneda de la compañía (factura en VEF pagada con USD)
 - **THEN** el parcial SHALL conservar su monto sin cambios (cubierto por `test_exchange_difference_settled_paying_ves_invoice_with_usd` en `tests/test_exchange_note_reversal.py`)
 
+#### Scenario: Conciliación anidada sin línea de nota
+
+- **GIVEN** el contexto de cierre de nota (`l10n_ve_exchange_closing_note`) todavía activo
+- **WHEN** se concilian dos líneas ninguna de las cuales es de una nota
+- **THEN** SHALL NOT dejarse en 0 el monto en divisa del parcial (solo se neutraliza si una de las dos líneas es de nota)
+
 ### Requirement: La nota cierra por su monto exacto con un único parcial
 
 La nota SHALL cerrar completa y con un único parcial por su monto en moneda de
@@ -122,9 +128,34 @@ como una nota que cierra completa y sin descontar divisa.
 - **WHEN** se cruza un pago en EUR contra una factura en USD
 - **THEN** lo aplicado SHALL igualar lo mostrado y el pago y las notas SHALL quedar cerrados
 
+### Requirement: La ND se emite cuando sube la tasa y la NC cuando baja, ligadas a la factura
+
+Si la tasa SUBE al cobrar, el cliente entrega más Bs que los de la factura y la diferencia SHALL
+documentarse con una Nota de Débito; si BAJA, con una Nota de Crédito. Cada nota SHALL quedar ligada a
+la factura de origen (`debit_origin_id` / `reversed_entry_id`) y el pago SHALL extinguir ambas cuentas por
+cobrar (la de la factura y la de la nota). Al desconciliar el pago la nota SHALL revertirse.
+
+#### Scenario: Sube la tasa al cobrar
+
+- **GIVEN** una factura de $100 del 01-01 a 36 Bs/$ (3.600 Bs) y un pago de $100 del 01-08 a 40 Bs/$ (4.000 Bs)
+- **WHEN** se cruza el pago
+- **THEN** SHALL emitirse una ND de 400 Bs ligada a la factura (`debit_origin_id`)
+- **AND** el pago SHALL quedar aplicado: 3.600 Bs contra la factura y 400 Bs contra la ND, con saldo 0
+- **AND** al desconciliar el pago la ND SHALL revertirse y el pago SHALL quedar disponible por 4.000 Bs
+
+#### Scenario: Baja la tasa al cobrar
+
+- **GIVEN** una factura de $100 del 01-01 a 40 Bs/$ y un pago parcial de $50 del 01-08 a 36 Bs/$
+- **WHEN** se cruza el pago
+- **THEN** SHALL emitirse una NC por el diferencial, cerrada contra la línea de la factura, y el residual en divisa de la factura SHALL ser $50
+
 ### Requirement: Vínculo de la nota con la factura
 
 La nota SHALL seguir ligada a su factura (`debit_origin_id` para la ND,
 `reversed_entry_id` para la NC) y SHALL seguir apareciendo en los libros de
 compra y venta. Digitalizar o no una nota de diferencial es una decisión
 administrativa y `l10n_ve_invoice_digital` no la restringe.
+
+Las notas de diferencial SHALL llevar el impuesto de venta exento por diseño: el producto de la nota
+(`l10n_ve_exchange_note_product_id`) debe tener el impuesto exento por defecto
+(`_check_l10n_ve_exchange_note_product_id`).

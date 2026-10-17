@@ -15,7 +15,10 @@
 - [x] 2.1 `tests/common.py`: fixture compartido sin tests (los tests que heredaban de `TestExchangeNoteReversal` pasan a usarlo).
 - [x] 2.2 `tests/test_exchange_note_foreign_residual.py`: la nota no reduce el residual en divisa (lado factura y lado pago), matriz de fechas x montos, cierre exacto con un parcial con tasa más favorable, una nota por cuota (residual de ambos lados) y reversión por parcial y total, fila del widget (datos), y widget + notas (VEF->USD, USD->VEF con nota, EUR, sobrepago USD sobre factura VEF con nota en ambas líneas), y notas del lado del pago visibles en el widget (una nota, dos cuotas, y desaparición al desconciliar).
 
-## 3. Verificación manual
+- [x] 2.3 Tasas crecientes (36 -> 40): `test_rising_rates_*` (widget y conciliación manual, pagos de 3.600 y 4.000 Bs) y `test_rate_rise_at_collection_emits_a_debit_note_that_the_payment_settles_with_the_invoice` (ND ligada a la factura, el pago extingue ambas CxC, reversión al desconciliar).
+- [x] 2.4 Tests de la neutralización acotada (`test_closing_note_context_does_not_touch_partials_without_a_note_line`) y de `_is_exchange_note_line` sin asiento.
+
+## 3. Verificación manual (fuera del alcance de la implementación: se hace en la instancia de pruebas)
 
 - [ ] 3.1 Factura en USD con pago parcial en USD a otra tasa: el "por pagar" en USD no cambia por la nota de diferencial.
 - [ ] 3.3 Con `l10n_ve_exchange_use_nd_nc` activo: factura con dos cuotas pagada a otra tasa -> una nota por cuota; desconciliar el pago las revierte todas.
