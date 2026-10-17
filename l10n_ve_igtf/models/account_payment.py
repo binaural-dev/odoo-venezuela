@@ -18,7 +18,7 @@ class AccountPaymentAndIgtf(models.Model):
         "account.move",
         "origin_payment_advanced_payment_id",
         string="Asientos de Anticipo",
-        domain="[('move_type', '=', 'entry'), ('state', 'not in', ('draft', 'cancel'))]",
+        domain=[('move_type', '=', 'entry'), ('state', 'not in', ('draft', 'cancel'))],
         help="Anticipos (account.move) aplicados a este pago.",
         copy=False,
     )
@@ -688,6 +688,18 @@ class AccountPaymentAndIgtf(models.Model):
                 
                 rec._create_outbound_move_line_igtf_vals(vals, igtf_base)
 
+    def _cancel_draft_advance_crosses(self):
+        """`advanced_move_ids` solo trae cruces publicados. Un cruce que quedó en borrador ligado a este pago
+        (p. ej. si falló su publicación) no tiene nada que confirmar: se cancela y se desliga junto con el pago,
+        porque sus botones propios no pueden hacerlo."""
+        self.ensure_one()
+        drafts = self.env["account.move"].search([
+            ("origin_payment_advanced_payment_id", "=", self.id),
+            ("state", "=", "draft"),
+        ])
+        drafts.with_context(move_action_cancel_advance_payment=True).button_cancel()
+        drafts.write({"origin_payment_advanced_payment_id": False})
+
     def action_cancel(self):
         for record in self:
             if record.advanced_move_ids:
@@ -718,6 +730,7 @@ class AccountPaymentAndIgtf(models.Model):
             # de desconciliar, o `remove_move_reconcile()` (que rompe TODOS
             # los parciales del asiento de una sola vez) deja el IGTF/ND de
             # las facturas restantes huérfano y posteado.
+            record._cancel_draft_advance_crosses()
             move_lines = record.move_id.line_ids
             partial_recs = move_lines.matched_debit_ids | move_lines.matched_credit_ids
             for partial_rec in partial_recs:
@@ -748,6 +761,7 @@ class AccountPaymentAndIgtf(models.Model):
             # Ver nota equivalente en `action_cancel`: procesar TODOS los
             # parciales de conciliación del asiento, no solo el primero,
             # antes de romperlos todos con `remove_move_reconcile()`.
+            record._cancel_draft_advance_crosses()
             move_lines = record.move_id.line_ids
             partial_recs = move_lines.matched_debit_ids | move_lines.matched_credit_ids
             for partial_rec in partial_recs:

@@ -1,6 +1,8 @@
+from unittest.mock import patch
+
 from odoo.tests import tagged, TransactionCase
 from odoo.exceptions import UserError
-from odoo import Command
+from odoo import Command, fields
 
 
 @tagged("post_install", "-at_install")
@@ -14,9 +16,12 @@ class TestIgtfNoteDebitUnit(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.company = cls.env.company
-        # La moneda de la compañía (VEF en esta localización) nace inactiva
-        # en Odoo; sin activarla no se pueden validar asientos/facturas.
-        cls.company.currency_id.active = True
+        cls.env.ref("base.VEF").active = True
+        cls.company.write({
+            "currency_id": cls.env.ref("base.VEF").id,
+            "foreign_currency_id": cls.env.ref("base.USD").id,
+            "country_id": cls.company.country_id.id or cls.env.ref("base.ve").id,
+        })
         cls.partner = cls.env["res.partner"].create({"name": "Cliente IGTF Unit Test"})
 
         cls.exempt_sale_tax = cls.env["account.tax"].create({
@@ -61,10 +66,11 @@ class TestIgtfNoteDebitUnit(TransactionCase):
             "property_account_income_id": income_account.id if income_account else False,
         })
 
-    def _create_invoice(self):
+    def _create_invoice(self, currency=None):
         invoice = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
+            **({"currency_id": currency.id} if currency else {}),
             "invoice_line_ids": [Command.create({
                 "product_id": self.sale_product.id,
                 "quantity": 1,
@@ -114,6 +120,87 @@ class TestIgtfNoteDebitUnit(TransactionCase):
         invoice.settle_igtf_debit_note(debit_note, payment, include_in_payment=True)
         invoice = self.env["account.move"].browse(invoice.id)
         self.assertFalse(invoice.has_pending_igtf_debit_note)
+
+    def _usd_bank_journal(self):
+        """Diario de banco en USD: la ND de IGTF siempre es en VEF (moneda de la
+        compañía), así que un pago en USD obliga a cruzar monedas distintas."""
+        usd = self.env.ref("base.USD")
+        usd.write({
+            "active": True,
+            "rate_ids": [Command.create({"name": fields.Date.today(), "company_rate": 1 / 40.0})],
+        })
+        account = self.env["account.account"].create({
+            "name": "Banco USD (unit test ND IGTF)", "code": "BUSDNDI01",
+            "account_type": "asset_cash", "currency_id": usd.id,
+        })
+        return self.env["account.journal"].create({
+            "name": "Banco USD (unit test ND IGTF)", "type": "bank", "code": "BUSDN",
+            "currency_id": usd.id, "company_id": self.company.id,
+            "default_account_id": account.id,
+            "inbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                "name": "Manual",
+                "payment_method_id": self.env.ref("account.account_payment_method_manual_in").id,
+                "payment_account_id": account.id,
+            })],
+            "outbound_payment_method_line_ids": [(5, 0, 0), (0, 0, {
+                "name": "Manual",
+                "payment_method_id": self.env.ref("account.account_payment_method_manual_out").id,
+                "payment_account_id": account.id,
+            })],
+        })
+
+    def test_debit_note_settlement_keeps_the_payment_accounting_rate(self):
+        """Al saldar la ND de IGTF (en VEF) contra el remanente de su pago en USD no se aplica la tasa del widget
+        (`l10n_ve_widget_rates`): conserva la tasa contable del pago; si no, una ND emitida días después generaría
+        un diferencial que antes no existía. Control: el mismo cruce sobre una factura normal en VEF sí la usa."""
+        move_model = type(self.env["account.move"])
+        line_model = type(self.env["account.move.line"])
+        original_assign = move_model.js_assign_outstanding_line
+        original_residuals = line_model._prepare_move_line_residual_amounts
+        debit_note_assignments = []
+        widget_rates_seen = []
+
+        def spy_assign(record, line_id):
+            if record.l10n_ve_igtf_note_debit_origin:
+                debit_note_assignments.append(record.id)
+            return original_assign(record, line_id)
+
+        def spy_residuals(record, *args, **kwargs):
+            widget_rates_seen.append(record.env.context.get("l10n_ve_widget_rates"))
+            return original_residuals(record, *args, **kwargs)
+
+        self._activate_debit_note_mode()
+        usd_journal = self._usd_bank_journal()
+        invoice = self._create_invoice()
+        payment = self.env["account.payment"].create({
+            "payment_type": "inbound", "partner_type": "customer", "partner_id": self.partner.id,
+            "amount": 5.0, "currency_id": self.env.ref("base.USD").id, "journal_id": usd_journal.id,
+        })
+        payment.action_post()
+        debit_note = invoice.prepare_igtf_payment_debit_note(3.0, invoice, payment)
+
+        with patch.object(move_model, "js_assign_outstanding_line", spy_assign), \
+                patch.object(line_model, "_prepare_move_line_residual_amounts", spy_residuals):
+            invoice.settle_igtf_debit_note(debit_note, payment, include_in_payment=True)
+
+        self.assertTrue(
+            debit_note_assignments,
+            "El test debía ejercitar el cruce de la ND por `js_assign_outstanding_line`",
+        )
+        self.assertTrue(widget_rates_seen, "La conciliación debía pasar por `_prepare_move_line_residual_amounts`")
+        self.assertFalse(any(widget_rates_seen), "La ND de IGTF no debe usar la tasa del widget")
+
+        widget_rates_seen.clear()
+        control_invoice = self._create_invoice(currency=self.env.ref("base.VEF"))
+        control_payment = self.env["account.payment"].create({
+            "payment_type": "inbound", "partner_type": "customer", "partner_id": self.partner.id,
+            "amount": 5.0, "currency_id": self.env.ref("base.USD").id, "journal_id": usd_journal.id,
+        })
+        control_payment.action_post()
+        control_line = control_payment.move_id.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        with patch.object(line_model, "_prepare_move_line_residual_amounts", spy_residuals):
+            control_invoice.js_assign_outstanding_line(control_line.id)
+        self.assertTrue(any(widget_rates_seen), "El cruce normal debía usar la tasa del widget")
 
     # -- prepare_igtf_payment_debit_note --------------------------------
 

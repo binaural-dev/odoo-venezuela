@@ -1,11 +1,11 @@
 from odoo import Command, fields
 from odoo.tests import Form, tagged
 
-from .test_exchange_note_reversal import TestExchangeNoteReversal
+from .common import ExchangeNoteCommon
 
 
 @tagged("l10n_ve_exchange_difference", "-at_install", "post_install")
-class TestExchangeNoteMixedFlow(TestExchangeNoteReversal):
+class TestExchangeNoteMixedFlow(ExchangeNoteCommon):
     """Cubre el flujo mixto por cliente
     (`l10n_ve_exchange_validate_partner_note` + `res.partner.l10n_ve_exchange_allow_note`)
     y la exclusión de pagos de retención
@@ -13,20 +13,8 @@ class TestExchangeNoteMixedFlow(TestExchangeNoteReversal):
     `openspec/changes/l10n-ve-exchange-difference-mixed-flow`. Ninguno de
     los dos tenía test hasta ahora (`tasks.md` 6.1).
 
-    Subclasea `TestExchangeNoteReversal` para reutilizar íntegro su
-    `setUpClass` (compañía, tasas, cuentas, diarios, producto/lista de ND)
-    en vez de rearmar ese fixture desde cero. Costo conocido: al correr la
-    suite COMPLETA del módulo (sin filtrar por clase), los ~80 tests de
-    `TestExchangeNoteReversal` se descubren y corren una segunda vez bajo
-    este nombre (mismo `setUpClass`, cero cobertura nueva) -- se intentó
-    evitarlo invocando `TestExchangeNoteReversal.setUpClass.__func__(cls)`
-    sin heredar, pero el `super()` sin argumentos de ese método está
-    ligado por closure a `TestExchangeNoteReversal` y revienta
-    (`TypeError: super(type, obj): obj must be an instance or subtype of
-    type`) si `cls` no es realmente una subclase suya. Extraer el fixture
-    a una clase base no-`TestCase` compartida evitaría la duplicación,
-    pero implica tocar la clase existente de 4000+ líneas -- fuera de
-    alcance acá; el costo es solo tiempo de CI (~85s), no incorrección."""
+    Reutiliza el fixture compartido `ExchangeNoteCommon` (`common.py`):
+    compañía, tasas, cuentas, diarios, producto/lista de ND."""
 
     def _settle_and_get_notes(self, invoice):
         """Mismo flujo de `test_exchange_difference_settled_by_real_note_via_register_payment`
