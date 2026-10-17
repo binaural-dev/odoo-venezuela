@@ -60,6 +60,12 @@ interacción con estas notas) se documenta en el change
   diferencial (`is_exchange`), igual que el asiento nativo, en moneda de la compañía y con el
   monto en Bs del parcial (`_get_all_reconciled_invoice_partials`). El parcial de la nota lleva
   monto en divisa 0 del lado del documento: antes la fila mostraba un pago/reverso engañoso.
+  También se ven las notas que cierran contra la línea del PAGO, que no es parcial de la
+  factura y el core no encuentra (el nativo las ve vía `exchange_move_id`, que las notas no
+  usan para no duplicar la reversión): ocurre cuando el pago vale más Bs que la factura (tasa
+  mayor), el caso habitual con tasas que suben y el pago posterior a la factura. Las filas se
+  agregan en `_get_exchange_note_partials_against_counterparts`, con parciales reales (el
+  reporte impreso solo lista filas con `is_exchange == 0`, así que no cambia el PDF).
 - Tests: fixture compartido `tests/common.py` (`ExchangeNoteCommon`, sin tests
   propios) en lugar de heredar de `TestExchangeNoteReversal`, que obligaba a
   repetir ~80 tests en cada subclase.
