@@ -114,9 +114,16 @@ tomada, con ejemplos y valores en el change `outstanding-widget-applies-shown-am
   factura (ej.: 0,04 Bs) que, con el flujo ND/NC activo, sale como una NC fiscal con correlativo, además de la
   ND del lado del pago. Cubierto por `test_widget_usd_overpayment_on_vef_invoice_settles_both_sides`.
   **Decisión funcional: se acepta** (no se aplica tolerancia de redondeo ni umbral).
-- **Notas contra el pago (ND de ganancia):** se mantienen como estaban. Se evaluó que solo el diferencial del
-  lado de la factura emitiera nota y el del pago fuera al asiento nativo, y se descartó: queda como está hasta
-  que contabilidad confirme el criterio fiscal (si la ganancia cambiaria requiere documento al cliente).
+- **Razón fiscal y decisiones (responsable de la vertical contable):** la ND se emite cuando SUBE la tasa al
+  cobrar (el cliente entrega más Bs que los de la factura: incrementa la base imponible) y la NC cuando BAJA
+  (reduce la base). Ambas se ligan a la factura de origen y amarran la diferencia al estado de cuenta del
+  cliente y al libro de ventas. Con tasas que suben el diferencial cae del lado del PAGO, así que la ND se
+  concilia con el excedente del pago: el pago extingue las dos cuentas por cobrar (factura + ND). Se evaluó que
+  solo el diferencial del lado de la factura emitiera nota (el del pago al asiento nativo) y se DESCARTÓ,
+  porque eliminaría la ND por alza de tasa. Las notas llevan el impuesto EXENTO (decisión explícita: el producto
+  de la nota debe ser exento, `_check_l10n_ve_exchange_note_product_id`), de modo que no generan ni reducen IVA
+  por sí mismas; si se quisiera, es un cambio aparte (replicar los impuestos de la factura de origen).
+  Cubierto por `test_rate_rise_at_collection_emits_a_debit_note_that_the_payment_settles_with_the_invoice`.
 - Acoplado a Odoo 19.0-20260710: `_prepare_reconciliation_single_partial`,
   `_prepare_move_line_residual_amounts` y la estructura de `partial_values` son
   internos del core.

@@ -537,3 +537,40 @@ class TestExchangeNoteForeignResidual(ExchangeNoteCommon):
         self.assertEqual(len(notes), 1)
         self.assertEqual(notes.move_type, "out_refund")
         self.assertAlmostEqual(notes.amount_total, 400.0, places=2)
+
+    def test_rate_rise_at_collection_emits_a_debit_note_that_the_payment_settles_with_the_invoice(self):
+        """Razón fiscal de la ND: si la tasa SUBE al cobrar, el cliente entrega más Bs que los de la factura
+        (3.600 Bs a 36; cobro de $100 a 40 = 4.000 Bs) y esa diferencia (400 Bs) se documenta con una ND ligada a
+        la factura. El pago extingue AMBAS cuentas por cobrar (factura 3.600 + ND 400, saldo 0) y, al
+        desconciliar el pago, se deshace todo y la ND se revierte."""
+        self._use_rising_rates()
+        invoice = self._create_invoice("2026-01-01")
+        invoice.with_context(move_action_post_alert=True).action_post()
+        payment = self._unreconciled_payment(100.0, "2026-08-01")
+        invoice_line = self._receivable(invoice)
+        payment_line = self._receivable(payment.move_id)
+        self._cross_from_widget(invoice, payment)
+
+        note = self._notes(invoice)
+        self.assertEqual(len(note), 1)
+        self.assertEqual(note.move_type, "out_invoice", "Sube la tasa: Nota de Débito")
+        self.assertEqual(note.debit_origin_id, invoice, "La ND queda ligada a la factura de origen")
+        self.assertAlmostEqual(note.amount_total, 400.0, places=2)
+        self.assertEqual(note.state, "posted")
+
+        note_line = self._receivable(note)
+        self.assertEqual(invoice.payment_state, "paid")
+        self.assertTrue(self.company.currency_id.is_zero(note_line.amount_residual))
+        self.assertTrue(self.company.currency_id.is_zero(payment_line.amount_residual), "El pago queda aplicado")
+        self.assertTrue(self.usd.is_zero(payment_line.amount_residual_currency))
+        invoice_partial = self._partial_between(invoice_line, payment_line)
+        note_partial = self._partial_between(note_line, payment_line)
+        self.assertAlmostEqual(invoice_partial.amount, 3600.0, places=2, msg="El pago liquida la factura")
+        self.assertAlmostEqual(note_partial.amount, 400.0, places=2, msg="y la ND con el excedente")
+
+        invoice.js_remove_outstanding_partial(invoice_partial.id)
+
+        self.assertEqual(invoice.payment_state, "not_paid")
+        self.assertTrue(note.reversal_move_ids, "Al desconciliar el pago la ND se revierte")
+        self.assertFalse(self._partial_between(note_line, payment_line))
+        self.assertAlmostEqual(payment_line.amount_residual, -4000.0, places=2, msg="El pago queda disponible completo")
