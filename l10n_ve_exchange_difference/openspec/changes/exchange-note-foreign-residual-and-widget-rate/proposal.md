@@ -113,6 +113,10 @@ tomada, con ejemplos y valores en el change `outstanding-widget-applies-shown-am
   Bs, el redondeo a centavos de la tasa del widget puede dejar un diferencial de céntimos del lado de la
   factura (ej.: 0,04 Bs) que, con el flujo ND/NC activo, sale como una NC fiscal con correlativo, además de la
   ND del lado del pago. Cubierto por `test_widget_usd_overpayment_on_vef_invoice_settles_both_sides`.
+  **Decisión funcional: se acepta** (no se aplica tolerancia de redondeo ni umbral).
+- **Notas contra el pago (ND de ganancia):** se mantienen como estaban. Se evaluó que solo el diferencial del
+  lado de la factura emitiera nota y el del pago fuera al asiento nativo, y se descartó: queda como está hasta
+  que contabilidad confirme el criterio fiscal (si la ganancia cambiaria requiere documento al cliente).
 - Acoplado a Odoo 19.0-20260710: `_prepare_reconciliation_single_partial`,
   `_prepare_move_line_residual_amounts` y la estructura de `partial_values` son
   internos del core.
