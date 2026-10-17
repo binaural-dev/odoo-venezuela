@@ -151,7 +151,7 @@ el pago completo con una ND de 400 Bs).
   `l10n_ve_account_mf`, `l10n_ve_invoice` (fechas de pago), `l10n_ve_payment_extension` y
   `l10n_ve_invoice_digital` recorren las filas sin mirar `is_exchange`, así que las notas (también las del
   lado del pago, que ahora se ven) llegan como una fila de pago más. Preexistente para las notas del lado de
-  la factura y para el diferencial nativo; pendiente decidir si se filtran en esos módulos.
+  la factura y para el diferencial nativo. Fuera del alcance de este change (ver `l10n_ve_exchange_difference`).
 - **El widget puede dejar una factura en divisa parcialmente abierta** cuando el pago en Bs es
   anterior y la tasa subió (ver la decisión funcional y el ejemplo arriba). Es el costo de que
   lo mostrado sea lo aplicado; quien necesite la valoración a la fecha del pago debe conciliar
