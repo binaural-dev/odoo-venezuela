@@ -105,6 +105,14 @@ tomada, con ejemplos y valores en el change `outstanding-widget-applies-shown-am
   tocan (documentos publicados, posiblemente de períodos cerrados).
 
 ## Riesgos y compatibilidad
+- **Notas antiguas sin línea (`l10n_ve_exchange_line_id` vacío) y la guarda de duplicados:** una nota emitida
+  antes de este cambio que cierra contra la línea de un pago se reconoce como existente para cualquier cuota.
+  Si luego el resto de ese mismo pago se cruza con otra cuota, su diferencial no emite nota y queda sin
+  documento. Transitorio (solo notas anteriores a la actualización) y ya ocurría antes con `limit=1`.
+- **NC/ND por céntimos desde el widget:** al cruzar un pago en otra moneda que cubre de sobra una factura en
+  Bs, el redondeo a centavos de la tasa del widget puede dejar un diferencial de céntimos del lado de la
+  factura (ej.: 0,04 Bs) que, con el flujo ND/NC activo, sale como una NC fiscal con correlativo, además de la
+  ND del lado del pago. Cubierto por `test_widget_usd_overpayment_on_vef_invoice_settles_both_sides`.
 - Acoplado a Odoo 19.0-20260710: `_prepare_reconciliation_single_partial`,
   `_prepare_move_line_residual_amounts` y la estructura de `partial_values` son
   internos del core.

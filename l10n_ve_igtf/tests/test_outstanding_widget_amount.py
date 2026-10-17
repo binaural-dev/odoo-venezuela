@@ -122,6 +122,8 @@ class TestOutstandingWidgetAmount(CurrencyFixtureCommon):
         self.assertTrue(self.vef.is_zero(invoice.amount_residual))
         self.assertAlmostEqual(line.amount_residual_currency, -4000.0, places=0)
         self.assertLess(line.amount_residual, 0.0)
+        # El remanente en Bs sigue a la tasa contable del pago (01-01: 0,27 Bs/JPY): 4.000 JPY x 0,27.
+        self.assertAlmostEqual(line.amount_residual, -4000.0 * 0.27, delta=1.0)
 
     def test_kwd_payment_on_vef_invoice_three_decimals(self):
         """Factura en VEF pagada con KWD (3 decimales): 4.000 Bs / 120 = 33,333 KWD; de un pago de 40 KWD
@@ -133,6 +135,8 @@ class TestOutstandingWidgetAmount(CurrencyFixtureCommon):
         self.assertTrue(self.vef.is_zero(invoice.amount_residual))
         self.assertAlmostEqual(line.amount_residual_currency, -6.667, places=2)
         self.assertLess(line.amount_residual, 0.0)
+        # El remanente en Bs sigue a la tasa contable del pago (01-01: 130 Bs/KWD): 6,667 KWD x 130.
+        self.assertAlmostEqual(line.amount_residual, -6.667 * 130.0, delta=1.0)
 
     def test_vendor_bill_with_payment_in_company_currency(self):
         """Factura de PROVEEDOR en USD pagada en VEF (el pago queda del lado

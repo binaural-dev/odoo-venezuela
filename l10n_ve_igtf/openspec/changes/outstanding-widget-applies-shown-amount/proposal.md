@@ -102,7 +102,8 @@ nativa de Odoo (tasa de la fecha del pago): es diseño existente del módulo y q
 alcance, por lo que el mismo pago puede dar resultados distintos según el camino.
 
 Ejemplo, con tasas de enero (01-01) 36 Bs/$ y de agosto (01-08) 40 Bs/$ y una factura de $100
-del 01-08 (4.000 Bs), con un pago en Bs del 01-01 (verificado con las pruebas de ambos caminos):
+del 01-08 (4.000 Bs), con un pago en Bs del 01-01 (cubierto por los tests `test_rising_rates_*` de
+`l10n_ve_exchange_difference/tests/test_exchange_note_foreign_residual.py`, widget y conciliación manual):
 
 | Pago (01-01) | Widget (valora a 40, fecha de la factura) | Manual (valora a 36, fecha del pago) |
 |---|---|---|
@@ -140,6 +141,17 @@ el pago completo con una ND de 400 Bs).
   `l10n_ve_exchange_difference`.
 
 ## Riesgos y compatibilidad
+- **Modo `debit_note` con diario IGTF:** `l10n_ve_igtf_note_debit.js_assign_outstanding_line` arma su propio
+  parcial y NO pasa por `l10n_ve_widget_rates`; allí lo aplicado es lo que ese flujo calcula, no necesariamente
+  lo mostrado. "Cualquier combinación de monedas" aplica al cruce estándar del widget.
+- **Módulo antiguo `binaural_advance_payment_igtf`** (`integra-addons`): está deprecado y no se instala (confirmado
+  por el equipo). Se menciona porque crea cruces de anticipo con `origin_payment_advanced_payment_id` posiblemente
+  vacío, que las guardas de este cambio no dejarían publicar; al no instalarse, no tiene efecto.
+- **Filas de diferencial en los consumidores de `invoice_payments_widget`:** `l10n_ve_iot_mf`,
+  `l10n_ve_account_mf`, `l10n_ve_invoice` (fechas de pago), `l10n_ve_payment_extension` y
+  `l10n_ve_invoice_digital` recorren las filas sin mirar `is_exchange`, así que las notas (también las del
+  lado del pago, que ahora se ven) llegan como una fila de pago más. Preexistente para las notas del lado de
+  la factura y para el diferencial nativo; pendiente decidir si se filtran en esos módulos.
 - **El widget puede dejar una factura en divisa parcialmente abierta** cuando el pago en Bs es
   anterior y la tasa subió (ver la decisión funcional y el ejemplo arriba). Es el costo de que
   lo mostrado sea lo aplicado; quien necesite la valoración a la fecha del pago debe conciliar
