@@ -153,7 +153,7 @@ class AccountMoveLine(models.Model):
     def _compute_foreign_subtotal(self):
         for line in self:
             line_discount_price_unit = line.foreign_price * (
-                1 - (line.discount / 100.0)
+                1 - (line._get_effective_discount_percent() / 100.0)
             )
             foreign_subtotal = line_discount_price_unit * line.quantity
 

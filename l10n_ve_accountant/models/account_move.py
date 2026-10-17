@@ -530,7 +530,7 @@ class AccountMove(models.Model):
                 subtotal = line_sign * abs(line.balance)
                 tax_amount = line_sign * abs(tax_amount_by_line_id.get(line.id, 0.0))
 
-                discount_percent = line.discount or 0.0
+                discount_percent = line._get_effective_discount_percent()
                 discount_type = 'percent'
                 denominator = line.quantity * (1 - discount_percent / 100.0)
                 price_unit = (
@@ -693,7 +693,7 @@ class AccountMove(models.Model):
 
             for line in record.invoice_line_ids:
                 subtotal = line.price_unit * line.quantity
-                if line.discount > 0:
+                if line._get_effective_discount_percent() > 0:
                     discount_amount += subtotal - line.price_subtotal
                 total += subtotal
 
