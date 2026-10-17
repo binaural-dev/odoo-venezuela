@@ -31,6 +31,11 @@
    propio pago como "cruce", y lo cancelaba. Verificado con un test: ocurría igual
    con el código anterior. El asiento origen nunca debe cancelarse al desconciliar.
 
+5. **El asiento de cruce de anticipo se podía deshacer por sus botones propios.**
+   "Pasar a borrador" o "Cancelar" sobre el cruce lo sacaban de su pago origen por
+   fuera de los caminos que lo gestionan, y un cruce ya cancelado y desligado del pago
+   podía volver a publicarse sin pago origen y duplicar su efecto contable.
+
 ## What Changes
 
 - El widget expone `rate` en cada línea: la tasa SIN redondear con la que se
@@ -71,6 +76,20 @@
   cancelación y desconciliar el parcial del propio pago es un desconciliado normal.
   El módulo externo `integra-addons/binaural_advance_payment`, que redefinía el campo
   con otro dominio, está deprecado y no se instala.
+
+- El cruce de anticipo (`is_advance_move`, marca que se escribe al crearlo y NO se borra
+  al cancelarlo, a diferencia de `origin_payment_advanced_payment_id`) solo cambia de estado
+  por los caminos que lo gestionan: desconciliar desde la factura y pasar a borrador o
+  cancelar el pago origen. `button_draft` y `button_cancel` fallan con `UserError` salvo con
+  el contexto `move_action_cancel_advance_payment`, que fijan esos caminos (wizard,
+  `cancel_advance_payment_transaction`, `remove_igtf_from_account_move` y
+  `_unreconcile_and_cancel_advance`). `_post` exige pago origen (la reversión de un cruce
+  queda exenta).
+- `remove_igtf_from_account_move` registra en el log el error que antes se tragaba en
+  silencio al pasar a borrador o cancelar.
+- Pago origen: `action_cancel` y `action_draft` cancelan y desligan los cruces que quedaron
+  en borrador ligados al pago (`advanced_move_ids` solo trae los publicados). No es
+  retroactivo: solo actúa cuando se cancela o pasa a borrador ese pago.
 
 ## Fuera de alcance
 - Otras suposiciones de línea única, anteriores a este cambio, en el flujo de

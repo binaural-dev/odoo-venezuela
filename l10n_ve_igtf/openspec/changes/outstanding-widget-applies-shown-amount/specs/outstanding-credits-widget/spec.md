@@ -100,3 +100,24 @@ cancelarse; solo se cancela el asiento de CRUCE cuando es su parcial el que se r
 - **WHEN** se desconcilia la factura del asiento de cruce
 - **THEN** SHALL cancelarse solo ese cruce y el pago SHALL seguir publicado
 
+### Requirement: El cruce de anticipo solo se deshace por sus caminos gestionados
+
+Un asiento de cruce de anticipo (`is_advance_move`) SHALL NOT pasar a borrador ni cancelarse
+con sus botones propios, y SHALL NOT publicarse sin pago origen. Solo SHALL deshacerse al
+desconciliar desde la factura o al pasar a borrador o cancelar su pago origen.
+
+#### Scenario: Botones propios del cruce
+
+- **WHEN** se intenta pasar a borrador o cancelar un cruce de anticipo publicado
+- **THEN** SHALL fallar con un error y el cruce SHALL seguir publicado
+
+#### Scenario: Cruce cancelado al desconciliar
+
+- **WHEN** se desconcilia el cruce desde la factura
+- **THEN** SHALL quedar cancelado y desligado del pago, y SHALL NOT poder volver a borrador ni publicarse sin pago origen
+
+#### Scenario: Cruce en borrador al cancelar el pago origen
+
+- **GIVEN** un cruce en borrador ligado al pago
+- **WHEN** se cancela o pasa a borrador el pago
+- **THEN** el cruce SHALL cancelarse y desligarse del pago sin abrir el wizard

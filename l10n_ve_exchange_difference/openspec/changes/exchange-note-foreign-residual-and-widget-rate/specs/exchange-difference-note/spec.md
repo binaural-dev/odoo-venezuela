@@ -75,6 +75,12 @@ nota(s) de su cuota (y las notas sin línea, por par factura/pago).
 - **WHEN** se concilia
 - **THEN** SHALL emitirse igualmente una nota por cuota
 
+#### Scenario: Un parcial deja diferencial en la factura y en el pago
+
+- **GIVEN** una factura en VEF y un pago en USD mayor, cruzado desde el widget con el flujo de ND/NC activo
+- **WHEN** el mismo parcial deja diferencial en la línea de la factura y en la del pago
+- **THEN** SHALL emitirse una nota por cada línea (la guarda de duplicados solo reconoce la nota cerrada contra la misma línea) y el pago SHALL quedar con el residual de su propia tasa
+
 #### Scenario: Romper el parcial de una cuota
 
 - **WHEN** se rompe el parcial de UNA cuota

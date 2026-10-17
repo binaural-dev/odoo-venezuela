@@ -780,6 +780,7 @@ class AccountMove(models.Model):
         if not partial_reconcile:
             raise UserError(_("The partial reconciliation record is mandatory for cancellation."))        
         
+        partial_reconcile = partial_reconcile.with_context(move_action_cancel_advance_payment=True)
         partial_reconcile.line_ids.remove_move_reconcile()
         partial_reconcile.button_draft()
         partial_reconcile.button_cancel()
@@ -972,9 +973,10 @@ class AccountMove(models.Model):
             return False
 
         try:
-            payment_move.button_draft()
-            
+            payment_move.with_context(move_action_cancel_advance_payment=True).button_draft()
+
         except Exception:
+            _logger.warning("Could not reset move %s to draft to remove its IGTF", payment_move.display_name, exc_info=True)
             return False
         
         
@@ -1060,16 +1062,49 @@ class AccountMove(models.Model):
 
             if payment_move.origin_payment_advanced_payment_id:
                 payment_move.origin_payment_advanced_payment_id.write({'advanced_move_ids': [(3, payment_move.id)]})
-                payment_move.button_cancel()
+                payment_move.with_context(move_action_cancel_advance_payment=True).button_cancel()
             else:
                 payment_move.action_post()
         except Exception:
+            _logger.warning("Could not settle move %s after removing its IGTF", payment_move.display_name, exc_info=True)
             return False
             
         return True
     
 
+    def _is_advance_cross(self):
+        """Asiento de cruce de anticipo: lo marca `is_advance_move` al crearse y no se borra al cancelarlo (a
+        diferencia de `origin_payment_advanced_payment_id`). La reversión de un cruce no es un cruce."""
+        self.ensure_one()
+        return bool(self.is_advance_move and not self.reversed_entry_id)
+
+    def _check_advance_cross_lifecycle(self):
+        """Un cruce de anticipo solo cambia de estado por los caminos que lo gestionan (desconciliar desde la
+        factura, o pasar a borrador/cancelar el pago origen), que lo declaran con el contexto
+        `move_action_cancel_advance_payment`. Sus botones propios no deben deshacerlo por separado."""
+        if self.env.context.get('move_action_cancel_advance_payment'):
+            return
+        crosses = self.filtered(lambda m: m._is_advance_cross())
+        if crosses:
+            raise UserError(_(
+                "The advance payment cross entry %s cannot be reset to draft or cancelled by itself. "
+                "Unreconcile it from the invoice, or reset to draft or cancel its origin payment."
+            ) % ', '.join(crosses.mapped('display_name')))
+
+    def _post(self, soft=True):
+        orphans = self.filtered(lambda m: m._is_advance_cross() and not m.origin_payment_advanced_payment_id)
+        if orphans:
+            raise UserError(_(
+                "The advance payment cross entry %s has no origin payment, so it cannot be posted."
+            ) % ', '.join(orphans.mapped('display_name')))
+        return super()._post(soft=soft)
+
+    def button_cancel(self):
+        self._check_advance_cross_lifecycle()
+        return super().button_cancel()
+
     def button_draft(self):
+        self._check_advance_cross_lifecycle()
         self._check_draftable()
         self.line_ids.analytic_line_ids.with_context(skip_analytic_sync=True).unlink()
         self.mapped('line_ids').remove_move_reconcile()
