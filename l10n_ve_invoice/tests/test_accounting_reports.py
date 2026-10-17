@@ -669,6 +669,49 @@ class TestAccountingReports(TransactionCase):
         result = wizard._determinate_resume_books(moves, "exempt_aliquot")
         self.assertEqual(len(result), 4)
 
+    def _check_resume_total_row_has_net_formulas(self, report, journal, taxes):
+        today = fields.Date.today()
+        move = self._create_move(
+            "out_invoice" if report == "sale" else "in_invoice",
+            journal, taxes, correlative="RT001"
+        )
+        # El contexto evita el wizard de alerta que l10n_ve_accountant abre al publicar ventas
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(move.state, "posted")
+        # En ventas la secuencia puede reemplazar el correlativo al publicar
+        self.env.cr.execute(
+            "UPDATE account_move SET correlative = 'RT001' WHERE id = %s", (move.id,)
+        )
+        move.invalidate_recordset(["correlative"])
+        wizard = self._create_wizard(report, date_from=today, date_to=today)
+        formulas = {}
+
+        class FakeWorksheet:
+            def merge_range(self, *args, **kwargs):
+                pass
+
+            def write(self, *args, **kwargs):
+                pass
+
+            def write_formula(self, row, col, formula, *args, **kwargs):
+                formulas[col] = formula
+
+        wizard.generate_book_resume(FakeWorksheet(), 0, None, {"number": None})
+        # Columnas C..H (2..7): incluida "Total Neto" (G, H)
+        self.assertEqual(sorted(formulas), [2, 3, 4, 5, 6, 7])
+        self.assertTrue(formulas[6].startswith("=SUM(G"))
+        self.assertTrue(formulas[7].startswith("=SUM(H"))
+
+    def test_resume_sale_total_row_net_columns_are_sums(self):
+        self._check_resume_total_row_has_net_formulas(
+            "sale", self.journal_sale, [self.tax_sale_16.id]
+        )
+
+    def test_resume_purchase_total_row_net_columns_are_sums(self):
+        self._check_resume_total_row_has_net_formulas(
+            "purchase", self.journal_purchase, [self.tax_purchase_16.id]
+        )
+
     def test_resume_books_general_aliquot(self):
         today = fields.Date.today()
         self._create_posted_move(
