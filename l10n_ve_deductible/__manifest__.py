@@ -1,7 +1,7 @@
 {
     "name": "Deducibles - Contabilidad Binaural",
     "summary": """
-        Descuentos globales deducibles (porcentaje o monto fijo) en facturas de proveedor
+        Descuentos globales deducibles (porcentaje o monto fijo) en facturas de proveedor y de cliente
     """,
     "license": "LGPL-3",
     "author": "binaural-dev",
