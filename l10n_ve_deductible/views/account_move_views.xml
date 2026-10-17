@@ -6,7 +6,7 @@
         <field name="inherit_id" ref="l10n_ve_invoice.view_account_move_form_l10n_ve_invoice"/>
         <field name="arch" type="xml">
 
-            <xpath expr="//div[@name='due_date']" position="after">
+            <xpath expr="//page[@name='invoice_tab']//field[@name='narration']" position="after">
                 <field name="use_deductible" invisible="1"/>
                 <field name="is_deductible"
                     invisible="move_type not in ('in_invoice', 'in_refund') or (not use_deductible and not is_deductible) or (move_type == 'in_refund' and not is_deductible)"
@@ -24,7 +24,7 @@
                     readonly="state != 'draft'"
                     required="is_deductible and global_deductible_type == 'amount'"/>
                 <field name="global_deductible_reference_amount"
-                    invisible="move_type not in ('in_invoice', 'in_refund') or not is_deductible"/>
+                    invisible="move_type not in ('in_invoice', 'in_refund') or not is_deductible or global_deductible_type != 'percent'"/>
             </xpath>
 
             <xpath expr="//field[@name='invoice_line_ids']//list//field[@name='discount']" position="attributes">

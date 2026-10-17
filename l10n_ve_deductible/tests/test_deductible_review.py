@@ -289,6 +289,23 @@ class TestDeductibleReviewCases(AssertMixin, TransactionCase):
         with self.assertRaisesMsg(ValidationError, "must add up to the deductible amount"):
             bill.invoice_line_ids[0].write({"global_deductible_line_amount": 1.0})
 
+    def test_section_is_below_the_terms_and_reference_only_for_percentage(self):
+        """The section sits right after `narration` (Términos y condiciones) of
+        the lines tab, not in the header; the reference amount is only shown
+        for the percentage type."""
+        arch = self.env["account.move"].get_view(
+            self.env.ref("account.view_move_form").id, "form"
+        )["arch"]
+        narration = arch.index('name="narration"')
+        first = arch.index('name="is_deductible"')
+        self.assertLess(narration, first)
+        self.assertLess(first - narration, 400)
+        header = arch[: arch.index('name="invoice_tab"')]
+        self.assertNotIn("is_deductible", header)
+        reference = arch[arch.index('name="global_deductible_reference_amount"'):]
+        reference = reference[: reference.index("/>")]
+        self.assertIn("global_deductible_type != &#39;percent&#39;", reference.replace("'", "&#39;"))
+
     def test_line_amount_column_is_read_only_and_only_for_fixed_amount(self):
         arch = self.env["account.move"].get_view(
             self.env.ref("account.view_move_form").id, "form"
