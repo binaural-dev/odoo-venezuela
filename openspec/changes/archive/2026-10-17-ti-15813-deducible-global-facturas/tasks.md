@@ -1,0 +1,6 @@
+- [x] 1. Módulo `l10n_ve_deductible`: campos, validaciones, vistas, Ajustes, manifest e icono
+- [x] 2. Reparto por línea (mayor residuo en centavos) con paridad exacta con el descuento nativo y `discount_fixed`
+- [x] 3. Gancho `_get_effective_discount_percent()` y `_get_base_line_sync_extra_fields()` en `l10n_ve_accountant`
+- [x] 4. Consistencia al vuelo en el formulario, notas de crédito/débito, reemplazo, multicompañía y alcance por compañía
+- [x] 5. Filas del deducible en los widgets de totales y en el reporte de forma libre
+- [x] 6. Traducción es_VE, specs y pruebas (proveedor y cliente) en base limpia

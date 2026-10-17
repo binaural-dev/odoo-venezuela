@@ -7,5 +7,15 @@ class ResCompany(models.Model):
     use_deductible = fields.Boolean(
         string="Use Deductibles",
         help="Allows applying a global deductible (percentage or fixed amount) "
-        "to vendor bills.",
+        "to the documents selected in 'Deductible Applies To'.",
+    )
+    deductible_scope = fields.Selection(
+        [
+            ("vendor", "Vendor Bills"),
+            ("customer", "Customer Invoices"),
+            ("both", "Vendor Bills and Customer Invoices"),
+        ],
+        string="Deductible Applies To",
+        default="vendor",
+        required=True,
     )

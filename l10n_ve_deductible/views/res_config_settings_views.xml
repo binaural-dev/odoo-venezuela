@@ -15,9 +15,20 @@
                             <label for="use_deductible"/>
                             <div class="text-muted">
                                 Allows applying a global deductible (percentage or fixed
-                                amount) to vendor bills with exempt taxes. While active on a
-                                bill, line discounts are disabled.
+                                amount) to documents with exempt taxes. While active on a
+                                document, line discounts are disabled.
                             </div>
+                        </div>
+                    </div>
+                    <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_deductible_div_scope"
+                         invisible="not use_deductible">
+                        <div class="o_setting_right_pane">
+                            <label for="deductible_scope"/>
+                            <div class="text-muted">
+                                Documents on which the deductible can be activated.
+                            </div>
+                            <field name="deductible_scope" widget="radio"
+                                   required="use_deductible"/>
                         </div>
                     </div>
                 </block>
