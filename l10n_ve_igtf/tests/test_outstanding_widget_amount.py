@@ -103,6 +103,37 @@ class TestOutstandingWidgetAmount(CurrencyFixtureCommon):
         self.assertTrue(self.kwd.is_zero(line.amount_residual_currency))
 
 
+    def test_jpy_payment_on_vef_invoice_zero_decimals(self):
+        """Factura en VEF pagada con JPY (0 decimales): 4.000 Bs / 0,25 (tasa de la factura) = 16.000 JPY."""
+        invoice = self._invoice("2026-08-01", 4000.0)
+        line = self._outstanding_line(self.bank["JPY"], 16000.0, self.jpy, "2026-01-01")
+        shown, applied = self._shown_and_applied(invoice, line)
+        self.assertAlmostEqual(shown, 4000.0, places=2)
+        self.assertAlmostEqual(applied, shown, places=2)
+        self.assertTrue(self.jpy.is_zero(line.amount_residual_currency))
+
+    def test_jpy_payment_exceeding_vef_invoice_zero_decimals_partial(self):
+        """Pago de 20.000 JPY sobre una factura de 4.000 Bs (16.000 JPY): se aplica solo lo de la factura y el
+        residual en JPY y en Bs queda del mismo lado (nunca JPY agotado con Bs pendientes, ni al revés)."""
+        invoice = self._invoice("2026-08-01", 4000.0)
+        line = self._outstanding_line(self.bank["JPY"], 20000.0, self.jpy, "2026-01-01")
+        _shown, applied = self._shown_and_applied(invoice, line)
+        self.assertAlmostEqual(applied, 4000.0, places=2)
+        self.assertTrue(self.vef.is_zero(invoice.amount_residual))
+        self.assertAlmostEqual(line.amount_residual_currency, -4000.0, places=0)
+        self.assertLess(line.amount_residual, 0.0)
+
+    def test_kwd_payment_on_vef_invoice_three_decimals(self):
+        """Factura en VEF pagada con KWD (3 decimales): 4.000 Bs / 120 = 33,333 KWD; de un pago de 40 KWD
+        sobran 6,667 KWD y los Bs correspondientes, del mismo lado."""
+        invoice = self._invoice("2026-08-01", 4000.0)
+        line = self._outstanding_line(self.bank["KWD"], 40.0, self.kwd, "2026-01-01")
+        _shown, applied = self._shown_and_applied(invoice, line)
+        self.assertAlmostEqual(applied, 4000.0, places=2)
+        self.assertTrue(self.vef.is_zero(invoice.amount_residual))
+        self.assertAlmostEqual(line.amount_residual_currency, -6.667, places=2)
+        self.assertLess(line.amount_residual, 0.0)
+
     def test_vendor_bill_with_payment_in_company_currency(self):
         """Factura de PROVEEDOR en USD pagada en VEF (el pago queda del lado
         débito): también debe aplicarse lo mostrado."""
