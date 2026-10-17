@@ -4,6 +4,7 @@
 - [x] 1.2 La línea de la nota no ofrece residual en divisa al cerrarse (cierre con un único parcial exacto).
 - [x] 1.3 Una nota por cuota de la factura: campo `l10n_ve_exchange_line_id`, guarda por (factura, pago, cuota) y reversión por parcial.
 - [x] 1.4 Widget de pagos: la nota se devuelve como fila de diferencial (`is_exchange`) en moneda de la compañía.
+- [x] 1.4b Widget de pagos: también se ven las notas que cierran contra la línea del PAGO (el core las encuentra vía `exchange_move_id`, que las notas no usan), una fila por nota y sin duplicar.
 - [x] 1.5 La guarda de duplicados de `_create_exchange_difference_note` solo da por existente la nota que cierra contra la misma línea (un parcial puede dejar diferencial en la factura y en el pago: una nota por línea, como el nativo; sin campos nuevos).
 - [x] 1.6 Neutralización del parcial acotada a parciales con una línea de nota, y `_is_exchange_note_line` sin `ensure_one()` para líneas sin asiento.
 - [x] 1.6b Bump de versión de `l10n_ve_exchange_difference`.
@@ -12,7 +13,7 @@
 ## 2. Tests
 
 - [x] 2.1 `tests/common.py`: fixture compartido sin tests (los tests que heredaban de `TestExchangeNoteReversal` pasan a usarlo).
-- [x] 2.2 `tests/test_exchange_note_foreign_residual.py`: la nota no reduce el residual en divisa (lado factura y lado pago), matriz de fechas x montos, cierre exacto con un parcial con tasa más favorable, una nota por cuota (residual de ambos lados) y reversión por parcial y total, fila del widget (datos), y widget + notas (VEF->USD, USD->VEF con nota, EUR, sobrepago USD sobre factura VEF con nota en ambas líneas).
+- [x] 2.2 `tests/test_exchange_note_foreign_residual.py`: la nota no reduce el residual en divisa (lado factura y lado pago), matriz de fechas x montos, cierre exacto con un parcial con tasa más favorable, una nota por cuota (residual de ambos lados) y reversión por parcial y total, fila del widget (datos), y widget + notas (VEF->USD, USD->VEF con nota, EUR, sobrepago USD sobre factura VEF con nota en ambas líneas), y notas del lado del pago visibles en el widget (una nota, dos cuotas, y desaparición al desconciliar).
 
 ## 3. Verificación manual
 

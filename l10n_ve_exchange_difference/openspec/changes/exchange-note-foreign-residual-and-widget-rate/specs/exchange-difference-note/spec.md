@@ -54,6 +54,13 @@ compañía y por el monto en Bs del parcial.
 - **THEN** la fila de la nota SHALL llevar `is_exchange`, `currency_id` de la compañía y `amount` igual al monto de la nota
 - **AND** la fila del pago SHALL permanecer sin marcar y en la moneda del pago
 
+#### Scenario: Nota que cierra contra la línea del pago
+
+- **GIVEN** un pago con tasa mayor que la de la factura (pago de más valor en Bs), de modo que la ND cierra contra la línea del PAGO y no contra la de la factura
+- **WHEN** se lee `invoice_payments_widget`
+- **THEN** la nota SHALL aparecer como fila de diferencial (`is_exchange`), en moneda de la compañía y por el monto en Bs de su parcial, igual que el diferencial nativo, sin repetirse
+- **AND** al desconciliar el pago la nota SHALL revertirse y su fila SHALL dejar de verse
+
 ### Requirement: Una nota por cuota con residual
 
 Como el asiento de diferencial nativo, el flujo SHALL emitir una nota por cada
