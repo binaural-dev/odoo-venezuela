@@ -71,7 +71,16 @@ class TestDeductibleRules(DeductibleCase):
             with self.subTest(move_type=move_type), self.assertRaisesMsg(ValidationError, "only be used on"):
                 self._doc(move_type=move_type, **self.PERCENT)
 
-    def test_edition_only_in_draft_and_deactivation_reverts_everything(self):
+    def test_deactivation_reverts_everything(self):
+        doc = self._doc(**self.AMOUNT)
+        doc.is_deductible = False
+        self.assertEqual((doc.global_deductible_percent, doc.global_deductible_amount), (0.0, 0.0))
+        self.assertFalse(any(doc.invoice_line_ids.mapped("global_deductible_discount_percent")))
+        self.assertFalse(any(doc.invoice_line_ids.mapped("global_deductible_line_amount")))
+        self.assertFalse(doc.tax_totals.get("is_deductible"))
+        self._assert_same(doc, self._doc())
+
+    def test_edition_only_in_draft(self):
         doc = self._post(self._doc(**self.AMOUNT))
         for vals in ({"global_deductible_percent": 5.0}, {"is_deductible": False}):
             with self.assertRaisesMsg(UserError, "draft documents"):
@@ -79,10 +88,8 @@ class TestDeductibleRules(DeductibleCase):
         doc.button_draft()
         doc.is_deductible = False
         self.assertEqual((doc.global_deductible_percent, doc.global_deductible_amount), (0.0, 0.0))
-        self.assertFalse(any(doc.invoice_line_ids.mapped("global_deductible_discount_percent")))
         self.assertFalse(any(doc.invoice_line_ids.mapped("global_deductible_line_amount")))
-        self.assertFalse(doc.tax_totals.get("is_deductible"))
-        self._assert_same(doc, self._doc())
+        self.assertEqual(doc.amount_untaxed, self._doc().amount_untaxed)
 
     def test_changing_the_scope_does_not_lock_existing_documents(self):
         draft = self._doc(**self.AMOUNT)
