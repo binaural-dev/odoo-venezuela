@@ -21,3 +21,4 @@
 
 - [ ] 3.1 Cruce desde el widget con pagos en VEF, USD y una tercera moneda: lo aplicado coincide con lo mostrado.
 - [ ] 3.2 Pago USD aplicado a dos facturas: desconciliar una desde el widget deja la otra pagada y el pago publicado.
+- [ ] 3.3 Con tasas que suben (pago en Bs anterior a la factura en USD): confirmar que el widget muestra y aplica el monto a la tasa de la fecha de la factura (puede dejar la factura parcial) y que la conciliación manual conserva la valoración nativa (decisión funcional documentada en `proposal.md`).
