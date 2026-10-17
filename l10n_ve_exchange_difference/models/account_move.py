@@ -123,7 +123,12 @@ class AccountMove(models.Model):
         """Muestra las ND/NC de diferencial en el widget de pagos como fila de diferencial (`is_exchange`).
         Su parcial lleva monto en divisa 0 del lado del documento, así que la fila usa
         `partial.amount` (en moneda de la compañía). El `sudo()` solo lee ese monto,
-        igual que el compute del core."""
+        igual que el compute del core.
+
+        Una nota que cierra contra la línea del PAGO (pago de más valor en Bs) no es parcial de la factura, así
+        que el SQL del core no la encuentra. El diferencial nativo sí se ve porque el core lo busca a través de
+        `exchange_move_id`; las notas no se enlazan ahí (el módulo las revierte por su cuenta), así que se agregan
+        aquí las que cierran contra una línea contraparte de la factura."""
         res = super()._get_all_reconciled_invoice_partials()
         Partial = self.env['account.partial.reconcile']
         for partial_values in res:
@@ -133,7 +138,46 @@ class AccountMove(models.Model):
             partial_values['is_exchange'] = True
             partial_values['currency'] = self.company_id.currency_id
             partial_values['amount'] = abs(Partial.sudo().browse(partial_values['partial_id']).amount)
+        if not res:
+            # El core devuelve `{}` (no una lista) si el asiento no tiene líneas por cobrar/pagar.
+            return res
+        res.extend(self._get_exchange_note_partials_against_counterparts(res))
         return res
+
+    def _get_exchange_note_partials_against_counterparts(self, partial_values_list):
+        """Filas de diferencial de las notas ligadas a esta factura cuyo parcial es contra una de las líneas
+        contraparte ya listadas (la del pago), sin repetir las que ya salen."""
+        self.ensure_one()
+        listed_partial_ids = {values['partial_id'] for values in partial_values_list if values.get('partial_id')}
+        counterpart_ids = [values['aml'].id for values in partial_values_list if values.get('aml')]
+        if not self.id or not counterpart_ids:
+            return []
+        note_lines = self.env['account.move'].sudo().search([
+            ('l10n_ve_exchange_invoice_id', '=', self.id),
+            ('state', '=', 'posted'),
+            ('reversal_move_ids', '=', False),
+        ]).line_ids.filtered(lambda line: line.account_type in ('asset_receivable', 'liability_payable'))
+        if not note_lines:
+            return []
+        partials = self.env['account.partial.reconcile'].sudo().search([
+            '|',
+            '&', ('debit_move_id', 'in', note_lines.ids), ('credit_move_id', 'in', counterpart_ids),
+            '&', ('credit_move_id', 'in', note_lines.ids), ('debit_move_id', 'in', counterpart_ids),
+        ])
+        rows = []
+        for partial in partials:
+            if partial.id in listed_partial_ids:
+                continue
+            note_line = partial.debit_move_id if partial.debit_move_id in note_lines else partial.credit_move_id
+            rows.append({
+                'aml_id': note_line.id,
+                'aml': note_line,
+                'partial_id': partial.id,
+                'amount': abs(partial.amount),
+                'currency': self.company_id.currency_id,
+                'is_exchange': True,
+            })
+        return rows
 
     def _compute_payment_state(self):
         """Corrects core's `'reversed'` verdict when our own exchange-diff
