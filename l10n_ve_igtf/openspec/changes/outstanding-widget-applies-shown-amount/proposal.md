@@ -91,7 +91,32 @@
   en borrador ligados al pago (`advanced_move_ids` solo trae los publicados). No es
   retroactivo: solo actúa cuando se cancela o pasa a borrador ese pago.
 
+### Decisión funcional: el widget valora a la fecha de la factura; la conciliación manual no cambia
+
+El widget valora un pago en moneda de la compañía anterior a una factura en divisa con la
+tasa de la FECHA DE LA FACTURA (`max(invoice_date, line.date)`), y el cruce aplica ese monto.
+Con tasas que suben (la realidad venezolana: el Bs pierde valor entre el pago y la factura) eso
+puede dejar la factura PARCIALMENTE ABIERTA aunque el pago, el día que se hizo, la cubría.
+Se decidió mantenerlo así. La conciliación manual desde apuntes sigue con la valoración
+nativa de Odoo (tasa de la fecha del pago): es diseño existente del módulo y queda fuera de
+alcance, por lo que el mismo pago puede dar resultados distintos según el camino.
+
+Ejemplo, con tasas de enero (01-01) 36 Bs/$ y de agosto (01-08) 40 Bs/$ y una factura de $100
+del 01-08 (4.000 Bs), con un pago en Bs del 01-01 (verificado con las pruebas de ambos caminos):
+
+| Pago (01-01) | Widget (valora a 40, fecha de la factura) | Manual (valora a 36, fecha del pago) |
+|---|---|---|
+| 3.600 Bs | muestra y aplica $90; la factura queda parcial, debe $10 (400 Bs); sin notas | aplica $100; factura pagada; NC de 400 Bs fechada 01-01 |
+| 4.000 Bs | muestra y aplica $100; el pago queda consumido; sin notas | aplica $100; al pago le quedan 400 Bs sin aplicar; NC de 400 Bs |
+
+Con tasas que bajan ocurre lo contrario: el sobrante del pago queda como crédito del cliente
+en lugar de saldo pendiente en la factura (pago de 4.000 Bs del 01-01 a 40 y factura de $100
+del 01-08 a 36: el widget aplica $100 = 3.600 Bs y quedan 400 Bs de crédito; el manual consume
+el pago completo con una ND de 400 Bs).
+
 ## Fuera de alcance
+- La valoración de la conciliación manual desde apuntes (nativa de Odoo, a la fecha del
+  pago): no se modifica en este cambio.
 - Otras suposiciones de línea única, anteriores a este cambio, en el flujo de
   anticipos (`l10n_ve_igtf` y `l10n_ve_igtf_note_debit`: `factura_line.amount_residual`,
   `receivable_payable_line.id`, `lines_to_match...[:1]`): ticket aparte.
@@ -100,6 +125,10 @@
   `l10n_ve_exchange_difference`.
 
 ## Riesgos y compatibilidad
+- **El widget puede dejar una factura en divisa parcialmente abierta** cuando el pago en Bs es
+  anterior y la tasa subió (ver la decisión funcional y el ejemplo arriba). Es el costo de que
+  lo mostrado sea lo aplicado; quien necesite la valoración a la fecha del pago debe conciliar
+  manualmente.
 - Acoplado a Odoo 19.0-20260710 (métodos y estructura de `partial_values` internos).
 - Si el pago vale más/menos de lo que el motor aplicaría, la diferencia queda como
   diferencial cambiario, como cualquier diferencial nativo de Odoo (con

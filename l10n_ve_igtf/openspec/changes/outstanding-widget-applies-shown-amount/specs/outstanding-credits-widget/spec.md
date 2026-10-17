@@ -78,6 +78,25 @@ pedido sea el único efecto.
 - **WHEN** el asiento tiene línea de IGTF
 - **THEN** SHALL seguir el flujo existente (borrador, absorción del IGTF en la línea de CxC/CxP y nueva publicación)
 
+### Requirement: El widget valora a la fecha de la factura; la conciliación manual conserva la valoración nativa
+
+Para un pago en moneda de la compañía anterior a una factura en divisa, el widget SHALL
+valorar el pago con la tasa de la fecha de la factura y el cruce SHALL aplicar ese monto, aunque
+la factura quede parcialmente abierta. La conciliación manual desde apuntes SHALL conservar la
+valoración nativa de Odoo (tasa de la fecha del pago); este cambio no la modifica.
+
+#### Scenario: Tasas que suben, pago de 3.600 Bs del 01-01 (36) contra factura de $100 del 01-08 (40)
+
+- **WHEN** se asigna desde el widget
+- **THEN** SHALL mostrarse y aplicarse $90, la factura SHALL quedar parcial con $10 (400 Bs) pendientes y SHALL NOT emitirse nota
+- **AND** la conciliación manual de las mismas líneas SHALL aplicar $100, dejar la factura pagada y emitir una NC de 400 Bs
+
+#### Scenario: Tasas que suben, pago de 4.000 Bs del 01-01 (36) contra factura de $100 del 01-08 (40)
+
+- **WHEN** se asigna desde el widget
+- **THEN** SHALL mostrarse y aplicarse $100, el pago SHALL quedar consumido y SHALL NOT emitirse nota
+- **AND** la conciliación manual SHALL dejar 400 Bs sin aplicar en el pago y emitir una NC de 400 Bs
+
 ### Requirement: Desconciliar nunca cancela el asiento origen del pago
 
 `account.payment.advanced_move_ids` SHALL devolver solo asientos de cruce de

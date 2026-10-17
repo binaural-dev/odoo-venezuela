@@ -64,6 +64,15 @@ interacción con estas notas) se documenta en el change
   propios) en lugar de heredar de `TestExchangeNoteReversal`, que obligaba a
   repetir ~80 tests en cada subclase.
 
+- La neutralización del parcial de la nota (`_l10n_ve_neutralize_foreign_amount_of_note_partial`) se aplica
+  solo si una de las dos líneas del parcial es de una nota (`_is_exchange_note_line()`), no solo por el
+  contexto `l10n_ve_exchange_closing_note`, que sigue vivo en conciliaciones anidadas. Es preventivo: sin
+  esa condición, una conciliación anidada con el contexto puesto y sin línea de nota deja en 0 los montos
+  en divisa, el residual nunca baja y el motor entra en bucle hasta agotar memoria (reproducido forzando el
+  contexto). NO se pudo reproducir en un flujo real: con impuestos de exigibilidad al pago (CABA) y una
+  nota de diferencial, el asiento de caja se concilia FUERA del cierre de la nota (sin el contexto).
+- `_is_exchange_note_line` devuelve `False` (no revienta) para una línea sin asiento.
+
 ### Interacción con el cruce desde el widget (`l10n_ve_igtf`)
 El cruce desde el widget aplica el monto mostrado (change
 `outstanding-widget-applies-shown-amount`). **Decisión funcional: ese monto es el
@@ -73,6 +82,11 @@ ejemplo, una factura de 4.000 Bs con un pago anterior de 80 USD: el widget
 muestra y aplica 2.880 Bs (80 x 36) y la diferencia con el balance del pago
 (3.200 Bs) sale como una ND de 320 Bs; el cruce nativo habría aplicado 3.200 Bs
 sin nota.
+
+Con tasas que suben (pago en Bs anterior a la factura en divisa) el widget valora a la fecha de la
+factura y puede dejar la factura parcialmente abierta, mientras que la conciliación manual conserva
+la valoración nativa (fecha del pago) y emite la NC por la diferencia. Es una decisión funcional ya
+tomada, con ejemplos y valores en el change `outstanding-widget-applies-shown-amount` de `l10n_ve_igtf`.
 
 ## Fuera de alcance
 - El vínculo `debit_origin_id`/`reversed_entry_id` de la nota con su factura se
