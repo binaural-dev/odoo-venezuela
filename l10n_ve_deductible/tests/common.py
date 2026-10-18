@@ -195,7 +195,6 @@ class DeductibleCase(AssertMixin, TransactionCase):
             "amount_untaxed": doc.amount_untaxed,
             "amount_total": doc.amount_total,
             "amount_total_signed": doc.amount_total_signed,
-            "amount_residual": doc.amount_residual,
             "price_subtotal": lines.mapped("price_subtotal"),
             "price_total": lines.mapped("price_total"),
             "balance": lines.mapped("balance"),
