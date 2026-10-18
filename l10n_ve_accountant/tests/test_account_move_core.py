@@ -427,7 +427,7 @@ class TestAccountMoveCore(TransactionCase):
             "type": "purchase", "company_id": self.company.id,
         })
         purchase_journal.write({"is_purchase_international": True})
-        with self.assertRaises(ValidationError):
+        with self.assertRaises(UserError):
             self.env["account.journal"].sudo().create({
                 "name": "Intl Purchase 2", "code": "INP2",
                 "type": "purchase", "company_id": self.company.id,

@@ -1,6 +1,9 @@
 from datetime import timedelta
 from unittest.mock import patch
 
+from lxml import etree
+
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
 import logging
@@ -1228,3 +1231,128 @@ class TestForeignExchangeDiff(TransactionCase):
             entry.reversal_move_ids,
             "The safety net must reverse the entry itself when core's own path did not",
         )
+
+    # ── Ticket: apuntes conciliados, borrador, default y wizard ──
+
+    def _standalone_entry(self, move):
+        entry = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        self.assertTrue(entry, "Setup sanity: the standalone entry must exist")
+        return entry
+
+    @staticmethod
+    def _closing_lines(entry):
+        return entry.line_ids.filtered(
+            lambda l: l.account_id.account_type in ('asset_receivable', 'liability_payable')
+        )
+
+    def test_open_reconcile_view_from_standalone_entry_lists_origin_chain(self):
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+        entry = self._standalone_entry(move)
+
+        ids = self._domain_ids(entry.open_reconcile_view())
+        self.assertTrue(set(self._closing_lines(entry).ids) <= ids)
+        self.assertTrue({receivable_line.id, payment_line.id} <= ids)
+
+    def test_open_reconcile_view_from_other_payment_includes_standalone_entry(self):
+        """Two partial payments of one invoice: each one's standalone entry
+        must be reachable from the other payment's Reconciled Items, not
+        only from the payment that originated it."""
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        half = move.amount_total / 2
+        payment_a, _r, _p = self._pay_invoice(move, amount=half)
+        payment_b, _r, _p = self._pay_invoice(move, amount=half)
+        entries = self.env["account.move"].search([
+            ("l10n_ve_exchange_foreign_source_move_id", "=", move.id),
+        ])
+        self.assertEqual(len(entries), 2, "Setup sanity: one standalone entry per partial payment")
+
+        ids_b = self._domain_ids(payment_b.move_id.open_reconcile_view())
+        for entry in entries:
+            self.assertTrue(
+                set(self._closing_lines(entry).ids) <= ids_b,
+                "Every standalone entry of the invoice must show in the other payment's view",
+            )
+
+    def test_standalone_entry_cannot_be_reset_to_draft(self):
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        self._pay_invoice(move)
+        entry = self._standalone_entry(move)
+        with self.assertRaises(UserError):
+            entry.button_draft()
+        self.assertEqual(entry.state, "posted")
+
+    def test_reversed_standalone_entry_cannot_be_reset_to_draft(self):
+        move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
+        self._set_usd_rate(self.settlement_date, 50.0)
+        _payment, receivable_line, payment_line = self._pay_invoice(move)
+        entry = self._standalone_entry(move)
+        (receivable_line + payment_line).remove_move_reconcile()
+        reversal = entry.reversal_move_ids
+        self.assertTrue(reversal, "Setup sanity: the entry must be reversed")
+        with self.assertRaises(UserError):
+            reversal.button_draft()
+
+    def test_foreign_exchange_diff_enabled_by_default(self):
+        field = self.env["res.company"]._fields["l10n_ve_use_foreign_exchange_diff"]
+        self.assertTrue(field.default(self.env["res.company"]))
+
+    def test_new_company_without_chart_can_be_created_with_default(self):
+        company = self.env["res.company"].create({"name": "No Chart Company"})
+        self.assertTrue(company.l10n_ve_use_foreign_exchange_diff)
+
+    def test_constraint_still_requires_config_when_chart_exists(self):
+        self.company.chart_template = self.company.chart_template or "generic_coa"
+        self.company.l10n_ve_use_foreign_exchange_diff = False
+        self.company.currency_exchange_journal_id = False
+        with self.assertRaises(ValidationError):
+            self.company.l10n_ve_use_foreign_exchange_diff = True
+
+    def test_explicit_activation_without_chart_and_config_raises(self):
+        """Only the *default* is skipped on creation: explicitly enabling
+        the check without journal/accounts must fail, chart or not."""
+        with self.assertRaises(ValidationError):
+            self.env["res.company"].create({
+                "name": "No Chart Explicit Co",
+                "l10n_ve_use_foreign_exchange_diff": True,
+            })
+        company = self.env["res.company"].create({"name": "No Chart Default Co"})
+        company.l10n_ve_use_foreign_exchange_diff = False
+        with self.assertRaises(ValidationError):
+            company.l10n_ve_use_foreign_exchange_diff = True
+
+    def test_chart_load_disables_flag_when_chart_has_no_exchange_config(self):
+        """`account.chart.template._load` revalidates at the end: a chart
+        that leaves the exchange journal/accounts empty cannot keep the
+        flag on."""
+        company = self.env["res.company"].create({"name": "Chart Without Exchange Co"})
+        self.assertTrue(company.l10n_ve_use_foreign_exchange_diff)
+        template_model = self.env["account.chart.template"]
+        with patch(
+            "odoo.addons.account.models.chart_template.AccountChartTemplate._load",
+            return_value=None,
+        ):
+            template_model._load("generic_coa", company, False)
+        self.assertFalse(company.l10n_ve_use_foreign_exchange_diff)
+
+    def test_payment_wizard_indexed_check_visible_only_when_to_agreed(self):
+        view = self.env["account.payment.register"].get_view(view_type="form")
+        arch = etree.fromstring(view["arch"])
+        nodes = arch.xpath("//field[@name='indexed_default']")
+        self.assertTrue(nodes, "The indexed check must be in the wizard")
+        invisible = nodes[0].get("invisible") or ""
+        self.assertIn("indexaxion_payment_mode != 'to_agreed'", invisible)
+
+    def test_constraint_skipped_while_chart_template_loads(self):
+        """Loading a chart writes journal/accounts in separate steps: the
+        half-configured state in between must not raise."""
+        self.company.chart_template = self.company.chart_template or "generic_coa"
+        self.company.l10n_ve_use_foreign_exchange_diff = False
+        self.company.currency_exchange_journal_id = False
+        self.company.with_context(chart_template_load=True).l10n_ve_use_foreign_exchange_diff = True
+        self.assertTrue(self.company.l10n_ve_use_foreign_exchange_diff)
