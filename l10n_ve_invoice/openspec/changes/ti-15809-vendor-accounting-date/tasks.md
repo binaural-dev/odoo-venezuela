@@ -4,3 +4,4 @@
 - [x] Tests (default, apagada no bloquea, NC de proveedor, edición posterior, ventas no afectadas)
 - [x] Bump de versión `19.0.1.0.25`
 - [x] Spec `openspec/specs/l10n_ve_invoice/spec.md`
+- [x] La fecha contable de compras tampoco puede ser mayor a `context_today` (misma constraint y misma configuración)

@@ -81,6 +81,10 @@ class AccountMove(models.Model):
                             "The invoice date cannot be greater than the accounting date."
                         )
                     )
+                if move.date and move.date > fields.Date.context_today(move):
+                    raise ValidationError(
+                        _("The accounting date cannot be greater than today.")
+                    )
 
     import_file_number_purchase_international = fields.Char(
         string="Import File Number Purchase International"
