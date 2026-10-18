@@ -141,3 +141,22 @@ class TestVendorAccountingDate(TransactionCase):
             self.today - timedelta(days=1),
         )
         self.assertEqual(invoice.date, self.today - timedelta(days=1))
+
+    def test_accounting_date_in_future_blocks(self):
+        with self.assertRaisesRegex(ValidationError, "cannot be greater than today"):
+            self._create_move(
+                "in_invoice",
+                self.journal_purchase,
+                self.today,
+                self.today + timedelta(days=1),
+            )
+
+    def test_accounting_date_in_future_with_setting_off_is_allowed(self):
+        self.company.block_invoice_display_date_upper_than_date = False
+        bill = self._create_move(
+            "in_invoice",
+            self.journal_purchase,
+            self.today,
+            self.today + timedelta(days=1),
+        )
+        self.assertEqual(bill.date, self.today + timedelta(days=1))

@@ -208,6 +208,11 @@ La opción de apagarla existe solo por criterio del consultor, para ajustes o ca
 - **WHEN** se guarda una factura de proveedor con fecha contable anterior a su fecha de factura y la configuración encendida
 - **THEN** se lanza un error "The invoice date cannot be greater than the accounting date."
 
+#### Scenario: Fecha contable posterior a hoy
+
+- **WHEN** se guarda un documento de compra con fecha contable mayor a la fecha actual (`context_today`) y la configuración encendida
+- **THEN** se lanza un error "The accounting date cannot be greater than today."
+
 #### Scenario: Fecha contable igual o posterior
 
 - **WHEN** se guarda una factura de proveedor con fecha contable igual o posterior a su fecha de factura
