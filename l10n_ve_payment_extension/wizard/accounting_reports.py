@@ -158,7 +158,7 @@ class WizardAccountingReports(models.TransientModel):
             ("type", "in", move_type),
             ("type_retention", "=", "iva"),
             ("state", "=", "emitted"),
-            ("company_id", "=", self.company_id.id),
+            ("company_id", "in", self.report_company_ids.ids),
         ]
         return domain
 
