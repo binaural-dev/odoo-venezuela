@@ -2133,8 +2133,7 @@ msgstr "La tolerancia de edición del monto de impuesto debe estar entre 0 y 1."
 
 #. module: l10n_ve_accountant
 #. odoo-python
-#: code:addons/l10n_ve_accountant/models/account_payment.py:0
-#: code:addons/l10n_ve_accountant/wizard/account_payment_register.py:0
+#: code:addons/l10n_ve_accountant/models/payment_date_check_mixin.py:0
 msgid "The payment date (%(date)s) cannot be later than today (%(today)s)."
 msgstr "La fecha del pago (%(date)s) no puede ser posterior a hoy (%(today)s)."
 

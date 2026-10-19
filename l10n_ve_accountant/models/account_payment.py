@@ -1,6 +1,5 @@
 from odoo import api, fields, models, _
-from odoo.exceptions import UserError, ValidationError
-from odoo.tools import format_date
+from odoo.exceptions import UserError
 
 import logging
 
@@ -8,7 +7,7 @@ _logger = logging.getLogger(__name__)
 
 
 class AccountPayment(models.Model):
-    _inherit = "account.payment"
+    _inherit = ["account.payment", "l10n_ve.payment.date.check.mixin"]
 
     destination_account_id = fields.Many2one(
         "account.account",
@@ -307,21 +306,33 @@ class AccountPayment(models.Model):
                 return
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
 
+    def _get_outstanding_account(self, payment_type):
+        """Disable core's silent fallback (company.transfer_account_id or a
+        chart template account) for bank journals whose payment method line
+        has no payment_account_id configured.
+
+        Without this, create() (account_payment.py core) picks that generic
+        account instead of raising or leaving outstanding_account_id empty --
+        exactly the "silently-picked account" the task 81735 validations
+        elsewhere in this module are meant to prevent. Returning an empty
+        recordset here (instead of calling super()) leaves
+        outstanding_account_id False, which the action_post() guard below
+        turns into an explicit error at confirmation time.
+
+        Scoped to bank journals only, and only when accounting_installed is
+        False in core's create() (this method is never called by core
+        otherwise) -- doesn't affect POS, hr_expense or
+        l10n_account_withholding_tax, which set outstanding_account_id
+        directly rather than through this method (confirmed via code
+        review, PR #1344 / task 81735).
+        """
+        if self.journal_id.type == 'bank' and not self.payment_method_line_id.payment_account_id:
+            return self.env['account.account']
+        return super()._get_outstanding_account(payment_type)
+
     @api.constrains("date")
     def _check_date_not_in_future(self):
-        """A payment cannot be dated after today (user's timezone), whether it
-        is created from the payment form, from the register-payment wizard or
-        by any other flow."""
-        today = fields.Date.context_today(self)
-        for payment in self:
-            if payment.date and payment.date > today:
-                raise ValidationError(
-                    _(
-                        "The payment date (%(date)s) cannot be later than today (%(today)s).",
-                        date=format_date(self.env, payment.date),
-                        today=format_date(self.env, today),
-                    )
-                )
+        self._l10n_ve_check_payment_date_not_in_future("date")
 
     def action_post(self):
         """Block confirming a bank payment that would end up with no

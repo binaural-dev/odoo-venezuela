@@ -790,6 +790,15 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 - **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
 - **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta
 
+### Requirement: El widget de pagos no falla con registros sin guardar
+
+`_get_all_reconciled_invoice_partials` DEBE (MUST) devolver el resultado del núcleo sin consultar los asientos de diferencial en moneda alterna cuando el registro no tiene id de base de datos (`self._origin.id` vacío, por ejemplo un `account.move` nuevo en el formulario).
+
+#### Scenario: Factura nueva sin guardar
+
+- **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
+- **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
+
 ### Requirement: Un pago no puede tener fecha futura
 
 La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
@@ -810,5 +819,4 @@ formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15
 #### Scenario: Asistente de registrar pago con fecha futura
 
 - **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
-- **THEN** se lanza un error de validación antes de crear ningún pago 
-
+- **THEN** se lanza un error de validación antes de crear ningún pago
