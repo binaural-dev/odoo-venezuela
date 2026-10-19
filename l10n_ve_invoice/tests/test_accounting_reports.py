@@ -678,29 +678,39 @@ class TestAccountingReports(TransactionCase):
         # El contexto evita el wizard de alerta que l10n_ve_accountant abre al publicar ventas
         move.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(move.state, "posted")
-        # En ventas la secuencia puede reemplazar el correlativo al publicar
-        self.env.cr.execute(
-            "UPDATE account_move SET correlative = 'RT001' WHERE id = %s", (move.id,)
-        )
-        move.invalidate_recordset(["correlative"])
         wizard = self._create_wizard(report, date_from=today, date_to=today)
+        writes = []
         formulas = {}
 
         class FakeWorksheet:
             def merge_range(self, *args, **kwargs):
                 pass
 
-            def write(self, *args, **kwargs):
-                pass
+            def write(self, row, col, value, *args, **kwargs):
+                writes.append((row, col, "value"))
 
             def write_formula(self, row, col, formula, *args, **kwargs):
-                formulas[col] = formula
+                writes.append((row, col, "formula"))
+                formulas[(row, col)] = formula
 
-        wizard.generate_book_resume(FakeWorksheet(), 0, None, {"number": None})
+        index_to_start = 0
+        wizard.generate_book_resume(
+            FakeWorksheet(), index_to_start, None, {"number": None}
+        )
+        total_row = max(row for row, _col in formulas)
+        first_row = index_to_start + 5
         # Columnas C..H (2..7): incluida "Total Neto" (G, H)
-        self.assertEqual(sorted(formulas), [2, 3, 4, 5, 6, 7])
-        self.assertTrue(formulas[6].startswith("=SUM(G"))
-        self.assertTrue(formulas[7].startswith("=SUM(H"))
+        self.assertEqual(
+            sorted(col for row, col in formulas if row == total_row), [2, 3, 4, 5, 6, 7]
+        )
+        for col, letter in zip(range(2, 8), "CDEFGH"):
+            self.assertEqual(
+                formulas[(total_row, col)],
+                f"=SUM({letter}{first_row}:{letter}{total_row})",
+            )
+            # Ninguna escritura posterior pisa la fórmula de la celda
+            cell_writes = [kind for r, c, kind in writes if (r, c) == (total_row, col)]
+            self.assertEqual(cell_writes[-1], "formula")
 
     def test_resume_sale_total_row_net_columns_are_sums(self):
         self._check_resume_total_row_has_net_formulas(
