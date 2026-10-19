@@ -1,7 +1,29 @@
+import warnings
+
 from . import models
 from . import wizard
 
 import logging
+
+# account.payment.register.amount (wizard/account_payment_register.py) is
+# re-declared with store=True, compute='_compute_amount', while
+# amount_without_difference/igtf_amount/igtf_to_show share that same
+# compute method but don't restate store=True -- Odoo requires every field
+# computed together by one method to agree on 'store' (and 'compute_sudo',
+# same mismatch here), and escalates a mismatch to a UserWarning on every
+# registry load ("account.payment.register: inconsistent 'compute_sudo'/
+# 'store' for computed fields..."). Harmless at runtime (this wizard has
+# worked this way since before this fix), but fatal in odoo.sh's test-mode
+# registry build (warnings-as-errors) -- same category, and same reasoning
+# for suppressing rather than touching the fields, as
+# l10n_ve_accountant's company_currency_id/invoice_currency_rate case (see
+# that module's __init__.py for the full story).
+warnings.filterwarnings(
+    "ignore",
+    message=r"account\.payment\.register: inconsistent '(compute_sudo|store)' "
+            r"for computed fields",
+    category=UserWarning,
+)
 
 _logger = logging.getLogger(__name__)
 

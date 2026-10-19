@@ -23,6 +23,17 @@ warnings.filterwarnings(
             r"stock\.picking\.sale_id",
     category=UserWarning,
 )
+# Sibling warning, same root cause: location_id loses precompute (the
+# re-declaration above doesn't restate it) while location_dest_id keeps
+# core's precompute=True untouched -- two fields computed by the same
+# method now disagree on 'precompute', which Odoo flags on its own,
+# separately from the "depends on non-precomputed field" one above.
+warnings.filterwarnings(
+    "ignore",
+    message=r"stock\.picking: inconsistent 'precompute' for computed "
+            r"fields location_id, location_dest_id",
+    category=UserWarning,
+)
 
 old_module = "binaural_stock_accountant"
 new_module = "l10n_ve_stock_account"
