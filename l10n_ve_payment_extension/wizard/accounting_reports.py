@@ -178,6 +178,7 @@ class WizardAccountingReports(models.TransientModel):
 
     def parse_sale_book_data(self):
         data = super().parse_sale_book_data()
+        self._prefetch_retention_iva_lines(data)
         for move in data:
             date = move.get("accounting_date", False)
             if move.get("vat", "") != "RESUMEN" and (
@@ -203,6 +204,7 @@ class WizardAccountingReports(models.TransientModel):
 
     def parse_purchase_book_data(self):
         data = super().parse_purchase_book_data()
+        self._prefetch_retention_iva_lines(data)
         for move in data:
             move_date = datetime.strptime(move.get("accounting_date"), "%d/%m/%Y").date()
             if self._check_future_retention_dates(move_date):
@@ -222,6 +224,15 @@ class WizardAccountingReports(models.TransientModel):
             move.update(retention_data)
 
         return data
+
+    def _prefetch_retention_iva_lines(self, data):
+        """Load the IVA retention lines of all the book moves in batch.
+
+        get_retention_iva_values browses each move alone, which would read its retention
+        lines with one query per move.
+        """
+        moves = self.env["account.move"].browse([line["_id"] for line in data if line.get("_id")])
+        moves.retention_iva_line_ids.retention_id.fetch(["state", "date", "date_accounting"])
 
     def get_retention_iva_values(self, move_id):
         move = self.env["account.move"].browse(move_id)

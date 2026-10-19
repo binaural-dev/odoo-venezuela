@@ -184,7 +184,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         return purchase_book_lines
 
-    def _determinate_resume_books(self, moves, tax_type=None):
+    def _determinate_resume_books(self, moves, tax_type=None, taxes_by_move=None):
         resume_lines = []
 
         def check_future_dates(move):
@@ -197,6 +197,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return move.move_type in types
 
         moves = moves.filtered(check_future_dates)
+        if taxes_by_move is None:
+            taxes_by_move = self._get_amount_taxeds_by_move(moves)
         credit_notes = moves.filtered(filter_credit_notes)
         moves -= credit_notes
 
@@ -204,7 +206,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["tax_base_exempt_aliquot"]
+                        taxes_by_move[move]["tax_base_exempt_aliquot"]
                         for move in moves
                         if not move.journal_id.is_purchase_international
                     ]
@@ -213,7 +215,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["amount_exempt_aliquot"]
+                        taxes_by_move[move]["amount_exempt_aliquot"]
                         for move in moves
                         if not move.journal_id.is_purchase_international
                     ]
@@ -222,7 +224,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_exempt_aliquot"] * -1
+                        taxes_by_move[note]["tax_base_exempt_aliquot"] * -1
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -231,7 +233,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_exempt_aliquot"] * -1
+                        taxes_by_move[note]["amount_exempt_aliquot"] * -1
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -243,7 +245,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["tax_base_general_aliquot"]
+                        taxes_by_move[move]["tax_base_general_aliquot"]
                         for move in moves
                         if not move.journal_id.is_purchase_international
                     ]
@@ -252,7 +254,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["amount_general_aliquot"]
+                        taxes_by_move[move]["amount_general_aliquot"]
                         for move in moves
                         if not move.journal_id.is_purchase_international
                     ]
@@ -261,7 +263,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_general_aliquot"] * -1
+                        taxes_by_move[note]["tax_base_general_aliquot"] * -1
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -270,7 +272,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_general_aliquot"] * -1
+                        taxes_by_move[note]["amount_general_aliquot"] * -1
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -282,7 +284,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["tax_base_reduced_aliquot"]
+                        taxes_by_move[move]["tax_base_reduced_aliquot"]
                         for move in moves
                         if not move.journal_id.is_purchase_international
                     ]
@@ -291,7 +293,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["amount_reduced_aliquot"]
+                        taxes_by_move[move]["amount_reduced_aliquot"]
                         for move in moves
                         if not move.journal_id.is_purchase_international
                     ]
@@ -300,7 +302,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_reduced_aliquot"] * -1
+                        taxes_by_move[note]["tax_base_reduced_aliquot"] * -1
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -309,7 +311,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_reduced_aliquot"] * -1
+                        taxes_by_move[note]["amount_reduced_aliquot"] * -1
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -321,7 +323,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["tax_base_extend_aliquot"]
+                        taxes_by_move[move]["tax_base_extend_aliquot"]
                         for move in moves
                         if not move.journal_id.is_purchase_international
                     ]
@@ -330,7 +332,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["amount_extend_aliquot"]
+                        taxes_by_move[move]["amount_extend_aliquot"]
                         for move in moves
                         if not move.journal_id.is_purchase_international
                     ]
@@ -339,7 +341,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_extend_aliquot"] * -1
+                        taxes_by_move[note]["tax_base_extend_aliquot"] * -1
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -348,7 +350,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_extend_aliquot"] * -1
+                        taxes_by_move[note]["amount_extend_aliquot"] * -1
                         for note in credit_notes
                         if not note.journal_id.is_purchase_international
                     ]
@@ -361,7 +363,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["tax_base_zero_aliquot_international"]
+                        taxes_by_move[move]["tax_base_zero_aliquot_international"]
                         for move in moves
                     ]
                 )
@@ -369,7 +371,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["amount_zero_aliquot_international"]
+                        taxes_by_move[move]["amount_zero_aliquot_international"]
                         for move in moves
                     ]
                 )
@@ -377,7 +379,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_zero_aliquot_international"] * -1
+                        taxes_by_move[note]["tax_base_zero_aliquot_international"] * -1
                         for note in credit_notes
                     ]
                 )
@@ -385,7 +387,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_zero_aliquot_international"] * -1
+                        taxes_by_move[note]["amount_zero_aliquot_international"] * -1
                         for note in credit_notes
                     ]
                 )
@@ -397,7 +399,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["tax_base_general_aliquot_international"]
+                        taxes_by_move[move]["tax_base_general_aliquot_international"]
                         for move in moves
                     ]
                 )
@@ -405,7 +407,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["amount_general_aliquot_international"]
+                        taxes_by_move[move]["amount_general_aliquot_international"]
                         for move in moves
                     ]
                 )
@@ -413,7 +415,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_general_aliquot_international"] * -1
+                        taxes_by_move[note]["tax_base_general_aliquot_international"] * -1
                         for note in credit_notes
                     ]
                 )
@@ -421,7 +423,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_general_aliquot_international"] * -1
+                        taxes_by_move[note]["amount_general_aliquot_international"] * -1
                         for note in credit_notes
                     ]
                 )
@@ -433,7 +435,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["tax_base_extend_aliquot_international"]
+                        taxes_by_move[move]["tax_base_extend_aliquot_international"]
                         for move in moves
                     ]
                 )
@@ -441,7 +443,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(move)["amount_extend_aliquot_international"]
+                        taxes_by_move[move]["amount_extend_aliquot_international"]
                         for move in moves
                     ]
                 )
@@ -449,7 +451,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["tax_base_extend_aliquot_international"] * -1
+                        taxes_by_move[note]["tax_base_extend_aliquot_international"] * -1
                         for note in credit_notes
                     ]
                 )
@@ -457,7 +459,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             resume_lines.append(
                 sum(
                     [
-                        self._determinate_amount_taxeds(note)["amount_extend_aliquot_international"] * -1
+                        taxes_by_move[note]["amount_extend_aliquot_international"] * -1
                         for note in credit_notes
                     ]
                 )
@@ -804,91 +806,106 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         else:
             moves = move_model.search(domain, order="correlative asc, name asc")
 
+        # Load the line taxes read by tax_totals in batch, not one query per move.
+        moves.line_ids.fetch(["tax_ids", "tax_tag_ids"])
         return moves
 
+    def _get_amount_taxeds_by_move(self, moves):
+        """Compute the taxes of each move once, so the resume rows do not recompute them."""
+        return {move: self._determinate_amount_taxeds(move) for move in moves}
+
     def _resume_sale_book_fields(self, moves):
+        taxes_by_move = self._get_amount_taxeds_by_move(
+            moves.filtered(lambda m: self.date_from <= m.date <= self.date_to)
+        )
         return [
             {
                 "name": "Ventas Internas no Gravadas",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "exempt_aliquot"),
+                "values": self._determinate_resume_books(moves, "exempt_aliquot", taxes_by_move),
             },
             {
                 "name": "Ventas de Exportación",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "zero_aliquot_international"),
+                "values": self._determinate_resume_books(moves, "zero_aliquot_international", taxes_by_move),
             },
             {
                 "name": "Ventas Internas Gravadas sólo por Alícuota General",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "general_aliquot"),
+                "values": self._determinate_resume_books(moves, "general_aliquot", taxes_by_move),
             },
             {
                 "name": "Ventas Internas Gravadas por Alícuota Reducida",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "reduced_aliquot"),
+                "values": self._determinate_resume_books(moves, "reduced_aliquot", taxes_by_move),
             },
             {
                 "name": "Ajustes a los Débitos Fiscales de Periodos Anteriores",
                 "format": "number",
-                "values": self._determinate_resume_books(moves),
+                "values": self._determinate_resume_books(moves, taxes_by_move=taxes_by_move),
             },
             {
                 "name": "Total Ventas y Débitos Fiscales del Periodo",
                 "format": "number",
-                "values": self._determinate_resume_books(moves),
+                "values": self._determinate_resume_books(moves, taxes_by_move=taxes_by_move),
                 "total": True,
             },
         ]
 
     def _resume_purchase_book_fields(self, moves):
+        taxes_by_move = self._get_amount_taxeds_by_move(
+            moves.filtered(lambda m: self.date_from <= m.date <= self.date_to)
+        )
         return [
             {
                 "name": "Compras Internas no Gravadas",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "exempt_aliquot"),
+                "values": self._determinate_resume_books(moves, "exempt_aliquot", taxes_by_move),
             },
             {
                 "name": "Importaciones Gravadas por Alícuota General",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "general_aliquot_international"),
+                "values": self._determinate_resume_books(moves, "general_aliquot_international", taxes_by_move),
             },
             {
                 "name": "Importaciones Gravadas por Alícuota General más Adicional",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "extend_aliquot_international"),
+                "values": self._determinate_resume_books(moves, "extend_aliquot_international", taxes_by_move),
             },
             {
                 "name": "Compras Internas Gravadas sólo por Alícuota General",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "general_aliquot"),
+                "values": self._determinate_resume_books(moves, "general_aliquot", taxes_by_move),
             },
             {
                 "name": "Compras Internas Gravadas por Alícuota General más Adicional",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "extend_aliquot"),
+                "values": self._determinate_resume_books(moves, "extend_aliquot", taxes_by_move),
             },
             {
                 "name": "Compras Internas Gravadas por Alícuota Reducida",
                 "format": "number",
-                "values": self._determinate_resume_books(moves, "reduced_aliquot"),
+                "values": self._determinate_resume_books(moves, "reduced_aliquot", taxes_by_move),
             },
             {
                 "name": "Ajustes a los Créditos Fiscales de Periodos Anteriores",
                 "format": "number",
-                "values": self._determinate_resume_books(moves),
+                "values": self._determinate_resume_books(moves, taxes_by_move=taxes_by_move),
             },
             {
                 "name": "Total Compras y Créditos Fiscales del Periodo",
                 "format": "number",
-                "values": self._determinate_resume_books(moves),
+                "values": self._determinate_resume_books(moves, taxes_by_move=taxes_by_move),
                 "total": True,
             },
         ]
 
     def _determinate_amount_taxeds(self, move):
         is_posted = move.state == "posted"
-        vef_base = self.company_id.currency_id.id == self.env.ref("base.VEF").id
+        # env.ref() runs an exists() query on every call; the xmlid lookup is cached.
+        vef_base = self.company_id.currency_id.id == self.env["ir.model.data"]._xmlid_to_res_id(
+            "base.VEF"
+        )
 
         if not is_posted:
             fields_in_zero = {
@@ -1320,6 +1337,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 
         name_columns = flat_fields 
         total_idx = 0
+        locked_format = workbook.add_format({"locked": True})
 
         for index, field in enumerate(name_columns):
             
@@ -1328,7 +1346,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if field["field"] == "index":
                     worksheet.write(INIT_LINES + index_line, index, index_line + 1)
                 else:
-                    cell_format = cell_formats.get(field.get("format"), workbook.add_format({"locked": True}))
+                    cell_format = cell_formats.get(field.get("format"), locked_format)
                     worksheet.write(
                         INIT_LINES + index_line, index, line.get(field["field"]), cell_format
                     )
@@ -1466,6 +1484,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 
         name_columns = flat_fields 
         total_idx = 0
+        locked_format = workbook.add_format({"locked": True})
 
         for index, field in enumerate(name_columns):
             
@@ -1474,7 +1493,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 if field["field"] == "index":
                     worksheet.write(INIT_LINES + index_line, index, index_line + 1)
                 else:
-                    cell_format = cell_formats.get(field.get("format"), workbook.add_format({"locked": True}))
+                    cell_format = cell_formats.get(field.get("format"), locked_format)
                     worksheet.write(
                         INIT_LINES + index_line, index, line.get(field["field"]), cell_format
                     )
