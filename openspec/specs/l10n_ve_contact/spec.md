@@ -100,6 +100,11 @@ Cuando la **compañía activa del usuario** tiene `validate_partner_name_immutab
 - **WHEN** la compañía activa del usuario tiene `validate_partner_name_immutable` en `False`
 - **THEN** el nombre puede modificarse aunque existan transacciones, incluso si la compañía dueña del contacto sí tiene el control activo
 
+#### Scenario: Usuario con el grupo de edición
+
+- **WHEN** el usuario que guarda pertenece al grupo `l10n_ve_contact.group_edit_partner_name_immutable` (asignado por defecto a `base.user_root` y `base.user_admin`) y renombra un contacto con transacciones
+- **THEN** el nombre se guarda sin lanzar `ValidationError`; los usuarios sin el grupo siguen bloqueados
+
 ### Requirement: País por defecto Venezuela
 
 El campo `country_id` de `res.partner` DEBE (MUST) tener como valor por defecto Venezuela (`base.ve`) y `tracking=True`.
