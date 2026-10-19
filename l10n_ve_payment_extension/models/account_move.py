@@ -198,15 +198,7 @@ class AccountMoveRetention(models.Model):
         retention payment was posted with the retention of the whole invoice in that currency.
         """
         self.ensure_one()
-        if self.company_id.currency_id == self.env.ref("base.VEF"):
-            return
-        for line in self.retention_islr_line_ids.filtered(lambda rl: rl.state != "cancel"):
-            rate = line.foreign_currency_rate or self.foreign_rate
-            if not rate or not line.foreign_invoice_amount:
-                continue
-            invoice_amount = line.foreign_invoice_amount / rate
-            if self.company_id.currency_id.compare_amounts(invoice_amount, line.invoice_amount):
-                line.invoice_amount = invoice_amount
+        self.retention_islr_line_ids._sync_islr_supplier_base_from_foreign()
 
     @api.model
     def _check_retention_vs_move(self, islr_retention_lines):

@@ -401,6 +401,27 @@ class AccountRetentionLine(models.Model):
                 foreign_retention_base - record.related_amount_subtract_fees
             )
 
+    def _sync_islr_supplier_base_from_foreign(self):
+        """
+        Take the taxable base in the company currency of the ISLR supplier lines from their base in
+        the foreign currency (Bs), at the rate of the line.
+
+        When the company currency is not VEF the invoice and the retention forms only show the base
+        in Bs, so a base edited there by the user (e.g. to retain only the part of the invoice
+        subject to ISLR) did not update the hidden base in the company currency, and the retention
+        payment was posted with the retention of the whole invoice in that currency.
+        """
+        for line in self.filtered(lambda rl: rl.state != "cancel"):
+            company_currency = line.company_id.currency_id
+            if company_currency == self.env.ref("base.VEF"):
+                continue
+            rate = line.foreign_currency_rate or line.move_id.foreign_rate
+            if not rate or not line.foreign_invoice_amount:
+                continue
+            invoice_amount = line.foreign_invoice_amount / rate
+            if company_currency.compare_amounts(invoice_amount, line.invoice_amount):
+                line.invoice_amount = invoice_amount
+
     @api.onchange("economic_activity_id", "move_id")
     def onchange_economic_activity_id(self):
         """

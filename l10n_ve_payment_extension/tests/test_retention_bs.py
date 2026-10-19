@@ -665,3 +665,42 @@ class TestAccountRetentionSequence(TransactionCase):
         self.assertAlmostEqual(
             invoice.amount_residual, invoice.amount_total - payment.amount, places=2
         )
+
+    def test_15_islr_supplier_retention_form_base_follows_edited_bs_base_on_usd_company(self):
+        """Regression: same as test_14, but emitting the ISLR retention from
+        the retention form (or re-emitting it after cancelling the one of the
+        invoice). The base in Bs edited on that form must also set the base
+        and the payment in the company currency."""
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+        rate = invoice.foreign_rate
+        self.assertTrue(rate, "Sanity check: the invoice needs a foreign rate.")
+
+        retention = self._create_retention(invoice, "islr")
+        line = retention.retention_line_ids
+        whole_base = invoice.amount_untaxed
+
+        edited_bs_base = whole_base / 4 * rate
+        line.write({"foreign_invoice_amount": edited_bs_base})
+        self.assertAlmostEqual(
+            line.invoice_amount,
+            whole_base,
+            places=2,
+            msg="Sanity check: the USD base starts out of sync with the Bs base.",
+        )
+
+        retention.action_post()
+
+        self.assertAlmostEqual(line.invoice_amount, whole_base / 4, places=2)
+        self.assertAlmostEqual(line.foreign_invoice_amount, edited_bs_base, places=2)
+        payment = retention.payment_ids
+        self.assertEqual(len(payment), 1)
+        self.assertAlmostEqual(
+            payment.amount,
+            float_round(line.foreign_retention_amount / rate, precision_digits=2),
+            places=2,
+            msg="The retention payment in USD must match the retention in Bs at the invoice rate.",
+        )
+        self.assertAlmostEqual(
+            invoice.amount_residual, invoice.amount_total - payment.amount, places=2
+        )

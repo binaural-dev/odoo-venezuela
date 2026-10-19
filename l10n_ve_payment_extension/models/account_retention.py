@@ -716,6 +716,14 @@ class AccountRetention(models.Model):
             move_ids = retention.mapped("retention_line_ids.move_id")
             self.set_voucher_number_in_invoice(move_ids, retention)
 
+            if retention.type_retention == "islr" and retention.type == "in_invoice":
+                # The base in Bs may have been edited on this form (or after setting the retention
+                # back to draft), so the base and the payments in the company currency must follow.
+                retention.retention_line_ids._sync_islr_supplier_base_from_foreign()
+                retention.payment_ids.filtered(
+                    lambda p: p.state == "draft"
+                ).compute_retention_amount_from_retention_lines()
+
             if not retention.payment_ids:
                 payments = retention.create_payment_from_retention_form()
                 retention.payment_ids = payments.ids
