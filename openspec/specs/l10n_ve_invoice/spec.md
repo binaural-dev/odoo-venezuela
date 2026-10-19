@@ -199,12 +199,44 @@ El sistema DEBE (MUST) impedir agregar a facturas de venta más líneas que el m
 
 ### Requirement: Fecha de factura no posterior a la fecha contable en compras
 
-Cuando la compañía activa `block_invoice_display_date_upper_than_date`, el sistema DEBE (MUST) impedir en documentos de compra que `invoice_date_display` sea mayor que la fecha contable `date` (constraint `_check_invoice_date_display_purchases`).
+La configuración `block_invoice_display_date_upper_than_date` (modelo `res.company`, Ajustes de facturación) DEBE (MUST) estar **encendida por defecto** (`default=True`) y en todas las compañías existentes (migración `19.0.1.0.25`). Con ella encendida, el sistema DEBE impedir en documentos de compra (facturas, notas y recibos de proveedor) que `invoice_date_display` sea mayor que la fecha contable `date`, es decir, que la fecha contable sea menor que la fecha de la factura (constraint `_check_invoice_date_display_purchases`).
 
-#### Scenario: Fecha de documento futura
+La opción de apagarla existe solo por criterio del consultor, para ajustes o casos puntuales del cliente; no es un modo de operación normal. Los documentos de venta no se ven afectados.
 
-- **WHEN** se guarda una factura de proveedor con fecha de documento posterior a la fecha contable y el bloqueo activo
+#### Scenario: Fecha contable anterior a la fecha de la factura
+
+- **WHEN** se guarda una factura de proveedor con fecha contable anterior a su fecha de factura y la configuración encendida
 - **THEN** se lanza un error "The invoice date cannot be greater than the accounting date."
+
+#### Scenario: Fecha contable posterior a hoy
+
+- **WHEN** se guarda un documento de compra con fecha contable mayor a la fecha actual (`context_today`) y la configuración encendida
+- **THEN** se lanza un error "The accounting date cannot be greater than today."
+
+#### Scenario: Fecha contable igual o posterior
+
+- **WHEN** se guarda una factura de proveedor con fecha contable igual o posterior a su fecha de factura
+- **THEN** el documento se guarda y se puede confirmar
+
+#### Scenario: Edición posterior de las fechas
+
+- **WHEN** se edita `date` o `invoice_date_display` de una factura de proveedor existente dejando la fecha contable por debajo de la fecha de factura
+- **THEN** se lanza el mismo error (el control es una constraint, no solo un onchange)
+
+#### Scenario: Configuración apagada por el consultor
+
+- **WHEN** la compañía tiene la configuración apagada
+- **THEN** no se valida la relación entre ambas fechas en compras
+
+#### Scenario: Compañía nueva o migrada
+
+- **WHEN** se crea una compañía nueva o se actualiza el módulo a `19.0.1.0.25`
+- **THEN** la configuración queda encendida
+
+#### Scenario: Documentos de venta
+
+- **WHEN** se guarda una factura de cliente con fecha contable anterior a su fecha de factura
+- **THEN** no se lanza este error
 
 ### Requirement: Solo documentos confirmados se imprimen
 
