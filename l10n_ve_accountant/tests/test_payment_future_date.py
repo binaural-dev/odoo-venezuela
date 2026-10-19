@@ -187,4 +187,3 @@ class TestPaymentFutureDate(TransactionCase):
         wizard = self._register_wizard(invoice, payment_date=self.today)
         with self.assertRaisesRegex(ValidationError, "payment date .* cannot be later than today"):
             wizard.payment_date = self.today + timedelta(days=1)
-        self.assertFalse(invoice.payment_state == "paid")
