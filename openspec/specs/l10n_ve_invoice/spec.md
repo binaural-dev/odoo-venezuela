@@ -169,12 +169,31 @@ El campo `next_installment_date` DEBE (MUST) calcularse como el menor `date_matu
 
 ### Requirement: Dominio de los libros fiscales
 
-El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de la compañía con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por correlativo en ventas y por fecha de documento en compras; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
+El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de las compañías del alcance del libro (`report_company_ids`, ver «Alcance del libro con sucursales nativas») con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por correlativo en ventas y por fecha de documento en compras; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
 
 #### Scenario: Generación del libro de ventas
 
 - **WHEN** se genera el libro de ventas de un período
 - **THEN** solo aparecen documentos de venta publicados o anulados con número de control dentro del rango de fechas
+
+### Requirement: Alcance del libro con sucursales nativas
+
+El wizard `wizard.accounting.reports` DEBE (MUST) detectar las sucursales nativas de Odoo (compañías descendientes por `parent_id`) de la compañía activa que comparten su RIF —una sucursal sin RIF propio se considera el mismo contribuyente— y exponer `has_branches`. Cuando `has_branches` es verdadero, el wizard DEBE (MUST) mostrar el campo `branch_scope` con tres valores: `all` (consolidado: la matriz y todas sus sucursales del mismo RIF; valor por defecto), `main` (solo la compañía activa, excluyendo sus sucursales) y `branch` (una sucursal elegida en `branch_company_id`, obligatoria en ese caso y obligatoriamente del mismo RIF). Sin sucursales del mismo RIF el selector DEBE (MUST) permanecer oculto y el libro se genera solo con la compañía activa. Las compañías hijas con RIF distinto NO DEBEN (MUST NOT) incluirse nunca. `report_company_ids` se limita a las compañías a las que el usuario creador del wizard tiene acceso. Los libros consolidados conservan por línea el número de factura y de control de cada sede, ordenan por fecha del documento con una sola numeración de operación y calculan el resumen sobre el total consolidado; el encabezado (razón social, RIF y dirección) y la configuración de alícuotas son los de la compañía del wizard (la matriz), salvo en el alcance `branch`, donde el encabezado es el de la sucursal.
+
+#### Scenario: Libro consolidado desde la matriz
+
+- **WHEN** se genera el libro con la matriz activa y alcance `all`
+- **THEN** aparecen los documentos de la matriz y de sus sucursales del mismo RIF, con sus números de control originales, ordenados por fecha, y las compañías con otro RIF quedan excluidas
+
+#### Scenario: Solo la matriz o una sucursal
+
+- **WHEN** el alcance es `main` o `branch`
+- **THEN** el libro contiene únicamente los documentos de la matriz, o de la sucursal elegida, respectivamente
+
+#### Scenario: Sucursal activa sin hijos
+
+- **WHEN** la compañía activa es una sucursal sin sucursales propias
+- **THEN** el selector de alcance no se muestra y el libro contiene solo sus documentos
 
 ### Requirement: Documento sin fecha bloquea el libro
 
@@ -284,14 +303,121 @@ El módulo DEBE (MUST) instalar dos reglas de registro globales: `invoice_correl
 
 ### Requirement: Descarga del libro por controlador autenticado
 
-Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST) requerir usuario autenticado (`auth="user"`) y devolver el XLSX como adjunto (`Libro_de_venta.xlsx` / `Libro_de_compra.xlsx`), con la hoja protegida contra edición mediante contraseña. La lectura se hace con un entorno elevado a `SUPERUSER_ID`: se toma el último registro `wizard.accounting.reports` creado en la base —sin filtrar por usuario ni por compañía— y se le escribe como `company_id` el parámetro `company_id` de la URL (1 por defecto) antes de generar el libro, de modo que el contenido depende de ese parámetro y no de la compañía activa del usuario.
+Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST) requerir usuario autenticado (`auth="user"`) y devolver el XLSX como adjunto (`Libro_de_venta.xlsx` / `Libro_de_compra.xlsx`), con la hoja protegida contra edición mediante contraseña. La URL recibe el `wizard_id` del wizard que generó el libro; el controlador DEBE (MUST) rechazar con `AccessError` el wizard inexistente, creado por otro usuario o cuya compañía no esté entre las del usuario, y generar el libro con un entorno elevado a `SUPERUSER_ID` limitado a `report_company_ids`. Se conserva el parámetro `company_id` en las llamadas a `generate_sales_book` / `generate_purchases_book` por compatibilidad con los módulos que las extienden.
 
 #### Scenario: Descarga del libro de compras
 
 - **WHEN** un usuario autenticado ejecuta la generación del libro de compras
-- **THEN** el navegador descarga `Libro_de_compra.xlsx` generado a partir del último wizard creado, con la compañía indicada en el parámetro `company_id`
+- **THEN** el navegador descarga `Libro_de_compra.xlsx` generado a partir de su propio wizard (`wizard_id`)
 
-#### Scenario: Parámetro de compañía en la URL
+#### Scenario: Wizard ajeno
 
-- **WHEN** se invoca la ruta con un `company_id` distinto del de la compañía activa
-- **THEN** el libro se genera para la compañía indicada en el parámetro, sin control de acceso adicional por parte del controlador
+- **WHEN** se invoca la ruta con el `wizard_id` de un wizard creado por otro usuario
+- **THEN** el controlador responde con un error de acceso y no genera el libro
+
+### Requirement: Ajuste de descuento fijo en el desglose por línea en moneda de la compañía
+
+Cuando una línea de factura usa descuento fijo (`discount_fixed`, con el campo nativo `discount` forzado a 0), el sistema DEBE (MUST) calcular el precio unitario y el monto de descuento de `company_currency_line_totals` (`l10n_ve_accountant`) usando el porcentaje de descuento equivalente exacto de `discount_fixed`, no el campo nativo `discount` -- que en este caso vale 0 y daría un precio unitario incorrecto.
+
+#### Scenario: Línea con descuento fijo
+
+- **WHEN** una línea de factura usa `discount_fixed` en una compañía configurada con descuento por monto fijo
+- **THEN** `company_currency_line_totals` de esa línea refleja el descuento real aplicado, con `discount_type` en `'amount'`, y el precio unitario reconstruido reproduce el bruto correcto
+
+### Requirement: Ninguna fecha de factura, nota de crédito, nota de débito o recibo puede ser futura al confirmar
+
+El guard `_check_dates_not_in_future` DEBE (MUST) impedir confirmar cualquier documento que no sea un asiento contable puro (`move_type` distinto de `entry` -- en la práctica, `is_invoice(include_receipts=True)`: factura, nota de crédito, nota de débito o recibo, de venta o de compra) cuando `invoice_date_display` sea posterior a la fecha del día (`fields.Date.context_today`) o `invoice_date` (fecha de la tasa) sea posterior a `invoice_date_display`. `invoice_date` PUEDE (MAY) ser anterior a `invoice_date_display`. La fecha contable (`date`) NO se valida en documentos normales: core la permite a futuro a propósito (documentos que se confirman solos en su fecha). El error de validación identifica el campo y la fecha en conflicto. Tickets #15450 y #15594.
+
+Las mismas reglas aplican a ventas y a compras. Aunque ningún ticket lo pida para compras, impedir facturas con fecha futura es el criterio correcto del producto y el comportamiento de validación no debe depender del tipo de documento. Consecuencia conocida: en una factura de proveedor con fecha de documento anterior a hoy hay que bajar la fecha de tasa (por defecto hoy) para poder confirmarla, porque su `onchange` solo sincroniza ventas.
+
+Un asiento contable (`move_type = 'entry'`) queda fuera del alcance: no tiene `invoice_date` ni `invoice_date_display` con sentido fiscal.
+
+El guard se ejecuta en `action_post` y también antes de los dos caminos de la interfaz que confirman con `_post` sin pasar por `action_post`: la acción "Confirm Entries" de lista y kanban (`action_validate_moves_with_confirmation`) y el botón "Confirm" del asistente `validate.account.move` (incluida la casilla "Force"). Sin ese cubrimiento, una factura con `invoice_date_display` de hoy e `invoice_date` de mañana se confirmaría desde la lista sin ningún aviso, porque el núcleo solo pide confirmación cuando `date` es futura. `_post` en sí no se bloquea: los llamadores internos directos (donación, reverso de IGTF, cron) lo hacen de forma intencional.
+
+La validación no es un `@api.constrains` de guardado para las fechas futuras: un borrador con alguna de esas fechas en el futuro SÍ se puede crear y guardar; solo se bloquea confirmarlo mientras siga así. Sin zona horaria (cron o usuarios de integración sin `tz`), `context_today` usa UTC; entre las 20:00 y las 24:00 de Caracas puede aceptarse un documento fechado "mañana" local (limitación conocida).
+
+Una nota de débito (`account.debit.note`) no es un modelo distinto: es un `account.move` con `debit_origin_id`, así que pasa por el mismo guard sin lógica adicional.
+
+Notas (`reversed_entry_id` o `debit_origin_id`), ticket #15594:
+- `invoice_date_display` no puede ser anterior al `invoice_date_display` del origen (con `date` como resguardo), ni posterior a hoy: se valida en los wizards, en el guard y al confirmar desde "Confirm Entries".
+- `invoice_date` (tasa) DEBE ser igual al del origen al confirmar, y es de solo lectura en el formulario (ventas y compras). No aplica a las notas automáticas de diferencial cambiario, cuya tasa es la del pago (`_l10n_ve_allows_future_date()`).
+- Los mensajes del guard nombran el documento, porque "Confirm Entries" valida todo el lote y lo aborta si un borrador no cumple.
+- La fecha contable (`date`) de una nota NO puede ser anterior a su propio `invoice_date_display` (constraint de guardado `_check_note_accounting_date`), de modo que editarla directamente (multi-edición de la lista, edición rápida o RPC) no permite esquivar el rango del origen. `date` posterior es válido (fecha de bloqueo).
+
+Exención: la ND/NC de diferencial cambiario (`l10n_ve_exchange_difference`) toma la fecha del pago y la ND de IGTF se confirma desde el flujo de pago; ambas se confirman con el contexto `l10n_ve_skip_future_date_check`. El contexto por sí solo no basta (se puede enviar por RPC): el guard solo lo respeta si `_l10n_ve_allows_future_date()` devuelve `True` para el documento. Ese método devuelve `False` por defecto y lo sobreescriben `l10n_ve_exchange_difference` (notas con `l10n_ve_exchange_diff_entry` y `l10n_ve_exchange_payment_id`) y `l10n_ve_igtf_note_debit` (ND con `l10n_ve_igtf_note_debit_origin`, `origin_payment_to_pay_igtf` y `debit_origin_id`). Esas marcas no se exponen en ningún formulario ni las escribe un `onchange`. La fecha de la ND de IGTF no cambia (hoy; su cálculo es en VEF).
+
+#### Scenario: Factura de venta con invoice_date_display posterior a hoy
+
+- **WHEN** se confirma una factura de venta cuyo `invoice_date_display` es posterior a hoy
+- **THEN** se lanza un error de validación indicando que esa fecha no puede ser posterior a hoy
+
+#### Scenario: Nota de crédito con invoice_date_display futuro
+
+- **WHEN** se confirma una nota de crédito de venta cuyo `invoice_date_display` es posterior a hoy
+- **THEN** se lanza un error de validación
+
+#### Scenario: Fecha contable futura no se bloquea
+
+- **WHEN** se confirma una factura de proveedor cuyo `date` (fecha contable) es posterior a hoy y `invoice_date_display` es hoy o anterior
+- **THEN** la confirmación procede con normalidad
+
+#### Scenario: Recibo de venta o de compra con fecha futura
+
+- **WHEN** se confirma un recibo (`out_receipt`/`in_receipt`) cuyo `invoice_date_display` es posterior a hoy
+- **THEN** se lanza el mismo error de validación que en una factura
+
+#### Scenario: Nota de débito hereda el guard de su action_post
+
+- **WHEN** se confirma una nota de débito (venta o compra) con `invoice_date_display` posterior a hoy
+- **THEN** se lanza el mismo error de validación, sin código específico para notas de débito
+
+#### Scenario: Un asiento contable puro no se valida
+
+- **WHEN** se confirma un `account.move` con `move_type = 'entry'` y `date` posterior a hoy
+- **THEN** la confirmación procede con normalidad; el guard no aplica a asientos
+
+#### Scenario: Guardar un borrador con fecha futura no se bloquea
+
+- **WHEN** se crea o guarda en borrador una factura, nota de crédito, nota de débito o recibo con alguna fecha futura, sin confirmarla
+- **THEN** el guardado se permite; el bloqueo solo aplica al llamar `action_post`
+
+#### Scenario: Fecha de hoy confirma sin error
+
+- **WHEN** se confirma un documento con `invoice_date_display` hoy o anterior e `invoice_date` no posterior a `invoice_date_display`
+- **THEN** la confirmación procede con normalidad
+
+#### Scenario: Nota confirmada con fecha anterior a su origen
+
+- **WHEN** se edita en borrador una nota de crédito o de débito con `invoice_date_display` anterior al del origen y se confirma
+- **THEN** se lanza un error de validación indicando la fecha del documento original
+
+#### Scenario: invoice_date posterior a invoice_date_display
+
+- **WHEN** se confirma un documento cuyo `invoice_date` es posterior a su `invoice_date_display`
+- **THEN** se lanza un error de validación
+
+#### Scenario: El contexto de exención no basta
+
+- **WHEN** se confirma una factura común con fecha futura y el contexto `l10n_ve_skip_future_date_check=True`
+- **THEN** el guard sigue bloqueándola, porque `_l10n_ve_allows_future_date()` es `False`
+
+#### Scenario: Nota automática con exención
+
+- **WHEN** se confirma una ND/NC de diferencial cambiario o una ND de IGTF con el contexto de exención
+- **THEN** el guard no la bloquea
+
+#### Scenario: Confirm Entries no esquiva el guard
+
+- **WHEN** se confirma desde la lista, el kanban o el asistente "Confirm Entries" (con o sin "Force") un borrador cuya fecha no cumple las reglas del guard
+- **THEN** se lanza el mismo error de validación y el documento sigue en borrador
+
+#### Scenario: Tasa de una nota distinta a la de su origen
+
+- **WHEN** se confirma una nota de crédito o de débito cuyo `invoice_date` (tasa) es distinto al de su documento origen
+- **THEN** se lanza un error de validación, también en notas de proveedor
+
+#### Scenario: Fecha contable de una nota editada antes de su fecha de documento
+
+- **WHEN** se edita la fecha contable (`date`) de una nota para que sea anterior a su `invoice_date_display` y se guarda
+- **THEN** se lanza un error de validación y no se guarda
+
