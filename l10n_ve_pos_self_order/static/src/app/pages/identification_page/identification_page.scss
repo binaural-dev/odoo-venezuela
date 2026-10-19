@@ -13,6 +13,18 @@
         font-weight: 600;
     }
 
+    // Same treatment as .o_ve_prefix_select, a bit wider: the phone operator
+    // code is 4 digits ("0414") instead of a single VAT-prefix letter.
+    .o_ve_phone_code_select {
+        width: 8.5rem;
+        padding-left: 1rem;
+        padding-right: 2.25rem;
+        text-align: center;
+        text-align-last: center;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+
     // El borde por defecto de Bootstrap casi no se distingue sobre el fondo
     // claro del kiosko; lo reforzamos para que los campos se lean como cajas.
     .form-control-lg,

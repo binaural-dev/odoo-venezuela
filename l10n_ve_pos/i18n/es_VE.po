@@ -16,6 +16,12 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "%(journal)s: suspense account"
+msgstr "%(journal)s: cuenta transitoria"
+
+#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.table_payment_report_pos_general
 msgid "&gt;$"
 msgstr ""
@@ -907,6 +913,18 @@ msgstr "La categoría %s no pertenece a la compañía actual."
 
 #. module: l10n_ve_pos
 #. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid ""
+"The cross move of the payment method %(method)s cannot be created because these accounts are not set:\n"
+"%(accounts)s\n"
+"Set them in the journal configuration and try again."
+msgstr ""
+"No se puede crear el asiento de cruce del método de pago %(method)s porque faltan estas cuentas:\n"
+"%(accounts)s\n"
+"Configúrelas en el diario y vuelva a intentarlo."
+
+#. module: l10n_ve_pos
+#. odoo-python
 #: code:addons/l10n_ve_pos/controllers/controller.py:0
 msgid "The product's '%s' You do not have enough stock in the warehouse %s"
 msgstr "El producto '%s' no tiene suficiente stock en el almacén '%s'"
@@ -921,6 +939,18 @@ msgstr "Los productos '%s' no están disponibles en el almacén %s"
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment__foreign_rate
 msgid "The rate that is gonna be always shown to the user."
 msgstr "La tarifa que siempre se mostrará al usuario."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_config.py:0
+msgid ""
+"The session cannot be opened: the cross move of these payment methods needs accounts that are not set:\n"
+"%(accounts)s\n"
+"Set them in Accounting > Configuration > Journals."
+msgstr ""
+"No se puede abrir la sesión: el asiento de cruce de estos métodos de pago necesita cuentas que no están configuradas:\n"
+"%(accounts)s\n"
+"Configúrelas en Contabilidad > Configuración > Diarios."
 
 #. module: l10n_ve_pos
 #. odoo-python
@@ -1003,6 +1033,24 @@ msgid ""
 msgstr ""
 "No puede romper conciliación de un pago vinculado a una sesión de POS que "
 "aún está abierta"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "an account of the move lines"
+msgstr "una cuenta de las líneas del asiento"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "incoming payments account"
+msgstr "cuenta de pagos entrantes"
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_session.py:0
+msgid "outgoing payments account"
+msgstr "cuenta de pagos salientes"
 
 #. module: l10n_ve_pos
 #: model:ir.model,name:l10n_ve_pos.model_report_l10n_ve_pos_payment_report_pos

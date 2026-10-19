@@ -1,7 +1,7 @@
 from odoo import models, fields, api, _, Command
 from odoo.tools import float_is_zero, float_compare
 from odoo.osv.expression import AND, OR
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -146,13 +146,14 @@ class PosSession(models.Model):
         between the two journals' suspense accounts.
         """
         for session in self:
-            payments = session.order_ids.payment_ids.filtered(
-                lambda p: session._is_cross_move_eligible(
-                    p.payment_method_id,
-                    use_suspense=session._cross_move_uses_suspense(
-                        p.payment_method_id
-                    ),
+            # Per method, not per payment: an ineligible method logs why once.
+            eligible_methods = session.order_ids.payment_ids.payment_method_id.filtered(
+                lambda pm: session._is_cross_move_eligible(
+                    pm, use_suspense=session._cross_move_uses_suspense(pm)
                 )
+            )
+            payments = session.order_ids.payment_ids.filtered(
+                lambda p: p.payment_method_id in eligible_methods
             )
             for payment_method in payments.payment_method_id:
                 method_payments = payments.filtered(
@@ -241,24 +242,84 @@ class PosSession(models.Model):
         recordset, the line is built with ``account_id = False`` and the
         insert violates ``account_move_line_check_accountable_required_fields``
         — inside ``action_pos_session_close``, so it would take the session
-        close down with it. Hence the explicit check on the destination too.
-        (The ``use_suspense=False`` branch has the same latent hole on
-        ``cross_journal``'s payment method lines; left as is, out of the scope
-        of this change.)
+        close down with it. Hence the explicit check on the destination too;
+        the skip is logged, since the session can no longer be opened with
+        those accounts missing (``pos.config._check_cross_move_accounts``)
+        and only a session opened before they were cleared gets here.
+
+        The ``use_suspense=False`` branch does not skip on a missing
+        ``cross_journal`` payment method line account: opening the session
+        requires it from every module that crosses that way (the bank sales
+        here, by method type — see ``_get_cross_move_missing_accounts`` —, the
+        foreign cash drawer difference in ``binaural_pos_close``), and
+        ``_create_cross_move_for`` raises a readable error for a session
+        created before it was cleared.
         """
-        return bool(
+        if not (
             payment_method.is_foreign_currency
             and payment_method.type != "pay_later"
             and payment_method.cross_account_journal
             and payment_method.cross_journal
-            and self._get_cross_transitory_account(payment_method, use_suspense=use_suspense)
-            and (
-                not use_suspense
-                or self._get_cross_real_account(
-                    payment_method, outbound=False, use_suspense=True
-                )
-            )
+        ):
+            return False
+        if not use_suspense:
+            return bool(self._get_cross_transitory_account(payment_method))
+        return self._cross_move_suspense_accounts_ready(payment_method)
+
+    def _cross_move_suspense_accounts_ready(self, payment_method):
+        """Whether both suspense accounts of a ``use_suspense=True`` cross move
+        of ``payment_method`` are set; if not, logs the skip and returns False.
+        """
+        if self._get_cross_transitory_account(
+            payment_method, use_suspense=True
+        ) and self._get_cross_real_account(payment_method, outbound=False, use_suspense=True):
+            return True
+        _logger.warning(
+            "Cross move of payment method %s skipped in session %s: %s",
+            payment_method.name,
+            self.name,
+            ", ".join(self._get_cross_move_missing_accounts(payment_method)),
         )
+        return False
+
+    def _get_cross_move_missing_accounts(self, payment_method):
+        """Describe each account the cross move of ``payment_method`` needs
+        and is not set, one string per account (empty list: nothing missing).
+
+        Only what this module's own cross move uses, by method type (see
+        ``_cross_move_uses_suspense``): a bank sale lands on the
+        ``cross_journal``'s payment method line accounts, a cash sale crosses
+        between the two journals' suspense accounts. Other ``use_suspense=False``
+        callers on a cash method (``binaural_pos_close``'s opening/closing
+        differences) add the payment method line accounts themselves.
+        """
+        if self._cross_move_uses_suspense(payment_method):
+            return self._get_cross_move_missing_suspense_accounts(payment_method)
+        return self._get_cross_move_missing_payment_accounts(payment_method)
+
+    def _get_cross_move_missing_payment_accounts(self, payment_method):
+        """The ``cross_journal``'s incoming/outgoing payment method line
+        accounts that are not set (``_get_cross_real_account`` with
+        ``use_suspense=False``). ``l10n_ve_accountant`` only requires them on
+        bank journals, and Odoo creates cash journals without them."""
+        journal = payment_method.cross_journal.display_name
+        return [
+            f"{journal}: {label}"
+            for outbound, label in (
+                (False, _("incoming payments account")),
+                (True, _("outgoing payments account")),
+            )
+            if not self._get_cross_real_account(payment_method, outbound=outbound)
+        ]
+
+    def _get_cross_move_missing_suspense_accounts(self, payment_method):
+        """The ``suspense_account_id`` of the method's journal and of the
+        ``cross_journal`` that is not set (``use_suspense=True``)."""
+        return [
+            _("%(journal)s: suspense account", journal=journal.display_name)
+            for journal in payment_method.journal_id | payment_method.cross_journal
+            if not journal.suspense_account_id
+        ]
 
     def _get_cross_transitory_account(self, payment_method, use_suspense=False):
         """Return the account the cross move drains.
@@ -567,6 +628,20 @@ class PosSession(models.Model):
             payment_method, call_amount, call_foreign_amount, foreign_rate, partner,
             use_suspense=use_suspense,
         )
+        if not all(command[2]["account_id"] for command in line_vals):
+            raise UserError(
+                _(
+                    "The cross move of the payment method %(method)s cannot be created "
+                    "because these accounts are not set:\n%(accounts)s\n"
+                    "Set them in the journal configuration and try again.",
+                    method=payment_method.name,
+                    accounts="\n".join(
+                        f"- {account}"
+                        for account in self._get_cross_move_missing_accounts(payment_method)
+                        or [_("an account of the move lines")]
+                    ),
+                )
+            )
         return self._create_cross_move(
             payment_method, line_vals, foreign_rate, date, ref, partner
         )
@@ -675,12 +750,12 @@ class PosSession(models.Model):
         Migration contract (spec ``pos-cross-account-move/spec.md``): the
         pre-C2 override accessed ``res.move_id.payment_id``, which raised
         ``AttributeError`` in Odoo 19 (renamed to ``origin_payment_id`` —
-        see the same fix already applied in ``_create_split_account_payment``).
+        see the same fix already applied in ``_create_split_account_payments``).
 
         Native Odoo 19 ``_create_combine_account_payment`` returns the
         receivable ``account.move.line`` on the ``account.payment``'s own
         move (see ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1094``),
-        the same contract as ``_create_split_account_payment``.
+        the same contract as the core ``_create_split_account_payment``.
         """
         res = super(PosSession, self.with_context(from_pos=True))._create_combine_account_payment(
             payment_method, amounts, diff_amount
@@ -704,58 +779,55 @@ class PosSession(models.Model):
                 line.foreign_debit = abs(amounts["foreign_amount"])
         return res
 
-    def _create_split_account_payment(self, payment, amounts):
-        """Odoo 19-compatible override.
+    def _create_split_account_payments(self, payment_amounts_list):
+        """Venezuelan rate and alternate amounts on the ``account.payment``
+        of each split bank payment.
 
-        Migration contract (Slice C2.1, spec
-        ``pos-odoo19-session-accounting/spec.md``):
+        Odoo 19 creates the split payments in batch: ``_create_bank_payment_moves``
+        calls this method directly and the core ``_create_split_account_payment``
+        only delegates to it, so an override of the singular method never runs
+        when a session is closed (tarea 83148, H15).
 
-        - Odoo 19 super returns an ``account.move.line`` recordset (the
-          receivable line on the ``account.payment.move_id``), NOT an
-          ``account.payment`` — see
-          ``/home/binaural19/odoo/addons/point_of_sale/models/pos_session.py:1170``.
-        - When the payment method has no journal, super short-circuits
-          and returns ``self.env['account.move.line']`` (empty recordset)
-          — see native line 1147-1148. We MUST handle the empty case
-          without touching non-existent records.
-        - The pre-C2 override accessed ``res.move_id.payment_id`` which
-          raised ``AttributeError`` in Odoo 19 (the field on
-          ``account.move`` was renamed to ``origin_payment_id`` —
-          ``/home/binaural19/odoo/addons/account/models/account_move.py:206``).
-
-        The Venezuelan write contract is preserved: the originating
-        ``account.payment`` receives ``foreign_rate`` and
-        ``foreign_inverse_rate``, and every line of its move receives
-        the matching ``foreign_debit`` / ``foreign_credit``.
+        Each payment move gets the rate the register charged with
+        (``pos.payment.foreign_rate``, same convention as the other POS
+        payment moves) and, on every line, the alternate amount the register
+        charged (``foreign_amount``). Otherwise ``l10n_ve_accountant`` values
+        the liquidity line at the rate of the move date: when the rate changed
+        between the sale and the closing, the move no longer balances in the
+        alternate currency (receivable 12.45 against liquidity 11.76).
         """
-        receivable_lines = super(
+        payment_to_line = super(
             PosSession, self.with_context(from_pos=True)
-        )._create_split_account_payment(payment, amounts)
+        )._create_split_account_payments(payment_amounts_list)
 
-        if not receivable_lines:
-            # Odoo 19 early-return: payment method without journal.
-            return receivable_lines
-
-        payment_move = receivable_lines.move_id
-        account_payment = payment_move.origin_payment_id
-        if account_payment:
-            account_payment.write(
-                {
-                    "foreign_rate": self.config_id.foreign_rate,
-                    "foreign_inverse_rate": self.config_id.foreign_inverse_rate,
-                }
+        for payment, receivable_lines in payment_to_line.items():
+            payment_move = receivable_lines.move_id
+            if not payment_move:
+                continue
+            rate_vals = payment.pos_order_id.config_id._get_move_foreign_rate_vals(
+                payment.foreign_rate
             )
+            account_payment = payment_move.origin_payment_id
+            if account_payment and rate_vals:
+                account_payment.write(
+                    {
+                        "foreign_rate": rate_vals["foreign_rate"],
+                        "foreign_inverse_rate": rate_vals["foreign_inverse_rate"],
+                    }
+                )
+            if rate_vals:
+                payment_move.write(rate_vals)
 
-        foreign_amount = abs(payment.foreign_amount)
-        for line in payment_move.line_ids:
-            if line.credit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_credit = foreign_amount
-            if line.debit > 0:
-                line.not_foreign_recalculate = True
-                line.foreign_debit = foreign_amount
-
-        return receivable_lines
+            foreign_amount = abs(payment.foreign_amount)
+            for line in payment_move.line_ids:
+                line.write(
+                    {
+                        "not_foreign_recalculate": True,
+                        "foreign_debit": foreign_amount if line.debit > 0 else 0.0,
+                        "foreign_credit": foreign_amount if line.credit > 0 else 0.0,
+                    }
+                )
+        return payment_to_line
 
     def _create_account_move(
         self, balancing_account=False, amount_to_balance=0, bank_payment_method_diffs=None
@@ -924,7 +996,7 @@ class PosSession(models.Model):
           the session-side receivable line (created here) plus the
           receivable line on the ``account.payment.move_id`` (created
           by ``_create_combine_account_payment`` /
-          ``_create_split_account_payment``).
+          ``_create_split_account_payments``).
 
         For every receivable line in both buckets we set the matching
         Venezuelan ``foreign_debit`` / ``foreign_credit`` and mark it
@@ -1003,6 +1075,18 @@ class PosSession(models.Model):
         was then never set, so the line fell back to the base compute, which
         ran once at creation time (before the move's ``foreign_inverse_rate``
         had been assigned) and got stuck at 0.
+
+        The counterpart is only mirrored and locked (``not_foreign_recalculate``)
+        on a bank-statement move — the cash statement the closing books per
+        cash method, whose only non-receivable line is the cash/liquidity
+        leg. Mirroring without locking let ``l10n_ve_accountant`` recompute
+        that leg at the rate of the move date (the closing day), while the
+        receivable leg kept the sale-time ``foreign_amount``: when the BCV
+        rate changed between the sale and the closing, the statement ended
+        up with foreign debit != foreign credit (ticket #15169). On any other
+        move (the session's own closing move) the first non-receivable line
+        is a sales or tax line of non-invoiced orders, not a counterpart:
+        it is left alone so the base compute keeps valuing it.
         """
         rounding = self.currency_id.rounding
         matched_credit = abs(line.credit) > 0 and float_compare(
@@ -1020,13 +1104,16 @@ class PosSession(models.Model):
         if matched_debit:
             line.foreign_debit = abs(foreign_amount)
 
+        if not line.move_id.statement_line_id:
+            return
         other_lines = line.move_id.line_ids.filtered(
             lambda x: x != line and x.account_id.account_type != "asset_receivable"
         )
         if not other_lines:
             return
         other_line = other_lines[0]
-        if matched_credit and other_line.foreign_debit != line.foreign_credit:
+        other_line.not_foreign_recalculate = True
+        if matched_credit:
             other_line.foreign_debit = abs(line.foreign_credit)
-        if matched_debit and other_line.foreign_credit != line.foreign_debit:
+        if matched_debit:
             other_line.foreign_credit = abs(line.foreign_debit)

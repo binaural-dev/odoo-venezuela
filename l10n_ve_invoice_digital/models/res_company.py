@@ -42,6 +42,13 @@ class ResCompany(models.Model):
              "(VES or USD line prices + dual totals if USD selected). An additional "
              "checkbox + currency selector will appear on each invoice."
     )
+    notify_email_tfhka = fields.Boolean(
+        default=True,
+        string="Email sending from The Factory HKA",
+        help="When enabled, The Factory HKA will send the digitalized "
+        "document to the customer by email. When disabled, the email will "
+        "be sent directly from Odoo.",
+    )
     mix_invoicing_tfhka = fields.Boolean(default=True, string="Allow Mixed Invoicing")
     mix_invoicing_type_tfhka = fields.Selection(
         [
@@ -50,6 +57,29 @@ class ResCompany(models.Model):
         ],
         default="free_form",
     )
+    # Habilita la acción "Generate TFHKA Digitalization Batch" en la lista de
+    # facturas. Apagado por defecto: sin esto, tfhka.batch.service.create_batch
+    # rechaza la operación aunque el usuario tenga el botón/acción visible.
+    # Depende de digitalization_with_payment_tfhka: el lote encola directo
+    # (sin pasar por el filtro "not payment-driven" de
+    # account.move._tfhka_enqueue_eligible_for_digitalization), así que solo
+    # tiene sentido habilitarlo cuando ese es el modo de la compañía. Esa
+    # dependencia se aplica en res.config.settings (onchange + set_values,
+    # mismo patrón que dispatch_guide_digital_tfhka) y se revalida en
+    # tfhka.batch.service.create_batch -- NO con un @api.constrains aquí: los
+    # campos `related` del wizard de Ajustes se escriben uno por uno (cada
+    # inverse dispara su propio write()), así que una constraint cruzada entre
+    # dos de ellos ve estados transitorios inconsistentes y aborta el guardado
+    # incluso cuando el resultado final sería válido.
+    batch_invoicing_tfhka = fields.Boolean(
+        string="Batch Invoicing",
+        default=False,
+        help="Allows grouping several posted invoices into a TFHKA digitalization "
+             "batch: reserves a numbering range via /AsignarNumeraciones and marks "
+             "them with esLote before they go through the digitalization queue. "
+             "Requires 'Digital invoicing with payment registration' to be enabled.",
+    )
+
 
     @api.onchange("digitalization_with_payment_tfhka")
     def _onchange_digitalization_with_payment_tfhka(self):

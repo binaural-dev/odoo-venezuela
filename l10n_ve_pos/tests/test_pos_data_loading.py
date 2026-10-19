@@ -1,3 +1,4 @@
+from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -87,7 +88,10 @@ class TestPosDataLoading(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # ``l10n_ve_stock`` rejects creating a product in a company other than
+        # ``env.company`` (no superuser bypass), so create it from the test
+        # company.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "Test Product VE",
                 "lst_price": 10.0,
@@ -267,23 +271,39 @@ class TestPosDataLoading(TransactionCase):
         with self.assertRaises(UserError):
             guarded_session.delete_opening_control_session()
 
-    def test_lst_price_converted_when_currency_differs(self):
-        """Triangulation: when the PoS config currency is the foreign
-        currency and the company currency is USD, ``lst_price`` must be
-        reported in the PoS currency (post-conversion), not the company
-        currency. This is the Odoo 17 ``_process_pos_ui_product_product``
-        contract preserved through Odoo 19's ``_load_pos_data_read``.
+    def test_lst_price_converted_once_when_currency_differs(self):
+        """With the PoS in a currency other than the company's, ``lst_price``
+        reaches the PoS converted ONCE to the PoS currency (the core's
+        ``_convert_pos_data_currency``). ``l10n_ve_pos`` used to convert it
+        again: 10 USD at 36.5 arrived as 13,322.50 VEF instead of 365.00.
         """
-        # Sanity: the session is wired with the foreign currency as the
-        # PoS currency, so any price must already be in VEF in the payload.
-        data = self._load()
+        today = fields.Date.context_today(self.env.user)
+        self.env["res.currency.rate"].search(
+            [
+                ("currency_id", "=", self.foreign_currency.id),
+                ("company_id", "=", self.company.id),
+                ("name", "=", today),
+            ]
+        ).unlink()
+        self.env["res.currency.rate"].create(
+            {
+                "currency_id": self.foreign_currency.id,
+                "company_id": self.company.id,
+                "name": today,
+                "rate": 36.5,
+            }
+        )
+        expected = self.company.currency_id._convert(
+            self.product.lst_price, self.foreign_currency, self.company, today
+        )
+        self.assertAlmostEqual(expected, 365.0)
+
+        # Con la compañía de la sesión, como el PdV: el core convierte con
+        # ``self.env.company`` y la tasa de 36,5 es de esta compañía.
+        data = self.session.with_company(self.company).load_data([])
         products = {p["id"]: p for p in data["product.product"]}
         self.assertIn(self.product.id, products)
-        self.assertGreater(
-            products[self.product.id]["lst_price"],
-            0.0,
-            "lst_price must be a positive number after currency conversion",
-        )
+        self.assertAlmostEqual(products[self.product.id]["lst_price"], expected)
 
     def test_product_category_parent_resolved(self):
         """Triangulation: the legacy ``_get_pos_ui_product_category``

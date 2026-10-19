@@ -900,6 +900,57 @@ msgid "Discount field shown on invoice lines: percentage or fixed amount."
 msgstr "Campo de descuento mostrado en las líneas de factura: porcentaje o importe fijo."
 
 #. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"%(document)s: %(field)s (%(value)s) cannot be later than today (%(today)s) "
+"to confirm this document."
+msgstr ""
+"%(document)s: %(field)s (%(value)s) no puede ser posterior a hoy "
+"(%(today)s) para confirmar este documento."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"%(document)s: %(field)s (%(value)s) cannot be later than %(limit_field)s "
+"(%(limit)s) to confirm this document."
+msgstr ""
+"%(document)s: %(field)s (%(value)s) no puede ser posterior a "
+"%(limit_field)s (%(limit)s) para confirmar este documento."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_debit_note.py:0
+msgid ""
+"A debit note can only be issued against a single document. "
+"Please select one document at a time."
+msgstr ""
+"Una nota de débito solo puede emitirse contra un único documento. "
+"Seleccione un documento a la vez."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"%(document)s: %(field)s (%(value)s) must be equal to the one of the "
+"original document %(origin)s (%(origin_date)s)."
+msgstr ""
+"%(document)s: %(field)s (%(value)s) debe ser igual a la del documento "
+"original %(origin)s (%(origin_date)s)."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid ""
+"The accounting date (%(date)s) of a note cannot be earlier than its "
+"%(field)s (%(value)s)."
+msgstr ""
+"La fecha contable (%(date)s) de una nota no puede ser anterior a su "
+"%(field)s (%(value)s)."
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
 msgid "Free Form"
 msgstr "Forma Libre"
+

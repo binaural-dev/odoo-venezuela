@@ -48,7 +48,9 @@ anterior sin cambios.
 #### Scenario: foreign_rate enviado al servidor es positivo y consistente
 
 - **GIVEN** una orden de reembolso con tasa exacta conocida
-- **WHEN** se serializa el pago (`serializeForORM`)
+- **WHEN** se serializa la orden con sus pagos (`PosOrder.serializeForORM`,
+  que pone la tasa en los comandos de `payment_ids`; ver
+  `l10n-ve-pos-payment-foreign-rate`)
 - **THEN** `foreign_rate` es `1 / tasa_exacta` (positivo), no un multiplicador
   negativo derivado del descuadre de signo entre el total foráneo (sin signo)
   y `totalDue` (negativo)
@@ -57,7 +59,7 @@ anterior sin cambios.
 
 - **GIVEN** una orden de venta, o un reembolso cuya orden original no tuvo
   pagos con método `is_foreign_currency` (tasa exacta = 0)
-- **WHEN** se agrega o edita una línea de pago foránea, o se serializa el pago
+- **WHEN** se agrega o edita una línea de pago foránea, o se serializa la orden
 - **THEN** todas las conversiones y la `foreign_rate` enviada conservan el
   comportamiento anterior (tasa viva en ventas; proporción por líneas del
   reembolso como respaldo), sin cambios

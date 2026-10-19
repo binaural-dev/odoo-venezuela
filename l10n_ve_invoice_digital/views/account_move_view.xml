@@ -61,6 +61,20 @@
                 <field name="show_payment_box" invisible="not digitalization_with_payment_active or not journal_digital_invoice"
                        readonly="is_digitalized"/>
             </xpath>
+            <!-- Serie de proveedor (ticket helpdesk #15078): se agrega justo debajo
+                 del numero grande de la factura (el "name"), dentro del mismo
+                 div "oe_title", en una fila compacta en linea (d-flex) para no
+                 competir en tamaño con el h1 ni descuadrar el titulo. Solo en
+                 facturas/notas de credito de proveedor, y solo si TFHKA esta activo
+                 en la compañia. No obligatorio: no todos los proveedores usan serie. -->
+            <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
+                <field name="invoice_digital_tfhka_active" invisible="1"/>
+                <div class="d-flex align-items-center"
+                     invisible="move_type not in ('in_invoice', 'in_refund') or not invoice_digital_tfhka_active">
+                    <label for="vendor_series_tfhka" string="Series" class="oe_inline me-2"/>
+                    <field name="vendor_series_tfhka" nolabel="1" class="oe_inline" readonly="state != 'draft'"/>
+                </div>
+            </xpath>
         </field>
     </record>
 
@@ -80,8 +94,18 @@
                        decoration-muted="tfhka_digitalization_state == 'not_applicable'"
                        decoration-primary="tfhka_digitalization_state == 'none'"
                        optional="show"/>
+                <field name="tfhka_batch_ref" string="TFHKA Batch" optional="hide"/>
             </xpath>
         </field>
+    </record>
+
+    <record id="action_server_tfhka_create_batch" model="ir.actions.server">
+        <field name="name">Generate TFHKA Digitalization Batch</field>
+        <field name="model_id" ref="account.model_account_move"/>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+        <field name="binding_view_types">list</field>
+        <field name="state">code</field>
+        <field name="code">action = records.action_tfhka_create_batch()</field>
     </record>
 
     <record id="view_account_invoice_filter_inherit_tfhka_digitalization" model="ir.ui.view">

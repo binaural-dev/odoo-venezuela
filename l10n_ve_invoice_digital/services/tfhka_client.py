@@ -13,7 +13,9 @@ TFHKA_ENDPOINTS = {
     "emision": "/Emision",
     "ultimo_documento": "/UltimoDocumento",
     "consulta_numeraciones": "/ConsultaNumeraciones",
+    "asignar_numeraciones": "/AsignarNumeraciones",
     "anular": "/Anular",
+    "descarga_archivo": "/DescargaArchivo",
 }
 
 # Timeout (segundos) para las llamadas HTTP a TFHKA.
@@ -42,6 +44,18 @@ class TfhkaBusinessError(UserError):
     def __init__(self, message, tfhka_code=None):
         super().__init__(message)
         self.tfhka_code = tfhka_code
+
+
+class TfhkaConnectionError(UserError):
+    """UserError levantado cuando ni siquiera se pudo contactar al servidor
+    de TFHKA (timeout, DNS, conexión rechazada, ...) -- un fallo de
+    transporte, no una respuesta (de negocio o de validación) de TFHKA.
+
+    A diferencia de ``TfhkaBusinessError``/``TfhkaDataError``, esto es, por
+    definición, transitorio: ``tfhka.digitalization.mixin`` lo reintenta
+    solo (vuelve el documento a 'queued' en vez de 'error') en vez de cortar
+    el encolado y esperar una intervención humana -- ver HD-15695.
+    """
 
 
 class TfhkaApiClient(models.AbstractModel):
@@ -199,7 +213,7 @@ class TfhkaApiClient(models.AbstractModel):
         except requests.exceptions.RequestException as e:
             _logger.error("Error connecting to the API: %s", e)
             self._log_call(company, endpoint, payload, origin, None, str(e), False)
-            raise UserError(_("Error connecting to the API: %(error)s") % {"error": e})
+            raise TfhkaConnectionError(_("Error connecting to the API: %(error)s") % {"error": e})
 
     # ------------------------------------------------------------------
     # Endpoints
@@ -212,6 +226,17 @@ class TfhkaApiClient(models.AbstractModel):
     def annul(self, company, payload, origin=None):
         """POST /Anular. Anula un documento digital (serie/tipo/numero + motivo)."""
         return self._request(company, "anular", payload, origin=origin)
+
+    def download_document(self, company, document_type, document_number, series="", origin=None):
+        """POST /DescargaArchivo. Devuelve el PDF ya digitalizado en base64
+        (campo ``archivo`` de la respuesta), para adjuntarlo a un correo sin
+        guardarlo en el documento de origen."""
+        payload = {
+            "serie": series,
+            "tipoDocumento": document_type,
+            "numeroDocumento": document_number,
+        }
+        return self._request(company, "descarga_archivo", payload, origin=origin)
 
     def get_last_document_number(self, company, document_type, series="", origin=None):
         """POST /UltimoDocumento. Devuelve el último número como entero (0 si no existe).
@@ -238,6 +263,14 @@ class TfhkaApiClient(models.AbstractModel):
                 response.get("numeroDocumento"),
             )
             return 0
+
+    def assign_numbering(self, company, detalle_asignacion, origin=None):
+        """POST /AsignarNumeraciones. Reserva por adelantado un rango de
+        ``numeroDocumento`` (y su ``numeroControl`` correspondiente) para una
+        emisión por lotes. Devuelve la respuesta completa de TFHKA
+        (``rangosAsignados``, ``detallesReserva``, ``fechaAsignacion``, ...)."""
+        payload = {"detalleAsignacion": detalle_asignacion}
+        return self._request(company, "asignar_numeraciones", payload, origin=origin)
 
     def query_numbering(self, company, series="", origin=None):
         """POST /ConsultaNumeraciones. Valida que la serie exista y tenga rango."""

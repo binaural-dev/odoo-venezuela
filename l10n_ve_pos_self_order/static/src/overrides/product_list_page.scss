@@ -1,5 +1,5 @@
-// Kiosk "scan / search only" header: greeting + search box shown in place of
-// the hidden product catalog.
+// Kiosk header: greeting (every kiosk) + search box (scan/search-only mode,
+// in place of the hidden product catalog).
 .o_ve_kiosk_scan_header {
     background-color: var(--o-so-view-bg, #fff);
     border-bottom: 1px solid var(--o-so-border-color, rgba(0, 0, 0, 0.1));

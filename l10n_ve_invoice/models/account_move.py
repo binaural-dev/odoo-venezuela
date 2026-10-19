@@ -4,7 +4,7 @@ import logging
 import calendar
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
-from odoo.tools import format_date, float_compare
+from odoo.tools import format_date, float_compare, float_round, float_is_zero
 
 _logger = logging.getLogger(__name__)
 
@@ -343,7 +343,115 @@ class AccountMove(models.Model):
                         max=origin_total_all,
                     ))
 
+    @api.constrains("date", "invoice_date_display")
+    def _check_note_accounting_date(self):
+        """The accounting date of a credit/debit note cannot be earlier than
+        its own document date (`invoice_date_display`), which in turn cannot be
+        earlier than the one of its origin (`_l10n_ve_check_note_date`,
+        `_check_dates_not_in_future`). Checked on save so that editing `date`
+        directly (list multi-edit, quick edit, RPC) cannot go around it."""
+        for move in self:
+            if not (move.reversed_entry_id or move.debit_origin_id):
+                continue
+            if not move.is_invoice(include_receipts=True):
+                continue
+            if move.date and move.invoice_date_display and move.date < move.invoice_date_display:
+                label = move.fields_get(["invoice_date_display"])["invoice_date_display"]["string"]
+                raise ValidationError(
+                    _(
+                        "The accounting date (%(date)s) of a note cannot be earlier "
+                        "than its %(field)s (%(value)s).",
+                        date=format_date(self.env, move.date),
+                        field=label,
+                        value=format_date(self.env, move.invoice_date_display),
+                    )
+                )
+
+    def _l10n_ve_allows_future_date(self):
+        """Whether this document may skip the date checks of
+        `_check_dates_not_in_future` when the caller asks for it through the
+        context `l10n_ve_skip_future_date_check`. The context alone is never
+        enough (it can be sent through RPC): the document must also identify
+        itself as one of the automatic notes dated after a payment, which the
+        modules that generate them declare by overriding this method."""
+        self.ensure_one()
+        return False
+
+    def _check_dates_not_in_future(self):
+        """Block posting if the invoice date is after today (or, for notes, before
+        the origin's date) or the rate date
+        is after the invoice date. Accounting date is not validated."""
+        skip_requested = self.env.context.get("l10n_ve_skip_future_date_check")
+        today = fields.Date.context_today(self)
+        labels = {
+            name: desc["string"]
+            for name, desc in self.fields_get(
+                ["invoice_date", "invoice_date_display"]
+            ).items()
+        }
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            if skip_requested and move._l10n_ve_allows_future_date():
+                continue
+            display_date = move.invoice_date_display
+            if display_date and display_date > today:
+                raise ValidationError(
+                    _(
+                        "%(document)s: %(field)s (%(value)s) cannot be later than "
+                        "today (%(today)s) to confirm this document.",
+                        document=move.display_name,
+                        field=labels["invoice_date_display"],
+                        value=format_date(self.env, display_date),
+                        today=format_date(self.env, today),
+                    )
+                )
+            origin = move.reversed_entry_id or move.debit_origin_id
+            if origin and origin.is_invoice(include_receipts=True):
+                if display_date:
+                    origin._l10n_ve_check_note_date(display_date)
+                origin_rate_date = origin.invoice_date or origin.invoice_date_display
+                # Automatic notes (exchange difference) carry the payment's rate date.
+                if (
+                    move.invoice_date
+                    and origin_rate_date
+                    and move.invoice_date != origin_rate_date
+                    and not move._l10n_ve_allows_future_date()
+                ):
+                    raise ValidationError(
+                        _(
+                            "%(document)s: %(field)s (%(value)s) must be equal to the one of the "
+                            "original document %(origin)s (%(origin_date)s).",
+                            document=move.display_name,
+                            field=labels["invoice_date"],
+                            value=format_date(self.env, move.invoice_date),
+                            origin=origin.display_name,
+                            origin_date=format_date(self.env, origin_rate_date),
+                        )
+                    )
+            limit = display_date or today
+            if move.invoice_date and move.invoice_date > limit:
+                raise ValidationError(
+                    _(
+                        "%(document)s: %(field)s (%(value)s) cannot be later than "
+                        "%(limit_field)s (%(limit)s) to confirm this "
+                        "document.",
+                        document=move.display_name,
+                        field=labels["invoice_date"],
+                        value=format_date(self.env, move.invoice_date),
+                        limit_field=labels["invoice_date_display"],
+                        limit=format_date(self.env, limit),
+                    )
+                )
+
+    def action_validate_moves_with_confirmation(self):
+        """The list/kanban action "Confirm Entries" posts through `_post`
+        without going through `action_post`: validate the same dates first."""
+        self.filtered(lambda m: m.state == "draft" and m.line_ids)._check_dates_not_in_future()
+        return super().action_validate_moves_with_confirmation()
+
     def action_post(self):
+        self._check_dates_not_in_future()
 
         for record in self:
             if record.move_type in (
@@ -366,6 +474,39 @@ class AccountMove(models.Model):
                             )
                         )
         return super().action_post()
+
+    @api.depends("invoice_line_ids.discount_fixed", "company_id.discount_type")
+    def _compute_company_currency_line_totals(self):
+        """discount_fixed lines force native `discount` (%) to 0, so the
+        base computation gets price_unit/discount_amount wrong for them.
+        Patches just those entries with the exact equivalent %.
+        """
+        super()._compute_company_currency_line_totals()
+        precision = self.env['decimal.precision'].precision_get('Product Price')
+        for move in self:
+            fixed_lines = move.line_ids.filtered(
+                lambda l: l.display_type == 'product' and l._uses_discount_fixed()
+            )
+            if not fixed_lines:
+                continue
+            totals = move.company_currency_line_totals or {}
+            cc = move.company_currency_id
+            for line in fixed_lines:
+                entry = totals.get(str(line.id))
+                if not entry:
+                    continue
+                subtotal = entry['subtotal']
+                discount_percent = line._get_exact_discount_percentage()
+                denominator = line.quantity * (1 - discount_percent / 100.0)
+                price_unit = (
+                    float_round(subtotal / denominator, precision_digits=precision)
+                    if not float_is_zero(denominator, precision_digits=precision)
+                    else 0.0
+                )
+                entry['price_unit'] = price_unit
+                entry['discount_amount'] = cc.round(price_unit * line.quantity - subtotal)
+                entry['discount_type'] = 'amount'
+            move.company_currency_line_totals = totals
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -428,21 +569,39 @@ class AccountMove(models.Model):
                         )
                     )
 
-            if (
-                move.correlative
-                and not move.is_contingency
-                and move.move_type in ("out_invoice", "out_refund")
-            ):
-                repeated_moves = AccountMove.search(
-                    [
-                        ("id", "!=", move.id),
-                        ("company_id", "=", move.company_id.id),
-                        ("correlative", "=", move.correlative),
-                        ("state", "=", "posted"),
-                        ("move_type", "in", ("out_invoice", "out_refund")),
-                    ],
-                    limit=1,
-                )
+            if move.correlative and not move.is_contingency:
+                base_domain = [
+                    ("id", "!=", move.id),
+                    ("company_id", "=", move.company_id.id),
+                    ("correlative", "=", move.correlative),
+                    ("state", "=", "posted"),
+                ]
+
+                if move.move_type in ("out_invoice", "out_refund"):
+                    repeated_moves = AccountMove.search(
+                        base_domain
+                        + [("move_type", "in", ("out_invoice", "out_refund"))],
+                        limit=1,
+                    )
+                elif move.move_type in ("in_invoice", "in_refund"):
+                    # Unlike sales, the control number of a vendor bill is
+                    # assigned by the vendor's own numbering, so uniqueness
+                    # is scoped per vendor, not company-wide.
+                    repeated_moves = AccountMove.search(
+                        base_domain
+                        + [
+                            ("move_type", "in", ("in_invoice", "in_refund")),
+                            (
+                                "commercial_partner_id",
+                                "=",
+                                move.commercial_partner_id.id,
+                            ),
+                        ],
+                        limit=1,
+                    )
+                else:
+                    repeated_moves = AccountMove
+
                 if repeated_moves:
                     raise ValidationError(
                         _(

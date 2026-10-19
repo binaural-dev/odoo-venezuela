@@ -129,10 +129,12 @@ class AccountTax(models.Model):
             return
         if isinstance(record.id, api.NewId):
             return
-        if company.tax_calculation_rounding_method != 'round_per_line':
-            return
         real_tax_lines = record.line_ids.filtered(lambda l: l.display_type == 'tax')
         if not real_tax_lines:
+            return
+        if company.tax_calculation_rounding_method != 'round_per_line' and not any(
+            t.price_include and not t.include_base_amount for t in real_tax_lines.tax_line_id
+        ):
             return
 
         cc = company.currency_id

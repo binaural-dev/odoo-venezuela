@@ -132,7 +132,10 @@ class TestPosSerialization(TransactionCase):
                 "property_account_expense_categ_id": cls.account_income.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # ``l10n_ve_stock`` rejects creating a product in a company other than
+        # ``env.company`` (no superuser bypass), so create it from the test
+        # company.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "Slice B Product",
                 "lst_price": 100.0,

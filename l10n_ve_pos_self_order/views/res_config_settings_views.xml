@@ -11,6 +11,11 @@
                          invisible="pos_self_ordering_mode != 'kiosk'">
                     <field name="pos_self_ordering_hide_catalog"/>
                 </setting>
+                <setting string="Kiosk: require customer address"
+                         help="Require the state, municipality and street when creating a new contact in Kiosk mode."
+                         invisible="pos_self_ordering_mode != 'kiosk'">
+                    <field name="pos_self_ordering_require_address"/>
+                </setting>
             </block>
         </field>
     </record>

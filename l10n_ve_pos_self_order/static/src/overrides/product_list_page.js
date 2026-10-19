@@ -34,6 +34,13 @@ patch(ProductListPage.prototype, {
         return config.self_ordering_mode === "kiosk" && config.self_ordering_hide_catalog;
     },
 
+    // The "Hi {customer}!" header is shown in both kiosk modes (with and
+    // without catalog): the customer was identified by cédula before
+    // reaching this screen (LandingPage.start() gate).
+    get showGreeting() {
+        return this.selfOrder.config.self_ordering_mode === "kiosk";
+    },
+
     get greeting() {
         const partner = this.selfOrder.currentOrder?.partner_id;
         const name = partner?.name;

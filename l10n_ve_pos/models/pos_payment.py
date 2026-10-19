@@ -1,5 +1,4 @@
 from odoo import api, fields, models
-from odoo.tools import float_compare
 
 
 class PosPayment(models.Model):
@@ -70,42 +69,70 @@ class PosPayment(models.Model):
 
     def _create_payment_moves(self, is_reverse=False):
         """The function that creates the payment entry was overwritten so that it has the same
-        rate as the invoice/order/payment
+        rate as the invoice/order/payment. Each move is matched to its payments through
+        ``pos_payment_ids``, not by amount: a move merging a payment and its change carries
+        their net.
         """
-        move_id = super()._create_payment_moves(is_reverse=is_reverse)
-        for payment in self:
-            payment_move = move_id.filtered(
-                lambda x: float_compare(
-                    abs(payment.amount),
-                    x.amount_total,
-                    precision_rounding=payment.pos_order_id.currency_id.rounding,
-                )
-                == 0
+        moves = self._create_payment_moves_by_method(is_reverse)
+        for payment_move in moves:
+            payments = payment_move.pos_payment_ids
+            payment = payments.filtered(lambda p: not p.is_change)[:1] or payments[:1]
+            rate_vals = payment.pos_order_id.config_id._get_move_foreign_rate_vals(
+                payment.foreign_rate
             )
-            if not payment_move:
-                continue
-
-            payment_move.write(
-                {
-                    "foreign_rate": payment.foreign_rate,
-                    "foreign_inverse_rate": payment.foreign_rate,
-                    "manually_set_rate": True,
-                }
-            )
+            if rate_vals:
+                payment_move.write(rate_vals)
+            # A move merging a payment and its change carries their net, so its
+            # alternate amount is the sum of their signed foreign amounts.
             # Fallback: a change (vuelto) line created server-side may reach
             # here with foreign_amount == 0 (see pos.order._process_payment_lines).
             # Derive it from the order rate so the alternate-currency columns are
             # never silently zeroed (ticket #15090).
-            foreign_amount = payment.foreign_amount
-            if not foreign_amount and payment.amount:
-                foreign_amount = payment.pos_order_id._amount_to_foreign(payment.amount)
+            foreign_amount = sum(
+                p.foreign_amount
+                or (p.amount and p.pos_order_id._amount_to_foreign(p.amount))
+                or 0.0
+                for p in payments
+            )
 
             for line in payment_move.line_ids:
                 line.write(
                     {
                         "not_foreign_recalculate": True,
                         "foreign_debit": abs(foreign_amount) if line.debit > 0 else 0,
-                        "foreign_credit":  abs(foreign_amount) if line.credit > 0 else 0,
+                        "foreign_credit": abs(foreign_amount) if line.credit > 0 else 0,
                     }
                 )
-        return move_id
+        return moves
+
+    def _create_payment_moves_by_method(self, is_reverse=False):
+        """Keep the change in the payment move of its own payment method.
+
+        Core merges the cash change into the move of the first cash payment of
+        the order, whatever its method (the change always goes to the first
+        cash method of the POS). The session closing reconciles the POS
+        receivable account per payment method, so a move holding payments of
+        two methods left two lines that net to zero unreconciled (task 83148,
+        H12). Merge the change with a cash payment of its method, or give it
+        its own move when there is none. A split-transactions method is
+        reconciled per payment, so its change always gets its own move.
+        """
+        change = self.filtered(lambda p: p.is_change and p.payment_method_id.type == "cash")
+        cash_payments = self.filtered(
+            lambda p: not p.is_change and p.payment_method_id.type == "cash"
+        )
+        if not change or not cash_payments:
+            return super()._create_payment_moves(is_reverse=is_reverse)
+        change_method = change.payment_method_id
+        same_method = cash_payments.filtered(
+            lambda p: p.payment_method_id == change_method
+        )[:1]
+        if same_method and len(change_method) == 1 and not change_method.split_transactions:
+            # Core merges the change into the first cash payment of the recordset.
+            return super(PosPayment, same_method | self)._create_payment_moves(
+                is_reverse=is_reverse
+            )
+        # Alone in the recordset, core gives each change its own move.
+        return super(PosPayment, self - change)._create_payment_moves(
+            is_reverse=is_reverse
+        ) | super(PosPayment, change)._create_payment_moves(is_reverse=is_reverse)

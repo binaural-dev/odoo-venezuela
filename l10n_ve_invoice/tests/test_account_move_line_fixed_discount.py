@@ -139,7 +139,33 @@ class TestAccountMoveLineFixedDiscount(TransactionCase):
                 "invoice_line_ids": [Command.create(line_vals)],
             }
         )
+        self._assert_company_currency_line_totals(move)
         return move, move.invoice_line_ids.filtered(lambda l: l.product_id)
+
+    def _assert_company_currency_line_totals(self, move):
+        """company_currency_line_totals (l10n_ve_accountant) debe cuadrar
+        exacto con line_ids.balance sin importar si el descuento de la
+        linea viene de 'discount' (%) o de 'discount_fixed': ambos ya
+        estan reflejados en balance para cuando este campo lo lee, asi que
+        alcanza con verificar que no se pierde ni se inventa nada al
+        pasar a la moneda de la compañia. Llamada desde _create_invoice:
+        las ~20 pruebas de este archivo quedan verificadas sin tocarlas
+        una por una."""
+        product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
+        if not product_lines:
+            return
+
+        totals = move.company_currency_line_totals or {}
+        for line in product_lines:
+            self.assertIn(str(line.id), totals)
+            self.assertAlmostEqual(
+                abs(totals[str(line.id)]['subtotal']), abs(line.balance), places=2
+            )
+
+        tax_lines = move.line_ids.filtered('tax_repartition_line_id')
+        sum_tax_amount = sum(abs(t['tax_amount']) for t in totals.values())
+        sum_tax_balance = sum(abs(l.balance) for l in tax_lines)
+        self.assertAlmostEqual(sum_tax_amount, sum_tax_balance, places=2)
 
     # ── discount (%) is never touched, regardless of how it's written ──
 
@@ -440,3 +466,140 @@ class TestAccountMoveLineFixedDiscount(TransactionCase):
 
         self.assertEqual(line_100.price_subtotal, 90.0)  # 100 - 10
         self.assertEqual(line_50.price_subtotal, 40.0)  # 50 - 10
+
+    # ── company_currency_line_totals (l10n_ve_accountant) ───────────────
+
+    def _set_vef_company_rate(self, currency, rate):
+        """company_currency_line_totals exists for the real scenario this
+        module is built for: a VE company (currency VEF) invoicing in a
+        foreign currency (USD/EUR) -- NOT this file's own default setUp,
+        where company currency is USD. Switches the company to VEF and
+        sets `currency`'s rate relative to it (VEF per unit of currency),
+        isolated to the calling test (TransactionCase rolls back after).
+        """
+        self.company.write({
+            "currency_id": self.currency_vef.id,
+            "foreign_currency_id": currency.id,
+        })
+        today = fields.Date.today()
+        vef_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_vef.id),
+            ("company_id", "=", self.company.id),
+            ("name", "=", today),
+        ])
+        if vef_rate:
+            vef_rate.write({"inverse_company_rate": 1.0})
+        else:
+            self.env["res.currency.rate"].create({
+                "name": today, "currency_id": self.currency_vef.id,
+                "inverse_company_rate": 1.0, "company_id": self.company.id,
+            })
+        currency_rate = self.env["res.currency.rate"].search([
+            ("currency_id", "=", currency.id),
+            ("company_id", "=", self.company.id),
+            ("name", "=", today),
+        ])
+        if currency_rate:
+            currency_rate.write({"inverse_company_rate": rate})
+        else:
+            self.env["res.currency.rate"].create({
+                "name": today, "currency_id": currency.id,
+                "inverse_company_rate": rate, "company_id": self.company.id,
+            })
+
+    def test_company_currency_line_totals_fixed_discount_usd_invoice(self):
+        """discount_fixed forces the native `discount` (%) to 0 on the
+        line, so l10n_ve_accountant's base computation of
+        company_currency_line_totals -- which only knows the native % --
+        gets price_unit/discount_amount wrong here. This module's own
+        override of _compute_company_currency_line_totals (account_move.py)
+        must patch exactly this: reconstruct the gross unit price from the
+        exact equivalent %, not from a division that assumes discount=0.
+
+        Company VEF, factura en USD (1 USD = 38 VEF): el escenario real.
+        """
+        self._set_vef_company_rate(self.currency_usd, 38.0)
+        move, line = self._create_invoice(
+            price_unit=100.0, quantity=2, discount_fixed=15.0,
+            currency=self.currency_usd,
+        )
+        self.assertEqual(line.discount, 0.0)
+
+        totals = move.company_currency_line_totals[str(line.id)]
+        cc = move.company_currency_id
+        # Bruto: 100 USD * 2 * 38 = 7600 VEF; descuento fijo 15 USD -> 570
+        # VEF; neto = 7030 VEF.
+        expected_gross = cc.round(100.0 * 2 * 38.0)
+        expected_discount = cc.round(15.0 * 38.0)
+        self.assertEqual(totals['discount_type'], 'amount')
+        self.assertAlmostEqual(
+            totals['price_unit'] * totals['quantity'], expected_gross, places=2
+        )
+        self.assertAlmostEqual(totals['discount_amount'], expected_discount, places=2)
+        self.assertAlmostEqual(
+            totals['subtotal'], expected_gross - expected_discount, places=2
+        )
+
+    def test_company_currency_line_totals_fixed_discount_eur_invoice(self):
+        """Same as the USD case, but with the invoice in EUR -- a third
+        currency relative to the company (VEF) and its usual foreign
+        currency (USD), to make sure the fix isn't tied to one currency
+        pair.
+        """
+        currency_eur = self.env.ref("base.EUR")
+        currency_eur.active = True
+        self._set_vef_company_rate(currency_eur, 41.5)
+
+        move, line = self._create_invoice(
+            price_unit=60.0, quantity=3, discount_fixed=10.0,
+            currency=currency_eur,
+        )
+        self.assertEqual(line.discount, 0.0)
+
+        totals = move.company_currency_line_totals[str(line.id)]
+        cc = move.company_currency_id
+        # Bruto: 60 EUR * 3 * 41.5 = 7470 VEF; descuento fijo 10 EUR ->
+        # 415 VEF; neto = 7055 VEF.
+        expected_gross = cc.round(60.0 * 3 * 41.5)
+        expected_discount = cc.round(10.0 * 41.5)
+        self.assertEqual(totals['discount_type'], 'amount')
+        self.assertAlmostEqual(
+            totals['price_unit'] * totals['quantity'], expected_gross, places=2
+        )
+        self.assertAlmostEqual(totals['discount_amount'], expected_discount, places=2)
+        self.assertAlmostEqual(
+            totals['subtotal'], expected_gross - expected_discount, places=2
+        )
+
+    def test_company_currency_line_totals_percent_discount_unaffected(self):
+        """A line using the native % discount (not discount_fixed) must go
+        through l10n_ve_accountant's base computation untouched -- this
+        module's override only patches discount_fixed lines. USD invoice,
+        company VEF, same real-world scenario as the fixed-discount tests.
+        """
+        self._set_vef_company_rate(self.currency_usd, 38.0)
+        self.company.discount_type = "percent"
+        move = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner_a.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": fields.Date.today(),
+            "journal_id": self.journal.id,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1,
+                    "price_unit": 200.0,
+                    "discount": 25.0,
+                    "tax_ids": [Command.clear()],
+                })
+            ],
+        })
+        line = move.invoice_line_ids.filtered(lambda l: l.product_id)
+        totals = move.company_currency_line_totals[str(line.id)]
+        cc = move.company_currency_id
+
+        # 200 USD * 0.75 * 38 = 5700 VEF; descuento = 200 * 0.25 * 38 = 1900 VEF.
+        self.assertEqual(totals['discount_type'], 'percent')
+        self.assertAlmostEqual(totals['subtotal'], cc.round(200.0 * 0.75 * 38.0), places=2)
+        self.assertAlmostEqual(totals['discount_amount'], cc.round(200.0 * 0.25 * 38.0), places=2)

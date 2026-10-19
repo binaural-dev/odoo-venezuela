@@ -10,3 +10,4 @@ from . import test_res_partner
 from . import test_tfhka_api_log
 from . import test_tfhka_service_base
 from . import test_tfhka_digitalization_mixin
+from . import test_tfhka_batch_service
