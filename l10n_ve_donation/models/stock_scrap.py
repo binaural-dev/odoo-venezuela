@@ -33,7 +33,7 @@ class StockScrap(models.Model):
 
     @api.depends("company_id")
     def _compute_scrap_location_id(self):
-        super()._compute_scrap_location_id()
+        res = super()._compute_scrap_location_id()
         for scrap in self:
             if scrap.is_donation:
                 scrap_location = self.env["stock.location"].search(
@@ -44,6 +44,7 @@ class StockScrap(models.Model):
                     limit=1,
                 )
                 scrap.scrap_location_id = scrap_location
+        return res
 
     def _creation_message(self):
         if self.is_donation:
