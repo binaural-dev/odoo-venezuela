@@ -350,11 +350,21 @@ class AccountPayment(models.Model):
                     method=payment.payment_method_line_id.name,
                     journal=payment.journal_id.display_name,
                 ))
-        for payment in self:
-            if payment.currency_id.is_zero(payment.amount):
-                raise UserError(
-                    _("You cannot confirm a payment with an amount of 0.0.")
-                )
+        # El POS agrupa pagos de banco por neto (venta y devolución pueden netear 0)
+        # y debe poder cerrar la sesión: se exime con el contexto from_pos.
+        if not self.env.context.get("from_pos"):
+            for payment in self:
+                if payment.currency_id.is_zero(payment.amount):
+                    raise UserError(
+                        _(
+                            "You cannot confirm a payment with an amount of 0.0. "
+                            "If the payment was converted to %(currency)s, the converted "
+                            "amount is lower than the minimum unit of the currency "
+                            "(%(rounding)s) and was rounded to zero.",
+                            currency=payment.currency_id.name,
+                            rounding=payment.currency_id.rounding,
+                        )
+                    )
         res = super().action_post()
         # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
         self.write({"block_change_partner_after_post": True})

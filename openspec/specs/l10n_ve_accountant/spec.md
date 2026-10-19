@@ -813,3 +813,15 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** se confirma un pago con importe mayor a cero
 - **THEN** el pago se confirma con normalidad
+
+#### Scenario: Registrar pago por wizard en divisa cuyo importe convertido redondea a 0.0
+
+- **GIVEN** una factura en Bs cuyo saldo, convertido a USD, es menor a 0,01 USD
+- **WHEN** se registra el pago con `account.payment.register` en un diario USD con IGTF
+- **THEN** se lanza un `UserError` que indica la moneda y que el importe convertido es menor a la unidad mínima
+- **AND** no se crea ni concilia ningún pago, y la factura conserva su saldo
+
+#### Scenario: Cierre de sesión POS con neto cero
+
+- **WHEN** el cierre de sesión POS crea el pago agrupado de un método de banco cuyo neto es 0 (contexto `from_pos`)
+- **THEN** la guarda no aplica y la sesión puede cerrarse

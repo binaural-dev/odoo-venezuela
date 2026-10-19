@@ -2159,5 +2159,11 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #: code:addons/l10n_ve_accountant/models/account_payment.py:0
-msgid "You cannot confirm a payment with an amount of 0.0."
-msgstr "No puede confirmar un pago con un importe de 0.0."
+msgid ""
+"You cannot confirm a payment with an amount of 0.0. If the payment was "
+"converted to %(currency)s, the converted amount is lower than the minimum "
+"unit of the currency (%(rounding)s) and was rounded to zero."
+msgstr ""
+"No puede confirmar un pago con un importe de 0.0. Si el pago se convirtió a "
+"%(currency)s, el importe convertido es menor a la unidad mínima de la moneda "
+"(%(rounding)s) y se redondeó a cero."
