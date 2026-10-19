@@ -65,6 +65,41 @@ class ResCompany(models.Model):
         string="Auto-fill IVA Client Retention Amount", default=False
     )
 
+    islr_prioritize_product_subtotal_base = fields.Boolean(
+        string="ISLR: prioritize product subtotal as automatic base (suppliers)",
+        default=False,
+        help=(
+            "For SUPPLIER invoices only (task #82491): when an invoice mixes"
+            " goods with a single service that carries an ISLR withholding"
+            " concept: by default (disabled) the automatic calculation uses"
+            " the whole invoice subtotal as the withholding base (the goods"
+            " are deemed necessary for the service, per the regulation). If"
+            " enabled, the automatic calculation uses only that"
+            " product/service's own subtotal instead. Either way, the"
+            " taxable base can always be edited by hand line by line to use"
+            " whichever criterion is needed, regardless of this setting - it"
+            " only decides what gets proposed automatically. Client ISLR"
+            " retentions are never affected by this setting. When 2 or more"
+            " products/services carry an ISLR concept on the same invoice,"
+            " each one always uses its own subtotal, regardless of this"
+            " setting."
+        ),
+    )
+
+    use_parent_retention_sequence = fields.Boolean(
+        string="Use the parent company retention sequence",
+        default=False,
+        help=(
+            "Only for branches (companies with a parent company). When"
+            " enabled, the IVA, ISLR and municipal retention voucher numbers"
+            " of this branch are taken from the parent company sequences"
+            " instead of creating independent ones, so every branch sharing"
+            " the same tax ID uses a single correlative. Ignored if the tax"
+            " ID (VAT) differs from the parent company's. Disabled by"
+            " default: each branch keeps its own sequence."
+        ),
+    )
+
     def write(self, vals):
         if "condition_withholding_id" in vals:
             for company in self:
