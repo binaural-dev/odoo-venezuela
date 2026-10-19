@@ -200,10 +200,16 @@ class TfhkaDocumentService(models.AbstractModel):
                     affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
 
                 if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    affected_invoice_amount = str(round(record.debit_origin_id.amount_total, 2))
+                    affected_invoice_amount = "{:.2f}".format(
+                        record.debit_origin_id.currency_id.round(record.debit_origin_id.amount_total)
+                    )
                 else:
                     tax_totals = record.debit_origin_id.tax_totals
-                    affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
+                    affected_invoice_amount = "{:.2f}".format(
+                        record.debit_origin_id.company_id.currency_foreign_id.round(
+                            tax_totals.get("foreign_amount_total_igtf", 0)
+                        )
+                    )
 
                 if record.ref and ',' in record.ref:
                     affected_invoice_comment = record.ref.split(',', 1)[1].strip()
@@ -217,10 +223,16 @@ class TfhkaDocumentService(models.AbstractModel):
                     affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
 
                 if record.company_id.currency_id.name in ('VEF', 'VES'):
-                    affected_invoice_amount = str(round(record.reversed_entry_id.amount_total, 2))
+                    affected_invoice_amount = "{:.2f}".format(
+                        record.reversed_entry_id.currency_id.round(record.reversed_entry_id.amount_total)
+                    )
                 else:
                     tax_totals = record.reversed_entry_id.tax_totals
-                    affected_invoice_amount = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
+                    affected_invoice_amount = "{:.2f}".format(
+                        record.reversed_entry_id.company_id.currency_foreign_id.round(
+                            tax_totals.get("foreign_amount_total_igtf", 0)
+                        )
+                    )
 
                 if record.ref and ',' in record.ref:
                     affected_invoice_comment = record.ref.split(',', 1)[1].strip()
@@ -265,41 +277,59 @@ class TfhkaDocumentService(models.AbstractModel):
             currency = record.company_id.currency_id.name
             tax_totals = record.tax_totals
 
+            # Los campos "normales" de tax_totals (subtotal, amount_total,
+            # groups_by_subtotal, igtf_amount, ...) siempre vienen en la
+            # moneda de la propia compañía; los campos "foreign_*"
+            # (foreign_subtotal, groups_by_foreign_subtotal,
+            # foreign_igtf_amount, ...) siempre vienen en currency_foreign_id.
+            # Esto es asi sin importar cual de las dos ramas de abajo aplique,
+            # asi que el redondeo de cada monto usa SIEMPRE la moneda real del
+            # campo del que se leyo (ver Fix 4: currency.round(), no round()
+            # nativo de Python).
+            local_currency = record.company_id.currency_id
+            foreign_currency = record.company_id.currency_foreign_id
+
             igtf = tax_totals.get("igtf", {}) or {}
             if currency in ("VEF", "VES"):
-                igtf_ves = igtf.get("igtf_amount", 0)
-                igtf_foreign = igtf.get("foreign_igtf_amount", 0)
+                igtf_ves, igtf_ves_currency = igtf.get("igtf_amount", 0), local_currency
+                igtf_foreign, igtf_foreign_currency = igtf.get("foreign_igtf_amount", 0), foreign_currency
             else:
-                igtf_ves = igtf.get("foreign_igtf_amount", 0)
-                igtf_foreign = igtf.get("igtf_amount", 0)
-            totalIGTF_VES = round(igtf_ves or 0, 2)
-            totalIGTF_foreign = round(igtf_foreign or 0, 2)
+                igtf_ves, igtf_ves_currency = igtf.get("foreign_igtf_amount", 0), foreign_currency
+                igtf_foreign, igtf_foreign_currency = igtf.get("igtf_amount", 0), local_currency
+            totalIGTF_VES = igtf_ves_currency.round(igtf_ves or 0)
+            totalIGTF_foreign = igtf_foreign_currency.round(igtf_foreign or 0)
             amounts = {}
             amounts_foreign = {}
             multi_currency = record.multi_currency_invoice
 
             base_groups = self._iter_tax_groups(tax_totals, 'groups_by_subtotal')
             foreign_groups = self._iter_tax_groups(tax_totals, 'groups_by_foreign_subtotal')
-            exempt_base = next(
-                (g.get('tax_group_base_amount', 0) for g in base_groups
-                 if self._is_exempt_group(record, g)), 0
+            # Suma de TODOS los grupos exentos, no solo el primero que se
+            # encuentre: una factura puede tener mas de un grupo con alicuota
+            # 0 (p.ej. una linea "Exenta" y otra "IVA 0%" como grupos
+            # fiscales distintos). Con next() se perdia el resto y
+            # montoExentoTotal quedaba corto (y montoGravadoTotal, que se
+            # calcula como subtotal - exempt_base, largo).
+            exempt_base = sum(
+                g.get('tax_group_base_amount', 0) for g in base_groups
+                if self._is_exempt_group(record, g)
             )
-            exempt_foreign = next(
-                (g.get('tax_group_base_amount', 0) for g in foreign_groups
-                 if self._is_exempt_group(record, g)), 0
+            exempt_foreign = sum(
+                g.get('tax_group_base_amount', 0) for g in foreign_groups
+                if self._is_exempt_group(record, g)
             )
 
             if currency == "VEF" or currency == "VES":
-                amounts["montoGravadoTotal"] = str(
-                    round(tax_totals.get('subtotal', 0) - exempt_base, 2)
+                amounts["montoGravadoTotal"] = "{:.2f}".format(
+                    local_currency.round(tax_totals.get('subtotal', 0) - exempt_base)
                 )
-                amounts["montoExentoTotal"] = str(round(exempt_base, 2))
-                amounts["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
-                amounts["subtotalAntesDescuento"] = str(round(tax_totals.get('subtotal', 0), 2))
-                amounts["totalAPagar"] = str(round(tax_totals.get("amount_total_igtf", 0), 2))
-                amounts["totalIVA"] = round(sum(g.get('tax_group_amount', 0) for g in base_groups), 2)
-                amounts["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
-                amounts["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
+                amounts["montoExentoTotal"] = "{:.2f}".format(local_currency.round(exempt_base))
+                amounts["subtotal"] = "{:.2f}".format(local_currency.round(tax_totals.get("amount_untaxed", 0)))
+                amounts["subtotalAntesDescuento"] = "{:.2f}".format(local_currency.round(tax_totals.get('subtotal', 0)))
+                amounts["totalAPagar"] = "{:.2f}".format(local_currency.round(tax_totals.get("amount_total_igtf", 0)))
+                amounts["totalIVA"] = local_currency.round(sum(g.get('tax_group_amount', 0) for g in base_groups))
+                amounts["montoTotalConIVA"] = "{:.2f}".format(local_currency.round(tax_totals.get("amount_total", 0)))
+                amounts["totalDescuento"] = "{:.2f}".format(abs(local_currency.round(tax_totals.get("discount_amount", 0))))
 
                 taxes_subtotal, _dummy = self._prepare_tax_subtotals(record, currency)
                 currency_tfhka_code = record.company_id.currency_id.code_tfhka
@@ -316,16 +346,16 @@ class TfhkaDocumentService(models.AbstractModel):
                 # Los montos se LEEN de Odoo (columnas foreign_* de
                 # tax_totals), no se calculan dividiendo por la tasa.
                 if multi_currency:
-                    amounts_foreign["montoGravadoTotal"] = str(
-                        round(tax_totals.get('foreign_subtotal', 0) - exempt_foreign, 2)
+                    amounts_foreign["montoGravadoTotal"] = "{:.2f}".format(
+                        foreign_currency.round(tax_totals.get('foreign_subtotal', 0) - exempt_foreign)
                     )
-                    amounts_foreign["montoExentoTotal"] = str(round(exempt_foreign, 2))
-                    amounts_foreign["subtotal"] = str(round(tax_totals.get("foreign_amount_untaxed", 0), 2))
-                    amounts_foreign["subtotalAntesDescuento"] = str(round(tax_totals.get("foreign_subtotal", 0), 2))
-                    amounts_foreign["totalAPagar"] = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
-                    amounts_foreign["totalIVA"] = round(sum(g.get('tax_group_amount', 0) for g in foreign_groups), 2)
-                    amounts_foreign["montoTotalConIVA"] = str(round(tax_totals.get("foreign_amount_total", 0), 2))
-                    amounts_foreign["totalDescuento"] = str(abs(round(tax_totals.get("foreign_discount_amount", 0), 2)))
+                    amounts_foreign["montoExentoTotal"] = "{:.2f}".format(foreign_currency.round(exempt_foreign))
+                    amounts_foreign["subtotal"] = "{:.2f}".format(foreign_currency.round(tax_totals.get("foreign_amount_untaxed", 0)))
+                    amounts_foreign["subtotalAntesDescuento"] = "{:.2f}".format(foreign_currency.round(tax_totals.get("foreign_subtotal", 0)))
+                    amounts_foreign["totalAPagar"] = "{:.2f}".format(foreign_currency.round(tax_totals.get("foreign_amount_total_igtf", 0)))
+                    amounts_foreign["totalIVA"] = foreign_currency.round(sum(g.get('tax_group_amount', 0) for g in foreign_groups))
+                    amounts_foreign["montoTotalConIVA"] = "{:.2f}".format(foreign_currency.round(tax_totals.get("foreign_amount_total", 0)))
+                    amounts_foreign["totalDescuento"] = "{:.2f}".format(abs(foreign_currency.round(tax_totals.get("foreign_discount_amount", 0))))
                     taxes_subtotal, taxes_subtotal_foreign = self._prepare_tax_subtotals(record, currency, multi_currency=True)
                     foreign_currency_code = record.company_id.currency_foreign_id.code_tfhka
                 else:
@@ -334,45 +364,55 @@ class TfhkaDocumentService(models.AbstractModel):
                 currency = currency_tfhka_code
 
             else:
-                amounts_foreign["montoGravadoTotal"] = str(
-                    round(tax_totals.get('subtotal', 0) - exempt_base, 2)
+                amounts_foreign["montoGravadoTotal"] = "{:.2f}".format(
+                    local_currency.round(tax_totals.get('subtotal', 0) - exempt_base)
                 )
-                amounts_foreign["montoExentoTotal"] = str(round(exempt_base, 2))
-                amounts_foreign["subtotal"] = str(round(tax_totals.get("amount_untaxed", 0), 2))
-                amounts_foreign["subtotalAntesDescuento"] = str(round(tax_totals.get('subtotal', 0), 2))
-                amounts_foreign["totalAPagar"] = str(round(tax_totals.get("amount_total_igtf", 0), 2))
-                amounts_foreign["totalIVA"] = round(sum(g.get('tax_group_amount', 0) for g in base_groups), 2)
-                amounts_foreign["montoTotalConIVA"] = str(round(tax_totals.get("amount_total", 0), 2))
-                amounts_foreign["totalDescuento"] = str(abs(round(tax_totals.get("discount_amount", 0), 2)))
+                amounts_foreign["montoExentoTotal"] = "{:.2f}".format(local_currency.round(exempt_base))
+                amounts_foreign["subtotal"] = "{:.2f}".format(local_currency.round(tax_totals.get("amount_untaxed", 0)))
+                amounts_foreign["subtotalAntesDescuento"] = "{:.2f}".format(local_currency.round(tax_totals.get('subtotal', 0)))
+                amounts_foreign["totalAPagar"] = "{:.2f}".format(local_currency.round(tax_totals.get("amount_total_igtf", 0)))
+                amounts_foreign["totalIVA"] = local_currency.round(sum(g.get('tax_group_amount', 0) for g in base_groups))
+                amounts_foreign["montoTotalConIVA"] = "{:.2f}".format(local_currency.round(tax_totals.get("amount_total", 0)))
+                amounts_foreign["totalDescuento"] = "{:.2f}".format(abs(local_currency.round(tax_totals.get("discount_amount", 0))))
 
-                amounts["montoGravadoTotal"] = str(
-                    round(tax_totals.get('foreign_subtotal', 0) - exempt_foreign, 2)
+                amounts["montoGravadoTotal"] = "{:.2f}".format(
+                    foreign_currency.round(tax_totals.get('foreign_subtotal', 0) - exempt_foreign)
                 )
-                amounts["montoExentoTotal"] = str(round(exempt_foreign, 2))
-                amounts["subtotal"] = str(round(tax_totals.get("foreign_amount_untaxed", 0), 2))
-                amounts["subtotalAntesDescuento"] = str(round(tax_totals.get("foreign_subtotal", 0), 2))
-                amounts["totalAPagar"] = str(round(tax_totals.get("foreign_amount_total_igtf", 0), 2))
-                amounts["totalIVA"] = round(sum(g.get('tax_group_amount', 0) for g in foreign_groups), 2)
-                amounts["montoTotalConIVA"] = str(round(tax_totals.get("foreign_amount_total", 0), 2))
-                amounts["totalDescuento"] = str(abs(round(tax_totals.get("foreign_discount_amount", 0), 2)))
+                amounts["montoExentoTotal"] = "{:.2f}".format(foreign_currency.round(exempt_foreign))
+                amounts["subtotal"] = "{:.2f}".format(foreign_currency.round(tax_totals.get("foreign_amount_untaxed", 0)))
+                amounts["subtotalAntesDescuento"] = "{:.2f}".format(foreign_currency.round(tax_totals.get("foreign_subtotal", 0)))
+                amounts["totalAPagar"] = "{:.2f}".format(foreign_currency.round(tax_totals.get("foreign_amount_total_igtf", 0)))
+                amounts["totalIVA"] = foreign_currency.round(sum(g.get('tax_group_amount', 0) for g in foreign_groups))
+                amounts["montoTotalConIVA"] = "{:.2f}".format(foreign_currency.round(tax_totals.get("foreign_amount_total", 0)))
+                amounts["totalDescuento"] = "{:.2f}".format(abs(foreign_currency.round(tax_totals.get("foreign_discount_amount", 0))))
 
                 taxes_subtotal, taxes_subtotal_foreign = self._prepare_tax_subtotals(record, currency)
+                # El codigo de moneda del bloque "otra moneda"
+                # (totalesOtraMoneda, armado mas abajo desde amounts_foreign)
+                # es el de la moneda BASE real de la compañia: en esta rama
+                # amounts_foreign se llena con los campos NO "foreign_*" de
+                # tax_totals, es decir, los montos en record.company_id.currency_id
+                # (local_currency), no en la misma moneda que currency
+                # (que abajo pasa a ser el codigo de currency_foreign_id).
+                # Antes quedaba igual a `currency`, asi que ambos bloques del
+                # payload salian con el mismo codigo de moneda pero cifras
+                # distintas.
+                foreign_currency_code = local_currency.code_tfhka
                 currency = record.company_id.currency_foreign_id.code_tfhka
-                foreign_currency_code = currency
 
             totals = {
-                "nroItems": str(len(record.invoice_line_ids)),
+                "nroItems": str(len(self._get_product_lines(record))),
                 "montoGravadoTotal": amounts["montoGravadoTotal"],
                 "montoExentoTotal": amounts["montoExentoTotal"],
                 "subtotal": amounts["subtotal"],
                 "subtotalAntesDescuento": amounts["subtotalAntesDescuento"],
                 "totalAPagar": amounts["totalAPagar"],
-                "totalIVA": str(amounts["totalIVA"]),
+                "totalIVA": "{:.2f}".format(amounts["totalIVA"]),
                 "montoTotalConIVA": amounts["montoTotalConIVA"],
                 "totalDescuento": amounts["totalDescuento"],
                 "impuestosSubtotal": taxes_subtotal,
-                "totalIGTF": str(totalIGTF_VES),
-                "totalIGTF_VES": str(totalIGTF_VES),
+                "totalIGTF": "{:.2f}".format(totalIGTF_VES),
+                "totalIGTF_VES": "{:.2f}".format(totalIGTF_VES),
             }
             # Cuadro de pago: el bloque formasPago solo se adjunta cuando el
             # usuario activó "Mostrar cuadro de pago" en la factura.
@@ -395,11 +435,11 @@ class TfhkaDocumentService(models.AbstractModel):
                     "subtotal": amounts_foreign["subtotal"],
                     "subtotalAntesDescuento": amounts_foreign["subtotalAntesDescuento"],
                     "totalAPagar": amounts_foreign["totalAPagar"],
-                    "totalIVA": str(amounts_foreign["totalIVA"]),
+                    "totalIVA": "{:.2f}".format(amounts_foreign["totalIVA"]),
                     "montoTotalConIVA": amounts_foreign["montoTotalConIVA"],
                     "totalDescuento": amounts_foreign["totalDescuento"],
-                    "totalIGTF": str(totalIGTF_foreign),
-                    "totalIGTF_VES": str(totalIGTF_VES),
+                    "totalIGTF": "{:.2f}".format(totalIGTF_foreign),
+                    "totalIGTF_VES": "{:.2f}".format(totalIGTF_VES),
                     "impuestosSubtotal": taxes_subtotal_foreign,
                 }
             else:
@@ -410,7 +450,7 @@ class TfhkaDocumentService(models.AbstractModel):
         tax_subtotals = []
         tax_subtotals_foreign = []
 
-        def tax_line_vals(record, group, base_key='tax_group_base_amount', amount_key='tax_group_amount'):
+        def tax_line_vals(record, group, currency_obj, base_key='tax_group_base_amount', amount_key='tax_group_amount'):
             # Código y alícuota se derivan del impuesto, no del nombre del grupo
             # (traducible y renombrable por el cliente). Ver
             # tfhka.service.base._get_tax_group_code_and_rate.
@@ -418,19 +458,26 @@ class TfhkaDocumentService(models.AbstractModel):
             return {
                 "codigoTotalImp": code,
                 "alicuotaImp": str(rate),
-                "baseImponibleImp": str(round(group.get(base_key) or 0.0, 2)),
-                "valorTotalImp": str(round(group.get(amount_key) or 0.0, 2)),
+                "baseImponibleImp": "{:.2f}".format(currency_obj.round(group.get(base_key) or 0.0)),
+                "valorTotalImp": "{:.2f}".format(currency_obj.round(group.get(amount_key) or 0.0)),
             }
 
-        def igtf_vals(record, igtf, base_key, amount_key):
+        def igtf_vals(record, igtf, currency_obj, base_key, amount_key):
             return {
                 "codigoTotalImp": "IGTF",
                 "alicuotaImp": str(self._get_igtf_rate(record)),
-                "baseImponibleImp": str(round(igtf.get(base_key) or 0.0, 2)),
-                "valorTotalImp": str(round(igtf.get(amount_key) or 0.0, 2)),
+                "baseImponibleImp": "{:.2f}".format(currency_obj.round(igtf.get(base_key) or 0.0)),
+                "valorTotalImp": "{:.2f}".format(currency_obj.round(igtf.get(amount_key) or 0.0)),
             }
 
         for record in invoice:
+            # groups_by_subtotal / igtf_(base_)amount siempre estan en la
+            # moneda de la compañia; groups_by_foreign_subtotal /
+            # foreign_igtf_(base_)amount siempre en currency_foreign_id,
+            # independientemente de cual de las ramas de abajo aplique (ver
+            # el mismo criterio en _prepare_totals).
+            local_currency = record.company_id.currency_id
+            foreign_currency_obj = record.company_id.currency_foreign_id
             base_groups = self._iter_tax_groups(record.tax_totals, 'groups_by_subtotal')
             foreign_groups = self._iter_tax_groups(record.tax_totals, 'groups_by_foreign_subtotal')
             igtf = (record.tax_totals or {}).get('igtf', {}) or {}
@@ -438,10 +485,10 @@ class TfhkaDocumentService(models.AbstractModel):
 
             if currency in ("VEF", "VES") and not multi_currency:
                 for group in base_groups:
-                    tax_subtotals.append(tax_line_vals(record, group))
+                    tax_subtotals.append(tax_line_vals(record, group, local_currency))
                 if apply_igtf:
                     tax_subtotals.append(
-                        igtf_vals(record, igtf, 'igtf_base_amount', 'igtf_amount')
+                        igtf_vals(record, igtf, local_currency, 'igtf_base_amount', 'igtf_amount')
                     )
                 return tax_subtotals, tax_subtotals_foreign
             elif multi_currency:
@@ -449,39 +496,47 @@ class TfhkaDocumentService(models.AbstractModel):
                 # en la moneda alterna (groups_by_foreign_subtotal). Ambos se LEEN
                 # de Odoo; no se calcula nada dividiendo por la tasa.
                 for group in base_groups:
-                    tax_subtotals.append(tax_line_vals(record, group))
+                    tax_subtotals.append(tax_line_vals(record, group, local_currency))
                 if apply_igtf:
                     tax_subtotals.append(
-                        igtf_vals(record, igtf, 'igtf_base_amount', 'igtf_amount')
+                        igtf_vals(record, igtf, local_currency, 'igtf_base_amount', 'igtf_amount')
                     )
                 for group in foreign_groups:
-                    tax_subtotals_foreign.append(tax_line_vals(record, group))
+                    tax_subtotals_foreign.append(tax_line_vals(record, group, foreign_currency_obj))
                 if apply_igtf:
                     tax_subtotals_foreign.append(
-                        igtf_vals(record, igtf, 'foreign_igtf_base_amount', 'foreign_igtf_amount')
+                        igtf_vals(record, igtf, foreign_currency_obj, 'foreign_igtf_base_amount', 'foreign_igtf_amount')
                     )
                 return tax_subtotals, tax_subtotals_foreign
             else:
                 for group in foreign_groups:
-                    tax_subtotals.append(tax_line_vals(record, group))
+                    tax_subtotals.append(tax_line_vals(record, group, foreign_currency_obj))
                 for group in base_groups:
-                    tax_subtotals_foreign.append(tax_line_vals(record, group))
+                    tax_subtotals_foreign.append(tax_line_vals(record, group, local_currency))
                 if apply_igtf:
                     tax_subtotals_foreign.append(
-                        igtf_vals(record, igtf, 'igtf_base_amount', 'igtf_amount')
+                        igtf_vals(record, igtf, local_currency, 'igtf_base_amount', 'igtf_amount')
                     )
                     tax_subtotals.append(
-                        igtf_vals(record, igtf, 'foreign_igtf_base_amount', 'foreign_igtf_amount')
+                        igtf_vals(record, igtf, foreign_currency_obj, 'foreign_igtf_base_amount', 'foreign_igtf_amount')
                     )
                 return tax_subtotals, tax_subtotals_foreign
+
+    def _get_product_lines(self, record):
+        """Líneas de detalle real (excluye secciones/notas: ``display_type``
+        distinto de ``"product"``).
+
+        Única fuente de verdad del filtro: la consumen tanto
+        ``_prepare_detail_lines`` (``detallesItems``) como ``_prepare_totals``
+        (``nroItems``), para que ambos conteos nunca se desincronicen.
+        """
+        return record.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
 
     def _prepare_detail_lines(self, invoice):
         item_details = []
         line_number = 1
         for record in invoice:
-            product_lines = record.invoice_line_ids.filtered(
-                lambda l: l.display_type == 'product'
-            )
+            product_lines = self._get_product_lines(record)
             for line in product_lines:
                 taxes = line.tax_ids.filtered(lambda t: t.amount)
                 tax_rate = taxes[0].amount if taxes else 0.0
@@ -492,20 +547,22 @@ class TfhkaDocumentService(models.AbstractModel):
                 if not record.is_invoice_multi_currency_enabled() and record.company_id.currency_id.name in ("VEF", "VES"):
                     base_price = line.price_unit
                     base_subtotal = line.price_subtotal
+                    line_currency = record.currency_id
                 else:
                     base_price = line.foreign_price
                     base_subtotal = line.foreign_subtotal
+                    line_currency = record.company_id.currency_foreign_id
 
                 discount_factor = (line.discount or 0.0) / 100.0
-                unit_price = round(base_price, 2)
-                discount_unit = round(base_price * discount_factor, 2)
-                unit_price_discount = round(base_price - discount_unit, 2)
-                discount_amount = round(base_price * discount_factor * line.quantity, 2)
-                item_price = round(base_subtotal, 2)
-                price_before_discount = round(base_price * line.quantity, 2)
+                unit_price = line_currency.round(base_price)
+                discount_unit = line_currency.round(base_price * discount_factor)
+                unit_price_discount = line_currency.round(base_price - discount_unit)
+                discount_amount = line_currency.round(base_price * discount_factor * line.quantity)
+                item_price = line_currency.round(base_subtotal)
+                price_before_discount = line_currency.round(base_price * line.quantity)
 
-                vat = round(item_price * tax_rate / 100.0, 2)
-                total_item_value = round(item_price + vat, 2)
+                vat = line_currency.round(item_price * tax_rate / 100.0)
+                total_item_value = line_currency.round(item_price + vat)
 
                 tax_code, _rate = self._get_tfhka_tax_code(
                     tax_rate, line.product_id.display_name
@@ -517,15 +574,15 @@ class TfhkaDocumentService(models.AbstractModel):
                     "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
                     "descripcion": line.product_id.name or "",
                     "cantidad": str(line.quantity),
-                    "precioUnitario": str(unit_price),
-                    "precioUnitarioDescuento": str(unit_price_discount),
-                    "descuentoMonto": str(discount_amount),
-                    "precioItem": str(item_price),
-                    "precioAntesDescuento": str(price_before_discount),
+                    "precioUnitario": "{:.2f}".format(unit_price),
+                    "precioUnitarioDescuento": "{:.2f}".format(unit_price_discount),
+                    "descuentoMonto": "{:.2f}".format(discount_amount),
+                    "precioItem": "{:.2f}".format(item_price),
+                    "precioAntesDescuento": "{:.2f}".format(price_before_discount),
                     "codigoImpuesto": tax_code,
                     "tasaIVA": str(round(tax_rate, 2)),
-                    "valorIVA": str(vat),
-                    "valorTotalItem": str(total_item_value),
+                    "valorIVA": "{:.2f}".format(vat),
+                    "valorTotalItem": "{:.2f}".format(total_item_value),
                 })
                 line_number += 1
         return item_details
@@ -604,11 +661,14 @@ class TfhkaDocumentService(models.AbstractModel):
             currency_code = payment_currency
             exchange_rate = "{:.4f}".format(payment_id.foreign_rate)
 
+        # Fallback a la moneda de la factura si el pago no trae una propia
+        # (mismo criterio defensivo que `payment_currency` arriba).
+        payment_currency_obj = payment_id.currency_id or invoice.currency_id
         payment_info = {
             "descripcion": payment_method.description if payment_method else "",
             "fecha": payment_id.date.strftime("%d/%m/%Y") if payment_id.date else "",
             "forma": payment_method.code if payment_method else "",
-            "monto": str(round(payment_id.amount, 2)),
+            "monto": "{:.2f}".format(payment_currency_obj.round(payment_id.amount)),
             "moneda": currency_code,
         }
 

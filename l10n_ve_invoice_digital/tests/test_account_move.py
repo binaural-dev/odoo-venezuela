@@ -1,4 +1,4 @@
-from odoo.exceptions import UserError, ValidationError, AccessError
+from odoo.exceptions import UserError, ValidationError
 from odoo import fields, Command
 from odoo.tests import TransactionCase, tagged
 from unittest.mock import patch, MagicMock
@@ -1509,18 +1509,19 @@ class TestAccountMoveApiCalls(TransactionCase):
         totals, _foreign = self.env['tfhka.document.service']._prepare_totals(invoice)
         self.assertNotIn("formasPago", totals)
 
-    def test_131_uninstall_requires_tfhka_admin(self):
-        # Un usuario sin el grupo TFHKA Admin no puede desinstalar el modulo.
-        module = self.env['ir.module.module'].search(
-            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
-        )
-        user = self.env['res.users'].create({
-            'name': 'No Admin TFHKA',
-            'login': 'no_admin_tfhka',
-            'groups_id': [(6, 0, [self.env.ref('base.group_user').id])],
-        })
-        with self.assertRaises(AccessError):
-            module.with_user(user)._check_tfhka_uninstall_rights()
+    def test_131_group_system_implies_tfhka_admin(self):
+        # El guard custom de desinstalacion (ir_module_module.py,
+        # _check_tfhka_uninstall_rights) se elimino por redundante: el core
+        # ya exige is_admin() (implica group_erp_manager) en
+        # button_uninstall/button_immediate_uninstall, y ir.model.access.csv
+        # solo da acceso CRUD sobre ir.module.module a base.group_system --
+        # por lo que en la practica solo un group_system puede completar la
+        # desinstalacion. Este test protege la premisa de la que depende esa
+        # conclusion: si el implied_ids de data/groups.xml llegara a
+        # quitarse, el guard custom volveria a ser necesario.
+        system_group = self.env.ref('base.group_system')
+        admin_group = self.env.ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin')
+        self.assertIn(admin_group, system_group.implied_ids)
 
     def test_65_is_eligible_for_tfhka_company_disabled(self):
         self.company.write({"invoice_digital_tfhka": False})
@@ -2121,51 +2122,6 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertFalse(debit.show_digital_debit_note)
 
     # ------------------------------------------------------------------
-    # Cobertura adicional: ir_module_module.py (guard de desinstalación)
-    # ------------------------------------------------------------------
-
-    def test_157_check_uninstall_rights_empty_recordset(self):
-        # Recordset vacío: el for no itera, sale directo (12->exit).
-        self.env['ir.module.module'].browse([])._check_tfhka_uninstall_rights()
-
-    def test_158_check_uninstall_rights_other_modules_no_raise(self):
-        # Módulos que no son el nuestro: la condición del if da False y el
-        # for sigue de largo (13->12) sin lanzar AccessError.
-        modules = self.env['ir.module.module'].search([('name', 'in', ['base', 'web'])])
-        self.assertTrue(len(modules) >= 1)
-        modules._check_tfhka_uninstall_rights()
-
-    def test_159_button_uninstall_as_admin(self):
-        from odoo.addons.base.models.ir_module import Module
-        module = self.env['ir.module.module'].search(
-            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
-        )
-        admin_group = self.env.ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin')
-        admin_user = self.env['res.users'].create({
-            'name': 'TFHKA Admin Uninstall',
-            'login': 'tfhka_admin_uninstall',
-            'groups_id': [(6, 0, [self.env.ref('base.group_user').id, admin_group.id])],
-        })
-        with patch.object(Module, 'button_uninstall', return_value=True) as mock_super:
-            module.with_user(admin_user).button_uninstall()
-            mock_super.assert_called_once()
-
-    def test_160_button_immediate_uninstall_as_admin(self):
-        from odoo.addons.base.models.ir_module import Module
-        module = self.env['ir.module.module'].search(
-            [('name', '=', 'l10n_ve_invoice_digital')], limit=1
-        )
-        admin_group = self.env.ref('l10n_ve_invoice_digital.group_l10n_ve_invoice_digital_admin')
-        admin_user = self.env['res.users'].create({
-            'name': 'TFHKA Admin Immediate Uninstall',
-            'login': 'tfhka_admin_immediate_uninstall',
-            'groups_id': [(6, 0, [self.env.ref('base.group_user').id, admin_group.id])],
-        })
-        with patch.object(Module, 'button_immediate_uninstall', return_value=True) as mock_super:
-            module.with_user(admin_user).button_immediate_uninstall()
-            mock_super.assert_called_once()
-
-    # ------------------------------------------------------------------
     # Cobertura adicional: tfhka_client.py
     # ------------------------------------------------------------------
 
@@ -2395,55 +2351,66 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_174_prepare_tax_subtotals_local_branch_subtotal_group(self):
         # Doble de prueba (duck-typing): _prepare_tax_subtotals solo necesita
-        # que cada elemento exponga `.tax_totals`, así que se aísla la lógica
-        # de armado del payload de la capa ORM.
-        fake = type("FakeTaxRecord", (), {"tax_totals": {
-            "groups_by_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
-            ]},
-        }})()
+        # que cada elemento exponga `.tax_totals` y `.company_id` (esta
+        # ultima para el redondeo con currency.round(), Fix 4), asi que se
+        # aisla la logica de armado del payload de la capa ORM.
+        fake = type("FakeTaxRecord", (), {
+            "company_id": self.company,
+            "tax_totals": {
+                "groups_by_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+                ]},
+            },
+        })()
         local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "VEF")
         self.assertEqual(local[0]["codigoTotalImp"], "G")
+        self.assertEqual(local[0]["baseImponibleImp"], "100.00")
         self.assertEqual(foreign, [])
 
     def test_175_prepare_tax_subtotals_multi_currency_branch_with_igtf(self):
-        fake = type("FakeTaxRecord", (), {"tax_totals": {
-            "groups_by_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
-            ]},
-            "groups_by_foreign_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
-            ]},
-            "igtf": {
-                "apply_igtf": True,
-                "name": "3.0 %",
-                "igtf_base_amount": 100.0,
-                "igtf_amount": 3.0,
-                "foreign_igtf_base_amount": 200.0,
-                "foreign_igtf_amount": 6.0,
+        fake = type("FakeTaxRecord", (), {
+            "company_id": self.company,
+            "tax_totals": {
+                "groups_by_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+                ]},
+                "groups_by_foreign_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
+                ]},
+                "igtf": {
+                    "apply_igtf": True,
+                    "name": "3.0 %",
+                    "igtf_base_amount": 100.0,
+                    "igtf_amount": 3.0,
+                    "foreign_igtf_base_amount": 200.0,
+                    "foreign_igtf_amount": 6.0,
+                },
             },
-        }})()
+        })()
         local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "VEF", multi_currency=True)
         self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in local))
         self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in foreign))
 
     def test_176_prepare_tax_subtotals_foreign_branch_with_igtf(self):
-        fake = type("FakeTaxRecord", (), {"tax_totals": {
-            "groups_by_foreign_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
-            ]},
-            "groups_by_subtotal": {"Subtotal": [
-                {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
-            ]},
-            "igtf": {
-                "apply_igtf": True,
-                "name": "3.0 %",
-                "igtf_base_amount": 100.0,
-                "igtf_amount": 3.0,
-                "foreign_igtf_base_amount": 200.0,
-                "foreign_igtf_amount": 6.0,
+        fake = type("FakeTaxRecord", (), {
+            "company_id": self.company,
+            "tax_totals": {
+                "groups_by_foreign_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 16%", "tax_group_base_amount": 100.0, "tax_group_amount": 16.0},
+                ]},
+                "groups_by_subtotal": {"Subtotal": [
+                    {"tax_group_name": "IVA 8%", "tax_group_base_amount": 50.0, "tax_group_amount": 4.0},
+                ]},
+                "igtf": {
+                    "apply_igtf": True,
+                    "name": "3.0 %",
+                    "igtf_base_amount": 100.0,
+                    "igtf_amount": 3.0,
+                    "foreign_igtf_base_amount": 200.0,
+                    "foreign_igtf_amount": 6.0,
+                },
             },
-        }})()
+        })()
         local, foreign = self.env['tfhka.document.service']._prepare_tax_subtotals([fake], "USD", multi_currency=False)
         self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in local))
         self.assertTrue(any(t["codigoTotalImp"] == "IGTF" for t in foreign))
@@ -2628,21 +2595,24 @@ class TestAccountMoveApiCalls(TransactionCase):
         subtotal = totals["impuestosSubtotal"][0]
         self.assertEqual(subtotal["codigoTotalImp"], "G")
         self.assertEqual(subtotal["alicuotaImp"], "16.0")
-        self.assertEqual(subtotal["baseImponibleImp"], "100.0")
-        self.assertEqual(subtotal["valorTotalImp"], "16.0")
-        self.assertEqual(totals["totalIVA"], "16.0")
+        self.assertEqual(subtotal["baseImponibleImp"], "100.00")
+        self.assertEqual(subtotal["valorTotalImp"], "16.00")
+        self.assertEqual(totals["totalIVA"], "16.00")
 
     def test_189_tax_subtotals_independent_of_subtotal_title(self):
         """Mismo payload con el titulo del subtotal en español y en ingles."""
         service = self.env['tfhka.document.service']
 
         def fake(title):
-            return type("FakeMove", (), {"tax_totals": {"groups_by_subtotal": {title: [{
-                "tax_group_name": "VAT 16%",
-                "tax_group_id": self.tax_group.id,
-                "tax_group_base_amount": 100.0,
-                "tax_group_amount": 16.0,
-            }]}}})()
+            return type("FakeMove", (), {
+                "company_id": self.company,
+                "tax_totals": {"groups_by_subtotal": {title: [{
+                    "tax_group_name": "VAT 16%",
+                    "tax_group_id": self.tax_group.id,
+                    "tax_group_base_amount": 100.0,
+                    "tax_group_amount": 16.0,
+                }]}},
+            })()
 
         es, _f1 = service._prepare_tax_subtotals([fake("Subtotal")], "VEF")
         en, _f2 = service._prepare_tax_subtotals([fake("Untaxed Amount")], "VEF")
@@ -2672,12 +2642,39 @@ class TestAccountMoveApiCalls(TransactionCase):
         ])
         totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
 
-        self.assertEqual(totals["montoExentoTotal"], "50.0")
-        self.assertEqual(totals["montoGravadoTotal"], "100.0")
+        self.assertEqual(totals["montoExentoTotal"], "50.00")
+        self.assertEqual(totals["montoGravadoTotal"], "100.00")
         self.assertTrue(
             any(t["codigoTotalImp"] == "E" for t in totals["impuestosSubtotal"]),
             "falta la linea exenta en impuestosSubtotal",
         )
+
+    def test_191b_exempt_amount_sums_all_exempt_groups(self):
+        """montoExentoTotal debe sumar TODOS los grupos exentos, no solo el
+        primero que encuentre (bug corregido: antes usaba next() y se
+        quedaba con un solo grupo exento).
+
+        Dos grupos fiscales distintos con alicuota 0 ("Exenta" e "IVA 0%"):
+        el monto exento total debe sumar ambas bases, y montoGravadoTotal
+        debe quedar con el resto del subtotal.
+        """
+        tax_group_exenta = self.env['account.tax.group'].create({'name': 'Exenta'})
+        tax_exenta = self.env['account.tax'].create({
+            'name': 'Exenta',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'tax_group_id': tax_group_exenta.id,
+        })
+        inv = self._vef_invoice([
+            {"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]},
+            {"product_id": self.product.id, "price_unit": 50, "tax_ids": [self.tax_iva0.id]},
+            {"product_id": self.product.id, "price_unit": 30, "tax_ids": [tax_exenta.id]},
+        ])
+        totals, _foreign = self.env['tfhka.document.service']._prepare_totals(inv)
+
+        self.assertEqual(totals["montoExentoTotal"], "80.00")
+        self.assertEqual(totals["montoGravadoTotal"], "100.00")
 
     def test_192_unsupported_rate_raises_user_error(self):
         """Una alicuota fuera de {0, 8, 16, 31} debe dar UserError, no KeyError."""
@@ -2867,4 +2864,90 @@ class TestAccountMoveApiCalls(TransactionCase):
         with self.assertRaises(ValidationError):
             inv2.action_tfhka_generate_digital()
         self.assertEqual(inv2.tfhka_digitalization_state, "none")
+
+    # ------------------------------------------------------------------
+    # Cobertura adicional: fixes de revision de codigo (nroItems, moneda
+    # del bloque "otra moneda", redondeo monetario)
+    # ------------------------------------------------------------------
+
+    def test_205_nro_items_excludes_sections_and_notes(self):
+        """nroItems debe contar solo lineas de producto, igual criterio que
+        detallesItems/_prepare_detail_lines (display_type == 'product').
+
+        Antes contaba TODAS las lineas de invoice_line_ids, incluidas
+        secciones y notas, asi que nroItems no coincidia con la cantidad
+        real de items del detalle.
+        """
+        inv = self._create_invoice(
+            products=[
+                {"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]},
+                {"product_id": self.product.id, "price_unit": 50, "tax_ids": [self.tax_iva16.id]},
+            ],
+            do_post=False,
+        )
+        inv.write({
+            "invoice_line_ids": [
+                Command.create({"display_type": "line_section", "name": "Seccion 1"}),
+                Command.create({"display_type": "line_note", "name": "Nota"}),
+            ],
+        })
+        service = self.env['tfhka.document.service']
+        totals, _foreign = service._prepare_totals(inv)
+        details = service._prepare_detail_lines(inv)
+
+        self.assertEqual(len(details), 2)
+        self.assertEqual(totals["nroItems"], "2")
+        self.assertEqual(totals["nroItems"], str(len(details)))
+
+    def test_206_foreign_totals_moneda_is_company_base_currency_when_non_ves(self):
+        """En compañias con moneda base distinta de VES, 'totalesOtraMoneda'
+        debe quedar etiquetado con el codigo de la moneda BASE real de la
+        compañia (la que efectivamente contienen sus montos, leidos de los
+        campos NO 'foreign_*' de tax_totals), no con el mismo codigo que
+        termina usando el bloque local.
+
+        Bug corregido: antes 'foreign_currency_code' quedaba apuntando al
+        mismo codigo que 'currency' (el de currency_foreign_id), asi que
+        ambos bloques del payload salian etiquetados con el mismo codigo de
+        moneda pero con cifras distintas.
+        """
+        self.currency_usd.code_tfhka = "USD"
+        self.currency_vef.code_tfhka = "VES"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
+        )
+        _totals, foreign_totals = self.env['tfhka.document.service']._prepare_totals(invoice)
+        self.assertTrue(foreign_totals, "Compañia en USD debe generar totalesOtraMoneda")
+        self.assertEqual(foreign_totals["moneda"], "USD")
+
+    def test_207_prepare_totals_uses_currency_round_not_native_round(self):
+        """Los montos del payload deben venir con el redondeo de Odoo
+        (currency.round(), medio hacia arriba) y siempre con 2 decimales,
+        no con round() nativo de Python (medio al par) ni strings sin
+        ceros de relleno como "100.0".
+        """
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
+        )
+        totals, foreign_totals = self.env['tfhka.document.service']._prepare_totals(invoice)
+        for key in ("montoGravadoTotal", "subtotal", "montoTotalConIVA", "totalIVA", "totalDescuento"):
+            self.assertRegex(
+                totals[key], r"^-?\d+\.\d{2}$",
+                f"{key} debe tener siempre 2 decimales: {totals[key]!r}",
+            )
+        for key in ("montoGravadoTotal", "subtotal", "montoTotalConIVA", "totalIVA", "totalDescuento"):
+            self.assertRegex(
+                foreign_totals[key], r"^-?\d+\.\d{2}$",
+                f"{key} (otra moneda) debe tener siempre 2 decimales: {foreign_totals[key]!r}",
+            )
+
+    def test_208_build_payment_info_monto_uses_currency_round(self):
+        """El monto del cuadro de pago usa currency.round(), con 2 decimales
+        siempre (antes: round() nativo + str(), p.ej. "100.0")."""
+        pay = self._create_payment(amount=100)
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}]
+        )
+        info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
+        self.assertEqual(info["monto"], "100.00")
 
