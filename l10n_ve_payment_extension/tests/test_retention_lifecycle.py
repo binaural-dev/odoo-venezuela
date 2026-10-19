@@ -360,6 +360,9 @@ class TestRetentionLifecycle(RetentionTestCommon):
         new_date = fields.Date.today()
         old_invoice.invoice_date_display = old_date
         new_invoice.invoice_date_display = new_date
+        # The rate date (invoice_date) cannot be later than invoice_date_display.
+        old_invoice.invoice_date = old_date
+        new_invoice.invoice_date = new_date
         old_invoice.action_post()
         new_invoice.action_post()
 

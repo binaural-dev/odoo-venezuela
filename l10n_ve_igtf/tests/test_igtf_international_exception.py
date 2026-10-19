@@ -75,6 +75,7 @@ class TestIgtfInternationalException(TransactionCase):
             "name": "Bank IGTF Test",
             "type": "bank",
             "code": "BIGTFTEST",
+            "default_account_id": account_bank_usd.id,
             "is_igtf": True,
             "currency_id": cls.env.ref("base.USD").id,
             "inbound_payment_method_line_ids": [(6, 0, pm_line_in_usd.ids)],
