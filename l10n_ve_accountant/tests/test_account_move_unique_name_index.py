@@ -1,8 +1,7 @@
 from collections import deque
 
-from psycopg2 import IntegrityError
-
 from odoo import fields
+from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 from odoo.tools import drop_index, index_exists
 
@@ -10,8 +9,8 @@ from odoo.tools import drop_index, index_exists
 @tagged("post_install", "-at_install", "l10n_ve_accountant", "unique_name_index")
 class TestAccountMoveUniqueNameIndex(TransactionCase):
     """Cubre el ticket #14986: ante nombres de account.move duplicados,
-    _auto_init no debe renombrar registros ni crashear -- solo debe omitir
-    la creación del índice único y loguear un warning."""
+    _auto_init no debe renombrar registros -- debe detener la instalación
+    con un UserError propio y legible, sin crear el índice único."""
 
     def setUp(self):
         super().setUp()
@@ -61,25 +60,19 @@ class TestAccountMoveUniqueNameIndex(TransactionCase):
 
     def test_duplicate_names_are_not_renamed_but_real_duplicates_still_block_install(self):
         """Duplicados reales (mismo proveedor+diario+número): nuestro código
-        no renombra nada y loguea el warning, pero la instalación igual se
-        detiene -- Odoo core tampoco puede crear su propio índice sobre datos
-        genuinamente duplicados. Es el comportamiento deseado: un problema de
-        datos real debe frenar la migración para revisión manual, no
-        ocultarse silenciosamente."""
+        no renombra nada y es quien detiene la instalación -- con un error
+        propio y legible (proveedor, diario, número), antes de que Odoo
+        core intente siquiera crear su índice. Es el comportamiento
+        deseado: un problema de datos real debe frenar la migración para
+        revisión manual, no ocultarse silenciosamente."""
         move_1 = self._create_move("FAC-DUP-001", self.partner_a)
         move_2 = self._create_move("FAC-DUP-001", self.partner_a)
 
-        with self.assertLogs(
-            "odoo.addons.l10n_ve_accountant.models.account_move", level="WARNING"
-        ) as log_ctx:
-            with self.assertRaises(IntegrityError):
-                with self.env.cr.savepoint():
-                    self._run_auto_init()
+        with self.assertRaises(UserError) as error_ctx:
+            self._run_auto_init()
 
-        self.assertTrue(
-            any("account_move_unique_name_ve" in msg for msg in log_ctx.output),
-            "Se esperaba un warning indicando que el índice no se reemplazó por duplicados",
-        )
+        self.assertIn("FAC-DUP-001", str(error_ctx.exception))
+        self.assertIn(self.partner_a.name, str(error_ctx.exception))
         move_1.invalidate_recordset()
         move_2.invalidate_recordset()
         self.assertEqual(

@@ -31,54 +31,72 @@ class AccountMove(models.Model):
 
     def _auto_init(self):
         # Se ejecuta ANTES de super()._auto_init(): el _auto_init de core
-        # (account/models/account_move.py) intenta crear su propio índice
-        # account_move_unique_name (name, journal_id) de forma incondicional,
-        # sin protección alguna. Si ya existe un índice con ese nombre --el
-        # nuestro, más amplio-- core detecta que ya existe y se salta su
-        # propio intento, evitando que la instalación truene por facturas de
+        # (account/models/account_move.py) protege la creación de su propio
+        # índice con `if not index_exists(cr, 'account_move_unique_name')`.
+        # Si para cuando corre ya existe un índice con ese nombre -el
+        # nuestro, más amplio, con partner_id/company_id- core ve que "ya
+        # existe" y se salta su propio intento (más angosto, sin
+        # partner_id), que de lo contrario fallaría con facturas de
         # distintos proveedores que comparten número en el mismo diario.
         if not index_exists(self.env.cr, "account_move_unique_name_ve"):
-            groups = self.env["account.move"]._read_group(
-                domain=[
-                    ("state", "=", "posted"),
-                    ("name", "!=", "/"),
-                    ("partner_id", "!=", False),
-                ],
-                groupby=["partner_id", "journal_id", "company_id", "name"],
-                aggregates=["__count"],
+            self.env.cr.execute(
+                """
+                SELECT partner.name, journal.name, move.name, COUNT(*)
+                FROM account_move move
+                JOIN res_partner partner ON partner.id = move.partner_id
+                JOIN account_journal journal ON journal.id = move.journal_id
+                WHERE move.state = 'posted'
+                  AND move.name != '/'
+                  AND move.partner_id IS NOT NULL
+                GROUP BY move.partner_id, move.journal_id, move.company_id,
+                         move.name, partner.name, journal.name
+                HAVING COUNT(*) > 1
+                ORDER BY COUNT(*) DESC
+                LIMIT 20
+                """
             )
-            collisions = [group for group in groups if group[-1] > 1]
+            collisions = self.env.cr.fetchall()
             if collisions:
-                _logger.warning(
-                    "l10n_ve_accountant: no se reemplazó el índice único "
-                    "account_move_unique_name por account_move_unique_name_ve "
-                    "porque existen %d grupo(s) de account.move con el mismo "
-                    "nombre para el mismo proveedor/diario/compañía. No se "
-                    "modificó ningún dato -- revisar manualmente si son "
-                    "duplicados reales antes de forzar la unicidad. Grupos: %s",
-                    len(collisions), collisions,
+                detail = "\n".join(
+                    f"- {partner} / {journal} / {name}: {count} facturas"
+                    for partner, journal, name, count in collisions
                 )
-            else:
-                # Solo se descarta el índice de core (name, journal_id) una vez
-                # confirmado que es seguro reemplazarlo por uno más permisivo
-                # (incluye partner_id/company_id): en Venezuela distintos
-                # proveedores pueden repetir el mismo número de factura en el
-                # mismo diario.
-                drop_index(self.env.cr, "account_move_unique_name", self._table)
-                self.env.cr.execute(
-                    """
-                    CREATE UNIQUE INDEX account_move_unique_name
-                        ON account_move(
-                            name, partner_id, company_id, journal_id
-                        )
-                    WHERE state = 'posted' AND name != '/';
-                    CREATE UNIQUE INDEX account_move_unique_name_ve
-                        ON account_move(
-                            name, partner_id, company_id, journal_id
-                        )
-                    WHERE state = 'posted' AND name != '/';
-                    """
+                if len(collisions) == 20:
+                    detail += "\n- ... (mostrando los primeros 20, puede haber más)"
+                raise UserError(
+                    _(
+                        "l10n_ve_accountant: no se puede crear el índice único "
+                        "account_move_unique_name_ve porque existen facturas de "
+                        "proveedor con el mismo nombre para el mismo proveedor/"
+                        "diario/compañía. No se modificó ningún dato -- revisar "
+                        "manualmente estos casos antes de reinstalar el módulo:\n%s",
+                        detail,
+                    )
                 )
+            # Solo se descarta el índice de core (name, journal_id) una vez
+            # confirmado que es seguro reemplazarlo por uno más permisivo
+            # (incluye partner_id/company_id): en Venezuela distintos
+            # proveedores pueden repetir el mismo número de factura en el
+            # mismo diario.
+            drop_index(self.env.cr, "account_move_unique_name", self._table)
+            # account_move_unique_name_ve es idéntico a account_move_unique_name
+            # (mismas columnas y condición) -- existe solo como marcador propio
+            # para el `index_exists` de arriba, independiente del índice de
+            # core, que podría cambiar de nombre o definición en el futuro.
+            self.env.cr.execute(
+                """
+                CREATE UNIQUE INDEX account_move_unique_name
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+                CREATE UNIQUE INDEX account_move_unique_name_ve
+                    ON account_move(
+                        name, partner_id, company_id, journal_id
+                    )
+                WHERE state = 'posted' AND name != '/';
+                """
+            )
         return super()._auto_init()
 
     def _get_fields_to_compute_lines(self):
