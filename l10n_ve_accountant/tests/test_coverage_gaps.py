@@ -348,6 +348,7 @@ class TestCoverageGaps(TransactionCase):
             ], limit=1).id or self.env['account.journal'].sudo().create({
                 "name": "Bank Stmt", "code": "BNKSTMT",
                 "type": "bank", "company_id": self.company.id,
+                "default_account_id": self.acc_bank.id,
             }).id,
         })
         vals = st_line.with_company(self.company)._prepare_move_line_default_vals()

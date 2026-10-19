@@ -3,6 +3,7 @@ from datetime import timedelta
 from odoo import api, fields, models, _
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools import format_date
+from odoo.tools import float_compare
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -266,6 +267,12 @@ class AccountPaymentRegister(models.TransientModel):
                     )
 
         return payment_vals
+
+    def action_create_payments(self):
+        for wizard in self:
+            if float_compare(wizard.amount, 0.0, precision_rounding=wizard.currency_id.rounding) == 0:
+                raise UserError(_("The amount to pay cannot be 0.0."))
+        return super().action_create_payments()
 
     def _create_payments(self):
         """
