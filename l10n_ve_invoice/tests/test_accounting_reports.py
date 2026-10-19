@@ -387,7 +387,7 @@ class TestAccountingReports(TransactionCase):
         today = fields.Date.today()
         wizard = self._create_wizard("sale", date_from=today, date_to=today)
         domain = wizard._get_domain()
-        self.assertIn(("company_id", "=", self.company.id), domain)
+        self.assertIn(("company_id", "in", [self.company.id]), domain)
         self.assertIn(("date", ">=", today), domain)
         self.assertIn(("date", "<=", today), domain)
         self.assertIn(("correlative", "not in", ["/", False]), domain)
@@ -904,7 +904,7 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("purchase", date_from=today, date_to=today)
         action = wizard.generate_report()
         self.assertEqual(action["type"], "ir.actions.act_url")
-        self.assertIn("company_id", action["url"])
+        self.assertIn("wizard_id=%s" % wizard.id, action["url"])
 
     def test_download_sales_book_url(self):
         wizard = self._create_wizard("sale")
