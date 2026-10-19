@@ -679,3 +679,17 @@ En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el 
 
 - **WHEN** la otra retención con la misma factura está `cancel`, o es de otro `type_retention`
 - **THEN** no se lanza el error de duplicidad
+
+### Requirement: Retenciones de IVA en los libros fiscales según el alcance del libro
+
+El módulo DEBE (MUST) extender `wizard.accounting.reports` para que las retenciones de IVA emitidas (`account.retention` en estado `emitted`, tipo `iva`) se seleccionen para las compañías del alcance del libro (`report_company_ids`) y no solo para la compañía activa, de modo que el libro consolidado incluya las retenciones de la matriz y de sus sucursales del mismo RIF y que el total de retenciones del resumen se calcule sobre ese mismo conjunto.
+
+#### Scenario: Retención de una sucursal en el libro consolidado
+
+- **WHEN** se genera el libro de ventas con alcance consolidado y una sucursal tiene una retención de IVA emitida en el período
+- **THEN** la retención aparece en el libro y en el total de retenciones del resumen
+
+#### Scenario: Libro solo de la matriz
+
+- **WHEN** el alcance es `main` y la retención pertenece a una sucursal
+- **THEN** la retención no aparece en el libro
