@@ -13,3 +13,4 @@ from . import test_credit_limit_scope
 from . import test_reversal_foreign_rate
 from . import test_invoice_price_unit_pricelist
 from . import test_partner_id_domain
+from . import test_chart_template_relink
