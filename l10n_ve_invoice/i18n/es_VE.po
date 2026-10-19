@@ -904,6 +904,7 @@ msgstr "Campo de descuento mostrado en las líneas de factura: porcentaje o impo
 msgid "Free Form"
 msgstr "Forma Libre"
 
+#. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid ""
