@@ -1,4 +1,4 @@
-# Spec delta: pos-refund-original-rate
+# Spec delta: pos-orderline-foreign-display
 
 ## ADDED Requirements
 

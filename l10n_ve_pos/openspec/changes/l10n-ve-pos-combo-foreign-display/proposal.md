@@ -48,6 +48,7 @@ Además, las hijas mostraban el "/ $ x" suelto, sin el precio local al lado.
 
 - **Módulo**: `l10n_ve_pos`, solo frontend. Fix visual; no toca totales,
   pagos ni contabilidad.
+- **Capability**: `pos-orderline-foreign-display` (nueva).
 - **Pantallas**: todas las que usan `point_of_sale.Orderline` (pedido, ticket
   screen, reembolso, recibo, pantalla del cliente).
 - `binaural_pos_multicurrency` (integra-addons) hereda esta plantilla para las

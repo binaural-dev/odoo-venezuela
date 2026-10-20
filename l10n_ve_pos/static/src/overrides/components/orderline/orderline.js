@@ -9,6 +9,8 @@ import { _t } from "@web/core/l10n/translation";
 // solo el del padre (la suma de ellas). Cada hija muestra su parte del precio
 // como una línea normal: su displayPrice en la moneda de la caja y, por
 // orderline.xml, el monto secundario (foráneo o de la compañía).
+// El descuento de la hija sigue oculto, como en el core (`discount: ... &&
+// !line.combo_parent_id`): su displayPrice ya lo trae aplicado.
 patch(Orderline.prototype, {
     get lineScreenValues() {
         const vals = super.lineScreenValues;
