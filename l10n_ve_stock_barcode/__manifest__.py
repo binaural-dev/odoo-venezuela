@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Inventory/Stock",
-    "version": "1.3",
+    "version": "19.0.1.3.0",
     "depends": ["stock_barcode"],
     "data": [],
     "auto_install": True,

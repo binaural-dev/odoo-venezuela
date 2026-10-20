@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_lead_view_kanban_forecast_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.lead.view.kanban.forecast.foreign.currency</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_kanban_forecast"/>
+        <field name="arch" type="xml">
+            <xpath expr="//kanban" position="inside">
+                <field name="prorated_revenue_foreign"/>
+                <field name="recurring_revenue_monthly_prorated_foreign"/>
+                <field name="recurring_revenue_prorated_foreign"/>
+            </xpath>
+            <progressbar position="attributes">
+                <attribute name="sum_field">prorated_revenue_foreign</attribute>
+                <attribute name="recurring_revenue_sum_field">recurring_revenue_monthly_prorated_foreign</attribute>
+            </progressbar>
+            <!-- Reemplaza el contenido de la fila alterna heredada del kanban base
+                 (montos crudos) por los ponderados por probabilidad, para que
+                 coincida en semántica con la fila VES de Pronóstico. -->
+            <xpath expr="//div[@id='o_kanban_card_crm_lead_revenue_foreign']" position="replace">
+                <div id="o_kanban_card_crm_lead_revenue_foreign" class="o_kanban_card_crm_lead_revenue">
+                    <t t-if="record.prorated_revenue_foreign.raw_value">
+                        <field name="prorated_revenue_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+                        <span t-if="record.recurring_revenue_prorated_foreign and record.recurring_revenue_prorated_foreign.raw_value" groups="crm.group_use_recurring_revenues"> + </span>
+                    </t>
+                    <t t-if="record.recurring_revenue_prorated_foreign and record.recurring_revenue_prorated_foreign.raw_value">
+                        <field class="me-1" name="recurring_revenue_prorated_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}" groups="crm.group_use_recurring_revenues"/>
+                        <field name="recurring_plan" groups="crm.group_use_recurring_revenues"/>
+                    </t>
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_tree_forecast_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.lead.view.list.forecast.foreign.currency</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_tree_forecast"/>
+        <field name="arch" type="xml">
+            <field name="prorated_revenue" position="attributes">
+                <attribute name="optional">hide</attribute>
+            </field>
+            <field name="prorated_revenue" position="after">
+                <field name="foreign_currency_id" column_invisible="True"/>
+                <field
+                    name="prorated_revenue_foreign"
+                    sum="Prorated Revenues"
+                    optional="show"
+                    widget="monetary"
+                    options="{'currency_field': 'foreign_currency_id'}"
+                />
+            </field>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_graph_forecast_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.lead.view.graph.forecast.foreign.currency</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_graph_forecast"/>
+        <field name="arch" type="xml">
+            <field name="prorated_revenue" position="replace">
+                <field name="prorated_revenue_foreign" type="measure"/>
+            </field>
+        </field>
+    </record>
+
+    <record id="crm_lead_view_pivot_forecast_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.lead.view.pivot.forecast.foreign.currency</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_pivot_forecast"/>
+        <field name="arch" type="xml">
+            <field name="prorated_revenue" position="replace">
+                <field name="prorated_revenue_foreign" type="measure"/>
+            </field>
+        </field>
+    </record>
+</odoo>

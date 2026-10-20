@@ -21,3 +21,13 @@ class ResCurrency(models.Model):
                     "l10n_ve_accountant.group_fiscal_config_support"
                 )
             )
+
+    def is_venezuelan_bolivar(self):
+        """True when this currency is the Venezuelan Bolívar, VEF or VES.
+
+        Odoo keeps VEF (pre-2018 redenomination) and VES (current) as separate
+        currency records, so callers that mean "the local Bolívar" must not
+        hardcode either one alone or they'll misbehave for companies still on
+        the other record.
+        """
+        return self.name in ("VEF", "VES")
