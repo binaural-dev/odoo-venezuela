@@ -901,6 +901,21 @@ class AccountRetention(models.Model):
             "target": "new",
         }
 
+    def action_print_municipal_retention_pdf(self):
+        """Download the municipal retention voucher as PDF.
+
+        Mirrors action_print_municipal_retention_xlsx: the delivery date is set
+        on the first print so both vouchers show the same date. Drafts are
+        still blocked by ir.actions.report._render_qweb_pdf.
+        """
+        self.ensure_one()
+        if not self.date_emision:
+            self.write({"date_emision": fields.Date.today()})
+            self.flush_recordset(["date_emision"])
+        return self.env.ref(
+            "l10n_ve_payment_extension.retention_voucher_action"
+        ).report_action(self)
+
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
             # Dispatch through get_sequence_<type>_retention() rather than
