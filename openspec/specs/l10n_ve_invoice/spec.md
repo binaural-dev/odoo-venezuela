@@ -295,11 +295,13 @@ La validación DEBE (MUST) consultar por cada Nota de Crédito `_l10n_ve_skip_re
 
 ### Requirement: Fecha de factura no posterior a la fecha contable en compras
 
-Cuando la compañía activa `block_invoice_display_date_upper_than_date`, el sistema DEBE (MUST) impedir en documentos de compra que `invoice_date_display` sea mayor que la fecha contable `date` (constraint `_check_invoice_date_display_purchases`).
+La configuración `block_invoice_display_date_upper_than_date` (modelo `res.company`, Ajustes de facturación) DEBE (MUST) estar **encendida por defecto** (`default=True`) y en todas las compañías existentes (migración `19.0.1.0.25`). Con ella encendida, el sistema DEBE impedir en documentos de compra (facturas, notas y recibos de proveedor) que `invoice_date_display` sea mayor que la fecha contable `date`, es decir, que la fecha contable sea menor que la fecha de la factura (constraint `_check_invoice_date_display_purchases`).
 
-#### Scenario: Fecha de documento futura
+La opción de apagarla existe solo por criterio del consultor, para ajustes o casos puntuales del cliente; no es un modo de operación normal. Los documentos de venta no se ven afectados.
 
-- **WHEN** se guarda una factura de proveedor con fecha de documento posterior a la fecha contable y el bloqueo activo
+#### Scenario: Fecha contable anterior a la fecha de la factura
+
+- **WHEN** se guarda una factura de proveedor con fecha contable anterior a su fecha de factura y la configuración encendida
 - **THEN** se lanza un error "The invoice date cannot be greater than the accounting date."
 
 ### Requirement: Solo documentos contables confirmados se imprimen
