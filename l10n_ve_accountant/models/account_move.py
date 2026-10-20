@@ -30,14 +30,17 @@ class AccountMove(models.Model):
     ]
 
     def _auto_init(self):
-        # Se ejecuta ANTES de super()._auto_init(): el _auto_init de core
-        # (account/models/account_move.py) protege la creación de su propio
-        # índice con `if not index_exists(cr, 'account_move_unique_name')`.
-        # Si para cuando corre ya existe un índice con ese nombre -el
-        # nuestro, más amplio, con partner_id/company_id- core ve que "ya
-        # existe" y se salta su propio intento (más angosto, sin
-        # partner_id), que de lo contrario fallaría con facturas de
-        # distintos proveedores que comparten número en el mismo diario.
+        """Replace core's unique index on (name, journal_id) with a wider
+        one that also includes partner_id and company_id, so that
+        different partners can share the same document number in the same
+        journal -- normal practice in Venezuela.
+
+        Must run BEFORE super()._auto_init(): core's _auto_init (in
+        account/models/account_move.py) only creates its own
+        account_move_unique_name index `if not index_exists(...)`, so
+        creating our own index under that same name first makes core skip
+        its narrower one instead of failing on it.
+        """
         if not index_exists(self.env.cr, "account_move_unique_name_ve"):
             self.env.cr.execute(
                 """
@@ -58,31 +61,25 @@ class AccountMove(models.Model):
             collisions = self.env.cr.fetchall()
             if collisions:
                 detail = "\n".join(
-                    f"- {partner} / {journal} / {name}: {count} facturas"
+                    f"- {partner} / {journal} / {name}: {count} entries"
                     for partner, journal, name, count in collisions
                 )
                 if len(collisions) == 20:
-                    detail += "\n- ... (mostrando los primeros 20, puede haber más)"
+                    detail += "\n- ... (showing the first 20, there may be more)"
                 raise UserError(
                     _(
-                        "l10n_ve_accountant: no se puede crear el índice único "
-                        "account_move_unique_name_ve porque existen facturas de "
-                        "proveedor con el mismo nombre para el mismo proveedor/"
-                        "diario/compañía. No se modificó ningún dato -- revisar "
-                        "manualmente estos casos antes de reinstalar el módulo:\n%s",
+                        "l10n_ve_accountant: cannot create the "
+                        "account_move_unique_name_ve index because there are "
+                        "accounting entries with the same number for the same "
+                        "partner/journal/company. No data was changed -- review "
+                        "these cases manually before reinstalling the module:\n%s",
                         detail,
                     )
                 )
-            # Solo se descarta el índice de core (name, journal_id) una vez
-            # confirmado que es seguro reemplazarlo por uno más permisivo
-            # (incluye partner_id/company_id): en Venezuela distintos
-            # proveedores pueden repetir el mismo número de factura en el
-            # mismo diario.
             drop_index(self.env.cr, "account_move_unique_name", self._table)
-            # account_move_unique_name_ve es idéntico a account_move_unique_name
-            # (mismas columnas y condición) -- existe solo como marcador propio
-            # para el `index_exists` de arriba, independiente del índice de
-            # core, que podría cambiar de nombre o definición en el futuro.
+            # account_move_unique_name_ve mirrors account_move_unique_name;
+            # it exists only as our own marker for the index_exists check
+            # above, independent of core's index name/definition.
             self.env.cr.execute(
                 """
                 CREATE UNIQUE INDEX account_move_unique_name
