@@ -40,9 +40,9 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="col-12 col-lg-6 o_setting_box" invisible="not company_parent_id">
+                        <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane">
-                                <field name="use_parent_retention_sequence"/>
+                                <field name="use_parent_retention_sequence" readonly="not company_parent_id"/>
                                 <field name="company_parent_id" invisible="1"/>
                             </div>
                             <div class="o_setting_right_pane">
