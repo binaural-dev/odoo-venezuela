@@ -117,11 +117,14 @@ class TestMunicipalRetentionPdf(RetentionTestCommon):
         self.assertFalse(retention.date_emision)
         _logger.info("========= test_05 passed =========")
 
-    def test_06_draft_municipal_raises(self):
-        retention = self._create_municipal_retention()
-        self.assertEqual(retention.state, "draft")
+    def test_06_draft_municipal_renders_and_iva_raises(self):
+        municipal = self._create_municipal_retention()
+        self.assertEqual(municipal.state, "draft")
+        self.assertIn("ACTIVIDADES ECONÓMICAS", self._render(municipal))
+        iva = self._create_iva_retention()
+        self.assertEqual(iva.state, "draft")
         with self.assertRaises(ValidationError):
-            self._render(retention)
+            self._render(iva)
         _logger.info("========= test_06 passed =========")
 
     def test_07_rows_match_xlsx(self):
