@@ -16,7 +16,7 @@ class IrActionsReport(models.Model):
         ):
             retention_ids = self.env["account.retention"].browse(res_ids)
             for retention in retention_ids:
-                if retention.state == "draft":
+                if retention.state == "draft" and retention.type_retention != "municipal":
                     raise ValidationError(
                         _("You cannot download a withholding slip in draft status. ")
                     )
