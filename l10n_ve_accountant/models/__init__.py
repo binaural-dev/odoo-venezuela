@@ -4,6 +4,7 @@ from . import account_move_line
 from . import account_move
 from . import account_tax
 from . import account_partial_reconcile
+from . import payment_date_check_mixin
 from . import account_payment
 from . import account_invoice_report
 from . import res_partner
