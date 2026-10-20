@@ -62,6 +62,11 @@ class ResPartner(models.Model):
         if not self.env.company.validate_partner_name_immutable:
             return
 
+        if self.env.user.has_group(
+            "l10n_ve_contact.group_edit_partner_name_immutable"
+        ):
+            return
+
         model_checks = {
             "sale.order": [("partner_id", "=", "id")],
             "purchase.order": [("partner_id", "=", "id")],
@@ -184,13 +189,19 @@ class ResPartner(models.Model):
         return super(ResPartner, self).create(vals_list)
 
     def write(self, vals):
+        # Only the contacts whose email really changes are checked: writing back
+        # the email a contact already has (e.g. a form, an import or any process
+        # that sends every field) must not fail because another partner shares it.
+        email_changed = self.browse()
+        if "email" in vals:
+            email_changed = self.filtered(lambda partner: partner.email != vals["email"])
         res = super().write(vals)
         if "prefix_vat" and "vat" in vals:
             for record in self:
                 record.check_duplicate_vat(
                     vals.get("prefix_vat"), vals.get("vat"))
         if "email" in vals:
-            for record in self:
+            for record in email_changed:
                 if record.type == "contact":
                     record.check_duplicate_email(vals.get("email"))
         return res

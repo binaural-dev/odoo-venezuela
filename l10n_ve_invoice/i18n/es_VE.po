@@ -705,6 +705,12 @@ msgstr ""
 #. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
+msgid "The accounting date cannot be greater than today."
+msgstr "La fecha contable no puede ser mayor que la fecha de hoy."
+
+#. module: l10n_ve_invoice
+#. odoo-python
+#: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid "The invoice date cannot be greater than the accounting date."
 msgstr "La fecha de la factura no puede ser mayor que la fecha contable."
 

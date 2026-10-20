@@ -20,3 +20,4 @@ from . import test_outstanding_widget_amount
 from . import test_remove_igtf_without_igtf_line
 
 from . import test_unreconcile_advance_cross
+from . import test_igtf_zero_amount_payment
