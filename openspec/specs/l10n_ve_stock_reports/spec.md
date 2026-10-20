@@ -2,7 +2,7 @@
 
 ## Purpose
 
-**Estado: DEPRECADO.** El módulo no funciona en Odoo 19 porque su cálculo depende de `stock.valuation.layer`, y no debe instalarse junto a otro módulo que declare `wizard.stock.book.report` o la ruta `/web/download_stock_book`. Los requisitos siguientes describen el comportamiento heredado y no se mantienen.
+**Estado: DEPRECADO.** El módulo no funciona en Odoo 19 porque su cálculo depende de `stock.valuation.layer`, y no debe instalarse junto a otro módulo que declare `wizard.stock.book.report` o la ruta `/web/download_stock_book`. Las pruebas del wizard se retiraron por depender de ese modelo; se conserva solo la del controlador. Los requisitos siguientes describen el comportamiento heredado y no se mantienen.
 
 Genera el libro de inventario venezolano ("Registro detallado de entradas y salidas de inventario de mercancías") como archivo Excel, a partir de las capas de valoración de inventario (`stock.valuation.layer`). Define el wizard `wizard.stock.book.report` y el controlador HTTP de descarga. Declara dependencias de `stock`, `account` y `sale_stock`, pero el código usa además el modelo `stock.valuation.layer` (que en Odoo 19 ya no existe: `stock_account` lo sustituyó por `product.value`), el campo `transfer_reason_id` de `stock.picking` (definido en `l10n_ve_stock_account`) y los campos `production_id` / `raw_material_production_id` de `stock.move` (definidos en `mrp`), ninguno de los cuales está declarado como dependencia.
 
