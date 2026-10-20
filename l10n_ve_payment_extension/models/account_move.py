@@ -145,6 +145,7 @@ class AccountMoveRetention(models.Model):
         if retention_type == "municipal":
             pending = retentions.filtered(lambda r: not r.date_emision)
             pending.write({"date_emision": fields.Date.today()})
+            pending.flush_recordset(["date_emision"])
         return self.env.ref(
             "l10n_ve_payment_extension.retention_voucher_action"
         ).report_action(retentions, config=False)
