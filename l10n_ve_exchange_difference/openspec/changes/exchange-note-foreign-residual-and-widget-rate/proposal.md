@@ -111,7 +111,9 @@ tomada, con ejemplos y valores en el change `outstanding-widget-applies-shown-am
 - Filtrar `is_exchange` en los consumidores de `invoice_payments_widget` (`l10n_ve_iot_mf`,
   `l10n_ve_account_mf`, las fechas de pago de `l10n_ve_invoice`, `l10n_ve_payment_extension`,
   `l10n_ve_invoice_digital`, comisiones): no se trata en este change. Hoy esos consumidores ya reciben estas
-  filas (notas del lado de la factura y diferencial nativo) sin distinguirlas.
+  filas (notas del lado de la factura y diferencial nativo) sin distinguirlas. Las filas de la ND que cierra contra el
+  pago son nuevas en este change: una factura cobrada a una tasa mayor e impresa después del cobro mandaría esa ND a la
+  máquina fiscal como otra forma de pago (`_mf_build_payment_lines` y `l10n_ve_iot_mf`). Queda como ticket aparte.
 - El IVA de las notas: llevan el impuesto exento por diseño (`_check_l10n_ve_exchange_note_product_id`).
 - Las verificaciones manuales de la sección 3 de `tasks.md`: se hacen en la instancia de pruebas, no forman
   parte de la implementación.

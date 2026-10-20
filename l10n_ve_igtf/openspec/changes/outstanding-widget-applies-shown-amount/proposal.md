@@ -136,6 +136,12 @@ el pago completo con una ND de 400 Bs).
   - **Criterio funcional:** ese cruce no es un flujo esperado para facturas a cuotas con IGTF.
   - **Si algún día se vuelve un flujo esperado** hay que decidir antes qué cuota recibe el pago y cómo
     se reparte el IGTF entre las cuotas; hoy no hay una regla de negocio definida para eso.
+- Cruces de anticipo huérfanos que ya están publicados (sin pago origen: pago borrado por SQL o por
+  una integración, o datos anteriores a este cambio): no hay migración. Solo se cancelan cuando se
+  desconcilian desde la factura. Antes de desplegar, listarlos con una consulta sobre `account_move`
+  (`is_advance_move`, `origin_payment_advanced_payment_id IS NULL`, publicado, sin `reversed_entry_id`,
+  con línea en las cuentas de IGTF de la compañía). Cancelar un cruce implica desconciliar todas sus
+  líneas, no solo el parcial pedido (igual que un cruce con pago origen).
 - La interacción con el flujo de notas de diferencial cambiario está en el
   change `exchange-note-foreign-residual-and-widget-rate` de
   `l10n_ve_exchange_difference`.

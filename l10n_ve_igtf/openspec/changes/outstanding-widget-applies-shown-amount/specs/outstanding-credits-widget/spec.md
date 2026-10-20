@@ -140,3 +140,15 @@ desconciliar desde la factura o al pasar a borrador o cancelar su pago origen.
 - **GIVEN** un cruce en borrador ligado al pago
 - **WHEN** se cancela o pasa a borrador el pago
 - **THEN** el cruce SHALL cancelarse y desligarse del pago sin abrir el wizard
+
+#### Scenario: Cruce huérfano al desconciliar
+
+- **GIVEN** un cruce de anticipo publicado sin pago origen (con o sin línea de IGTF)
+- **WHEN** se desconcilia desde la factura
+- **THEN** SHALL cancelarse, SHALL NOT quedar atrapado contra la guarda de publicación, y la factura SHALL quedar sin ese pago
+
+#### Scenario: Borrador que no es cruce de anticipo
+
+- **GIVEN** un asiento en borrador que apunta al pago por `origin_payment_advanced_payment_id` pero sin `is_advance_move`
+- **WHEN** se cancela el pago
+- **THEN** el asiento SHALL NOT cancelarse ni desligarse

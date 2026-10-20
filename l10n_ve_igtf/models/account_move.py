@@ -965,11 +965,11 @@ class AccountMove(models.Model):
         if not payment_move:
             return False
         vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
-        if payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id:
+        if payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id and not payment_move._is_advance_cross():
             return 
 
         igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
-        if not igtf_line and not payment_move.origin_payment_advanced_payment_id:
+        if not igtf_line and not payment_move.origin_payment_advanced_payment_id and not payment_move._is_advance_cross():
             return False
 
         try:
@@ -1060,8 +1060,11 @@ class AccountMove(models.Model):
             
         try:
 
-            if payment_move.origin_payment_advanced_payment_id:
-                payment_move.origin_payment_advanced_payment_id.write({'advanced_move_ids': [(3, payment_move.id)]})
+            if payment_move._is_advance_cross():
+                # Un cruce sin pago origen (pago borrado o dato histórico) también se cancela: ya no
+                # tiene función y `_post` no lo deja volver a publicarse.
+                if payment_move.origin_payment_advanced_payment_id:
+                    payment_move.origin_payment_advanced_payment_id.write({'advanced_move_ids': [(3, payment_move.id)]})
                 payment_move.with_context(move_action_cancel_advance_payment=True).button_cancel()
             else:
                 payment_move.action_post()

@@ -176,3 +176,103 @@ class TestUnreconcileAdvanceCross(CurrencyFixtureCommon):
 
         self.assertEqual(cross.state, "cancel")
         self.assertFalse(cross.origin_payment_advanced_payment_id)
+
+    def test_orphan_cross_entry_is_cancelled_when_unreconciled_from_the_invoice(self):
+        """Un cruce publicado que perdió su pago origen (pago borrado o dato histórico) ya no tiene función:
+        al desconciliarlo desde la factura se cancela, sin quedar atrapado contra la guarda de `_post`."""
+        invoice = self._invoice("2026-08-01", 100.0)
+        payment_line = self._outstanding_line(self.bank["VEF"], 100.0, self.vef, "2026-08-01")
+        payment = payment_line.move_id.origin_payment_id
+        cross = self._cross_entry(payment, post=True, advance=True)
+        cross.origin_payment_advanced_payment_id = False
+        cross_line = cross.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+        invoice_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        (invoice_line + cross_line).reconcile()
+        partial = cross_line.matched_debit_ids | cross_line.matched_credit_ids
+
+        invoice.js_remove_outstanding_partial(partial.id)
+
+        self.assertEqual(cross.state, "cancel")
+        self.assertFalse(partial.exists())
+        self.assertEqual(invoice.payment_state, "not_paid")
+
+    def test_cancelling_the_origin_payment_leaves_non_advance_drafts_alone(self):
+        """Los asientos en borrador que apuntan al pago por `origin_payment_advanced_payment_id` pero no son
+        cruces de anticipo (p. ej. los de las integraciones) no se cancelan."""
+        payment_line = self._outstanding_line(self.bank["VEF"], 100.0, self.vef, "2026-08-01")
+        payment = payment_line.move_id.origin_payment_id
+        foreign_draft = self._cross_entry(payment, post=False, advance=False)
+
+        payment.action_cancel()
+
+        self.assertEqual(foreign_draft.state, "draft")
+        self.assertEqual(foreign_draft.origin_payment_advanced_payment_id, payment)
+
+    def test_orphan_cross_entry_with_igtf_line_is_cancelled_when_unreconciled(self):
+        """Caso del review: cruce publicado, sin pago origen y con línea de IGTF. `remove_igtf_from_account_move`
+        lo pasa a borrador (rompe el parcial); antes lo volvía a publicar, la guarda de `_post` lo rechazaba y
+        `js_remove_outstanding_partial` terminaba en `MissingError`. Ahora se cancela y la factura se desconcilia."""
+        igtf_account = self.env["account.account"].create({
+            "name": "IGTF por pagar (prueba cruce)", "code": "2302IGT",
+            "account_type": "liability_current", "company_ids": [Command.set([self.company.id])],
+        })
+        self.company.customer_account_igtf_id = igtf_account
+        self.partner.property_account_receivable_id = self.acc_receivable
+        self.partner.default_advance_customer_account_id = self.advance_account
+        invoice = self._invoice("2026-08-01", 100.0)
+        payment_line = self._outstanding_line(self.bank["VEF"], 100.0, self.vef, "2026-08-01")
+        payment = payment_line.move_id.origin_payment_id
+        cross = self.env["account.move"].create({
+            "is_advance_move": True,
+            "move_type": "entry",
+            "journal_id": self.misc_journal.id,
+            "date": "2026-08-01",
+            "origin_payment_advanced_payment_id": payment.id,
+            "partner_id": self.partner.id,
+            "line_ids": [
+                Command.create({"account_id": self.advance_account.id, "debit": 100.0, "credit": 0.0,
+                                "partner_id": self.partner.id}),
+                Command.create({"account_id": self.acc_receivable.id, "debit": 0.0, "credit": 97.0,
+                                "partner_id": self.partner.id}),
+                Command.create({"account_id": igtf_account.id, "debit": 0.0, "credit": 3.0,
+                                "partner_id": self.partner.id}),
+            ],
+        })
+        cross.action_post()
+        cross.origin_payment_advanced_payment_id = False
+        cross_line = cross.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+        invoice_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        (invoice_line + cross_line).reconcile()
+        partial = cross_line.matched_debit_ids | cross_line.matched_credit_ids
+
+        invoice.js_remove_outstanding_partial(partial.id)
+
+        self.assertEqual(cross.state, "cancel")
+        self.assertFalse(partial.exists())
+        self.assertEqual(invoice.payment_state, "not_paid")
+
+    def test_orphan_cross_entry_cancel_also_unreconciles_its_other_invoices(self):
+        """Cancelar un cruce implica desconciliar TODAS sus líneas (`button_draft` no distingue parciales): un
+        cruce huérfano aplicado a dos facturas las deja a ambas sin pagar, igual que un cruce con pago origen,
+        y no deja ningún parcial colgando del asiento cancelado."""
+        invoice_1 = self._invoice("2026-08-01", 50.0)
+        invoice_2 = self._invoice("2026-08-01", 50.0)
+        payment_line = self._outstanding_line(self.bank["VEF"], 100.0, self.vef, "2026-08-01")
+        payment = payment_line.move_id.origin_payment_id
+        cross = self._cross_entry(payment, post=True, advance=True)
+        cross.origin_payment_advanced_payment_id = False
+        cross_line = cross.line_ids.filtered(lambda l: l.account_id == self.acc_receivable)
+        for invoice in (invoice_1, invoice_2):
+            invoice_line = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+            (invoice_line + cross_line).reconcile()
+        self.assertEqual(invoice_1.payment_state, "paid")
+        self.assertEqual(invoice_2.payment_state, "paid")
+        partial = cross_line.matched_debit_ids | cross_line.matched_credit_ids
+        partial_1 = partial.filtered(lambda p: invoice_1.line_ids & (p.debit_move_id | p.credit_move_id))
+
+        invoice_1.js_remove_outstanding_partial(partial_1.id)
+
+        self.assertEqual(cross.state, "cancel")
+        self.assertEqual(invoice_1.payment_state, "not_paid")
+        self.assertEqual(invoice_2.payment_state, "not_paid")
+        self.assertFalse(cross_line.matched_debit_ids | cross_line.matched_credit_ids)

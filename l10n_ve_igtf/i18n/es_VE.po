@@ -780,7 +780,7 @@ msgid ""
 "origin payment."
 msgstr ""
 "El asiento de cruce de anticipo %s no puede pasarse a borrador ni cancelarse "
-"por sí solo. Desconcílielo desde la factura, o pase a borrador o cancele su "
+"por sí solo. Desconcílialo desde la factura, o pasa a borrador o cancela su "
 "pago origen."
 
 #. module: l10n_ve_igtf
