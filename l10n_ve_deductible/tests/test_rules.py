@@ -169,6 +169,11 @@ class TestDeductibleScope(DeductibleCase):
                         with self.assertRaisesMsg(ValidationError, "not enabled for this company"):
                             self._doc(move_type=move_type, **self.PERCENT)
 
+    def test_default_scope_is_customer(self):
+        company = self.env["res.company"].create({"name": "Compañía Nueva Deducible"})
+        self.assertEqual(company.deductible_scope, "customer")
+        self.assertFalse(company.use_deductible)
+
     def test_disabled_company_rejects_both_sides(self):
         self.company.use_deductible = False
         for move_type in ("in_invoice", "out_invoice"):

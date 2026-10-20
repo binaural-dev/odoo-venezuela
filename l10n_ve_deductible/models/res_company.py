@@ -16,6 +16,6 @@ class ResCompany(models.Model):
             ("both", "Vendor Bills and Customer Invoices"),
         ],
         string="Deductible Applies To",
-        default="vendor",
+        default="customer",
         required=True,
     )
