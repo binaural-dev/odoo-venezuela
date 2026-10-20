@@ -1,4 +1,6 @@
-import { test, expect, describe } from "@odoo/hoot";
+import { test, expect, describe, beforeEach } from "@odoo/hoot";
+import { allowTranslations, patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { localization } from "@web/core/l10n/localization";
 import { Orderline } from "@point_of_sale/app/components/orderline/orderline";
 import { formatCurrency } from "@web/core/currency";
 import "@l10n_ve_pos/overrides/components/orderline/orderline";
@@ -7,6 +9,13 @@ import "@l10n_ve_pos/overrides/components/orderline/orderline";
 // (`price: !line.combo_parent_id && ...`), solo el del padre. Cada hija muestra
 // su parte del precio como una línea normal; con `vals.price`, orderline.xml
 // agrega el monto secundario.
+
+// lineScreenValues formatea montos (formatCurrency) y traduce ("Free"): en un
+// test sin servicios ni la localización ni las traducciones están cargadas.
+beforeEach(() => {
+    allowTranslations();
+    patchWithCleanup(localization, { decimalPoint: ",", thousandsSep: ".", grouping: [3, 0] });
+});
 
 function makeLine(props = {}) {
     return {

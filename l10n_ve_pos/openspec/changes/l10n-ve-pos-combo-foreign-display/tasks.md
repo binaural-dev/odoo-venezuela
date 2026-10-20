@@ -17,8 +17,12 @@
 
 ## 2. Verificación
 
-- [x] 2.1 Correr los tests hoot de `l10n_ve_pos`: 14/14 en verde en una BD nueva
-      (posv19-consultor, 08-oct): `odoo -d posv19_consultor -i binaural_pos_multicurrency --test-tags "/web:WebSuite.test_unit_desktop[@l10n_ve_pos/unit/pos_order_line_combo_foreign,@binaural_pos_multicurrency/unit/pos_order_line_company_price]"`
+- [x] 2.1 Correr los tests hoot de `l10n_ve_pos`: 18/18 en verde en una BD nueva
+      (20-oct, estado final de este PR y de integra-addons#2996):
+      `odoo -d <bd_nueva> -i binaural_pos_multicurrency --test-tags "/web:WebSuite.test_unit_desktop[@l10n_ve_pos/unit/pos_order_line_combo_foreign,@l10n_ve_pos/unit/orderline_combo_child_price,@binaural_pos_multicurrency/unit/pos_order_line_company_price]"`.
+      El test de las hijas (1.5) no se había corrido: fallaba porque
+      `lineScreenValues` formatea y traduce sin localización ni traducciones
+      cargadas; corregido en el propio test.
 - [x] 2.2 Navegador, caja en moneda principal: combo con impuestos incluidos y
       separados (posv19, caja 81: $ 17,00 / $ 15,00)
 - [x] 2.3 Navegador: reembolso de un combo con la tasa del día cambiada (900
@@ -34,3 +38,5 @@
 ## 3. OpenSpec
 
 - [x] 3.1 `openspec validate`
+- [x] 3.2 El delta va en su propia capability, `pos-orderline-foreign-display`,
+      no en `pos-refund-original-rate` (code review)
