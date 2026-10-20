@@ -57,6 +57,10 @@ class ResCurrencyRate(models.Model):
         the closest one *before* it is used - rates dated after rate_date are excluded
         by the domain itself and never considered, regardless of how close they are.
 
+        Las tasas solo existen en la compañía principal (Odoo 19 no permite tasas en
+        sucursales nativas), por lo que se buscan en la compañía activa y su raíz
+        (`root_id`); una sucursal resuelve así la tasa de la matriz.
+
         Raises
         ------
         UserError
@@ -72,14 +76,20 @@ class ResCurrencyRate(models.Model):
             A dictionary with the rate and inverse rate for the given currency and
             date, or {} if no rate was found and raise_if_not_found is False.
         """
+
+        company = self.env.company
+        # las tasas solo viven en la compañía raíz (res.currency.rate._check_company_id)
+        company_ids = (company | company.root_id).ids
+
         rate = self.env["res.currency.rate"].search(
             [
                 ("currency_id", "=", foreign_currency_id),
-                ("company_id", "=", self.env.company.id),
+                ("company_id", "in", company_ids),
                 ("name", "<=", rate_date),
             ],
             order="name DESC", limit=1,
         )
+
         if not rate:
             if raise_if_not_found:
                 raise UserError(_("There is no rate for that date, please configure one."))

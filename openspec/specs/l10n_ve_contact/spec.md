@@ -65,17 +65,32 @@ El sistema DEBE (MUST) rechazar, vía `check_duplicate_vat`, la existencia de ot
 
 ### Requirement: Duplicidad de email en contactos
 
-El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un `res.partner` de tipo `contact` con un email que ya tenga **cualquier** otro partner (el dominio filtra por `email` e `id`, sin filtrar por `type`): en `create` cuando los valores traen `email` y el `type` es `contact` (o no viene), y en `write` cuando traen `email`, evaluando el `type` de cada registro y después del `super().write()`. Igual que en el RIF, los flags de compañía solo determinan si la búsqueda se restringe a `company_id` o es global y qué mensaje se muestra; nunca desactivan el control.
+El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un `res.partner` de tipo `contact` con un email que ya tenga **cualquier** otro partner (el dominio filtra por `email` e `id`, sin filtrar por `type`): en `create` cuando los valores traen `email` y el `type` es `contact` (o no viene), y en `write` cuando traen `email` **distinto del que ya tiene el registro**, evaluando el `type` de cada registro y después del `super().write()`. En `create`, además, una vez creado el lote se vuelve a validar cada contacto cuyo email se repite en otro contacto del mismo lote (las direcciones del lote no cuentan para esa repetición), porque el control previo solo ve los partners que ya existían. Igual que en el RIF, los flags de compañía solo determinan si la búsqueda se restringe a `company_id` o es global y qué mensaje se muestra; nunca desactivan el control.
 
 #### Scenario: Email repetido
 
 - **WHEN** se guarda un contacto de tipo `contact` con un email que ya tiene otro partner dentro del alcance configurado, aunque ese otro partner sea una dirección de entrega o una compañía
 - **THEN** se lanza `ValidationError`
 
+#### Scenario: Email repetido dentro del mismo lote
+
+- **WHEN** se crean en una sola llamada (por ejemplo una importación) dos contactos de tipo `contact` con el mismo email que no existía antes
+- **THEN** se lanza `ValidationError` y no se crea ninguno
+
+#### Scenario: Reescribir el mismo email
+
+- **WHEN** un `write` envía en `email` el mismo valor que ya tiene el contacto (un formulario, una importación o cualquier proceso que reenvía todos los campos), aunque otro partner ya comparta ese email por datos previos
+- **THEN** no se valida la duplicidad y el `write` se guarda
+
 #### Scenario: Dirección de entrega
 
-- **WHEN** se crea un registro con `type` distinto de `contact` (por ejemplo una dirección de entrega) con un email repetido
+- **WHEN** se escribe un registro con `type` distinto de `contact` (por ejemplo una dirección de entrega) cambiando el email a uno repetido
 - **THEN** la validación de email no se aplica a ese registro
+
+#### Known Limit: cambio de type a contact sin cambiar email
+
+- **WHEN** un `write` cambia el `type` de un registro a `contact` dejando un `email` igual al de otro partner (el `email` no viene en `vals` o viene igual)
+- **THEN** no se valida la duplicidad (`email_changed` queda vacío); comportamiento idéntico al upstream 19.0, documentado sin cambio de lógica
 
 ### Requirement: Los controles de create se omiten si falla la consulta al CNE
 
@@ -99,6 +114,11 @@ Cuando la **compañía activa del usuario** tiene `validate_partner_name_immutab
 
 - **WHEN** la compañía activa del usuario tiene `validate_partner_name_immutable` en `False`
 - **THEN** el nombre puede modificarse aunque existan transacciones, incluso si la compañía dueña del contacto sí tiene el control activo
+
+#### Scenario: Usuario con el grupo de edición
+
+- **WHEN** el usuario que guarda pertenece al grupo `l10n_ve_contact.group_edit_partner_name_immutable` (asignado por defecto a `base.user_root` y `base.user_admin`) y renombra un contacto con transacciones
+- **THEN** el nombre se guarda sin lanzar `ValidationError`; los usuarios sin el grupo siguen bloqueados
 
 ### Requirement: País por defecto Venezuela
 

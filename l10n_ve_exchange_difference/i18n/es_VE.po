@@ -606,6 +606,14 @@ msgstr ""
 
 #. module: l10n_ve_exchange_difference
 #. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid "You cannot reset to draft an exchange difference Debit/Credit Note."
+msgstr ""
+"No se puede regresar a borrador una Nota de Débito/Crédito de diferencial "
+"cambiario."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
 #: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
 msgid "gain"
 msgstr "ganancia"

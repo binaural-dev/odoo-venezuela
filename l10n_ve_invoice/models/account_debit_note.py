@@ -1,4 +1,5 @@
-from odoo import api, models, fields
+from odoo import _, api, models, fields
+from odoo.exceptions import UserError
 
 
 class AccountDebitNote(models.TransientModel):
@@ -19,6 +20,30 @@ class AccountDebitNote(models.TransientModel):
              "count as different periods. Warning only -- never blocks "
              "creating the note.",
     )
+
+    @api.model
+    def default_get(self, fields_list):
+        res = super().default_get(fields_list)
+        moves = self.env['account.move'].browse(
+            self.env.context['active_ids']
+        ) if self.env.context.get('active_model') == 'account.move' else self.env['account.move']
+        self._l10n_ve_check_single_document(moves)
+        return res
+
+    @api.model
+    def _l10n_ve_check_single_document(self, moves):
+        """A debit note is issued against ONE document only."""
+        if len(moves) > 1:
+            raise UserError(_(
+                "A debit note can only be issued against a single document. "
+                "Please select one document at a time."
+            ))
+
+    def create_debit(self):
+        self.ensure_one()
+        self._l10n_ve_check_single_document(self.move_ids)
+        self.move_ids._l10n_ve_check_note_date(self.date)
+        return super().create_debit()
 
     @api.depends('journal_type')
     def _compute_filter_enabled(self):
@@ -79,14 +104,17 @@ class AccountDebitNote(models.TransientModel):
         explicit decision to apply this to both directions and fix the
         onchange at its root instead.
 
-        `invoice_date_display` is the Note's own declared fiscal date
-        (what the "Out of Fiscal Period" warning above and the wizard's
-        own `date` field are about) -- so it must be `self.date`
-        (or `move.date`, same fallback core uses), not silently inherited
-        from the origin via `copy()`.
+        The rate date (`invoice_date`) is always carried over from the
+        origin. The document date (`invoice_date_display`) is the wizard's
+        `date` (today by default), validated in `create_debit` to lie
+        between the origin's document date and today.
         """
         default_values = super()._prepare_default_values(move)
         if move.is_invoice(include_receipts=True):
-            default_values['invoice_date_display'] = self.date or move.date
-            default_values['invoice_date'] = move.invoice_date
+            document_date = self.date or move.date
+            default_values.update({
+                'date': document_date,
+                'invoice_date_display': document_date,
+                'invoice_date': move.invoice_date or move.invoice_date_display or move.date,
+            })
         return default_values

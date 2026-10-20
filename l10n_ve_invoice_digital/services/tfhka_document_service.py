@@ -2,8 +2,9 @@ import logging
 import re
 
 from odoo import _, fields, models
-from odoo.tools import float_compare, float_is_zero
+from odoo.tools import float_compare, float_is_zero, html2plaintext
 
+from ..utils import status_message
 from .tfhka_service_base import TfhkaDataError
 
 _logger = logging.getLogger(__name__)
@@ -13,6 +14,12 @@ VES_CURRENCY_NAMES = ("VEF", "VES")
 
 # Grupos de impuestos que TFHKA reporta como exentos.
 EXEMPT_TAX_GROUPS = ("Exento", "IVA 0%")
+
+# Antigüedad máxima (en días, respecto a hoy) con la que una factura puede
+# digitalizarse. Pasado este límite se rechaza localmente en vez de dejar
+# que TFHKA emita un documento fiscal con una fecha arbitrariamente atrasada
+# (HD-15696).
+TFHKA_MAX_INVOICE_AGE_DAYS = 45
 
 # Mapeo de grupo de impuesto de Odoo -> código/alícuota de TFHKA.
 TFHKA_TAX_CODE = {
@@ -106,9 +113,14 @@ class TfhkaDocumentService(models.AbstractModel):
         else:
             last = client.get_last_document_number(company, document_type, series, origin=invoice)
             try:
-                document_number = int(last) + 1
+                last = int(last)
             except (ValueError, TypeError):
-                document_number = invoice.sequence_number or 1
+                last = 0
+            # last == 0 significa que la imprenta no devolvió un número (serie
+            # sin documentos previos o 203+validaciones) -- no asumir que el
+            # siguiente es el 1, sino respetar el correlativo que Odoo ya le
+            # asignó a esta factura.
+            document_number = last + 1 if last else (invoice.sequence_number or 1)
 
         document_number = str(document_number)
 
@@ -163,9 +175,8 @@ class TfhkaDocumentService(models.AbstractModel):
 
     def _register_success(self, invoice, response, document_number):
         invoice.is_digitalized = True
-        emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
         invoice.message_post(
-            body=_("Document successfully digitized on %(date)s") % {"date": emission_date},
+            body=status_message(_("Document successfully digitized"), "success"),
             message_type='comment',
         )
         num_control_tfhka = response.get("resultado").get("numeroControl")
@@ -535,6 +546,20 @@ class TfhkaDocumentService(models.AbstractModel):
     # Secciones del payload
     # ------------------------------------------------------------------
 
+    def _get_emission_datetime(self, record):
+        """Ancla la emisión a la fecha/hora de la factura
+        (``invoice_date_display_datetime``, ver ``l10n_ve_invoice``) en vez
+        del momento real de la digitalización -- la digitalización es
+        asíncrona (cola + cron, ver ``tfhka.digitalization.mixin``) y usar
+        "ahora" hacía que, si corría después de medianoche respecto a la
+        factura, TFHKA rechazara el documento por vencimiento y la tasa
+        (que sí sale de la fecha de la factura) dejara de corresponder con la
+        fecha del documento digitalizado (HD-15696).
+        """
+        if not record.invoice_date_display_datetime:
+            raise TfhkaDataError(_("The invoice date is not defined."))
+        return self._localize(record.invoice_date_display_datetime, record)
+
     def _prepare_identification(self, invoice, document_type, document_number, series, ctx=None):
         # Recordset vacío: el for de abajo ya devuelve None sin iterar, pero
         # _get_currency_context exige ensure_one() y rompería antes de llegar
@@ -544,6 +569,17 @@ class TfhkaDocumentService(models.AbstractModel):
             now_local = self._get_emission_datetime(record)
             emission_time = now_local.strftime("%I:%M:%S %p").lower()
             emission_date = now_local.date()
+
+            real_today = self._localize(fields.Datetime.now(), record).date()
+            if (real_today - emission_date).days > TFHKA_MAX_INVOICE_AGE_DAYS:
+                raise TfhkaDataError(
+                    _(
+                        "Cannot digitalize: the invoice date is more than "
+                        "%(days)s days old."
+                    )
+                    % {"days": TFHKA_MAX_INVOICE_AGE_DAYS}
+                )
+
             due_date_obj = record.invoice_date_due
 
             if due_date_obj:
@@ -1196,7 +1232,18 @@ class TfhkaDocumentService(models.AbstractModel):
         )
 
     def _prepare_additional_information(self, invoice):
-        """Hook de extensión: información adicional del documento (sección
-        ``infoAdicional``). Por defecto vacío -- el número de guía ya se
-        reporta vía ``_get_dispatch_guide_reference`` (sección ``FacturaGuia``)."""
-        return []
+        """Prepara la sección ``infoAdicional`` del documento.
+
+        Envía un campo ``PDF`` cuyo valor es la representación en texto de
+        ``{'Orservaciones': <narration en texto plano>}``. ``narration`` es un
+        campo Html (p. ej. ``<p data-oe-version="2.0">...</p>``), así que se
+        convierte con ``html2plaintext`` antes de mandarlo -- TFHKA no espera
+        markup en este campo.
+        """
+        narration = html2plaintext(invoice.narration or "").strip()
+        return [
+            {
+                "campo": "PDF",
+                "valor": str({"Orservaciones": narration}),
+            }
+        ]

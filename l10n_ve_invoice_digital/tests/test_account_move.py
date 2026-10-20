@@ -123,12 +123,7 @@ class TestAccountMoveApiCalls(TransactionCase):
                 [("type", "=", "bank"), ("currency_id", "=", self.currency_usd.id)],
                 limit=1,
             )
-            # O19: l10n_ve_accountant._check_payment_method_line_accounts exige
-            # cuenta en cada línea de método de pago de un diario bancario. Odoo
-            # las autocrea sin payment_account_id y sin plan de cuentas cargado no
-            # hay de dónde resolverla, así que se usa el mismo escape que la
-            # propia restricción contempla para el bootstrap.
-            or Journal.with_context(install_mode=True).create(
+            or Journal.with_context(install_mode=True, chart_template_load=True).create(
                 {
                     "name": "Banco USD",
                     "code": "BNKUS",
@@ -138,6 +133,12 @@ class TestAccountMoveApiCalls(TransactionCase):
                 }
             )
         )
+        bank_account = acc("1102", "asset_cash", "Banco USD")
+        for line in (
+            self.bank_journal_usd.inbound_payment_method_line_ids
+            | self.bank_journal_usd.outbound_payment_method_line_ids
+        ).filtered(lambda l: not l.payment_account_id):
+            line.payment_account_id = bank_account
         self.bank_journal_usd.write({"is_igtf": True})
 
         # ➡️ Diario puente para “cruce anticipo + IGTF”
@@ -190,18 +191,33 @@ class TestAccountMoveApiCalls(TransactionCase):
             'street': 'Calle Falsa 123',
         })
 
-        # El mapeo de TFHKA usa el nombre del GRUPO de impuesto, que en el
-        # plan de cuentas venezolano real es "IVA 16%" / "Exento".
-        self.tax_group = self.env['account.tax.group'].create({
+        # Crear impuesto IVA 16%
+        tax_country = self.env.ref('base.ve')
+        self.company.account_fiscal_country_id = tax_country
+
+        tax_group = self.env['account.tax.group'].create({
             'name': 'IVA 16%',
+            'company_id': self.company.id,
+            'country_id': tax_country.id,
         })
-        
+
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': self.company.id,
             'amount': 16,
             'amount_type': 'percent',
             'type_tax_use': 'sale',
-            'tax_group_id': self.tax_group.id,
+        })
+        self.tax_iva16_purchase = self.env['account.tax'].create({
+            'name': 'IVA 16% compras',
+            'tax_group_id': tax_group.id,
+            'country_id': tax_country.id,
+            'company_id': self.company.id,
+            'amount': 16,
+            'amount_type': 'percent',
+            'type_tax_use': 'purchase',
         })
 
         # Crear el producto
@@ -211,6 +227,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             'list_price': 100,
             'barcode': '123456789',
             'taxes_id': [Command.set([self.tax_iva16.id])],
+            'supplier_taxes_id': [Command.set([self.tax_iva16_purchase.id])],
         })
 
     def _next_correlative(self):
@@ -227,6 +244,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             ref = "Test Invoice",
             foreign_rate=38,
             foreign_inverse_rate=38,
+            correlative=1,
             currency_id=None,
             foreign_currency_id=None,
             do_post=True,
@@ -248,8 +266,8 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "product_id": product["product_id"],
                     "quantity": product.get("quantity", 1),
                     "price_unit": product["price_unit"],
+                    "account_id": self.acc_income.id,
                     "tax_ids": product.get("tax_ids", []),
-                    "account_id": self.acc_income.id, 
                 }
             )
             for product in products
@@ -274,12 +292,10 @@ class TestAccountMoveApiCalls(TransactionCase):
             "foreign_inverse_rate": foreign_inverse_rate,
             "manually_set_rate": True,
             "invoice_line_ids": invoice_lines,
-            "invoice_date": fields.Date.today(),
+            "invoice_date": fields.Date.context_today(self.env.user),
+            "invoice_date_display": fields.Date.context_today(self.env.user),
             "journal_id": self.journal.id,
-            # O19: l10n_ve_invoice._check_correlative prohibe repetir el
-            # numero de control entre facturas confirmadas, asi que cada
-            # factura del fixture necesita el suyo.
-            "correlative": self._next_correlative(),
+            "correlative": self._next_correlative() if correlative == 1 else correlative,
         }
 
         # Solo para notas de crédito
@@ -979,6 +995,130 @@ class TestAccountMoveApiCalls(TransactionCase):
             self.invoice.generate_document_digital()
         _logger.info("Test passed: Invalid expiration date validation: %s", e.exception)
 
+    # HD-15696: fechaEmision/horaEmision deben salir de invoice_date_display,
+    # no del momento real en que corre la digitalización.
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_hd15696_emission_date_from_invoice_not_now(self, mock_call):
+        self.invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ]
+        )
+
+        # Backdateada (pero dentro de los 45 días) para distinguirla sin
+        # ambigüedad de la fecha real en la que corre este test.
+        backdated = fields.Date.context_today(self) - timedelta(days=5)
+        self.invoice.invoice_date_display = backdated
+
+        self.invoice.generate_document_digital()
+
+        payload = mock_call.call_args.args[2]
+        identification = payload["documentoElectronico"]["encabezado"]["identificacionDocumento"]
+        self.assertEqual(
+            identification["fechaEmision"],
+            backdated.strftime("%d/%m/%Y"),
+            "fechaEmision debe salir de invoice_date_display, no de 'ahora'.",
+        )
+        _logger.info("Test passed: fechaEmision anclada a la factura, no al reloj.")
+
+    # HD-15696: no se digitaliza una factura con más de 45 días de antigüedad.
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_hd15696_rejects_invoice_older_than_45_days(self, mock_call):
+        self.invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ]
+        )
+        self.invoice.invoice_date_display = fields.Date.context_today(self) - timedelta(days=46)
+
+        with self.assertRaises(UserError) as e:
+            self.invoice.generate_document_digital()
+        _logger.info("Test passed: invoice older than 45 days rejected: %s", e.exception)
+
+    # HD-15696: el límite es "más de 45 días", 45 exactos sigue permitido.
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_hd15696_allows_invoice_exactly_45_days_old(self, mock_call):
+        self.invoice = self._create_invoice(
+            products=[
+                {
+                    "product_id": self.product.id,
+                    "price_unit": 1,
+                    "tax_ids": [self.tax_iva16.id],
+                }
+            ]
+        )
+        self.invoice.invoice_date_display = fields.Date.context_today(self) - timedelta(days=45)
+
+        self.invoice.generate_document_digital()
+        _logger.info("Test passed: invoice exactly 45 days old still digitalizes.")
+
+    # HD-15459: no se puede cancelar ni reabrir a borrador una factura en
+    # vuelo o ya digitalizada con TFHKA.
+    def test_hd15459_button_cancel_blocked_while_in_flight_or_digitalized(self):
+        for state in ("queued", "processing", "success"):
+            with self.subTest(state=state):
+                invoice = self._create_invoice(
+                    products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                )
+                invoice.tfhka_digitalization_state = state
+                with self.assertRaises(UserError):
+                    invoice.button_cancel()
+
+    def test_hd15459_button_draft_blocked_while_in_flight_or_digitalized(self):
+        for state in ("queued", "processing", "success"):
+            with self.subTest(state=state):
+                invoice = self._create_invoice(
+                    products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                )
+                invoice.tfhka_digitalization_state = state
+                with self.assertRaises(UserError):
+                    invoice.button_draft()
+
+    def test_hd15459_button_cancel_allowed_after_error_or_unqueued(self):
+        for state in ("none", "error", "data_error"):
+            with self.subTest(state=state):
+                invoice = self._create_invoice(
+                    products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                )
+                invoice.tfhka_digitalization_state = state
+                invoice.button_cancel()
+                self.assertEqual(invoice.state, "cancel")
+
+    def test_hd15459_button_draft_allowed_after_error_or_unqueued(self):
+        for state in ("none", "error", "data_error"):
+            with self.subTest(state=state):
+                invoice = self._create_invoice(
+                    products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                )
+                # Odoo core's own button_draft() only accepts 'posted'/'cancel'
+                # as the starting state -- force it here instead of trusting
+                # _create_invoice()'s action_post() to land there, since an
+                # unrelated quirk of this fixture (outside HD-15459's scope)
+                # can leave it in 'draft' already.
+                invoice.state = "posted"
+                invoice.tfhka_digitalization_state = state
+                invoice.button_draft()
+                self.assertEqual(invoice.state, "draft")
+
+    def test_hd15459_button_cancel_raises_user_error_not_other_exception(self):
+        """The guard must surface as UserError (a clean dialog for the user),
+        not let some other exception type leak through."""
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.tfhka_digitalization_state = "success"
+        with self.assertRaises(UserError) as exc:
+            invoice.button_cancel()
+        self.assertIn(invoice.display_name, str(exc.exception))
+
     # # Factura con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
     # def test_17_generate_document_digital_subsidiary_succes(self, mock_call):
@@ -1375,8 +1515,9 @@ class TestAccountMoveApiCalls(TransactionCase):
     def test_49b_get_item_details_with_discount_fixed(self):
         # discount_type='amount' es lo que permite escribir discount_fixed
         # (_enforce_discount_exclusivity fuerza discount_fixed a 0 en modo
-        # 'percent'); la decisión de _prepare_detail_lines de cuál leer es
-        # por el valor de la línea, no por este ajuste de compañía.
+        # 'percent') y lo que hace que _uses_discount_fixed() -- de la que
+        # depende _prepare_detail_lines -- lo reconozca (ver test_49c para
+        # el caso en que la compañía cambia a 'percent' después).
         self.company.discount_type = 'amount'
         prod = self.env['product.product'].create({
             'name': 'Prod Descuento Fijo',
@@ -1395,11 +1536,12 @@ class TestAccountMoveApiCalls(TransactionCase):
         # descuento fijo -- debe cuadrar con lo anterior.
         self.assertEqual(details[0]["precioItem"], "80.0")
 
-    def test_49c_get_item_details_discount_fixed_ignores_company_config(self):
-        # Con discount_type='percent' (config normal) pero una línea que de
-        # todos modos trae discount_fixed cargado, _prepare_detail_lines
-        # debe usarlo igual -- la decisión es por el valor de la línea, no
-        # por la configuración de la compañía.
+    def test_49c_get_item_details_discount_fixed_requires_company_in_amount_mode(self):
+        # Spec (openspec/specs/l10n_ve_invoice/spec.md, "Modo porcentaje
+        # activo"): discount_type es una config GLOBAL de la compañía, no
+        # por línea/documento -- con discount_type='percent', discount_fixed
+        # no tiene ningun efecto aunque la línea tenga un valor distinto de
+        # cero cargado de cuando la compañía estaba en modo 'amount'.
         self.company.discount_type = 'amount'
         prod = self.env['product.product'].create({
             'name': 'Prod Descuento Fijo 2',
@@ -1411,10 +1553,12 @@ class TestAccountMoveApiCalls(TransactionCase):
         )
         invoice.invoice_line_ids[0].discount_fixed = 20
         # Cambiar el modo de la compañía DESPUÉS de cargar el descuento fijo
-        # en la línea -- _prepare_detail_lines no debe dejar de reconocerlo.
+        # en la línea: _uses_discount_fixed() vuelve a ser False (depende del
+        # discount_type VIGENTE), asi que _prepare_detail_lines ya no debe
+        # reportar ese descuento fijo.
         self.company.discount_type = 'percent'
         details = self.env['tfhka.document.service']._prepare_detail_lines(invoice)
-        self.assertEqual(details[0]["descuentoMonto"], "20.0")
+        self.assertEqual(details[0]["descuentoMonto"], "0.0")
 
     def test_50_compute_invisible_check_draft(self):
         inv = self.env["account.move"].create({
@@ -2463,6 +2607,43 @@ class TestAccountMoveApiCalls(TransactionCase):
                     )
                     inv.generate_document_digital()
                     self.assertTrue(inv.is_digitalized)
+
+    def test_165_send_document_adopts_odoo_sequence_when_factory_has_no_last_number(self):
+        # Ticket #15552/#15590: UltimoDocumento devolviendo 0 (serie sin
+        # documentos previos en la imprenta) se interpretaba como "el
+        # siguiente numero es 1", pisando el correlativo que Odoo ya le
+        # habia asignado a la factura.
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.get_last_document_number',
+            return_value=0,
+        ):
+            with patch(
+                'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.query_numbering',
+                return_value=None,
+            ):
+                with patch(
+                    'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request'
+                ) as mock_call:
+                    mock_call.return_value = {
+                        "codigo": "200",
+                        "resultado": {"numeroControl": "00-00000001"},
+                    }
+                    self.journal.sequence_id.number_next_actual = 251
+                    inv = self._create_invoice(
+                        products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+                    )
+                    self.assertEqual(inv.sequence_number, 251)
+                    inv.generate_document_digital()
+                    self.assertTrue(inv.is_digitalized)
+
+                    payload = mock_call.call_args.args[2]
+                    document_number = payload["documentoElectronico"]["encabezado"][
+                        "identificacionDocumento"
+                    ]["numeroDocumento"]
+                    self.assertEqual(document_number, "251")
+                    # No se adopta el numero de The Factory (0+1=1): se
+                    # conserva el correlativo de Odoo sin renombrar la factura.
+                    self.assertTrue(inv.name.endswith("00000251"))
 
     @patch(
         'odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService'

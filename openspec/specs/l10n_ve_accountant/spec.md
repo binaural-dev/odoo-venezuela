@@ -67,6 +67,46 @@ Al crear un `account.move` de tipo `out_refund` o `in_refund` con `reversed_entr
 - **WHEN** se crea una nota de débito con `debit_origin_id`
 - **THEN** su tasa no se copia del documento de origen
 
+### Requirement: Fechas de la Nota de Crédito respecto a su documento origen
+
+Al crear una Nota de Crédito con `account.move.reversal` (`_prepare_default_reversal`) sobre un documento facturable (`is_invoice(include_receipts=True)`), de cliente o de proveedor, el sistema DEBE (MUST):
+
+- Tomar `invoice_date` (fecha de tasa) siempre del documento origen, nunca del wizard.
+- Tomar `invoice_date_display` y `date` de la fecha del wizard, que por defecto es hoy (`fields.Date.context_today`) y es editable.
+- Validar con `account.move._l10n_ve_check_note_date` que esa fecha no sea anterior a `invoice_date_display` del origen (con `date` como resguardo) ni posterior a hoy; `reverse_moves` lanza `ValidationError` en caso contrario.
+- Emitirse contra UNA sola factura: `default_get` y `reverse_moves` lanzan `UserError` cuando reciben más de un documento facturable.
+
+Ticket #15594.
+
+#### Scenario: Nota de Crédito con fecha entre el origen y hoy
+
+- **WHEN** se revierte una factura con una fecha de wizard entre la de la factura y hoy
+- **THEN** la nota queda con `invoice_date_display` y `date` iguales a esa fecha e `invoice_date` igual al de la factura
+
+#### Scenario: Fecha por defecto del wizard
+
+- **WHEN** se abre el wizard de reversión
+- **THEN** `date` es hoy según la zona horaria del usuario
+
+#### Scenario: Fecha anterior al origen o futura
+
+- **WHEN** la fecha del wizard es anterior a la del origen o posterior a hoy
+- **THEN** `reverse_moves` lanza `ValidationError`
+
+#### Scenario: Wizard sobre varias facturas
+
+- **WHEN** se abre o ejecuta el wizard de reversión con más de una factura seleccionada
+- **THEN** se lanza `UserError`
+
+### Requirement: Fecha de tasa de la nota bloqueada en el formulario
+
+En el formulario de `account.move`, `invoice_date` (fecha de tasa) DEBE (MUST) ser de solo lectura cuando `reversed_entry_id` o `debit_origin_id` están definidos, además de la regla previa de solo lectura fuera de borrador. `invoice_date_display` permanece editable en borrador.
+
+#### Scenario: Edición de las fechas de una nota
+
+- **WHEN** un usuario abre en borrador una nota con `reversed_entry_id` o `debit_origin_id`
+- **THEN** la fecha de tasa no es editable y la fecha del documento sí
+
 ### Requirement: Trazabilidad del cambio manual de tasa
 
 Cuando un documento con `manually_set_rate` activo se crea o modifica con una `foreign_rate` distinta de la tasa vigente (o de la última tasa registrada en `last_foreign_rate`), el sistema DEBE (MUST) publicar un mensaje en el chatter indicando la tasa anterior y la nueva.
@@ -465,14 +505,94 @@ Al crear un diario o cambiar su tipo, los usuarios sin el grupo `l10n_ve_account
 - **WHEN** un usuario sin el grupo de soporte crea un diario de tipo venta
 - **THEN** se lanza un error de permisos y el diario no se crea
 
+### Requirement: Cuenta bancaria obligatoria en diarios tipo banco
+
+Todo diario de tipo `bank` DEBE (MUST) tener `default_account_id` ("Cuenta Bancaria") asignado (constraint `_check_default_account_id_required_for_bank` de `account.journal`). Esto es independiente de la propagación a los métodos de pago (ver el siguiente requirement): un diario banco sin esta cuenta no se puede guardar bajo ninguna circunstancia.
+
+#### Scenario: Diario banco sin cuenta bancaria
+
+- **WHEN** se crea o guarda un diario de tipo `bank` sin `default_account_id`
+- **THEN** se lanza un error "Bank journals require a default account (Bank Account)."
+
+### Requirement: Propagación automática de la cuenta bancaria a los métodos de pago
+
+Cuando un diario de tipo `bank` tiene `default_account_id` asignado, esa cuenta DEBE (MUST) propagarse automáticamente a `payment_account_id` en todas sus líneas de método de pago (entrantes y salientes) que no tengan ya una cuenta propia (`_fill_payment_account_id_from_default` de `account.journal`), sin intervención manual del usuario. Esto aplica tanto a las líneas generadas por el compute nativo de Odoo al crear/editar el diario, como a líneas de método de pago agregadas manualmente después, vía el `default` de `payment_account_id` en `account.payment.method.line` (`_default_payment_account_id`, usa el contexto `default_journal_id`).
+
+Editar `default_account_id` en un diario ya guardado con líneas de método de pago adicionales (más allá de las nativas) NO DEBE (MUST NOT) desvincular ni eliminar esas líneas extra, ni los pagos que ya las usan -- la propagación solo rellena cuentas vacías, nunca reconstruye las líneas desde cero.
+
+#### Scenario: Creación del diario en una sola llamada API
+
+- **WHEN** se crea un diario de tipo `bank` con `default_account_id` ya en los valores, sin pasar por ningún onchange
+- **THEN** todas las líneas de método de pago generadas (entrantes y salientes) toman esa cuenta en `payment_account_id`
+
+#### Scenario: Línea de método de pago agregada manualmente
+
+- **WHEN** se crea una `account.payment.method.line` para un diario `bank` existente (con el contexto `default_journal_id` del diario)
+- **THEN** la línea toma `default_account_id` del diario como su `payment_account_id`, sin que el usuario la configure a mano
+
+#### Scenario: Edición de la cuenta bancaria no borra líneas extra
+
+- **WHEN** se edita `default_account_id` en un diario `bank` ya guardado que tiene una línea de método de pago agregada manualmente (además de las nativas)
+- **THEN** esa línea extra sigue existiendo, vinculada al mismo diario, con su nombre intacto
+
+#### Scenario: Diario no bancario no hereda cuenta
+
+- **WHEN** se crea una línea de método de pago para un diario de tipo distinto a `bank` (ej. `cash`)
+- **THEN** `payment_account_id` queda vacío, sin tomar ninguna cuenta por defecto
+
 ### Requirement: Métodos de pago bancarios con cuenta obligatoria
 
-Todo método de pago (entrante o saliente) de un diario de tipo `bank` DEBE (MUST) tener `payment_account_id` asignada (constraint `_check_payment_method_line_accounts`), salvo durante la carga de plantillas contables o instalación.
+Todo método de pago (entrante o saliente) de un diario de tipo `bank` DEBE (MUST) tener `payment_account_id` asignada. Esto se garantiza con dos constraints independientes, salvo durante la carga de plantillas contables o instalación:
 
-#### Scenario: Método sin cuenta
+- `_check_payment_method_line_accounts` de `account.journal` -- se dispara cuando cambia la relación o two2many `inbound_payment_method_line_ids`/`outbound_payment_method_line_ids` del diario (ej. al guardar el diario con líneas sin cuenta, o al vaciar la colección de un lado).
+- `_check_payment_account_id_required_for_bank` de `account.payment.method.line` -- se dispara al escribir directamente sobre la línea, camino que el constrains del diario NO cubre (Odoo no reevalúa un constrains sobre un campo o2m cuando se edita un campo propio del registro hijo). Su propio `create()` rellena `payment_account_id` desde `default_account_id` del diario ANTES de validar, para que este constrains pueda ser estricto sin romper la creación de diarios banco por ningún camino (compute nativo, `_auto_link_payment_methods`, payment providers).
 
-- **WHEN** se guarda un diario bancario con una línea de método de pago sin cuenta
+Un diario `bank` también DEBE (MUST) tener al menos una línea de método de pago entrante y una saliente.
+
+#### Scenario: Diario sin líneas entrantes o salientes
+
+- **WHEN** se vacía `inbound_payment_method_line_ids` o `outbound_payment_method_line_ids` de un diario `bank` ya guardado
+- **THEN** se lanza un error indicando que el diario debe tener al menos un método de pago de ese lado
+
+#### Scenario: Ninguna línea tiene cuenta
+
+- **WHEN** se guarda un diario bancario donde ninguna línea de método de pago (entrante ni saliente) tiene cuenta
 - **THEN** se lanza un error "All payment methods must have an assigned account."
+
+#### Scenario: Una línea con cuenta y otra sin
+
+- **WHEN** un diario bancario tiene una línea con cuenta asignada y otra sin, del mismo lado (entrante o saliente)
+- **THEN** se lanza el mismo error -- el constrains falla si CUALQUIER línea carece de cuenta, no solo cuando todas carecen
+
+#### Scenario: Escritura directa sobre la línea
+
+- **WHEN** se escribe `payment_account_id = False` directamente sobre una línea de un diario `bank`, sin pasar por el campo o2m del diario
+- **THEN** se lanza un error "must have an assigned account" (vía el constrains propio de `account.payment.method.line`)
+
+#### Scenario: Diario de caja no se ve afectado
+
+- **WHEN** se crea o edita un diario de tipo `cash` con líneas de método de pago sin cuenta
+- **THEN** no se lanza ningún error -- ambos constraints están acotados a `type == 'bank'`
+
+### Requirement: Bloqueo de confirmación de pagos de banco sin cuenta contable
+
+Un `account.payment` cuyo diario es de tipo `bank` y cuya línea de método de pago (`payment_method_line_id`) no tiene `payment_account_id` NO DEBE (MUST NOT) poder confirmarse (`action_post`), ni quedar con un asiento contable generado usando una cuenta genérica distinta a la configurada.
+
+El core de Odoo, al confirmar un pago sin `outstanding_account_id`, normalmente cae en un fallback silencioso (`company.transfer_account_id` o una cuenta del chart template) cuando la app completa de Contabilidad no está instalada, o directamente omite ese fallback -- dejando el pago confirmado sin asiento y sin error -- cuando sí está instalada. `_get_outstanding_account` (override de `account.payment`) DEBE (MUST) deshabilitar ese fallback para diarios `bank` sin cuenta en su línea, dejando `outstanding_account_id` en `False`; `action_post` (override de `account.payment`) DEBE (MUST) rechazar la confirmación en ese caso con un error explícito, antes de intentar generar el asiento.
+
+#### Scenario: Pago correctamente configurado
+
+- **WHEN** se confirma un pago cuyo diario `bank` y método de pago tienen cuenta asignada
+- **THEN** el pago genera su asiento contable normalmente
+
+#### Scenario: Línea sin cuenta, app de Contabilidad no instalada
+
+- **WHEN** se crea y confirma un pago contra una línea de método de pago de un diario `bank` sin `payment_account_id` (incluso si la compañía tiene `transfer_account_id` configurado, que en otro caso habría sido usado en silencio)
+- **THEN** el pago se crea con `outstanding_account_id` en `False`, y `action_post` lanza un error explícito en vez de confirmar sin asiento
+
+### Requirement: Migración de diarios banco existentes sin cuenta
+
+Al actualizar el módulo, los diarios de tipo `bank` ya existentes cuyas líneas de método de pago no tengan `payment_account_id` DEBEN (MUST) recibir automáticamente la cuenta de `default_account_id` del propio diario (migración `19.0.1.0.28`, idempotente), para no quedar bloqueados por los constraints de este documento apenas se actualice el sistema. Los diarios que tampoco tengan `default_account_id` configurado quedan registrados en el log del servidor, sin bloquear la migración.
 
 ### Requirement: Un único diario de compra internacional
 
@@ -669,3 +789,13 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
 - **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta
+
+### Requirement: El widget de pagos no falla con registros sin guardar
+
+`_get_all_reconciled_invoice_partials` DEBE (MUST) devolver el resultado del núcleo sin consultar los asientos de diferencial en moneda alterna cuando el registro no tiene id de base de datos (`self._origin.id` vacío, por ejemplo un `account.move` nuevo en el formulario).
+
+#### Scenario: Factura nueva sin guardar
+
+- **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
+- **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
+

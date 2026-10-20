@@ -1754,8 +1754,26 @@ msgstr "Fecha de tasa"
 #. module: l10n_ve_accountant
 #. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "Journal \"%(journal)s\" must have at least one inbound payment method."
+msgstr "El diario \"%(journal)s\" debe tener al menos un método de pago entrante."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "Journal \"%(journal)s\" must have at least one outbound payment method."
+msgstr "El diario \"%(journal)s\" debe tener al menos un método de pago saliente."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
 msgid "All payment methods must have an assigned account."
 msgstr "Todos los métodos de pagos deben tener una cuenta asignada."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_journal.py:0
+msgid "Bank journals require a default account (Bank Account)."
+msgstr "Los diarios de tipo Banco requieren una cuenta contable por defecto (Cuenta Bancaria)."
 
 #. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_payment__foreign_amount
@@ -1773,6 +1791,22 @@ msgstr "Importe adeudado"
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "You cannot delete a journal item that is posted, cancelled, or has been previously posted."
 msgstr "No puede borrar apuntes ya publicados, cancelados o anteriormente publicados."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/wizard/account_payment_register.py:0
+msgid "The amount to pay cannot be 0.0."
+msgstr "El importe a pagar no puede ser 0.0."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"You cannot reset to draft an alternate currency exchange difference journal "
+"entry."
+msgstr ""
+"No se puede regresar a borrador un asiento de diferencial cambiario en "
+"moneda alterna."
 
 #. module: l10n_ve_accountant
 #. odoo-python
@@ -1998,20 +2032,14 @@ msgstr "Documento de Origen (Diferencial Cambiario en Moneda Alterna)"
 #. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid ""
-"The exchange difference entry Odoo creates natively at
-"
-"                                    reconciliation time also carries the alternate currency amount
-"
-"                                    on its own lines. If only the alternate currency shows a
-"
+"The exchange difference entry Odoo creates natively at\n"
+"                                    reconciliation time also carries the alternate currency amount\n"
+"                                    on its own lines. If only the alternate currency shows a\n"
 "                                    difference, the same kind of entry is still created for it."
 msgstr ""
-"El asiento de diferencial cambiario que Odoo crea de forma nativa al
-"
-"                                    conciliar también lleva el monto en moneda alterna
-"
-"                                    en sus propias líneas. Si solo la moneda alterna muestra una
-"
+"El asiento de diferencial cambiario que Odoo crea de forma nativa al\n"
+"                                    conciliar también lleva el monto en moneda alterna\n"
+"                                    en sus propias líneas. Si solo la moneda alterna muestra una\n"
 "                                    diferencia, igual se crea este mismo tipo de asiento para ella."
 
 #. module: l10n_ve_accountant
@@ -2102,3 +2130,29 @@ msgstr ""
 #: code:addons/l10n_ve_accountant/models/res_company.py:0
 msgid "The tax amount edit tolerance must be between 0 and 1."
 msgstr "La tolerancia de edición del monto de impuesto debe estar entre 0 y 1."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/wizard/account_move_reversal.py:0
+msgid ""
+"A credit note can only be issued against a single invoice. "
+"Please select one invoice at a time."
+msgstr ""
+"Una nota de crédito solo puede emitirse contra una única factura. "
+"Seleccione una factura a la vez."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid "The note date (%(value)s) cannot be later than today (%(today)s)."
+msgstr "La fecha de la nota (%(value)s) no puede ser posterior a hoy (%(today)s)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+msgid ""
+"The note date (%(value)s) cannot be earlier than the date of the original "
+"document %(origin)s (%(origin_date)s)."
+msgstr ""
+"La fecha de la nota (%(value)s) no puede ser anterior a la fecha del "
+"documento original %(origin)s (%(origin_date)s)."
