@@ -901,6 +901,22 @@ class AccountRetention(models.Model):
             "target": "new",
         }
 
+    def action_print_retention_voucher_pdf(self):
+        """Download the PDF voucher of an emitted retention (IVA, ISLR or municipal).
+
+        For municipal retentions the delivery date is set on the first print,
+        like the XLSX button does, so both vouchers show the same date.
+        """
+        self.ensure_one()
+        if self.state != "emitted":
+            raise UserError(_("Only emitted retention vouchers can be downloaded."))
+        if self.type_retention == "municipal" and not self.date_emision:
+            self.write({"date_emision": fields.Date.today()})
+            self.flush_recordset(["date_emision"])
+        return self.env.ref(
+            "l10n_ve_payment_extension.retention_voucher_action"
+        ).report_action(self, config=False)
+
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
             # Dispatch through get_sequence_<type>_retention() rather than
