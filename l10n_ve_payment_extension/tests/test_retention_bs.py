@@ -704,3 +704,26 @@ class TestAccountRetentionSequence(TransactionCase):
         self.assertAlmostEqual(
             invoice.amount_residual, invoice.amount_total - payment.amount, places=2
         )
+
+    def test_16_islr_supplier_retention_form_onchange_syncs_usd_base(self):
+        """Editing the base in Bs on the ISLR supplier retention form must
+        update the base and the retention in the company currency right
+        away, before the retention is emitted."""
+        invoice = self._create_invoice_simple()
+        invoice.action_post()
+        rate = invoice.foreign_rate
+        retention = self._create_retention(invoice, "islr")
+        whole_base = invoice.amount_untaxed
+        edited_bs_base = whole_base / 4 * rate
+
+        with Form(retention) as retention_form:
+            with retention_form.retention_line_ids.edit(0) as line_form:
+                line_form.foreign_invoice_amount = edited_bs_base
+        line = retention.retention_line_ids
+
+        self.assertEqual(retention.state, "draft")
+        self.assertAlmostEqual(line.foreign_invoice_amount, edited_bs_base, places=2)
+        self.assertAlmostEqual(line.invoice_amount, whole_base / 4, places=2)
+        self.assertAlmostEqual(
+            line.retention_amount, line.foreign_retention_amount / rate, places=2
+        )

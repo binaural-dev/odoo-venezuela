@@ -302,8 +302,11 @@ class AccountRetentionLine(models.Model):
                 # of collapsing it to 0. Same guard already applied to
                 # retention_amount/foreign_retention_amount in _compute_retention_amount.
                 continue
-            origin_invoice_amount = line._origin.invoice_amount
-            origin_foreign_invoice_amount = line._origin.foreign_invoice_amount
+            # On the onchange of a saved line, the values being edited are the source, not the
+            # persisted ones, or the edited base would be reverted.
+            source = line if isinstance(line.id, models.NewId) else line._origin
+            origin_invoice_amount = source.invoice_amount
+            origin_foreign_invoice_amount = source.foreign_invoice_amount
             if not base_currency_is_vef:
                 if origin_foreign_invoice_amount:
                     line.invoice_amount = origin_foreign_invoice_amount * (
@@ -524,6 +527,19 @@ class AccountRetentionLine(models.Model):
                     * (1 / line.move_id.foreign_rate)
                 }
             )
+
+    @api.onchange("foreign_invoice_amount")
+    def _onchange_islr_supplier_foreign_invoice_amount(self):
+        """
+        Keep the base in the company currency of the ISLR supplier lines of the retention form in
+        sync with the base in Bs while it is edited, so the retention amount in the company currency
+        is right before the retention is emitted. The lines of the invoice form are already synced
+        by onchange_foreign_retention_amount.
+        """
+        self.filtered(
+            lambda l: l.retention_id.type == "in_invoice"
+            and l.retention_id.type_retention == "islr"
+        )._sync_islr_supplier_base_from_foreign()
 
     @api.constrains(
         "retention_amount",
