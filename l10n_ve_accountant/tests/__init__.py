@@ -10,4 +10,5 @@ from . import test_product_template
 from . import test_action_cancel
 from . import test_account_journal_bank_account
 from . import test_foreign_exchange_diff
+from . import test_payment_zero_amount
 from . import test_payment_future_date
