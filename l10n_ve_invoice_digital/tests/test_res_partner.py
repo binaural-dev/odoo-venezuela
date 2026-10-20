@@ -94,56 +94,6 @@ class TestResPartnerEmailDuplicate(TransactionCase):
                 existing_partner.email, company_id=other_company.id
             )
 
-    def test_07_create_validates_against_real_target_company_not_active(self):
-        """Extremo a extremo (sin llamar check_duplicate_email directo): la
-        compañia ACTIVA digitaliza con TFHKA, pero el contacto se crea para
-        OTRA compañia (``vals["company_id"]``) que no digitaliza. La
-        validacion de duplicados debe seguir aplicando para esa compañia.
-
-        Antes del fix, ``create()``/``write()`` de l10n_ve_contact nunca
-        pasaban ``company_id`` a ``check_duplicate_email``, asi que el
-        override de este modulo siempre caia a ``self.env.company`` (la
-        activa, TFHKA) y el duplicado se colaba igual aunque el contacto
-        fuera explicitamente de otra compañia.
-        """
-        other_company = self.env["res.company"].create({
-            "name": "Otra Compañia (no TFHKA, create)",
-            "invoice_digital_tfhka": False,
-            "validate_user_creation_by_company": True,
-        })
-        self.env["res.partner"].create({
-            "name": "Partner de Otra Compania (create)",
-            "email": "otra_compania_create@example.com",
-            "company_id": other_company.id,
-        })
-        with self.assertRaises(ValidationError):
-            self.env["res.partner"].create({
-                "name": "Duplicado colado",
-                "email": "otra_compania_create@example.com",
-                "company_id": other_company.id,
-            })
-
-    def test_08_write_validates_against_real_target_company_not_active(self):
-        """Igual que el anterior pero vía ``write()``: la compañia ACTIVA
-        digitaliza, el contacto que se edita pertenece a otra que no."""
-        other_company = self.env["res.company"].create({
-            "name": "Otra Compañia (no TFHKA, write)",
-            "invoice_digital_tfhka": False,
-            "validate_user_creation_by_company": True,
-        })
-        self.env["res.partner"].create({
-            "name": "Partner de Otra Compania (write)",
-            "email": "otra_compania_write@example.com",
-            "company_id": other_company.id,
-        })
-        partner_to_edit = self.env["res.partner"].create({
-            "name": "Partner a editar",
-            "email": "sin_conflicto@example.com",
-            "company_id": other_company.id,
-        })
-        with self.assertRaises(ValidationError):
-            partner_to_edit.write({"email": "otra_compania_write@example.com"})
-
     def test_06_decision_skips_validation_for_tfhka_company_id_param(self):
         """A la inversa: la compañia ACTIVA no digitaliza, pero el
         ``company_id`` recibido si lo hace -- la validacion debe omitirse

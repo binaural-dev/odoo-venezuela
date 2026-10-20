@@ -185,11 +185,7 @@ class ResPartner(models.Model):
             if "vat" and "prefix_vat" in vals:
                 self.check_duplicate_vat(vals.get("prefix_vat"), vals.get("vat"))
             if "email" in vals:
-                self.check_duplicate_email(
-                    vals.get("email"),
-                    company_id=vals.get("company_id"),
-                    parent_id=vals.get("parent_id"),
-                )
+                self.check_duplicate_email(vals.get("email"), parent_id=vals.get("parent_id"))
         return super(ResPartner, self).create(vals_list)
 
     def write(self, vals):
@@ -200,16 +196,7 @@ class ResPartner(models.Model):
         if "email" in vals:
             for record in self:
                 actual_parent_id = vals.get("parent_id", record.parent_id.id)
-                # ``vals`` puede estar cambiando la compañia del contacto; si
-                # no la cambia, se valida contra la compañia real actual del
-                # registro, nunca contra la compañia activa del usuario (ver
-                # l10n_ve_invoice_digital.res_partner.check_duplicate_email).
-                actual_company_id = vals.get("company_id", record.company_id.id)
-                record.check_duplicate_email(
-                    vals.get("email"),
-                    company_id=actual_company_id,
-                    parent_id=actual_parent_id,
-                )
+                record.check_duplicate_email(vals.get("email"), parent_id=actual_parent_id)
         return res
 
     def _check_vat(self):
