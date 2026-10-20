@@ -1,4 +1,5 @@
 import logging
+from datetime import timedelta
 
 from odoo import fields
 from odoo.exceptions import ValidationError
@@ -142,3 +143,35 @@ class TestMunicipalRetentionPdf(RetentionTestCommon):
         self.assertEqual(data["total"], 10.0)
         self.assertEqual(data["display_rows"][0][5], "5.00 %")
         _logger.info("========= test_07 passed =========")
+
+    def test_08_print_pdf_button_returns_report_action(self):
+        retention = self._create_municipal_retention(date_emision=False)
+        retention.state = "emitted"
+        action = retention.action_print_municipal_retention_pdf()
+        self.assertEqual(action["type"], "ir.actions.report")
+        self.assertEqual(action["report_name"], REPORT_REF)
+        self.assertEqual(action["context"]["active_ids"], retention.ids)
+        _logger.info("========= test_08 passed =========")
+
+    def test_09_print_pdf_button_sets_delivery_date_once(self):
+        retention = self._create_municipal_retention(date_emision=False)
+        retention.state = "emitted"
+        retention.action_print_municipal_retention_pdf()
+        self.assertEqual(retention.date_emision, fields.Date.today())
+        previous = fields.Date.today() - timedelta(days=3)
+        retention.date_emision = previous
+        retention.action_print_municipal_retention_pdf()
+        self.assertEqual(retention.date_emision, previous)
+        _logger.info("========= test_09 passed =========")
+
+    def test_10_print_pdf_button_hidden_in_draft(self):
+        view = self.env.ref(
+            "l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension"
+        )
+        arch = self.env["account.retention"].get_view(view.id)["arch"]
+        self.assertIn("action_print_municipal_retention_pdf", arch)
+        retention = self._create_municipal_retention()
+        self.assertEqual(retention.state, "draft")
+        with self.assertRaises(ValidationError):
+            self._render(retention)
+        _logger.info("========= test_10 passed =========")
