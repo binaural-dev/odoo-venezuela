@@ -34,6 +34,7 @@ class AccountMove(models.Model):
         string='Source Customer Invoice (Exchange Difference)',
         copy=False,
         check_company=True,
+        index='btree_not_null',
         help="Original CUSTOMER invoice/note whose residual (in company "
              "currency) this exchange difference Debit/Credit Note "
              "settles.",

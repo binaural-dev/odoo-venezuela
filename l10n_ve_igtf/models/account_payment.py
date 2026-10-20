@@ -695,6 +695,7 @@ class AccountPaymentAndIgtf(models.Model):
         self.ensure_one()
         drafts = self.env["account.move"].search([
             ("origin_payment_advanced_payment_id", "=", self.id),
+            ("is_advance_move", "=", True),
             ("state", "=", "draft"),
         ])
         drafts.with_context(move_action_cancel_advance_payment=True).button_cancel()

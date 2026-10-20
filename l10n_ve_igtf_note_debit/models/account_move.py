@@ -648,8 +648,11 @@ class AccountMove(models.Model):
             )[:1]
 
             vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
-            is_vef_direct_payment = (
-                payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id
+            is_vef_direct_payment = bool(
+                payment_move
+                and payment_move.currency_id == vef
+                and not payment_move.origin_payment_advanced_payment_id
+                and not payment_move._is_advance_cross()
             )
 
             if payment_move and not is_vef_direct_payment:
