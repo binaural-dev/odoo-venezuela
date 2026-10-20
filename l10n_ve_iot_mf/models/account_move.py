@@ -36,9 +36,13 @@ class AccountMoveInh(models.Model):
     )
     mf_reportz = fields.Char(string="Report number Z", default=False, copy=False, tracking=True)
     
+    def _default_print_type(self):
+        return self.env.company.invoice_print_type
+
     print_type = fields.Selection(
-        related='company_id.invoice_print_type',
-        store=True
+        selection=lambda self: self.env['res.company']._fields['invoice_print_type'].selection,
+        default=_default_print_type,
+        store=True,
     )
 
     def has_printed(self, invoice_number):
@@ -290,7 +294,7 @@ class AccountMoveInh(models.Model):
                 [("account_move", "in", candidate_move_ids)],
                 order="id desc",
                 limit=1,
-            )
+            ) if "pos.order" in self.env.registry else False
 
             if pos_order and pos_order.payment_ids:
                 for payment in pos_order.payment_ids:
