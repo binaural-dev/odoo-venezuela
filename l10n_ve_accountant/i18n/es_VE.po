@@ -635,6 +635,24 @@ msgid "Journal Item"
 msgstr "Apunte contable"
 
 #. module: l10n_ve_accountant
+#. odoo-python
+#: code:addons/l10n_ve_accountant/models/account_move.py:0
+#, python-format
+msgid ""
+"l10n_ve_accountant: cannot create the account_move_unique_name_ve index "
+"because there are accounting entries with the same number for the same "
+"partner/journal/company. No data was changed -- review these cases "
+"manually before reinstalling the module:\n"
+"%s"
+msgstr ""
+"l10n_ve_accountant: no se puede crear el índice "
+"account_move_unique_name_ve porque existen asientos contables con el "
+"mismo número para el mismo proveedor/diario/compañía. No se modificó "
+"ningún dato -- revisar manualmente estos casos antes de reinstalar el "
+"módulo:\n"
+"%s"
+
+#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.binaural_accountant_inherit_report_payment_receipt_document
 msgid "La cantidad de"
 msgstr ""
