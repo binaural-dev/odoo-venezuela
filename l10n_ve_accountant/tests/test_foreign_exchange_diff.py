@@ -29,8 +29,10 @@ class TestForeignExchangeDiff(TransactionCase):
         self.today = fields.Date.today()
         # Distinct dates for booking vs. settlement -- `res.currency.rate`
         # has a real unique constraint of one rate per (currency, day).
-        self.booking_date = self.today - timedelta(days=5)
-        self.settlement_date = self.today
+        # Settlement installments go up to `settlement_date` + 6 days: keep them
+        # all in the past (a payment cannot be dated after today).
+        self.booking_date = self.today - timedelta(days=20)
+        self.settlement_date = self.today - timedelta(days=10)
 
         self.company.write({
             "currency_id": self.currency_vef.id,
