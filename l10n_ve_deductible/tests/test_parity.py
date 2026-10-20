@@ -47,6 +47,15 @@ class TestDeductibleParity(DeductibleCase):
                 with self.subTest(method=method, currency=currency.name, lines=len(lines)):
                     self._check_percent(currency, lines, 12.5)
 
+    def test_percent_equals_native_discount_with_taxed_lines(self):
+        for method, currency in self._combos():
+            with self.subTest(method=method, currency=currency.name):
+                tax = self.tax("general")
+                native = self._doc(self.LINES, currency, tax=tax, line_extra={"discount": 12.5})
+                mine = self._doc(self.LINES, currency, tax=tax, **self.PERCENT)
+                self._assert_same(mine, native)
+                self.assertTrue(mine.amount_tax)
+
     def test_amount_equals_discount_fixed(self):
         for method, currency in self._combos():
             for lines in self.SCENARIOS:

@@ -18,12 +18,6 @@ msgstr ""
 #. module: l10n_ve_deductible
 #. odoo-python
 #: code:addons/l10n_ve_deductible/models/account_move.py:0
-msgid "%s: every line must have an exempt tax."
-msgstr "%s: todas las líneas deben tener un impuesto exento."
-
-#. module: l10n_ve_deductible
-#. odoo-python
-#: code:addons/l10n_ve_deductible/models/account_move.py:0
 msgid "%s: lines cannot have a previous discount."
 msgstr "%s: las líneas no pueden tener un descuento previo."
 
@@ -49,9 +43,9 @@ msgstr "Asistente para agregar nota de débito"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.view_res_config_settings_l10n_ve_deductible
 msgid ""
 "Allows applying a global deductible (percentage or fixed\n"
-"                                amount) to documents with exempt taxes. While active on a\n"
+"                                amount) to documents. While active on a\n"
 "                                document, line discounts are disabled."
-msgstr "Permite aplicar un deducible global (porcentaje o monto fijo) a documentos con impuestos exentos. Mientras esté activo en un documento, los descuentos por línea quedan deshabilitados."
+msgstr "Permite aplicar un deducible global (porcentaje o monto fijo) a documentos. Mientras esté activo en un documento, los descuentos por línea quedan deshabilitados."
 
 #. module: l10n_ve_deductible
 #: model:ir.model.fields,help:l10n_ve_deductible.field_res_company__use_deductible
