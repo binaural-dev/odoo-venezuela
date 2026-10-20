@@ -817,6 +817,31 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
 - **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
+### Requirement: No se puede confirmar un pago con importe cero
+
+`account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.
+
+#### Scenario: Confirmar un pago con importe 0.0
+
+- **WHEN** se confirma desde la vista de pagos un pago cuyo importe es 0.0
+- **THEN** se lanza un `UserError` y el pago permanece en borrador
+
+#### Scenario: Confirmar un pago con importe mayor a cero
+
+- **WHEN** se confirma un pago con importe mayor a cero
+- **THEN** el pago se confirma con normalidad
+
+#### Scenario: Registrar pago por wizard en divisa cuyo importe convertido redondea a 0.0
+
+- **GIVEN** una factura en Bs cuyo saldo, convertido a USD, es menor a 0,01 USD
+- **WHEN** se registra el pago con `account.payment.register` en un diario USD con IGTF
+- **THEN** se lanza un `UserError` que indica la moneda y que el importe convertido es menor a la unidad mínima
+- **AND** no se crea ni concilia ningún pago, y la factura conserva su saldo
+
+#### Scenario: Cierre de sesión POS con neto cero
+
+- **WHEN** el cierre de sesión POS crea el pago agrupado de un método de banco cuyo neto es 0 (contexto `from_pos`)
+- **THEN** la guarda no aplica y la sesión puede cerrarse
 ### Requirement: Un pago no puede tener fecha futura
 
 La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
