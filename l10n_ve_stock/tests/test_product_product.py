@@ -105,9 +105,8 @@ class TestProductProductComputeQuantities(TransactionCase):
             "location_id": self.location.id,
             "quantity": 10,
         })
-        res = self.product._compute_quantities_dict(
+        res = self.product.with_context(location=self.location.id)._compute_quantities_dict(
             lot_id=False, owner_id=False, package_id=False,
-            location=self.location
         )
         self.assertEqual(res[self.product.id]["qty_available"], 10.0)
 
@@ -122,9 +121,8 @@ class TestProductProductComputeQuantities(TransactionCase):
             "quantity": 5,
             "lot_id": lot.id,
         })
-        res = self.product._compute_quantities_dict(
+        res = self.product.with_context(location=self.location.id)._compute_quantities_dict(
             lot_id=lot.id, owner_id=False, package_id=False,
-            location=self.location
         )
         self.assertEqual(res[self.product.id]["qty_available"], 5.0)
 
@@ -136,9 +134,8 @@ class TestProductProductComputeQuantities(TransactionCase):
             "quantity": 7,
             "owner_id": owner.id,
         })
-        res = self.product._compute_quantities_dict(
+        res = self.product.with_context(location=self.location.id)._compute_quantities_dict(
             lot_id=False, owner_id=owner.id, package_id=False,
-            location=self.location
         )
         self.assertEqual(res[self.product.id]["qty_available"], 7.0)
 
@@ -150,9 +147,8 @@ class TestProductProductComputeQuantities(TransactionCase):
             "quantity": 3,
             "package_id": package.id,
         })
-        res = self.product._compute_quantities_dict(
+        res = self.product.with_context(location=self.location.id)._compute_quantities_dict(
             lot_id=False, owner_id=False, package_id=package.id,
-            location=self.location
         )
         self.assertEqual(res[self.product.id]["qty_available"], 3.0)
 
@@ -163,10 +159,9 @@ class TestProductProductComputeQuantities(TransactionCase):
             "quantity": 15,
         })
         past_date = (datetime.now() - timedelta(days=30)).strftime("%Y-%m-%d %H:%M:%S")
-        res = self.product._compute_quantities_dict(
+        res = self.product.with_context(location=self.location.id)._compute_quantities_dict(
             lot_id=False, owner_id=False, package_id=False,
             from_date=past_date,
-            location=self.location
         )
         self.assertEqual(res[self.product.id]["qty_available"], 15.0)
 
@@ -177,17 +172,15 @@ class TestProductProductComputeQuantities(TransactionCase):
             "quantity": 20,
         })
         past_date = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d %H:%M:%S")
-        res = self.product._compute_quantities_dict(
+        res = self.product.with_context(location=self.location.id)._compute_quantities_dict(
             lot_id=False, owner_id=False, package_id=False,
             to_date=past_date,
-            location=self.location
         )
         self.assertIn(self.product.id, res)
 
     def test_compute_quantities_dict_zero_quantity(self):
-        res = self.product._compute_quantities_dict(
+        res = self.product.with_context(location=self.location.id)._compute_quantities_dict(
             lot_id=False, owner_id=False, package_id=False,
-            location=self.location
         )
         self.assertEqual(res[self.product.id]["qty_available"], 0.0)
         self.assertEqual(res[self.product.id]["free_qty"], 0.0)
@@ -208,9 +201,55 @@ class TestProductProductComputeQuantitiesForReport(TransactionCase):
             "is_storable": True,
         })
 
-    @unittest.skip("_compute_quantities_dict_for_report depends on location_final_id removed in Odoo 19")
     def test_compute_quantities_dict_for_report_basic(self):
-        pass
+        self.env["stock.quant"].create({
+            "product_id": self.product.id,
+            "location_id": self.location.id,
+            "quantity": 10,
+        })
+        res = self.product._compute_quantities_dict_for_report(
+            lot_id=False, owner_id=False, package_id=False, location=self.location,
+        )
+        self.assertEqual(res[self.product.id]["qty_available"], 10.0)
+
+    def test_compute_quantities_dict_for_report_internal_transfer_does_not_inflate(self):
+        """A move.line whose origin and destination are both inside the
+        selected locations (e.g. WH/Stock -> WH/Output) must not be counted
+        as incoming AND outgoing at once, or the report's totals get
+        inflated for every internal transfer.
+        """
+        other_internal_location = self.env["stock.location"].create({
+            "name": "Internal Transfer Target",
+            "location_id": self.location.location_id.id,
+            "usage": "internal",
+        })
+        picking = self.env["stock.picking"].create({
+            "picking_type_id": self.warehouse.int_type_id.id,
+            "location_id": self.location.id,
+            "location_dest_id": other_internal_location.id,
+            "move_ids": [(0, 0, {
+                "product_id": self.product.id,
+                "product_uom_qty": 5,
+                "product_uom": self.product.uom_id.id,
+                "location_id": self.location.id,
+                "location_dest_id": other_internal_location.id,
+            })],
+        })
+        picking.action_confirm()
+        picking.move_ids.quantity = 5
+        picking.button_validate()
+
+        res = self.product._compute_quantities_dict_for_report(
+            lot_id=False, owner_id=False, package_id=False,
+        )
+        self.assertEqual(
+            res[self.product.id]["incoming_qty"], 0.0,
+            "An internal transfer between two selected locations must not count as incoming.",
+        )
+        self.assertEqual(
+            res[self.product.id]["outgoing_qty"], 0.0,
+            "An internal transfer between two selected locations must not count as outgoing.",
+        )
 
     @unittest.skip("_compute_quantities_dict_for_report depends on location_final_id removed in Odoo 19")
     def test_compute_quantities_dict_for_report_with_lot(self):

@@ -155,8 +155,6 @@ class AccountPaymentRegister(models.TransientModel):
             ]
             payment.journal_id = self.env.company.iva_customer_retention_journal_id.id
             payment.compute_retention_amount_from_retention_lines()
-            payment.foreign_rate = vals["to_reconcile"].move_id.foreign_rate
-            payment.foreign_inverse_rate = vals["to_reconcile"].move_id.foreign_inverse_rate
         retention = self._create_retention(payments)
         retention.action_post()
         return payments

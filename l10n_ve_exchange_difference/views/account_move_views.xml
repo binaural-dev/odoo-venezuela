@@ -1,0 +1,44 @@
+<odoo>
+    <record id="view_move_form_inherit_l10n_ve_exchange" model="ir.ui.view">
+        <field name="name">account.move.form.inherit.l10n_ve_exchange</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_move_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//page[@id='other_tab']/group[@id='other_tab_group']/group[@name='sale_info_group']" position="inside">
+                <field
+                    name="l10n_ve_exchange_invoice_id"
+                    invisible="not l10n_ve_exchange_invoice_id"
+                    readonly="1"
+                />
+                <field
+                    name="l10n_ve_exchange_original_id"
+                    invisible="not l10n_ve_exchange_original_id"
+                    readonly="1"
+                />
+            </xpath>
+        </field>
+    </record>
+
+    <record id="view_account_invoice_filter_inherit_l10n_ve_exchange" model="ir.ui.view">
+        <field name="name">account.invoice.select.inherit.l10n_ve_exchange</field>
+        <field name="model">account.move</field>
+        <field name="inherit_id" ref="account.view_account_invoice_filter"/>
+        <field name="arch" type="xml">
+            <!-- Anclado DESPUÉS de "cancel", no de "posted": el grupo
+                 Borrador/Publicado/Cancelado del core (`account.view_account_invoice_filter`)
+                 es un grupo OR delimitado por separadores ANTES de "draft"
+                 y DESPUÉS de "cancel" insertar un `<separator/>` entre
+                 "posted" y "cancel" partía ese grupo en dos, rompiendo el
+                 OR nativo Borrador/Publicado/Cancelado. -->
+            <filter name="cancel" position="after">
+                <separator/>
+                <filter
+                    name="l10n_ve_exchange_diff_entry"
+                    string="Exchange Difference Notes"
+                    domain="[('l10n_ve_exchange_diff_entry', '=', True)]"
+                    invisible="context.get('default_move_type') in ('in_invoice', 'in_refund', 'in_receipt')"
+                />
+            </filter>
+        </field>
+    </record>
+</odoo>

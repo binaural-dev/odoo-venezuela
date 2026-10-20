@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
+<!--
+  Company currency is set in post_init_hook (set_main_company_currency_to_vef)
+  via SQL to avoid ORM constraint that blocks currency change when journal
+  items already exist (installed by `account` module before this module).
+-->
 <odoo>
-    <data noupdate="1">
-        <record id="base.main_company" model="res.company">
-            <field name="currency_id" ref="base.VEF"/> 
-        </record>
-    </data>
+    <data noupdate="1"/>
 </odoo>

@@ -1,7 +1,7 @@
 import logging
 import re
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import AccessError, ValidationError
 from collections import defaultdict
 
 _logger = logging.getLogger(__name__)
@@ -46,6 +46,28 @@ class ProductTemplate(models.Model):
 
     liters_per_unit = fields.Float(digits="Stock Weight")
 
+    company_id = fields.Many2one(tracking=True)
+
+    can_edit_company_id = fields.Boolean(
+        string="Can edit company",
+        compute="_compute_can_edit_company_id",
+        help="Whether the current user can modify the product's company.",
+    )
+
+    lock_internal_reference_on_moves = fields.Boolean(
+        string="Bloquear referencia interna con movimientos",
+        compute="_compute_lock_internal_reference_on_moves",
+        inverse="_set_lock_internal_reference_on_moves",
+        store=True,
+        help=(
+            "Si está activo, la referencia interna (código) no podrá "
+            "modificarse una vez que el producto (siendo almacenable) tenga "
+            "movimientos de inventario ya validados (estado 'Hecho'). Un "
+            "pedido de compra o venta confirmado, sin la transferencia "
+            "asociada validada todavía, no cuenta como movimiento."
+        ),
+    )
+
     def button_dummy(self):
         # TDE FIXME: this button is very interesting
         # Maldito Raiver e.e
@@ -61,14 +83,89 @@ class ProductTemplate(models.Model):
             if product.list_price <= 0:
                 raise ValidationError(_("Price cannot be negative or zero."))
 
-    @api.constrains("taxes_id")
-    def _check_taxes_id(self):
+    def _check_company_id_edit_allowed(self, vals):
+        if "company_id" not in vals:
+            return
+        if self.env.user.has_group("l10n_ve_stock.group_edit_product_company"):
+            return
+
+        new_company = vals["company_id"]
+        if not self:
+            # create(): no existing record to compare against. copy_data()
+            # always sends company_id (field has no copy=False), so
+            # duplicating a product must not be treated as an edit as long
+            # as the copy lands in the user's own active company - only a
+            # value that actually differs from that is a real attempt to
+            # set the company. False (no company / "Visible for all
+            # companies") is the least privileged state, not a change of
+            # company - env.company.id is never False, so comparing
+            # against it unconditionally made every explicit
+            # company_id=False create() fail for every non-privileged
+            # user (shared products, imports, other modules' create()).
+            # Only a truthy, different company is a real attempt to
+            # assign the product somewhere specific.
+            if new_company and new_company != self.env.company.id:
+                raise AccessError(
+                    _("You don't have permission to change this product's company.")
+                )
+            return
+
+        # write() can run on several products at once with a single vals
+        # dict, so "did it change" has to be checked per product: a value
+        # identical to one product's own company_id is a no-op for that
+        # product even if it differs for another one in the same call.
+        # False is the same least-privileged state as in create() above, so
+        # clearing a product's company is allowed without the group too -
+        # only assigning a specific, different company is restricted.
         for product in self:
+            if new_company and new_company != product.company_id.id:
+                raise AccessError(
+                    _("You don't have permission to change this product's company.")
+                )
+
+    def write(self, vals):
+        self._check_company_id_edit_allowed(vals)
+        # default_code and lock_internal_reference_on_moves are both stored
+        # fields with their own inverse (_set_default_code on the core side,
+        # _set_lock_internal_reference_on_moves here), so Odoo runs them as
+        # separate write() calls on the variant, in vals key order. In the
+        # resolved form arch, default_code renders before the toggle, so it
+        # always arrives first in vals - meaning product.product.write()'s
+        # own same-write guard (which reads
+        # vals.get("lock_internal_reference_on_moves", ...)) never sees the
+        # new toggle value, only the variant's still-locked stored one.
+        # Propagate the toggle to the variants directly, before super()
+        # triggers any inverse, so unlocking and fixing default_code in the
+        # same save always sees the intended state regardless of key order.
+        if "lock_internal_reference_on_moves" in vals and "default_code" in vals:
+            self.product_variant_ids.write(
+                {"lock_internal_reference_on_moves": vals["lock_internal_reference_on_moves"]}
+            )
+
+        res = super().write(vals)
+        if "taxes_id" in vals:
+            self._validate_single_sale_tax()
+        return res
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        for vals in vals_list:
+            self._check_company_id_edit_allowed(vals)
+        records = super().create(vals_list)
+        # Always validate after creation because default taxes can come from multiple sources
+        records._validate_single_sale_tax()
+        return records
+
+    def _validate_single_sale_tax(self):
+        # Combo products are exempt, as in `l10n_ve_accountant` (FIX-061) and
+        # core: a combo carries no taxes of its own (core hides and clears
+        # them), the taxes live on the lines of its component products.
+        for product in self.filtered(lambda p: p.type != "combo"):
             taxes_by_company = defaultdict(int)
             for tax in product.taxes_id.sudo():
                 taxes_by_company[tax.company_id] += 1
                 if taxes_by_company[tax.company_id] > 1:
-                    raise ValidationError(_("This product must have only one tax."))                
+                    raise ValidationError(_("This product must have only one tax."))   
 
     @api.depends("list_price")
     def _compute_prices_with_tax(self):
@@ -118,3 +215,17 @@ class ProductTemplate(models.Model):
         domain = [('free_qty', operator, value)]
         product_variant_query = self.env['product.product'].sudo()._search(domain)
         return [('product_variant_ids', 'in', product_variant_query)]
+
+    @api.depends_context("uid")
+    def _compute_can_edit_company_id(self):
+        can_edit = self.env.user.has_group("l10n_ve_stock.group_edit_product_company")
+        for product in self:
+            product.can_edit_company_id = can_edit
+    @api.depends("product_variant_ids.lock_internal_reference_on_moves")
+    def _compute_lock_internal_reference_on_moves(self):
+        self._compute_template_field_from_variant_field(
+            "lock_internal_reference_on_moves", default=True
+        )
+
+    def _set_lock_internal_reference_on_moves(self):
+        self._set_product_variant_field("lock_internal_reference_on_moves")

@@ -109,7 +109,7 @@ class TestCoverageGaps(TransactionCase):
     def _create_invoice(self, currency=None, price=100.0, tax=True):
         currency = currency or self.currency_vef
         tax_ids = [(6, 0, [self.tax_16.id])] if tax else [(5, 0, 0)]
-        return self.env["account.move"].with_context(
+        invoice = self.env["account.move"].with_context(
             check_move_validity=False,
         ).create({
             "move_type": "out_invoice",
@@ -126,6 +126,30 @@ class TestCoverageGaps(TransactionCase):
                 }),
             ],
         })
+        self._assert_company_currency_line_totals(invoice)
+        return invoice
+
+    def _assert_company_currency_line_totals(self, move):
+        """company_currency_line_totals debe cuadrar exacto con
+        line_ids.balance, linea por linea (no un agregado). Llamada desde
+        _create_invoice: toda factura creada por las ~60 pruebas de este
+        archivo queda verificada contra el nuevo campo sin tener que
+        tocar cada test uno por uno."""
+        product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
+        if not product_lines:
+            return
+
+        totals = move.company_currency_line_totals or {}
+        for line in product_lines:
+            self.assertIn(str(line.id), totals)
+            self.assertAlmostEqual(
+                abs(totals[str(line.id)]['subtotal']), abs(line.balance), places=2
+            )
+
+        tax_lines = move.line_ids.filtered('tax_repartition_line_id')
+        sum_tax_amount = sum(abs(t['tax_amount']) for t in totals.values())
+        sum_tax_balance = sum(abs(l.balance) for l in tax_lines)
+        self.assertAlmostEqual(sum_tax_amount, sum_tax_balance, places=2)
 
     # ═══════════════════════════════════════════════════════════════
     # account_tax.py - _prepare_foreign_base_line_for_taxes_computation
@@ -324,6 +348,7 @@ class TestCoverageGaps(TransactionCase):
             ], limit=1).id or self.env['account.journal'].sudo().create({
                 "name": "Bank Stmt", "code": "BNKSTMT",
                 "type": "bank", "company_id": self.company.id,
+                "default_account_id": self.acc_bank.id,
             }).id,
         })
         vals = st_line.with_company(self.company)._prepare_move_line_default_vals()
@@ -443,20 +468,24 @@ class TestCoverageGaps(TransactionCase):
         self.assertIsInstance(result, dict)
 
     # ═══════════════════════════════════════════════════════════════
-    # account_move_line.py - _compute_price_unit_ves / _compute_ves_currency_id
+    # account_move.py - _compute_company_currency_line_totals
     # ═══════════════════════════════════════════════════════════════
 
-    def test_18_price_unit_ves(self):
-        """_compute_price_unit_ves: verifica computo en USD y VEF."""
+    def test_18_company_currency_line_totals(self):
+        """_compute_company_currency_line_totals: presente en USD, y
+        coincide con los propios montos nativos cuando la factura ya esta
+        en la moneda de la compañia (tasa 1)."""
         inv_usd = self._create_invoice(self.currency_usd, 200.0)
         line_usd = inv_usd.line_ids.filtered(lambda l: l.display_type == 'product')
         if line_usd:
-            self.assertIsNotNone(line_usd.price_unit_ves)
+            totals = inv_usd.company_currency_line_totals.get(str(line_usd.id))
+            self.assertIsNotNone(totals)
 
         inv_vef = self._create_invoice(self.currency_vef, 200.0)
         line_vef = inv_vef.line_ids.filtered(lambda l: l.display_type == 'product')
         if line_vef:
-            self.assertAlmostEqual(line_vef.price_unit_ves, 200.0, places=2)
+            totals = inv_vef.company_currency_line_totals.get(str(line_vef.id))
+            self.assertAlmostEqual(totals['price_unit'], 200.0, places=2)
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - get_view
@@ -786,6 +815,90 @@ class TestCoverageGaps(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         tt = invoice.tax_totals
         self.assertIn('formatted_total_discount', tt)
+
+    def test_39b_tax_totals_record_derived_from_base_lines_ignores_stale_active_id(self):
+        """`_get_tax_totals_summary` (`account_tax.py`) deriva `record` --
+        la factura para la que arma el summary -- PRIMERO de
+        `base_lines[0]['record']` (el documento REAL que se está
+        calculando), y solo si eso falla cae al `active_model`/`active_id`
+        del contexto. Antes tomaba el `active_id` del contexto como
+        prioritario; se invirtió porque `_compute_tax_totals`
+        (`account_move.py`) dejó de fijar `active_id=move.id` POR
+        REGISTRO al iterar un batch (ese `with_context()` por registro
+        causaba un `RecursionError` real en cadenas de `super()` largas de
+        este proyecto) -- sin la inversión de prioridad, un `active_id`
+        AJENO ya colgando del contexto (ej. un wizard de pago en lote, o
+        un recompute encadenado disparado por OTRO documento) haría que
+        `record` se resolviera al documento equivocado, y esa factura
+        heredaría silenciosamente la tasa/moneda/descuento de otra.
+
+        Este test reproduce exactamente ese escenario: dos facturas, A
+        (sin descuento) y B (con descuento) -- se fuerza el recómputo del
+        `tax_totals` de A con `active_id` apuntando a B en el contexto, y
+        se confirma que A sigue viéndose a SÍ MISMA (sin descuento), no a
+        B. `has_discount` (`account_tax.py`) es una señal limpia y
+        determinista para esto: cuando es `False`,
+        `formatted_total_discount` queda como el float `0.0` literal (sin
+        pasar por `formatLang`); cuando es `True`, se convierte en un
+        string formateado -- un cambio de tipo, no solo de valor, así que
+        una contaminación cruzada es imposible de confundir con
+        coincidencia numérica."""
+        invoice_a = self._create_invoice(self.currency_usd, 100.0)
+        invoice_a.with_context(move_action_post_alert=True).action_post()
+
+        invoice_b = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 2.0, "price_unit": 500.0,
+                    "discount": 10.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice_b.with_context(move_action_post_alert=True).action_post()
+
+        # Sanity check bajo contexto NORMAL (sin `active_id` ajeno): A sin
+        # descuento, B con descuento -- confirma que el fixture en sí
+        # produce la señal esperada antes de introducir el contexto
+        # adversarial.
+        self.assertEqual(invoice_a.tax_totals.get('formatted_total_discount'), 0.0)
+        self.assertIsInstance(invoice_b.tax_totals.get('formatted_total_discount'), str)
+
+        # Fuerza el recómputo de `tax_totals` de A con `active_id`
+        # apuntando a B (la factura CON descuento) colgando del contexto
+        # -- simula el wizard/recompute encadenado que deja un
+        # `active_id` ajeno sin limpiar.
+        stale_context = dict(self.env.context, active_model='account.move', active_id=invoice_b.id)
+        invoice_a.with_context(stale_context).invalidate_recordset(['tax_totals'])
+        tt_a_under_stale_context = invoice_a.with_context(stale_context).tax_totals
+
+        self.assertEqual(
+            tt_a_under_stale_context.get('formatted_total_discount'), 0.0,
+            "La factura A (sin descuento) no debió heredar el descuento de "
+            "B solo porque `active_id` del contexto apuntaba a B -- "
+            "`base_lines[0]['record']` (A, el documento real) debió ganar "
+            "sobre el `active_id` ajeno del contexto.",
+        )
+
+        # Verificación inversa -- B (con descuento) tampoco debió PERDER
+        # su propio descuento por un `active_id` ajeno apuntando a A.
+        stale_context_b = dict(self.env.context, active_model='account.move', active_id=invoice_a.id)
+        invoice_b.with_context(stale_context_b).invalidate_recordset(['tax_totals'])
+        tt_b_under_stale_context = invoice_b.with_context(stale_context_b).tax_totals
+        self.assertIsInstance(
+            tt_b_under_stale_context.get('formatted_total_discount'), str,
+            "La factura B (con descuento) no debió perder su propio "
+            "descuento por un `active_id` ajeno apuntando a A.",
+        )
 
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _compute_total_debit_credit EUR

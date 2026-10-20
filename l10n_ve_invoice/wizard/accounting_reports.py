@@ -819,7 +819,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return "03-ANU"
 
     def search_moves(self):
-        order = "invoice_date_display asc" if self.report == "purchase" else "correlative asc"
+        order = "invoice_date_display asc"
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
@@ -1490,45 +1490,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 total_line = idx_line + 2
                 worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
 
-            if not is_purchase:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
-
+            if resume.get("total"):
+                first_row = index_to_start + 5
+                for col in range(2, 8):
+                    col_letter = chr(ord("A") + col)
                     worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
+                        row_resume,
+                        col,
+                        f"=SUM({col_letter}{first_row}:{col_letter}{row_resume})",
+                        cell_formats.get("number"),
                     )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
-
-            else:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
-
-                    worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
+                continue
 
             values = resume.get("values", [0, 0, 0, 0])
             base_total_neto = (values[0] if len(values) > 0 else 0) + (values[2] if len(values) > 2 else 0)

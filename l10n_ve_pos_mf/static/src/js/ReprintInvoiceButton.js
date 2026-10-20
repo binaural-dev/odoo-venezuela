@@ -1,31 +1,89 @@
 /** @odoo-module **/
 
 import { Component } from "@odoo/owl";
-import { usePos } from "@point_of_sale/app/store/pos_hook";
+import { usePos } from "@point_of_sale/app/hooks/pos_hook";
+import { useService } from "@web/core/utils/hooks";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { _t } from "@web/core/l10n/translation";
 
+/**
+ * Botón de reimpresión de documento fiscal en la pantalla de Ticket (POS).
+ *
+ * Reimprime la factura/NC fiscal ya emitida directamente vía Web Serial
+ * API (TfhkaDriver.reprintDocument).
+ *
+ * Caso de uso principal: el cliente perdió su ticket físico y solicita una
+ * copia; el cajero busca el pedido ya facturado y reimprime desde aquí.
+ */
 export class ReprintInvoiceButton extends Component {
-  static template = "binaural_pos_mf.ReprintInvoiceButton";
-  setup() {
-    super.setup();
-    this.pos = usePos()
-    // useListener('click', this._onClick);
-  }
-  async _onClick() {
-    if (!this.props.order || this.props.order.mf_invoice_number) return;
-    let amount = this.props.order.paymentlines.reduce((prev, cur) => prev + cur.amount, 0)
-    const type = amount >= 0 ? "out_invoice" : "out_refund"
+    static template = "l10n_ve_pos_mf.ReprintInvoiceButton";
+    static props = {
+        order: { type: Object, optional: true },
+    };
 
-    const fdm = this.pos.useFiscalMachine();
-    let data = {
-      "type": type,
-      "mf_number": this.props.order.mf_invoice_number,
+    setup() {
+        this.pos = usePos();
+        this.dialog = useService("dialog");
     }
 
-    try {
-      await fdm.action({
-        action: `reprint`,
-        data: data,
-      }).th
-    } catch (err) {}
-  }
+    /**
+     * Obtiene la instancia del driver de la máquina fiscal (Web Serial)
+     * @returns {TfhkaDriver|null}
+     */
+    getFiscalPrinter() {
+        return window.fiscalPrinter || null;
+    }
+
+    _alert(title, body) {
+        this.dialog.add(AlertDialog, { title, body });
+    }
+
+    async _onClick() {
+        const order = this.props.order;
+
+        // Solo se puede reimprimir un documento que YA tiene número fiscal
+        if (!order || !order.mf_invoice_number) {
+            this._alert(
+                _t("Nada que reimprimir"),
+                _t("Este pedido no tiene un número de factura fiscal asociado.")
+            );
+            return;
+        }
+
+        const driver = this.getFiscalPrinter();
+        if (!driver || !driver.isConnected) {
+            this._alert(
+                _t("Máquina Fiscal no conectada"),
+                _t("Conecta la máquina fiscal antes de reimprimir el documento.")
+            );
+            return;
+        }
+
+        const type = order.totalDue >= 0 ? "out_invoice" : "out_refund";
+
+        try {
+            const result = await driver.reprintDocument({
+                type,
+                number: order.mf_invoice_number,
+            });
+
+            if (result.success) {
+                this._alert(
+                    _t("Documento reimpreso"),
+                    _t("El documento fiscal se reimprimió correctamente.")
+                );
+            } else {
+                this._alert(
+                    _t("Error al reimprimir"),
+                    result.error || _t("Error desconocido al reimprimir el documento fiscal.")
+                );
+            }
+        } catch (error) {
+            console.error("ReprintInvoiceButton:: Error al reimprimir", error);
+            this._alert(
+                _t("Error al reimprimir"),
+                error?.message || _t("Error interno al comunicar con la máquina fiscal.")
+            );
+        }
+    }
 }

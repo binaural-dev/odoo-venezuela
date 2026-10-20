@@ -1,0 +1,164 @@
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h2 class="oe_slogan">Venezuela - Ventas</h2>
+        <h3 class="oe_slogan">Montos en moneda alterna y control de la tasa de cambio en el ciclo de ventas</h3>
+        <div class="oe_span12">
+            <p class="oe_mt32 text-center">
+                Adapta el módulo de Ventas a la operación en Venezuela: cada
+                presupuesto y pedido lleva su tasa y sus montos equivalentes en
+                la moneda alterna de la compañía, y esa tasa se mantiene
+                coherente hasta la factura.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container oe_dark">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">Montos en moneda alterna</h3>
+        <div class="oe_span6">
+            <p class="oe_mt32">
+                En el <b>pedido</b>: base imponible, subtotal y total en la
+                moneda alterna, más los totales en moneda de la compañía.
+            </p>
+            <p>
+                En cada <b>línea</b>: precio unitario y subtotal en moneda
+                alterna.
+            </p>
+        </div>
+        <div class="oe_span6">
+            <p class="oe_mt32">
+                Todo se calcula con una sola vía de conversión, respetando la
+                precisión decimal configurada para el precio y descontando los
+                impuestos incluidos en el precio cuando corresponde.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">La fecha de la tasa</h3>
+        <div class="oe_span12">
+            <p class="oe_mt32">
+                El pedido guarda <b>de qué fecha salió su tasa</b>, un dato
+                distinto de la fecha del pedido: Odoo reescribe esta última con
+                la fecha de confirmación. Gracias a eso, un presupuesto con la
+                tasa congelada mantiene sus montos aunque se confirme días
+                después, y la factura puede heredar exactamente la misma tasa.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container oe_dark">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">Opciones de configuración</h3>
+        <div class="oe_span12">
+            <p class="oe_mt32">
+                En <b>Ajustes → Ventas</b>, sección Binaural. Las tres vienen
+                desactivadas de fábrica.
+            </p>
+        </div>
+        <div class="oe_span4">
+            <h4>Actualizar la tasa con la fecha del pedido</h4>
+            <p>
+                Activada, la tasa sigue a la fecha del pedido. Desactivada,
+                queda congelada desde la primera vez: útil para presupuestos
+                que se negocian durante varios días sin que el monto en divisa
+                se mueva.
+            </p>
+        </div>
+        <div class="oe_span4">
+            <h4>Usar la tasa del pedido en la factura</h4>
+            <p>
+                La factura hereda la fecha de la tasa del pedido, de modo que
+                ambos documentos convierten con la misma. Desactivada, la
+                factura usa la tasa de su propia fecha.
+            </p>
+        </div>
+        <div class="oe_span4">
+            <h4>Convertir moneda desde el pedido</h4>
+            <p>
+                Al cambiar la moneda de una factura de cliente generada desde
+                un pedido, recalcula los precios a partir del pedido de origen
+                usando la tasa de la factura.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">Recálculo de la factura desde el pedido</h3>
+        <div class="oe_span6">
+            <p class="oe_mt32">
+                Funciona en <b>ambos sentidos y con cualquier moneda</b>: de
+                moneda extranjera a bolívares, de bolívares a moneda
+                extranjera, y hacia una tercera moneda.
+            </p>
+            <p>
+                Se aplica solo a <b>facturas de cliente</b>. Las notas de
+                crédito y débito se emiten en base a su factura de origen, así
+                que recalcularlas desde el pedido las desalinearía del
+                documento que rectifican.
+            </p>
+        </div>
+        <div class="oe_span6">
+            <p class="oe_mt32">
+                En la interfaz la moneda de la factura la impone la
+                <b>tarifa</b>, así que el flujo es cambiar la tarifa: la moneda
+                se ajusta sola y el recálculo se dispara solo.
+            </p>
+            <p>
+                Si la tarifa define una <b>regla de precio</b> para alguno de
+                los productos, el recálculo se detiene con un mensaje de error
+                en lugar de pisarla. Las dos lógicas escriben el mismo precio
+                unitario, así que hay que elegir una: quitar la regla de la
+                tarifa o desactivar la opción.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container oe_dark">
+    <div class="oe_row oe_spaced">
+        <h3 class="oe_slogan">Otros controles sobre el pedido</h3>
+        <div class="oe_span4">
+            <h4>Existencias</h4>
+            <p>
+                Impide confirmar pedidos con productos almacenables sin
+                existencias suficientes.
+            </p>
+        </div>
+        <div class="oe_span4">
+            <h4>Crédito del cliente</h4>
+            <p>
+                Bloquea la confirmación según el estado de pago de sus facturas
+                y el monto vencido acumulado.
+            </p>
+        </div>
+        <div class="oe_span4">
+            <h4>Tamaño del presupuesto</h4>
+            <p>
+                Limita el número de líneas que puede tener un presupuesto.
+            </p>
+        </div>
+    </div>
+</section>
+
+<section class="oe_container">
+    <div class="oe_row oe_spaced">
+        <div class="oe_span12">
+            <p class="oe_mt32 text-center">
+                El comportamiento detallado está documentado en el
+                <code>README.rst</code> del módulo y en sus pruebas
+                automatizadas, escritas para fallar si alguno de estos
+                comportamientos se revierte.
+            </p>
+            <p class="text-center">
+                <a href="https://binauraldev.com/">Binaural C.A.</a>
+            </p>
+        </div>
+    </div>
+</section>

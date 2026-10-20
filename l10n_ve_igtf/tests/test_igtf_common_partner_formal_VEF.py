@@ -30,16 +30,34 @@ class IGTFTestCommon(TransactionCase):
         })
 
         self.rate = 390.2944  # 1 USD = 201.47bs
+        # `rate` explícito en AMBAS entradas -- no basta con `company_rate`/
+        # `inverse_company_rate` solos: `res.currency.rate._sanitize_vals()`
+        # (núcleo, `base/models/res_currency.py`) descarta
+        # `inverse_company_rate` en cuanto también viene `company_rate`, y
+        # el `inverse` de `company_rate` (`_inverse_company_rate`) calcula
+        # `rate = company_rate * last_rate[company]` usando la tasa más
+        # reciente YA CREADA como referencia -- si la tasa de HOY se crea
+        # primero en este mismo `write()` (índice 0 de la lista), la de
+        # AYER (índice 1, sin `rate` propio) terminaba componiendo
+        # `(1/380) * (1/390.2944)` en vez de `1/380` -- confirmado
+        # empíricamente: sin este fix, `res.currency.rate` para "ayer"
+        # quedaba con `company_rate=6.74e-06` (inverso de 380*390.2944 =
+        # 148311.872) en vez de `1/380 = 0.00263`, inflando cualquier
+        # factura/nota fechada "ayer" en esta magnitud. Mismo patrón ya
+        # usado (sin este bug) en la entrada de "hoy": fijar `rate`
+        # directo deja `company_rate` sin efecto (se descarta en
+        # `_sanitize_vals`), así que no hace falta calcularlo aparte.
         self.currency_usd.write({
             'rate_ids': [
                 Command.create({
-                    'company_rate': 1 / self.rate,  
-                    'rate': 1 / self.rate,  
+                    'company_rate': 1 / self.rate,
+                    'rate': 1 / self.rate,
                     'inverse_company_rate': self.rate,
                     'name': fields.Date.today(),
                 }),
                 Command.create({
-                    'company_rate': 1 / 380.0000,  
+                    'company_rate': 1 / 380.0000,
+                    'rate': 1 / 380.0000,
                     'inverse_company_rate': 380.0000,
                     'name': fields.Date.subtract(fields.Date.today(), days=1),
                 })
@@ -274,12 +292,33 @@ class IGTFTestCommon(TransactionCase):
             'country_id': self.company.country_id.id,
         })
 
+        # `supplier_taxes_id` explícito: sin esto, el default que arma
+        # Odoo para ese campo en `create()` puede traer más de un
+        # impuesto de compra al 0% en bases con varios configurados, y
+        # `l10n_ve_accountant` (`_enforce_single_tax_vals`) rechaza
+        # cualquier producto con más de un impuesto de compra asignado.
+        # El impuesto se CREA aquí (no se busca uno existente): un
+        # `search()` depende de qué otros módulos están instalados en
+        # la base -- en el subárbol aislado de este módulo no hay
+        # ningún impuesto de compra al 0% ya creado, así que la
+        # búsqueda devolvía vacío y el producto quedaba sin impuesto de
+        # compra, lo cual `_enforce_single_tax_vals` rechaza.
+        purchase_exent = self.env['account.tax'].create({
+            'name': 'Compra exenta',
+            'amount': 0,
+            'amount_type': 'percent',
+            'type_tax_use': 'purchase',
+            'company_id': self.company.id,
+            'tax_group_id': self.tax_group.id,
+            'country_id': self.company.country_id.id,
+        })
         self.product = self.env["product.product"].create(
             {
                 "name": "Servicio",
                 "list_price": 100,
                 "property_account_income_id": self.acc_income.id,
                 "taxes_id": [(6, 0, [self.tax_iva_exent.id])],
+                "supplier_taxes_id": [(6, 0, purchase_exent.ids)],
 
             }
         )
@@ -287,7 +326,10 @@ class IGTFTestCommon(TransactionCase):
 
 
     def _create_invoice_vef(self, amount, date=None): # 💡 ACEPTA FECHA
-        sale_journal = self.Journal.search([("type", "=", "sale")], limit=1)
+        sale_journal = self.Journal.search(
+            [("type", "=", "sale"), ("company_id", "=", self.company.id), ("is_debit", "=", False)],
+            limit=1,
+        )
         if not sale_journal:
              sale_journal = self.Journal.create({
                  'name': 'Diario Venta', 'type': 'sale', 'code': 'SALE',
@@ -391,7 +433,10 @@ class IGTFTestCommon(TransactionCase):
        
    
     def _create_invoice_usd(self, amount, date=None): # 💡 ACEPTA FECHA
-        sale_journal = self.Journal.search([("type", "=", "sale")], limit=1)
+        sale_journal = self.Journal.search(
+            [("type", "=", "sale"), ("company_id", "=", self.company.id), ("is_debit", "=", False)],
+            limit=1,
+        )
         if not sale_journal:
              sale_journal = self.Journal.create({
                  'name': 'Diario Venta', 'type': 'sale', 'code': 'SALE',
@@ -420,7 +465,10 @@ class IGTFTestCommon(TransactionCase):
         return inv
     
     def _create_invoice_eur(self, amount, date=None): # 💡 ACEPTA FECHA
-        sale_journal = self.Journal.search([("type", "=", "sale")], limit=1)
+        sale_journal = self.Journal.search(
+            [("type", "=", "sale"), ("company_id", "=", self.company.id), ("is_debit", "=", False)],
+            limit=1,
+        )
         if not sale_journal:
              sale_journal = self.Journal.create({
                  'name': 'Diario Venta', 'type': 'sale', 'code': 'SALE',

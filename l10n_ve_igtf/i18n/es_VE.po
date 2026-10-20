@@ -545,8 +545,8 @@ msgstr "Mostrar diferencia de pago"
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
-msgid "Show in Invoice"
-msgstr "Mostrar en factura"
+msgid "Show IGTF to be received"
+msgstr "Mostrar IGTF a percibir"
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
@@ -555,8 +555,8 @@ msgstr "Mostrar en Ordenes de Venta"
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf
-msgid "Show suggestion based on total amount of the Invoice"
-msgstr "Mostrar sugerido basado en el monto total de la factura"
+msgid "Show IGTF to be received freely from customer invoices"
+msgstr "Mostrar IGTF a percibir en forma libre de facturas de clientes "
 
 #. module: l10n_ve_igtf
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.res_config_settings_l10n_ve_igtf

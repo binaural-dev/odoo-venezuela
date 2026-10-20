@@ -6,13 +6,7 @@
         <field name="arch" type="xml">
 
 
-            <xpath expr="//form//header" position="inside">
-                <button
-                    name="print_invoice_free_form" string="Free Form"
-                    type="object" class="o_btn_validate"
-                    invisible="(move_type not in ('out_invoice', 'out_refund')) or state != 'posted' or correlative == False"
-                />
-            </xpath>
+           
 
             <xpath expr="//field[@name='ref']" position="after">
                 <field name="guide_number"/>

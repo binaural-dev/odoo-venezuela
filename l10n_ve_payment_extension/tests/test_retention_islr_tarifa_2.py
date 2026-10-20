@@ -12,6 +12,7 @@ class TestRetentionISLRTarifa2(TransactionCase):
 
         cls.company = cls.env.user.company_id
         cls.company.currency_id = cls.env.ref('base.VEF')
+        cls.company.foreign_currency_id = cls.env.ref('base.USD')
         
         # Activar el uso de retenciones de ISLR
         cls.env['ir.config_parameter'].sudo().set_param('l10n_ve_payment_extension.use_islr_retention', True)

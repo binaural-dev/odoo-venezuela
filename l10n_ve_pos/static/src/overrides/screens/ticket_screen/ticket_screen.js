@@ -1,41 +1,33 @@
 /** @odoo-module **/
 
-import { _t } from "@web/core/l10n/translation";
 import { TicketScreen } from "@point_of_sale/app/screens/ticket_screen/ticket_screen";
 import { patch } from "@web/core/utils/patch";
-import { FullRefundButton } from "@l10n_ve_pos/app/components/full_refund/full_refund";
 
-patch(TicketScreen, {
-  components: {
-    ...TicketScreen.components,
-    FullRefundButton,
-  },
-});
-
+// Odoo 19: el core ya maneja el flujo completo de reembolso vía
+// TicketScreen.onDoRefund (ver
+// point_of_sale/static/src/app/screens/ticket_screen/ticket_screen.js:309).
+// Los hooks _getToRefundDetail y _prepareRefundOrderlineOptions de Odoo 17
+// ya no existen; el botón "Reembolso total" se reescribe aquí contra la
+// API pública actual: getSelectedOrder(), getOrderlines() y
+// getToRefundDetail() (todos ya expuestos por el propio TicketScreen).
 patch(TicketScreen.prototype, {
-  async addAdditionalRefundInfo(order, destinationOrder) {
-    destinationOrder.to_receipt = order.to_receipt;
-    return Promise.resolve();
-  },
-
-  _getToRefundDetail(orderline) {
-    let res = super._getToRefundDetail(...arguments);
-    const { toRefundLines } = this.pos;
-    if (orderline.id in toRefundLines) {
-      res["orderline"]["foreign_price"] = orderline.foreign_price;
-      res["orderline"]["foreign_currency_rate"] =
-        orderline.foreign_currency_rate;
-      res["total_with_tax"] = orderline.order.get_total_with_tax();
-      res["foreign_total_with_tax"] =
-        orderline.order.get_foreign_total_with_tax();
-      return res;
+  onFullRefund() {
+    this.numberBuffer.reset();
+    const order = this.getSelectedOrder();
+    if (!order) {
+      return;
     }
-  },
-  _prepareRefundOrderlineOptions(toRefundDetail) {
-    let res = super._prepareRefundOrderlineOptions(...arguments);
-    let { orderline } = toRefundDetail;
-    res["foreign_currency_rate"] = orderline.foreign_currency_rate;
-    res["foreign_price"] = orderline.foreign_price;
-    return res;
+    for (const orderline of order.getOrderlines()) {
+      const toRefundDetail = this.getToRefundDetail(orderline);
+      // Ya vinculada a una orden de reembolso destino: no tocar su cantidad.
+      if (toRefundDetail.destinationOrder) {
+        continue;
+      }
+      const refundableQty = orderline.qty - orderline.refundedQty;
+      if (refundableQty <= 0) {
+        continue;
+      }
+      toRefundDetail.qty = refundableQty;
+    }
   },
 });

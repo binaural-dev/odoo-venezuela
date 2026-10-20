@@ -15,7 +15,8 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
         self.Account = self.env["account.account"]
         self.Journal = self.env["account.journal"]
         self.company = self.env.ref("base.main_company")
-        
+        self._correlative_seq = 0
+
 
         # 1. Configuración de Monedas
         self.currency_vef = self.env.ref("base.VEF") 
@@ -33,16 +34,23 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
         })
 
         self.rate = 390.2944  # 1 USD = 201.47bs
+        # `rate` explícito en AMBAS entradas -- ver el mismo fix y su
+        # explicación completa en
+        # `l10n_ve_igtf/tests/test_igtf_common_partner_formal_VEF.py`
+        # (`_sanitize_vals`/`_inverse_company_rate` del núcleo componen
+        # `(1/380) * (1/rate)` para la entrada de "ayer" si le falta
+        # `rate` propio y la de "hoy" ya existe en el mismo `write()`).
         self.currency_usd.write({
             'rate_ids': [
                 Command.create({
-                    'company_rate': 1 / self.rate,  
-                    'rate': 1 / self.rate,  
+                    'company_rate': 1 / self.rate,
+                    'rate': 1 / self.rate,
                     'inverse_company_rate': self.rate,
                     'name': fields.Date.today(),
                 }),
                 Command.create({
-                    'company_rate': 1 / 380.0000,  
+                    'company_rate': 1 / 380.0000,
+                    'rate': 1 / 380.0000,
                     'inverse_company_rate': 380.0000,
                     'name': fields.Date.subtract(fields.Date.today(), days=1),
                 })
@@ -272,12 +280,26 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
         })
        
         self.tax_iva_exent = self.env['account.tax'].create({
-            'name': 'IVA exento', 'amount': 0, 'amount_type': 'percent', 
+            'name': 'IVA exento', 'amount': 0, 'amount_type': 'percent',
             'type_tax_use': 'purchase', # Usar para compra
             'company_id': self.company.id,
             'tax_group_id': self.tax_group.id,  # <--- Esta es la clave
             'country_id': self.company.country_id.id,
 
+        })
+        # Impuesto de venta explícito: sin esto, `product.template.create()`
+        # completa `taxes_id` con el impuesto de venta por defecto de la
+        # compañía (`_enforce_single_tax_vals`, l10n_ve_accountant) -- si esa
+        # compañía ya tiene más de un impuesto de venta por defecto
+        # configurado (comparte `base.main_company` con el resto de la
+        # suite), el producto queda con 2 impuestos de venta y la
+        # validación de política fiscal única lo rechaza.
+        self.tax_iva_sale = self.env['account.tax'].create({
+            'name': 'IVA venta (fixture)', 'amount': 0, 'amount_type': 'percent',
+            'type_tax_use': 'sale',
+            'company_id': self.company.id,
+            'tax_group_id': self.tax_group.id,
+            'country_id': self.company.country_id.id,
         })
 
         self.product = self.env["product.product"].create(
@@ -287,6 +309,7 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
                 "purchase_ok": True, # Asegurar que es para compra
                 "property_account_expense_id": self.acc_expense.id, # Usar cuenta de Gasto
                 "supplier_taxes_id": [(6, 0, [self.tax_iva_exent.id])],
+                "taxes_id": [(6, 0, [self.tax_iva_sale.id])],
 
             }
         )
@@ -363,6 +386,13 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
                     f"Monto IGTF en asiento incorrecto. Esperado: {igtf_amount}, Encontrado: {find_amount} "
                     f"en la cuenta {acc_igtf.code}")
 
+    def _next_correlative(self):
+        """Número de control único por factura -- _check_correlative exige
+        unicidad por proveedor y el valor fijo original chocaba en cualquier
+        test que creara mas de una factura para el mismo partner."""
+        self._correlative_seq += 1
+        return f"12345698741256{self._correlative_seq}"
+
     def _create_invoice_usd(self, amount, date=None): # 💡 ACEPTA FECHA
         sale_journal = self.Journal.search([("type", "=", "purchase")], limit=1)
         if not sale_journal:
@@ -374,7 +404,7 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
       
         with Form(self.env["account.move"].with_context(default_move_type='in_invoice',default_journal_id=sale_journal)) as inv_form:
             inv_form.partner_id = self.partner
-            inv_form.correlative = "12345698741256"
+            inv_form.correlative = self._next_correlative()
             inv_form.invoice_date = date or fields.Date.today()
             inv_form.currency_id = self.currency_usd
             inv_form.save() 
@@ -402,7 +432,7 @@ class IGTFTestCommonPurchaseBook(TransactionCase):
 
       
         with Form(self.env["account.move"].with_context(default_move_type='in_invoice',default_journal_id=sale_journal)) as inv_form:
-            inv_form.correlative = "12345698741256"
+            inv_form.correlative = self._next_correlative()
             inv_form.partner_id = self.partner
             inv_form.invoice_date = date or fields.Date.today()
             inv_form.currency_id = self.currency_vef

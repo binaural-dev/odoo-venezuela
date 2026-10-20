@@ -1,6 +1,9 @@
 import logging
+from datetime import timedelta
+
 from odoo.tests import TransactionCase, tagged
 from odoo import fields, Command
+from odoo.tools import float_round
 
 _logger = logging.getLogger(__name__)
 
@@ -170,14 +173,56 @@ class TestRealPortion(TransactionCase):
             })
 
     def _assert_balances(self, move, label=""):
-        """Verifica que la suma de debitos = suma de creditos"""
+        """Verifica que la suma de debitos = suma de creditos, y que
+        company_currency_line_totals (si aplica) cuadra con line_ids.balance.
+
+        Llamada en las ~40 pruebas de este archivo: cualquier factura o
+        asiento que pase por aqui queda tambien verificado contra el nuevo
+        campo, sin tener que tocar cada test uno por uno.
+        """
         td = sum(move.line_ids.mapped('debit'))
         tc = sum(move.line_ids.mapped('credit'))
         self.assertAlmostEqual(
             td, tc, places=2,
             msg=f"{label}: Debit {td} != Credit {tc}"
         )
+        self._assert_company_currency_line_totals(move, label)
         return td, tc
+
+    def _assert_company_currency_line_totals(self, move, label=""):
+        """company_currency_line_totals debe cuadrar exacto con
+        line_ids.balance: |subtotal| == |balance| linea por linea (no un
+        agregado -- eso no detecta un reparto invertido que igual cuadra
+        en la suma), y suma de |tax_amount| == suma de |balance| de las
+        lineas de impuesto. Solo lineas 'product': 'cogs' no es una linea
+        de factura (ver _compute_company_currency_line_totals). No-op en
+        asientos que no son factura (el campo no aplica ahi).
+        """
+        if not move.is_invoice(include_receipts=True):
+            return
+        product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
+        if not product_lines:
+            return
+
+        totals = move.company_currency_line_totals or {}
+        for line in product_lines:
+            self.assertIn(
+                str(line.id), totals,
+                f"{label}: falta company_currency_line_totals para la linea {line.id}"
+            )
+            self.assertAlmostEqual(
+                abs(totals[str(line.id)]['subtotal']), abs(line.balance), places=2,
+                msg=f"{label}: |subtotal| de la linea {line.id} != |balance|"
+            )
+
+        tax_lines = move.line_ids.filtered('tax_repartition_line_id')
+        sum_tax_amount = sum(abs(t['tax_amount']) for t in totals.values())
+        sum_tax_balance = sum(abs(l.balance) for l in tax_lines)
+        self.assertAlmostEqual(
+            sum_tax_amount, sum_tax_balance, places=2,
+            msg=f"{label}: suma de |tax_amount| ({sum_tax_amount}) != suma de "
+                f"|balance| de lineas de impuesto ({sum_tax_balance})"
+        )
 
     def _assert_foreign_squares(self, move, label=""):
         """Verifica que foreign_debit total = foreign_credit total"""
@@ -262,6 +307,150 @@ class TestRealPortion(TransactionCase):
         self.assertAlmostEqual(fd, 1160.0, delta=1.0)
         # Se ejecuto la distribucion
         self.assertGreaterEqual(invoice.real_portion_count, 0)
+
+    def test_01b_subsection_gets_no_foreign_amount_and_entry_squares(self):
+        """`line_subsection` is the display_type Odoo 19 added to the layout
+        family (`line_section`, `line_note`). It was missing from branch 2 of
+        `_get_foreign_value()`, so a subsection fell through to the branches
+        below and could be handed a non-zero alternate-currency amount,
+        unbalancing the entry in the foreign column.
+
+        Covers tasks 3.1 and 3.2 of
+        openspec/changes/l10n-ve-subsection-foreign-value-zero. Those were
+        declared as debt on the grounds that "the fixture needs a posted
+        foreign-currency document, which this module's suite cannot build";
+        a code review pointed out that this very file already does it --
+        `setUp` writes USD as the company's foreign currency and `test_01`
+        posts such an invoice. The reviewer was right, so the debt is paid
+        here instead of carried.
+
+        SCOPE, measured not assumed: this test does NOT discriminate the fix.
+        Verified by reverting the tuple in `_get_foreign_value()` and
+        re-running -- this one still passes. On an invoice the conversion
+        branches never hand a layout line an amount, because core 19 blocks
+        `amount_currency != 0` on them by CHECK constraint. So this is a
+        characterization test of the invariant (layout lines at zero, foreign
+        column squares), and
+        `test_01c_subsection_exclusion_precedes_manual_adjustments` is the
+        one that actually goes red without the fix.
+
+        Run with:
+            odoo -d <db> -i l10n_ve_accountant --test-enable \\
+                 --test-tags l10n_ve_accountant_real_portion --stop-after-init
+        """
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "display_type": "line_section",
+                    "name": "Estudios",
+                }),
+                Command.create({
+                    "display_type": "line_subsection",
+                    "name": "Primera etapa",
+                }),
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 800.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+                Command.create({
+                    "display_type": "line_note",
+                    "name": "Nota al pie",
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        self._log_lines(invoice, "test_01b_subsection")
+
+        layout_lines = invoice.line_ids.filtered(
+            lambda l: l.display_type in (
+                "line_section", "line_subsection", "line_note",
+            )
+        )
+        subsections = layout_lines.filtered(
+            lambda l: l.display_type == "line_subsection"
+        )
+        self.assertTrue(
+            subsections,
+            "fixture is broken: the posted move carries no line_subsection, "
+            "so this test would pass without asserting anything",
+        )
+
+        for line in layout_lines:
+            self.assertAlmostEqual(
+                line.foreign_balance, 0.0, places=2,
+                msg=f"{line.display_type} '{line.name}' received a foreign "
+                    f"balance of {line.foreign_balance}",
+            )
+            self.assertAlmostEqual(line.foreign_debit, 0.0, places=2)
+            self.assertAlmostEqual(line.foreign_credit, 0.0, places=2)
+
+        self._assert_balances(invoice, "test_01b")
+        self._assert_foreign_squares(invoice, "test_01b")
+
+    def test_01c_subsection_exclusion_precedes_manual_adjustments(self):
+        """The layout-line exclusion must be evaluated BEFORE the manual
+        adjustment branches of `_get_foreign_value()`.
+
+        This is the case that actually matters: the same review noted that
+        core 19 blocks `amount_currency != 0` on a layout line by CHECK
+        constraint, so the genuinely reachable way one could end up with an
+        alternate amount is a manual `foreign_debit_adjustment` /
+        `foreign_credit_adjustment` (branches 3 and 4), not the conversion
+        branches. If the exclusion were moved after them, this test fails
+        while `test_01b` still passes.
+
+        THIS is the regression test for the change. Verified by reverting the
+        tuple in `_get_foreign_value()` to `("line_section", "line_note")`
+        and re-running the tag: this test goes red and `test_01b` stays
+        green.
+        """
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "display_type": "line_subsection",
+                    "name": "Etapa con ajuste manual",
+                    "foreign_debit_adjustment": 123.45,
+                }),
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 500.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+
+        subsection = invoice.line_ids.filtered(
+            lambda l: l.display_type == "line_subsection"
+        )
+        self.assertTrue(subsection, "fixture is broken: no subsection posted")
+        self.assertAlmostEqual(
+            subsection.foreign_balance, 0.0, places=2,
+            msg="the manual adjustment was applied to a layout line -- the "
+                "exclusion is being evaluated after the adjustment branches",
+        )
+        self._assert_foreign_squares(invoice, "test_01c")
 
     def test_02_invoice_usd_two_taxes_with_foreign_distribution(self):
         """Factura en USD con 2 productos usando IVA 16% y IVA 8%.
@@ -1435,3 +1624,1303 @@ class TestRealPortion(TransactionCase):
             total_gastos, total_vef_correcto, places=2,
             msg=f"RIGHT: gastos deben sumar {total_vef_correcto} VEF"
         )
+
+    # ═══════════════════════════════════════════════════════════════
+    # TESTS: COGS Y REDONDEO ACUMULADO (openspec l10n-ve-foreign-pt-cogs-imbalance)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_23_invoice_with_cogs_pair_stays_balanced(self):
+        """Factura VEF con un par COGS autobalanceado, igual al que
+           stock_account._post() inyecta en line_ids ANTES de postear
+           (ver openspec/changes/l10n-ve-foreign-pt-cogs-imbalance).
+
+           El par tiene el mismo costo con price_unit de signo opuesto
+           (igual que _stock_account_prepare_realtime_out_lines_vals).
+           Con _compute_foreign_price basado en _convert (lineal), negar
+           el costo debe negar exactamente el monto alterno, así que el
+           par se autobalancea sin depender de que _distribute_foreign_pt_residual
+           lo excluya de 'other'.
+        """
+        acc_stock = self._get_or_create('110100', 'Stock Account', 'asset_current')
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 23200.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        # Par COGS, mismo patrón que _stock_account_prepare_realtime_out_lines_vals:
+        # price_unit de signo opuesto, mismo costo.
+        cogs_cost = 9000.00
+        invoice.write({
+            "line_ids": [
+                Command.create({
+                    "name": "COGS interim",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": cogs_cost,
+                    "account_id": acc_stock.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+                Command.create({
+                    "name": "COGS expense",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": -cogs_cost,
+                    "account_id": self.acc_expense.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, 'posted')
+        self._log_lines(invoice, "test_23_cogs")
+
+        cogs_lines = invoice.line_ids.filtered(lambda l: l.display_type == 'cogs')
+        self.assertEqual(len(cogs_lines), 2, "Debe haber 2 lineas COGS")
+
+        # El par COGS debe autobalancearse en moneda alterna por construccion
+        cogs_fd = sum(cogs_lines.mapped('foreign_debit'))
+        cogs_fc = sum(cogs_lines.mapped('foreign_credit'))
+        self.assertAlmostEqual(
+            cogs_fd, cogs_fc, places=2,
+            msg=f"COGS: foreign_debit ({cogs_fd}) != foreign_credit ({cogs_fc})"
+        )
+
+        # Y el asiento completo (COGS incluidas) sigue cuadrando
+        self._assert_balances(invoice, "test_23")
+        self._assert_foreign_squares(invoice, "test_23")
+
+    def test_24_invoice_many_lines_decimal_rounding(self):
+        """Factura VEF con 50 lineas de precios con muchos decimales y
+           una tasa con muchos decimales - hallazgo #2 del proposal
+           (redondeo acumulado en facturas grandes).
+
+           No es una regresion de hoy: foreign_subtotal sigue siendo
+           foreign_price (ya redondeado) x cantidad, sin tocar. Lo que
+           se verifica es que, aun con esa desviacion por linea,
+           _distribute_foreign_pt_residual sigue cuadrando el total.
+        """
+        self._set_usd_rate(37.6543)
+
+        lines = []
+        n = 50
+        for i in range(n):
+            price = round(13.3333 + i * 0.7777, 4)
+            lines.append(Command.create({
+                "product_id": self.product.id,
+                "quantity": 3.0,
+                "price_unit": price,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(6, 0, [self.tax_16.id])],
+            }))
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, 'posted')
+
+        self.assertEqual(
+            len(invoice.invoice_line_ids), n,
+            "Deben crearse las 50 lineas de producto"
+        )
+
+        # El cuadre total debe mantenerse pese al redondeo por linea
+        self._assert_balances(invoice, "test_24")
+        fd, fc = self._assert_foreign_squares(invoice, "test_24")
+
+        # Medicion informativa (no regresion): cuanto se desvia la suma
+        # "ingenua" de foreign_subtotal por linea (cada una ya redondeada)
+        # respecto de convertir el total una sola vez.
+        product_lines = invoice.line_ids.filtered(lambda l: l.display_type == 'product')
+        naive_foreign_total = sum(product_lines.mapped('foreign_subtotal'))
+        direct_convert_total = self.currency_vef._convert(
+            sum(product_lines.mapped('price_subtotal')),
+            self.currency_usd, self.company, fields.Date.today(),
+        )
+        deviation = abs(naive_foreign_total - direct_convert_total)
+        _logger.info(
+            f"test_24: desviacion redondeo acumulado (50 lineas) = "
+            f"{deviation:.4f} USD (hallazgo #2 del proposal, no regresion)"
+        )
+        # El total del asiento SIEMPRE debe cuadrar, sin importar la
+        # desviacion por linea - eso es lo que garantiza la distribucion.
+        self.assertAlmostEqual(fd, fc, places=2)
+
+        # Techo para la desviacion acumulada: con 50 lineas no deberia pasar
+        # de 1 USD. Si algun cambio futuro la dispara, este assert lo detecta
+        # en vez de dejarlo solo en el log.
+        self.assertLess(
+            deviation, 1.0,
+            msg=f"Desviacion por redondeo acumulado demasiado alta: {deviation:.4f} USD"
+        )
+
+    # ═══════════════════════════════════════════════════════════════
+    # TESTS: UNIFICACION DEL CALCULO ALTERNO VIA _convert() (TA-74966)
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_25_manual_rate_does_not_override_convert(self):
+        """Con la unificacion via _convert(), la tasa fijada en el documento
+           (manually_set_rate) NO se usa para calcular el monto alterno de las
+           lineas: manda siempre la tasa de res.currency.rate a la fecha.
+
+           Este test deja constancia de la decision tomada en TA-74966. La
+           tasa del documento queda como dato informativo -- los flujos que la
+           heredan (l10n_ve_sale con use_invoice_rate_from_sale_order,
+           l10n_ve_pos, cierre de ejercicio) muestran su tasa pero los montos
+           alternos salen de la tabla.
+        """
+        self._set_usd_rate(50.0)
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            # Tasa "heredada" distinta de la tabla: 1 USD = 25 VEF
+            "manually_set_rate": True,
+            "foreign_rate": 25.0,
+            "foreign_inverse_rate": 0.04,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 1000.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # Tabla: 1000 / 50 = 20 USD. Tasa manual habria dado 1000 / 25 = 40.
+        self.assertAlmostEqual(
+            line.foreign_price, 20.0, places=2,
+            msg=f"foreign_price debe salir de la tabla (20), no de la tasa "
+                f"del documento (40). Obtenido: {line.foreign_price}"
+        )
+        # La tasa del documento se conserva como dato informativo
+        self.assertAlmostEqual(invoice.foreign_rate, 25.0, places=2)
+
+        invoice.action_post()
+        self._assert_balances(invoice, "test_25")
+        self._assert_foreign_squares(invoice, "test_25")
+
+    def test_26_foreign_price_recomputes_when_date_changes(self):
+        """La fecha entra en _convert(), asi que debe estar declarada en el
+           @api.depends de _compute_foreign_price: mover la fecha de un
+           borrador tiene que recalcular el monto alterno.
+
+           Antes de TA-74966 esta dependencia llegaba de rebote a traves de
+           foreign_inverse_rate (related de move_id.foreign_inverse_rate, que
+           si se recalcula con la fecha). Al pasar todo a _convert() ese
+           rebote desaparece y la dependencia tiene que ser explicita.
+        """
+        self._set_usd_rate(50.0)
+
+        past_date = fields.Date.today() - timedelta(days=30)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 25.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 1000.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        self.assertAlmostEqual(line.foreign_price, 20.0, places=2)
+
+        # Se mueve la fecha a una con tasa 25 -> 1000 / 25 = 40 USD
+        invoice.write({
+            "invoice_date": past_date,
+            "date": past_date,
+        })
+
+        self.assertAlmostEqual(
+            line.foreign_price, 40.0, places=2,
+            msg=f"foreign_price no se recalculo al cambiar la fecha "
+                f"(esperado 40, obtenido {line.foreign_price})"
+        )
+
+    def test_27_manual_entry_third_currency(self):
+        """Asiento manual (no factura) con una linea en una tercera moneda.
+
+           Es el caso que atravesaba el fallback eliminado en
+           _get_non_invoice_foreign_value: ni el atajo de balance directo
+           (no hay lineas en moneda alterna) ni la multiplicacion por
+           foreign_inverse_rate. Ahora convierte con _convert() desde la
+           moneda de la compania.
+        """
+        self._set_usd_rate(50.0)
+
+        misc_journal = self.env["account.journal"].search([
+            ("type", "=", "general"),
+            ("company_id", "=", self.company.id),
+        ], limit=1)
+        self.assertTrue(misc_journal, "Debe existir un diario misceláneo")
+
+        entry = self.env["account.move"].create({
+            "move_type": "entry",
+            "journal_id": misc_journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [
+                Command.create({
+                    "name": "Debito EUR",
+                    "account_id": self.acc_expense.id,
+                    "currency_id": self.currency_eur.id,
+                    "debit": 5500.0,
+                    "credit": 0.0,
+                    "amount_currency": 100.0,
+                }),
+                Command.create({
+                    "name": "Credito VEF",
+                    "account_id": self.acc_bank.id,
+                    "debit": 0.0,
+                    "credit": 5500.0,
+                }),
+            ],
+        })
+        entry.action_post()
+        self._log_lines(entry, "test_27_third_currency")
+
+        # 5500 VEF / 50 = 110 USD en cada pata
+        eur_line = entry.line_ids.filtered(lambda l: l.currency_id == self.currency_eur)
+        self.assertAlmostEqual(
+            eur_line.foreign_debit, 110.0, places=2,
+            msg=f"La linea EUR debe convertirse via _convert desde VEF "
+                f"(esperado 110 USD, obtenido {eur_line.foreign_debit})"
+        )
+        self._assert_balances(entry, "test_27")
+        self._assert_foreign_squares(entry, "test_27")
+
+    # ═══════════════════════════════════════════════════════════════
+    # TESTS: PRECISION, IMPUESTOS Y FECHA DE LA TASA (TA-74966)
+    # Cada uno esta construido para FALLAR si se revierte el cambio
+    # que verifica.
+    # ═══════════════════════════════════════════════════════════════
+
+    def test_29_foreign_price_keeps_field_precision(self):
+        """foreign_price debe redondearse a la precision del campo
+           ("Foreign Product Price", configurable) y no a los decimales de la
+           moneda destino.
+
+           REVERSION: si se quita el round=False + float_round y se deja que
+           _convert() redondee por defecto, un precio unitario pequeno se
+           pierde: 0,0567 VEF / 50 = 0,001134 USD se guardaria como 0,00, y
+           foreign_subtotal (= foreign_price x cantidad) arrastraria ese cero
+           multiplicado por la cantidad.
+        """
+        self._set_usd_rate(50.0)
+        precision = self.env["decimal.precision"].precision_get(
+            "Foreign Product Price"
+        )
+        self.assertGreater(
+            precision, 2,
+            "El test asume que Foreign Product Price tiene mas de 2 decimales"
+        )
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 10000.0,
+                    "price_unit": 0.0567,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # El esperado se calcula con la precision configurada, no con un
+        # numero fijo de decimales: "Foreign Product Price" es editable.
+        expected = float_round(0.0567 / 50.0, precision_digits=precision)
+        self.assertAlmostEqual(
+            line.foreign_price, expected, places=precision,
+            msg=f"foreign_price perdio precision: {line.foreign_price} "
+                f"(esperado {expected}). Con el redondeo de la moneda seria 0.00"
+        )
+        self.assertNotEqual(
+            line.foreign_price, 0.0,
+            "Un precio unitario pequeno no debe colapsar a cero"
+        )
+        # Y el subtotal no se va a cero por culpa del redondeo del unitario
+        self.assertAlmostEqual(
+            line.foreign_subtotal, 11.34, places=2,
+            msg=f"foreign_subtotal = {line.foreign_subtotal}, esperado 11.34"
+        )
+
+    def test_30_foreign_subtotal_with_price_included_tax(self):
+        """Con impuesto incluido en el precio, foreign_subtotal debe ser la
+           BASE (sin impuesto), que es lo que devuelve compute_all.
+
+           REVERSION: si se vuelve a la multiplicacion directa
+           (foreign_price x cantidad), el subtotal se reporta con el impuesto
+           dentro: 2,32 en vez de 2,00 USD.
+        """
+        self._set_usd_rate(50.0)
+
+        tax_incl = self._create_tax('IVA 16% incluido', 16.0)
+        tax_incl.price_include_override = 'tax_included'
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 116.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [tax_incl.id])],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # 116 VEF / 50 = 2,32 USD con el impuesto dentro
+        self.assertAlmostEqual(line.foreign_price, 2.32, places=2)
+        # y la base sin impuesto es 2,32 / 1,16 = 2,00 USD
+        self.assertAlmostEqual(
+            line.foreign_subtotal, 2.00, places=2,
+            msg=f"foreign_subtotal = {line.foreign_subtotal}. Debe ser la base "
+                f"sin impuesto (2.00); 2.32 significa que no paso por compute_all"
+        )
+
+    def test_31_foreign_total_billed_matches_lines(self):
+        """foreign_total_billed debe salir de tax_totals, que se arma sumando
+           las lineas, y no de convertir el total del documento de una vez.
+
+           REVERSION: si se reintroduce la rama que hace
+           _convert(amount_total), el pie del documento deja de cuadrar con la
+           suma de los foreign_subtotal que se ven en las lineas, porque una
+           via redondea una sola vez y la otra acumula el redondeo por linea.
+        """
+        self._set_usd_rate(37.6543)
+
+        lines = []
+        for i in range(12):
+            lines.append(Command.create({
+                "product_id": self.product.id,
+                "quantity": 3.0,
+                "price_unit": round(13.3333 + i * 0.7777, 4),
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(5, 0, 0)],
+            }))
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+
+        tax_totals = invoice.tax_totals if isinstance(invoice.tax_totals, dict) else {}
+        self.assertAlmostEqual(
+            invoice.foreign_total_billed,
+            tax_totals.get("total_amount_foreign_currency", 0),
+            places=2,
+            msg="foreign_total_billed no coincide con tax_totals: hay una "
+                "segunda via de conversion"
+        )
+
+    def test_32_rate_date_is_invoice_date_for_invoices(self):
+        """La fecha de la tasa es invoice_date en facturas y notas, y date en
+           asientos manuales.
+
+           En esta localizacion invoice_date es la fecha de la TASA (la fecha
+           visible del documento es invoice_date_display, ver
+           account.move._get_accounting_date_source).
+
+           REVERSION: si el helper vuelve a mezclar criterios de fecha, este
+           test falla porque la factura usaria la tasa del dia contable en vez
+           de la de su invoice_date.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=30)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 25.0,
+            "company_id": self.company.id,
+        })
+
+        # invoice_date (tasa) en el pasado, date (contable) hoy
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_vef.id,
+            "date": fields.Date.today(),
+            "invoice_date": past_date,
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 1000.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        self.assertAlmostEqual(
+            line.foreign_price, 40.0, places=2,
+            msg=f"La factura debe usar la tasa de invoice_date (1000/25 = 40), "
+                f"no la de date (1000/50 = 20). Obtenido: {line.foreign_price}"
+        )
+
+    def test_33_company_currency_line_totals_matches_balance(self):
+        """company_currency_line_totals debe salir de la misma base que usa
+        el motor de impuestos para postear el asiento (_get_rounded_base_
+        and_tax_lines): la suma de 'subtotal' de cada linea de producto
+        debe coincidir con la suma de balance de esas lineas, y la suma de
+        'tax_amount' con el balance de la linea de impuesto -- no una
+        conversion independiente que pueda arrastrar centavos de redondeo
+        distintos a los del asiento.
+
+        REVERSION: el field removido price_unit_ves convertia con
+        _convert() de forma independiente del balance, asi que podia
+        diferir del asiento por el redondeo que
+        _apply_product_real_portion corrige.
+        """
+        self._set_usd_rate(37.6543)
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 13.3333,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, self.tax_16.ids)],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        tax_line = invoice.line_ids.filtered(lambda l: l.tax_repartition_line_id)
+        totals = invoice.company_currency_line_totals.get(str(line.id))
+        self.assertIsNotNone(totals)
+
+        self.assertAlmostEqual(
+            totals['subtotal'], abs(line.balance), places=2,
+            msg="El subtotal en moneda de la compañia debe coincidir con el "
+                "balance de la linea de producto del asiento"
+        )
+        self.assertAlmostEqual(
+            totals['tax_amount'], abs(sum(tax_line.mapped('balance'))), places=2,
+            msg="El tax_amount de la linea debe coincidir con el balance de "
+                "la linea de impuesto del asiento"
+        )
+        self.assertAlmostEqual(
+            totals['subtotal_taxed'] - totals['subtotal'], totals['tax_amount'],
+            places=2,
+        )
+        self.assertEqual(totals['quantity'], 3.0)
+
+    def test_34_company_currency_line_totals_recomputes_when_date_changes(self):
+        """La fecha entra en el motor de impuestos via invoice_currency_rate,
+        asi que debe estar declarada (indirectamente, via line_ids.balance)
+        en el @api.depends de _compute_company_currency_line_totals: mover
+        la fecha de un borrador tiene que recalcular el JSON (igual que
+        test_26 para foreign_price)."""
+        self._set_usd_rate(50.0)
+
+        past_date = fields.Date.today() - timedelta(days=30)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 25.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 100.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        line = invoice.invoice_line_ids
+        # 100 USD a tasa 50 = 5000 VEF
+        totals = invoice.company_currency_line_totals.get(str(line.id))
+        self.assertAlmostEqual(totals['subtotal'], 5000.0, places=2)
+
+        # Se mueve la fecha a una con tasa 25 -> 100 * 25 = 2500 VEF
+        invoice.write({
+            "invoice_date": past_date,
+            "date": past_date,
+        })
+
+        totals = invoice.company_currency_line_totals.get(str(line.id))
+        self.assertAlmostEqual(
+            totals['subtotal'], 2500.0, places=2,
+            msg=f"company_currency_line_totals no se recalculo al cambiar "
+                f"la fecha (esperado 2500, obtenido {totals['subtotal']})"
+        )
+
+    def test_34b_company_currency_line_totals_prorates_shared_tax(self):
+        """Dos lineas de producto distintas comparten la misma tasa (16%),
+        asi que el asiento tiene una unica linea de impuesto agregada. El
+        'tax_amount' de cada linea del JSON debe repartir esa unica linea
+        de impuesto sin perder ni duplicar centavos: la suma de
+        'tax_amount' de ambas debe coincidir exactamente con el balance de
+        la linea de impuesto, y la suma de 'subtotal' con la suma de
+        balance de ambas lineas de producto.
+        """
+        self._set_usd_rate(37.6543)
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 13.3333,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, self.tax_16.ids)],
+                }),
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 2.0,
+                    "price_unit": 7.777,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, self.tax_16.ids)],
+                }),
+            ],
+        })
+
+        product_lines = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        tax_line = invoice.line_ids.filtered(lambda l: l.tax_repartition_line_id)
+        self.assertEqual(len(tax_line), 1, "Ambas lineas comparten la misma tasa: una sola linea de impuesto")
+
+        totals_by_line = [
+            invoice.company_currency_line_totals.get(str(line.id)) for line in product_lines
+        ]
+        self.assertTrue(all(totals_by_line))
+
+        sum_subtotal = sum(t['subtotal'] for t in totals_by_line)
+        sum_tax = sum(t['tax_amount'] for t in totals_by_line)
+
+        self.assertAlmostEqual(
+            sum_subtotal, abs(sum(product_lines.mapped('balance'))), places=2
+        )
+        self.assertAlmostEqual(
+            sum_tax, abs(tax_line.balance), places=2,
+            msg="La suma del tax_amount de las lineas debe cuadrar exacto "
+                "con el balance de la unica linea de impuesto compartida"
+        )
+
+    def test_34c_company_currency_line_totals_many_lines_mixed_taxes_and_precision(self):
+        """10 lineas de producto repartidas en 3 tasas distintas (16%, 8%,
+        exento), con precios unitarios y descuentos no redondos (division
+        no entera). Verifica que la reconciliacion con line_ids.balance se
+        sostiene cuando hay varias tasas simultaneas -- no solo una
+        compartida por todas (test_34b) -- y que price_unit conserva la
+        precision de 'Product Price' (6 decimales) en vez de truncarse a
+        la precision de la moneda (VEF, 2 decimales).
+        """
+        self._set_usd_rate(97.531)
+
+        specs = [
+            (1.0, 33.333333, 0.0, self.tax_16),
+            (2.0, 47.777, 5.0, self.tax_16),
+            (3.0, 19.999, 12.5, self.tax_16),
+            (1.5, 88.111, 0.0, self.tax_16),
+            (4.0, 12.345, 8.25, self.tax_8),
+            (2.0, 60.606, 0.0, self.tax_8),
+            (5.0, 9.87, 15.0, self.tax_8),
+            (1.0, 150.001, 0.0, self.tax_0),
+            (3.0, 24.242, 10.0, self.tax_0),
+            (2.5, 40.4, 0.0, self.tax_0),
+        ]
+        lines = [
+            Command.create({
+                "product_id": self.product.id,
+                "quantity": qty,
+                "price_unit": price,
+                "discount": discount,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(6, 0, [tax.id])],
+            })
+            for qty, price, discount, tax in specs
+        ]
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+        self._assert_balances(invoice, "test_34c")
+
+        product_lines = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        self.assertEqual(len(product_lines), 10)
+        totals = invoice.company_currency_line_totals
+
+        # Por cada tasa por separado: la suma de tax_amount de las lineas
+        # que la llevan debe cuadrar con el balance de esa tasa en el
+        # asiento -- no solo el agregado de las 10 lineas (eso ya lo
+        # cubre _assert_balances), sino cada grupo de tasa aislado.
+        for tax in (self.tax_16, self.tax_8, self.tax_0):
+            lines_with_tax = product_lines.filtered(lambda l: tax in l.tax_ids)
+            tax_line = invoice.line_ids.filtered(
+                lambda l: l.tax_repartition_line_id
+                and l.tax_repartition_line_id.tax_id == tax
+            )
+            sum_tax_amount = sum(
+                totals[str(l.id)]['tax_amount'] for l in lines_with_tax
+            )
+            expected = abs(sum(tax_line.mapped('balance'))) if tax_line else 0.0
+            self.assertAlmostEqual(
+                sum_tax_amount, expected, places=2,
+                msg=f"Tasa {tax.name}: suma de tax_amount ({sum_tax_amount}) "
+                    f"!= balance de su linea de impuesto ({expected})"
+            )
+
+        # price_unit no se trunca a la precision de VEF (2 decimales): con
+        # qty=3.0 y discount=12.5%, el denominador (2.625) no divide exacto
+        # y la cola decimal solo se conserva a precision "Product Price".
+        line_c = product_lines[2]  # (3.0, 19.999, 12.5, tax_16)
+        line_c_totals = totals[str(line_c.id)]
+        expected_price_unit = line_c_totals['subtotal'] / (3.0 * (1 - 12.5 / 100.0))
+        self.assertAlmostEqual(
+            line_c_totals['price_unit'], expected_price_unit, places=6,
+            msg="price_unit debe conservar precision 'Product Price', no truncarse antes"
+        )
+        self.assertNotAlmostEqual(
+            line_c_totals['price_unit'], round(expected_price_unit, 2), places=5,
+            msg="price_unit no deberia coincidir con el valor truncado a 2 "
+                "decimales (precision de VEF) -- si coincide, se esta "
+                "perdiendo la cola decimal"
+        )
+
+    def test_34d_company_currency_line_totals_with_price_included_tax(self):
+        """Con impuesto incluido en el precio (price_include_override=
+        'tax_included'), 'subtotal'/'tax_amount' deben seguir saliendo de
+        la base real (compute_all vía balance), no de dividir el precio
+        tal cual -- mismo caso que test_30 pero para este campo -- y el
+        'taxes' del JSON debe marcar price_include=True para ese impuesto.
+        """
+        self._set_usd_rate(50.0)
+
+        tax_incl = self._create_tax('IVA 16% incluido', 16.0)
+        tax_incl.price_include_override = 'tax_included'
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 116.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [tax_incl.id])],
+                }),
+            ],
+        })
+        self._assert_balances(invoice, "test_34d")
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        totals = invoice.company_currency_line_totals[str(line.id)]
+
+        # 116 USD (con IVA incluido) a tasa 50 = 5800 VEF total; base sin
+        # impuesto = 5800 / 1.16 = 5000 VEF; impuesto = 800 VEF.
+        self.assertAlmostEqual(totals['subtotal_taxed'], 5800.0, places=2)
+        self.assertAlmostEqual(totals['subtotal'], 5000.0, places=2)
+        self.assertAlmostEqual(totals['tax_amount'], 800.0, places=2)
+
+        self.assertEqual(len(totals['taxes']), 1)
+        self.assertEqual(totals['taxes'][0]['id'], tax_incl.id)
+        self.assertEqual(totals['taxes'][0]['name'], tax_incl.name)
+        self.assertTrue(totals['taxes'][0]['price_include'])
+
+    def test_34e_company_currency_line_totals_percent_discount(self):
+        """discount_type='percent' (default): discount_amount debe ser la
+        porcion en VEF que el descuento nativo (%) resta del bruto, y
+        discount_type debe reportar 'percent'.
+        """
+        self._set_usd_rate(50.0)
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 4.0,
+                    "price_unit": 25.5,
+                    "discount": 20.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+        self._assert_balances(invoice, "test_34e")
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        totals = invoice.company_currency_line_totals[str(line.id)]
+
+        # Bruto: 25.5 * 4 * 50 = 5100 VEF; neto (20% de descuento): 4080 VEF
+        self.assertEqual(totals['discount_type'], 'percent')
+        self.assertAlmostEqual(totals['subtotal'], 4080.0, places=2)
+        self.assertAlmostEqual(totals['discount_amount'], 1020.0, places=2)
+        self.assertAlmostEqual(
+            totals['price_unit'] * totals['quantity'] - totals['discount_amount'],
+            totals['subtotal'], places=2,
+        )
+
+    def test_34f_company_currency_line_totals_eur_invoice(self):
+        """Todo lo cubierto en USD (test_33/34c/34d/34e) debe sostenerse
+        igual con una factura en EUR: 1 EUR = 55 VEF (setUp), tercera
+        moneda distinta de la 'foreign' (USD) configurada en la compania.
+        """
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_eur.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 2.0,
+                    "price_unit": 80.0,
+                    "discount": 10.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        self._assert_balances(invoice, "test_34g")
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        tax_line = invoice.line_ids.filtered(lambda l: l.tax_repartition_line_id)
+        totals = invoice.company_currency_line_totals[str(line.id)]
+
+        # Bruto: 80 * 2 * 55 = 8800 VEF; neto (10% desc.): 7920 VEF;
+        # IVA 16% sobre neto: 1267.2 VEF.
+        self.assertAlmostEqual(totals['subtotal'], abs(line.balance), places=2)
+        self.assertAlmostEqual(totals['subtotal'], 7920.0, places=2)
+        self.assertAlmostEqual(totals['discount_amount'], 880.0, places=2)
+        self.assertAlmostEqual(totals['tax_amount'], abs(tax_line.balance), places=2)
+        self.assertAlmostEqual(totals['tax_amount'], 1267.2, places=2)
+        self.assertEqual(totals['discount_type'], 'percent')
+        self.assertEqual(totals['taxes'][0]['id'], self.tax_16.id)
+
+    def test_34h_company_currency_line_totals_prorates_three_lines_exactly(self):
+        """REVERSION (hallazgo de code review): _prorate_company_currency_
+        amount aplicaba el ratio de cada linea contra `remaining_units`
+        (que se va achicando en cada iteracion) en vez del monto TOTAL fijo
+        -- con 3+ lineas bajo la misma tasa, el reparto se iba desviando en
+        cascada. Con bases 500/300/200 USD e IVA 16% simulado, el bug daba
+        80/24/56 en vez de 80/48/32. Aqui se verifica el valor exacto por
+        linea, no solo la suma del grupo (eso lo cubre test_34c, pero un
+        reparto invertido igual cuadra en el agregado).
+        """
+        self._set_usd_rate(1.0)  # tasa 1:1 para que los VEF calcen con los USD de la tasa
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": price,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                })
+                for price in (500.0, 300.0, 200.0)
+            ],
+        })
+        self._assert_balances(invoice, "test_34h")
+
+        lines = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        lines_by_price = {round(l.price_unit): l for l in lines}
+        expected_tax = {500: 80.0, 300: 48.0, 200: 32.0}
+
+        for price, expected in expected_tax.items():
+            totals = invoice.company_currency_line_totals[str(lines_by_price[price].id)]
+            self.assertAlmostEqual(
+                totals['tax_amount'], expected, places=2,
+                msg=f"Linea de base {price}: tax_amount = {totals['tax_amount']}, esperado {expected}"
+            )
+
+    # `test_34i_negative_line_blocked_by_existing_invoice_constraint` fue
+    # relocado a `l10n_ve_invoice/tests/test_account_move.py` (PR
+    # #1344/#1417): su propio docstring documentaba que solo verificaba
+    # `l10n_ve_invoice._check_price_in_zero`, sin ejercitar nada de
+    # `company_currency_line_totals` (la derivacion de signo mencionada
+    # nunca se afirmaba). Misma causa que `test_31` en
+    # `test_multi_currency_rounding.py`: `l10n_ve_invoice` no esta
+    # garantizado instalado al testear solo `l10n_ve_accountant`.
+
+    def test_34j_company_currency_line_totals_group_tax_not_dropped(self):
+        """Con un impuesto amount_type='group' (IVA 16% + IGTF 3%, ambos
+        hijos), account.move.line.tax_ids conserva el GRUPO, y las lineas
+        de impuesto del asiento apuntan a los HIJOS -- no al grupo. Sin
+        aplanar la jerarquia, el match `tax in line.tax_ids` nunca
+        encuentra la linea de producto y todo el balance de esa tasa se
+        descarta en silencio (subtotal_taxed quedaria igual a subtotal).
+        """
+        self._set_usd_rate(50.0)
+
+        tax_igtf = self._create_tax('IGTF 3%', 3.0)
+        tax_group = self.env['account.tax'].with_company(self.company).create({
+            'name': 'IVA 16% + IGTF 3%', 'amount_type': 'group',
+            'type_tax_use': 'sale', 'company_id': self.company.id,
+            'children_tax_ids': [(6, 0, [self.tax_16.id, tax_igtf.id])],
+        })
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 100.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [tax_group.id])],
+                }),
+            ],
+        })
+        self._assert_balances(invoice, "test_34j")
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        totals = invoice.company_currency_line_totals[str(line.id)]
+
+        # 100 USD * 50 = 5000 VEF base; IVA 16% + IGTF 3% = 19% -> 950 VEF.
+        self.assertAlmostEqual(
+            totals['tax_amount'], 950.0, places=2,
+            msg="El impuesto de tipo 'group' se descarto en vez de repartirse"
+        )
+        self.assertAlmostEqual(totals['subtotal_taxed'], 5950.0, places=2)
+
+    def test_35_invoice_date_change_same_rate_stays_balanced(self):
+        """Ticket 15089: mover invoice_date_display a otra fecha CUYA TASA
+           TIENE EL MISMO VALOR no debe descuadrar el asiento.
+
+           Antes del fix, _distribute_invoice_real_portion ajustaba las
+           lineas de producto (non_pt) contra un `expected_total` calculado
+           por conversion directa del total, y luego anclaba la
+           contrapartida releyendo ese ajuste. Si la tasa nueva es identica
+           a la anterior, el recompute del core de las lineas de producto
+           (disparado por el cambio de fecha) revierte ese ajuste a su
+           valor original -- pero la contrapartida ya quedo anclada al
+           valor ajustado que no sobrevive. El descuadre es exactamente el
+           residuo de redondeo acumulado entre sumar los balances linea por
+           linea y convertir el total una sola vez, y crece con la cantidad
+           de lineas (ver test_24).
+        """
+        self._set_usd_rate(807.3862)
+
+        n = 60
+        lines = []
+        for i in range(n):
+            price = round(45.4545 + i * 0.1111, 4)
+            lines.append(Command.create({
+                "product_id": self.product.id,
+                "quantity": 1.0,
+                "price_unit": price,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(5, 0, 0)],
+            }))
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+        self.assertEqual(invoice.state, 'draft')
+        self._assert_balances(invoice, "test_35_before")
+
+        # Misma tasa (807.3862) vigente en la nueva fecha: no se crea una
+        # tasa nueva, la de hoy sigue siendo la unica/ultima vigente.
+        new_date = fields.Date.today() - timedelta(days=1)
+        invoice.write({
+            "invoice_date_display": new_date,
+            "invoice_date": new_date,
+            "date": new_date,
+        })
+
+        self._assert_balances(invoice, "test_35_after")
+
+    def test_36_cancel_posted_invoice_iva_different_invoice_and_accounting_dates(self):
+        """Helpdesk MAXCAM (factura 0000186045 y similares): cancelar una
+        factura POSTED en USD, con IVA, cuya invoice_date (tasa) y date
+        (fecha contable) caen en dias con tasa BCV distinta, no debe
+        descuadrar el asiento.
+
+        `button_cancel()` llama primero a `button_draft()`, que solo
+        escribe `state`. Ese `write()` de todos modos dispara
+        `_sync_dynamic_lines`/`_sync_tax_lines` (se ejecuta en TODO write
+        de account.move, no solo cuando cambian campos de linea), y el
+        snapshot `moves_values_before` de `_sync_tax_lines` se toma con
+        `move.state` todavia en 'posted' (antes del write real) --
+        excluyendo siempre al move del filtro `if move.state == 'draft'`.
+        Eso hace que `_round_mode` trate currency_id/move_type como
+        "cambiados" y fuerce un resync completo de base+impuestos en cada
+        transicion posted->draft, sin importar si algo realmente cambio.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": past_date,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 137.4545,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        self._assert_balances(invoice, "test_36_after_post")
+
+        # `check_move_validity=False` (necesario para crear las lineas antes
+        # de que el asiento cuadre) sigue pegado a `invoice` -- sin quitarlo,
+        # button_cancel() heredaria `_check_balanced` DESACTIVADO y no
+        # detectaria el mismo descuadre que se quiere reproducir.
+        invoice = invoice.with_context(check_move_validity=True)
+
+        # Cancelar ocurre en un request/cursor nuevo en produccion, asi que
+        # `_distribute_final_real_portion` (cacheada por move.id dentro del
+        # cursor para no repetirse en la MISMA transaccion) corre fresca.
+        self.env.cr.cache.pop(('_real_portion_distributed', invoice.id), None)
+        invoice.button_cancel()
+
+        self.assertEqual(invoice.state, "cancel")
+        self._assert_balances(invoice, "test_36_after_cancel")
+
+    def test_37_draft_and_repost_invoice_iva_different_invoice_and_accounting_dates(self):
+        """Mismo escenario de test_36 pero pasando a borrador (sin
+        cancelar) y volviendo a confirmar: ni el `button_draft()` ni el
+        `action_post()` posterior deben descuadrar el asiento ni cambiar
+        los montos de base/IVA/pasivo.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0,
+            "company_id": self.company.id,
+        })
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": past_date,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 137.4545,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        invoice = invoice.with_context(check_move_validity=True)
+        before = {
+            line.id: (line.display_type, round(line.balance, 2))
+            for line in invoice.line_ids
+        }
+
+        self.env.cr.cache.pop(('_real_portion_distributed', invoice.id), None)
+        invoice.button_draft()
+
+        self.assertEqual(invoice.state, "draft")
+        self._assert_balances(invoice, "test_37_after_draft")
+
+        self.env.cr.cache.pop(('_real_portion_distributed', invoice.id), None)
+        invoice.with_context(move_action_post_alert=True).action_post()
+
+        self.assertEqual(invoice.state, "posted")
+        self._assert_balances(invoice, "test_37_after_repost")
+        after = {
+            line.id: (line.display_type, round(line.balance, 2))
+            for line in invoice.line_ids
+        }
+        self.assertEqual(
+            sorted(before.values()), sorted(after.values()),
+            msg="El ciclo draft->post cambio los balances de las lineas "
+                f"sin motivo. Antes: {before}. Despues: {after}",
+        )
+
+    def test_38_cancel_usd_invoice_with_cogs_pair_different_dates(self):
+        """Hipotesis puntual sobre la traza real de MAXCAM: `stock_account`
+        inyecta un par COGS (display_type='cogs') en `_post()`, y su
+        `button_draft()` llama primero a `super().button_draft()` -- que
+        incluye el `self.state = 'draft'` del core, dentro del cual corre
+        TODO el ciclo `_sync_dynamic_lines`/`_check_balanced` de
+        `l10n_ve_accountant` -- y SOLO DESPUES, ya con el estado en
+        borrador, hace unlink() de las lineas COGS. O sea: en el momento
+        exacto en que `_check_balanced` corre, el par COGS TODAVIA esta
+        presente.
+
+        `get_base_lines()` en `_sync_tax_lines` incluye 'cogs' junto con
+        'product'/'epd'/'rounding'. El bloque "Fix multi-currency
+        rounding" (activo solo si la factura es en moneda distinta a la
+        de la compañia) recalcula CADA base line con
+        `balance = round(amount_currency / rate)`. Las lineas COGS de
+        `_stock_account_prepare_realtime_out_lines_vals` llevan
+        `amount_currency = 0` (son un concepto interno en moneda de
+        compañia, sin lado "documento"): si ese recompute las alcanza iguel
+        que a las lineas de producto, su balance quedaria forzado a 0 --
+        perdiendo el costo real que traian. Como el par es COGS
+        interim/expense con signos opuestos, poner ambos en 0 no rompe el
+        balance del PAR en si (0 == 0), pero si esto tambien afecta a
+        `_apply_vef_first` / `_vef_base_for_tax` (que suman
+        `fresh_balance_by_line_id` de TODAS las base lines, cogs incluidas,
+        para recalcular el IVA), el IVA recalculado podria quedar corrido
+        por el costo COGS que ya no esta en la base.
+        """
+        self._set_usd_rate(50.0)
+        past_date = fields.Date.today() - timedelta(days=26)
+        self.env["res.currency.rate"].create({
+            "name": past_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 45.0,
+            "company_id": self.company.id,
+        })
+        acc_stock = self._get_or_create('110100', 'Stock Account', 'asset_current')
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": past_date,
+            "date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 137.4545,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+
+        # Par COGS igual al que
+        # stock_account._stock_account_prepare_realtime_out_lines_vals()
+        # realmente inyecta: `price_unit` viene de `_get_cogs_value()`
+        # (costo del producto, en moneda de COMPAÑIA -- standard_price/
+        # FIFO no se expresan en moneda documento), y ESE MISMO valor se
+        # pasa tal cual como `amount_currency` (con signo), sin convertir
+        # a la moneda del documento. O sea: `amount_currency` en una linea
+        # COGS real NO es un monto en USD -- es el costo en VEF puesto en
+        # el campo que, para el resto del asiento, se asume que SI esta en
+        # USD.
+        cogs_cost = 9000.00
+        invoice.write({
+            "line_ids": [
+                Command.create({
+                    "name": "COGS interim",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": cogs_cost,
+                    "amount_currency": -cogs_cost,
+                    "account_id": acc_stock.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+                Command.create({
+                    "name": "COGS expense",
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": -cogs_cost,
+                    "amount_currency": cogs_cost,
+                    "account_id": self.acc_expense.id,
+                    "display_type": "cogs",
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(invoice.state, "posted")
+        cogs_lines = invoice.line_ids.filtered(lambda l: l.display_type == 'cogs')
+        self.assertEqual(len(cogs_lines), 2, "Debe haber 2 lineas COGS antes de cancelar")
+        self._assert_balances(invoice, "test_38_after_post")
+
+        invoice = invoice.with_context(check_move_validity=True)
+        self.env.cr.cache.pop(('_real_portion_distributed', invoice.id), None)
+
+        # button_draft() real (no el write directo): asi se ejercita el
+        # MISMO orden que stock_account -- super().button_draft() primero
+        # (incluye el state='draft' + _check_balanced), unlink de COGS
+        # despues. Aqui no hay stock_account instalado, asi que las COGS
+        # quedan -- pero eso es justo lo que se quiere: confirmar si SU
+        # PRESENCIA durante el resync ya alcanza para descuadrar, sin
+        # necesitar que stock_account las borre despues.
+        invoice.button_cancel()
+
+        self.assertEqual(invoice.state, "cancel")
+        self._assert_balances(invoice, "test_38_after_cancel")
+
+        # El par COGS no forma parte de `tax_results['base_lines_to_update']`
+        # en este escenario (sin tax_ids, el motor de impuestos no las marca
+        # para actualizar), asi que sobreviven el ciclo intactas -- no las
+        # pisa el bloque "Fix multi-currency rounding" pese a que
+        # `get_base_lines()` las incluye.
+        cogs_after = invoice.line_ids.filtered(lambda l: l.display_type == 'cogs')
+        self.assertAlmostEqual(
+            sum(cogs_after.mapped('balance')), 0.0, places=2,
+            msg="El par COGS dejo de autobalancearse tras cancelar",
+        )
+        for line in cogs_after:
+            self.assertAlmostEqual(
+                abs(line.balance), 9000.0, places=2,
+                msg=f"COGS '{line.name}' perdio su costo original al cancelar "
+                    f"(quedo en {line.balance})",
+            )

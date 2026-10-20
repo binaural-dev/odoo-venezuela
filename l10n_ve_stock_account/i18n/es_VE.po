@@ -1129,12 +1129,6 @@ msgstr ""
 
 #. module: l10n_ve_stock_account
 #. odoo-python
-#: code:addons/l10n_ve_stock_account/models/stock_picking.py:0
-msgid "The partner must be the company itself for a donation"
-msgstr "El contacto debe ser la misma empresa para una donación"
-
-#. module: l10n_ve_stock_account
-#. odoo-python
 #: code:addons/l10n_ve_stock_account/models/sale_order.py:0
 msgid ""
 "The product %s is not available in the customer's consignation location."

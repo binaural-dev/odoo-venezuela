@@ -1,6 +1,6 @@
 <templates id="template" xml:space="preserve">
     <t t-name="l10n_ve_pos.ClosePosPopup" t-inherit="point_of_sale.ClosePosPopup" t-inherit-mode="extension" owl="1">
-        <xpath expr="//div/main/div" position="replace">
+        <xpath expr="//div[hasclass('payment-methods-overview')]" position="replace">
             <div class="payment-methods-container">
                 <div class="payment-methods-overview overflow-auto">
                     <table class="text-start">
@@ -26,7 +26,7 @@
                                         </div>
                                     </td>
                                     <td t-esc="env.utils.formatCurrency(getDifference(props.default_cash_details.id))"
-                                        t-att-class="{'warning text-danger fw-bolder': !env.utils.floatIsZero(getDifference(props.default_cash_details.id))}"/>
+                                        t-att-class="{'warning text-danger fw-bolder': !pos.currency.isZero(getDifference(props.default_cash_details.id))}"/>
                                 </tr>
                             </tbody>
                             <tbody class="cash-overview border-start small text-muted">
@@ -54,8 +54,8 @@
                                 </tr>
                             </tbody>
                         </t>
-                        <tbody t-if="props.other_payment_methods.length > 0">
-                            <tr t-foreach="props.other_payment_methods" t-as="pm" t-key="pm.id">
+                        <tbody t-if="props.non_cash_payment_methods.length > 0">
+                            <tr t-foreach="props.non_cash_payment_methods" t-as="pm" t-key="pm.id">
                                 <td t-esc="pm.name"/>
                                 <td t-esc="env.utils.formatCurrency(pm.amount)"/>
                                 <t t-set="_showDiff" t-value="pm.type === 'bank' and pm.number !== 0" />
@@ -64,7 +64,7 @@
                                         isValid.bind="env.utils.isValidFloat" />
                                 </td>
                                 <td t-if="_showDiff" t-esc="env.utils.formatCurrency(getDifference(pm.id))"
-                                    t-att-class="{'warning text-danger fw-bolder': getDifference(pm.id)}"/>
+                                    t-att-class="{'warning text-danger fw-bolder': !pos.currency.isZero(getDifference(pm.id))}"/>
                             </tr>
                         </tbody>
                     </table>

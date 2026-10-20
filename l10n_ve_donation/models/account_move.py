@@ -57,9 +57,9 @@ class AccountMove(models.Model):
             # ! FIXME: Buscar la manera de no ejecutar _post acá
             move._post(soft=True)
             wizard = self.env["account.move.reversal"].with_context(
-                active_ids=self.ids,
+                active_ids=move.ids,
                 active_model="account.move"
-            ).create({"date": fields.Date.today(), "journal_id": self.journal_id.id})
+            ).create({"date": fields.Date.context_today(self), "journal_id": move.journal_id.id})
             wizard.reverse_moves()
             credit_note = wizard.new_move_ids
             credit_note.action_post()
@@ -89,40 +89,29 @@ class AccountMove(models.Model):
                 move_vals = {
                     "move_type": "out_refund",
                     "journal_id": move.journal_id.id,
-                    "date": default_values.get("date", fields.Date.today()),
+                    "date": default_values.get("date", fields.Date.context_today(self)),
+                    "invoice_date": move.invoice_date,
                     "ref": default_values.get("ref", move.ref),
                     "reversed_entry_id": move.id,
                     "partner_id": move.partner_id.id,
                     "is_donation": True,
                     "invoice_line_ids": invoice_line_vals,
                 }
+                # `l10n_ve_skip_refund_origin_validation` -- este NC nunca
+                # repite el producto de la factura original (usa el
+                # producto de donación dedicado, ver
+                # `product_line_donation()`), así que no debe pasar por
+                # la validación de `l10n_ve_invoice` que exige que los
+                # productos de la NC ya estén en la factura de origen.
                 reverse_move = self.env['account.move'].with_context(
                     check_move_validity=False,
                     skip_invoice_sync=True,
+                    l10n_ve_skip_refund_origin_validation=True,
                 ).create(move_vals)
                 reverse_moves += reverse_move
             return reverse_moves
 
         return super()._reverse_moves(default_values_list, cancel)
-
-    def _get_tax_grouped_lines(self):
-        """
-        Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
-        Retorna un diccionario: { tuple(ids_impuestos): {'base': suma_base, 'taxes': recordset_impuestos} }
-        """
-        self.ensure_one()
-        tax_groups = {}
-        for line in self.invoice_line_ids:
-            tax_ids = line.tax_ids.ids
-            tax_key = tuple(sorted(tax_ids))
-
-            if tax_key not in tax_groups:
-                tax_groups[tax_key] = {
-                    'base_amount': 0.0,
-                    'taxes': line.tax_ids,
-                }
-            tax_groups[tax_key]['base_amount'] += line.price_subtotal
-        return tax_groups
 
     def product_line_donation(self):
         """Adds the donation product lines to invoice_line_ids grouped by tax.

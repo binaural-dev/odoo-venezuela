@@ -1,4 +1,5 @@
 from odoo import api, fields, models, _
+from odoo.exceptions import UserError
 
 import logging
 
@@ -28,48 +29,13 @@ class AccountPayment(models.Model):
         "res.currency", default=default_alternate_currency
     )
 
-    def default_rate(self):
-        """
-        This method is used to get the rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.foreign_currency_id.id or self.company_id.currency_id,
-            self.date or fields.Date.today(),
-        )
-        rate = rate_values.get("foreign_rate", 0)
-        return rate
-
-    def default_inverse_rate(self):
-        """
-        This method is used to get the inverse rate of the payment.
-
-        Returns
-        -------
-        type = float
-            The inverse rate of the payment
-        """
-        rate_values = self.env["res.currency.rate"].compute_rate(
-            self.foreign_currency_id.id or self.company_id.currency_id,
-            self.date or fields.Date.today(),
-        )
-        rate = rate_values.get("foreign_inverse_rate", 0)
-        return rate
-
-
     foreign_rate = fields.Float(
         compute="_compute_rate",
-        default=default_rate,
         digits="Tasa",
         store=True,
         readonly=False,
     )
     foreign_inverse_rate = fields.Float(
-        default=default_inverse_rate,
         help="Rate that will be used as factor to multiply of the foreign currency for this move.",
         compute="_compute_rate",
         digits=(16, 15),
@@ -103,6 +69,85 @@ class AccountPayment(models.Model):
     company_currency_symbol = fields.Char(related="company_id.currency_id.symbol")
 
     foreign_amount = fields.Monetary('foreign_amount',currency_field="foreign_currency_id",  compute="_compute_foreign_amount", store=True, readonly=False)
+
+    def _prepare_move_lines_per_type(self, write_off_line_vals=None, force_balance=None):
+        """
+        Same as the core method (account.payment), except the liquidity line is
+        converted to company currency using the l10n_ve_conversion_date context key
+        (the invoice date when the payment is not indexed) instead of always using
+        the payment date. The wizard sets this context key when creating payments
+        (see account_payment_register._create_payments); no field is persisted.
+        Duplicated instead of temporarily reassigning self.date, since that would
+        trigger a real write() on a stored field and cascade recomputes.
+        """
+        self.ensure_one()
+        conversion_date = self.env.context.get('l10n_ve_conversion_date')
+        
+        if not conversion_date:
+            return super()._prepare_move_lines_per_type(
+                write_off_line_vals=write_off_line_vals, force_balance=force_balance
+            )
+
+        if not self.outstanding_account_id:
+            raise UserError(_(
+                "You can't create a new payment without an outstanding payments/receipts account set either on the company or the %(payment_method)s payment method in the %(journal)s journal.",
+                payment_method=self.payment_method_line_id.name, journal=self.journal_id.display_name))
+
+        line_name = ''.join(x[1] for x in self._get_aml_default_display_name_list() if x[1])
+
+        write_off_lines = write_off_line_vals or []
+        write_off_amount_currency = sum(x['amount_currency'] for x in write_off_lines)
+        write_off_balance = sum(x['balance'] for x in write_off_lines)
+
+        withholding_lines = self._prepare_move_withholding_lines({})
+        withholding_amount_currency = sum(x['amount_currency'] for x in withholding_lines)
+        withholding_balance = sum(x['balance'] for x in withholding_lines)
+
+        if withholding_lines and write_off_lines:
+            write_off_lines = []
+            write_off_amount_currency = 0.0
+            write_off_balance = 0.0
+
+        if self.payment_type == 'inbound':
+            liquidity_amount_currency = self.amount
+        elif self.payment_type == 'outbound':
+            liquidity_amount_currency = -self.amount
+        else:
+            liquidity_amount_currency = 0.0
+
+        if not write_off_line_vals and force_balance is not None:
+            sign = 1 if liquidity_amount_currency > 0 else -1
+            liquidity_balance = sign * abs(force_balance)
+        else:
+            liquidity_balance = self.currency_id._convert(
+                liquidity_amount_currency,
+                self.company_id.currency_id,
+                self.company_id,
+                conversion_date,
+            )
+        liquidity_amount_currency -= withholding_amount_currency
+        liquidity_balance -= withholding_balance
+
+        liquidity_lines = self._prepare_move_liquidity_lines({
+            'name': line_name,
+            'balance': liquidity_balance,
+            'amount_currency': liquidity_amount_currency,
+        })
+
+        counterpart_amount_currency = -liquidity_amount_currency - write_off_amount_currency - withholding_amount_currency
+        counterpart_balance = -liquidity_balance - write_off_balance - withholding_balance
+        counterpart_lines = self._prepare_move_counterpart_lines({
+            'name': line_name,
+            'balance': counterpart_balance,
+            'amount_currency': counterpart_amount_currency,
+        })
+
+        return {
+            'liquidity_lines': liquidity_lines,
+            'counterpart_lines': counterpart_lines,
+            'write_off_lines': write_off_lines,
+            'withholding_lines': withholding_lines,
+        }
 
     @api.depends("amount", "currency_id","date")
     def _compute_foreign_amount(self):
@@ -138,6 +183,29 @@ class AccountPayment(models.Model):
             payment.is_foreign_currency = (
                 payment.currency_id == payment.company_id.foreign_currency_id
             )
+
+    @api.depends('payment_type')
+    def _compute_available_journal_ids(self):
+        """Restrict available journals to bank journals with a filled payment account.
+
+        This only depends on payment_type, but reads payment_account_id off
+        the journal's payment method lines: if a line's account is changed
+        within the same environment/transaction, available_journal_ids won't
+        recompute until the field is read fresh again (e.g. reopening the
+        form/wizard). Not adding the line accounts as extra dependencies on
+        purpose, to avoid recompute overhead on every line edit; documented
+        here as a known limitation instead.
+        """
+        super(AccountPayment, self)._compute_available_journal_ids()
+        for pay in self:
+            if pay.payment_type == 'inbound':
+                pay.available_journal_ids = pay.available_journal_ids.filtered(
+                    lambda journal: journal.type != 'bank' or journal.inbound_payment_method_line_ids.payment_account_id
+                )
+            else:
+                pay.available_journal_ids = pay.available_journal_ids.filtered(
+                    lambda journal: journal.type != 'bank' or journal.outbound_payment_method_line_ids.payment_account_id
+                )
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -176,11 +244,20 @@ class AccountPayment(models.Model):
     def _compute_rate(self):
         """
         Compute the rate of the payment using the compute_rate method of the res.currency.rate model.
+
+        foreign_rate/foreign_inverse_rate are stored+readonly=False, so the wizard's
+        create() call can set them explicitly with the indexation-aware rate. But
+        being @api.depends("date", "currency_id") means ANY later write to those
+        fields (e.g. a manual date correction) silently recomputes and overwrites
+        that value with today's rate, discarding the invoice-date rate for
+        non-indexed payments. Honor l10n_ve_conversion_date here too so a recompute
+        never reverts what the wizard set.
         """
         Rate = self.env["res.currency.rate"]
         for payment in self:
+            conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment.date or fields.Date.today()
             rate_values = Rate.compute_rate(
-                payment.foreign_currency_id.id, payment.date or fields.Date.today()
+                payment.foreign_currency_id.id, conversion_date
             )
             payment.update(rate_values)
 
@@ -191,12 +268,13 @@ class AccountPayment(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for payment in self:
+            conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment.date or fields.Date.today()
             if (
                 payment.currency_id != payment.company_id.currency_id
                 and payment.currency_id != payment.company_id.foreign_currency_id
             ):
                 rate_values = Rate.compute_rate(
-                    payment.currency_id.id, payment.date or fields.Date.today()
+                    payment.currency_id.id, conversion_date
                 )
                 payment.other_rate = rate_values.get("foreign_rate", 0)
                 payment.other_rate_inverse = rate_values.get("foreign_inverse_rate", 0)
@@ -228,15 +306,71 @@ class AccountPayment(models.Model):
                 return
             payment.other_rate_inverse = Rate.compute_inverse_rate(payment.other_rate)
 
+    def _get_outstanding_account(self, payment_type):
+        """Disable core's silent fallback (company.transfer_account_id or a
+        chart template account) for bank journals whose payment method line
+        has no payment_account_id configured.
+
+        Without this, create() (account_payment.py core) picks that generic
+        account instead of raising or leaving outstanding_account_id empty --
+        exactly the "silently-picked account" the task 81735 validations
+        elsewhere in this module are meant to prevent. Returning an empty
+        recordset here (instead of calling super()) leaves
+        outstanding_account_id False, which the action_post() guard below
+        turns into an explicit error at confirmation time.
+
+        Scoped to bank journals only, and only when accounting_installed is
+        False in core's create() (this method is never called by core
+        otherwise) -- doesn't affect POS, hr_expense or
+        l10n_account_withholding_tax, which set outstanding_account_id
+        directly rather than through this method (confirmed via code
+        review, PR #1344 / task 81735).
+        """
+        if self.journal_id.type == 'bank' and not self.payment_method_line_id.payment_account_id:
+            return self.env['account.account']
+        return super()._get_outstanding_account(payment_type)
+
     def action_post(self):
+        """Block confirming a bank payment that would end up with no
+        outstanding account and therefore no journal entry -- core silently
+        allows this when the full Accounting app is installed (see
+        _get_outstanding_account override above for the other half of this
+        gap, found in code review, PR #1344 / task 81735): create() then
+        skips the fallback entirely, _generate_journal_entry()'s need_move
+        filter skips payments without outstanding_account_id, and
+        _check_move_id's own constrains only fires when outstanding_account_id
+        is truthy. Must run before super() flips the state, since that
+        assignment is what triggers write()'s journal-entry generation.
+        """
+        for payment in self:
+            if payment.journal_id.type == 'bank' and not payment.outstanding_account_id:
+                raise UserError(_(
+                    "Payment method \"%(method)s\" on bank journal \"%(journal)s\" has no account "
+                    "configured; the payment cannot be confirmed without a journal entry.",
+                    method=payment.payment_method_line_id.name,
+                    journal=payment.journal_id.display_name,
+                ))
         res = super().action_post()
         # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
         self.write({"block_change_partner_after_post": True})
         return res
             
 
-    # @api.model
-    # def _get_trigger_fields_to_synchronize(self):
-    #     original_fields = super()._get_trigger_fields_to_synchronize()
-    #     additional_fields = ("foreign_rate", "foreign_inverse_rate")
-    #     return original_fields + additional_fields
+    def action_cancel(self):
+        """Cancel payments preserving fiscal traceability.
+
+        Odoo's native behavior physically deletes ('unlink') draft moves
+        associated with the payment. This override protects previously
+        posted moves (posted_before=True) by cancelling them instead of
+        letting them be deleted, while handling the rest of the standard
+        flow (posted moves reversal, draft moves cleanup) explicitly.
+        """
+        for payment in self:
+            move = payment.move_id
+            if not move:
+                continue
+            if move.state == 'draft' and not move.posted_before:
+                move.unlink()
+            elif move.state != 'cancel':
+                move.button_cancel()
+        self.state = 'canceled'

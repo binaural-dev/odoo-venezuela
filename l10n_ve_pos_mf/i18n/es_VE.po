@@ -444,3 +444,8 @@ msgstr "La máquina fiscal no respondió a tiempo"
 #, python-format
 msgid "Error with the tax machine"
 msgstr "Error con la máquina fiscal"
+
+#. module: l10n_ve_pos_mf
+#: model:res.groups,name:l10n_ve_pos_mf.group_pos_close_native
+msgid "Close POS session natively (skip mandatory Z report)"
+msgstr "Cerrar sesión de PDV de forma nativa (sin Reporte Z obligatorio)"

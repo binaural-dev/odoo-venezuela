@@ -1,0 +1,73 @@
+<odoo>
+    <!--
+        Formulario reducido de contacto SOLO para el PdV.
+
+        En Odoo 19 el PdV ya no tiene un componente propio de edición de
+        contacto: abre la acción `point_of_sale.res_partner_action_edit_pos`
+        (target="new") y renderiza dentro de un diálogo la vista form que esa
+        acción indique (ver pos_store.js). Por defecto esa acción usa
+        `base.view_partner_form`, el formulario COMPLETO de backoffice.
+
+        Esta vista hereda de `base.view_partner_form` con `mode="primary"`,
+        lo que la convierte en una vista raíz independiente: Odoo primero
+        calcula el arch de `base.view_partner_form` ya combinado con TODAS
+        sus vistas de extensión activas (aquí, `l10n_ve_contact` que sustituye
+        `vat` por el bloque `prefix_vat` + `vat`, y `l10n_ve_location` que
+        añade el bloque de dirección venezolana `l10n_ve_address_format` con
+        `city_id`/`municipality`/`parish_id`) y SOLO DESPUÉS le aplica los
+        xpaths de este registro. Por eso heredamos gratis esos campos sin
+        tener que repetirlos aquí, y por eso `base.view_partner_form` (el
+        backoffice) queda completamente intacto: no lo estamos modificando,
+        estamos creando una vista nueva a partir de su resultado combinado.
+    -->
+    <record id="view_partner_form_pos" model="ir.ui.view">
+        <field name="name">res.partner.form.pos.l10n.ve</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="mode">primary</field>
+        <field name="priority">100</field>
+        <field name="arch" type="xml">
+            <!-- Sin botones inteligentes (facturas, ventas, etc.): no aplican
+                 en el flujo rápido de creación/edición de cliente del PdV. -->
+            <xpath expr="//div[@name='button_box']" position="replace"/>
+            <!-- Sin foto de avatar: no aporta nada al cajero y ahorra espacio. -->
+            <xpath expr="//field[@name='image_1920']" position="replace"/>
+            <!-- El campo "Cargo" (function) no se usa en el PdV; en su lugar
+                 se necesita el código de barras del cliente, que en el form
+                 de backoffice vive dentro del notebook que eliminamos más
+                 abajo. Lo reinsertamos aquí, en el hueco que deja "function". -->
+            <xpath expr="//field[@name='function']" position="replace">
+                <field name="barcode"/>
+            </xpath>
+            <!-- Sitio web: dato de backoffice, no se captura en el PdV. -->
+            <xpath expr="//field[@name='website']" position="replace"/>
+            <!-- Idioma del contacto: no se gestiona desde el PdV. -->
+            <xpath expr="//field[@name='lang']" position="replace"/>
+            <!-- Etiquetas de contacto: clasificación de backoffice. -->
+            <xpath expr="//field[@name='category_id']" position="replace"/>
+            <!-- Propiedades dinámicas (properties): quitamos el div contenedor
+                 completo, no solo el campo, para no dejar un bloque vacío. -->
+            <xpath expr="//field[@name='properties']/parent::div" position="replace"/>
+            <!-- El notebook completo (Contactos, Ventas y Compras, Notas) es
+                 backoffice puro: direcciones adicionales, vendedor, referencia
+                 interna, industria, notas... Nada de esto se edita desde el
+                 PdV, así que se elimina en bloque. -->
+            <xpath expr="//notebook" position="replace"/>
+        </field>
+    </record>
+
+    <!--
+        Override de la acción que el PdV abre para crear/editar un cliente
+        (point_of_sale.res_partner_action_edit_pos, definida en
+        point_of_sale/views/res_partner_views.xml). Le apuntamos al formulario
+        reducido de arriba y marcamos el contexto para que
+        `res.partner.default_get` (ver models/res_partner.py) sepa que debe
+        precargar estado/ciudad/municipio/parroquia/C.P. desde la dirección
+        de la compañía. Esta acción es exclusiva del PdV: no se usa en
+        ningún otro punto del backoffice.
+    -->
+    <record id="point_of_sale.res_partner_action_edit_pos" model="ir.actions.act_window">
+        <field name="view_id" ref="l10n_ve_pos.view_partner_form_pos"/>
+        <field name="context">{'l10n_ve_pos_partner_defaults': True}</field>
+    </record>
+</odoo>

@@ -13,19 +13,7 @@ class AccountMove(models.Model):
     picking_ids = fields.Many2many("stock.picking", column1='account_move_id', column2= 'stock_picking_id', relation='pickings_invoice_rel')
     from_picking = fields.Boolean(string="From Picking", default=False)
 
-    # 0: not printed yet, 1: first print (original), 2 or more: copies
-    free_form_copy_number = fields.Integer(default=0, copy=False)
-
-
-    def print_invoice_free_form(self):
-
-        report = self.env.ref(
-            "l10n_ve_invoice.action_invoice_free_form_l10n_ve_invoice"
-        )
-
-        self.free_form_copy_number = self.free_form_copy_number + 1
-
-        return report.report_action(self)
+    
 
     @api.depends("picking_ids")
     def _compute_guide_number(self):
@@ -33,3 +21,21 @@ class AccountMove(models.Model):
             list_guide_number = [picking.guide_number for picking in record.picking_ids]
             record.guide_number = "/".join(list_guide_number)
 
+    def _get_tax_grouped_lines(self):
+        """
+        Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
+        Retorna un diccionario: { tuple(ids_impuestos): {'base_amount': suma_base, 'taxes': recordset_impuestos} }
+        """
+        self.ensure_one()
+        tax_groups = {}
+        for line in self.invoice_line_ids:
+            tax_ids = line.tax_ids.ids
+            tax_key = tuple(sorted(tax_ids))
+
+            if tax_key not in tax_groups:
+                tax_groups[tax_key] = {
+                    'base_amount': 0.0,
+                    'taxes': line.tax_ids,
+                }
+            tax_groups[tax_key]['base_amount'] += line.price_subtotal
+        return tax_groups
