@@ -9,7 +9,7 @@ class ResCurrencyRate(models.Model):
     _inherit = "res.currency.rate"
 
     @api.model
-    def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=False):
+    def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=True):
         """
         Compute the rate and inverse rate for the given currency and date.
 
@@ -33,23 +33,10 @@ class ResCurrencyRate(models.Model):
             The date of the rate that is gonna be searched for the given currency
             (foreign_currency_id).
         raise_if_not_found : bool
-            Whether the absence of a usable rate should raise UserError, instead of
-            returning {}. Defaults to False: this method is reached from many
-            "automatic" paths that are not a deliberate user request for a rate -
-            record defaults on create(), a create()-time chatter comparison against
-            the current rate, and even the plain @api.depends compute for
-            foreign_rate/foreign_inverse_rate, which the ORM can re-trigger from
-            unrelated code simply reading that field (e.g. sale.order._prepare_invoice()
-            reading self.foreign_rate). None of those call sites can meaningfully
-            react to a hard error, so raising there would block unrelated operations
-            (creating an order, preparing an invoice) entirely, for every user,
-            whenever nobody has loaded today's rate yet.
-
-            raise_if_not_found=True only makes sense from a call site built
-            specifically to let the user act on the error in place (e.g. a
-            dedicated "recalculate rate" button or onchange) - no such call site
-            exists yet in this codebase; the parameter is kept available for one to
-            opt into deliberately, rather than baked into the shared compute chain.
+            Whether the absence of a usable rate should raise UserError instead of
+            returning {}. Defaults to True: every search that finds no rate at or
+            before rate_date must stop with "no rate assigned". Pass False only from
+            a call site that can deliberately work without a rate.
 
         The search only ever looks backwards in time: it filters rates with
         name <= rate_date and takes the closest one (name DESC, limit 1). If there
@@ -64,7 +51,7 @@ class ResCurrencyRate(models.Model):
         Raises
         ------
         UserError
-            If raise_if_not_found is True and there is no rate at or before rate_date
+            If raise_if_not_found is True (default) and there is no rate at or before rate_date
             for this currency/company - i.e. rate_date is older than every recorded
             rate (or none exist at all). This does not happen just because there is
             no rate for that exact date; it only happens when there is no earlier
@@ -75,7 +62,13 @@ class ResCurrencyRate(models.Model):
         dict
             A dictionary with the rate and inverse rate for the given currency and
             date, or {} if no rate was found and raise_if_not_found is False.
+            The company currency without a recorded rate resolves to 1.0 / 1.0 (its rate
+            against itself). {} is returned only when no foreign currency is given at
+            all (there is no currency to look up).
         """
+
+        if not foreign_currency_id:
+            return {}
 
         company = self.env.company
         # las tasas solo viven en la compañía raíz (res.currency.rate._check_company_id)
@@ -91,8 +84,18 @@ class ResCurrencyRate(models.Model):
         )
 
         if not rate:
+            if foreign_currency_id == company.currency_id.id:
+                # the company currency against itself is always 1
+                return {"foreign_rate": 1.0, "foreign_inverse_rate": 1.0}
             if raise_if_not_found:
-                raise UserError(_("There is no rate for that date, please configure one."))
+                currency = self.env["res.currency"].browse(foreign_currency_id)
+                raise UserError(
+                    _(
+                        "There is no rate assigned for %(currency)s on %(date)s, please configure one.",
+                        currency=currency.name,
+                        date=rate_date,
+                    )
+                )
             return {}
 
         vef_id = self.env.company.currency_id.id
@@ -119,11 +122,18 @@ class ResCurrencyRate(models.Model):
         rate : float
             The rate that is gonna be used to compute the inverse rate.
 
+        Raises
+        ------
+        UserError
+            If the rate is empty or zero: there is no rate to invert.
+
         Returns
         -------
         float
             The inverse rate for the given rate.
         """
+        if not rate:
+            raise UserError(_("There is no rate assigned, please configure one."))
         base_usd_id = self.env["ir.model.data"]._xmlid_to_res_id(
             "base.USD", raise_if_not_found=False
         )
