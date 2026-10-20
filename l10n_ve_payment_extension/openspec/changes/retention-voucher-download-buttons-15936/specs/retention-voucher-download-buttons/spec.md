@@ -64,3 +64,30 @@ posteriores NO DEBEN modificarla.
 - **GIVEN** una retención municipal emitida sin `date_emision`
 - **WHEN** se descarga su comprobante desde el documento
 - **THEN** `date_emision` queda con la fecha de hoy
+
+### Requirement: El formulario de cada retención debe ofrecer un botón de descarga cuando está emitida
+
+El sistema SHALL mostrar en la cabecera del formulario de las retenciones de IVA,
+ISLR y municipal un botón "Download voucher PDF", visible solo cuando la
+retención está en estado `emitted`. Al pulsarlo, `action_print_retention_voucher_pdf`
+SHALL devolver la acción de `retention_voucher_action` sobre esa retención y
+lanzar `UserError` si la retención no está emitida.
+
+#### Scenario: Retención emitida
+
+- **GIVEN** una retención de cualquiera de los tres tipos en estado `emitted`
+- **THEN** el formulario muestra el botón "Download voucher PDF"
+- **WHEN** el usuario lo pulsa
+- **THEN** descarga el PDF del comprobante con el formato de su tipo
+
+#### Scenario: Retención en borrador o anulada
+
+- **GIVEN** una retención en estado `draft` o `cancel`
+- **THEN** el botón no se muestra
+
+#### Scenario: Primera descarga de una retención municipal
+
+- **GIVEN** una retención municipal emitida sin `date_emision`
+- **WHEN** se pulsa el botón
+- **THEN** `date_emision` queda con la fecha de hoy
+- **AND** descargas posteriores no la modifican

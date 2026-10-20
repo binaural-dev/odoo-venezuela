@@ -3,7 +3,9 @@
 ## 1. Implementación
 
 - [x] 1.1 Método `action_download_retention_voucher` en `account.move`
-- [x] 1.2 Tres botones en la cabecera del documento, visibles según el tipo de
+- [x] 1.2 Método `action_print_retention_voucher_pdf` y botón en el formulario
+      de las retenciones IVA, ISLR y municipal, visible solo si está emitida
+- [x] 1.3 Tres botones en la cabecera del documento, visibles según el tipo de
       retención emitida
 
 ## 2. Traducción

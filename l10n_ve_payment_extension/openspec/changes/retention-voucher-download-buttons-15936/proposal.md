@@ -22,6 +22,12 @@ descargarse en PDF desde `municipal-retention-pdf-15877`.
     para que un administrador no vea el asistente de diseño de documentos.
   - Para las municipales fija `date_emision` si está vacío, igual que el botón
     del Excel, de modo que la fecha de entrega salga en el PDF.
+- `l10n_ve_payment_extension/models/account_retention.py` y
+  `views/account_retention_{iva,islr,municipal}.xml`
+  - Nuevo `action_print_retention_voucher_pdf` y botón "Download voucher PDF" en
+    el formulario de cada tipo de retención, visible solo con la retención
+    emitida (`state == 'emitted'`). Para las municipales fija `date_emision` si
+    está vacío, igual que el botón del Excel.
 - `l10n_ve_payment_extension/views/account_move.xml`
   - Tres botones en la cabecera: "Download IVA voucher", "Download ISLR voucher"
     y "Download municipal voucher". Cada uno se muestra solo si el documento
@@ -40,5 +46,4 @@ descargarse en PDF desde `municipal-retention-pdf-15877`.
   *emitida* (no en borrador ni anulada), porque el PDF de un borrador está
   bloqueado. El ticket habla de "una retención de ese tipo"; si se quiere ver
   también en borrador, hay que revisar ese bloqueo.
-- **Fuera de alcance**: el formulario de la retención y el menú Imprimir no
-  cambian.
+- **Fuera de alcance**: el menú Imprimir no cambia.
