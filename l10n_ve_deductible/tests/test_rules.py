@@ -30,14 +30,50 @@ class TestDeductibleRules(DeductibleCase):
             with self.assertRaisesMsg(ValidationError, "greater than 0 and less than 100"):
                 self._doc(**self.PERCENT | {"global_deductible_percent": percent})
 
-    def test_only_exempt_taxes(self):
-        with self.assertRaisesMsg(ValidationError, "exempt tax"):
-            self._doc(tax=self.tax("general"), **self.PERCENT)
-        with self.assertRaisesMsg(ValidationError, "exempt tax"):
-            self._doc(tax=self.tax("fixed"), **self.PERCENT)
-        sale = self.MOVE_TYPE.startswith("out_")
-        self.company["exent_aliquot_sale" if sale else "exent_aliquot_purchase"] = self.tax("fixed")
-        self.assertTrue(self._doc(tax=self.tax("fixed"), **self.PERCENT).is_deductible)
+    def test_taxed_lines_are_allowed(self):
+        """The deductible is not limited to exempt taxes: general, fixed and
+        mixed-tax documents accept it and the tax is computed on the base
+        left after the deductible."""
+        for kind in ("general", "fixed"):
+            with self.subTest(kind=kind):
+                doc = self._doc(tax=self.tax(kind), **self.PERCENT)
+                self.assertTrue(doc.is_deductible)
+        general = self._doc([(100.0, 1), (300.0, 1)], tax=self.tax("general"), **self.PERCENT | {"global_deductible_percent": 10.0})
+        self.assertEqual(general.amount_untaxed, 360.0)
+        self.assertEqual(general.amount_tax, 57.6)
+        self.assertEqual(general.amount_total, 417.6)
+        self.assertEqual(general.global_deductible_reference_amount, 40.0)
+
+    def test_taxed_and_exempt_lines_mixed(self):
+        taxes = (self.tax("general"), self.tax("exempt"))
+        lines = [
+            Command.create(
+                {"product_id": self.product.id, "name": f"L{i}", "quantity": 1, "price_unit": 100.0,
+                 "tax_ids": [Command.set(tax.ids)]}
+            )
+            for i, tax in enumerate(taxes)
+        ]
+        doc = self._doc(invoice_line_ids=lines, **self.PERCENT | {"global_deductible_percent": 50.0})
+        self.assertEqual(doc.amount_untaxed, 100.0)
+        self.assertEqual(doc.amount_tax, 8.0)
+
+    def test_taxed_line_can_be_added_and_activation_has_no_warning(self):
+        plain = self._doc(tax=self.tax("general"))
+        result = plain.onchange({"is_deductible": True}, ["is_deductible"], {"is_deductible": {}})
+        self.assertNotIn("warning", result)
+        doc = self._doc(**self.PERCENT)
+        new_line = Command.create(
+            {"product_id": self.product.id, "name": "IVA", "price_unit": 5.0, "tax_ids": [Command.set(self.tax("general").ids)]}
+        )
+        doc.write({"invoice_line_ids": [new_line]})
+        doc.invoice_line_ids[0].tax_ids = self.tax("general")
+        self.assertTrue(doc.is_deductible)
+
+    def test_fixed_amount_with_taxed_lines(self):
+        for method, currency in self._combos():
+            with self.subTest(method=method, currency=currency.name):
+                doc = self._doc(tax=self.tax("general"), currency=currency, **self.AMOUNT)
+                self.assertEqual(round(sum(doc.invoice_line_ids.mapped("global_deductible_line_amount")), 2), 77.77)
 
     def test_price_included_exempt_tax_matches_native_discount(self):
         lines = [(100.0, 2), (33.3333, 3)]
@@ -51,20 +87,6 @@ class TestDeductibleRules(DeductibleCase):
         doc = self._doc(**self.PERCENT)
         with self.assertRaisesMsg(ValidationError, "cannot have lines with a discount"):
             doc.invoice_line_ids[0].discount = 5.0
-
-    def test_taxed_line_blocks_activation_and_later_changes(self):
-        plain = self._doc(tax=self.tax("general"))
-        result = plain.onchange({"is_deductible": True}, ["is_deductible"], {"is_deductible": {}})
-        self.assertIn("warning", result)
-        self.assertFalse(result["value"].get("is_deductible", False))
-        doc = self._doc(**self.PERCENT)
-        new_line = Command.create(
-            {"product_id": self.product.id, "name": "IVA", "price_unit": 5.0, "tax_ids": [Command.set(self.tax("general").ids)]}
-        )
-        with self.assertRaisesMsg(ValidationError, "exempt tax"):
-            doc.write({"invoice_line_ids": [new_line]})
-        with self.assertRaisesMsg(ValidationError, "exempt tax"):
-            doc.invoice_line_ids[0].tax_ids = self.tax("general")
 
     def test_unsupported_documents(self):
         for move_type in ("in_receipt", "out_receipt", "in_refund", "out_refund"):

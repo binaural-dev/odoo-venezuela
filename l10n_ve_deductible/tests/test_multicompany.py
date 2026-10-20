@@ -50,14 +50,10 @@ class TestDeductibleMultiCompany(DeductibleCase):
         self.assertEqual((self.company_b.use_deductible, self.company_b.deductible_scope), (False, "vendor"))
         self.assertEqual((self.company.use_deductible, self.company.deductible_scope), (True, "both"))
 
-    def test_exempt_aliquot_is_configured_per_company(self):
-        fixed = {company: self.tax("fixed", company=company) for company in (self.company, self.company_b)}
-        self.company["exent_aliquot_purchase"] = fixed[self.company]
-        self.assertTrue(self._doc(tax=fixed[self.company], **self.PERCENT).is_deductible)
-        with self.assertRaisesMsg(Exception, "exempt tax"):
-            self._doc_b(tax=fixed[self.company_b], **self.PERCENT)
-        self.company_b["exent_aliquot_purchase"] = fixed[self.company_b]
-        self.assertTrue(self._doc_b(tax=fixed[self.company_b], **self.PERCENT).is_deductible)
+    def test_taxed_documents_are_allowed_in_both_companies(self):
+        general = {company: self.tax("general", company=company) for company in (self.company, self.company_b)}
+        self.assertTrue(self._doc(tax=general[self.company], **self.PERCENT).is_deductible)
+        self.assertTrue(self._doc_b(tax=general[self.company_b], **self.PERCENT).is_deductible)
 
     def test_same_figures_in_both_companies(self):
         for method in self.METHODS:

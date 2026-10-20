@@ -1,6 +1,6 @@
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools import float_compare, float_is_zero, formatLang
+from odoo.tools import float_compare, formatLang
 
 SIDE_BY_TYPE = {"in_invoice": "vendor", "out_invoice": "customer"}
 REFUND_TYPES = ("in_refund", "out_refund")
@@ -117,28 +117,12 @@ class AccountMove(models.Model):
             default_values.update(move._get_deductible_copy_values())
         return super()._reverse_moves(default_values_list=default_values_list, cancel=cancel)
 
-    def _get_deductible_exempt_taxes(self):
-        """Exempt aliquots of the company for the side of this document."""
-        company = self.company_id
-        if self.is_sale_document(include_receipts=True):
-            return company.exent_aliquot_sale
-        return company.exent_aliquot_purchase | company.exent_aliquot_purchase_international
-
-    def _is_deductible_exempt_tax(self, tax):
-        """Exempt = the company's exempt aliquot (sale or purchase) or a 0% tax."""
-        return tax in self._get_deductible_exempt_taxes() or all(
-            t.amount_type == "percent" and float_is_zero(t.amount, precision_digits=6)
-            for t in tax.flatten_taxes_hierarchy()
-        )
-
     def _get_deductible_issues(self):
         """Reasons why this document cannot be deductible (list of messages)."""
         self.ensure_one()
         issues = []
         for line in self._get_deductible_product_lines():
             name = line.product_id.display_name or line.name or ""
-            if not line.tax_ids or not all(self._is_deductible_exempt_tax(t) for t in line.tax_ids):
-                issues.append(_("%s: every line must have an exempt tax.", name))
             if line.discount or line.discount_fixed:
                 issues.append(_("%s: lines cannot have a previous discount.", name))
         return issues
@@ -185,8 +169,8 @@ class AccountMove(models.Model):
 
     @api.constrains(*DEDUCTIBLE_FIELDS, "move_type", "reversed_entry_id", "invoice_line_ids")
     def _check_deductible(self):
-        """Enabled document type (or credit note of a deductible one), exempt
-        taxes, no previous discount, value limits and per-line amounts adding
+        """Enabled document type (or credit note of a deductible one), no
+        previous discount, value limits and per-line amounts adding
         up to the amount entered."""
         for move in self.filtered("is_deductible"):
             move._check_deductible_document()

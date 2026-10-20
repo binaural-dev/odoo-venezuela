@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Descuento global "deducible" (porcentaje o monto fijo) para facturas de proveedor y de cliente con impuestos exentos. Se activa por compañía desde Ajustes (`res.company.use_deductible`, bloque "Deducibles") y la opción `deductible_scope` decide en qué documentos se ofrece: facturas de proveedor (`vendor`, por defecto), facturas de cliente (`customer`) o ambas (`both`).
+Descuento global "deducible" (porcentaje o monto fijo) para facturas de proveedor y de cliente, con o sin impuestos. Se activa por compañía desde Ajustes (`res.company.use_deductible`, bloque "Deducibles") y la opción `deductible_scope` decide en qué documentos se ofrece: facturas de proveedor (`vendor`, por defecto), facturas de cliente (`customer`) o ambas (`both`).
 
 Donde está habilitado, el documento muestra en la pestaña de líneas, justo debajo de "Términos y condiciones" (`narration`): el booleano `is_deductible`, el tipo (`global_deductible_type`: porcentaje o monto fijo), el valor (`global_deductible_percent` o `global_deductible_amount`) y, solo en modo porcentaje, un monto referencial (`global_deductible_reference_amount`). En modo monto fijo el importe que se resta a cada línea se guarda en `account.move.line.global_deductible_line_amount` (monetario, solo lectura, visible solo en ese modo); de él, o del porcentaje del documento en modo porcentaje, sale `account.move.line.global_deductible_discount_percent` (Float almacenado, sin redondeo a propósito).
 
@@ -14,7 +14,7 @@ Fuera de alcance: las máquinas fiscales y la factura digital no leen el deducib
 
 ### Requirement: Activación por compañía y alcance
 
-El deducible DEBE (MUST) poder usarse solo si la compañía tiene `use_deductible` activo y el tipo de documento coincide con `deductible_scope`. Las notas de crédito (`in_refund`, `out_refund`) lo admiten únicamente cuando revierten un documento deducible. Cualquier otro tipo de documento (por ejemplo recibos), o un tipo no habilitado por la compañía, DEBE (MUST) producir un `ValidationError` aunque se intente por RPC o importación. La alícuota exenta es la de venta de la compañía en documentos de cliente y la de compra (nacional o internacional) en documentos de proveedor.
+El deducible DEBE (MUST) poder usarse solo si la compañía tiene `use_deductible` activo y el tipo de documento coincide con `deductible_scope`. Las notas de crédito (`in_refund`, `out_refund`) lo admiten únicamente cuando revierten un documento deducible. Cualquier otro tipo de documento (por ejemplo recibos), o un tipo no habilitado por la compañía, DEBE (MUST) producir un `ValidationError` aunque se intente por RPC o importación.
 
 La validación de que el tipo esté habilitado se hace solo al activar el deducible (al crear un documento ya deducible o al marcar `is_deductible`), de modo que un documento que ya era deducible sigue usable si después se apaga la opción o se cambia el alcance: se puede seguir editando, y la nota de crédito, la nota de débito con líneas copiadas y la factura de reemplazo de "reversar y modificar" heredan el deducible de su origen sin importar el alcance actual. Activarlo en un documento que no lo era sí exige el tipo habilitado.
 
@@ -28,13 +28,18 @@ La validación de que el tipo esté habilitado se hace solo al activar el deduci
 - **WHEN** se crea una factura de proveedor o de cliente con `is_deductible = True` en una compañía con `use_deductible` apagado
 - **THEN** se lanza un error de validación y el documento no se guarda
 
-### Requirement: Solo líneas con impuesto exento y sin descuento previo
+### Requirement: Líneas sin descuento previo
 
-Un documento con `is_deductible` DEBE (MUST) tener todas las líneas de producto con impuestos exentos (la alícuota exenta de la compañía para ese tipo de documento, o impuestos en porcentaje al 0 %; un impuesto exento con precio incluido también se admite) y sin `discount` ni `discount_fixed`. Al activar el booleano, el `onchange` DEBE (MUST) mostrar una advertencia y dejar el deducible apagado si hay líneas inválidas; al agregar luego una línea inválida DEBE (MUST) advertir y el guardado DEBE (MUST) fallar. Las columnas de descuento nativas DEBEN (MUST) ocultarse y quedar de solo lectura mientras el documento es deducible.
+Un documento con `is_deductible` DEBE (MUST) tener todas las líneas de producto sin `discount` ni `discount_fixed`; el deducible NO se limita a líneas con impuestos exentos: acepta cualquier impuesto y este se calcula sobre la base resultante tras el deducible. Al activar el booleano, el `onchange` DEBE (MUST) mostrar una advertencia y dejar el deducible apagado si hay líneas con descuento; al agregar luego una línea con descuento DEBE (MUST) advertir y el guardado DEBE (MUST) fallar. Las columnas de descuento nativas DEBEN (MUST) ocultarse y quedar de solo lectura mientras el documento es deducible.
 
 #### Scenario: Línea gravada
 
 - **WHEN** se activa el deducible en un documento con una línea con IVA 16 %
+- **THEN** el deducible se activa sin advertencia y el IVA se calcula sobre la base tras el deducible
+
+#### Scenario: Línea con descuento previo
+
+- **WHEN** se activa el deducible en un documento con una línea con descuento
 - **THEN** aparece la advertencia, `is_deductible` queda en falso y, si se intenta por servidor, se lanza un `ValidationError`
 
 ### Requirement: Límites del valor deducible
@@ -87,7 +92,7 @@ Las notas creadas a partir de un documento deducible DEBEN (MUST) conservar el m
 
 ### Requirement: Multicompañía
 
-La activación (`use_deductible`), el alcance (`deductible_scope`), la alícuota exenta y todas las validaciones DEBEN (MUST) usar la compañía del documento, nunca la compañía en la que esté trabajando el usuario; la pantalla de Ajustes DEBE (MUST) editar solo la compañía actual. Con dos compañías, el mismo documento da las mismas cifras en ambas.
+La activación (`use_deductible`), el alcance (`deductible_scope`), y todas las validaciones DEBEN (MUST) usar la compañía del documento, nunca la compañía en la que esté trabajando el usuario; la pantalla de Ajustes DEBE (MUST) editar solo la compañía actual. Con dos compañías, el mismo documento da las mismas cifras en ambas.
 
 #### Scenario: Una compañía con la opción apagada
 
@@ -125,7 +130,7 @@ Con `is_deductible` activo, los tres widgets de totales (moneda del documento, a
 
 ### Requirement: Limitaciones conocidas
 
-El deducible no genera los apuntes de asignación de descuento que Odoo crea a partir de `discount` cuando la compañía configura las cuentas `account_discount_*_allocation_id`; `discount_fixed` comparte esa limitación. La alícuota exenta acepta cualquier impuesto en porcentaje al 0 %, además de la configurada en la compañía.
+El deducible no genera los apuntes de asignación de descuento que Odoo crea a partir de `discount` cuando la compañía configura las cuentas `account_discount_*_allocation_id`; `discount_fixed` comparte esa limitación.
 
 #### Scenario: Compañía con cuentas de asignación de descuento
 
