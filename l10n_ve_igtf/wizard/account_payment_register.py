@@ -98,8 +98,11 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     wizard.igtf_amount = total_igtf_amount
                     wizard.igtf_to_show = total_igtf_amount
                     wizard.amount_without_difference = base_amount
-
-                wizard.last_computed_amount = wizard.amount
+                    # Only the amount proposed here is remembered: an amount typed by the user
+                    # must not match it on a later recompute (changing the date, journal or rate,
+                    # or when creating the payment), or the IGTF would be taken from the whole
+                    # residual of the invoice instead of from the amount paid.
+                    wizard.last_computed_amount = wizard.amount
 
     @api.depends('can_edit_wizard', 'amount', 'payment_date', 'is_igtf','amount_without_difference')
     def _compute_payment_difference(self):
