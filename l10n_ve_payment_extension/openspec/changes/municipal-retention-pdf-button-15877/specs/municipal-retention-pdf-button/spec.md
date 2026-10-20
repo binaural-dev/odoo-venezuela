@@ -5,9 +5,10 @@
 ### Requirement: El formulario de la retención municipal debe ofrecer un botón para descargar el PDF
 
 El sistema SHALL mostrar en la cabecera del formulario de la retención
-municipal un botón "Print municipal retention PDF", oculto cuando la retención
-está en `draft`. Al pulsarlo, `action_print_municipal_retention_pdf` SHALL
-devolver la acción de `retention_voucher_action` sobre esa retención.
+municipal un botón "Print municipal retention PDF" en cualquier estado
+(`draft`, `emitted` y `cancel`), igual que el botón del Excel. Al pulsarlo,
+`action_print_municipal_retention_pdf` SHALL devolver la acción de
+`retention_voucher_action` sobre esa retención.
 
 #### Scenario: Descargar el PDF desde el formulario
 
@@ -16,11 +17,30 @@ devolver la acción de `retention_voucher_action` sobre esa retención.
 - **THEN** el sistema devuelve la acción del reporte
   `l10n_ve_payment_extension.retention_voucher_template` sobre esa retención
 
-#### Scenario: Retención en borrador
+#### Scenario: Retención en borrador o anulada
+
+- **GIVEN** una retención municipal en estado `draft` o `cancel`
+- **THEN** el botón se muestra
+- **AND** el PDF se genera sin restricción
+
+### Requirement: El PDF de una retención municipal en borrador no está bloqueado
+
+El sistema SHALL permitir descargar el PDF de una retención municipal en
+estado `draft`. Esto modifica el requisito de `municipal-retention-pdf-15877`
+(bloqueo de borradores) solo para el tipo `municipal`: las retenciones de IVA e
+ISLR en borrador siguen bloqueadas por `ir.actions.report._render_qweb_pdf`.
+
+#### Scenario: PDF de una retención municipal en borrador
 
 - **GIVEN** una retención municipal en estado `draft`
-- **THEN** el botón no se muestra
-- **AND** imprimir el PDF por otra vía sigue lanzando `ValidationError`
+- **WHEN** se imprime el comprobante en PDF
+- **THEN** el PDF se genera sin error
+
+#### Scenario: PDF de una retención de IVA en borrador
+
+- **GIVEN** una retención de IVA en estado `draft`
+- **WHEN** se imprime el comprobante en PDF
+- **THEN** el sistema lanza `ValidationError`
 
 ### Requirement: La primera impresión fija la fecha de entrega
 

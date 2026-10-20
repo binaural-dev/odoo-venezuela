@@ -15,8 +15,11 @@ del formulario. Se agrega el botón equivalente para el PDF.
     `date_emision` en la primera impresión (así la fecha de entrega sale en el
     PDF) y devuelve la acción de `retention_voucher_action`.
 - `l10n_ve_payment_extension/views/account_retention_municipal.xml`
-  - Botón "Print municipal retention PDF" junto al del Excel, oculto en
-    borrador.
+  - Botón "Print municipal retention PDF" junto al del Excel, visible en
+    cualquier estado.
+- `l10n_ve_payment_extension/models/ir_actions_report.py`
+  - El bloqueo de borradores en `_render_qweb_pdf` deja de aplicar al tipo
+    `municipal` (IVA e ISLR siguen bloqueados).
 - `l10n_ve_payment_extension/i18n/es_VE.po`
   - Traducción al español del texto del botón.
 
