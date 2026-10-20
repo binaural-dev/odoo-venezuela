@@ -31,3 +31,9 @@ class TestPaymentZeroAmount(TransactionCase):
         payment = self._create_payment(100.0)
         payment.action_post()
         self.assertNotEqual(payment.state, "draft")
+
+    def test_post_zero_amount_from_pos_is_exempt(self):
+        """El cierre de sesión POS agrupa pagos por neto y puede netear 0."""
+        payment = self._create_payment(0.0)
+        payment.with_context(from_pos=True).action_post()
+        self.assertNotEqual(payment.state, "draft")

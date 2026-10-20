@@ -671,6 +671,10 @@ class TestAccountingReports(TransactionCase):
 
     def _check_resume_total_row_has_net_formulas(self, report, journal, taxes):
         today = fields.Date.today()
+        # La fila "alícuota general" solo se llena si el impuesto está configurado en la compañía
+        self.company.write({
+            "general_aliquot_sale" if report == "sale" else "general_aliquot_purchase": taxes[0]
+        })
         move = self._create_move(
             "out_invoice" if report == "sale" else "in_invoice",
             journal, taxes, correlative="RT001"
@@ -678,29 +682,60 @@ class TestAccountingReports(TransactionCase):
         # El contexto evita el wizard de alerta que l10n_ve_accountant abre al publicar ventas
         move.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(move.state, "posted")
-        # En ventas la secuencia puede reemplazar el correlativo al publicar
-        self.env.cr.execute(
-            "UPDATE account_move SET correlative = 'RT001' WHERE id = %s", (move.id,)
-        )
-        move.invalidate_recordset(["correlative"])
         wizard = self._create_wizard(report, date_from=today, date_to=today)
+        writes = []
         formulas = {}
+        values = {}
 
         class FakeWorksheet:
             def merge_range(self, *args, **kwargs):
                 pass
 
-            def write(self, *args, **kwargs):
-                pass
+            def write(self, row, col, value, *args, **kwargs):
+                writes.append((row, col, "value"))
+                values[(row, col)] = value
 
             def write_formula(self, row, col, formula, *args, **kwargs):
-                formulas[col] = formula
+                writes.append((row, col, "formula"))
+                formulas[(row, col)] = formula
 
-        wizard.generate_book_resume(FakeWorksheet(), 0, None, {"number": None})
+        index_to_start = 0
+        wizard.generate_book_resume(
+            FakeWorksheet(), index_to_start, None, {"number": None}
+        )
+        total_row = max(row for row, _col in formulas)
+        first_row = index_to_start + 5
         # Columnas C..H (2..7): incluida "Total Neto" (G, H)
-        self.assertEqual(sorted(formulas), [2, 3, 4, 5, 6, 7])
-        self.assertTrue(formulas[6].startswith("=SUM(G"))
-        self.assertTrue(formulas[7].startswith("=SUM(H"))
+        self.assertEqual(
+            sorted(col for row, col in formulas if row == total_row), [2, 3, 4, 5, 6, 7]
+        )
+        for col, letter in zip(range(2, 8), "CDEFGH"):
+            self.assertEqual(
+                formulas[(total_row, col)],
+                f"=SUM({letter}{first_row}:{letter}{total_row})",
+            )
+            # Ninguna escritura posterior pisa la fórmula de la celda
+            cell_writes = [kind for r, c, kind in writes if (r, c) == (total_row, col)]
+            self.assertEqual(cell_writes[-1], "formula")
+
+        # Evalúa los =SUM contra los valores escritos (filas Excel first_row..total_row)
+        data_rows = range(first_row - 1, total_row)
+        totals = {
+            col: sum(values.get((row, col), 0) for row in data_rows)
+            for col in range(2, 8)
+        }
+        # Total Neto (G, H) = base/débito de las dos primeras alícuotas (C+E, D+F)
+        for row in data_rows:
+            self.assertAlmostEqual(
+                values[(row, 6)], values[(row, 2)] + values[(row, 4)]
+            )
+            self.assertAlmostEqual(
+                values[(row, 7)], values[(row, 3)] + values[(row, 5)]
+            )
+        self.assertAlmostEqual(totals[6], totals[2] + totals[4])
+        self.assertAlmostEqual(totals[7], totals[3] + totals[5])
+        # El bug dejaba el Total Neto de la fila total en 0
+        self.assertTrue(totals[6] or totals[7])
 
     def test_resume_sale_total_row_net_columns_are_sums(self):
         self._check_resume_total_row_has_net_formulas(

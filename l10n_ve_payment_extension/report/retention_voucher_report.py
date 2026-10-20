@@ -2,6 +2,11 @@ from odoo import models, api
 from odoo.tools.misc import formatLang
 
 
+MONEY_COLUMNS = ("Base Imponible", "Impuesto Municipal Retenido", "Impuesto Retenido")
+PERCENT_COLUMN = "Alícuota %"
+RETAINED_COLUMN = "Impuesto Retenido"
+
+
 class PaymentExtensionRetentionIvaVoucher(models.AbstractModel):
     _name = "report.l10n_ve_payment_extension.retention_voucher_template"
 
@@ -45,18 +50,24 @@ class PaymentExtensionRetentionIvaVoucher(models.AbstractModel):
         columns = list(table.columns.values)
         rows = table.values.tolist()
         vef = self.env.ref("base.VEF")
-        money_columns = (4, 7, 8)
+        money_columns = {
+            index for index, name in enumerate(columns) if name in MONEY_COLUMNS
+        }
+        percent_columns = {
+            index for index, name in enumerate(columns) if name == PERCENT_COLUMN
+        }
         display_rows = []
         for row in rows:
             display = []
             for index, value in enumerate(row):
                 if index in money_columns:
                     value = formatLang(self.env, value, currency_obj=vef)
-                elif index == 5:
-                    value = "%.2f %%" % (value * 100)
+                elif index in percent_columns:
+                    value = "%s %%" % formatLang(self.env, value * 100, digits=2)
                 display.append(value)
             display_rows.append(display)
-        total = sum(row[8] for row in rows)
+        retained_index = columns.index(RETAINED_COLUMN) if rows else None
+        total = sum(row[retained_index] for row in rows)
         return {
             "tax_auth": tax_auth,
             "columns": columns,
