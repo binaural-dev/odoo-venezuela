@@ -35,6 +35,16 @@ class StockPicking(models.Model):
         domain="[('is_trailer', '=', True)]",
     )
 
+    @api.depends("transport_data_source", "transport_vehicle_id", "transport_trailer_id")
+    def _compute_transport_data_locked(self):
+        # Solo bloquea la guía que ya tiene un vehículo/batea de Flota
+        # elegido; un transportista externo sin ficha en Flota sigue
+        # pudiendo cargar los datos a mano aunque la compañía use 'fleet'.
+        for picking in self:
+            picking.transport_data_locked = picking.transport_data_source == "fleet" and bool(
+                picking.transport_vehicle_id or picking.transport_trailer_id
+            )
+
     # ------------------------------------------------------------------
     # Copia de datos desde Flota. Nunca related/compute almacenado: la guía
     # guarda una foto de los datos al elegir el vehículo y el usuario puede

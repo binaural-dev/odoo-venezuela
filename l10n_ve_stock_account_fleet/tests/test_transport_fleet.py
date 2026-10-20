@@ -143,6 +143,37 @@ class TestTransportFleet(TransactionCase):
         self.assertEqual(picking.transport_driver_name, "Pedro Pérez Conductor")
         self.assertEqual(picking.transport_vehicle_plate, "A12BC3D")
 
+    def test_fleet_source_without_vehicle_leaves_fields_editable(self):
+        # Transportista externo sin ficha en Flota: el origen de la compañía
+        # es 'fleet' pero esta guía no tiene vehículo/batea elegido, así que
+        # los datos se pueden seguir cargando a mano.
+        with Form(self.env["stock.picking"]) as form:
+            form.picking_type_id = self.picking_type
+            form.partner_id = self.partner
+            form.transfer_reason_id = self.reason_other_causes
+            form.other_causes_transfer_reason = "Transportista externo"
+            self.assertFalse(form._get_modifier("transport_driver_name", "readonly"))
+            self.assertFalse(form._get_modifier("transport_vehicle_plate", "readonly"))
+            form.transport_driver_name = "Carlos Externo"
+            form.transport_vehicle_plate = "X11YY22"
+        picking = form.record
+        self.assertEqual(picking.transport_driver_name, "Carlos Externo")
+        self.assertEqual(picking.transport_vehicle_plate, "X11YY22")
+        self.assertFalse(picking.transport_data_locked)
+
+    def test_fleet_source_with_vehicle_locks_data(self):
+        picking = self._create_picking(transport_vehicle_id=self.vehicle.id)
+        self.assertTrue(picking.transport_data_locked)
+
+    def test_removing_vehicle_and_trailer_unlocks_transport_data(self):
+        picking = self._create_picking(
+            transport_vehicle_id=self.vehicle.id,
+            transport_trailer_id=self.trailer.id,
+        )
+        self.assertTrue(picking.transport_data_locked)
+        picking.write({"transport_vehicle_id": False, "transport_trailer_id": False})
+        self.assertFalse(picking.transport_data_locked)
+
     def test_manual_source_leaves_fields_editable(self):
         self.company.transport_data_source = "manual"
         with Form(self.env["stock.picking"]) as form:

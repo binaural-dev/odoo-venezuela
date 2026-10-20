@@ -1,3 +1,5 @@
+from lxml import etree
+
 from odoo import Command
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
@@ -179,3 +181,26 @@ class TestTransportData(TransactionCase):
         )["5"]
         for value in (label, "04141234567", "Camión", "U-07"):
             self.assertIn(value, html)
+
+    def test_transport_data_not_locked_without_fleet(self):
+        # Sin l10n_ve_stock_account_fleet instalado, 'fleet' no es una
+        # fuente disponible: los datos de transporte nunca están bloqueados.
+        picking = self._create_guide()
+        self.assertFalse(picking.transport_data_locked)
+
+    def test_transport_settings_visible_without_tfhka_gate(self):
+        # La config de "Flota" vive en Inventario/Contabilidad, sin el
+        # invisible atado a TFHKA que antes la ocultaba.
+        info = self.env["res.config.settings"].get_view(view_type="form")
+        doc = etree.fromstring(info["arch"])
+        nodes = doc.xpath("//div[@id='l10n_ve_settings_transport_data']")
+        self.assertTrue(nodes)
+        self.assertNotIn("invisible", nodes[0].attrib)
+        self.assertTrue(nodes[0].xpath(".//field[@name='transport_data_required']"))
+
+    def test_transport_settings_field_is_persisted_on_company(self):
+        settings = self.env["res.config.settings"].create(
+            {"transport_data_required": True}
+        )
+        settings.execute()
+        self.assertTrue(self.company.transport_data_required)

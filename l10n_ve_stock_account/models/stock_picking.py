@@ -156,6 +156,11 @@ class StockPicking(models.Model):
     transport_vehicle_plate = fields.Char(string="Vehicle Plate", copy=False, tracking=True)
     transport_trailer_plate = fields.Char(string="Trailer Plate", copy=False, tracking=True)
     transport_data_source = fields.Selection(related="company_id.transport_data_source")
+    # Overridden by l10n_ve_stock_account_fleet: True cuando los datos de
+    # transporte provienen de un vehículo/batea de Flota ya elegido, para
+    # bloquear solo esas guías y no todas las que usan la fuente 'fleet'
+    # (p. ej. un transportista externo sin ficha en Flota).
+    transport_data_locked = fields.Boolean(compute="_compute_transport_data_locked")
 
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
@@ -1457,6 +1462,13 @@ class StockPicking(models.Model):
         return res
 
     # === TRANSPORT DATA ===#
+
+    @api.depends("transport_data_source")
+    def _compute_transport_data_locked(self):
+        # Sin l10n_ve_stock_account_fleet no hay fuente distinta de 'manual':
+        # los datos de transporte nunca están bloqueados.
+        for picking in self:
+            picking.transport_data_locked = False
 
     @api.model
     def _transport_normalize_vals(self, vals):
