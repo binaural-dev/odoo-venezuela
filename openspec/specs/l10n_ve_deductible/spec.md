@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Descuento global "deducible" (porcentaje o monto fijo) para facturas de proveedor y de cliente, con o sin impuestos. Se activa por compañía desde Ajustes (`res.company.use_deductible`, bloque "Deducibles") y la opción `deductible_scope` decide en qué documentos se ofrece: facturas de proveedor (`vendor`, por defecto), facturas de cliente (`customer`) o ambas (`both`).
+Descuento global "deducible" (porcentaje o monto fijo) para facturas de proveedor y de cliente, con o sin impuestos. Se activa por compañía desde Ajustes (`res.company.use_deductible`, bloque "Deducibles") y la opción `deductible_scope` decide en qué documentos se ofrece: facturas de proveedor (`vendor`), facturas de cliente (`customer`, por defecto) o ambas (`both`).
 
 Donde está habilitado, el documento muestra en la pestaña de líneas, justo debajo de "Términos y condiciones" (`narration`): el booleano `is_deductible`, el tipo (`global_deductible_type`: porcentaje o monto fijo), el valor (`global_deductible_percent` o `global_deductible_amount`) y, solo en modo porcentaje, un monto referencial (`global_deductible_reference_amount`). En modo monto fijo el importe que se resta a cada línea se guarda en `account.move.line.global_deductible_line_amount` (monetario, solo lectura, visible solo en ese modo); de él, o del porcentaje del documento en modo porcentaje, sale `account.move.line.global_deductible_discount_percent` (Float almacenado, sin redondeo a propósito).
 
