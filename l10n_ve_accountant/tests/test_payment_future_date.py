@@ -1,4 +1,5 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from odoo import Command, fields
 from odoo.exceptions import ValidationError
@@ -134,10 +135,39 @@ class TestPaymentFutureDate(TransactionCase):
         payment.action_post()
         self.assertNotEqual(payment.state, "draft")
 
+    def test_payment_dated_tomorrow_is_rejected_for_vendor_payment(self):
+        with self.assertRaisesRegex(ValidationError, "payment date .* cannot be later than today"):
+            self.env["account.payment"].create(self._payment_vals(
+                payment_type="outbound",
+                partner_type="supplier",
+                date=self.today + timedelta(days=1),
+            ))
+
+    def test_vendor_payment_dated_today_is_allowed(self):
+        payment = self.env["account.payment"].create(self._payment_vals(
+            payment_type="outbound", partner_type="supplier",
+        ))
+        self.assertEqual(payment.date, self.today)
+
     def test_payment_uses_the_user_timezone_not_utc(self):
-        """`today` is the date in the user's timezone (`context_today`)."""
-        payment = self.env["account.payment"].create(self._payment_vals(date=self.today))
-        self.assertEqual(payment.date, fields.Date.context_today(payment))
+        """A las 02:00 UTC del dia D+1 en Caracas (UTC-4) todavia son las
+        22:00 del dia D: la fecha de hoy es D, no D+1 (UTC)."""
+        utc_now = datetime(2026, 3, 11, 2, 0, 0)
+        caracas_today = fields.Date.to_date("2026-03-10")
+
+        class FrozenDatetime(datetime):
+            @classmethod
+            def now(cls, tz=None):
+                return utc_now
+
+        # `Date.context_today` llama a `datetime.now()` de su propio modulo
+        with patch("odoo.orm.fields_temporal.datetime", FrozenDatetime):
+            self.assertEqual(fields.Date.context_today(self.env["account.payment"]), caracas_today)
+            payment = self.env["account.payment"].create(self._payment_vals(date=caracas_today))
+            self.assertEqual(payment.date, caracas_today)
+            # el dia UTC ya es el 11, pero para el usuario sigue siendo el 10
+            with self.assertRaisesRegex(ValidationError, "payment date .* cannot be later than today"):
+                self.env["account.payment"].create(self._payment_vals(date=fields.Date.to_date("2026-03-11")))
 
     # --- register-payment wizard (account.payment.register) ---
 
@@ -157,4 +187,3 @@ class TestPaymentFutureDate(TransactionCase):
         wizard = self._register_wizard(invoice, payment_date=self.today)
         with self.assertRaisesRegex(ValidationError, "payment date .* cannot be later than today"):
             wizard.payment_date = self.today + timedelta(days=1)
-        self.assertFalse(invoice.payment_state == "paid")

@@ -7,7 +7,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 class AccountPaymentRegister(models.TransientModel):
-    _inherit = "account.payment.register"
+    _inherit = ["account.payment.register", "l10n_ve.payment.date.check.mixin"]
 
     def default_alternate_currency(self):
         """
@@ -114,18 +114,7 @@ class AccountPaymentRegister(models.TransientModel):
 
     @api.constrains("payment_date")
     def _check_payment_date_not_in_future(self):
-        """Same rule as `account.payment`: reject it in the wizard, before
-        any payment is created."""
-        today = fields.Date.context_today(self)
-        for wizard in self:
-            if wizard.payment_date and wizard.payment_date > today:
-                raise ValidationError(
-                    _(
-                        "The payment date (%(date)s) cannot be later than today (%(today)s).",
-                        date=format_date(self.env, wizard.payment_date),
-                        today=format_date(self.env, today),
-                    )
-                )
+        self._l10n_ve_check_payment_date_not_in_future("payment_date")
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):

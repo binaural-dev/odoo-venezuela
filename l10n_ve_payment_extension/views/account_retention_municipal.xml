@@ -5,10 +5,12 @@
             <field name="model">account.retention</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
-                <form string="Retention">
+                <form string="Retention" duplicate="false">
                     <header>
                         <button name="action_print_municipal_retention_xlsx" type="object"
                             string="Print municipal retention XLSX" />
+                        <button name="action_print_retention_voucher_pdf" type="object"
+                            string="Download voucher PDF" invisible="state != 'emitted'" />
                         <button name="action_draft" type="object"
                             string="Convert to draft" invisible="type != 'out_invoice' or state != 'cancel'"/>
                         <button name="action_post" type="object" invisible="state != 'draft'" string="Approve"
@@ -18,6 +20,7 @@
                         <field name="state" widget="statusbar" nolabel="1" />
                     </header>
 
+                    <sheet>
                     <field name="retention_resync_pending" invisible="1" />
                     <div class="alert alert-warning" role="alert"
                          invisible="not retention_resync_pending">
@@ -207,6 +210,8 @@
                             </field>
                         </page>
                     </notebook>
+                    </sheet>
+                    <chatter/>
                 </form>
             </field>
         </record>

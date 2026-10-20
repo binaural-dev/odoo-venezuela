@@ -16,6 +16,46 @@ msgstr ""
 "Plural-Forms: \n"
 
 #. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Download ISLR voucher"
+msgstr "Descargar comprobante de ISLR"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Download IVA voucher"
+msgstr "Descargar comprobante de IVA"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
+msgid "Download municipal voucher"
+msgstr "Descargar comprobante municipal"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension
+msgid "Download voucher PDF"
+msgstr "Descargar comprobante en PDF"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "Only emitted retention vouchers can be downloaded."
+msgstr "Solo se pueden descargar comprobantes de retención emitidos."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "There is no emitted retention voucher to download."
+msgstr "No hay ningún comprobante de retención emitido para descargar."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_move.py:0
+msgid "Unknown retention type."
+msgstr "Tipo de retención desconocido."
+
+#. module: l10n_ve_payment_extension
 #: model:ir.actions.report,print_report_name:l10n_ve_payment_extension.retention_voucher_action
 msgid "\"%s\" % (object.number)"
 msgstr ""

@@ -16,7 +16,11 @@ tasas desconocidas). Es la tercera validación de fechas junto a 15450 (document
 - `account.payment.register` (`wizard/account_payment_register.py`): constraint
   `_check_payment_date_not_in_future` sobre `payment_date`, para rechazarlo en el asistente antes de crear
   ningún pago.
-- Traducción `es_VE` del mensaje y bump `19.0.1.0.29` -> `19.0.1.0.30`.
+- Mixin abstracto `l10n_ve.payment.date.check.mixin` (`models/payment_date_check_mixin.py`) con la regla única,
+  compartida por ambas constraints; expone el hook `_l10n_ve_allows_future_payment_date()` para una futura excepción.
+- Traducción `es_VE` del mensaje y bump de versión de `l10n_ve_accountant` a `19.0.1.0.35`.
+- Test heredado de #1416 `test_exchange_difference_note_with_future_payment_date_is_posted` reescrito como
+  `test_payment_with_future_date_is_rejected_before_exchange_note` (`l10n_ve_exchange_difference`).
 
 ## Decisiones
 
@@ -28,8 +32,6 @@ tasas desconocidas). Es la tercera validación de fechas junto a 15450 (document
 ## Non-goals
 
 - No toca las reglas de 15450 ni de 15594 (facturas y notas).
-- Este change es independiente de la rama `maint-19.0-fix-ti-15450-block-future-dated-documents`. Si esa
-  rama se mergea, su test `test_exchange_difference_note_with_future_payment_date_is_posted`
-  (`l10n_ve_exchange_difference`), que crea un pago con fecha de mañana, ya no podrá crear el pago y debe
-  quitarse o adaptarse; la exención `l10n_ve_skip_future_date_check` de las notas de diferencial sigue
-  siendo válida como defensa.
+- Líneas de extracto bancario con fecha futura y conciliación manual: fuera de este ticket (pendiente de decisión).
+- Excepción para cheques posfechados / pagos programados: no implementada; el hook del mixin queda como punto de
+  extensión (pendiente de decisión del líder técnico).

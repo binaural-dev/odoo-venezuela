@@ -6,7 +6,7 @@ Desde la vista de pagos (`account.payment`) era posible confirmar un pago con im
 
 - `l10n_ve_accountant`: `account.payment.action_post()` lanza `UserError` si algún pago del conjunto tiene importe cero (comparado con la precisión de la moneda del pago, `currency_id.is_zero`). La validación corre antes de `super()`, así que el pago queda en borrador.
 - Traducción es_VE del mensaje.
-- Bump de manifest `l10n_ve_accountant` 19.0.1.0.30 → 19.0.1.0.31.
+- Bump de manifest `l10n_ve_accountant` 19.0.1.0.33 → 19.0.1.0.34.
 
 ## Impact
 
