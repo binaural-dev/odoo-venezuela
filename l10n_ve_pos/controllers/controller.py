@@ -71,9 +71,9 @@ class ValidateQtyProducts(http.Controller):
                             data.update(
                                 {
                                     "msg_error": _(
-                                        "The product's '%s' You do not have enough stock in the warehouse %s",
-                                        product_id.name,
-                                        warehouse_id_pos.name,
+                                        "The product's '%(product)s' You do not have enough stock in the warehouse %(warehouse)s",
+                                        product=product_id.name,
+                                        warehouse=warehouse_id_pos.name,
                                     ),
                                 }
                             )
@@ -87,9 +87,9 @@ class ValidateQtyProducts(http.Controller):
             data.update(
                 {
                     "msg_error": _(
-                        "The product's '%s' not available in stock warehouse %s",
-                        products_name,
-                        warehouse_id_pos.name,
+                        "The product's '%(products)s' not available in stock warehouse %(warehouse)s",
+                        products=products_name,
+                        warehouse=warehouse_id_pos.name,
                     ),
                 }
             )
