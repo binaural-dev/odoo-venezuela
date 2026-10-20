@@ -78,8 +78,14 @@ class ProductTemplate(models.Model):
         company = self.company_id or self.env.company
         if not company.physical_relocation_transfer:
             return False
-        removed_locations = self._origin.physical_locations_ids - self.physical_locations_ids
-        if not removed_locations:
+        # While editing, the m2m holds NewId wrappers of the real locations:
+        # compare their _origin, or nothing ever matches the persisted ones.
+        before = self._origin.physical_locations_ids
+        after = self.physical_locations_ids._origin
+        removed_locations = before - after
+        # Same substitution criterion as _pair_relocations: only adding or
+        # only removing locations never triggers a relocation transfer.
+        if not removed_locations or not after - before:
             return False
         quants = self.env["stock.quant"].sudo().search(
             [
