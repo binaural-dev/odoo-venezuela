@@ -15,7 +15,7 @@
                             <label for="use_deductible"/>
                             <div class="text-muted">
                                 Allows applying a global deductible (percentage or fixed
-                                amount) to documents with exempt taxes. While active on a
+                                amount) to documents. While active on a
                                 document, line discounts are disabled.
                             </div>
                         </div>
