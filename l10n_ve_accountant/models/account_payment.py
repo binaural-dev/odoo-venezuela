@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 
 
 class AccountPayment(models.Model):
-    _inherit = "account.payment"
+    _inherit = ["account.payment", "l10n_ve.payment.date.check.mixin"]
 
     destination_account_id = fields.Many2one(
         "account.account",
@@ -329,6 +329,10 @@ class AccountPayment(models.Model):
         if self.journal_id.type == 'bank' and not self.payment_method_line_id.payment_account_id:
             return self.env['account.account']
         return super()._get_outstanding_account(payment_type)
+
+    @api.constrains("date")
+    def _check_date_not_in_future(self):
+        self._l10n_ve_check_payment_date_not_in_future("date")
 
     def action_post(self):
         """Block confirming a bank payment that would end up with no

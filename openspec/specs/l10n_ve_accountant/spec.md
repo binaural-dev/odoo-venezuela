@@ -825,3 +825,24 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** el cierre de sesión POS crea el pago agrupado de un método de banco cuyo neto es 0 (contexto `from_pos`)
 - **THEN** la guarda no aplica y la sesión puede cerrarse
+### Requirement: Un pago no puede tener fecha futura
+
+La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
+(`account.payment.register.payment_date`) NO PUEDEN (MUST NOT) ser posteriores a `fields.Date.context_today` (zona
+horaria del usuario). La validación es una constraint de guardado, de modo que aplica al crear y al escribir desde el
+formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15682.
+
+#### Scenario: Pago con fecha de hoy o pasada
+
+- **WHEN** se crea un pago con fecha de hoy o anterior
+- **THEN** se crea con normalidad
+
+#### Scenario: Pago con fecha futura desde el formulario
+
+- **WHEN** se crea un pago con fecha posterior a hoy, o se cambia la fecha de un pago existente a una fecha posterior a hoy
+- **THEN** se lanza un error de validación y no se guarda
+
+#### Scenario: Asistente de registrar pago con fecha futura
+
+- **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
+- **THEN** se lanza un error de validación antes de crear ningún pago
