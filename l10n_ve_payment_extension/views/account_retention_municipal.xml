@@ -5,10 +5,12 @@
             <field name="model">account.retention</field>
             <field name="type">form</field>
             <field name="arch" type="xml">
-                <form string="Retention">
+                <form string="Retention" duplicate="false">
                     <header>
                         <button name="action_print_municipal_retention_xlsx" type="object"
                             string="Print municipal retention XLSX" />
+                        <button name="action_print_retention_voucher_pdf" type="object"
+                            string="Download voucher PDF" invisible="state != 'emitted'" />
                         <button name="action_draft" type="object"
                             string="Convert to draft" invisible="type != 'out_invoice' or state != 'cancel'"/>
                         <button name="action_post" type="object" invisible="state != 'draft'" string="Approve"
@@ -24,6 +26,7 @@
                         Warning: this retention's declared base/amount no longer match its invoice's current data. Recalculate it from the invoice (button "Recalculate Retentions") to bring it up to date.
                     </div>
 
+                    <sheet>
                     <group colspan="2">
                         <group >
                             <!-- Invisible fields -->
@@ -207,6 +210,8 @@
                             </field>
                         </page>
                     </notebook>
+                    </sheet>
+                    <chatter/>
                 </form>
             </field>
         </record>

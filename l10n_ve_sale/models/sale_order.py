@@ -269,12 +269,10 @@ class SaleOrder(models.Model):
         type = dict
             The view of the account move form with the foreign currency symbol added to the page title
         """
-        foreign_currency_symbol = ""
         foreign_currency_id = self.env.company.foreign_currency_id
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
-            foreign_currency_symbol = foreign_currency_id.symbol
             foreign_currency_name = foreign_currency_id.name
             company_currency_id = self.env.company.currency_id
             company_currency_symbol = company_currency_id.symbol or ""
@@ -289,11 +287,6 @@ class SaleOrder(models.Model):
                 foreign_subtotal_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_subtotal']")
                 if foreign_subtotal_order_line:
                     foreign_subtotal_order_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
-                page = doc.xpath("//page[@name='foreign_currency']")
-                if page:
-                    page[0].set(
-                        "string", _("Foreign Currency ") + foreign_currency_symbol
-                    )
                 res["arch"] = etree.tostring(doc, encoding="unicode")
             elif view_type == "list":
                 doc = etree.XML(res["arch"])

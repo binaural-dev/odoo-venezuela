@@ -182,6 +182,32 @@ class AccountMoveRetention(models.Model):
             rec.count_municipal_retention = len(muni)
             rec.has_emited_municipal_retention = any(r.state == 'emitted' for r in muni)
 
+    def action_download_retention_voucher(self):
+        """Download the PDF voucher of the emitted retentions of one type.
+
+        The type comes from the `retention_type` context key (iva, islr or
+        municipal). When the document has several emitted retentions of that
+        type, the PDF contains one voucher per retention.
+        """
+        self.ensure_one()
+        retention_type = self.env.context.get("retention_type")
+        if retention_type not in ("iva", "islr", "municipal"):
+            raise UserError(_("Unknown retention type."))
+        retentions = self.env["account.retention"].search([
+            ("retention_line_ids.move_id", "=", self.id),
+            ("type_retention", "=", retention_type),
+            ("state", "=", "emitted"),
+        ])
+        if not retentions:
+            raise UserError(_("There is no emitted retention voucher to download."))
+        if retention_type == "municipal":
+            pending = retentions.filtered(lambda r: not r.date_emision)
+            pending.write({"date_emision": fields.Date.today()})
+            pending.flush_recordset(["date_emision"])
+        return self.env.ref(
+            "l10n_ve_payment_extension.retention_voucher_action"
+        ).report_action(retentions, config=False)
+
     def action_view_retention(self):
         self.ensure_one()
         ret_type = self.env.context.get('retention_type')
