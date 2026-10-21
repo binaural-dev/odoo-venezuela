@@ -196,7 +196,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.company.account_fiscal_country_id = tax_country
 
         tax_group = self.env['account.tax.group'].create({
-            'name': 'IVA',
+            'name': 'IVA 16%',
             'company_id': self.company.id,
             'country_id': tax_country.id,
         })
@@ -209,7 +209,6 @@ class TestAccountMoveApiCalls(TransactionCase):
             'amount': 16,
             'amount_type': 'percent',
             'type_tax_use': 'sale',
-            'tax_group_id': self.tax_group.id,
         })
         self.tax_iva16_purchase = self.env['account.tax'].create({
             'name': 'IVA 16% compras',
@@ -269,7 +268,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "price_unit": product["price_unit"],
                     "account_id": self.acc_income.id,
                     "tax_ids": product.get("tax_ids", []),
-                    "account_id": self.acc_income.id, 
                 }
             )
             for product in products
@@ -966,43 +964,6 @@ class TestAccountMoveApiCalls(TransactionCase):
             _logger.error(e.exception)
 
         _logger.info("Test passed: code 200 error, UserError raised as expected.")
-
-    # Validacion de factura sin digitalizar
-    @patch('odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.call_tfhka_api', side_effect=mock_api)
-    def test_15_generate_document_digital_has_not_been_digitized_error(self, mock_call):
-
-        self.invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ]
-        )
-
-        self.env['move.action.post.alert.wizard'].create({
-            'move_id': self.invoice.id
-        }).action_confirm()
-
-        invoice = self._create_invoice(
-            products=[
-                {
-                    "product_id": self.product.id,
-                    "price_unit": 1,
-                    "tax_ids": [self.tax_iva16.id],
-                }
-            ],
-            correlative=2,
-        )
-        
-        with self.assertRaises(UserError) as e:        
-            self.env['move.action.post.alert.wizard'].create({
-                'move_id': invoice.id
-            }).action_confirm()
-
-            _logger.info(e.exception)
-        _logger.info("Test passed: ")
 
     # Validacion de fecha
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)

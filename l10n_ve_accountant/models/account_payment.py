@@ -7,7 +7,7 @@ _logger = logging.getLogger(__name__)
 
 
 class AccountPayment(models.Model):
-    _inherit = "account.payment"
+    _inherit = ["account.payment", "l10n_ve.payment.date.check.mixin"]
 
     destination_account_id = fields.Many2one(
         "account.account",
@@ -330,6 +330,10 @@ class AccountPayment(models.Model):
             return self.env['account.account']
         return super()._get_outstanding_account(payment_type)
 
+    @api.constrains("date")
+    def _check_date_not_in_future(self):
+        self._l10n_ve_check_payment_date_not_in_future("date")
+
     def action_post(self):
         """Block confirming a bank payment that would end up with no
         outstanding account and therefore no journal entry -- core silently
@@ -350,6 +354,21 @@ class AccountPayment(models.Model):
                     method=payment.payment_method_line_id.name,
                     journal=payment.journal_id.display_name,
                 ))
+        # El POS agrupa pagos de banco por neto (venta y devolución pueden netear 0)
+        # y debe poder cerrar la sesión: se exime con el contexto from_pos.
+        if not self.env.context.get("from_pos"):
+            for payment in self:
+                if payment.currency_id.is_zero(payment.amount):
+                    raise UserError(
+                        _(
+                            "You cannot confirm a payment with an amount of 0.0. "
+                            "If the payment was converted to %(currency)s, the converted "
+                            "amount is lower than the minimum unit of the currency "
+                            "(%(rounding)s) and was rounded to zero.",
+                            currency=payment.currency_id.name,
+                            rounding=payment.currency_id.rounding,
+                        )
+                    )
         res = super().action_post()
         # Establecer el booleano en todos los pagos en una sola escritura para mayor eficiencia
         self.write({"block_change_partner_after_post": True})

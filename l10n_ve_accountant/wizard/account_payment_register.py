@@ -7,7 +7,7 @@ import logging
 _logger = logging.getLogger(__name__)
 
 class AccountPaymentRegister(models.TransientModel):
-    _inherit = "account.payment.register"
+    _inherit = ["account.payment.register", "l10n_ve.payment.date.check.mixin"]
 
     def default_alternate_currency(self):
         """
@@ -111,6 +111,10 @@ class AccountPaymentRegister(models.TransientModel):
             payment.foreign_inverse_rate = Rate.compute_inverse_rate(
                 payment.foreign_rate
             )
+
+    @api.constrains("payment_date")
+    def _check_payment_date_not_in_future(self):
+        self._l10n_ve_check_payment_date_not_in_future("payment_date")
 
     @api.onchange("payment_date")
     def _onchange_invoice_date(self):
