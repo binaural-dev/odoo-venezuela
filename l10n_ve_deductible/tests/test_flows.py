@@ -1,4 +1,4 @@
-from odoo import fields
+from odoo import Command, fields
 from odoo.tests import Form
 
 from .common import DeductibleCase, set_usd_rate
@@ -39,6 +39,21 @@ class TestDeductibleFlows(DeductibleCase):
             self.assertEqual(replacement.state, "draft")
             self.assertEqual(replacement.global_deductible_type, doc.global_deductible_type)
             self.assertEqual(replacement.amount_untaxed, doc.amount_untaxed)
+
+    def test_credit_and_debit_notes_keep_the_amounts_typed_in_the_lines(self):
+        doc = self._doc([(100.0, 1), (200.0, 1), (300.0, 1)], **self.AMOUNT | {"global_deductible_amount": 60.0})
+        first = doc.invoice_line_ids.sorted("id")[0]
+        doc.invoice_line_ids = [
+            Command.update(first.id, {"global_deductible_line_amount": 30.0, "global_deductible_manual": True}),
+        ]
+        expected = doc.invoice_line_ids.sorted("id").mapped("global_deductible_line_amount")
+        self.assertEqual(expected, [30.0, 12.0, 18.0])
+        self._post(doc)
+        credit, _replacement = self._reverse(doc)
+        self.assertEqual(credit.invoice_line_ids.sorted("id").mapped("global_deductible_line_amount"), expected)
+        self.assertEqual(credit.amount_total, doc.amount_total)
+        note = self._debit(doc, copy_lines=True)
+        self.assertEqual(note.invoice_line_ids.sorted("id").mapped("global_deductible_line_amount"), expected)
 
     def test_draft_credit_note_is_editable_and_a_plain_one_is_not_deductible(self):
         doc = self._post(self._doc(**self.PERCENT))
@@ -140,6 +155,41 @@ class TestDeductibleFlows(DeductibleCase):
                 self.assertEqual(round(sum(doc.invoice_line_ids.mapped("global_deductible_line_amount")), 2), 41.41)
                 lines = [(line.price_unit, line.quantity) for line in doc.invoice_line_ids]
                 self._assert_same(doc, self._doc(lines, **self.AMOUNT | {"global_deductible_amount": 41.41}))
+
+    def test_line_amount_typed_in_the_form(self):
+        """The amount of each line is editable in the form (fixed amount) and
+        the percent column follows what was typed."""
+        for method, currency in self._combos():
+            with self.subTest(method=method, currency=currency.name):
+                doc = self._doc([(100.0, 1), (200.0, 1), (300.0, 1)], currency, **self.AMOUNT | {"global_deductible_amount": 60.0})
+                with Form(doc) as form:
+                    for index, amount in enumerate((30.0, 20.0, 10.0)):
+                        with form.invoice_line_ids.edit(index) as line:
+                            line.global_deductible_line_amount = amount
+                lines = doc.invoice_line_ids.sorted("id")
+                self.assertEqual(lines.mapped("global_deductible_line_amount"), [30.0, 20.0, 10.0])
+                self.assertEqual(
+                    [round(percent, 6) for percent in lines.mapped("global_deductible_discount_percent")],
+                    [30.0, 10.0, round(10.0 / 3, 6)],
+                )
+                self.assertEqual(doc.amount_untaxed, 540.0)
+
+    def test_typing_one_line_spreads_the_rest_in_the_form(self):
+        doc = self._doc([(100.0, 1), (200.0, 1), (300.0, 1)], **self.AMOUNT | {"global_deductible_amount": 60.0})
+        with Form(doc) as form:
+            with form.invoice_line_ids.edit(0) as line:
+                line.global_deductible_line_amount = 30.0
+        lines = doc.invoice_line_ids.sorted("id")
+        self.assertEqual(lines.mapped("global_deductible_line_amount"), [30.0, 12.0, 18.0])
+        self.assertEqual(lines.mapped("global_deductible_manual"), [True, False, False])
+
+    def test_line_amounts_that_do_not_add_up_are_rejected_in_the_form(self):
+        doc = self._doc([(100.0, 1), (200.0, 1)], **self.AMOUNT | {"global_deductible_amount": 60.0})
+        with self.assertRaisesMsg(Exception, "must add up to the deductible amount"):
+            with Form(doc) as form:
+                for index, amount in enumerate((50.0, 50.0)):
+                    with form.invoice_line_ids.edit(index) as line:
+                        line.global_deductible_line_amount = amount
 
     def test_free_form_report_shows_the_deductible(self):
         report = "l10n_ve_invoice.template_invoice_free_form_l10n_ve_invoice"

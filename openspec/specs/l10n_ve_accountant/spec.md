@@ -801,6 +801,24 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 ### Requirement: Un pago no puede tener fecha futura
 
 
+### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
+
+`account.move.line._get_effective_discount_percent()` DEBE (MUST) devolver el porcentaje de descuento que realmente se aplica a la línea (por defecto `discount or 0.0`) y ser la única fuente que lean el cálculo de impuestos de la línea (override de `account.tax._prepare_base_line_for_taxes_computation`, que asigna `discount` solo cuando el registro es un `account.move.line`), `_compute_foreign_subtotal`, `company_currency_line_totals`, `detailed_amounts` y la reconstrucción del apunte de las líneas con impuesto de precio incluido (`_price_included_split`). Un módulo que descuenta a través de un campo propio DEBE (MUST) extender solo este método. Sin ninguna extensión el comportamiento es idéntico al de leer `discount`. `l10n_ve_deductible` lo extiende; `discount_fixed` de `l10n_ve_invoice` mantiene su propio override.
+
+#### Scenario: Módulo con descuento propio
+
+- **WHEN** un módulo extiende `_get_effective_discount_percent()` para devolver su porcentaje en una línea con `discount = 0`
+- **THEN** el subtotal, el total, el apunte, el subtotal en moneda alterna, el desglose en moneda de la compañía y el detalle de importes de esa línea usan ese porcentaje
+
+### Requirement: `_sync_tax_lines` resincroniza los apuntes cuando cambian los campos de `_get_base_line_sync_extra_fields()`
+
+`account.move._get_base_line_sync_extra_fields()` DEBE (MUST) devolver los campos de línea de factura, además de los de agrupación, cuyo cambio obliga a `_sync_tax_lines` a resincronizar los apuntes (por defecto `price_unit`, `quantity` y `discount`). Un módulo que altera los importes de la línea con un campo propio DEBE (MUST) añadirlo extendiendo este método; de lo contrario, cambiar solo ese campo en una factura guardada no actualizaría los apuntes.
+
+#### Scenario: Cambia solo el campo propio de un módulo
+
+- **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
+- **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
+
 ### Requirement: No se puede confirmar un pago con importe cero
 
 `account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.

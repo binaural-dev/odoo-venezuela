@@ -63,6 +63,9 @@ class DeductibleCase(AssertMixin, TransactionCase):
         ensure_ve_base(cls.env)
         cls.env.ref("product.decimal_price").digits = 4
         cls.vef, cls.usd = cls.env.ref("base.VEF"), cls.env.ref("base.USD")
+        # documents are dated with the server date: the date of the notes (user
+        # timezone) must be the same one, whatever the hour the tests run at
+        cls.env.user.tz = "UTC"
         cls.company = cls.env.company
         cls.company.write({"use_deductible": True, "deductible_scope": "both", "discount_type": "percent"})
         set_usd_rate(cls.env, cls.RATES[0])

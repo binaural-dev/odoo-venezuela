@@ -90,6 +90,11 @@ msgid "Deducted"
 msgstr "Deducido"
 
 #. module: l10n_ve_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.view_move_form_l10n_ve_deductible
+msgid "Deducted (%)"
+msgstr "Deducido (%)"
+
+#. module: l10n_ve_deductible
 #: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_bank_statement_line__global_deductible_reference_amount
 #: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__global_deductible_reference_amount
 msgid "Deducted Amount"
@@ -131,6 +136,11 @@ msgstr "Monto deducible (línea)"
 #: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_config_settings__deductible_scope
 msgid "Deductible Applies To"
 msgstr "El deducible aplica a"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_line__global_deductible_manual
+msgid "Deductible Typed by Hand"
+msgstr "Deducible escrito a mano"
 
 #. module: l10n_ve_deductible
 #: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_line__global_deductible_discount_percent

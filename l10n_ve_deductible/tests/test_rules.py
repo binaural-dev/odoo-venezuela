@@ -149,6 +149,81 @@ class TestDeductibleRules(DeductibleCase):
                 self.assertEqual(with_text.amount_untaxed, self._doc(currency=currency, **self.AMOUNT).amount_untaxed)
 
 
+    def test_line_amounts_can_be_adjusted_by_hand(self):
+        """The share of each line can be typed, as long as the lines add up
+        to the amount of the document: the percent follows and the figures
+        are those of a native fixed discount with the same amounts."""
+        for method, currency in self._combos():
+            with self.subTest(method=method, currency=currency.name):
+                doc = self._doc(
+                    [(100.0, 1), (200.0, 1), (300.0, 1)], currency,
+                    **self.AMOUNT | {"global_deductible_amount": 60.0},
+                )
+                first, second, third = doc.invoice_line_ids.sorted("id")
+                doc.invoice_line_ids = [
+                    Command.update(first.id, {"global_deductible_line_amount": 30.0, "global_deductible_manual": True}),
+                    Command.update(second.id, {"global_deductible_line_amount": 20.0, "global_deductible_manual": True}),
+                    Command.update(third.id, {"global_deductible_line_amount": 10.0, "global_deductible_manual": True}),
+                ]
+                self.assertEqual(
+                    doc.invoice_line_ids.sorted("id").mapped("global_deductible_line_amount"), [30.0, 20.0, 10.0]
+                )
+                self.assertEqual(
+                    [round(p, 6) for p in doc.invoice_line_ids.sorted("id").mapped("global_deductible_discount_percent")],
+                    [30.0, 10.0, round(10.0 / 3, 6)],
+                )
+                self.assertEqual(doc.amount_untaxed, 540.0)
+
+    def test_the_rest_is_spread_over_the_lines_not_typed(self):
+        """Typing one line keeps it and spreads what is left over the others,
+        so the lines still add up to the amount of the document."""
+        doc = self._doc([(100.0, 1), (200.0, 1), (300.0, 1)], **self.AMOUNT | {"global_deductible_amount": 60.0})
+        first = doc.invoice_line_ids.sorted("id")[0]
+        doc.invoice_line_ids = [
+            Command.update(first.id, {"global_deductible_line_amount": 30.0, "global_deductible_manual": True}),
+        ]
+        amounts = doc.invoice_line_ids.sorted("id").mapped("global_deductible_line_amount")
+        self.assertEqual(amounts, [30.0, 12.0, 18.0])
+
+    def test_line_amounts_must_add_up_to_the_deductible_amount(self):
+        doc = self._doc([(100.0, 1), (200.0, 1)], **self.AMOUNT | {"global_deductible_amount": 60.0})
+        first, second = doc.invoice_line_ids.sorted("id")
+        with self.assertRaisesMsg(ValidationError, "must add up to the deductible amount"):
+            doc.invoice_line_ids = [
+                Command.update(first.id, {"global_deductible_line_amount": 25.0, "global_deductible_manual": True}),
+                Command.update(second.id, {"global_deductible_line_amount": 40.0, "global_deductible_manual": True}),
+            ]
+        # lines written one by one: the sum is checked on the document when it is posted
+        first.write({"global_deductible_line_amount": 25.0, "global_deductible_manual": True})
+        second.write({"global_deductible_line_amount": 40.0, "global_deductible_manual": True})
+        with self.assertRaisesMsg(ValidationError, "must add up to the deductible amount"):
+            self._post(doc)
+
+    def test_line_amount_cannot_reach_its_subtotal(self):
+        doc = self._doc([(100.0, 1), (200.0, 1)], **self.AMOUNT | {"global_deductible_amount": 60.0})
+        first, second = doc.invoice_line_ids.sorted("id")
+        with self.assertRaisesMsg(ValidationError, "must be less than its subtotal"):
+            doc.invoice_line_ids = [
+                Command.update(first.id, {"global_deductible_line_amount": 100.0, "global_deductible_manual": True}),
+                Command.update(second.id, {"global_deductible_line_amount": -40.0, "global_deductible_manual": True}),
+            ]
+
+    def test_line_amount_is_not_editable_on_posted_documents(self):
+        doc = self._post(self._doc(**self.AMOUNT))
+        with self.assertRaisesMsg(UserError, "draft documents"):
+            doc.invoice_line_ids[0].global_deductible_line_amount = 1.0
+
+    def test_line_amounts_are_proposed_again_when_the_document_changes(self):
+        doc = self._doc([(100.0, 1), (200.0, 1)], **self.AMOUNT | {"global_deductible_amount": 60.0})
+        first, second = doc.invoice_line_ids.sorted("id")
+        doc.invoice_line_ids = [
+            Command.update(first.id, {"global_deductible_line_amount": 40.0, "global_deductible_manual": True}),
+            Command.update(second.id, {"global_deductible_line_amount": 20.0, "global_deductible_manual": True}),
+        ]
+        doc.global_deductible_amount = 30.0
+        self.assertEqual(doc.invoice_line_ids.sorted("id").mapped("global_deductible_line_amount"), [10.0, 20.0])
+
+
 class TestDeductibleRulesCustomer(TestDeductibleRules):
     MOVE_TYPE = "out_invoice"
 
@@ -197,13 +272,21 @@ class TestDeductibleViewsAndTranslation(DeductibleCase):
         reference = arch[arch.index('name="global_deductible_reference_amount"'):]
         self.assertIn("global_deductible_type != &#39;percent&#39;", reference[: reference.index("/>")].replace("'", "&#39;"))
 
-    def test_line_amount_column_is_read_only_and_only_for_fixed_amount(self):
+    def test_line_amount_column_is_editable_only_in_draft_and_only_for_fixed_amount(self):
         arch = self._arch()
-        self.assertRegex(
-            arch,
-            r'name="global_deductible_line_amount"[^>]*readonly="1"|readonly="1"[^>]*name="global_deductible_line_amount"',
-        )
-        self.assertIn("parent.global_deductible_type != 'amount'", arch)
+        amount = arch[arch.index('name="global_deductible_line_amount"'):]
+        amount = amount[: amount.index("/>")]
+        self.assertNotIn('readonly="1"', amount)
+        self.assertIn("parent.state != 'draft'", amount)
+        self.assertIn("parent.global_deductible_type != 'amount'", amount)
+
+    def test_line_percent_column_is_read_only_and_shown_in_both_modes(self):
+        arch = self._arch()
+        percent = arch[arch.index('name="global_deductible_discount_percent"'):]
+        percent = percent[: percent.index("/>")]
+        self.assertIn('readonly="1"', percent)
+        self.assertIn("not parent.is_deductible", percent)
+        self.assertNotIn("global_deductible_type", percent)
 
     def test_spanish_translation_file_is_valid(self):
         with file_open("l10n_ve_deductible/i18n/es_VE.po", "rb") as po:
