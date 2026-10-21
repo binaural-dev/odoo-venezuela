@@ -103,6 +103,38 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty and not is_official_discount and not is_reward:
                     raise ValidationError(_("An invoice cannot have a line with a negative price unless it is a registered discount or reward"))
 
+    @api.depends("invoice_date", "company_id")
+    def _compute_date(self):
+        """Use today as accounting date for back-dated vendor documents.
+
+        Odoo's native compute moves the accounting date of purchase documents
+        dated before today to the last day of the period (month end / 31-12).
+        We do not override ``_get_accounting_date`` because it is shared with
+        reconciliation, exchange differences, etc. Instead, the native compute
+        runs first (so everything else keeps its behavior) and then the date is
+        readjusted to today. Being a compute override, it covers both the form
+        / virtual record (``new()``) path and ``create()`` without ``date``.
+        If today violates a lock date, the native result is kept.
+        """
+        res = super()._compute_date()
+        today = fields.Date.context_today(self)
+        for move in self:
+            if (
+                move.move_type not in ("in_invoice", "in_refund", "in_receipt")
+                or move.state != "draft"
+                or not move.invoice_date
+                or move.invoice_date >= today
+                or move.company_id.skip_vendor_bill_today_accounting_date
+                or move._get_violated_lock_dates(today, move._affect_tax_report())
+            ):
+                continue
+            if move.date != today:
+                move.date = today
+                # Same follow-up as the native compute
+                self.env.add_to_compute(move.line_ids._fields["date"], move.line_ids)
+                self.env.add_to_compute(self._fields["name"], move)
+        return res
+
     def action_post(self):
         for record in self:
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)], limit=1)
