@@ -3665,3 +3665,41 @@ msgstr ""
 "\n"
 "Anule el comprobante '%(other_ret)s' o quite la factura de uno de los dos "
 "comprobantes."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__use_parent_retention_sequence
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__use_parent_retention_sequence
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Use the parent company retention sequence"
+msgstr "Usar el correlativo de retenciones de la empresa matriz"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_company__use_parent_retention_sequence
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_config_settings__use_parent_retention_sequence
+msgid ""
+"Only for branches (companies with a parent company). When enabled, the IVA, "
+"ISLR and municipal retention voucher numbers of this branch are taken from "
+"the parent company sequences instead of creating independent ones, so every "
+"branch sharing the same tax ID uses a single correlative. Ignored if the tax "
+"ID (VAT) differs from the parent company's. Disabled by default: each branch "
+"keeps its own sequence."
+msgstr ""
+"Solo para sucursales (empresas con empresa matriz). Al activarla, los "
+"números de comprobante de retención de IVA, ISLR y municipal de esta "
+"sucursal se toman de las secuencias de la empresa matriz en lugar de crear "
+"secuencias independientes, de modo que todas las sucursales con el mismo RIF "
+"usen un único correlativo. Se ignora si el RIF (VAT) es distinto al de la "
+"empresa matriz. Desactivada por defecto: cada sucursal conserva su propia "
+"secuencia."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid ""
+"When enabled, the IVA, ISLR and municipal retention voucher numbers of this "
+"branch use the parent company correlative instead of an independent "
+"sequence. Only applies if the branch shares the parent company's tax ID."
+msgstr ""
+"Al activarla, los números de comprobante de retención de IVA, ISLR y "
+"municipal de esta sucursal usan el correlativo de la empresa matriz en lugar "
+"de una secuencia independiente. Solo aplica si la sucursal comparte el RIF "
+"de la empresa matriz."

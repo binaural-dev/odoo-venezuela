@@ -22,7 +22,7 @@ El comprobante `account.retention` DEBE (MUST) tener un tipo de retención (`typ
 
 ### Requirement: Numeración automática de comprobantes
 
-En `create` el sistema DEBE (MUST) ejecutar `_set_sequence` sobre todo comprobante sin `number` —sin distinguir tipo ni flujo, por lo que también numera los comprobantes de cliente— asignando un correlativo con formato `AAAAMM` (año y mes de `date_accounting`) seguido del siguiente valor de la secuencia de la compañía activa: `retention.iva.control.number` con padding 8 para IVA (resultando 14 dígitos) y `retention.islr.control.number` con padding 5 para ISLR; el correlativo se guarda en `number` y `name`. Además, `action_post` vuelve a invocar `_set_sequence` solo para los comprobantes de proveedor (`in_invoice`, `in_refund`, `in_debit`). La secuencia se crea automáticamente si no existe, pero para municipal la búsqueda usa el código `retention.municipal.control.number` mientras la creación registra la secuencia con el código `retention.iva.control.number` y padding 5, por lo que la búsqueda nunca la reencuentra y cada numeración municipal crea una secuencia nueva que arranca de su primer valor.
+En `create` el sistema DEBE (MUST) ejecutar `_set_sequence` sobre todo comprobante sin `number` —sin distinguir tipo ni flujo, por lo que también numera los comprobantes de cliente— asignando un correlativo con formato `AAAAMM` (año y mes de `date_accounting`) seguido del siguiente valor de la secuencia de la compañía activa (o de su empresa matriz, según el requisito «Correlativo de retenciones compartido con la empresa matriz»): `retention.iva.control.number` con padding 8 para IVA (resultando 14 dígitos) y `retention.islr.control.number` con padding 5 para ISLR; el correlativo se guarda en `number` y `name`. Además, `action_post` vuelve a invocar `_set_sequence` solo para los comprobantes de proveedor (`in_invoice`, `in_refund`, `in_debit`). La secuencia se crea automáticamente si no existe, pero para municipal la búsqueda usa el código `retention.municipal.control.number` mientras la creación registra la secuencia con el código `retention.iva.control.number` y padding 5, por lo que la búsqueda nunca la reencuentra y cada numeración municipal crea una secuencia nueva que arranca de su primer valor.
 
 #### Scenario: Comprobante IVA de proveedor sin número
 
@@ -38,6 +38,30 @@ En `create` el sistema DEBE (MUST) ejecutar `_set_sequence` sobre todo comproban
 
 - **WHEN** se numeran dos comprobantes municipales en una compañía sin secuencia municipal previa
 - **THEN** cada uno crea una secuencia nueva registrada con el código de IVA y ambos reciben el mismo valor inicial de secuencia
+
+### Requirement: Correlativo de retenciones compartido con la empresa matriz
+
+`res.company` DEBE (MUST) exponer el booleano `use_parent_retention_sequence` (por defecto `False`), editable desde Ajustes > Localización Venezuela > «Payment Extension Settings» > «General Configuration» y visible solo cuando la compañía activa tiene `parent_id` (sucursal nativa de Odoo). `get_sequence_retention` DEBE (MUST) resolver la compañía dueña de la secuencia con `_get_retention_sequence_company`: devuelve la empresa matriz (`root_id`) únicamente si la compañía activa tiene `parent_id`, el booleano está activo y su RIF (`vat`) es no vacío e igual al de la matriz; en cualquier otro caso devuelve la compañía activa (comportamiento nativo: una secuencia propia por compañía). La búsqueda y la eventual creación de `retention.<tipo>.control.number` usan esa compañía, por lo que aplica por igual a IVA, ISLR y municipal; cuando la dueña es la matriz la secuencia se lee con `sudo()` para no depender de las compañías permitidas del usuario. La secuencia municipal por subsidiaria analítica de `binaural_subsidiary_payment_extension` conserva su prioridad y no se modifica.
+
+#### Scenario: Valor por defecto conserva la numeración propia
+
+- **WHEN** una sucursal con `use_parent_retention_sequence` en `False` emite un comprobante de retención
+- **THEN** el número sale de la secuencia de la propia sucursal, como antes del cambio
+
+#### Scenario: Sucursal que comparte el correlativo de la matriz
+
+- **WHEN** una sucursal con el booleano activo y el mismo RIF que la matriz emite comprobantes y la secuencia de la matriz va en 8786
+- **THEN** los comprobantes reciben 8786 y 8787 de la secuencia de la matriz y no se crea ninguna secuencia para la sucursal
+
+#### Scenario: RIF distinto al de la matriz
+
+- **WHEN** la sucursal tiene el booleano activo pero un RIF distinto al de la matriz
+- **THEN** usa su propia secuencia
+
+#### Scenario: Compañía sin empresa matriz
+
+- **WHEN** una compañía sin `parent_id` tiene el booleano activo
+- **THEN** el valor se ignora y usa su propia secuencia
 
 ### Requirement: Formato de 14 dígitos del número de comprobante IVA
 

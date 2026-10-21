@@ -942,6 +942,27 @@ class AccountRetention(models.Model):
         )
 
     @api.model
+    def _get_retention_sequence_company(self):
+        """Company whose retention sequences must be used.
+
+        A branch (company with a parent) flagged with
+        `use_parent_retention_sequence` shares the correlative of its
+        parent company, as long as both share the same tax ID. Otherwise
+        the current company keeps its own sequences (native behavior).
+        """
+        company = self.env.company
+        root = company.root_id
+        if (
+            company.parent_id
+            and company.use_parent_retention_sequence
+            and root != company
+            and company.vat
+            and company.vat == root.vat
+        ):
+            return root
+        return company
+
+    @api.model
     def get_sequence_retention(self, type_retention):
         """Get (or create) the ir.sequence for a given retention type.
 
@@ -950,23 +971,30 @@ class AccountRetention(models.Model):
         entry in that selection to get its own sequence automatically.
         """
         code = f"retention.{type_retention}.control.number"
-        sequence = self.env["ir.sequence"].with_context(active_test=False).search(
+        company = self._get_retention_sequence_company()
+        IrSequence = self.env["ir.sequence"]
+        if company != self.env.company:
+            # The parent company is not necessarily in the user's allowed
+            # companies, and the ir.sequence multi-company rule would hide
+            # its sequence.
+            IrSequence = IrSequence.sudo()
+        sequence = IrSequence.with_context(active_test=False).search(
             [
                 ("code", "=", code),
-                ("company_id", "=", self.env.company.id),
+                ("company_id", "=", company.id),
             ],
             order="id asc",
             limit=1,
         )
         if not sequence:
             padding_by_type = {"iva": 8, "islr": 5, "municipal": 5}
-            sequence = self.env["ir.sequence"].create(
+            sequence = IrSequence.create(
                 {
                     "name": _("Numero de control retenciones %s")
                     % type_retention.upper(),
                     "code": code,
                     "padding": padding_by_type.get(type_retention, 5),
-                    "company_id": self.env.company.id,
+                    "company_id": company.id,
                     "implementation": "no_gap",
                 }
             )
