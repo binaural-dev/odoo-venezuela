@@ -41,7 +41,7 @@
                     column_invisible="not parent.is_deductible or parent.global_deductible_type != 'amount'"/>
                 <field name="global_deductible_manual" column_invisible="True"/>
                 <field name="global_deductible_discount_percent" string="Deducted (%)" readonly="1"
-                    column_invisible="not parent.is_deductible"/>
+                    column_invisible="not parent.is_deductible or parent.global_deductible_type != 'percent'"/>
             </xpath>
             <xpath expr="//field[@name='invoice_line_ids']//list//field[@name='discount_fixed']" position="attributes">
                 <attribute name="column_invisible" add="parent.is_deductible" separator=" or "/>
