@@ -84,8 +84,13 @@ El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un 
 
 #### Scenario: Dirección de entrega
 
-- **WHEN** se crea un registro con `type` distinto de `contact` (por ejemplo una dirección de entrega) con un email repetido
+- **WHEN** se escribe un registro con `type` distinto de `contact` (por ejemplo una dirección de entrega) cambiando el email a uno repetido
 - **THEN** la validación de email no se aplica a ese registro
+
+#### Known Limit: cambio de type a contact sin cambiar email
+
+- **WHEN** un `write` cambia el `type` de un registro a `contact` dejando un `email` igual al de otro partner (el `email` no viene en `vals` o viene igual)
+- **THEN** no se valida la duplicidad (`email_changed` queda vacío); comportamiento idéntico al upstream 19.0, documentado sin cambio de lógica
 
 ### Requirement: Los controles de create se omiten si falla la consulta al CNE
 
@@ -109,6 +114,11 @@ Cuando la **compañía activa del usuario** tiene `validate_partner_name_immutab
 
 - **WHEN** la compañía activa del usuario tiene `validate_partner_name_immutable` en `False`
 - **THEN** el nombre puede modificarse aunque existan transacciones, incluso si la compañía dueña del contacto sí tiene el control activo
+
+#### Scenario: Usuario con el grupo de edición
+
+- **WHEN** el usuario que guarda pertenece al grupo `l10n_ve_contact.group_edit_partner_name_immutable` (asignado por defecto a `base.user_root` y `base.user_admin`) y renombra un contacto con transacciones
+- **THEN** el nombre se guarda sin lanzar `ValidationError`; los usuarios sin el grupo siguen bloqueados
 
 ### Requirement: País por defecto Venezuela
 
