@@ -330,14 +330,34 @@ class AccountMove(models.Model):
         this request. In "digitalization with payment" mode this button is
         the ONLY entry point to the queue (see
         _tfhka_is_eligible_for_digitalization, always False in that mode),
-        so it's the only place that can stop an unpaid or out-of-order
-        invoice before it reaches 'queued'. Both validated BEFORE
-        enqueueing so a failure here never touches
+        so it's the only place that can stop an unpaid, out-of-order, or
+        undeterminable-type invoice before it reaches 'queued'. All
+        validated BEFORE enqueueing so a failure here never touches
         tfhka_digitalization_state."""
         for move in self:
             move._tfhka_validate_previous_document_queued()
+            move._tfhka_validate_document_type_determinable()
         self._check_tfhka_payment_required()
         self._tfhka_enqueue_digitalization()
+
+    def _tfhka_validate_document_type_determinable(self):
+        """Hard block: raises before this document reaches the queue if no
+        TFHKA document type can be determined for it (e.g. a credit note
+        without reversed_entry_id). Letting it through would fail once
+        picked up by the cron with no path back to a resolved state --
+        _tfhka_cron_process_queue's per-company error lock never clears on
+        its own, so this must never be allowed to reach 'queued'."""
+        self.ensure_one()
+        if not self._tfhka_get_document_type_and_series()[0]:
+            raise ValidationError(
+                _(
+                    "Cannot queue %(name)s for digitalization: no TFHKA "
+                    "document type could be determined for this document "
+                    "(e.g. a credit note without a reversal link). Check "
+                    "its configuration before retrying.",
+                    name=self.name,
+                )
+            )
 
     def _tfhka_validate_previous_document_queued(self):
         """Hard block: the previous posted document in this journal's own
@@ -418,14 +438,18 @@ class AccountMove(models.Model):
 
     def _tfhka_is_eligible_for_digitalization(self):
         """True when this move should be queued for normal digitalization:
-        digital journal, not already digitalized, and not in "digitalization
+        digital journal, not already digitalized, not in "digitalization
         with payment" mode (driven by the manual button instead -- see
-        ``action_tfhka_generate_digital``)."""
+        ``action_tfhka_generate_digital``), and a TFHKA document type can
+        actually be determined for it -- otherwise it would reach 'queued'
+        only to fail and wedge the company's queue (see
+        _tfhka_cron_process_queue)."""
         self.ensure_one()
         return (
             not self.is_digitalized
             and self.journal_id.digital_invoice
             and not self.company_id.digitalization_with_payment_tfhka
+            and bool(self._tfhka_get_document_type_and_series()[0])
         )
 
     def _tfhka_enqueue_eligible_for_digitalization(self):
@@ -684,6 +708,7 @@ class AccountMove(models.Model):
         if self.search_count([
             ("tfhka_digitalization_state", "=", "error"),
             ("company_id", "=", company.id),
+            ("state", "!=", "cancel"),
         ]):
             return 0
         queued = self.search(

@@ -166,6 +166,33 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         mock_generate.assert_not_called()
         self.assertEqual(queued.tfhka_digitalization_state, "queued")
 
+    def test_cron_process_queue_ignores_errored_document_that_was_cancelled(self):
+        # Fix bloqueante: el lock por compania no excluia state='cancel'. Un
+        # documento en 'error' que se cancela no tiene ninguna via de vuelta
+        # a un estado resuelto -- un reintento no tiene sentido sobre un
+        # asiento cancelado -- asi que sin este fix la cola de la compania
+        # quedaba bloqueada para siempre.
+        #
+        # button_cancel() alcanza solo: en 17 ya resetea a draft primero si
+        # hace falta (ver account_move.button_cancel en el core), y este
+        # helper _create_invoice() deja el asiento en 'draft' de todas
+        # formas (action_post() sin move_action_post_alert solo abre el
+        # wizard de alerta, no postea -- ver l10n_ve_accountant.action_post).
+        errored = self._create_invoice()
+        errored.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+        errored.button_cancel()
+
+        queued = self._create_invoice()
+        queued._tfhka_enqueue_digitalization()
+
+        with patch(GENERATE_DIGITAL_PATCH, lambda self: self.write({"is_digitalized": True})):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(
+            queued.tfhka_digitalization_state, "success",
+            "Un documento en error que ya fue cancelado no debe seguir bloqueando la cola.",
+        )
+
     def test_cron_process_queue_halts_after_first_failure_leaving_rest_queued(self):
         inv1 = self._create_invoice()
         inv1._tfhka_enqueue_digitalization()
@@ -489,3 +516,19 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertFalse(resolved)
         self.assertEqual(old.tfhka_digitalization_state, "error")
         self.assertEqual(fresh.tfhka_digitalization_state, "processing")
+
+    def test_crons_are_registered_to_run_indefinitely(self):
+        # Fix bloqueante: en Odoo 17 ir.cron.numbercall tiene default 1 --
+        # sin numbercall=-1/doall=False el cron corre una sola vez y
+        # _process_job lo desactiva (numbercall=0, active=False). Esto ya
+        # paso una vez con el cron de la cola (quedaba inactivo tras su
+        # primera corrida) y el mismo bug seguia sin corregir en el cron de
+        # purga. Las pruebas que llaman a los metodos directamente (p.ej.
+        # _tfhka_cron_process_queue()) nunca pasan por ir.cron y no lo
+        # hubieran detectado -- este test lee el registro real.
+        queue_cron = self.env.ref("l10n_ve_invoice_digital.ir_cron_tfhka_digitalization_queue")
+        purge_cron = self.env.ref("l10n_ve_invoice_digital.ir_cron_purge_tfhka_api_log")
+
+        for cron in (queue_cron, purge_cron):
+            self.assertEqual(cron.numbercall, -1)
+            self.assertFalse(cron.doall)

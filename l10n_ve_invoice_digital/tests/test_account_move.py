@@ -3004,3 +3004,46 @@ class TestAccountMoveApiCalls(TransactionCase):
         with self.assertRaises(ValidationError):
             inv2._tfhka_validate_previous_document_queued()
 
+    def test_211_is_eligible_for_digitalization_excludes_undeterminable_document_type(self):
+        # Fix bloqueante: una NC sin reversed_entry_id no tiene tipo de
+        # documento TFHKA determinable (ver test_98). Si se encola igual,
+        # falla en el cron y, por el lock de _tfhka_cron_process_queue,
+        # bloquea la cola de toda la compania para siempre -- nada la saca
+        # de 'error' salvo un reintento exitoso, imposible para este caso.
+        self.journal.digital_invoice = True
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+        )
+        self.assertFalse(credit._tfhka_is_eligible_for_digitalization())
+
+    def test_212_enqueue_eligible_for_digitalization_skips_undeterminable_document_type(self):
+        # Mismo fix, camino automatico (post del wizard): el filtro de
+        # elegibilidad debe excluir la NC sin tipo determinable y dejar
+        # pasar la factura normal del mismo lote.
+        self.journal.digital_invoice = True
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+        )
+        (invoice | credit)._tfhka_enqueue_eligible_for_digitalization()
+        self.assertEqual(invoice.tfhka_digitalization_state, "queued")
+        self.assertEqual(credit.tfhka_digitalization_state, "none")
+
+    def test_213_action_generate_digital_blocks_undeterminable_document_type(self):
+        # Mismo fix, camino manual (modo "digitalizacion con pago"): el
+        # boton no debe encolar un documento sin tipo TFHKA determinable --
+        # debe fallar de inmediato, antes de tocar tfhka_digitalization_state.
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        credit = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+        )
+        with self.assertRaises(ValidationError):
+            credit.action_tfhka_generate_digital()
+        self.assertEqual(credit.tfhka_digitalization_state, "none")
+
