@@ -33,17 +33,14 @@ class ResCurrencyRate(models.Model):
             The date of the rate that is gonna be searched for the given currency
             (foreign_currency_id).
         raise_if_not_found : bool
-            Whether the absence of a usable rate should raise UserError instead of
-            returning {}. Defaults to True: every search that finds no rate at or
-            before rate_date must stop with "no rate assigned". Pass False only from
+            Whether the absence of a rate should raise UserError instead of
+            returning {}. Defaults to True: every search that finds no rate for
+            rate_date must stop with "no rate assigned". Pass False only from
             a call site that can deliberately work without a rate.
 
-        La búsqueda replica a `res.currency._get_rates` de Odoo:
-
-        1. la tasa más reciente con name <= rate_date;
-        2. si no hay ninguna anterior o igual, la más antigua que exista para la
-           moneda (aunque sea posterior a rate_date);
-        3. solo si la moneda no tiene ninguna tasa se considera "no encontrada".
+        La tasa se busca SOLO para la fecha exacta `rate_date`: no se usa la más
+        cercana, ni la anterior, ni la posterior. Si la moneda no tiene un registro
+        con esa fecha, se considera "no encontrada".
 
         Las tasas solo existen en la compañía principal (Odoo 19 no permite tasas en
         sucursales nativas). Se busca primero en la compañía activa y, si no hay
@@ -53,8 +50,8 @@ class ResCurrencyRate(models.Model):
         Raises
         ------
         UserError
-            If raise_if_not_found is True (default) and the currency has no rate at
-            all (neither at/before rate_date nor after it) in the company hierarchy.
+            If raise_if_not_found is True (default) and the currency has no rate dated
+            exactly rate_date in the company hierarchy.
 
         Returns
         -------
@@ -73,21 +70,17 @@ class ResCurrencyRate(models.Model):
         # las tasas solo viven en la compañía raíz (res.currency.rate._check_company_id);
         # la compañía activa va primero para que una tasa propia gane a la de la matriz
         company_ids = list(dict.fromkeys((company | company.root_id).ids))
-        domain = [("currency_id", "=", foreign_currency_id)]
 
         rate = self.env["res.currency.rate"]
-        # 1. la más reciente en o antes de rate_date; 2. si no hay, la más antigua
-        for extra_domain, order in (
-            ([("name", "<=", rate_date)], "name DESC"),
-            ([], "name ASC"),
-        ):
-            for company_id in company_ids:
-                rate = self.env["res.currency.rate"].search(
-                    domain + extra_domain + [("company_id", "=", company_id)],
-                    order=order, limit=1,
-                )
-                if rate:
-                    break
+        for company_id in company_ids:
+            rate = rate.search(
+                [
+                    ("currency_id", "=", foreign_currency_id),
+                    ("company_id", "=", company_id),
+                    ("name", "=", rate_date),
+                ],
+                limit=1,
+            )
             if rate:
                 break
 

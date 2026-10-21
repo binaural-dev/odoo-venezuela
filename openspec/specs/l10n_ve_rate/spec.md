@@ -40,26 +40,26 @@ El sistema DEBE (MUST) impedir modificar `foreign_currency_id` de una compañía
 
 ### Requirement: Cálculo de tasa y tasa inversa por fecha
 
-El método `compute_rate(foreign_currency_id, rate_date, raise_if_not_found=True)` de `res.currency.rate` DEBE (MUST) devolver la tasa (`foreign_rate`) y la tasa inversa (`foreign_inverse_rate`) tomando el registro de tasa más reciente cuya fecha sea menor o igual a `rate_date` para esa moneda y la compañía activa o, si esta es una sucursal nativa, las de su compañía raíz (ver el requisito «Las tasas de cambio pertenecen a la compañía principal»). Si la moneda solicitada es la moneda principal de la compañía, ambos valores son `company_rate` (o `1.0` si esa moneda no tiene ningún registro de tasa: su tasa contra sí misma); en caso contrario `foreign_rate` es `inverse_company_rate` y `foreign_inverse_rate` es `company_rate`. La tasa inversa es el factor por el que se multiplican los montos para obtener su equivalente en moneda alterna. La asignación replica a `res.currency._get_rates` de Odoo: se usa la tasa más reciente con fecha `<=` `rate_date`; las tasas posteriores no se consideran mientras exista una en o antes de esa fecha. Si `rate_date` es anterior a toda tasa registrada, se usa la **más antigua** que exista para la moneda. Solo se considera «no encontrada» cuando la moneda no tiene ninguna tasa.
+El método `compute_rate(foreign_currency_id, rate_date, raise_if_not_found=True)` de `res.currency.rate` DEBE (MUST) devolver la tasa (`foreign_rate`) y la tasa inversa (`foreign_inverse_rate`) tomando el registro de tasa más reciente cuya fecha sea menor o igual a `rate_date` para esa moneda y la compañía activa o, si esta es una sucursal nativa, las de su compañía raíz (ver el requisito «Las tasas de cambio pertenecen a la compañía principal»). Si la moneda solicitada es la moneda principal de la compañía, ambos valores son `company_rate` (o `1.0` si esa moneda no tiene ningún registro de tasa: su tasa contra sí misma); en caso contrario `foreign_rate` es `inverse_company_rate` y `foreign_inverse_rate` es `company_rate`. La tasa inversa es el factor por el que se multiplican los montos para obtener su equivalente en moneda alterna. La tasa se busca únicamente para la fecha exacta `rate_date`: no se usa la más cercana, ni una anterior ni una posterior. Si la moneda no tiene un registro de tasa con esa fecha, se considera «no encontrada».
 
 #### Scenario: Moneda alterna distinta a la de la compañía
 
-- **WHEN** se invoca `compute_rate` con una moneda distinta a la moneda principal de la compañía y existe una tasa registrada en o antes de la fecha dada
-- **THEN** devuelve `foreign_rate = inverse_company_rate` y `foreign_inverse_rate = company_rate` de la tasa más reciente aplicable
+- **WHEN** se invoca `compute_rate` con una moneda distinta a la moneda principal de la compañía y existe una tasa registrada con esa fecha exacta
+- **THEN** devuelve `foreign_rate = inverse_company_rate` y `foreign_inverse_rate = company_rate` de la tasa de esa fecha
 
-#### Scenario: Fecha anterior a todas las tasas
+#### Scenario: Sin tasa para la fecha exacta pero con tasas en otras fechas
 
-- **WHEN** se invoca `compute_rate` con una fecha anterior a toda tasa registrada de la moneda
-- **THEN** devuelve la tasa más antigua que exista (como Odoo), sin lanzar error
+- **WHEN** se invoca `compute_rate` con una fecha para la cual no hay tasa, aunque existan tasas anteriores o posteriores
+- **THEN** lanza `UserError` de tasa no asignada; no se usa la tasa más cercana
 
 #### Scenario: Sin tasa registrada (comportamiento por defecto)
 
-- **WHEN** se invoca `compute_rate` sin `raise_if_not_found` (o con `raise_if_not_found=True`) y la moneda no tiene ninguna tasa registrada (ni en o antes de la fecha dada ni posterior a ella) en la compañía ni en su raíz
+- **WHEN** se invoca `compute_rate` sin `raise_if_not_found` (o con `raise_if_not_found=True`) y la moneda no tiene una tasa registrada con esa fecha exacta en la compañía ni en su raíz
 - **THEN** lanza `UserError` indicando que no hay tasa asignada para esa moneda y fecha («No hay una tasa asignada para USD al 2026-10-20, configúrela.»); nunca devuelve un diccionario vacío ni una tasa `0.0` silenciosa
 
 #### Scenario: Sin tasa registrada, con `raise_if_not_found=False`
 
-- **WHEN** se invoca `compute_rate` con `raise_if_not_found=False` y la moneda no tiene ninguna tasa registrada
+- **WHEN** se invoca `compute_rate` con `raise_if_not_found=False` y la moneda no tiene una tasa registrada con esa fecha exacta
 - **THEN** devuelve un diccionario vacío (comportamiento silencioso, solo para un llamador que pueda trabajar sin tasa de forma deliberada)
 
 #### Scenario: Moneda principal de la compañía sin registro de tasa
@@ -85,7 +85,7 @@ Intentar crear (o mover) una tasa a una sucursal lanza, desde Odoo base (`res.cu
 #### Scenario: Sucursal sin tasa propia
 
 - **WHEN** se invoca `compute_rate` desde una sucursal nativa y la tasa está registrada solo en la compañía matriz
-- **THEN** devuelve la tasa de la matriz (la más reciente con fecha `<=` `rate_date`, o la más antigua si la fecha es anterior a todas), no `{}` ni `0.0`
+- **THEN** devuelve la tasa de la matriz (la de la fecha exacta `rate_date`), no `{}` ni `0.0`
 
 #### Scenario: Sucursal sin ninguna tasa en la jerarquía
 

@@ -36,10 +36,10 @@ class TestAccountant(TransactionCase):
                 "company_id": self.company.id,
             }
         )
-        # Tasa de la moneda alterna (VEF): compute_rate lanza error si no existe ninguna
+        # Tasa de la moneda alterna (VEF): compute_rate lanza error si no existe una para la fecha
         self.env["res.currency.rate"].create(
             {
-                "name": fields.Date.from_string("2025-07-28"),
+                "name": fields.Date.today(),
                 "currency_id": self.currency_vef.id,
                 "inverse_company_rate": 120.439,
                 "company_id": self.company.id,
