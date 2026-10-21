@@ -6,8 +6,70 @@
         <field name="inherit_id" ref="stock.view_picking_form"/>
         <field name="arch" type="xml">
             <xpath expr="//field[@name='origin']" position="after">
-                <field name="is_donation" readonly="1"/>
+                <field name="picking_type_code" invisible="1"/>
+                <field name="sale_id" invisible="1"/>
+                <field name="is_donation" readonly="1" force_save="1"/>
+                <field name="donation_reason" invisible="not is_donation or sale_id or picking_type_code != 'outgoing'" readonly="state in ('done', 'cancel')"/>
+            </xpath>
+            <!-- Donations are not returned (see stock.return.picking). The base
+                 condition already hides the button for returns. -->
+            <xpath expr="//button[@name='%(stock.act_stock_return_picking)d']" position="attributes">
+                <attribute name="invisible">state != 'done' or is_return or (is_donation and not sale_id)</attribute>
+            </xpath>
+            <xpath expr="//button[@name='do_print_picking']" position="after">
+                <button
+                    name="print_donation_certificate"
+                    string="Print Donation Certificate"
+                    type="object"
+                    groups="stock.group_stock_user"
+                    invisible="not is_donation or sale_id or picking_type_code != 'outgoing' or state != 'done'"
+                />
             </xpath>
         </field>
     </record>
+
+    <!-- Form used only by the Donations menu: same form as the native one
+         (including every extension of it), but the operation type selector
+         only offers the types flagged as donation types. -->
+    <record id="view_picking_form_donation" model="ir.ui.view">
+        <field name="name">stock.picking.form.donation</field>
+        <field name="model">stock.picking</field>
+        <field name="mode">primary</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='picking_type_id']" position="attributes">
+                <attribute name="domain">[('is_donation_picking_type', '=', True)]</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="action_stock_picking_donation" model="ir.actions.act_window">
+        <field name="name">Donations</field>
+        <field name="res_model">stock.picking</field>
+        <field name="view_mode">tree,form</field>
+        <field name="domain">[('is_donation', '=', True), ('sale_id', '=', False)]</field>
+        <field name="context">{'contact_display': 'partner_address', 'default_company_id': allowed_company_ids[0], 'donation_menu': True}</field>
+        <field name="search_view_id" ref="stock.view_picking_internal_search"/>
+    </record>
+
+    <record id="action_stock_picking_donation_tree" model="ir.actions.act_window.view">
+        <field name="sequence" eval="1"/>
+        <field name="view_mode">tree</field>
+        <field name="view_id" ref="stock.vpicktree"/>
+        <field name="act_window_id" ref="action_stock_picking_donation"/>
+    </record>
+
+    <record id="action_stock_picking_donation_form" model="ir.actions.act_window.view">
+        <field name="sequence" eval="2"/>
+        <field name="view_mode">form</field>
+        <field name="view_id" ref="view_picking_form_donation"/>
+        <field name="act_window_id" ref="action_stock_picking_donation"/>
+    </record>
+
+    <menuitem id="menu_stock_picking_donation"
+              name="Donations"
+              parent="stock.menu_stock_transfers"
+              action="action_stock_picking_donation"
+              sequence="23"
+              groups="stock.group_stock_manager,stock.group_stock_user"/>
 </odoo>

@@ -1,4 +1,4 @@
-from odoo.tests import tagged
+from odoo.tests import Form, tagged
 from odoo.exceptions import ValidationError
 from .common import TestDonationCommon
 
@@ -41,17 +41,24 @@ class TestProductWarehouse(TestDonationCommon):
         new_loc = self.env["stock.location"].new({"name": "Fake"})
         self.assertFalse(new_loc.get_warehouse())
 
-    def test_05_picking_type_donation_must_be_outgoing(self):
-        """Donation picking type must have code outgoing."""
-        with self.assertRaises(ValidationError):
-            self.env["stock.picking.type"].create({
-                "name": "Bad Donation Picking",
-                "code": "incoming",
-                "sequence_code": "BAD",
-                "is_donation_picking_type": True,
-            })
-
     def test_06_warehouse_readonly_compute(self):
         """Readonly field mirrors is_donation_warehouse."""
         self.assertTrue(self.warehouse_donation.readonly_is_donation_warehouse)
         self.assertFalse(self.warehouse_normal.readonly_is_donation_warehouse)
+
+    def test_07_donation_picking_type_configurable_from_form(self):
+        """`is_donation_picking_type` stays configurable from the form view.
+
+        Direct regression test for the V19 bug (ticket #13662): a view that
+        exposed this field got removed, leaving the flag impossible to set
+        from the UI. This confirms the current view in `l10n_ve_donation`
+        still exposes the field correctly in V17."""
+        form = Form(self.env["stock.picking.type"])
+        form.name = "Donation Picking Form Test"
+        form.sequence_code = "DONFORM"
+        form.is_donation_picking_type = True
+        picking_type = form.save()
+        self.assertTrue(picking_type.is_donation_picking_type)
+
+        picking_type.invalidate_recordset()
+        self.assertTrue(picking_type.is_donation_picking_type)
