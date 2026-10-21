@@ -24,6 +24,11 @@ class ResCountryParishBinauralLocalizacion(models.Model):
         for partner in self:
             if partner.city_id and partner.city_id.state_id != partner.state_id:
                 partner.city_id = False
+            # Municipalities and parishes are only loaded for Venezuela; foreign
+            # addresses use a generic value (e.g. "EXTERIOR") that must be kept
+            country = partner.state_id.country_id or partner.country_id
+            if country.code != "VE":
+                continue
             if partner.municipality and partner.state_id not in partner.municipality.state_id:
                 partner.municipality = False
                 partner.parish_id = False
