@@ -17,7 +17,7 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
 
 #### Scenario: Factura de venta
 
@@ -38,6 +38,16 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 - **WHEN** un documento tiene `manually_set_rate` en verdadero
 - **THEN** el recálculo automático no modifica su tasa
+
+#### Scenario: Documento con fecha sin tasa cargada
+
+- **WHEN** se crea o contabiliza un documento cuya fecha de tasa no tiene registro de tasa para la moneda alterna, aunque existan tasas de otras fechas
+- **THEN** se lanza un `UserError` "There is no rate assigned for <moneda> on <fecha>" y, una vez cargada la tasa de esa fecha, el mismo documento se contabiliza con ella
+
+#### Scenario: Cambio de la tasa después de contabilizar
+
+- **WHEN** se modifica el registro de tasa de la fecha de un documento ya contabilizado y luego se recalcula y cancela el documento
+- **THEN** el asiento sigue cuadrado (débito igual a crédito)
 
 ### Requirement: Prohibición de tasas negativas o cero
 
