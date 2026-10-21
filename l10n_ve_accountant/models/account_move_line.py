@@ -209,7 +209,7 @@ class AccountMoveLine(models.Model):
     def _compute_foreign_subtotal(self):
         for line in self:
             line_discount_price_unit = line.foreign_price * (
-                1 - (line.discount / 100.0)
+                1 - (line._get_effective_discount_percent() / 100.0)
             )
             foreign_subtotal = line_discount_price_unit * line.quantity
 
@@ -462,6 +462,13 @@ class AccountMoveLine(models.Model):
                 else:
                     line.balance = rounded_balance
 
+    def _get_effective_discount_percent(self):
+        """Discount % that really applies to the line, used where the line
+        amounts are rebuilt by hand instead of through the tax computation.
+        Modules that discount through a field of their own extend it."""
+        self.ensure_one()
+        return self.discount or 0.0
+
     def _price_included_split(self):
         """Returns (base_currency, base_company, included_currency,
         included_company) of a product line whose taxes are all flat
@@ -481,7 +488,7 @@ class AccountMoveLine(models.Model):
             return None
         raw_included = (
             self.price_unit * self.quantity
-            * (1 - (self.discount or 0.0) / 100.0) * move.direction_sign
+            * (1 - self._get_effective_discount_percent() / 100.0) * move.direction_sign
         )
         raw_excluded = raw_included / (1 + total_rate)
         currency = self.currency_id

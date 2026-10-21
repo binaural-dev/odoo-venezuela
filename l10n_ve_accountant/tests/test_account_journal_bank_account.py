@@ -95,6 +95,7 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
         )
 
     def test_payment_with_configured_account_creates_move(self):
+        self._set_rate(self.currency_usd, self.payment_date, 50.0)
         journal = self._get_foreign_bank_journal(self.currency_usd)
         payment = self.env["account.payment"].create({
             "amount": 50.0,
@@ -158,6 +159,7 @@ class TestAccountJournalBankAccount(TestIndexedPayments):
         ours, not an accident of a fixture company with no chart of
         accounts (the mistake in the original version of this test, found
         in code review)."""
+        self._set_rate(self.currency_usd, self.payment_date, 50.0)
         journal = self._get_foreign_bank_journal(self.currency_usd)
         self.company.transfer_account_id = self.account_bank
 
