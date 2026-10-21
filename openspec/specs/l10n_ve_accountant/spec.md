@@ -817,6 +817,7 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 
 - **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
 - **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
+
 ### Requirement: No se puede confirmar un pago con importe cero
 
 `account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.

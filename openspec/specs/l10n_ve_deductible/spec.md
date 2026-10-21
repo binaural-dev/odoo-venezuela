@@ -4,7 +4,7 @@
 
 Descuento global "deducible" (porcentaje o monto fijo) para facturas de proveedor y de cliente, con o sin impuestos. Se activa por compañía desde Ajustes (`res.company.use_deductible`, bloque "Deducibles") y la opción `deductible_scope` decide en qué documentos se ofrece: facturas de proveedor (`vendor`), facturas de cliente (`customer`, por defecto) o ambas (`both`).
 
-Donde está habilitado, el documento muestra en la pestaña de líneas, justo debajo de "Términos y condiciones" (`narration`): el booleano `is_deductible`, el tipo (`global_deductible_type`: porcentaje o monto fijo), el valor (`global_deductible_percent` o `global_deductible_amount`) y, solo en modo porcentaje, un monto referencial (`global_deductible_reference_amount`). En modo monto fijo el importe que se resta a cada línea se guarda en `account.move.line.global_deductible_line_amount` (monetario, solo lectura, visible solo en ese modo); de él, o del porcentaje del documento en modo porcentaje, sale `account.move.line.global_deductible_discount_percent` (Float almacenado, sin redondeo a propósito).
+Donde está habilitado, el documento muestra en la pestaña de líneas, justo debajo de "Términos y condiciones" (`narration`): el booleano `is_deductible`, el tipo (`global_deductible_type`: porcentaje o monto fijo), el valor (`global_deductible_percent` o `global_deductible_amount`) y, solo en modo porcentaje, un monto referencial (`global_deductible_reference_amount`). En modo monto fijo el importe que se resta a cada línea se guarda en `account.move.line.global_deductible_line_amount` (monetario, editable en documentos en borrador, visible solo en ese modo); de él, o del porcentaje del documento en modo porcentaje, sale `account.move.line.global_deductible_discount_percent` (Float almacenado, sin redondeo a propósito, de solo lectura y visible como columna «Deducido (%)» en ambos modos mientras el documento es deducible).
 
 El módulo no escribe sobre `discount` ni `discount_fixed`: el porcentaje se enchufa en `_get_effective_discount_percent()`, el gancho que `l10n_ve_accountant` usa para el cálculo de impuestos, el subtotal en moneda alterna, los totales en moneda de la compañía, el detalle de importes y el apunte de las líneas con precio incluido. Depende de `l10n_ve_accountant` y de `l10n_ve_invoice` (de donde sale `discount_fixed`, que el módulo oculta y valida) y se auto-instala cuando ambos están instalados; la dependencia de `l10n_ve_invoice` es intencional. Extiende además `_get_base_line_sync_extra_fields()` para que `_sync_tax_lines` vigile el campo nuevo.
 
@@ -53,7 +53,7 @@ En modo porcentaje, el valor DEBE (MUST) ser mayor que 0 y menor que 100. En mod
 
 ### Requirement: Reparto equivalente al descuento nativo y a `discount_fixed`
 
-En modo porcentaje todas las líneas DEBEN (MUST) recibir el mismo porcentaje exacto. En modo monto cada línea con importe bruto mayor que 0 DEBE (MUST) recibir y guardar en `global_deductible_line_amount` un importe proporcional a su subtotal bruto, en la moneda del documento, repartido por mayor residuo en centavos sin que ninguna línea alcance su propio subtotal; su porcentaje equivalente DEBE (MUST) calcularse como `(importe / bruto) * 100`, igual que `discount_fixed`. La suma de los importes de las líneas DEBE (MUST) ser siempre exactamente el monto ingresado, y el campo es de solo lectura: cualquier escritura que rompa la suma produce un `ValidationError`. Con los mismos importes por línea, las cifras del documento (subtotales y totales, apuntes, montos en moneda alterna, totales del widget y de `company_currency_line_totals`) DEBEN (MUST) coincidir exactamente con las del descuento nativo (%) y con las de `discount_fixed`, con ambos métodos de redondeo de impuestos y con documentos en la moneda base (VEF) o en la alterna (USD).
+En modo porcentaje todas las líneas DEBEN (MUST) recibir el mismo porcentaje exacto. En modo monto cada línea con importe bruto mayor que 0 DEBE (MUST) recibir y guardar en `global_deductible_line_amount` un importe propuesto proporcional a su subtotal bruto, en la moneda del documento, repartido por mayor residuo en centavos sin que ninguna línea alcance su propio subtotal; su porcentaje equivalente DEBE (MUST) calcularse como `(importe / bruto) * 100`, igual que `discount_fixed`. El usuario PUEDE (MAY) escribir a mano el importe de una línea (documentos en borrador): la línea queda marcada en `global_deductible_manual`, conserva su importe y lo que resta del monto del documento se reparte, con el mismo algoritmo, entre las líneas no marcadas; cambiar el tipo o el valor del documento vuelve a proponer todos los importes. La suma de los importes de las líneas DEBE (MUST) ser exactamente el monto ingresado y ninguna línea puede alcanzar su propio subtotal: ambas reglas producen un `ValidationError`. La suma se valida sobre el documento (al guardarlo con sus líneas y al publicarlo) y no línea por línea, porque las líneas de un documento se escriben una a una. Una nota de crédito o de débito con líneas copiadas conserva los importes escritos a mano. Con los mismos importes por línea, las cifras del documento (subtotales y totales, apuntes, montos en moneda alterna, totales del widget y de `company_currency_line_totals`) DEBEN (MUST) coincidir exactamente con las del descuento nativo (%) y con las de `discount_fixed`, con ambos métodos de redondeo de impuestos y con documentos en la moneda base (VEF) o en la alterna (USD).
 
 Las líneas con importe bruto menor o igual que 0 no participan del reparto en modo monto, pero sí cuentan en el total original que limita el monto; en modo porcentaje reciben el mismo porcentaje que las demás.
 
@@ -61,6 +61,16 @@ Las líneas con importe bruto menor o igual que 0 no participan del reparto en m
 
 - **WHEN** un documento tiene un deducible fijo de 77,77 y varias líneas con precios de 4 decimales
 - **THEN** la suma de `global_deductible_line_amount` de las líneas es exactamente 77,77, también tras cambiar precios o agregar líneas
+
+#### Scenario: Importe escrito a mano en una línea
+
+- **WHEN** un documento con un deducible fijo de 60 y tres líneas de 100, 200 y 300 tiene el importe de la primera línea escrito a mano en 30
+- **THEN** la primera línea conserva 30, queda marcada como escrita a mano y el resto (30) se reparte entre las otras dos (12 y 18); el porcentaje de cada línea se actualiza y la suma sigue siendo 60
+
+#### Scenario: Importes escritos a mano que no suman el monto
+
+- **WHEN** se guardan o se publican importes por línea cuya suma es distinta del monto del deducible, o una línea con un importe igual o mayor a su subtotal
+- **THEN** se lanza un `ValidationError` y el documento no se guarda ni se publica
 
 #### Scenario: Paridad con el descuento nativo
 

@@ -87,6 +87,11 @@ class AccountMove(models.Model):
                 )
         if "is_deductible" in vals and not vals["is_deductible"]:
             vals = dict(vals, global_deductible_percent=0.0, global_deductible_amount=0.0)
+        if any(field in vals for field in self.DEDUCTIBLE_FIELDS):
+            # a new value of the document: the amounts of the lines are proposed again
+            self.invoice_line_ids.filtered("global_deductible_manual").write(
+                {"global_deductible_manual": False}
+            )
         activating = self.filtered(lambda move: not move.is_deductible) if vals.get("is_deductible") else self.browse()
         result = super().write(vals)
         activating.filtered("is_deductible")._check_deductible_enabled()
@@ -155,20 +160,39 @@ class AccountMove(models.Model):
             if warning:
                 return warning
 
-    @api.onchange(*DEDUCTIBLE_FIELDS, "invoice_line_ids")
-    def _onchange_deductible_lines(self):
-        """Keep every line consistent on the fly: assign the per-line amount
-        and percent explicitly, as a change of the native `discount` does, so
-        each line refreshes its own subtotal in the form."""
+    @api.onchange(*DEDUCTIBLE_FIELDS)
+    def _onchange_deductible_values(self):
+        """The document's deductible changed: propose again the amount and the
+        percent of every line, assigned explicitly as a change of the native
+        `discount` does, so each line refreshes its own subtotal in the form."""
         for move in self:
-            amounts = move._get_deductible_line_amounts()
-            percents = move._get_deductible_line_percents()
             for line in move._get_deductible_product_lines():
-                line.global_deductible_line_amount = amounts.get(line, 0.0)
-                line.global_deductible_discount_percent = percents.get(line, 0.0)
+                line.global_deductible_manual = False
+            move._propose_deductible_line_values()
+
+    @api.onchange("invoice_line_ids")
+    def _onchange_deductible_line_values(self):
+        """A line changed (price, quantity, or the amount typed by the user):
+        keep what the user typed, spread the rest again and refresh the
+        percent each line shows."""
+        for move in self:
+            move._propose_deductible_line_values()
+
+    def _propose_deductible_line_values(self):
+        self.ensure_one()
+        amounts = self._get_deductible_line_amounts()
+        for line in self._get_deductible_product_lines():
+            line.global_deductible_line_amount = amounts.get(line, 0.0)
+        self._refresh_deductible_line_percents()
+
+    def _refresh_deductible_line_percents(self):
+        self.ensure_one()
+        percents = self._get_deductible_line_percents()
+        for line in self._get_deductible_product_lines():
+            line.global_deductible_discount_percent = percents.get(line, 0.0)
 
     @api.constrains(*DEDUCTIBLE_FIELDS, "move_type", "reversed_entry_id", "invoice_line_ids")
-    def _check_deductible(self):
+    def _check_deductible(self, check_sum=True):
         """Enabled document type (or credit note of a deductible one), no
         previous discount, value limits and per-line amounts adding
         up to the amount entered."""
@@ -179,7 +203,12 @@ class AccountMove(models.Model):
             if move.global_deductible_type == "percent":
                 move._check_deductible_percent()
             else:
-                move._check_deductible_amount()
+                move._check_deductible_amount(check_sum=check_sum)
+
+    def _post(self, soft=True):
+        """The amounts typed in the lines must add up before posting."""
+        self.filtered("is_deductible")._check_deductible()
+        return super()._post(soft=soft)
 
     def _check_deductible_document(self):
         """The document type accepts the deductible: an invoice, or a credit
@@ -217,9 +246,10 @@ class AccountMove(models.Model):
                 )
             )
 
-    def _check_deductible_amount(self):
+    def _check_deductible_amount(self, check_sum=True):
         """The amount is above 0 and below the original total, and the amounts
-        taken off the lines add up to it."""
+        taken off the lines add up to it (`check_sum`; the lines of a document
+        are written one by one, so the sum is only checked on the document)."""
         currency, amount = self.currency_id, self.global_deductible_amount
         gross = self._get_deductible_gross_total()
         digits = currency.decimal_places
@@ -236,7 +266,7 @@ class AccountMove(models.Model):
                 )
             )
         distributed = sum(self._get_deductible_product_lines().mapped("global_deductible_line_amount"))
-        if float_compare(distributed, amount, precision_rounding=currency.rounding):
+        if check_sum and float_compare(distributed, amount, precision_rounding=currency.rounding):
             raise ValidationError(
                 _(
                     "The amounts deducted on the lines (%(lines)s) must add "

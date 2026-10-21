@@ -1,5 +1,5 @@
 from odoo import _, api, fields, models
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tools import float_compare, formatLang
 
 
@@ -14,11 +14,20 @@ class AccountMoveLine(models.Model):
         currency_field="currency_id",
         compute="_compute_deductible_line_amount",
         store=True,
+        readonly=False,
         help="Share of the fixed deductible amount of the document that is taken "
-        "off this line, in the document currency: proportional to its gross "
-        "subtotal, with the cents lost to rounding given back by largest "
-        "remainder, so the lines always add up to the amount entered on the "
-        "document. Only used when the deductible is a fixed amount; read only.",
+        "off this line, in the document currency. It is proposed proportional "
+        "to the line's gross subtotal, with the cents lost to rounding given "
+        "back by largest remainder, and can be edited by hand on a draft "
+        "document; the lines must always add up to the amount entered on the "
+        "document and none can reach its own subtotal. Only used when the "
+        "deductible is a fixed amount.",
+    )
+    global_deductible_manual = fields.Boolean(
+        string="Deductible Typed by Hand",
+        copy=False,
+        help="The amount of the deductible of this line was typed by the user: it is "
+        "kept, and the rest of the amount of the document is spread over the other lines.",
     )
     global_deductible_discount_percent = fields.Float(
         string="Deductible Discount (%)",
@@ -34,6 +43,7 @@ class AccountMoveLine(models.Model):
         "display_type",
         "price_unit",
         "quantity",
+        "global_deductible_manual",
         "move_id.is_deductible",
         "move_id.global_deductible_type",
         "move_id.global_deductible_amount",
@@ -43,14 +53,21 @@ class AccountMoveLine(models.Model):
         "move_id.invoice_line_ids.display_type",
     )
     def _compute_deductible_line_amount(self):
-        amounts = {move: move._get_deductible_line_amounts() for move in self.move_id}
-        for line in self:
+        # In the form (virtual records) the onchange of the document assigns the
+        # amounts: computing them here would change the amount of the line being
+        # edited and the onchange of that field would take it as typed by the user.
+        saved = self.filtered(lambda line: bool(line.id))
+        amounts = {move: move._get_deductible_line_amounts() for move in saved.move_id}
+        for line in saved:
             line.global_deductible_line_amount = amounts.get(line.move_id, {}).get(line, 0.0)
+        for line in self - saved:
+            line.global_deductible_line_amount = line.global_deductible_line_amount
 
     @api.depends(
         "display_type",
         "price_unit",
         "quantity",
+        "global_deductible_line_amount",
         "move_id.is_deductible",
         "move_id.global_deductible_type",
         "move_id.global_deductible_percent",
@@ -66,6 +83,28 @@ class AccountMoveLine(models.Model):
         percents = {move: move._get_deductible_line_percents() for move in self.move_id}
         for line in self:
             line.global_deductible_discount_percent = percents.get(line.move_id, {}).get(line, 0.0)
+
+    @api.onchange("global_deductible_line_amount")
+    def _onchange_global_deductible_line_amount(self):
+        """What the user types in the line is kept and the rest is spread again
+        (by the onchange of the document). A new line starts with no amount
+        (0.0): that is not something typed."""
+        for line in self:
+            line.global_deductible_manual = bool(line.global_deductible_line_amount)
+
+    def write(self, vals):
+        """The amount of a line can be typed by hand, only on a draft document."""
+        if "global_deductible_line_amount" in vals:
+            posted = self.move_id.filtered(lambda move: move.state != "draft")
+            if posted:
+                raise UserError(
+                    _(
+                        "The deductible can only be changed on draft documents. "
+                        "Reset %s to draft first.",
+                        ", ".join(posted.mapped("display_name")),
+                    )
+                )
+        return super().write(vals)
 
     def _get_effective_discount_percent(self):
         return self.global_deductible_discount_percent or super()._get_effective_discount_percent()
@@ -91,13 +130,18 @@ class AccountMoveLine(models.Model):
                     )
                 )
 
-    @api.constrains(
-        "price_unit", "quantity", "tax_ids", "display_type", "move_id", "global_deductible_line_amount"
-    )
+    @api.constrains("price_unit", "quantity", "tax_ids", "display_type", "move_id")
     def _check_deductible_move(self):
         """`account.move._check_deductible` cannot listen to the lines'
-        fields (constrains ignores dotted paths), so it is triggered here,
-        together with the per-line limit of the fixed amount."""
+        fields (constrains ignores dotted paths), so it is triggered here.
+        The amounts typed in the lines are not added up here: the lines of a
+        document are written one by one, so the sum is checked on the document
+        (`invoice_line_ids` of the move) and when it is posted."""
+        self.move_id.filtered("is_deductible")._check_deductible(check_sum=False)
+
+    @api.constrains("global_deductible_line_amount")
+    def _check_deductible_line_limit(self):
+        """No line can take off its whole subtotal or more."""
         for line in self.filtered("global_deductible_line_amount"):
             gross = line.price_unit * line.quantity
             if gross > 0 and float_compare(
@@ -111,4 +155,10 @@ class AccountMoveLine(models.Model):
                         subtotal=formatLang(self.env, gross, currency_obj=line.currency_id),
                     )
                 )
-        self.move_id.filtered("is_deductible")._check_deductible()
+
+    def _copy_data_extend_business_fields(self, values):
+        """A credit or debit note keeps the amounts typed in the lines."""
+        super()._copy_data_extend_business_fields(values)
+        if self.global_deductible_manual:
+            values["global_deductible_line_amount"] = self.global_deductible_line_amount
+            values["global_deductible_manual"] = True
