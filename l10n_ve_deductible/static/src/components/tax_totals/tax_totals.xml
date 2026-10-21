@@ -1,0 +1,64 @@
+<templates xml:space="preserve">
+    <t t-name="l10n_ve_deductible.TaxTotalsField" t-inherit="account.TaxTotalsField" t-inherit-mode="extension" owl="1">
+        <xpath expr="//table[1]/tbody[1]/t[1]" position="before">
+            <tr t-if="totals.is_deductible">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Subtotal without deductible</label>
+                </td>
+                <td>
+                    <span class="o_tax_group_amount_value o_list_monetary" name="deductible_original"
+                          t-out="totals.formatted_deductible_original_currency"/>
+                </td>
+            </tr>
+            <tr t-if="totals.is_deductible">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Deductible</label>
+                </td>
+                <td>
+                    <span class="o_tax_group_amount_value o_list_monetary" name="global_deductible_amount"
+                          t-out="totals.formatted_deductible_amount_currency"/>
+                </td>
+            </tr>
+        </xpath>
+    </t>
+    <t t-name="l10n_ve_deductible.TaxForeignTotalsField" t-inherit="l10n_ve_accountant.TaxForeignTotalsField" t-inherit-mode="extension" owl="1">
+        <xpath expr="//t[@t-foreach='totals.subtotals']" position="before">
+            <tr t-if="totals.is_deductible">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Subtotal without deductible</label>
+                </td>
+                <td class="o_list_monetary">
+                    <span style="white-space: nowrap;" t-out="totals.formatted_deductible_original_foreign"/>
+                </td>
+            </tr>
+            <tr t-if="totals.is_deductible">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Deductible</label>
+                </td>
+                <td class="o_list_monetary">
+                    <span style="white-space: nowrap;" t-out="totals.formatted_deductible_amount_foreign"/>
+                </td>
+            </tr>
+        </xpath>
+    </t>
+    <t t-name="l10n_ve_deductible.TaxVesTotalsField" t-inherit="l10n_ve_accountant.TaxVesTotalsField" t-inherit-mode="extension" owl="1">
+        <xpath expr="//t[@t-foreach='totals.subtotals']" position="before">
+            <tr t-if="totals.is_deductible">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Subtotal without deductible</label>
+                </td>
+                <td class="o_list_monetary">
+                    <span style="white-space: nowrap;" t-out="totals.formatted_deductible_original_ves"/>
+                </td>
+            </tr>
+            <tr t-if="totals.is_deductible">
+                <td class="o_td_label">
+                    <label class="o_form_label o_tax_total_label">Deductible</label>
+                </td>
+                <td class="o_list_monetary">
+                    <span style="white-space: nowrap;" t-out="totals.formatted_deductible_amount_ves"/>
+                </td>
+            </tr>
+        </xpath>
+    </t>
+</templates>
