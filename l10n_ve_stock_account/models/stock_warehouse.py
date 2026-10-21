@@ -25,8 +25,7 @@ class StockWarehouse(models.Model):
 
     @api.constrains("is_consignation_warehouse")
     def _check_unique_consignation_warehouse(self):
-        if (
-            self.is_consignation_warehouse
-            and self.search_count([("is_consignation_warehouse", "=", True)]) > 1
+        if any(self.mapped("is_consignation_warehouse")) and (
+            self.search_count([("is_consignation_warehouse", "=", True)]) > 1
         ):
             raise ValidationError(_("There can only be one consignation warehouse."))
