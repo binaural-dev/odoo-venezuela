@@ -32,6 +32,8 @@ from . import test_retention_line_compute_amounts
 from . import test_retention_payment_move_date
 from . import test_retention_duplicate_lines
 from . import test_retention_sequence_no_gap
+from . import test_retention_sequence_branch
+from . import test_retention_sequence_branch_flow
 from . import test_retention_ti14548_rules
 from . import test_retention_foreign_rate_ticket_15154
 from . import test_sale_book_retention_lines
