@@ -6,3 +6,4 @@ from . import test_ir_sequence
 from . import test_purchase_book_international
 from . import test_common_sale_international
 from . import test_sale_book_international
+from . import test_vendor_bill_accounting_date

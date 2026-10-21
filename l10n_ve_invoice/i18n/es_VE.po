@@ -234,6 +234,29 @@ msgid "Auto Select Debit Note Journal"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__skip_vendor_bill_today_accounting_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__skip_vendor_bill_today_accounting_date
+msgid "Skip Vendor Bill Accounting Date Adjustment"
+msgstr "Omitir ajuste de fecha contable en facturas de proveedor"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_res_company__skip_vendor_bill_today_accounting_date
+#: model:ir.model.fields,help:l10n_ve_invoice.field_res_config_settings__skip_vendor_bill_today_accounting_date
+msgid ""
+"When activated, vendor bills dated before today keep Odoo's native "
+"accounting date (last day of the period) instead of using today's date."
+msgstr ""
+"Cuando está activado, las facturas de proveedor con fecha anterior a hoy mantienen la fecha contable nativa de Odoo (último día del período) en lugar de usar la fecha de hoy."
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
+msgid ""
+"<span>When activated, vendor bills dated before today keep Odoo's native "
+"accounting date (last day of the period) instead of using today's date.</span>"
+msgstr ""
+"<span>Cuando está activado, las facturas de proveedor con fecha anterior a hoy mantienen la fecha contable nativa de Odoo (último día del período) en lugar de usar la fecha de hoy.</span>"
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "BORRADOR"
 msgstr ""

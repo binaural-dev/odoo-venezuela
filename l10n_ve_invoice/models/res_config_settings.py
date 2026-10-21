@@ -30,6 +30,11 @@ class ResConfigSettings(models.TransientModel):
         readonly=False
     )
 
+    skip_vendor_bill_today_accounting_date = fields.Boolean(
+        related="company_id.skip_vendor_bill_today_accounting_date",
+        readonly=False,
+    )
+
     mandatory_contact_in_payable_or_receivable_accounting_accounts = fields.Boolean(
         related="company_id.mandatory_contact_in_payable_or_receivable_accounting_accounts",
         readonly=False

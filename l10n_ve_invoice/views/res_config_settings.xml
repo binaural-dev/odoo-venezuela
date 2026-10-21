@@ -87,6 +87,17 @@
                             </div>
                         </div>
                         </div>
+                        <div class="col-12 col-lg-12 o_setting_box" id="l10n_ve_invoice_div_skip_vendor_bill_today_accounting_date">
+                            <div class="o_setting_left_pane">
+                                <field name="skip_vendor_bill_today_accounting_date" class="oe_inline"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="skip_vendor_bill_today_accounting_date" class="oe_inline"/>
+                                <div class="text-muted">
+                                    <span>When activated, vendor bills dated before today keep Odoo's native accounting date (last day of the period) instead of using today's date.</span>
+                                </div>
+                            </div>
+                        </div>
                     </block>
                 </xpath>
             </field>
