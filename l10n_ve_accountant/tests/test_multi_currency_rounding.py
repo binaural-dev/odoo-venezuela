@@ -1356,12 +1356,11 @@ class TestMultiCurrencyRounding(TransactionCase):
         ], move_type='in_invoice')
         user = self._create_pencil_user(
             'sin_permiso_fiscal_test_2', with_group=False,
-            extra_groups=('l10n_ve_accountant.group_foreign_currency_view_accountant',),
         )
         inv_user = inv.with_user(user)
         self.assertFalse(inv_user.can_edit_tax_totals)
         arch = etree.fromstring(inv_user.get_view(view_type='form')['arch'])
-        for widget in ('account-tax-totals-field', 'account-tax-foreign-totals-field', 'account-tax-ves-totals-field'):
+        for widget in ('account-tax-totals-field', 'account-tax-ves-totals-field'):
             field = arch.xpath(f"//field[@name='tax_totals'][@widget='{widget}']")
             self.assertTrue(field, f"widget {widget} missing in the form view")
             self.assertIn('not can_edit_tax_totals', field[0].get('readonly'), widget)
@@ -2722,17 +2721,12 @@ class TestMultiCurrencyRounding(TransactionCase):
                 f"(debit={td}, credit={tc}, diff={td - tc})",
         )
 
-    def test_48_cancel_vendor_bill_rate_backfilled_after_posting(self):
-        """Variante de test_46: en VE la tasa BCV del dia exacto de la
-        factura a veces se carga en el sistema DESPUES de haberla
-        contabilizado (se publica con retraso). Al momento de POSTEAR,
-        `invoice_currency_rate` cae al fallback de la tasa vigente MAS
-        RECIENTE anterior a `invoice_date`. Si luego, antes de cancelar,
-        alguien carga la tasa exacta de `invoice_date`, el recompute
-        forzado en cada `button_draft()` (ver test_46) usa una tasa
-        DISTINTA a la que se uso para contabilizar originalmente -- ahi
-        es donde debe manifestarse el descuadre, no con una tasa que se
-        mantiene estable entre post y cancel.
+    def test_48_post_vendor_bill_without_exact_date_rate_raises(self):
+        """La tasa se toma SOLO de la fecha exacta del documento: si para
+        `invoice_date` no hay tasa cargada (aunque exista una anterior o una
+        posterior) no se puede contabilizar y se avisa que falta la tasa.
+        Una vez cargada la tasa de ese dia, el mismo documento se contabiliza
+        con ella.
         """
         self.company.tax_calculation_rounding_method = 'round_per_line'
         self.env["res.currency.rate"].search([
@@ -2742,14 +2736,66 @@ class TestMultiCurrencyRounding(TransactionCase):
 
         invoice_date = fields.Date.today() - timedelta(days=26)
         accounting_date = fields.Date.today()
-        stale_rate_date = invoice_date - timedelta(days=5)
+        lines = [
+            (3.0, 137.4545, [self.tax_16]),
+            (5.0, 62.9091, [self.tax_16]),
+            (1.0, 245.6363, [self.tax_16]),
+        ]
 
-        # Unica tasa disponible AL MOMENTO DE POSTEAR: la de 5 dias antes
-        # de invoice_date (fallback por tasa faltante ese dia).
+        # Solo existen la tasa de 5 dias antes y la de la fecha contable
+        # (hoy): ninguna es la de `invoice_date`.
         self.env["res.currency.rate"].create({
-            "name": stale_rate_date,
+            "name": invoice_date - timedelta(days=5),
             "currency_id": self.currency_usd.id,
             "inverse_company_rate": 170.1122,
+            "company_id": self.company.id,
+        })
+        self.env["res.currency.rate"].create({
+            "name": accounting_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+        with self.assertRaisesRegex(UserError, "no rate assigned"):
+            self._create_dated_invoice(
+                self.currency_usd, invoice_date, accounting_date, lines,
+                move_type='in_invoice',
+            )
+
+        # Llega la tasa BCV real de invoice_date: ahora si se contabiliza
+        # con ella y el asiento cuadra.
+        self.env["res.currency.rate"].create({
+            "name": invoice_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+        inv = self._create_dated_invoice(
+            self.currency_usd, invoice_date, accounting_date, lines,
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        self.assertAlmostEqual(inv.invoice_currency_rate, 1 / 187.9401, places=6)
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_48: {td} != {tc}")
+
+    def test_48b_cancel_vendor_bill_rate_changed_after_posting(self):
+        """Se postea con la tasa exacta de `invoice_date` y luego se corrige el
+        valor de ESA misma tasa: el recompute forzado usa una tasa distinta a
+        la del posteo y, aun asi, al cancelar el asiento debe seguir cuadrado.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+
+        invoice_date = fields.Date.today() - timedelta(days=26)
+        accounting_date = fields.Date.today()
+        rate = self.env["res.currency.rate"].create({
+            "name": invoice_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
             "company_id": self.company.id,
         })
         self.env["res.currency.rate"].create({
@@ -2769,31 +2815,17 @@ class TestMultiCurrencyRounding(TransactionCase):
             move_type='in_invoice',
         )
         self.assertEqual(inv.state, 'posted')
-        self.assertAlmostEqual(
-            inv.invoice_currency_rate, 1 / 170.1122, places=6,
-            msg="Sanity check: al postear debia usar el fallback de la tasa "
-                "de 5 dias antes (170.1122), no la de hoy",
-        )
+        self.assertAlmostEqual(inv.invoice_currency_rate, 1 / 187.9401, places=6)
         td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
-        self.assertAlmostEqual(td, tc, places=2, msg=f"test_48_after_post: {td} != {tc}")
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_48b_after_post: {td} != {tc}")
 
-        # Llega la tasa BCV real de invoice_date, publicada con retraso.
-        self.env["res.currency.rate"].create({
-            "name": invoice_date,
-            "currency_id": self.currency_usd.id,
-            "inverse_company_rate": 187.9401,
-            "company_id": self.company.id,
-        })
-        # `invoice_currency_rate` es `store=True` y su metodo de computo LEE
-        # `expected_currency_rate` (no-store, pero su valor viejo puede
-        # seguir cacheado en env de la lectura durante el post) -- hay que
-        # invalidar esa cache Y marcar `invoice_currency_rate` a recomputar.
+        # Se corrige el valor de la tasa de invoice_date despues de contabilizar.
+        rate.inverse_company_rate = 189.5
         inv.invalidate_recordset(['expected_currency_rate'])
         self.env.add_to_compute(inv._fields['invoice_currency_rate'], inv)
         self.assertAlmostEqual(
-            inv.invoice_currency_rate, 1 / 187.9401, places=6,
-            msg="Sanity check: ahora que existe la tasa exacta de "
-                "invoice_date, debe usar esa (187.9401), no el fallback",
+            inv.invoice_currency_rate, 1 / 189.5, places=6,
+            msg="Sanity check: el recompute debe usar la tasa corregida",
         )
 
         self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
@@ -2803,8 +2835,8 @@ class TestMultiCurrencyRounding(TransactionCase):
         td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
         self.assertAlmostEqual(
             td, tc, places=2,
-            msg=f"test_48_after_cancel: entry unbalanced after button_cancel "
-                f"with a backfilled invoice_date rate "
+            msg=f"test_48b_after_cancel: entry unbalanced after button_cancel "
+                f"with a rate changed after posting "
                 f"(debit={td}, credit={tc}, diff={td - tc})",
         )
 

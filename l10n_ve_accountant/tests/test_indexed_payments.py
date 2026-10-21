@@ -390,6 +390,9 @@ class TestIndexedPayments(TestForeignBalance):
         confirm the fix is not USD-specific."""
         self._set_rate(self.currency_eur, self.invoice_date, 44.0)
         self._set_rate(self.currency_eur, self.payment_date, 55.0)
+        # the company's alternate currency is USD: its rate must exist too
+        self._set_rate(self.currency_usd, self.invoice_date, 40.0)
+        self._set_rate(self.currency_usd, self.payment_date, 40.0)
 
         invoice = self._create_vef_invoice(amount=880.0)
         residual_vef = invoice.amount_residual
