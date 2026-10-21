@@ -145,6 +145,13 @@ class TestPosConfigStockAvailability(TransactionCase):
             [],
         )
 
+    def test_deleted_product_is_ignored(self):
+        """A product id that no longer exists is skipped, not a MissingError."""
+        self._set_on_hand(self.product, 1)
+        missing_id = self.env["product.product"].search([], order="id desc", limit=1).id + 1
+        shortages = self._check({missing_id: 1, self.product.id: 7})
+        self.assertEqual([s["name"] for s in shortages], [self.product.display_name])
+
     def test_without_source_location(self):
         self._set_on_hand(self.product, 1)
         config = self.env["pos.config"].new(

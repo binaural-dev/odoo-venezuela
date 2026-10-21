@@ -33,7 +33,7 @@ no aplica al PdV: el PdV valida su picking con `_action_done()` y se salta
 
 ## Impact
 
-- **Módulo tocado:** `l10n_ve_pos` (19.0.1.20.0 → 19.0.1.22.0; la 1.21.0 la usa el PR del ticket 15725: el que se mergee segundo debe subir su versión).
+- **Módulo tocado:** `l10n_ve_pos` (19.0.1.24.0 → 19.0.1.26.0; la 1.25.0 la usa el PR del ticket 15725, #1441: el que se mergee segundo debe subir su versión).
 - **Despliegue:** `-u l10n_ve_pos`. Sin cambio de esquema.
 - **Fuera de alcance:** `not_allow_negative_stock_movement` (movimientos internos) sigue sin
   aplicar al PdV; el código comentado de O17 en `pos_order.js` no se toca.

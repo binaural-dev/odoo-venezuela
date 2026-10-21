@@ -253,9 +253,12 @@ class PosConfig(models.Model):
             # Without a source location the quantity would be computed over
             # every internal location of the company: do not validate.
             return []
+        # exists(): a product deleted after the PoS loaded it is skipped
+        # instead of raising MissingError.
         products = (
             self.env["product.product"]
             .browse(list(qty_by_product))
+            .exists()
             .with_context(location=location.id)
             .filtered("is_storable")
         )
