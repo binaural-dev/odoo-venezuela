@@ -2779,6 +2779,67 @@ class TestMultiCurrencyRounding(TransactionCase):
         td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
         self.assertAlmostEqual(td, tc, places=2, msg=f"test_48: {td} != {tc}")
 
+    def test_48b_cancel_vendor_bill_rate_changed_after_posting(self):
+        """Se postea con la tasa exacta de `invoice_date` y luego se corrige el
+        valor de ESA misma tasa: el recompute forzado usa una tasa distinta a
+        la del posteo y, aun asi, al cancelar el asiento debe seguir cuadrado.
+        """
+        self.company.tax_calculation_rounding_method = 'round_per_line'
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ]).unlink()
+
+        invoice_date = fields.Date.today() - timedelta(days=26)
+        accounting_date = fields.Date.today()
+        rate = self.env["res.currency.rate"].create({
+            "name": invoice_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 187.9401,
+            "company_id": self.company.id,
+        })
+        self.env["res.currency.rate"].create({
+            "name": accounting_date,
+            "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 191.3862,
+            "company_id": self.company.id,
+        })
+
+        inv = self._create_dated_invoice(
+            self.currency_usd, invoice_date, accounting_date,
+            [
+                (3.0, 137.4545, [self.tax_16]),
+                (5.0, 62.9091, [self.tax_16]),
+                (1.0, 245.6363, [self.tax_16]),
+            ],
+            move_type='in_invoice',
+        )
+        self.assertEqual(inv.state, 'posted')
+        self.assertAlmostEqual(inv.invoice_currency_rate, 1 / 187.9401, places=6)
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(td, tc, places=2, msg=f"test_48b_after_post: {td} != {tc}")
+
+        # Se corrige el valor de la tasa de invoice_date despues de contabilizar.
+        rate.inverse_company_rate = 189.5
+        inv.invalidate_recordset(['expected_currency_rate'])
+        self.env.add_to_compute(inv._fields['invoice_currency_rate'], inv)
+        self.assertAlmostEqual(
+            inv.invoice_currency_rate, 1 / 189.5, places=6,
+            msg="Sanity check: el recompute debe usar la tasa corregida",
+        )
+
+        self.env.cr.cache.pop(('_real_portion_distributed', inv.id), None)
+        inv.button_cancel()
+
+        self.assertEqual(inv.state, 'cancel')
+        td, tc = sum(inv.line_ids.mapped('debit')), sum(inv.line_ids.mapped('credit'))
+        self.assertAlmostEqual(
+            td, tc, places=2,
+            msg=f"test_48b_after_cancel: entry unbalanced after button_cancel "
+                f"with a rate changed after posting "
+                f"(debit={td}, credit={tc}, diff={td - tc})",
+        )
+
     def test_47_draft_and_repost_vendor_bill_round_per_line_different_dates(self):
         """Companion de test_46: mismo escenario pero con `button_draft()`
         + `action_post()` (sin cancelar), para confirmar que el ciclo

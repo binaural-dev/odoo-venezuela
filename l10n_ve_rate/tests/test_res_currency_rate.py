@@ -1,7 +1,10 @@
 from datetime import date
 
+from psycopg2 import IntegrityError
+
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
+from odoo.tools import mute_logger
 
 
 @tagged("post_install", "-at_install", "l10n_ve_rate")
@@ -36,6 +39,15 @@ class TestComputeRateFallback(TransactionCase):
 
         self.assertEqual(result["foreign_rate"], exact.inverse_company_rate)
         self.assertEqual(result["foreign_inverse_rate"], exact.company_rate)
+
+    def test_rate_of_zero_cannot_be_stored(self):
+        """Evidencia: Odoo 19 (`CHECK (rate>0)`) impide guardar una tasa en 0,
+        asi que una tasa existente nunca produce un asiento con tasa 0,00; la
+        unica falla posible es la ausencia del registro (ver
+        test_compute_rate_raises_when_no_rate_for_exact_date).
+        """
+        with self.assertRaises(IntegrityError), mute_logger("odoo.sql_db"), self.env.cr.savepoint():
+            self._create_rate(date(2023, 6, 1), 0.0)
 
     def test_compute_rate_raises_when_no_rate_for_exact_date(self):
         """No se usa la tasa más cercana: ni la anterior ni la posterior."""
