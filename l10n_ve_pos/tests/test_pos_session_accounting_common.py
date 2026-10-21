@@ -27,6 +27,9 @@ class TestPosSessionAccountingBase(TransactionCase):
     - ``account_cash``          — generic asset_cash (cash journal default)
     - ``account_bank``          — generic asset_cash (bank journal default)
     - ``account_pos_receivable``— POS-default receivable (bank journal uses this)
+    - ``exchange_journal``      — company exchange difference journal
+    - ``account_exchange_gain`` / ``account_exchange_loss`` — company exchange
+      difference accounts
     - ``cash_journal``          — combined cash journal (VEF)
     - ``split_cash_journal``    — split cash journal (VEF)
     - ``bank_journal``          — bank journal (VEF, with inbound payment method line)
@@ -40,6 +43,11 @@ class TestPosSessionAccountingBase(TransactionCase):
     - ``product_category``      — category for the test product
     - ``product``               — single test product
     - ``config``                — POS config (foreign-currency, all four methods)
+
+    The company carries the exchange difference journal and accounts that its
+    chart of accounts would set: ``l10n_ve_accountant`` keeps "Use Alternate
+    Currency Exchange Difference" on by default and refuses to reconcile an
+    alternate currency difference without them.
     """
 
     @classmethod
@@ -93,6 +101,37 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "code": "400000C",
                 "account_type": "income",
                 "company_ids": [(6, 0, [cls.company.id])],
+            }
+        )
+        cls.account_exchange_gain = Account.create(
+            {
+                "name": "C Exchange Gain",
+                "code": "770000C",
+                "account_type": "income_other",
+                "company_ids": [(6, 0, [cls.company.id])],
+            }
+        )
+        cls.account_exchange_loss = Account.create(
+            {
+                "name": "C Exchange Loss",
+                "code": "870000C",
+                "account_type": "expense",
+                "company_ids": [(6, 0, [cls.company.id])],
+            }
+        )
+        cls.exchange_journal = cls.env["account.journal"].create(
+            {
+                "name": "C Exchange Difference",
+                "type": "general",
+                "code": "CEXCH",
+                "company_id": cls.company.id,
+            }
+        )
+        cls.company.write(
+            {
+                "currency_exchange_journal_id": cls.exchange_journal.id,
+                "income_currency_exchange_account_id": cls.account_exchange_gain.id,
+                "expense_currency_exchange_account_id": cls.account_exchange_loss.id,
             }
         )
         # The company's partner must point at the test receivable account,
@@ -241,6 +280,25 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "company_id": cls.company.id,
             }
         )
+        # TI-15065: l10n_ve_accountant rejects products created without a
+        # single sale AND purchase tax unless the company carries default
+        # fiscal configuration. Give this isolated test company its defaults
+        # so the scaffolding products stay fiscally consistent.
+        cls.purchase_tax = cls.env["account.tax"].create(
+            {
+                "name": "C Purchase Tax",
+                "amount": 16.0,
+                "type_tax_use": "purchase",
+                "tax_group_id": cls.tax_group.id,
+                "company_id": cls.company.id,
+            }
+        )
+        cls.company.write(
+            {
+                "account_sale_tax_id": cls.tax.id,
+                "account_purchase_tax_id": cls.purchase_tax.id,
+            }
+        )
         cls.product_category = cls.env["product.category"].create(
             {
                 "name": "C Category",
@@ -248,7 +306,10 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "property_account_expense_categ_id": cls.account_income.id,
             }
         )
-        cls.product = cls.env["product.product"].create(
+        # ``l10n_ve_stock`` rejects creating a product in a company other than
+        # ``env.company`` (no superuser bypass), so create it from the test
+        # company.
+        cls.product = cls.env["product.product"].with_company(cls.company).create(
             {
                 "name": "C Product",
                 "lst_price": 100.0,
@@ -257,6 +318,13 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "company_id": cls.company.id,
                 "categ_id": cls.product_category.id,
                 "taxes_id": [(6, 0, cls.tax.ids)],
+                # l10n_ve_accountant.ProductTemplate._enforce_single_tax_vals_create
+                # requires exactly one tax in BOTH taxes_id and
+                # supplier_taxes_id (this test company has no default
+                # purchase tax configured). This product is only ever sold
+                # via POS in these tests, never purchased, so reusing the
+                # same tax record here is enough to satisfy the constraint.
+                "supplier_taxes_id": [(6, 0, cls.tax.ids)],
             }
         )
         cls.product.with_company(cls.company).write(

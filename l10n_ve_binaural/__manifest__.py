@@ -42,5 +42,5 @@
         "demo/demo_company.xml",
     ],
     "license": "LGPL-3",
-    "version": "1.0",
+    "version": "19.0.1.0.0",
 }

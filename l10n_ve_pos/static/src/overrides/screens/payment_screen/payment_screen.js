@@ -6,7 +6,7 @@ import { _t } from "@web/core/l10n/translation";
 import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { useService } from "@web/core/utils/hooks";
 import { SelectionPopup } from "@point_of_sale/app/components/popups/selection_popup/selection_popup";
-import { useEnv } from "@odoo/owl";
+import { useEnv, onWillStart } from "@odoo/owl";
 import { makeAwaitable } from "@point_of_sale/app/utils/make_awaitable_dialog";
 import { GT } from "@point_of_sale/app/utils/numbers";
 
@@ -18,6 +18,41 @@ patch(PaymentScreen.prototype, {
     this.utils = useEnv().utils;
     this.dialog = useService("dialog");
     this.orm = useService("orm");
+    // For a refund, prefetch (before the screen renders) the exact rate the
+    // original order's foreign tender used, so foreign refund payment lines
+    // mirror the original payment to the cent (see pos_order.getRefundForeignRate).
+    onWillStart(async () => {
+      await this._prefetchRefundForeignRate();
+    });
+  },
+  async _prefetchRefundForeignRate() {
+    const order = this.currentOrder;
+    if (!order || !order.isRefund) {
+      return;
+    }
+    const originOrderIds = new Set();
+    for (const line of order.lines || []) {
+      const id = line.refunded_orderline_id?.order_id?.id;
+      if (id) {
+        originOrderIds.add(id);
+      }
+    }
+    if (!originOrderIds.size) {
+      return;
+    }
+    try {
+      const rate = await this.orm.call("pos.order", "get_refund_foreign_rate", [
+        Array.from(originOrderIds),
+      ]);
+      const numericRate = Number(rate);
+      if (Number.isFinite(numericRate) && numericRate > 0) {
+        // Cached on the order; the sync conversion helpers read it.
+        order.refund_foreign_rate = numericRate;
+      }
+    } catch (error) {
+      // Non-fatal: fall back to the aggregate-rate conversion.
+      console.warn("[l10n_ve_pos] no se pudo prefetch la tasa de reembolso:", error);
+    }
   },
   get foreignTotalDueText() {
     // Delegates to pos.order.get_foreign_total_with_tax (single source of
@@ -43,14 +78,18 @@ patch(PaymentScreen.prototype, {
       const line = this.selectedPaymentLine;
       const order = this.currentOrder;
       if (line && order && typeof line.set_foreign_amount === "function" &&
-          typeof order.localToForeign === "function") {
+          typeof order._convertOrderAmount === "function") {
         // Convert the LOCAL remaining due to foreign using the same
         // rounding as get_foreign_total_with_tax() (foreign_currency.round).
         // No manual floor: the "covers the due" branch in set_foreign_amount
         // handles fx-noise and prevents real overpayment by clamping the
         // local amount to the exact remainingDue. Truncating here would
         // steal a cent whenever the natural round is up.
-        const foreignDue = order.localToForeign(localDueBefore);
+        //
+        // _convertOrderAmount (not raw localToForeign) so a REFUND prefills
+        // the foreign amount at the frozen original-sale rate — the value
+        // that matches the original payment shown in "ver pagos de origen".
+        const foreignDue = order._convertOrderAmount(localDueBefore);
         line.set_foreign_amount(foreignDue);
         // Use locale-aware formatting (e.g. "-0,01" in es_VE) for the
         // number buffer. NEVER use toFixed() which produces "." decimal

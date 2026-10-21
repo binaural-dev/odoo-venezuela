@@ -1,0 +1,260 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_pos_mf_self_order
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-19 00:00+0000\n"
+"PO-Revision-Date: 2026-08-19 00:00+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"Language: es_VE\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid "Invalid order"
+msgstr "Orden no válida"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid "Fiscal invoice not printed"
+msgstr "Factura fiscal no impresa"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid ""
+"The order was registered and invoiced. The fiscal invoice could not be "
+"printed (reason: %s). It can be reprinted from the MF Debug menu."
+msgstr ""
+"La orden quedó registrada y facturada. La factura fiscal no se pudo imprimir "
+"(motivo: %s). Puede reimprimirse desde el menú de Debug MF."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid "unknown error"
+msgstr "error desconocido"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid "Fiscal machine not connected"
+msgstr "Máquina fiscal no conectada"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid "Error while printing"
+msgstr "Error al imprimir"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid "Error while printing on the fiscal machine"
+msgstr "Error al imprimir en la máquina fiscal"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid "The order has no fiscal number; use Print."
+msgstr "La orden no tiene número fiscal; usa Imprimir."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/overrides/self_order_fiscal.js:0
+#, python-format
+msgid "Error while reprinting the copy"
+msgstr "Error al reimprimir la copia"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.js:0
+#, python-format
+msgid "Sending to the fiscal machine…"
+msgstr "Enviando a la máquina fiscal…"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.js:0
+#, python-format
+msgid "Copy reprinted."
+msgstr "Copia reimpresa."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.js:0
+#, python-format
+msgid "Invoice printed (no. %s)."
+msgstr "Factura impresa (nº %s)."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.js:0
+#, python-format
+msgid "Failed: %s"
+msgstr "Falló: %s"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.js:0
+#, python-format
+msgid "Error: %s"
+msgstr "Error: %s"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Fiscal machine connected."
+msgstr "Máquina fiscal conectada."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Could not connect the fiscal machine."
+msgstr "No se pudo conectar la máquina fiscal."
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.xml:0
+msgid "Check connection status"
+msgstr "Comprobar estado de conexión"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Not available"
+msgstr "No disponible"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.js:0
+msgid "Pair fiscal machine"
+msgstr "Parear máquina fiscal"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Pending fiscal"
+msgstr "Pendiente fiscal"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Fiscal"
+msgstr "Fiscal"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "invoiced, pending fiscal-machine printing"
+msgstr "facturada, pendiente de imprimir en la máquina fiscal"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "fiscal invoice issued"
+msgstr "factura fiscal emitida"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Authorization:"
+msgstr "Autorización:"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Reference:"
+msgstr "Referencia:"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Batch:"
+msgstr "Lote:"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Card:"
+msgstr "Tarjeta:"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Bank:"
+msgstr "Banco:"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Print fiscal invoice"
+msgstr "Imprimir factura fiscal"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_orders_dialog_fiscal.xml:0
+msgid "Reprint copy"
+msgstr "Reimprimir copia"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.xml:0
+msgid "Fiscal machine status (last test):"
+msgstr "Estado de la máquina fiscal (última prueba):"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.xml:0
+msgid "Not tested"
+msgstr "Sin comprobar"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.xml:0
+msgid "Connected"
+msgstr "Conectada"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.xml:0
+msgid "Disconnected"
+msgstr "Desconectada"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-javascript
+#: code:addons/l10n_ve_pos_mf_self_order/static/src/app/debug/kiosk_debug_dialog_fiscal.xml:0
+msgid "Pair fiscal machine (authorize port)"
+msgstr "Parear máquina fiscal (autorizar puerto)"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf_self_order/controllers/main.py:0
+#, python-format
+msgid "Order not found for this POS"
+msgstr "Orden no encontrada para esta caja"
+
+#. module: l10n_ve_pos_mf_self_order
+#. odoo-python
+#: code:addons/l10n_ve_pos_mf_self_order/controllers/main.py:0
+#, python-format
+msgid "This order already has a fiscal number"
+msgstr "Esta orden ya tiene un número fiscal"

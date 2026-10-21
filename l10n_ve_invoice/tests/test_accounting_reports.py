@@ -379,6 +379,33 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("sale")
         self.assertEqual(wizard.convert_currency_to_float("ABC"), 0.0)
 
+    def test_convert_currency_to_float_symbol_before_nbsp(self):
+        """Formato real de Odoo: simbolo antes + espacio no-separable (\\xa0).
+        Antes se partia por \\xa0 y se quedaba con "Bs." -> 0.0 en todo importe."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa0876,18"), 876.18)
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa00,00"), 0.0)
+
+    def test_convert_currency_to_float_thousands(self):
+        """Punto de miles + coma decimal (es_VE)."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa02.382,11"), 2382.11)
+        self.assertEqual(
+            wizard.convert_currency_to_float("Bs.\xa013.836,97"), 13836.97
+        )
+
+    def test_convert_currency_to_float_symbol_after(self):
+        """Robustez: simbolo despues del monto tambien se parsea bien."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("1.234,56\xa0Bs."), 1234.56)
+
+    def test_convert_currency_to_float_symbol_after_dot_decimal(self):
+        """Simbolo despues con decimal de punto (Bs.F): el punto pegado al
+        simbolo NO debe colarse como decimal suelto y romper el parseo."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("100.00\xa0Bs.F"), 100.00)
+        self.assertEqual(wizard.convert_currency_to_float("16.00\xa0Bs.F"), 16.00)
+
     # ============================================================
     # Phase 3: Domain & search
     # ============================================================
