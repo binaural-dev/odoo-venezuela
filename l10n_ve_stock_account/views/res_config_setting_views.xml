@@ -113,6 +113,21 @@
                         </div>
                     </div>
                 </div>
+                <div class="col-12 col-lg-6 o_setting_box" id="l10n_ve_settings_transport_data">
+                    <div class="o_setting_left_pane">
+                        <field name="transport_data_required"/>
+                    </div>
+                    <div class="o_setting_right_pane">
+                        <label for="transport_data_required"/>
+                        <div class="text-muted">
+                            Outgoing dispatch guides need driver, driver ID number and vehicle plate to be validated.
+                        </div>
+                        <div class="mt8">
+                            <label for="transport_data_source" class="o_light_label me-2"/>
+                            <field name="transport_data_source" class="oe_inline"/>
+                        </div>
+                    </div>
+                </div>
             </xpath>
             <!-- Max product lines per dispatch guide (l10n_ve_stock) belongs to the dispatch guide section. -->
             <xpath expr="//div[@id='l10n_ve_settings_internal_transfer_reason_id']" position="after">

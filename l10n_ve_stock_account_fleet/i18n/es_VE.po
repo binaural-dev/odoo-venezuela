@@ -1,0 +1,151 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_stock_account_fleet
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-05 21:37+0000\n"
+"PO-Revision-Date: 2026-10-05 21:37+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model,name:l10n_ve_stock_account_fleet.model_res_company
+msgid "Companies"
+msgstr "Empresas"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_fleet_vehicle__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_stock_picking__display_name
+msgid "Display Name"
+msgstr "Nombre en pantalla"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account_fleet.selection__res_company__transport_data_source__fleet
+msgid "Fleet"
+msgstr "Flota"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_fleet_vehicle__id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_stock_picking__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_fleet_vehicle__is_trailer
+msgid "Is a Trailer"
+msgstr "Es batea"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,help:l10n_ve_stock_account_fleet.field_fleet_vehicle__is_trailer
+msgid ""
+"Mark it for trailers. They are offered in the 'Trailer' field of dispatch "
+"guides instead of the 'Vehicle' field."
+msgstr ""
+"Márquelo para las bateas. Se ofrecen en el campo 'Batea' de la guía de "
+"despacho en lugar del campo 'Vehículo'."
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_stock_picking__transport_trailer_id
+msgid "Trailer"
+msgstr "Batea"
+
+#. module: l10n_ve_stock_account_fleet
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account_fleet.fleet_vehicle_view_search_inherit_transport
+msgid "Trailers"
+msgstr "Bateas"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model,name:l10n_ve_stock_account_fleet.model_stock_picking
+msgid "Transfer"
+msgstr "Transferir"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_res_company__transport_data_source
+msgid "Transport Data Source"
+msgstr "Origen de los datos de transporte"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model,name:l10n_ve_stock_account_fleet.model_fleet_vehicle
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_stock_picking__transport_vehicle_id
+msgid "Vehicle"
+msgstr "Vehículo"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,help:l10n_ve_stock_account_fleet.field_res_company__transport_data_source
+msgid ""
+"Where the driver and vehicle data of the dispatch guide come from. 'Fleet' "
+"is only available when the Fleet app is installed."
+msgstr ""
+"De dónde salen los datos del conductor y del vehículo de la guía de "
+"despacho. 'Flota' solo está disponible si la aplicación Flota está "
+"instalada."
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account_fleet.selection__res_partner__driver_license_type__1
+msgid "1st Degree"
+msgstr "1er grado"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account_fleet.selection__res_partner__driver_license_type__2
+msgid "2nd Degree"
+msgstr "2do grado"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account_fleet.selection__res_partner__driver_license_type__3
+msgid "3rd Degree"
+msgstr "3er grado"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account_fleet.selection__res_partner__driver_license_type__4
+msgid "4th Degree"
+msgstr "4to grado"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields.selection,name:l10n_ve_stock_account_fleet.selection__res_partner__driver_license_type__5
+msgid "5th Degree"
+msgstr "5to grado"
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,help:l10n_ve_stock_account_fleet.field_res_partner__driver_license_type
+#: model:ir.model.fields,help:l10n_ve_stock_account_fleet.field_res_users__driver_license_type
+msgid ""
+"Copied to the dispatch guide when this contact is the driver of the vehicle "
+"selected from Fleet."
+msgstr ""
+"Se copia a la guía de despacho cuando este contacto es el conductor del "
+"vehículo elegido desde Flota."
+
+#. module: l10n_ve_stock_account_fleet
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_res_partner__driver_license_type
+#: model:ir.model.fields,field_description:l10n_ve_stock_account_fleet.field_res_users__driver_license_type
+msgid "Driver License Type"
+msgstr "Tipo de licencia"
+
+#. module: l10n_ve_stock_account_fleet
+#. odoo-python
+#: code:addons/l10n_ve_stock_account_fleet/models/fleet_vehicle.py:0
+#, python-format
+msgid "The driver of a vehicle must be a person, not a company: '%s'."
+msgstr "El conductor de un vehículo debe ser una persona, no una empresa: '%s'."
+
+#. module: l10n_ve_stock_account_fleet
+#. odoo-python
+#: code:addons/l10n_ve_stock_account_fleet/models/stock_picking.py:0
+#, python-format
+msgid ""
+"The vehicle '%(vehicle)s' has a company as its driver in Fleet "
+"('%(driver)s'). Fix the driver in Fleet before using this vehicle in a "
+"dispatch guide."
+msgstr ""
+"El vehículo '%(vehicle)s' tiene una empresa como conductor en Flota "
+"('%(driver)s'). Corrija el conductor en Flota antes de usar este vehículo "
+"en una guía de despacho."
