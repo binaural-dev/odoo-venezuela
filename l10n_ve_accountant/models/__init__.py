@@ -1,8 +1,10 @@
 from . import res_company
+from . import account_chart_template
 from . import account_move_line
 from . import account_move
 from . import account_tax
 from . import account_partial_reconcile
+from . import payment_date_check_mixin
 from . import account_payment
 from . import account_invoice_report
 from . import res_partner
@@ -12,4 +14,5 @@ from . import tax_unit
 from . import res_currency
 from . import res_config_settings
 from . import account_journal
+from . import account_payment_method_line
 from . import product_template

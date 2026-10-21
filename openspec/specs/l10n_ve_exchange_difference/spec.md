@@ -634,3 +634,27 @@ Se logra con:
 - **THEN** el runtime guard detecta que `'aml'` no existe
 - **AND** lanza `UserError` explícito ANTES de stashear None
 - **AND** la reconciliación falla ruidoso, no silenciosamente
+
+### Requirement: Un pago con fecha futura se rechaza antes de la conciliación
+
+Un pago (`account.payment`) o un asistente de registrar pago con fecha posterior a hoy NO PUEDE (MUST NOT) guardarse (ver `l10n_ve_accountant`, ticket #15682), por lo que nunca llega a la conciliación ni genera ND/NC de diferencial con fecha futura. La exención `l10n_ve_skip_future_date_check` de `action_post()` sigue vigente para las notas de diferencial: su fecha es la del pago, que ya no puede ser futura.
+
+#### Scenario: Pago con fecha futura sobre factura en divisa
+
+- **WHEN** se intenta registrar un pago con fecha posterior a hoy sobre una factura en divisa
+- **THEN** se lanza un error de validación en el asistente, no se crea el pago y no se genera ninguna ND/NC de diferencial
+
+#### Scenario: Tests de aislamiento de tasas
+
+- **WHEN** los tests de esta capa necesitan fechas sin tasas propias
+- **THEN** usan fechas pasadas (años 2000-2019), no futuras, para no chocar con el guard de fecha futura de `l10n_ve_invoice`
+
+#### Scenario: Fixtures de test independientes de otros módulos
+
+- **WHEN** los tests de esta capa necesitan un diario de banco en la moneda de la compañía
+- **THEN** solo reutilizan uno existente si su método de pago entrante tiene `payment_account_id`; de lo contrario crean el suyo, para no depender de diarios de la plantilla contable (p. ej. al instalar `account_asset`)
+
+#### Scenario: Reversión por el wizard estándar
+
+- **WHEN** una nota de diferencial se revierte con el wizard estándar
+- **THEN** la reversión no debe tener `invoice_date` (tasa) posterior a su `invoice_date_display`; el test usa la misma fecha de la nota original

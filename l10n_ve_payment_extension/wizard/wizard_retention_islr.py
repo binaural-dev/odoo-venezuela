@@ -1,3 +1,4 @@
+from odoo.tools.float_utils import float_round
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError,ValidationError
 import xlsxwriter
@@ -150,6 +151,36 @@ class RetentionIslrReport(models.TransientModel):
         return new_model_row
 
     @api.model    
+    def _islr_operation_amount(self, ret_line_id, is_vef_currency):
+        """El "Monto Operacion" del fichero ISLR, con el criterio de Odoo.
+
+        Estaba con `round(x, 2)` de Python, que redondea al PAR
+        -`round(0.125, 2)` da 0.12- mientras todo el resto del sistema,
+        empezando por los propios campos Monetary, redondea al alza. Es el
+        unico punto donde un importe que va a un fichero de declaracion usaba
+        el criterio contrario, y el sesgo no se cancela: crece con el numero
+        de operaciones declaradas.
+
+        Se fijan dos decimales porque el layout del SENIAT manda dos. Lo que
+        cambia es el criterio para llegar a ellos, no la cantidad.
+
+        `float_round` en vez de `currency.round()`: el campo de moneda de la
+        linea es un related no almacenado a traves de `retention_id` y puede
+        venir vacio -no es required ni en la retencion ni en la compania-, y
+        ahi `currency.round()` haria `ensure_one()` sobre un recordset vacio y
+        tumbaria la generacion del fichero entero. Justo el caso en que el ORM
+        tampoco redondeo el Monetary, que es cuando esto hace falta.
+
+        Vive aparte del constructor de fila para poder probarse sin montar una
+        retencion ISLR completa.
+        """
+        amount = (
+            ret_line_id.foreign_invoice_amount
+            if is_vef_currency
+            else ret_line_id.invoice_amount
+        )
+        return float_round(amount, precision_digits=2, rounding_method="HALF-UP")
+
     def _get_retention_islr_excel_row(self, row_idx, ret_line_id, is_vef_currency):
 
         new_row = self._get_retention_islr_excel_model_row()
@@ -183,8 +214,15 @@ class RetentionIslrReport(models.TransientModel):
 
         new_row["Código Concepto"] = concept
 
-        new_row["Monto Operación"] = (
-            round(ret_line_id.foreign_invoice_amount, 2) if is_vef_currency else ret_line_id.invoice_amount
+        # Se redondea con la moneda del propio campo, no con round() de
+        # Python: round() aplica banker's rounding -redondea al par, asi que
+        # round(2.675, 2) da 2.67 y round(1.005, 2) da 1.0- mientras que todo
+        # el resto del sistema, empezando por los propios campos Monetary,
+        # redondea al alza. Dos criterios distintos sobre un importe que va a
+        # un fichero de declaracion.
+        #
+        new_row["Monto Operación"] = self._islr_operation_amount(
+            ret_line_id, is_vef_currency
         )
 
         new_row["Porcentaje de retención"] = alicuota

@@ -1,6 +1,6 @@
 from odoo.tests import TransactionCase, tagged, Form
-from datetime import date
-from odoo.exceptions import UserError, ValidationError
+from datetime import timedelta, date
+from odoo.exceptions import UserError
 from odoo import Command, fields
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaSequenceMismatchError
 from unittest.mock import patch, MagicMock
@@ -17,6 +17,85 @@ class TestAccumulatedRate(TransactionCase):
         self.company = self.env.ref("base.main_company")
         self.env.user.tz = "America/Caracas"
 
+        self.purchase_journal = self.env['account.journal'].search([
+            ('company_id', '=', self.company.id),
+            ('type', '=', 'purchase')
+        ], limit=1)
+
+        if not self.purchase_journal:
+            self.purchase_journal = self.env['account.journal'].create({
+                'name': 'Purchase Journal',
+                'code': 'PURCH',
+                'type': 'purchase',
+                'company_id': self.company.id,
+            })
+
+        self.expense_account = self.env['account.account'].search([
+            ('company_ids', 'in', self.company.id),
+            ('account_type', '=', 'expense'),
+            ('active', '=', True)
+        ], limit=1)
+
+        if not self.expense_account:
+            self.expense_account = self.env['account.account'].create({
+                'name': 'Test Expense Account',
+                'code': '600000',
+                'account_type': 'expense',
+                'company_ids': [(6, 0, [self.company.id])],
+                'reconcile': False,
+            })
+
+        # Cuenta de pasivo (para partner)
+        self.payable_account = self.env['account.account'].search([
+            ('company_ids', 'in', self.company.id),
+            ('account_type', '=', 'liability_payable'),
+            ('active', '=', True)
+        ], limit=1)
+
+        if not self.payable_account:
+            self.payable_account = self.env['account.account'].create({
+                'name': 'Test Payable Account',
+                'code': '200000',
+                'account_type': 'liability_payable',
+                'company_ids': [(6, 0, [self.company.id])],
+                'reconcile': True,
+            })
+
+        # Diarios de retenciones (l10n_ve_payment_extension los exige en la compañía)
+        retention_account = self.env['account.account'].create({
+            'name': 'Retenciones por pagar',
+            'code': '210099',
+            'account_type': 'liability_current',
+            'company_ids': [(6, 0, [self.company.id])],
+            'reconcile': True,
+        })
+        retention_journal = self.env['account.journal'].with_context(
+            chart_template_load=True
+        ).create({
+            'name': 'Retenciones',
+            'code': 'RETN',
+            'type': 'bank',
+            'company_id': self.company.id,
+            'default_account_id': retention_account.id,
+        })
+        for line in (
+            retention_journal.inbound_payment_method_line_ids
+            | retention_journal.outbound_payment_method_line_ids
+        ).filtered(lambda l: not l.payment_account_id):
+            line.payment_account_id = retention_account
+        self.company.write({
+            'iva_supplier_retention_journal_id': retention_journal.id,
+            'iva_customer_retention_journal_id': retention_journal.id,
+            'islr_supplier_retention_journal_id': retention_journal.id,
+            'islr_customer_retention_journal_id': retention_journal.id,
+            'municipal_supplier_retention_journal_id': retention_journal.id,
+            'municipal_customer_retention_journal_id': retention_journal.id,
+        })
+
+        self.type_person = self.env['type.person'].create({
+            'name': 'No Juridica',
+        })
+        
         # En una base sin datos de demo el VEF viene inactivo y sin ninguna tasa
         # cargada. Sin esto el foreign_rate de la factura queda en 0 (lo calcula
         # _compute_rate contra res.currency.rate, no lo toma del valor que se le
@@ -29,6 +108,7 @@ class TestAccumulatedRate(TransactionCase):
             "company_rate": 2.0,
             "company_id": self.company.id,
         })
+
 
         iva_sequence = self.env["ir.sequence"].create({
             "name": "Secuencia de iva para proveedores",
@@ -1096,6 +1176,85 @@ class TestAccumulatedRate(TransactionCase):
         details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "05")
         self.assertTrue(details)
         self.assertEqual(details[0]["montoExento"], "50.0")
+
+    def test_47_prepare_detail_lines_uses_vendor_series_when_set(self):
+        """Ticket helpdesk #15078: si el proveedor tiene serie cargada, se
+        envia esa serie en lugar de la inferida del nombre del documento."""
+        invoice = self._create_invoice()
+        invoice.vendor_series_tfhka = "ABC"
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "05")
+        self.assertTrue(details)
+        self.assertEqual(details[0]["serieDocumento"], "ABC")
+        self.assertEqual(
+            details[0]["numeroDocumento"],
+            ''.join(c for c in invoice.name if c.isdigit()),
+        )
+
+    def test_48_prepare_detail_lines_falls_back_without_vendor_series(self):
+        """Sin serie de proveedor cargada se conserva el comportamiento
+        anterior: la serie se infiere del nombre del documento (sin
+        regresion para proveedores que no manejan serie)."""
+        invoice = self._create_invoice()
+        self.assertFalse(invoice.vendor_series_tfhka)
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+
+        details = self.env['tfhka.retention.service']._prepare_detail_lines(retention, "05")
+        self.assertTrue(details)
+        self.assertEqual(
+            details[0]["serieDocumento"],
+            ''.join(c for c in invoice.name if c.isalpha()),
+        )
+
+    def test_hd15078_vendor_series_readonly_after_confirm(self):
+        """Pedido de Yuliana (09/10) en el ticket helpdesk #15078: la serie
+        de proveedor se bloquea al confirmar la factura, para no reescribir
+        un valor que ya pudo haberse usado al digitalizar una retencion."""
+        invoice = self._create_invoice()
+        invoice.vendor_series_tfhka = "ABC"
+        invoice.action_post()
+
+        with Form(invoice) as invoice_form:
+            self.assertTrue(invoice_form._get_modifier("vendor_series_tfhka", "readonly"))
+            with self.assertRaises(AssertionError):
+                invoice_form.vendor_series_tfhka = "XYZ"
+
+    def test_hd15078_vendor_series_hidden_on_customer_invoices(self):
+        """La serie de proveedor (ticket helpdesk #15078) es exclusiva de
+        facturas/notas de credito de proveedor; en documentos de venta el
+        campo no debe aparecer."""
+        with Form(self.env["account.move"].with_context(default_move_type="out_invoice")) as invoice_form:
+            self.assertTrue(invoice_form._get_modifier("vendor_series_tfhka", "invisible"))
+
+    # HD-15459 (seguimiento): una factura de proveedor usada por una
+    # retención ya digitalizada con TFHKA no se puede cancelar ni reabrir --
+    # la retención ya envió los montos/fecha de esa factura a TFHKA.
+    def test_hd15459_vendor_bill_blocked_when_retention_digitalized(self):
+        invoice = self._create_invoice()
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+        retention.is_digitalized = True
+
+        with self.assertRaises(UserError):
+            invoice.button_cancel()
+        with self.assertRaises(UserError):
+            invoice.button_draft()
+
+    def test_hd15459_vendor_bill_allowed_when_retention_not_digitalized(self):
+        invoice = self._create_invoice()
+        invoice.action_post()
+        retention = self._create_retention("iva", invoice)
+        retention.action_post()
+        self.assertFalse(retention.is_digitalized)
+
+        invoice.button_cancel()
+        self.assertEqual(invoice.state, "cancel")
 
     # # Retencion con Sucursal
     # @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)

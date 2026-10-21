@@ -27,6 +27,9 @@ class TestPosSessionAccountingBase(TransactionCase):
     - ``account_cash``          — generic asset_cash (cash journal default)
     - ``account_bank``          — generic asset_cash (bank journal default)
     - ``account_pos_receivable``— POS-default receivable (bank journal uses this)
+    - ``exchange_journal``      — company exchange difference journal
+    - ``account_exchange_gain`` / ``account_exchange_loss`` — company exchange
+      difference accounts
     - ``cash_journal``          — combined cash journal (VEF)
     - ``split_cash_journal``    — split cash journal (VEF)
     - ``bank_journal``          — bank journal (VEF, with inbound payment method line)
@@ -40,6 +43,11 @@ class TestPosSessionAccountingBase(TransactionCase):
     - ``product_category``      — category for the test product
     - ``product``               — single test product
     - ``config``                — POS config (foreign-currency, all four methods)
+
+    The company carries the exchange difference journal and accounts that its
+    chart of accounts would set: ``l10n_ve_accountant`` keeps "Use Alternate
+    Currency Exchange Difference" on by default and refuses to reconcile an
+    alternate currency difference without them.
     """
 
     @classmethod
@@ -93,6 +101,37 @@ class TestPosSessionAccountingBase(TransactionCase):
                 "code": "400000C",
                 "account_type": "income",
                 "company_ids": [(6, 0, [cls.company.id])],
+            }
+        )
+        cls.account_exchange_gain = Account.create(
+            {
+                "name": "C Exchange Gain",
+                "code": "770000C",
+                "account_type": "income_other",
+                "company_ids": [(6, 0, [cls.company.id])],
+            }
+        )
+        cls.account_exchange_loss = Account.create(
+            {
+                "name": "C Exchange Loss",
+                "code": "870000C",
+                "account_type": "expense",
+                "company_ids": [(6, 0, [cls.company.id])],
+            }
+        )
+        cls.exchange_journal = cls.env["account.journal"].create(
+            {
+                "name": "C Exchange Difference",
+                "type": "general",
+                "code": "CEXCH",
+                "company_id": cls.company.id,
+            }
+        )
+        cls.company.write(
+            {
+                "currency_exchange_journal_id": cls.exchange_journal.id,
+                "income_currency_exchange_account_id": cls.account_exchange_gain.id,
+                "expense_currency_exchange_account_id": cls.account_exchange_loss.id,
             }
         )
         # The company's partner must point at the test receivable account,
