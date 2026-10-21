@@ -115,25 +115,16 @@ class ProductProduct(models.Model):
         quants_res = {product.id: (quantity, reserved_quantity) for product, quantity, reserved_quantity in Quant._read_group(domain_quant, ['product_id'], ['quantity:sum', 'reserved_quantity:sum'])}
         if dates_in_the_past:
             # Calculate the moves that were done before now to calculate back in time (as most questions will be recent ones)
-            if location:
-                copy_domain_move_in_done = domain_move_in_done
-                copy_domain_move_out_done = domain_move_out_done
-                domain_move_in_done = expression.AND(
-                    [copy_domain_move_in_done, [("location_dest_id", "=", location.id)]]
-                )
-                domain_move_in_done = expression.OR(
-                    [copy_domain_move_in_done, [("location_id", "=", location.id)]]
-                )
-                domain_move_out_done = expression.AND(
-                    [copy_domain_move_out_done, [("location_dest_id", "=", location.id)]]
-                )
-                domain_move_out_done = expression.OR(
-                    [copy_domain_move_out_done, [("location_id", "=", location.id)]]
-                )
-            domain_move_in_done = [('state', '=', 'done'), ('date', '>', to_date)] + domain_move_in_done 
+            domain_move_in_done = expression.AND(
+                [domain_move_in_done, [("location_dest_id", "=", location.id)]]
+            )
+            domain_move_out_done = expression.AND(
+                [domain_move_out_done, [("location_id", "=", location.id)]]
+            )
+            domain_move_in_done = [('state', '=', 'done'), ('date', '>', to_date)] + domain_move_in_done
             domain_move_out_done = [('state', '=', 'done'), ('date', '>', to_date)] + domain_move_out_done
-            moves_in_res_past = dict((item['product_id'][0], item['product_qty']) for item in Move._read_group(domain_move_in_done, ['product_id'], ['product_qty:sum']))
-            moves_out_res_past = dict((item['product_id'][0], item['product_qty']) for item in Move._read_group(domain_move_out_done, ['product_id'], ['product_qty:sum']))
+            moves_in_res_past = {product.id: product_qty for product, product_qty in Move._read_group(domain_move_in_done, ['product_id'], ['product_qty:sum'])}
+            moves_out_res_past = {product.id: product_qty for product, product_qty in Move._read_group(domain_move_out_done, ['product_id'], ['product_qty:sum'])}
 
         res = dict()
         for product in self.with_context(prefetch_fields=False):

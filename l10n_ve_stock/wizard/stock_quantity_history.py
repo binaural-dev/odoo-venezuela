@@ -36,9 +36,6 @@ class StockQuantityHistoryInh(models.TransientModel):
         res = super(StockQuantityHistoryInh, self.with_context(location=self.warehouse_search_id)).open_at_date()
         return res
 
-    def open_at_date_test(self):
-        self._compute_quantities_dict()
-
     def generate_report(self):
         company = self.env.company
         warehouse_search_id = self.warehouse_search_id
@@ -60,12 +57,15 @@ class StockQuantityHistoryInh(models.TransientModel):
             lot_id=False, owner_id=False, package_id=False,  to_date=inventory_datetime
         )
         
-        module_last_cost = self.env["ir.module.module"].search([('name', "ilike", "binaural_last_cost")])
-        last_cost_installed = True if module_last_cost.state == "installed" else False
+        last_cost_installed = bool(
+            self.env["ir.module.module"].search_count(
+                [("name", "=", "binaural_last_cost"), ("state", "=", "installed")]
+            )
+        )
+        fields_products = list(self.get_fields_products())
         if last_cost_installed:
-            FIELDSPRODUCTS.append("latest_standard_price")
-            FIELDSPRODUCTS.append("value_total_last_cost")
-        product_ids = product_ids.with_context(location=warehouse_search_id.id).read(fields=FIELDSPRODUCTS)
+            fields_products += ["latest_standard_price", "value_total_last_cost"]
+        product_ids = product_ids.with_context(location=warehouse_search_id.id).read(fields=fields_products)
         products_filter = []
         for prod in product_ids:
             prod["qty_available"] = product_ids_a[prod["id"]]["qty_available"]
@@ -75,7 +75,7 @@ class StockQuantityHistoryInh(models.TransientModel):
                     products_filter.append(prod)
         data = {
             "warehouse_id": warehouse_search_id.display_name if warehouse_search_id else False,
-            "company_id": company,
+            "company_id": company.id,
             "to_date": inventory_datetime.date(),
             "today": fields.Date.context_today(self),
             "product_ids": product_ids if not except_product else products_filter,
