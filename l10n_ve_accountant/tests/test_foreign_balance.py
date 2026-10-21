@@ -1158,6 +1158,7 @@ class TestForeignBalance(TransactionCase):
                 "currency_id": self.currency_vef.id,  # Factura en VEF (moneda de la compañía)
                 "date": day1,
                 "invoice_date": day1,
+                "invoice_date_display": day1,
                 "invoice_line_ids": [
                     Command.create(
                         {
@@ -1189,7 +1190,9 @@ class TestForeignBalance(TransactionCase):
             msg="Foreign debit/credit de la linea de impuesto no coincide con la tasa inicial",
         )
 
-        invoice.write({"invoice_date": day2, "date": day2})
+        invoice.write(
+            {"invoice_date": day2, "invoice_date_display": day2, "date": day2}
+        )
 
         tax_line = invoice.line_ids.filtered(lambda l: l.display_type == "tax")
         expected_day2 = self.currency_vef._convert(

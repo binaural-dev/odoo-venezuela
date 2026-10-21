@@ -67,9 +67,6 @@ class AccountMove(models.Model):
     @api.constrains("invoice_date_display", "date")
     def _check_invoice_date_display_purchases(self):
         for move in self:
-            _logger.warning(
-                f"Checking invoice_date_display constraint for move {move.id} with move_type {move.move_type} and company setting block_invoice_display_date_upper_than_date {move.company_id.block_invoice_display_date_upper_than_date}"
-            )
             if (
                 move.is_purchase_document(include_receipts=True)
                 and move.company_id.block_invoice_display_date_upper_than_date
@@ -83,6 +80,10 @@ class AccountMove(models.Model):
                         _(
                             "The invoice date cannot be greater than the accounting date."
                         )
+                    )
+                if move.date and move.date > fields.Date.context_today(move):
+                    raise ValidationError(
+                        _("The accounting date cannot be greater than today.")
                     )
 
     import_file_number_purchase_international = fields.Char(

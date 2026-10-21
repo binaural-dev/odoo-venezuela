@@ -807,3 +807,68 @@ El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_c
 
 - **WHEN** se obtiene el formulario de `account.move` en una compañía con `foreign_currency_id`
 - **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
+
+### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
+
+`account.move.line._get_effective_discount_percent()` DEBE (MUST) devolver el porcentaje de descuento que realmente se aplica a la línea (por defecto `discount or 0.0`) y ser la única fuente que lean el cálculo de impuestos de la línea (override de `account.tax._prepare_base_line_for_taxes_computation`, que asigna `discount` solo cuando el registro es un `account.move.line`), `_compute_foreign_subtotal`, `company_currency_line_totals`, `detailed_amounts` y la reconstrucción del apunte de las líneas con impuesto de precio incluido (`_price_included_split`). Un módulo que descuenta a través de un campo propio DEBE (MUST) extender solo este método. Sin ninguna extensión el comportamiento es idéntico al de leer `discount`. `l10n_ve_deductible` lo extiende; `discount_fixed` de `l10n_ve_invoice` mantiene su propio override.
+
+#### Scenario: Módulo con descuento propio
+
+- **WHEN** un módulo extiende `_get_effective_discount_percent()` para devolver su porcentaje en una línea con `discount = 0`
+- **THEN** el subtotal, el total, el apunte, el subtotal en moneda alterna, el desglose en moneda de la compañía y el detalle de importes de esa línea usan ese porcentaje
+
+### Requirement: `_sync_tax_lines` resincroniza los apuntes cuando cambian los campos de `_get_base_line_sync_extra_fields()`
+
+`account.move._get_base_line_sync_extra_fields()` DEBE (MUST) devolver los campos de línea de factura, además de los de agrupación, cuyo cambio obliga a `_sync_tax_lines` a resincronizar los apuntes (por defecto `price_unit`, `quantity` y `discount`). Un módulo que altera los importes de la línea con un campo propio DEBE (MUST) añadirlo extendiendo este método; de lo contrario, cambiar solo ese campo en una factura guardada no actualizaría los apuntes.
+
+#### Scenario: Cambia solo el campo propio de un módulo
+
+- **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
+- **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
+
+### Requirement: No se puede confirmar un pago con importe cero
+
+`account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.
+
+#### Scenario: Confirmar un pago con importe 0.0
+
+- **WHEN** se confirma desde la vista de pagos un pago cuyo importe es 0.0
+- **THEN** se lanza un `UserError` y el pago permanece en borrador
+
+#### Scenario: Confirmar un pago con importe mayor a cero
+
+- **WHEN** se confirma un pago con importe mayor a cero
+- **THEN** el pago se confirma con normalidad
+
+#### Scenario: Registrar pago por wizard en divisa cuyo importe convertido redondea a 0.0
+
+- **GIVEN** una factura en Bs cuyo saldo, convertido a USD, es menor a 0,01 USD
+- **WHEN** se registra el pago con `account.payment.register` en un diario USD con IGTF
+- **THEN** se lanza un `UserError` que indica la moneda y que el importe convertido es menor a la unidad mínima
+- **AND** no se crea ni concilia ningún pago, y la factura conserva su saldo
+
+#### Scenario: Cierre de sesión POS con neto cero
+
+- **WHEN** el cierre de sesión POS crea el pago agrupado de un método de banco cuyo neto es 0 (contexto `from_pos`)
+- **THEN** la guarda no aplica y la sesión puede cerrarse
+### Requirement: Un pago no puede tener fecha futura
+
+La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
+(`account.payment.register.payment_date`) NO PUEDEN (MUST NOT) ser posteriores a `fields.Date.context_today` (zona
+horaria del usuario). La validación es una constraint de guardado, de modo que aplica al crear y al escribir desde el
+formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15682.
+
+#### Scenario: Pago con fecha de hoy o pasada
+
+- **WHEN** se crea un pago con fecha de hoy o anterior
+- **THEN** se crea con normalidad
+
+#### Scenario: Pago con fecha futura desde el formulario
+
+- **WHEN** se crea un pago con fecha posterior a hoy, o se cambia la fecha de un pago existente a una fecha posterior a hoy
+- **THEN** se lanza un error de validación y no se guarda
+
+#### Scenario: Asistente de registrar pago con fecha futura
+
+- **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
+- **THEN** se lanza un error de validación antes de crear ningún pago
