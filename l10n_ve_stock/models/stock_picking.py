@@ -6,8 +6,6 @@ from odoo.osv import expression
 
 _logger = logging.getLogger(__name__)
 
-from odoo.exceptions import UserError
-
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
@@ -276,17 +274,18 @@ class StockPicking(models.Model):
                     context_to_stock['lot_id'] = lot_obj.id
                 
                 qty_real_allow = \
-                    product_obj.with_context(context_to_stock).qty_available - \
+                    product_obj.with_context(**context_to_stock).qty_available - \
                     total_qty_to_move
                 
                 if qty_real_allow < 0:
                     info_lote_serial = f" ({_('Lot/Serial')}: {lot_obj.name})" if lot_obj else ""
                     stock_msg.append(
-                        _("%s%s", product_obj.display_name, info_lote_serial)
+                        _("%(name)s%(serial)s", name=product_obj.display_name, serial=info_lote_serial)
                     )
             
             if stock_msg:
                 error_msg = _(
-                    "Insufficient stock:\n%s\n\nAdjust quantitys or request stock for this location."
-                ) % "\n".join(stock_msg)
+                    "Insufficient stock:\n%(items)s\n\nAdjust quantitys or request stock for this location.",
+                    items="\n".join(stock_msg),
+                )
                 raise ValidationError(error_msg)
