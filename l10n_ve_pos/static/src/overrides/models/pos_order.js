@@ -32,17 +32,42 @@ patch(PosOrder.prototype, {
         return this.config.foreign_currency_id;
     },
   get_display_rate() {
-    const rateCandidates = [
-      this.config?.foreign_inverse_rate,
-      this.pos?.config?.foreign_inverse_rate,
-      this.config?.foreign_rate,
-      this.pos?.config?.foreign_rate,
-      this.foreign_currency_rate,
-    ];
-
-    const rawRate = rateCandidates
-      .map((value) => Number(value))
-      .find((value) => Number.isFinite(value) && value > 0);
+    // For an already-synced (finalized) order — e.g. one reopened from the
+    // ticket screen — show the rate the order was SOLD at, not today's live
+    // pos.config rate (the BCV rate drifts daily). The live in-progress order
+    // has no frozen rate yet (or it equals the live one), so it keeps using
+    // the config rate below. We derive the finalized rate from the amounts
+    // the order actually uses, so the shown rate always agrees with the shown
+    // totals: a plain sale uses its frozen foreign_currency_rate; a refund
+    // uses the original sale's rate (already baked into the per-line foreign
+    // totals via _refundOriginalRate / get_foreign_total_with_tax).
+    let rawRate;
+    if (this.finalized) {
+      if (!this._hasRefundLines() && this._frozenOrderMultiplier() > 0) {
+        rawRate = this._frozenOrderMultiplier();
+      } else {
+        const local = this._localTotalWithTax();
+        const foreign = this.get_foreign_total_with_tax();
+        if (local && foreign) {
+          const m = foreign / local;
+          if (Number.isFinite(m) && m > 0) {
+            rawRate = m;
+          }
+        }
+      }
+    }
+    if (rawRate == null) {
+      const rateCandidates = [
+        this.config?.foreign_inverse_rate,
+        this.pos?.config?.foreign_inverse_rate,
+        this.config?.foreign_rate,
+        this.pos?.config?.foreign_rate,
+        this.foreign_currency_rate,
+      ];
+      rawRate = rateCandidates
+        .map((value) => Number(value))
+        .find((value) => Number.isFinite(value) && value > 0);
+    }
 
     if (!Number.isFinite(rawRate) || rawRate <= 0) {
       return _t("N/D");
@@ -261,6 +286,41 @@ patch(PosOrder.prototype, {
     return this._convert(amount, this._getForeignCurrencyRecord(), this._getMainCurrency(), doRound);
   },
 
+  // ---- Explicit-rate conversion (historical / frozen rates) ----
+  //
+  // localToForeign/foreignToLocal above always use the LIVE pos.config rate
+  // (via _getPosConversionRate). Refunds and reopened orders must convert at
+  // a rate that ISN'T today's: the exact original-payment rate, or an order's
+  // frozen sale rate. _convertAtRate is the rate-explicit twin of _convert —
+  // same multiply + same destination-currency rounding, just with the rate
+  // passed in instead of looked up. Every historical-rate money conversion
+  // funnels through here, so all math stays unified with the live pair.
+  _convertAtRate(fromAmount, rate, toCurrency, doRound = true) {
+    if (!fromAmount || !rate) {
+      return 0;
+    }
+    const result = Number(fromAmount) * Number(rate);
+    return doRound ? this._roundWithCurrency(toCurrency, result) : result;
+  },
+
+  // local → foreign at an explicit main→foreign multiplier (the twin of
+  // localToForeign). `mainToForeignRate` is the same orientation as
+  // foreign_currency_rate / get_foreign_multiplier (e.g. ~0.00105).
+  localToForeignAtRate(amount, mainToForeignRate, doRound = true) {
+    return this._convertAtRate(
+      amount, mainToForeignRate, this._getForeignCurrencyRecord(), doRound
+    );
+  },
+
+  // foreign → local at an explicit foreign→local multiplier (the twin of
+  // foreignToLocal). `foreignToLocalRate` is local-per-foreign (e.g. ~945),
+  // the orientation of getRefundForeignRate / get_local_multiplier.
+  foreignToLocalAtRate(amount, foreignToLocalRate, doRound = true) {
+    return this._convertAtRate(
+      amount, foreignToLocalRate, this._getMainCurrency(), doRound
+    );
+  },
+
   // ---- Backwards-compatibility shims (do NOT use in new code) ----
   // Existing callers (orderline.js, payment_status.js, some templates) still
   // reference these. They now delegate to the new API so all math is unified.
@@ -352,6 +412,7 @@ patch(PosOrder.prototype, {
     const data = super.serializeForORM(opts);
     data["foreign_amount_total"] = this.get_foreign_total_with_tax();
     data["foreign_currency_rate"] = Number(this.init_conversion_rate || 0);
+    this._setPaymentForeignRates(data);
     if (typeof this.is_to_receipt === "function") {
       data["to_receipt"] = this.is_to_receipt();
     } else if ("to_receipt" in this) {
@@ -361,6 +422,30 @@ patch(PosOrder.prototype, {
     // La facturación obligatoria aplica a TODAS las órdenes, incluyendo
     // reembolsos (isRefund).
     return data;
+  },
+  // Stamps `foreign_rate` on the payment commands of a serialized order.
+  //
+  // The core serializes the payments nested in the order by direct recursion
+  // (`deepSerialization`, raw field values), skipping
+  // `PosPayment.serializeForORM`, so a rate set there never reached the
+  // server (task 83148, H7). Same approach as l10n_ve_pos_igtf
+  // (order_model.js): patch the [0, 0, vals] / [1, id, vals] commands,
+  // matched by uuid, instead of writing the reactive field on every amount
+  // change. The rate is the order's effective multiplier, the one the
+  // payments' `foreign_amount` was computed with (a refund's original rate).
+  _setPaymentForeignRates(data) {
+    const commands = data?.payment_ids;
+    if (!Array.isArray(commands) || !commands.length) {
+      return;
+    }
+    const uuids = new Set(Array.from(this.payment_ids || [], (payment) => payment.uuid));
+    const rate = Number(this.get_effective_foreign_multiplier()) || 0;
+    for (const command of commands) {
+      const vals = Array.isArray(command) && command.length === 3 ? command[2] : null;
+      if (vals && uuids.has(vals.uuid)) {
+        vals.foreign_rate = rate;
+      }
+    }
   },
 //   is_to_receipt() {
 //     return this.to_receipt;
@@ -423,6 +508,10 @@ patch(PosOrder.prototype, {
   // instead — the only way the "no drift" invariant above still holds once
   // lines can carry different rates.
   //
+  // EXCEPTION — reopened (finalized) sales: a synced order viewed later
+  // (ticket screen) converts at its frozen sale rate (foreign_currency_rate),
+  // not today's live rate — see _isFrozenRateOrder / _frozenLocalToForeign.
+  //
   // Local sources (Odoo 19):
   //   this.totalDue         → total including taxes
   //   this.prices.taxDetails.base_amount    → total excluding taxes
@@ -432,8 +521,40 @@ patch(PosOrder.prototype, {
     return (this.lines || []).some((line) => !!line.refunded_orderline_id);
   },
 
+  // ---- Frozen (historical) rate for an already-synced order ----
+  //
+  // A finalized order carries `foreign_currency_rate`: the main→foreign
+  // multiplier it was SOLD at, stored once at sync time (see serializeForORM
+  // + pos_order.py::_load_pos_data_read). When such an order is later
+  // reopened (ticket screen), its foreign amounts must reflect THAT rate, not
+  // today's live pos.config rate. The live in-progress order is excluded (it
+  // either has no frozen rate yet or it equals the live one), so counter
+  // sales, the payment screen and MF fiscal printing keep using the live
+  // rate. Refund orders are handled earlier via _hasRefundLines (per-line
+  // original-sale rate), so this only governs plain reopened sales.
+  _frozenOrderMultiplier() {
+    const rate = Number(this.foreign_currency_rate);
+    return Number.isFinite(rate) && rate > 0 ? rate : 0;
+  },
+
+  _isFrozenRateOrder() {
+    return !!this.finalized && this._frozenOrderMultiplier() > 0;
+  },
+
+  _frozenLocalToForeign(localAmount) {
+    // main→foreign at the frozen sale rate, via the shared engine primitive.
+    return this.localToForeignAtRate(localAmount, this._frozenOrderMultiplier());
+  },
+
   _sumForeignLines(getterName) {
-    return this.roundForeignMoney(
+    // Odoo 19 gives each line's priceIncl/priceExcl multiplied by
+    // order.orderSign (-1 on a refund): a positive magnitude for display,
+    // while totalDue stays negative. Multiplying the sum by orderSign again
+    // gives the foreign total the sign of the local total; without it a
+    // refund's foreign total came out positive and the ratios derived from
+    // it (_convertOrderAmount, _convertForeignOrderAmount) negative, which
+    // flipped foreign_amount on every refund payment (task 83148, H1).
+    return this.orderSign * this.roundForeignMoney(
       (this.lines || []).reduce(
         (sum, line) => sum + (Number(line[getterName]?.()) || 0),
         0
@@ -460,6 +581,9 @@ patch(PosOrder.prototype, {
     if (this._hasRefundLines()) {
       return this._sumForeignLines("get_foreign_price_with_tax");
     }
+    if (this._isFrozenRateOrder()) {
+      return this._frozenLocalToForeign(this._localTotalWithTax());
+    }
     return this.localToForeign(this._localTotalWithTax());
   },
 
@@ -467,12 +591,18 @@ patch(PosOrder.prototype, {
     if (this._hasRefundLines()) {
       return this._sumForeignLines("get_foreign_price_without_tax");
     }
+    if (this._isFrozenRateOrder()) {
+      return this._frozenLocalToForeign(this._localTotalWithoutTax());
+    }
     return this.localToForeign(this._localTotalWithoutTax());
   },
 
   get_foreign_total_tax() {
     if (this._hasRefundLines()) {
       return this._sumForeignLines("get_foreign_total_tax");
+    }
+    if (this._isFrozenRateOrder()) {
+      return this._frozenLocalToForeign(this._localTotalTax());
     }
     return this.localToForeign(this._localTotalTax());
   },
@@ -483,17 +613,92 @@ patch(PosOrder.prototype, {
   // payment-state, not a per-line breakdown), so we derive the ratio the
   // total actually used and apply it here — keeps due/change proportional
   // to the total instead of silently reverting to the live rate.
+  // Local-per-foreign rate of the ORIGINAL order's foreign tender, prefetched
+  // by the payment screen (PaymentScreen._prefetchRefundForeignRate) via
+  // pos.order.get_refund_foreign_rate. It is the exact rate the customer's
+  // foreign payment was recorded at, so a refund can mirror it to the cent
+  // instead of re-deriving a rate from rounded aggregate totals. 0 when
+  // unknown (non-refund order, or the original had no foreign payment).
+  getRefundForeignRate() {
+    const rate = Number(this.refund_foreign_rate);
+    return Number.isFinite(rate) && rate > 0 ? rate : 0;
+  },
+
   _convertOrderAmount(amount) {
+    const exactRate = this.getRefundForeignRate();
+    if (exactRate > 0) {
+      // Refund: main→foreign at the exact original rate (1/exactRate is the
+      // main→foreign multiplier; exactRate is local-per-foreign).
+      return this.localToForeignAtRate(amount, 1 / exactRate);
+    }
     if (this._hasRefundLines()) {
       const localTotal = this._localTotalWithTax();
       if (localTotal) {
         const ratio = this.get_foreign_total_with_tax() / localTotal;
         if (Number.isFinite(ratio) && ratio !== 0) {
-          return this.roundForeignMoney(amount * ratio);
+          return this.localToForeignAtRate(amount, ratio);
         }
       }
     }
     return this.localToForeign(amount);
+  },
+
+  // Inverse of _convertOrderAmount: converts a FOREIGN amount back to LOCAL
+  // at the refund's effective rate (the frozen original-sale rate reflected
+  // in the per-line foreign total), instead of today's live pos.config rate.
+  // Used by refund PAYMENT lines so their local (main-currency) equivalent
+  // is valued at the rate the ORIGINAL sale happened at — same rule as
+  // get_foreign_total_with_tax / _convertOrderAmount, just the other
+  // direction. Non-refund orders fall back to the live foreignToLocal.
+  _convertForeignOrderAmount(amount) {
+    const exactRate = this.getRefundForeignRate();
+    if (exactRate > 0) {
+      // Refund: foreign→local at the exact original rate (exactRate is
+      // already local-per-foreign, the foreign→local multiplier).
+      return this.foreignToLocalAtRate(amount, exactRate);
+    }
+    if (this._hasRefundLines()) {
+      const localTotal = this._localTotalWithTax();
+      const foreignTotal = this.get_foreign_total_with_tax();
+      if (localTotal && foreignTotal) {
+        // foreign → local: local_total / foreign_total (inverse of the
+        // main→foreign ratio used in _convertOrderAmount).
+        const ratio = localTotal / foreignTotal;
+        if (Number.isFinite(ratio) && ratio !== 0) {
+          return this.foreignToLocalAtRate(amount, ratio);
+        }
+      }
+    }
+    return this.foreignToLocal(amount);
+  },
+
+  // Effective main→foreign multiplier for the order. For a refund order it
+  // is the rate the totals actually used (foreign_total / local_total, i.e.
+  // the frozen original-sale rate blended across lines); for a normal sale
+  // it is the live pos.config multiplier. Used to stamp the refund payment
+  // with the same rate its foreign amount was valued at, so the accounting
+  // move (pos_payment._create_payment_moves) freezes a consistent rate.
+  get_effective_foreign_multiplier() {
+    const exactRate = this.getRefundForeignRate();
+    if (exactRate > 0) {
+      // main→foreign multiplier, always positive.
+      return 1 / exactRate;
+    }
+    if (this._hasRefundLines()) {
+      const localTotal = this._localTotalWithTax();
+      const foreignTotal = this.get_foreign_total_with_tax();
+      if (localTotal && foreignTotal) {
+        // Both totals carry the order's sign, so the ratio is positive. An
+        // exchange (refund at the original rate plus a sale at today's) can
+        // net to opposite signs; that ratio is not a rate, so it falls back
+        // to the live multiplier like get_display_rate does.
+        const ratio = foreignTotal / localTotal;
+        if (Number.isFinite(ratio) && ratio > 0) {
+          return ratio;
+        }
+      }
+    }
+    return this.get_foreign_multiplier();
   },
 //   get_foreign_total_discount() {
 //     const ignored_product_ids = this._get_ignored_product_ids_total_discount();

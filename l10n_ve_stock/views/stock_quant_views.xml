@@ -30,7 +30,7 @@
                     </group>
                     <notebook>
                         <page string="Show Location Available">
-                            <field name="product_alter_location_ids" editable="button">
+                            <field name="product_alter_location_ids" editable="button" options="{'no_create': True, 'no_delete': True}">
                                 <list>
                                     <field name="location_id"/>
                                     <field name="quantity"/>
