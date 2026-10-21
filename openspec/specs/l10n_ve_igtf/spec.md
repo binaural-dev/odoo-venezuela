@@ -380,7 +380,7 @@ Tras crear pagos con IGTF desde el wizard (`_create_payments`), cuando el monto 
 
 ### Requirement: Columna IGTF en los libros fiscales
 
-El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoice` con un grupo/columna "IGTF" que muestra el `foreign_igtf_amount` de `tax_totals` de cada documento cuando su `alter_bi_igtf` es mayor que cero (0 en caso contrario), con signo negativo únicamente en las notas de crédito (`out_refund` en el libro de ventas, `in_refund` en el de compras); los flags `not_show_igtf_sale_order` / `not_show_igtf_purchase_order` de la compañía suprimen el grupo de columnas IGTF del Excel.
+El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoice` con un grupo/columna "IGTF" que muestra el `foreign_igtf_amount` de `tax_totals` de cada documento cuando su `alter_bi_igtf` es mayor que cero (0 en caso contrario), con signo negativo únicamente en las notas de crédito (`out_refund` en el libro de ventas, `in_refund` en el de compras); los flags `not_show_igtf_sale_order` / `not_show_igtf_purchase_order` de la compañía del wizard (`company_id`, no la del entorno) suprimen el grupo de columnas IGTF del Excel.
 
 #### Scenario: Factura con IGTF en el libro de ventas
 
@@ -389,7 +389,7 @@ El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoi
 
 #### Scenario: Columna oculta
 
-- **WHEN** la compañía activa `not_show_igtf_sale_order`
+- **WHEN** la compañía del wizard tiene `not_show_igtf_sale_order`
 - **THEN** el libro de ventas se genera sin el grupo de columnas IGTF
 
 ### Requirement: Revalorización de pagos en VEF configurable

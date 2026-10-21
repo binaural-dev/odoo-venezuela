@@ -365,12 +365,31 @@ El campo `next_installment_date` DEBE (MUST) calcularse como el menor `date_matu
 
 ### Requirement: Dominio de los libros fiscales
 
-El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de la compañía con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por correlativo en ventas y por fecha de documento en compras; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
+El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de las compañías del alcance del libro (`report_company_ids`, ver «Alcance del libro con sucursales nativas») con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por correlativo en ventas y por fecha de documento en compras; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
 
 #### Scenario: Generación del libro de ventas
 
 - **WHEN** se genera el libro de ventas de un período
 - **THEN** solo aparecen documentos de venta publicados o anulados con número de control dentro del rango de fechas
+
+### Requirement: Alcance del libro con sucursales nativas
+
+El wizard `wizard.accounting.reports` DEBE (MUST) detectar las sucursales nativas de Odoo (compañías descendientes por `parent_id`) de la compañía activa que comparten su RIF —una sucursal sin RIF propio se considera el mismo contribuyente— y exponer `has_branches`. Cuando `has_branches` es verdadero, el wizard DEBE (MUST) mostrar el campo `branch_scope` con tres valores: `all` (consolidado: la matriz y todas sus sucursales del mismo RIF; valor por defecto), `main` (solo la compañía activa, excluyendo sus sucursales) y `branch` (una sucursal elegida en `branch_company_id`, obligatoria en ese caso y obligatoriamente del mismo RIF). Sin sucursales del mismo RIF el selector DEBE (MUST) permanecer oculto y el libro se genera solo con la compañía activa. Las compañías hijas con RIF distinto NO DEBEN (MUST NOT) incluirse nunca. `report_company_ids` se limita a las compañías a las que el usuario creador del wizard tiene acceso. Los libros consolidados conservan por línea el número de factura y de control de cada sede, ordenan por fecha del documento con una sola numeración de operación y calculan el resumen sobre el total consolidado; el encabezado (razón social, RIF y dirección) y la configuración de alícuotas son los de la compañía del wizard (la matriz), salvo en el alcance `branch`, donde el encabezado es el de la sucursal.
+
+#### Scenario: Libro consolidado desde la matriz
+
+- **WHEN** se genera el libro con la matriz activa y alcance `all`
+- **THEN** aparecen los documentos de la matriz y de sus sucursales del mismo RIF, con sus números de control originales, ordenados por fecha, y las compañías con otro RIF quedan excluidas
+
+#### Scenario: Solo la matriz o una sucursal
+
+- **WHEN** el alcance es `main` o `branch`
+- **THEN** el libro contiene únicamente los documentos de la matriz, o de la sucursal elegida, respectivamente
+
+#### Scenario: Sucursal activa sin hijos
+
+- **WHEN** la compañía activa es una sucursal sin sucursales propias
+- **THEN** el selector de alcance no se muestra y el libro contiene solo sus documentos
 
 ### Requirement: Documento sin fecha bloquea el libro
 
@@ -480,17 +499,17 @@ El módulo DEBE (MUST) instalar dos reglas de registro globales: `invoice_correl
 
 ### Requirement: Descarga del libro por controlador autenticado
 
-Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST) requerir usuario autenticado (`auth="user"`) y devolver el XLSX como adjunto (`Libro_de_venta.xlsx` / `Libro_de_compra.xlsx`), con la hoja protegida contra edición mediante contraseña. La lectura se hace con un entorno elevado a `SUPERUSER_ID`: se toma el último registro `wizard.accounting.reports` creado en la base —sin filtrar por usuario ni por compañía— y se le escribe como `company_id` el parámetro `company_id` de la URL (1 por defecto) antes de generar el libro, de modo que el contenido depende de ese parámetro y no de la compañía activa del usuario.
+Las rutas `/web/download_sales_book` y `/web/download_purchase_book` DEBEN (MUST) requerir usuario autenticado (`auth="user"`) y devolver el XLSX como adjunto (`Libro_de_venta.xlsx` / `Libro_de_compra.xlsx`), con la hoja protegida contra edición mediante contraseña. La URL recibe el `wizard_id` del wizard que generó el libro; el controlador DEBE (MUST) rechazar con `AccessError` el wizard inexistente, creado por otro usuario o cuya compañía no esté entre las del usuario, y generar el libro con un entorno elevado a `SUPERUSER_ID` limitado a `report_company_ids`. Se conserva el parámetro `company_id` en las llamadas a `generate_sales_book` / `generate_purchases_book` por compatibilidad con los módulos que las extienden.
 
 #### Scenario: Descarga del libro de compras
 
 - **WHEN** un usuario autenticado ejecuta la generación del libro de compras
-- **THEN** el navegador descarga `Libro_de_compra.xlsx` generado a partir del último wizard creado, con la compañía indicada en el parámetro `company_id`
+- **THEN** el navegador descarga `Libro_de_compra.xlsx` generado a partir de su propio wizard (`wizard_id`)
 
-#### Scenario: Parámetro de compañía en la URL
+#### Scenario: Wizard ajeno
 
-- **WHEN** se invoca la ruta con un `company_id` distinto del de la compañía activa
-- **THEN** el libro se genera para la compañía indicada en el parámetro, sin control de acceso adicional por parte del controlador
+- **WHEN** se invoca la ruta con el `wizard_id` de un wizard creado por otro usuario
+- **THEN** el controlador responde con un error de acceso y no genera el libro
 
 ### Requirement: Ajuste de descuento fijo en el desglose por línea en moneda de la compañía
 
