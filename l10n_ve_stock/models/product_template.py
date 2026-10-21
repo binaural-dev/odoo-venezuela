@@ -60,7 +60,7 @@ class ProductTemplate(models.Model):
         for product in self:
             product.show_physical_locations = self.env.company.use_alternate_locations
 
-    @api.depends("physical_locations_ids")
+    @api.depends("physical_locations_ids", "company_id")
     def _compute_show_physical_relocation_reserved_warning(self):
         for product in self:
             product.show_physical_relocation_reserved_warning = (
@@ -75,8 +75,7 @@ class ProductTemplate(models.Model):
         never drags along stock already reserved for an order.
         """
         self.ensure_one()
-        company = self.company_id or self.env.company
-        if not company.physical_relocation_transfer:
+        if not self._physical_relocation_transfer_allowed():
             return False
         # While editing, the m2m holds NewId wrappers of the real locations:
         # compare their _origin, or nothing ever matches the persisted ones.
@@ -87,6 +86,8 @@ class ProductTemplate(models.Model):
         # only removing locations never triggers a relocation transfer.
         if not removed_locations or not after - before:
             return False
+        # sudo: not every user allowed to edit products can read stock.quant,
+        # and the warning must simply stay hidden instead of raising.
         quants = self.env["stock.quant"].sudo().search(
             [
                 ("product_id", "in", self.product_variant_ids.ids),
@@ -96,6 +97,24 @@ class ProductTemplate(models.Model):
             limit=1,
         )
         return bool(quants)
+
+    def _physical_relocation_transfer_allowed(self):
+        """Whether saving a location substitution generates the transfer.
+
+        Shared by the transfer itself and the reserved stock warning, so the
+        warning never shows up when no transfer would be generated.
+        """
+        self.ensure_one()
+        company = self.company_id or self.env.company
+        # The automatic relocation is optional and toggled in Settings ->
+        # Binaural, and only makes sense if alternate locations tracking is
+        # already active (use_alternate_locations). Only the inventory
+        # manager triggers the relocation.
+        return (
+            company.use_alternate_locations
+            and company.physical_relocation_transfer
+            and self.env.user.has_group("stock.group_stock_manager")
+        )
 
     price_with_tax = fields.Float(compute="_compute_prices_with_tax")
     price_without_tax = fields.Float(compute="_compute_prices_with_tax")
@@ -517,18 +536,8 @@ class ProductTemplate(models.Model):
         simply does not exist and is never written.
         """
         self.ensure_one()
-        Picking = self.env["stock.picking"]
-        company = self.company_id or self.env.company
-        # The automatic relocation is optional and toggled in Settings ->
-        # Binaural, and only makes sense if alternate locations tracking is
-        # already active (use_alternate_locations).
-        if not company.use_alternate_locations:
-            return Picking
-        if not company.physical_relocation_transfer:
-            return Picking
-        # Only the inventory manager triggers the relocation.
-        if not self.env.user.has_group("stock.group_stock_manager"):
-            return Picking
+        if not self._physical_relocation_transfer_allowed():
+            return self.env["stock.picking"]
         # From here on this runs as superuser: the transfer touches
         # localization models (stock.picking.alter.location) that require
         # their own groups, and the inventory manager is not expected to

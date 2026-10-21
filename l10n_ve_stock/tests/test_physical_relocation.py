@@ -111,6 +111,24 @@ class TestPhysicalRelocation(TransactionCase):
         editing = self._editing(self.location_b)
         self.assertFalse(editing.show_physical_relocation_reserved_warning)
 
+    def test_no_warning_when_alternate_locations_are_disabled(self):
+        self.env.company.use_alternate_locations = False
+        self._add_stock(self.location_a, 10.0, reserved=4.0)
+        editing = self._editing(self.location_b)
+        self.assertFalse(editing.show_physical_relocation_reserved_warning)
+
+    def test_no_warning_without_stock_manager(self):
+        self._add_stock(self.location_a, 10.0, reserved=4.0)
+        user = self.env["res.users"].create(
+            {
+                "name": "Stock User Warning",
+                "login": "stock_user_warning",
+                "group_ids": [(6, 0, [self.env.ref("stock.group_stock_user").id])],
+            }
+        )
+        editing = self._editing(self.location_b).with_user(user)
+        self.assertFalse(editing.show_physical_relocation_reserved_warning)
+
     # Automatic relocation
 
     def test_replacing_location_moves_free_stock(self):
