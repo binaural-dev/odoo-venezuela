@@ -267,7 +267,7 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 
 Cuando el usuario pertenece al grupo `l10n_ve_accountant.group_fiscal_config_support`, el formulario de factura DEBE (MUST) permitir editar manualmente el monto de un grupo de impuesto directamente en el widget `tax_totals`, mientras la factura está en borrador (`state == 'draft'`) -- con el mismo ícono de lápiz (`fa fa-pencil`) que el widget nativo de Odoo junto al monto editable, no solo el click habilitado sin esa señal visual. Usuarios fuera de ese grupo NO DEBEN (SHALL NOT) poder aplicar el cambio aunque lo intenten por escritura directa (no solo oculto en la vista): `_inverse_tax_totals` DEBE (MUST) rechazar la escritura con un `UserError` del lado servidor.
 
-El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los tres widgets de totales: el nativo (`account-tax-totals-field`, pestaña principal), el de moneda alterna y el de VES. Los tres comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
+El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los dos widgets de totales presentes en el formulario de factura: el nativo (`account-tax-totals-field`, pestaña principal) y el de VES (`account-tax-ves-totals-field`). Los dos comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
 
 `tax_totals_edit_tolerance` DEBE (MUST) estar entre 0 y 1 (constraint de `res.company`); fuera de ese rango se rechaza el guardado.
 
@@ -297,7 +297,7 @@ Core escribe `tax_totals` dos veces por cada `write()` de la factura: una transi
 
 - **GIVEN** un usuario fuera de `group_fiscal_config_support`
 - **WHEN** abre el formulario o intenta escribir `tax_totals`
-- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los tres widgets de totales incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
+- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los dos widgets de totales (nativo y VES) incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
 
 #### Scenario: Edición fuera de tolerancia se rechaza
 
@@ -799,6 +799,14 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 - **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
 - **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
 
+### Requirement: Sin página "Foreign currency" ni grupo de visibilidad en la factura
+
+El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_currency` ni el widget `account-tax-foreign-totals-field`, y el grupo `l10n_ve_accountant.group_foreign_currency_view_accountant` NO DEBE (MUST NOT) existir (eliminados por ti-83943: la página era invisible en la práctica y el grupo solo gobernaba su visibilidad). Los montos y la tasa alternos siguen disponibles en las líneas, en las vistas de lista y en `tax_totals` (claves `*_foreign_currency`), que no dependen de esa página. El widget `account-tax-foreign-totals-field` permanece registrado en el frontend pero ningún formulario lo usa.
+
+#### Scenario: Formulario de factura con moneda alterna configurada
+
+- **WHEN** se obtiene el formulario de `account.move` en una compañía con `foreign_currency_id`
+- **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
 
 ### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
 
