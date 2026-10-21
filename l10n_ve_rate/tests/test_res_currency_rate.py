@@ -26,19 +26,19 @@ class TestComputeRateFallback(TransactionCase):
             "rate": rate_value,
         })
 
-    def test_compute_rate_raises_by_default_when_date_predates_all_rates(self):
-        """If rate_date is older than every recorded rate for this
-        currency/company, compute_rate raises UserError by default."""
-        self._create_rate(date(2023, 1, 1), 40.0)
+    def test_compute_rate_uses_oldest_rate_when_date_predates_all_rates(self):
+        """Como Odoo (`_get_rates`): si rate_date es anterior a toda tasa, se usa
+        la más antigua que exista en vez de lanzar error."""
+        oldest = self._create_rate(date(2023, 1, 1), 40.0)
         self._create_rate(date(2023, 6, 1), 45.0)
 
-        with self.assertRaisesRegex(UserError, "no rate assigned"):
-            self.Rate.compute_rate(self.foreign_currency.id, date(2020, 1, 1))
+        result = self.Rate.compute_rate(self.foreign_currency.id, date(2020, 1, 1))
+
+        self.assertEqual(result["foreign_rate"], oldest.inverse_company_rate)
+        self.assertEqual(result["foreign_inverse_rate"], oldest.company_rate)
 
     def test_compute_rate_returns_empty_when_raise_is_disabled(self):
-        """raise_if_not_found=False keeps the silent behaviour: {}."""
-        self._create_rate(date(2023, 1, 1), 40.0)
-
+        """raise_if_not_found=False keeps the silent behaviour: {} (sin ninguna tasa)."""
         result = self.Rate.compute_rate(
             self.foreign_currency.id, date(2020, 1, 1), raise_if_not_found=False,
         )
@@ -151,6 +151,17 @@ class TestRateBranchInheritance(TransactionCase):
         )
 
         self.assertEqual(result["foreign_rate"], closest.inverse_company_rate)
+
+    def test_branch_uses_oldest_parent_rate_when_date_predates_all(self):
+        """Fecha anterior a toda tasa: la sucursal usa la más antigua de la matriz."""
+        oldest = self._create_rate(self.parent, date(2023, 6, 1), 0.025)
+        self._create_rate(self.parent, date(2023, 12, 1), 0.030)
+
+        result = self.Rate.with_company(self.branch).compute_rate(
+            self.usd.id, date(2020, 1, 1),
+        )
+
+        self.assertEqual(result["foreign_rate"], oldest.inverse_company_rate)
 
     def test_branch_does_not_use_unrelated_company_rates(self):
         """Tasas de una compañía fuera de la jerarquía no deben usarse."""
