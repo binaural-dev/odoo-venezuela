@@ -579,11 +579,6 @@ msgid "Foreign Currency "
 msgstr "Moneda alterna"
 
 #. module: l10n_ve_accountant
-#: model:res.groups,name:l10n_ve_accountant.group_foreign_currency_view_accountant
-msgid "Foreign Currency View Accountant"
-msgstr "Visualizar moneda extranjera en facturación"
-
-#. module: l10n_ve_accountant
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_bank_statement_line__foreign_debit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move__foreign_debit
 #: model:ir.model.fields,field_description:l10n_ve_accountant.field_account_move_line__foreign_debit
@@ -2133,6 +2128,12 @@ msgstr "La tolerancia de edición del monto de impuesto debe estar entre 0 y 1."
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/payment_date_check_mixin.py:0
+msgid "The payment date (%(date)s) cannot be later than today (%(today)s)."
+msgstr "La fecha del pago (%(date)s) no puede ser posterior a hoy (%(today)s)."
+
+#. module: l10n_ve_accountant
+#. odoo-python
 #: code:addons/l10n_ve_accountant/wizard/account_move_reversal.py:0
 msgid ""
 "A credit note can only be issued against a single invoice. "
@@ -2156,3 +2157,14 @@ msgid ""
 msgstr ""
 "La fecha de la nota (%(value)s) no puede ser anterior a la fecha del "
 "documento original %(origin)s (%(origin_date)s)."
+
+#. module: l10n_ve_accountant
+#: code:addons/l10n_ve_accountant/models/account_payment.py:0
+msgid ""
+"You cannot confirm a payment with an amount of 0.0. If the payment was "
+"converted to %(currency)s, the converted amount is lower than the minimum "
+"unit of the currency (%(rounding)s) and was rounded to zero."
+msgstr ""
+"No puede confirmar un pago con un importe de 0.0. Si el pago se convirtió a "
+"%(currency)s, el importe convertido es menor a la unidad mínima de la moneda "
+"(%(rounding)s) y se redondeó a cero."

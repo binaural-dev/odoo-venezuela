@@ -339,8 +339,7 @@ class TestRetentionLifecycle(RetentionTestCommon):
         )
 
     def test_15_accounting_date_multi_invoice_uses_latest_date(self):
-        """invoice_date (rate date) cannot be later than invoice_date_display
-        (l10n_ve_invoice guard, ti-15450), so both are set to the same day."""
+        """La fecha de tasa (`invoice_date`) se fija igual a la de la factura: al confirmar no puede ser posterior."""
         old_invoice = self._create_invoice_reten_iva(
             amount=100, partner=self.partner_pnr_75,
             out_invoice="in_invoice", journal=self.purchase_journal,

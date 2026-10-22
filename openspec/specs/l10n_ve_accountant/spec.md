@@ -17,7 +17,7 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
 
 #### Scenario: Factura de venta
 
@@ -38,6 +38,16 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 - **WHEN** un documento tiene `manually_set_rate` en verdadero
 - **THEN** el recálculo automático no modifica su tasa
+
+#### Scenario: Documento con fecha sin tasa cargada
+
+- **WHEN** se crea o contabiliza un documento cuya fecha de tasa no tiene registro de tasa para la moneda alterna, aunque existan tasas de otras fechas
+- **THEN** se lanza un `UserError` "There is no rate assigned for <moneda> on <fecha>" y, una vez cargada la tasa de esa fecha, el mismo documento se contabiliza con ella
+
+#### Scenario: Cambio de la tasa después de contabilizar
+
+- **WHEN** se modifica el registro de tasa de la fecha de un documento ya contabilizado y luego se recalcula y cancela el documento
+- **THEN** el asiento sigue cuadrado (débito igual a crédito)
 
 ### Requirement: Prohibición de tasas negativas o cero
 
@@ -267,7 +277,7 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 
 Cuando el usuario pertenece al grupo `l10n_ve_accountant.group_fiscal_config_support`, el formulario de factura DEBE (MUST) permitir editar manualmente el monto de un grupo de impuesto directamente en el widget `tax_totals`, mientras la factura está en borrador (`state == 'draft'`) -- con el mismo ícono de lápiz (`fa fa-pencil`) que el widget nativo de Odoo junto al monto editable, no solo el click habilitado sin esa señal visual. Usuarios fuera de ese grupo NO DEBEN (SHALL NOT) poder aplicar el cambio aunque lo intenten por escritura directa (no solo oculto en la vista): `_inverse_tax_totals` DEBE (MUST) rechazar la escritura con un `UserError` del lado servidor.
 
-El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los tres widgets de totales: el nativo (`account-tax-totals-field`, pestaña principal), el de moneda alterna y el de VES. Los tres comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
+El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los dos widgets de totales presentes en el formulario de factura: el nativo (`account-tax-totals-field`, pestaña principal) y el de VES (`account-tax-ves-totals-field`). Los dos comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
 
 `tax_totals_edit_tolerance` DEBE (MUST) estar entre 0 y 1 (constraint de `res.company`); fuera de ese rango se rechaza el guardado.
 
@@ -297,7 +307,7 @@ Core escribe `tax_totals` dos veces por cada `write()` de la factura: una transi
 
 - **GIVEN** un usuario fuera de `group_fiscal_config_support`
 - **WHEN** abre el formulario o intenta escribir `tax_totals`
-- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los tres widgets de totales incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
+- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los dos widgets de totales (nativo y VES) incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
 
 #### Scenario: Edición fuera de tolerancia se rechaza
 
@@ -799,3 +809,76 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 - **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
 - **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
 
+### Requirement: Sin página "Foreign currency" ni grupo de visibilidad en la factura
+
+El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_currency` ni el widget `account-tax-foreign-totals-field`, y el grupo `l10n_ve_accountant.group_foreign_currency_view_accountant` NO DEBE (MUST NOT) existir (eliminados por ti-83943: la página era invisible en la práctica y el grupo solo gobernaba su visibilidad). Los montos y la tasa alternos siguen disponibles en las líneas, en las vistas de lista y en `tax_totals` (claves `*_foreign_currency`), que no dependen de esa página. El widget `account-tax-foreign-totals-field` permanece registrado en el frontend pero ningún formulario lo usa.
+
+#### Scenario: Formulario de factura con moneda alterna configurada
+
+- **WHEN** se obtiene el formulario de `account.move` en una compañía con `foreign_currency_id`
+- **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
+
+### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
+
+`account.move.line._get_effective_discount_percent()` DEBE (MUST) devolver el porcentaje de descuento que realmente se aplica a la línea (por defecto `discount or 0.0`) y ser la única fuente que lean el cálculo de impuestos de la línea (override de `account.tax._prepare_base_line_for_taxes_computation`, que asigna `discount` solo cuando el registro es un `account.move.line`), `_compute_foreign_subtotal`, `company_currency_line_totals`, `detailed_amounts` y la reconstrucción del apunte de las líneas con impuesto de precio incluido (`_price_included_split`). Un módulo que descuenta a través de un campo propio DEBE (MUST) extender solo este método. Sin ninguna extensión el comportamiento es idéntico al de leer `discount`. `l10n_ve_deductible` lo extiende; `discount_fixed` de `l10n_ve_invoice` mantiene su propio override.
+
+#### Scenario: Módulo con descuento propio
+
+- **WHEN** un módulo extiende `_get_effective_discount_percent()` para devolver su porcentaje en una línea con `discount = 0`
+- **THEN** el subtotal, el total, el apunte, el subtotal en moneda alterna, el desglose en moneda de la compañía y el detalle de importes de esa línea usan ese porcentaje
+
+### Requirement: `_sync_tax_lines` resincroniza los apuntes cuando cambian los campos de `_get_base_line_sync_extra_fields()`
+
+`account.move._get_base_line_sync_extra_fields()` DEBE (MUST) devolver los campos de línea de factura, además de los de agrupación, cuyo cambio obliga a `_sync_tax_lines` a resincronizar los apuntes (por defecto `price_unit`, `quantity` y `discount`). Un módulo que altera los importes de la línea con un campo propio DEBE (MUST) añadirlo extendiendo este método; de lo contrario, cambiar solo ese campo en una factura guardada no actualizaría los apuntes.
+
+#### Scenario: Cambia solo el campo propio de un módulo
+
+- **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
+- **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
+
+### Requirement: No se puede confirmar un pago con importe cero
+
+`account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.
+
+#### Scenario: Confirmar un pago con importe 0.0
+
+- **WHEN** se confirma desde la vista de pagos un pago cuyo importe es 0.0
+- **THEN** se lanza un `UserError` y el pago permanece en borrador
+
+#### Scenario: Confirmar un pago con importe mayor a cero
+
+- **WHEN** se confirma un pago con importe mayor a cero
+- **THEN** el pago se confirma con normalidad
+
+#### Scenario: Registrar pago por wizard en divisa cuyo importe convertido redondea a 0.0
+
+- **GIVEN** una factura en Bs cuyo saldo, convertido a USD, es menor a 0,01 USD
+- **WHEN** se registra el pago con `account.payment.register` en un diario USD con IGTF
+- **THEN** se lanza un `UserError` que indica la moneda y que el importe convertido es menor a la unidad mínima
+- **AND** no se crea ni concilia ningún pago, y la factura conserva su saldo
+
+#### Scenario: Cierre de sesión POS con neto cero
+
+- **WHEN** el cierre de sesión POS crea el pago agrupado de un método de banco cuyo neto es 0 (contexto `from_pos`)
+- **THEN** la guarda no aplica y la sesión puede cerrarse
+### Requirement: Un pago no puede tener fecha futura
+
+La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
+(`account.payment.register.payment_date`) NO PUEDEN (MUST NOT) ser posteriores a `fields.Date.context_today` (zona
+horaria del usuario). La validación es una constraint de guardado, de modo que aplica al crear y al escribir desde el
+formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15682.
+
+#### Scenario: Pago con fecha de hoy o pasada
+
+- **WHEN** se crea un pago con fecha de hoy o anterior
+- **THEN** se crea con normalidad
+
+#### Scenario: Pago con fecha futura desde el formulario
+
+- **WHEN** se crea un pago con fecha posterior a hoy, o se cambia la fecha de un pago existente a una fecha posterior a hoy
+- **THEN** se lanza un error de validación y no se guarda
+
+#### Scenario: Asistente de registrar pago con fecha futura
+
+- **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
+- **THEN** se lanza un error de validación antes de crear ningún pago

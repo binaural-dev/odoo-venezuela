@@ -12,6 +12,9 @@
                                 <field name="report"/>
                                 <field name="date_from" widget="date"/>
                                 <field name="date_to" widget="date"/>
+                                <field name="has_branches" invisible="1"/>
+                                <field name="branch_scope" widget="radio" invisible="not has_branches"/>
+                                <field name="branch_company_id" invisible="not has_branches or branch_scope != 'branch'" required="has_branches and branch_scope == 'branch'" options="{'no_create': True}"/>
                                 <field name="show_field_currency_system" invisible="1"/>
                                 <field name="currency_system" invisible="show_field_currency_system == True"/>
                             </group>
