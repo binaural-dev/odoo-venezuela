@@ -49,3 +49,30 @@ class TestStockQuant(TransactionCase):
         )
         self.assertFalse(quant2.is_physical_location)
 
+
+
+@tagged("post_install", "-at_install", "l10n_ve_stock")
+class TestStockLocationGetWarehouse(TransactionCase):
+    def test_get_warehouse(self):
+        warehouse = self.env["stock.warehouse"].create({"name": "Get WH", "code": "GWH"})
+        shelf = self.env["stock.location"].create(
+            {"name": "Shelf", "location_id": warehouse.lot_stock_id.id, "usage": "internal"}
+        )
+        self.assertEqual(shelf.get_warehouse(), warehouse)
+        self.assertFalse(self.env["stock.location"].get_warehouse())
+
+
+@tagged("post_install", "-at_install", "l10n_ve_stock")
+class TestStockQuantAlterLocations(TransactionCase):
+    def test_product_alter_location_ids(self):
+        warehouse = self.env["stock.warehouse"].create({"name": "Quant WH", "code": "QAW"})
+        product = self.env["product.product"].create(
+            {"name": "Quant Alter Product", "type": "consu", "is_storable": True}
+        )
+        quant = self.env["stock.quant"].create(
+            {"product_id": product.id, "location_id": warehouse.lot_stock_id.id, "quantity": 2}
+        )
+        self.assertFalse(quant.product_alter_location_ids)
+        new_quant = self.env["stock.quant"].new({"product_id": product.id})
+        self.assertEqual(new_quant.product_alter_location_ids._origin, quant)
+        self.assertFalse(self.env["stock.quant"].new({}).product_alter_location_ids)
