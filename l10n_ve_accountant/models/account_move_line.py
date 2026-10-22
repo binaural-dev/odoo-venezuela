@@ -706,8 +706,22 @@ class AccountMoveLine(models.Model):
         if line_commands:
             # Core already decided a company-currency fix is needed --
             # reuse ITS OWN computed amount per pair, never re-derived.
+            # The residuals of both lines before and after the partial let the injector measure
+            # the alternate amount that really stays unsettled between them.
             # Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
-            self._inject_foreign_exchange_amounts(exchange_values, rate_source, debit_line, credit_line)
+            self._inject_foreign_exchange_amounts(
+                exchange_values, rate_source, debit_line, credit_line,
+                residuals={
+                    'debit': (
+                        initial_debit_residual,
+                        debit_values.get('amount_residual') if res.get('debit_values') else 0.0,
+                    ),
+                    'credit': (
+                        initial_credit_residual,
+                        credit_values.get('amount_residual') if res.get('credit_values') else 0.0,
+                    ),
+                },
+            )
             return res
 
         # Empty `line_commands` genuinely means nothing needed fixing in
@@ -834,13 +848,51 @@ class AccountMoveLine(models.Model):
                     return credit_line
         return None
 
-    def _inject_foreign_exchange_amounts(self, exchange_values, rate_source, debit_line, credit_line):
+    def _alt_exchange_diff_for_exchange_pair(self, owning_line, debit_line, credit_line, residuals,
+                                            rate_source, pair_count):
+        """Alternate-currency amount an exchange entry has to carry: the net alternate amount
+        consumed from the two reconciled lines, once the company-currency leftover cleared by the
+        entry is taken into account.
+
+        A leftover of the owning line is not a slice of alternate exposure by itself: when the
+        reconciliation is made in the currency of the document (e.g. EUR), the line is fully
+        consumed in that currency and its alternate amount has been matched with the one of the
+        other line. Taking the exposure proportional to the leftover in company currency would add
+        an alternate difference that does not exist (the alternate amounts of both lines already
+        net to zero). With two entries (one per line) each carries what its own line consumed.
+        """
+        foreign_currency = self._alt_exchange_diff_currency(rate_source)
+        if not foreign_currency:
+            return 0.0
+
+        def consumed(line, before, after):
+            return (
+                line._foreign_exposure_at_residual(before or 0.0)
+                - line._foreign_exposure_at_residual(after or 0.0)
+            )
+
+        # The residuals after the partial already include what the entry clears (core updates
+        # them before building it), so they are used as they are
+        debit_before, debit_after = residuals['debit']
+        credit_before, credit_after = residuals['credit']
+        debit_consumed = consumed(debit_line, debit_before, debit_after)
+        credit_consumed = consumed(credit_line, credit_before, credit_after)
+        if pair_count > 1:
+            total = debit_consumed if owning_line == debit_line else credit_consumed
+        else:
+            total = debit_consumed + credit_consumed
+        diff = foreign_currency.round(total)
+        return 0.0 if foreign_currency.is_zero(diff) else diff
+
+    def _inject_foreign_exchange_amounts(self, exchange_values, rate_source, debit_line, credit_line,
+                                         residuals=None):
         """Adds `foreign_debit`/`foreign_credit` to the lines core just
         built, deriving the base amount from what core itself put in each
         pair's `debit`/`credit` (never re-derived independently).
         Ver openspec: design-notes.md § inject_foreign_exchange_amounts
         """
         line_commands = (exchange_values.get('move_values') or {}).get('line_ids') or []
+        pair_count = len(line_commands) // 2
         i = 0
         while i + 1 < len(line_commands):
             closing_vals = line_commands[i][2]
@@ -852,8 +904,14 @@ class AccountMoveLine(models.Model):
             base_amount = closing_vals.get('credit', 0.0) - closing_vals.get('debit', 0.0)
             if not base_amount:
                 base_amount = -closing_vals.get('amount_currency', 0.0)
-            owning_line = self._resolve_closing_line(closing_vals, debit_line, credit_line) or rate_source
-            alt_diff = owning_line._compute_alt_exchange_diff_from_slice(base_amount, rate_source)
+            resolved_line = self._resolve_closing_line(closing_vals, debit_line, credit_line)
+            owning_line = resolved_line or rate_source
+            if residuals and resolved_line:
+                alt_diff = self._alt_exchange_diff_for_exchange_pair(
+                    resolved_line, debit_line, credit_line, residuals, rate_source, pair_count,
+                )
+            else:
+                alt_diff = owning_line._compute_alt_exchange_diff_from_slice(base_amount, rate_source)
             if alt_diff:
                 closing_vals['foreign_debit'] = abs(alt_diff) if alt_diff < 0.0 else 0.0
                 closing_vals['foreign_credit'] = abs(alt_diff) if alt_diff > 0.0 else 0.0

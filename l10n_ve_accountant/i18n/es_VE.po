@@ -1180,11 +1180,6 @@ msgstr ""
 "asiento."
 
 #. module: l10n_ve_accountant
-#: model:ir.actions.server,name:l10n_ve_accountant.recompute_foreign_debit_and_credit_of_journal_entries
-msgid "Recompute foreign debit and credit of journal entries"
-msgstr "Recalcular debito y credito alterno de apuntes contables"
-
-#. module: l10n_ve_accountant
 #: model_terms:ir.ui.view,arch_db:l10n_ve_accountant.view_res_config_settings_l10n_ve_accountant
 msgid "Reduced Aliquot"
 msgstr "Alícuota Reducida"
