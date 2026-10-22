@@ -1618,6 +1618,12 @@ msgstr ""
 
 #. module: l10n_ve_accountant
 #. odoo-python
+#: code:addons/l10n_ve_accountant/models/res_currency.py:0
+msgid "It is not possible to delete currency records."
+msgstr "No es posible eliminar los registros de monedas."
+
+#. module: l10n_ve_accountant
+#. odoo-python
 #: code:addons/l10n_ve_accountant/models/account_move.py:0
 msgid "You can only register payments for one foreign rate at a time."
 msgstr "Solo puedes registrar pagos para una tasa alterna a la vez."
