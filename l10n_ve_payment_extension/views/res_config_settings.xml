@@ -32,6 +32,17 @@
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box">
                             <div class="o_setting_left_pane">
+                                <field name="use_indexed_retentions"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="use_indexed_retentions" string="Use Indexed Retentions" />
+                                <div class="text-muted">
+                                    <p>Lets each retention voucher value the foreign-currency invoices with the rate of the voucher date. The retained amount in bolivars does not change.</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
                                 <field name="hide_issue_date_of_municipal_withholding_receipt"/>
                             </div>
                             <div class="o_setting_right_pane">

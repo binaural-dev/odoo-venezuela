@@ -45,6 +45,10 @@ class ResConfigSettings(models.TransientModel):
         related="company_id.auto_fill_retention_amount_iva", readonly=False
     )
 
+    use_indexed_retentions = fields.Boolean(
+        related="company_id.use_indexed_retentions", readonly=False
+    )
+
     islr_prioritize_product_subtotal_base = fields.Boolean(
         related="company_id.islr_prioritize_product_subtotal_base", readonly=False
     )

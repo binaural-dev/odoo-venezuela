@@ -186,12 +186,87 @@ class AccountRetention(models.Model):
 
     date_emision = fields.Date('Emision Date', default=False)
 
+    use_indexed_retentions = fields.Boolean(related="company_id.use_indexed_retentions")
+    show_indexation = fields.Boolean(
+        compute="_compute_show_indexation",
+        help=(
+            "The indexation only exists for invoices in foreign currency: the selector is shown"
+            " when the company enables it and the voucher has no lines yet or has at least one"
+            " invoice in foreign currency."
+        ),
+    )
+    indexation_mode = fields.Selection(
+        [
+            ("not_indexed", "Non-indexed (invoice rate)"),
+            ("indexed", "Indexed"),
+        ],
+        string="Indexation",
+        default="not_indexed",
+        required=True,
+        copy=False,
+        tracking=True,
+        help=(
+            "Non-indexed: the amounts in the currency of the invoice are valued with the rate of"
+            " the invoice. Indexed: they are valued with the rate of the voucher date. The"
+            " retained amount in bolivars is the legal amount and is the same in both modes. On an"
+            " invoice in bolivars the amounts are valued in the alternate currency of the company."
+        ),
+    )
+
     @api.depends("retention_line_ids", "retention_line_ids.move_id")
     def _compute_actual_invoice_ids(self):
         for retention in self:
             retention.actual_invoice_ids = retention.retention_line_ids.mapped('move_id').ids
 
-    @api.depends("type", "type_retention", "partner_id")
+    exchange_difference_treatment = fields.Selection(
+        [("entry", "Exchange entry")],
+        string="Exchange difference",
+        default="entry",
+        required=True,
+        copy=False,
+        tracking=True,
+        help=(
+            "How the exchange difference of an indexed retention is documented. Other modules can"
+            " add their own options. It is only used on indexed retentions."
+        ),
+    )
+    show_exchange_difference_treatment = fields.Boolean(
+        compute="_compute_show_exchange_difference_treatment"
+    )
+
+    @api.depends("type", "indexation_mode", "use_indexed_retentions")
+    def _compute_show_exchange_difference_treatment(self):
+        options = self._fields["exchange_difference_treatment"]._description_selection(self.env)
+        for retention in self:
+            retention.show_exchange_difference_treatment = bool(
+                retention.use_indexed_retentions
+                and retention.indexation_mode == "indexed"
+                and retention.type == "out_invoice"
+                and len(options) > 1
+            )
+
+    def _get_default_exchange_difference_treatment(self):
+        """Initial treatment of the exchange difference of an indexed retention. Other modules
+        override it to take it from the configuration of the contact."""
+        self.ensure_one()
+        return "entry"
+
+    def _reset_exchange_difference_treatment(self):
+        """Not indexed retentions keep no treatment; an indexed one starts from the default."""
+        for retention in self:
+            retention.exchange_difference_treatment = (
+                retention._get_default_exchange_difference_treatment()
+                if retention.indexation_mode == "indexed"
+                else "entry"
+            )
+
+    def _get_reconcile_extra_context(self, retention_line):
+        """Context added to the reconciliation of the payment of an indexed retention. Other
+        modules extend it to apply their treatment of the exchange difference."""
+        self.ensure_one()
+        return {}
+
+    @api.depends("type", "type_retention", "partner_id", "indexation_mode")
     def _compute_allowed_lines_move_ids(self):
         for retention in self:
             allowed_types = (
@@ -209,6 +284,9 @@ class AccountRetention(models.Model):
 
             if retention.type_retention == "islr":
                 domain.append(("is_isrl_retention_available", "=", True))
+
+            if retention.indexation_mode == "indexed":
+                domain.append(("currency_id", "!=", retention.company_id.currency_id.id))
 
             retention.allowed_lines_move_ids = self.env["account.move"].search(domain)
 
@@ -244,6 +322,57 @@ class AccountRetention(models.Model):
                 retention.foreign_total_retention_amount += line.foreign_retention_amount
 
 
+    @api.depends("use_indexed_retentions")
+    def _compute_show_indexation(self):
+        for retention in self:
+            retention.show_indexation = bool(retention.use_indexed_retentions)
+
+    @api.constrains("indexation_mode")
+    def _check_indexation_mode(self):
+        for retention in self.filtered(lambda r: r.indexation_mode == "indexed"):
+            if not retention.company_id.use_indexed_retentions:
+                raise ValidationError(_("Indexed retentions are not enabled for this company."))
+
+    def _check_indexed_valuation(self):
+        """The retained amount of an indexed line has to be valued: with no rate for the date, or
+        an amount so small that it rounds to zero in the currency of the invoice, there is nothing
+        to value it with and the voucher is not issued."""
+        for retention in self.filtered(lambda r: r.indexation_mode == "indexed"):
+            for line in retention.retention_line_ids:
+                if line.retention_amount and not line.foreign_retention_amount:
+                    currency, rate_date = line._get_valuation_target()
+                    raise UserError(
+                        _(
+                            "The retained amount of the invoice %(invoice)s cannot be valued in"
+                            " %(currency)s on %(date)s: there is no rate for that date or the"
+                            " amount is too small."
+                        )
+                        % {
+                            "invoice": line.move_id.name or line.move_id.ref or "",
+                            "currency": currency.name or "",
+                            "date": rate_date or "",
+                        }
+                    )
+
+    def _apply_partner_indexation_mode(self):
+        """The voucher inherits the default indexation of its contact when the company uses the
+        function; a contact without a value leaves the voucher non-indexed."""
+        self.ensure_one()
+        if self.company_id.use_indexed_retentions:
+            self.indexation_mode = self.partner_id.retention_indexation_mode or "not_indexed"
+        self._reset_exchange_difference_treatment()
+
+    @api.onchange("indexation_mode")
+    def _onchange_indexation_mode(self):
+        for retention in self:
+            retention._reset_exchange_difference_treatment()
+            retention.retention_line_ids._apply_foreign_valuation()
+
+    @api.onchange("date")
+    def _onchange_date_valuation(self):
+        """The indexed valuation uses the rate of the day of the voucher."""
+        self.filtered(lambda r: r.indexation_mode == "indexed").retention_line_ids._apply_foreign_valuation()
+
     @api.onchange("partner_id")
     def onchange_partner_id(self):
         """
@@ -254,6 +383,7 @@ class AccountRetention(models.Model):
         self._validate_retention_journals()
 
         for retention in self.filtered(lambda r: r.state == "draft" and r.partner_id):
+            retention._apply_partner_indexation_mode()
             if retention.is_third_party_retention:
                 # For third-party billing, just re-compute existing line amounts
                 # using the new partner's withholding, without replacing lines
@@ -436,6 +566,9 @@ class AccountRetention(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
+        for vals, retention in zip(vals_list, res):
+            if "exchange_difference_treatment" not in vals:
+                retention._reset_exchange_difference_treatment()
         for retention in res:
             if retention.is_third_party_retention:
                 moves = retention.retention_line_ids.mapped("move_id")
@@ -445,6 +578,23 @@ class AccountRetention(models.Model):
         return res
 
     def write(self, vals):
+        if "indexation_mode" in vals and any(
+            retention.state != "draft" and retention.indexation_mode != vals["indexation_mode"]
+            for retention in self
+        ):
+            raise UserError(_("The indexation of a retention can only be changed in draft."))
+        if "exchange_difference_treatment" in vals and any(
+            retention.state != "draft"
+            and retention.exchange_difference_treatment != vals["exchange_difference_treatment"]
+            for retention in self
+        ):
+            raise UserError(_("The exchange difference treatment can only be changed in draft."))
+        for date_field in ("date", "date_accounting"):
+            if date_field in vals and any(
+                retention.state == "emitted" and retention[date_field] != fields.Date.to_date(vals[date_field])
+                for retention in self
+            ):
+                raise UserError(_("The dates of an emitted retention cannot be changed."))
         res = super().write(vals)
         for retention in self:
             if retention.is_third_party_retention:
@@ -452,6 +602,12 @@ class AccountRetention(models.Model):
                 if any(m.state != "posted" for m in moves):
                     raise UserError(_("You cannot modify retentions for a draft or cancelled invoice."))
 
+        if "indexation_mode" in vals:
+            if "exchange_difference_treatment" not in vals:
+                self._reset_exchange_difference_treatment()
+            self.retention_line_ids._apply_foreign_valuation()
+        elif "date" in vals:
+            self.filtered(lambda r: r.indexation_mode == "indexed").retention_line_ids._apply_foreign_valuation()
         return res
 
     def unlink(self):
@@ -482,6 +638,8 @@ class AccountRetention(models.Model):
         # local calendar day hasn't rolled over yet (e.g. Caracas, UTC-4,
         # from 20:00 local onward), making this fallback fail the very
         # constraint it's about to trigger on write() a few lines below.
+        self._check_indexation_mode()
+        self._check_indexed_valuation()
         today = fields.Date.context_today(self)
         is_automated = self.env.context.get('automated_action') or self.env.context.get('cron_id')
 
@@ -1127,10 +1285,44 @@ class AccountRetention(models.Model):
             # Coordinated purely via context, not a shared dependency:
             # `l10n_ve_exchange_difference` reads this key without
             # depending on this module.
+            # The core converts a payment in the currency of the company to the currency of the
+            # invoice with the rate of the date of the payment, so the amount that settles the
+            # invoice would depend on the direction of the rate. The reconciliation is forced to the
+            # rate of the modality, looked up by its date (not computed).
+            retention_line = payment.retention_line_ids[:1]
+            company_currency = payment.company_id.currency_id
+            currency, rate_date = retention_line._get_valuation_target()
+            rate = 0.0
+            reconcile_context = {}
+            if retention_line._is_indexed():
+                # Indexed: Odoo's own reconciliation, which generates the exchange difference, with
+                # the indexed rate (the one of the valuation of the line). The retention is not
+                # flagged as a retention reconcile, so the exchange difference notes module treats
+                # its difference like any other: a debit/credit note when the customer allows it
+                # (treatment B), or the exchange entry otherwise (treatment A).
+                if retention_line.move_id.currency_id != company_currency:
+                    rate = company_currency._get_conversion_rate(
+                        company_currency, currency, payment.company_id, rate_date
+                    )
+                reconcile_context.update(
+                    payment.retention_id._get_reconcile_extra_context(retention_line)
+                )
+            else:
+                # Non-indexed: settled at the rate of the invoice, in a single partial and with no
+                # exchange difference.
+                reconcile_context.update(
+                    {
+                        "l10n_ve_exchange_is_retention_reconcile": True,
+                        "no_exchange_difference": True,
+                        "group_in_single_partial": True,
+                    }
+                )
+                if currency and rate_date and retention_line.move_id.currency_id != company_currency:
+                    rate = retention_line.move_id.invoice_currency_rate
+            if rate:
+                reconcile_context["forced_rate_from_register_payment"] = rate
             payment.retention_line_ids.move_id.with_context(
-                no_exchange_difference=True,
-                group_in_single_partial=True,
-                l10n_ve_exchange_is_retention_reconcile=True,
+                **reconcile_context
             ).js_assign_outstanding_line(lines[0].id)
 
     @api.model
@@ -1499,6 +1691,12 @@ class AccountRetention(models.Model):
         # own date_accounting. Guarded since l10n_ve_igtf isn't a hard dependency.
         if "keep_alter_value_vef" in self.env["account.payment"]._fields:
             res["keep_alter_value_vef"] = True
+
+        # The currency chosen for the invoice travels to the payment (the lines of the same invoice
+        # share it); non-indexed retentions are always paid in the currency of the company.
+        payment_currency = lines[:1].payment_currency_id
+        if payment_currency:
+            res["currency_id"] = payment_currency.id
 
         return res
 

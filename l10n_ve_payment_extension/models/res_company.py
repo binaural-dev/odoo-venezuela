@@ -50,6 +50,17 @@ class ResCompany(models.Model):
         string="Create Suppliers Retentions in Draft", default=False
     )
 
+    use_indexed_retentions = fields.Boolean(
+        string="Use Indexed Retentions",
+        default=False,
+        help=(
+            "Allows choosing, on each retention voucher, whether the amounts in the currency of"
+            " foreign-currency invoices are valued with the invoice rate (non-indexed, the"
+            " default) or with the rate of the voucher date (indexed). The retained amount in"
+            " bolivars is the same in both modes."
+        ),
+    )
+
     hide_issue_date_of_municipal_withholding_receipt = fields.Boolean('Hide issue date of municipal withholding receipt',default=False)
     
     text_header_1_municipal_retention = fields.Text(
