@@ -636,12 +636,20 @@ class AccountMove(models.Model):
                     "base_amount_foreign_currency", 0
                 )
          
-    @api.depends('currency_id', 'invoice_date')
+    @api.depends('currency_id', 'invoice_date', 'invoice_currency_rate', 'foreign_rate')
     def _compute_move_currency_to_company_currency_rate(self):
         '''
-        Compute the move currency to company currency rate'''
+        Rate of the move currency read from the document's stored rate, so it
+        keeps the one it was confirmed with. Falls back to the rate of the date
+        when the document has none.'''
         for move in self:
             if move.currency_id == move.company_currency_id:
+                stored_rate = move.foreign_rate
+            else:
+                stored_rate = 1 / move.invoice_currency_rate if move.invoice_currency_rate else 0.0
+            if stored_rate:
+                move.move_currency_to_company_currency_rate = stored_rate
+            elif move.currency_id == move.company_currency_id:
                 move.move_currency_to_company_currency_rate = move.currency_id._get_conversion_rate(
                     from_currency=move.foreign_currency_id,
                     to_currency=move.company_currency_id,
