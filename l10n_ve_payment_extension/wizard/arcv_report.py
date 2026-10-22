@@ -127,8 +127,6 @@ class ArcvReport(models.TransientModel):
                     ),
                     "total_invoice_amount": sum(line.invoice_amount for line in lines),
                     "total_retention_amount": sum(line.retention_amount for line in lines),                    
-                    "total_foreign_invoice_amount": sum(line.foreign_invoice_amount for line in lines),
-                    "total_foreign_retention_amount": sum(line.foreign_retention_amount for line in lines),
                 }
             )
         data = {
