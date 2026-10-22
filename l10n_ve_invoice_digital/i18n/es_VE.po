@@ -1263,6 +1263,49 @@ msgstr "Falló la digitalización TFHKA: %s"
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid ""
+"TFHKA did not digitalize this document: no document type could be "
+"determined, or digital invoicing is disabled for this company. Check the "
+"document configuration before retrying."
+msgstr ""
+"TFHKA no digitalizó este documento: no se pudo determinar el tipo de "
+"documento, o la facturación digital está deshabilitada para esta "
+"compañía. Verifique la configuración del documento antes de reintentar."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"Cannot queue %(name)s for digitalization: no TFHKA document type could be "
+"determined for this document (e.g. a credit note without a reversal "
+"link). Check its configuration before retrying."
+msgstr ""
+"No se puede encolar %(name)s para digitalización: no se pudo determinar "
+"el tipo de documento TFHKA para este documento (por ejemplo, una nota de "
+"crédito sin vínculo de reversión). Verifique su configuración antes de "
+"reintentar."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"Cannot queue %(name)s for digitalization: there is a numbering gap "
+"between it and the previous document, %(previous_name)s. Fix the "
+"sequence irregularity in Odoo first."
+msgstr ""
+"No se puede encolar %(name)s para digitalización: hay un salto en la "
+"numeración entre este documento y el anterior, %(previous_name)s. "
+"Corrija la irregularidad de secuencia en Odoo antes de reintentar."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
 "TFHKA digitalization was interrupted and no successful response was found "
 "in the API log after waiting %(minutes)s minute(s). There is no "
 "confirmation TFHKA received this document -- verify with TFHKA before "
