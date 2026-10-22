@@ -3098,7 +3098,6 @@ class TestRetentionIndexed(RetentionTestCommon):
         for index, (allow, treatment) in enumerate(((False, "note"), (True, "entry"))):
             with self.subTest(allow_note=allow, treatment=treatment):
                 self._enable_exchange_notes(allow_note=allow)
-                self.env["account.retention"]._fields  # asegura el registro cargado
                 result = self._run_retention_case(
                     "cus", "iva", "USD", "indexed", number="0123456789142%d" % index, treatment=treatment,
                 )
