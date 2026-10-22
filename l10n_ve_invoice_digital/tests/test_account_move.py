@@ -3130,3 +3130,44 @@ class TestAccountMoveApiCalls(TransactionCase):
         info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
         self.assertEqual(info["monto"], "100.00")
 
+    # ------------------------------------------------------------------
+    # _tfhka_check_sequence_gap(): hallazgo adicional de la ronda 3 de
+    # revision, portado de v19. En modo "digitalizacion con pago" el
+    # numero enviado a TFHKA es el sequence_number local (no el name), asi
+    # que un hueco ahi se reporta fuera de orden si no se bloquea aqui.
+    # ------------------------------------------------------------------
+
+    def test_218_action_generate_digital_blocks_sequence_gap_in_payment_mode(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.action_tfhka_generate_digital()
+        self.assertEqual(inv1.tfhka_digitalization_state, "queued")
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        # Simula el hueco: un numero de secuencia local saltado (p.ej. una
+        # factura cancelada que ya lo consumio), sin tocar 'name'.
+        inv2.sequence_number = inv1.sequence_number + 2
+
+        with self.assertRaises(ValidationError):
+            inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "none")
+
+    def test_219_check_sequence_gap_noop_in_normal_mode(self):
+        # En modo normal el numero reportado a TFHKA no es sequence_number
+        # (ver tfhka.document.service), asi que un hueco local no debe
+        # bloquear nada en ese modo.
+        self.company.digitalization_with_payment_tfhka = False
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv2.sequence_number = inv1.sequence_number + 2
+        inv2._tfhka_check_sequence_gap()
+

@@ -337,6 +337,7 @@ class AccountMove(models.Model):
         for move in self:
             move._tfhka_validate_previous_document_queued()
             move._tfhka_validate_document_type_determinable()
+            move._tfhka_check_sequence_gap()
         self._check_tfhka_payment_required()
         self._tfhka_enqueue_digitalization()
 
@@ -407,6 +408,48 @@ class AccountMove(models.Model):
                 )
             )
 
+    def _tfhka_check_sequence_gap(self):
+        """Hard block, "digitalization with payment" mode only: this move's
+        ``sequence_number`` must be exactly one more than its predecessor's
+        in the same journal/move_type. Only enforced in that mode because
+        it's the one where TFHKA is sent the local ``sequence_number`` as
+        the document number (see ``_check_tfhka_payment_required`` /
+        ``action_tfhka_generate_digital``, its only entry point to the
+        queue) -- a gap there (e.g. a cancelled invoice that ate a number)
+        would be reported to TFHKA out of order. In normal mode the number
+        sent to TFHKA comes from TFHKA's own last-number-at-the-time (see
+        ``tfhka.document.service``), not ``sequence_number``, so a local gap
+        doesn't affect it. Ported from v19's
+        ``AccountMove._tfhka_check_sequence_gap``. No override wizard -- the
+        gap must be resolved in Odoo first; TFHKA requires strictly
+        consecutive numbering."""
+        self.ensure_one()
+        if not self.company_id.digitalization_with_payment_tfhka:
+            return
+        previous = self.env["account.move"].search(
+            [
+                ("id", "!=", self.id),
+                ("company_id", "=", self.company_id.id),
+                ("journal_id", "=", self.journal_id.id),
+                ("move_type", "=", self.move_type),
+                ("state", "=", "posted"),
+                ("name", "<", self.name),
+            ],
+            order="name desc",
+            limit=1,
+        )
+        if previous and self.sequence_number != previous.sequence_number + 1:
+            raise ValidationError(
+                _(
+                    "Cannot queue %(name)s for digitalization: there is a "
+                    "numbering gap between it and the previous document, "
+                    "%(previous_name)s. Fix the sequence irregularity in "
+                    "Odoo first.",
+                    name=self.name,
+                    previous_name=previous.name,
+                )
+            )
+
     def _check_tfhka_payment_required(self):
         """In 'cash' mode, block digitalization until the invoice is paid.
 
@@ -443,14 +486,28 @@ class AccountMove(models.Model):
         ``action_tfhka_generate_digital``), and a TFHKA document type can
         actually be determined for it -- otherwise it would reach 'queued'
         only to fail and wedge the company's queue (see
-        _tfhka_cron_process_queue)."""
+        _tfhka_cron_process_queue).
+
+        ``_tfhka_get_document_type_and_series`` can also raise ``UserError``
+        on its own (an invalid sales invoicing series configuration), not
+        just return an empty type. This runs synchronously inside the
+        posting flow (``_tfhka_enqueue_eligible_for_digitalization``, called
+        from ``move.action.post.alert.wizard.action_confirm()``), so letting
+        that propagate would abort the whole posting instead of just
+        excluding this move from the queue -- treated the same as an
+        undeterminable document type."""
         self.ensure_one()
-        return (
-            not self.is_digitalized
-            and self.journal_id.digital_invoice
-            and not self.company_id.digitalization_with_payment_tfhka
-            and bool(self._tfhka_get_document_type_and_series()[0])
-        )
+        if (
+            self.is_digitalized
+            or not self.journal_id.digital_invoice
+            or self.company_id.digitalization_with_payment_tfhka
+        ):
+            return False
+        try:
+            document_type = self._tfhka_get_document_type_and_series()[0]
+        except UserError:
+            return False
+        return bool(document_type)
 
     def _tfhka_enqueue_eligible_for_digitalization(self):
         """Enqueues each eligible move for TFHKA digitalization (queue
