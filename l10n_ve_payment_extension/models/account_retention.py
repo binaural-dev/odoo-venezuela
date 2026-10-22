@@ -913,8 +913,12 @@ class AccountRetention(models.Model):
         if self.type_retention == "municipal" and not self.date_emision:
             self.write({"date_emision": fields.Date.today()})
             self.flush_recordset(["date_emision"])
+        # report_action keeps the caller's active_model: opened from an invoice it
+        # is account.move, and l10n_ve_invoice would read these ids as invoices.
         return self.env.ref(
             "l10n_ve_payment_extension.retention_voucher_action"
+        ).with_context(
+            active_model="account.retention", active_id=self.id, active_ids=self.ids
         ).report_action(self, config=False)
 
     def _set_sequence(self):
