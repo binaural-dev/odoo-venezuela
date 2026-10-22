@@ -163,6 +163,12 @@ class TestIndexedPayments(TestForeignBalance):
             "supplier_taxes_id": [(6, 0, [self.test_purchase_tax.id])],
         })
 
+        # A database without demo data has no USD rate for these dates, and
+        # creating any document/payment in USD raises "no rate assigned".
+        # Tests that need a specific rate override it with _set_rate().
+        for rate_date in (self.invoice_date, self.payment_date):
+            self._set_rate(self.currency_usd, rate_date, 40.0)
+
     # -- helpers (extend the parent's _set_usd_rate to any currency/date) -----
 
     def _set_rate(self, currency, date, rate):
