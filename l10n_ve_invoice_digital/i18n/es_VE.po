@@ -1292,6 +1292,20 @@ msgstr ""
 #: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
 #, python-format
 msgid ""
+"Cannot queue %(name)s for digitalization: there is a numbering gap "
+"between it and the previous document, %(previous_name)s. Fix the "
+"sequence irregularity in Odoo first."
+msgstr ""
+"No se puede encolar %(name)s para digitalización: hay un salto en la "
+"numeración entre este documento y el anterior, %(previous_name)s. "
+"Corrija la irregularidad de secuencia en Odoo antes de reintentar."
+
+#. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
 "TFHKA digitalization was interrupted and no successful response was found "
 "in the API log after waiting %(minutes)s minute(s). There is no "
 "confirmation TFHKA received this document -- verify with TFHKA before "
