@@ -138,10 +138,16 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
         wizard.action_create_payments()
         return self.env["account.payment"].search([("id", ">", last_id)])
 
-    def _assert_payments_consistent(self, payments, payment_type):
+    def _assert_payments_consistent(self, payments, payment_type, amount=None):
+        """`amount` is the expected payment amount; where the journal has no
+        IGTF it is the document's, with no 3% added."""
         self.assertTrue(payments, "El wizard debe crear al menos un pago.")
         for payment in payments:
             self.assertEqual(payment.payment_type, payment_type)
+            if not payment.journal_id.is_igtf:
+                self.assertEqual(payment.igtf_amount, 0.0, "Un diario sin IGTF no debe cobrar IGTF.")
+                if amount is not None:
+                    self.assertAlmostEqual(payment.amount, amount, places=2)
             lines = payment.move_id.line_ids
             self.assertEqual(
                 payment.currency_id.round(sum(lines.mapped("balance"))), 0.0,
@@ -168,13 +174,13 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
     def test_01_customer_refund_usd_paid_in_vef_no_igtf(self):
         refund = self._create_document("out_refund", 100.0, self.currency_usd)
         payments = self._pay(refund, self.journal_vef, self.currency_vef)
-        self._assert_payments_consistent(payments, "outbound")
+        self._assert_payments_consistent(payments, "outbound", 100.0 * RATE)
         self._assert_settled(refund)
 
     def test_02_customer_refund_usd_paid_in_usd_journal_no_igtf(self):
         refund = self._create_document("out_refund", 100.0, self.currency_usd)
         payments = self._pay(refund, self.journal_usd, self.currency_usd)
-        self._assert_payments_consistent(payments, "outbound")
+        self._assert_payments_consistent(payments, "outbound", 100.0)
         self._assert_settled(refund)
 
     def test_03_customer_refund_usd_paid_in_usd_journal_with_igtf(self):
@@ -185,7 +191,7 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
     def test_04_customer_refund_usd_partial_in_vef_no_igtf(self):
         refund = self._create_document("out_refund", 100.0, self.currency_usd)
         payments = self._pay(refund, self.journal_vef, self.currency_vef, amount=30.0 * RATE)
-        self._assert_payments_consistent(payments, "outbound")
+        self._assert_payments_consistent(payments, "outbound", 30.0 * RATE)
         self.assertEqual(refund.payment_state, "partial")
 
     def test_05_two_customer_refunds_grouped_in_vef_no_igtf(self):
@@ -195,7 +201,7 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
         )
         payments = self._pay(refunds, self.journal_vef, self.currency_vef, group=True)
         self.assertEqual(len(payments), 1, "Las NC del mismo cliente se agrupan en un solo pago.")
-        self._assert_payments_consistent(payments, "outbound")
+        self._assert_payments_consistent(payments, "outbound", 155.5 * RATE)
         self._assert_settled(refunds)
 
     def test_06a_customer_refund_vef_paid_in_usd_journal_with_igtf(self):
@@ -206,7 +212,7 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
     def test_06b_customer_refund_vef_paid_in_vef(self):
         refund = self._create_document("out_refund", 102630.95, self.currency_vef)
         payments = self._pay(refund, self.journal_vef, self.currency_vef)
-        self._assert_payments_consistent(payments, "outbound")
+        self._assert_payments_consistent(payments, "outbound", 102630.95)
         self._assert_settled(refund)
 
     # -- notas de crédito de proveedor (pago inbound) -------------------------
@@ -214,13 +220,13 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
     def test_07_supplier_refund_usd_paid_in_vef_no_igtf(self):
         refund = self._create_document("in_refund", 100.0, self.currency_usd)
         payments = self._pay(refund, self.journal_vef, self.currency_vef)
-        self._assert_payments_consistent(payments, "inbound")
+        self._assert_payments_consistent(payments, "inbound", 100.0 * RATE)
         self._assert_settled(refund)
 
     def test_07b_supplier_refund_vef_paid_in_vef(self):
         refund = self._create_document("in_refund", 102630.95, self.currency_vef)
         payments = self._pay(refund, self.journal_vef, self.currency_vef)
-        self._assert_payments_consistent(payments, "inbound")
+        self._assert_payments_consistent(payments, "inbound", 102630.95)
         self._assert_settled(refund)
 
     # -- regresión: facturas normales -----------------------------------------
@@ -228,7 +234,7 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
     def test_08a_customer_invoice_usd_paid_in_vef_no_igtf(self):
         invoice = self._create_document("out_invoice", 100.0, self.currency_usd)
         payments = self._pay(invoice, self.journal_vef, self.currency_vef)
-        self._assert_payments_consistent(payments, "inbound")
+        self._assert_payments_consistent(payments, "inbound", 100.0 * RATE)
         self._assert_settled(invoice)
 
     def test_08b_customer_invoice_usd_paid_in_usd_journal_with_igtf(self):
@@ -239,11 +245,11 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
     def test_08c_customer_invoice_vef_paid_in_vef(self):
         invoice = self._create_document("out_invoice", 102630.95, self.currency_vef)
         payments = self._pay(invoice, self.journal_vef, self.currency_vef)
-        self._assert_payments_consistent(payments, "inbound")
+        self._assert_payments_consistent(payments, "inbound", 102630.95)
         self._assert_settled(invoice)
 
     def test_08d_supplier_bill_vef_paid_in_vef(self):
         bill = self._create_document("in_invoice", 102630.95, self.currency_vef)
         payments = self._pay(bill, self.journal_vef, self.currency_vef)
-        self._assert_payments_consistent(payments, "outbound")
+        self._assert_payments_consistent(payments, "outbound", 102630.95)
         self._assert_settled(bill)
