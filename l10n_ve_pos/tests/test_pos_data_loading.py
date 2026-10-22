@@ -150,6 +150,14 @@ class TestPosDataLoading(TransactionCase):
         """Helper: call the Odoo 19 entry point the same way the JS does."""
         return self.session.load_data([])
 
+    def test_pos_config_rate_does_not_raise_without_rate(self):
+        """Sin tasa del día, ``pos.config`` calcula su tasa sin lanzar error."""
+        self.env["res.currency.rate"].search(
+            [("currency_id", "=", self.foreign_currency.id)]
+        ).unlink()
+        self.config.invalidate_recordset(["foreign_rate", "foreign_inverse_rate"])
+        self.config._compute_rate()
+
     def test_load_data_has_no_ad_hoc_prefix_vats_extra_key(self):
         """A.1 / Spec: payload must not include ad-hoc top-level keys."""
         data = self._load()

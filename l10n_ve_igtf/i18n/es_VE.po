@@ -770,3 +770,25 @@ msgstr "créditos y anticipos pendientes"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_igtf.view_form_move_inherited_binaural_advance_payment
 msgid "outstanding debits and advances"
 msgstr "débitos y anticipos pendientes"
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid ""
+"The advance payment cross entry %s cannot be reset to draft or cancelled by "
+"itself. Unreconcile it from the invoice, or reset to draft or cancel its "
+"origin payment."
+msgstr ""
+"El asiento de cruce de anticipo %s no puede pasarse a borrador ni cancelarse "
+"por sí solo. Desconcílialo desde la factura, o pasa a borrador o cancela su "
+"pago origen."
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_move.py:0
+msgid ""
+"The advance payment cross entry %s has no origin payment, so it cannot be "
+"posted."
+msgstr ""
+"El asiento de cruce de anticipo %s no tiene pago origen, por lo que no puede "
+"publicarse."

@@ -530,7 +530,7 @@ class AccountMove(models.Model):
                 subtotal = line_sign * abs(line.balance)
                 tax_amount = line_sign * abs(tax_amount_by_line_id.get(line.id, 0.0))
 
-                discount_percent = line.discount or 0.0
+                discount_percent = line._get_effective_discount_percent()
                 discount_type = 'percent'
                 denominator = line.quantity * (1 - discount_percent / 100.0)
                 price_unit = (
@@ -693,7 +693,7 @@ class AccountMove(models.Model):
 
             for line in record.invoice_line_ids:
                 subtotal = line.price_unit * line.quantity
-                if line.discount > 0:
+                if line._get_effective_discount_percent() > 0:
                     discount_amount += subtotal - line.price_subtotal
                 total += subtotal
 
@@ -748,7 +748,6 @@ class AccountMove(models.Model):
             foreign_currency_record = self.env["res.currency"].search(
                 [("id", "=", int(foreign_currency_id))]
             )
-            foreign_currency_symbol = foreign_currency_record.symbol or ""
             foreign_currency_name = foreign_currency_record.name or ""
             company_currency_symbol = self.env.company.currency_id.symbol or ""
             if view_type == "form":
@@ -756,17 +755,12 @@ class AccountMove(models.Model):
                     "l10n_ve_accountant.view_account_move_form_l10n_ve_accountant"
                 ).id
                 doc = etree.XML(res["arch"])
-                page = doc.xpath("//page[@name='foreign_currency']")
                 foreign_subtotal_line = doc.xpath("//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='foreign_subtotal']")
                 foreign_price_line = doc.xpath("//page[@id='invoice_tab'][1]/field[1]/list[1]/field[@name='foreign_price']")
                 if foreign_subtotal_line:
                     foreign_subtotal_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
                 if foreign_price_line:
                     foreign_price_line[0].set("string", _("Price") + " " + foreign_currency_name)
-                if page:
-                    page[0].set(
-                        "string", _("Foreign Currency ") + " " + foreign_currency_symbol
-                    )
                 res["arch"] = etree.tostring(doc, encoding="unicode")
 
             if view_type == "list":
@@ -1657,6 +1651,13 @@ class AccountMove(models.Model):
             rate=rate,
         )
 # Unbalanced Lines Synchronization
+    @api.model
+    def _get_base_line_sync_extra_fields(self):
+        """Invoice line fields whose change forces `_sync_tax_lines` to
+        resynchronize the journal items. Extend it from other modules that
+        alter the line amounts through a field of their own."""
+        return ['price_unit', 'quantity', 'discount']
+
     @contextmanager
     def _sync_tax_lines(self, container):
         AccountTax = self.env['account.tax']
@@ -1677,7 +1678,7 @@ class AccountMove(models.Model):
         def get_base_line_tracked_fields(line):
             grouping_key = AccountTax._prepare_base_line_grouping_key(fake_base_line)
             if line.move_id.is_invoice(include_receipts=True):
-                extra_fields = ['price_unit', 'quantity', 'discount']
+                extra_fields = self._get_base_line_sync_extra_fields()
                 # discount_fixed (l10n_ve_invoice, opcional -- este modulo no
                 # depende de ese) tambien cambia la base de la linea y debe
                 # disparar el re-balanceo igual que discount (%); sin esto,

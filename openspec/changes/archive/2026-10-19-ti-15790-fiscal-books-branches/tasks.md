@@ -1,0 +1,7 @@
+- [x] 1. Campos `has_branches`, `branch_scope`, `branch_company_id`, `report_company_ids` y validaciones en el wizard base
+- [x] 2. `_get_domain` y cabecera según el alcance; vista con selector condicionado a `has_branches`
+- [x] 3. Controlador de descarga por `wizard_id` con validación de propiedad y acceso
+- [x] 4. `_get_retention_domain` consolidado en `l10n_ve_payment_extension`
+- [x] 5. IGTF lee su configuración de la compañía del wizard
+- [x] 6. Tests de alcance y de consolidación con sucursales nativas, documentos y retención reales
+- [x] 7. Bump de manifest de los tres módulos y actualización de specs
