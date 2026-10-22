@@ -221,12 +221,22 @@ Al confirmar la orden, cuando la compañía tiene `limit_product_qty_out` mayor 
 
 ### Requirement: Facturación por lotes según límite de productos por factura
 
-`_get_invoiceable_lines` DEBE (MUST) truncar las líneas facturables al máximo `max_product_invoice` de la compañía (campo de `l10n_ve_invoice`), salvo que el contexto traiga `ignore_limit`; y `_create_invoices` DEBE (MUST) crear tantas facturas como haga falta, repitiendo la creación mientras queden líneas facturables, de modo que una orden que excede el límite se factura en varias facturas.
+`_get_invoiceable_lines` DEBE (MUST) truncar las líneas facturables al máximo `max_product_invoice` de la compañía (campo de `l10n_ve_invoice`), salvo que el contexto traiga `ignore_limit`; y `_create_invoices` DEBE (MUST) crear tantas facturas como haga falta, repitiendo la creación por lotes mientras queden líneas facturables, de modo que una orden que excede el límite se factura en varias facturas. Cada lote DEBE (MUST) llamar a la creación estándar una sola vez, solo con las órdenes que aún tienen líneas pendientes; las líneas de sección/nota no cuentan como pendientes, y una orden cuyas líneas pendientes no cambian tras un lote sale de la repetición.
 
 #### Scenario: Orden con más productos que el límite
 
 - **WHEN** se factura una orden con más líneas facturables que `max_product_invoice`
 - **THEN** se generan varias facturas, cada una con a lo sumo el límite de líneas, hasta cubrir toda la orden
+
+#### Scenario: Facturación consolidada de varias órdenes
+
+- **WHEN** se facturan juntas varias órdenes sin agrupar por orden, sin exceder el límite
+- **THEN** se genera una sola factura con las líneas de todas las órdenes
+
+#### Scenario: Orden cuyas líneas siguen facturables tras el lote
+
+- **WHEN** una orden mantiene las mismas líneas facturables después de un lote (p. ej. una suscripción con su factura en borrador, facturada junto a una orden normal)
+- **THEN** no se vuelve a facturar ni se repite el lote; la factura consolidada es la única creada
 
 #### Scenario: Límite ignorado por contexto
 
