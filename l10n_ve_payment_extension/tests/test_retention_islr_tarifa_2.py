@@ -13,6 +13,21 @@ class TestRetentionISLRTarifa2(TransactionCase):
         cls.company = cls.env.user.company_id
         cls.company.currency_id = cls.env.ref('base.VEF')
         cls.company.foreign_currency_id = cls.env.ref('base.USD')
+
+        # Odoo exige la tasa del día exacto: se fijan las tasas de hoy (VEF 1,0 y USD)
+        today = fields.Date.today()
+        rate_model = cls.env["res.currency.rate"]
+        rate_model.search([
+            ("currency_id", "in", (cls.env.ref("base.VEF") | cls.env.ref("base.USD")).ids),
+            ("company_id", "=", cls.company.id), ("name", "=", today),
+        ]).unlink()
+        rate_model.create([
+            {"currency_id": cls.env.ref("base.VEF").id, "company_id": cls.company.id, "name": today, "rate": 1.0},
+            {
+                "currency_id": cls.env.ref("base.USD").id, "company_id": cls.company.id, "name": today,
+                "rate": 1 / 390.0, "company_rate": 1 / 390.0, "inverse_company_rate": 390.0,
+            },
+        ])
         
         # Activar el uso de retenciones de ISLR
         cls.env['ir.config_parameter'].sudo().set_param('l10n_ve_payment_extension.use_islr_retention', True)
@@ -280,3 +295,96 @@ class TestRetentionISLRTarifa2(TransactionCase):
         self.assertEqual(retention_line.related_amount_subtract_fees, 500.0 * 43.0, "El sustraendo debe ser 21500 Bs (500 UT)")
         self.assertAlmostEqual(retention_line.retention_amount, 36979.94, places=2)
         
+
+    def _usd_islr_line(self, indexation_mode="not_indexed"):
+        """Factura en USD de 1.000 a tasa 390 y su línea de retención de ISLR (tarifa 2)."""
+        usd = self.env.ref('base.USD')
+        today = fields.Date.context_today(self.env.user)
+        # Tasas fijas del día. Odoo 19 normaliza company_rate dividiendo entre la última tasa de la
+        # moneda de la compañía, así que la serie del VEF se deja en 1.0 (igual que
+        # RetentionTestCommon) para no arrastrar la tasa histórica de semilla.
+        vef = self.env.ref('base.VEF')
+        rate_model = self.env['res.currency.rate']
+        rate_model.search([
+            ('currency_id', 'in', (vef | usd).ids), ('company_id', '=', self.company.id),
+            ('name', '=', today),
+        ]).unlink()
+        rate_model.create([
+            {'currency_id': vef.id, 'company_id': self.company.id, 'name': today, 'rate': 1.0},
+            {
+                'currency_id': usd.id,
+                'company_id': self.company.id,
+                'name': today,
+                'rate': 1 / 390.0,
+                'company_rate': 1 / 390.0,
+                'inverse_company_rate': 390.0,
+            },
+        ])
+
+        purchase_journal_usd = self.env['account.journal'].search(
+            [('code', '=', 'PTU'), ('company_id', '=', self.company.id)], limit=1
+        ) or self.env['account.journal'].create({
+            'name': 'Compras USD Test',
+            'code': 'PTU',
+            'type': 'purchase',
+            'company_id': self.company.id,
+        })
+        invoice = self.env['account.move'].create({
+            'move_type': 'in_invoice',
+            'journal_id': purchase_journal_usd.id,
+            'partner_id': self.partner.id,
+            'invoice_date': today,
+            'currency_id': usd.id,
+            'invoice_line_ids': [(0, 0, {
+                'product_id': self.product.id,
+                'price_unit': 1000.0,
+                'quantity': 1.0,
+                'account_id': self.expense_account.id,
+            })],
+        })
+        self.assertAlmostEqual(abs(invoice.amount_untaxed_signed), 390000.0, places=2)
+
+        retention = self.env['account.retention'].create({
+            'partner_id': self.partner.id,
+            'type_retention': 'islr',
+            'type': 'in_invoice',
+            'indexation_mode': indexation_mode,
+        })
+        retention_line = self.env['account.retention.line'].create({
+            'name': 'Retencion ISLR USD',
+            'retention_id': retention.id,
+            'move_id': invoice.id,
+            'payment_concept_id': self.payment_concept.id,
+            'invoice_amount': 390000.0,
+            'invoice_total': 390000.0,
+            'retention_amount': 1.0,
+        })
+        retention_line._compute_related_fields()
+        retention_line._compute_retention_amount()
+        return retention_line
+
+    def test_retention_islr_tarifa_2_usd_invoice_uses_company_currency_base(self):
+        """El tramo se elige con la base acumulada en UT, y la UT está en bolívares: una factura
+        en USD debe acumular su base en Bs y no su monto en USD.
+
+        USD 1.000 a tasa 390 son Bs 390.000 = 9.069,77 UT -> 90% = 8.162,79 UT (Tramo 3, 34%).
+        Con el monto en USD (1.000 / 43 = 23,26 UT) caería en el Tramo 1 (15%).
+        """
+        retention_line = self._usd_islr_line()
+        self.assertEqual(
+            retention_line.related_percentage_fees, 34.0,
+            "La base acumulada debe medirse en Bs (Tramo 3), no con el monto en USD (Tramo 1)",
+        )
+        self.assertEqual(retention_line.related_amount_subtract_fees, 500.0 * 43.0)
+
+    def test_ri_062_accumulated_islr_gives_the_same_bolivars_in_both_modalities(self):
+        """RI-062: ISLR con tarifa acumulada: el monto en Bs es el mismo con retención indexada o no
+        indexada (la base se acumula en bolívares) y el valor en USD sale de convertir esos Bs."""
+        self.company.use_indexed_retentions = True
+        not_indexed = self._usd_islr_line("not_indexed")
+        indexed = self._usd_islr_line("indexed")
+        self.assertAlmostEqual(indexed.retention_amount, not_indexed.retention_amount, places=2)
+        self.assertEqual(indexed.related_percentage_fees, 34.0)
+        self.assertAlmostEqual(
+            indexed.foreign_retention_amount, indexed.retention_amount / 390.0, places=2
+        )
