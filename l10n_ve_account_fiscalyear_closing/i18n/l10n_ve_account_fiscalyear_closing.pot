@@ -1,0 +1,138 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_account_fiscalyear_closing
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260828\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-08-30 21:43+0000\n"
+"PO-Revision-Date: 2026-08-30 21:43+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_abstract
+msgid "Account fiscalyear closing abstract"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_unbalanced_move
+msgid "Account fiscalyear closing unbalanced move"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_unbalanced_move_line
+msgid "Account fiscalyear closing unbalanced move line"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__company_id
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_abstract__company_id
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_template__company_id
+msgid "Company"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__display_name
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_abstract__display_name
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config__display_name
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config_template__display_name
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_mapping__display_name
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__display_name
+msgid "Display Name"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing
+msgid "Fiscal year closing"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_config
+msgid "Fiscal year closing configuration"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_config_template
+msgid "Fiscal year closing configuration template"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model,name:l10n_ve_account_fiscalyear_closing.model_account_fiscalyear_closing_mapping
+msgid "Fiscal year closing mapping"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__foreign_credit
+msgid "Foreign Credit"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__foreign_debit
+msgid "Foreign Debit"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing__id
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_abstract__id
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config__id
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config_template__id
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_mapping__id
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move__id
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move_line__id
+msgid "ID"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config__l_map
+#: model_terms:ir.ui.view,arch_db:l10n_ve_account_fiscalyear_closing.account_fiscal_year_closing_inherit_binaural
+#: model_terms:ir.ui.view,arch_db:l10n_ve_account_fiscalyear_closing.account_fiscal_year_closing_template_inherit_binaural
+msgid "Load Accounts"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_config_template__l_map
+msgid "Load accounts"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+msgid ""
+"No account of type 'Current Year Earnings' (equity_unaffected) found "
+"configured for company %(company)s. Configure the chart of accounts before "
+"performing the fiscal closing."
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+msgid ""
+"No fiscal closing entries were generated for %(company)s between "
+"%(start)s and %(end)s: none of the mapped accounts had a balance to close "
+"in that period. Check the account mappings and the period dates before "
+"calculating again."
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#: model:ir.model.fields,field_description:l10n_ve_account_fiscalyear_closing.field_account_fiscalyear_closing_unbalanced_move__foreign_currency_rate
+msgid "Rate"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+msgid "Result"
+msgstr ""
+
+#. module: l10n_ve_account_fiscalyear_closing
+#. odoo-python
+#: code:addons/l10n_ve_account_fiscalyear_closing/models/account_fiscalyear_closing.py:0
+msgid "Se encontraron uno o más movimientos sin asentar: \n"
+msgstr ""
