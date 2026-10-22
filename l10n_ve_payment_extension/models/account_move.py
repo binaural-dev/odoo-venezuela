@@ -149,15 +149,12 @@ class AccountMoveRetention(models.Model):
         "invoice_line_ids.product_id",
         "invoice_line_ids.balance",
         "retention_islr_line_ids.invoice_amount",
-        "retention_islr_line_ids.foreign_invoice_amount",
         "retention_islr_line_ids.retention_amount",
         "retention_islr_line_ids.state",
         "retention_iva_line_ids.invoice_amount",
-        "retention_iva_line_ids.foreign_invoice_amount",
         "retention_iva_line_ids.retention_amount",
         "retention_iva_line_ids.state",
         "retention_municipal_line_ids.invoice_amount",
-        "retention_municipal_line_ids.foreign_invoice_amount",
         "retention_municipal_line_ids.retention_amount",
         "retention_municipal_line_ids.state",
     )
@@ -1037,34 +1034,26 @@ class AccountMoveRetention(models.Model):
     def _retention_lines_amounts_differ(self, lines_of_move, fresh_amounts, currency):
         """
         Compares this invoice's recorded retention.line amounts (for one
-        retention) against freshly recomputed data, in both currencies -
-        comparing against move.tax_totals['base_amount'] directly would
-        give false positives with multiple IVA aliquots or several ISLR
-        concepts, and would never detect anything for Municipal (whose
-        base isn't derived from tax_totals at all).
+        retention) against freshly recomputed data, in the company
+        currency only - comparing against move.tax_totals['base_amount']
+        directly would give false positives with multiple IVA aliquots or
+        several ISLR concepts, and would never detect anything for
+        Municipal (whose base isn't derived from tax_totals at all).
 
-        `fresh_amounts` is an iterable of (invoice_amount,
-        foreign_invoice_amount) tuples, one per freshly (re)computed line.
+        The foreign currency amounts are deliberately NOT compared: the
+        generators used to recompute the data of ISLR only return the base
+        in the company currency, and the foreign amounts stored in ISLR
+        lines are empty when the line is created by the automatic flow, so
+        comparing them flagged every freshly emitted ISLR retention.
+
+        `fresh_amounts` is an iterable of company currency amounts, one per
+        freshly (re)computed line.
         """
         total_invoice_amount = sum(lines_of_move.mapped("invoice_amount"))
-        total_foreign_invoice_amount = sum(lines_of_move.mapped("foreign_invoice_amount"))
-        fresh_invoice_amount = sum(amount for amount, _foreign in fresh_amounts)
-        fresh_foreign_invoice_amount = sum(foreign for _amount, foreign in fresh_amounts)
-
-        foreign_currency = (
-            lines_of_move[:1].foreign_currency_id
-            or self.company_id.foreign_currency_id
-        )
-        return (
-            float_compare(
-                total_invoice_amount, fresh_invoice_amount, precision_rounding=currency.rounding
-            ) != 0
-            or float_compare(
-                total_foreign_invoice_amount,
-                fresh_foreign_invoice_amount,
-                precision_rounding=(foreign_currency.rounding if foreign_currency else currency.rounding),
-            ) != 0
-        )
+        fresh_invoice_amount = sum(fresh_amounts)
+        return float_compare(
+            total_invoice_amount, fresh_invoice_amount, precision_rounding=currency.rounding
+        ) != 0
 
     def _retention_out_of_sync(self, retention):
         """
@@ -1098,16 +1087,13 @@ class AccountMoveRetention(models.Model):
                 # shouldn't happen here: _retention_still_applies() above
                 # already catches "no tax" via "still_applies".
                 return True
-            fresh_amounts = [
-                (d.get("invoice_amount", 0.0), d.get("foreign_invoice_amount", 0.0))
-                for d in fresh_lines_data
-            ]
+            fresh_amounts = [d.get("invoice_amount", 0.0) for d in fresh_lines_data]
             if self._retention_lines_amounts_differ(lines_of_move, fresh_amounts, currency):
                 return True
 
         elif retention.type_retention == "islr":
             fresh_amounts = [
-                (base_amount, base_amount)
+                base_amount
                 for _concept_id, base_amount, _invoice_line_id in self._get_payment_concepts_from_invoice()
             ]
             if self._retention_lines_amounts_differ(lines_of_move, fresh_amounts, currency):
