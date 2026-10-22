@@ -49,6 +49,26 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 - **WHEN** se modifica el registro de tasa de la fecha de un documento ya contabilizado y luego se recalcula y cancela el documento
 - **THEN** el asiento sigue cuadrado (débito igual a crédito)
 
+### Requirement: Restablecer a borrador conserva la tasa de confirmación
+
+La tasa que muestra el documento (`move_currency_to_company_currency_rate`) DEBE (MUST) salir de la tasa guardada en él (`invoice_currency_rate`, o `foreign_rate` cuando el documento está en la moneda de la compañía) y solo usar la tasa vigente de la fecha cuando el documento no tiene ninguna guardada. Editar después el registro de tasa del día de un documento ya contabilizado NO DEBE (MUST NOT) cambiar la tasa mostrada, `foreign_rate`, `foreign_inverse_rate` ni `invoice_currency_rate`, y restablecer ese documento a borrador DEBE (MUST) conservarlas junto con los importes de todas sus líneas (ventas, impuestos y cuenta por cobrar), de modo que el histórico de la tasa no se pierde y el asiento no se descuadra.
+
+#### Scenario: Restablecer a borrador tras editar la tasa del día
+
+- **GIVEN** una factura en USD confirmada con la tasa 884,75 y luego la tasa de ese mismo día editada a 900
+- **WHEN** se restablece la factura a borrador
+- **THEN** el cambio de estado se permite, el asiento queda balanceado y todas sus líneas conservan los importes calculados con 884,75
+
+#### Scenario: Tasa mostrada de un documento contabilizado
+
+- **WHEN** se abre una factura contabilizada cuya tasa del día se editó después de confirmarla
+- **THEN** el formulario muestra la tasa con la que se confirmó y no la tasa vigente
+
+#### Scenario: Factura en la moneda de la compañía
+
+- **WHEN** se restablece a borrador una factura en la moneda de la compañía tras editar la tasa de su día
+- **THEN** sus columnas de la moneda alterna (`foreign_debit`, `foreign_credit`, `foreign_balance`) y su `foreign_rate` no cambian
+
 ### Requirement: Prohibición de tasas negativas o cero
 
 El sistema DEBE (MUST) rechazar en el formulario del asiento una `foreign_rate` negativa y una `foreign_inverse_rate` negativa o igual a cero (onchanges `_onchange_foreign_rate` y `_onchange_foreign_inverse_rate` de `account.move`), y al editar `foreign_rate` recalcular `foreign_inverse_rate` mediante `compute_inverse_rate` de `l10n_ve_rate`.
@@ -213,7 +233,7 @@ Al sincronizar las líneas dinámicas de una factura **en borrador** (`_distribu
 
 Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) corregir las diferencias de redondeo introducidas por el redondeo línea a línea, en dos pasos independientes que corren en etapas distintas del ciclo de sincronización:
 
-1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa cruda del documento (`currency_id._convert` a la fecha de factura), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
+1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa guardada del documento (`invoice_currency_rate`; solo si el documento no la tiene cae a `currency_id._convert` a la fecha de factura, nunca a la tasa vigente de esa fecha si esta se editó después de contabilizar), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
 2. Durante `_sync_tax_lines` (bloque "Fix multi-currency rounding" de `account.move`), tras calcular `tax_results` con el motor estándar de impuestos: el balance de cada línea de impuesto cuyo repartition line pertenece a un impuesto `amount_type = 'percent'` se recalcula NATIVAMENTE en VEF, sumando el `balance` fresco (ya calculado en este mismo ciclo, NO el campo `record.balance` desactualizado) de las líneas de producto que usan ese impuesto y aplicando `% del impuesto x factor_percent de la línea de reparto`; `amount_currency` se deriva multiplicando ese balance por `move.invoice_currency_rate` y redondeando con `move.currency_id` (la moneda del documento, NO la de la compañía -- VEF es el monto "maestro" para `balance`, pero `amount_currency` debe respetar la precisión de la moneda en la que está la factura). El match de las líneas de producto que usan el impuesto considera tanto el impuesto directo (`tax in record.tax_ids`) como su `group_tax_id`: `record.tax_ids` trae el impuesto tal como lo eligió el usuario, que para un `percent` hijo de un `amount_type = 'group'` es el grupo, no el hijo -- sin este segundo criterio la base salía en 0 para esos hijos, sin romper el cuadre del asiento (ver "Requirement" de este mismo bloque, punto 3, que ancla la contrapartida al resto). Para impuestos `fixed`/`division`/`group`, y para las líneas base, se mantiene `amount_currency / rate` como antes. Esto evita que el % del impuesto visible en el asiento diverja de la base real de las líneas de producto (ver `l10n_ve_accountant/tests/test_multi_currency_rounding.py`, tests 15-22, 26 y 27).
 3. Durante `_sync_dynamic_lines`, ya con el recompute del core aplicado (`account.move._distribute_invoice_real_portion`): recorre las líneas de impuesto y, para las de un impuesto `fixed`/`division`/`group`, fija `balance = amount_currency / rate` redondeado (ruta real de cálculo para esos tipos). Para impuestos `amount_type = 'percent'` este paso hace `continue` explícito y NO toca el balance -- **no son idempotentes** entre sí: `amount_currency / rate` divide por una tasa pequeña (VEF hacia la moneda del documento), lo que amplifica el redondeo de 2 decimales de `amount_currency` a un error de varios bolívares en VEF (confirmado empíricamente con precios a 6 decimales y cantidades no enteras, `l10n_ve_accountant/tests/test_multi_currency_rounding.py::test_24_distribute_invoice_real_portion_would_diverge_without_the_skip`); si este paso recalculara el balance de esas líneas, revertiría el cálculo VEF-nativo del paso 2. Luego ancla la contrapartida (las líneas de término de pago si existen; si no, el resto de líneas sin `tax_repartition_line_id`) a `-actual_non_pt`, donde `actual_non_pt` es la suma REAL de los balances de todas las líneas que no son de término de pago, COGS, ni sección/subsección/nota (`line_section`/`line_subsection`/`line_note`, excluidas para no violar el `CHECK` de líneas no contables) tal como quedaron después del recompute — NO una conversión directa del total del documento. El ajuste se acumula en `real_portion_amount` e incrementa `real_portion_count`.
 
@@ -225,6 +245,12 @@ Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_
 
 - **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total de esas líneas en la unidad de redondeo
 - **THEN** la diferencia se reparte entre las líneas de producto (`_apply_product_real_portion`) y, al sincronizar las líneas dinámicas, la contrapartida se ancla a la suma real de las líneas no-PT resultante
+
+#### Scenario: Restablecer a borrador tras editar la tasa del día no recalcula las líneas de producto
+
+- **GIVEN** una factura en divisa confirmada con una tasa y luego la tasa de su fecha editada
+- **WHEN** se restablece a borrador y `_apply_product_real_portion` compara los balances con la conversión esperada
+- **THEN** la conversión esperada usa `invoice_currency_rate`, la diferencia es solo de redondeo y no se reescribe ninguna línea de producto ni la contrapartida
 
 #### Scenario: Cambio de fecha a una fecha con la misma tasa vigente no descuadra el asiento (ticket 15089)
 
