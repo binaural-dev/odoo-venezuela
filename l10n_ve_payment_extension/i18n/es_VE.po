@@ -3338,8 +3338,8 @@ msgstr ""
 #. module: l10n_ve_payment_extension
 #. odoo-python
 #: code:addons/l10n_ve_payment_extension/models/account_move.py:0
-msgid "Invoice %s cannot be modified: it is already paid or in payment."
-msgstr "No se puede modificar la factura %s: ya está pagada o en proceso de pago."
+msgid "Invoice %s cannot be modified: it has a real payment applied."
+msgstr "No se puede modificar la factura %s: tiene un pago real aplicado."
 
 #. module: l10n_ve_payment_extension
 #. odoo-python
@@ -3394,16 +3394,55 @@ msgstr ""
 "\"Recalcular Retenciones\") para actualizarla."
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__has_pending_retention_to_cancel
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__has_pending_retention_to_cancel
 msgid "Has Pending Retention To Cancel"
 msgstr "Tiene retención pendiente de cancelar"
 
 #. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_bank_statement_line__retention_resync_pending
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_move__retention_resync_pending
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_payment__retention_resync_pending
 #: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__retention_resync_pending
 msgid "Retention Resync Pending"
 msgstr "Recálculo de retención pendiente"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_bank_statement_line__retention_resync_pending
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_move__retention_resync_pending
+msgid ""
+"True when this invoice has an emitted retention whose lines or linked "
+"payment no longer match what would be recalculated from the invoice's "
+"current data (e.g. the invoice was reset to draft, edited and reposted)."
+msgstr ""
+"Verdadero cuando esta factura tiene una retención emitida cuyas líneas o "
+"pago asociado ya no coinciden con lo que se recalcularía a partir de los "
+"datos actuales de la factura (p. ej. la factura se pasó a borrador, se "
+"editó y se volvió a publicar)."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_payment__retention_resync_pending
+msgid ""
+"True when this is a retention payment and its retention no longer matches "
+"its invoice's current data (see account.retention.retention_resync_pending)."
+msgstr ""
+"Verdadero cuando este es un pago de retención y su retención ya no coincide "
+"con los datos actuales de su factura (ver "
+"account.retention.retention_resync_pending)."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__retention_resync_pending
+msgid ""
+"True when this retention's invoice has some retention whose declared "
+"base/amount no longer matches what would be recalculated from the invoice's "
+"current data (see account.move.retention_resync_pending). Note: for a "
+"retention grouping several invoices, this only reflects the first one."
+msgstr ""
+"Verdadero cuando la factura de esta retención tiene alguna retención cuya "
+"base/monto declarado ya no coincide con lo que se recalcularía a partir de "
+"los datos actuales de la factura (ver account.move.retention_resync_pending). "
+"Nota: para una retención que agrupa varias facturas, solo refleja la "
+"primera."
 
 #. module: l10n_ve_payment_extension
 #: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.account_move_form_l10n_ve_payment_extension
