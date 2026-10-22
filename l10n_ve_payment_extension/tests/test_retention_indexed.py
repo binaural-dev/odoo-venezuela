@@ -3417,8 +3417,9 @@ class TestRetentionIndexed(RetentionTestCommon):
             })],
         })
         retention.action_post()
-        self.assertAlmostEqual(retention.payment_ids.move_id.line_ids[:1].foreign_balance, 106.67, places=2) \
-            if retention.payment_ids.move_id.line_ids[:1].foreign_balance > 0 else None
+        payment_foreign_balance = retention.payment_ids.move_id.line_ids[:1].foreign_balance
+        if payment_foreign_balance > 0:
+            self.assertAlmostEqual(payment_foreign_balance, 106.67, places=2)
         # Cancelar y reabrir con otra fecha
         retention.action_cancel()
         self.assertAlmostEqual(invoice.amount_residual, total_usd, places=2)
