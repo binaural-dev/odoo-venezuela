@@ -1,5 +1,5 @@
-from odoo import Command
-from odoo.tests import tagged
+from odoo import Command, fields
+from odoo.tests import Form, tagged
 
 from .test_indexed_payments import TestIndexedPayments
 
@@ -104,6 +104,89 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
                 abs(abs(line.balance) - amount * NEW_RATE),
                 f"La línea {line.account_id.code} ({line.display_type}) quedó más cerca de la tasa nueva que de la original.",
             )
+
+    def test_repost_after_draft_keeps_posted_alternate_rate(self):
+        """Draft -> post again: la tasa alterna (y con ella las columnas
+        alternas) sigue siendo la de la primera confirmación."""
+        before, rates_before = self._balances(), self._rates()
+        self._set_rate(self.currency_usd, self.invoice_date, NEW_RATE)
+        self._as_new_request()
+
+        self.invoice.button_draft()
+        self._as_new_request()
+        self.invoice.with_context(move_action_post_alert=True).action_post()
+
+        self.assertEqual(self.invoice.state, "posted")
+        self.assertEqual(self._rates(), rates_before, "La tasa alterna cambió al volver a confirmar.")
+        self.assertEqual(self._balances(), before)
+
+    def test_rewriting_same_date_on_reset_draft_keeps_posted_rates(self):
+        """Escribir la misma fecha en el borrador (RPC, importación, otro
+        módulo) no recalcula las tasas con la tasa nueva del día: Odoo
+        recalcula al escribir una dependencia aunque el valor no cambie."""
+        rates_before = self._rates()
+        self._set_rate(self.currency_usd, self.invoice_date, NEW_RATE)
+        self._as_new_request()
+        self.invoice.button_draft()
+        self._as_new_request()
+
+        self.invoice.write({"invoice_date": self.invoice_date, "date": self.invoice_date})
+
+        self.assertEqual(self._rates(), rates_before, "La fecha reescrita recalculó las tasas.")
+
+    def test_form_date_changed_and_restored_keeps_posted_alternate_rate(self):
+        """Formulario del borrador: la fecha se cambia y se devuelve a la
+        original antes de guardar. El onchange recalcula el registro virtual
+        con la fecha intermedia y, al volver, no debe quedar la tasa nueva del
+        día sino la de la confirmación."""
+        day = self.invoice_date
+        other_day = fields.Date.subtract(day, days=1)
+        self._set_rate(self.currency_usd, other_day, 870.0)
+        self.invoice = self.invoice.copy(
+            {"invoice_date": day, "invoice_date_display": day, "date": day}
+        )
+        self.invoice.with_context(move_action_post_alert=True).action_post()
+        rates_before = self._rates()
+        self._set_rate(self.currency_usd, day, NEW_RATE)
+        self._as_new_request()
+        self.invoice.button_draft()
+        self._as_new_request()
+
+        with Form(self.invoice) as form:
+            form.invoice_date_display = other_day
+            form.invoice_date_display = day
+        self._as_new_request()
+
+        self.assertEqual(
+            self.invoice.invoice_date, day, "La fecha de tasa debe quedar en la original."
+        )
+        self.assertEqual(
+            (self.invoice.foreign_rate, self.invoice.foreign_inverse_rate),
+            rates_before[:2],
+            "Guardar el formulario recalculó la tasa alterna.",
+        )
+
+    def test_changing_the_date_of_a_reset_draft_does_recompute_rates(self):
+        """La protección no congela la tasa si la fecha realmente cambia."""
+        other_date = fields.Date.subtract(self.invoice_date, days=1)
+        self._set_rate(self.currency_usd, other_date, 870.0)
+        self.invoice.button_draft()
+        self._as_new_request()
+
+        self.invoice.write({"invoice_date": other_date})
+
+        self.assertAlmostEqual(self.invoice.foreign_rate, 870.0, places=4)
+        self.assertAlmostEqual(self.invoice.move_currency_to_company_currency_rate, 870.0, places=4)
+
+    def test_rewriting_same_date_on_never_posted_draft_still_recomputes(self):
+        """Un borrador que nunca se confirmó sigue tomando la tasa vigente."""
+        draft = self.invoice.copy({"invoice_date": self.invoice_date})
+        self._set_rate(self.currency_usd, self.invoice_date, NEW_RATE)
+        self._as_new_request()
+
+        draft.write({"invoice_date": self.invoice_date})
+
+        self.assertAlmostEqual(draft.foreign_rate, NEW_RATE, places=4)
 
 
 @tagged("post_install", "-at_install", "l10n_ve_accountant_draft_keeps_posted_rate")
