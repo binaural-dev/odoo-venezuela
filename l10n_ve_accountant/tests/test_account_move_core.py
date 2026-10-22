@@ -606,6 +606,7 @@ class TestAccountMoveCore(TransactionCase):
             "partner_id": self.partner.id,
             "currency_id": currency.id,
             "invoice_date": invoice_date,
+            "invoice_date_display": invoice_date,
             "date": invoice_date,
             "invoice_line_ids": [
                 Command.create({

@@ -1,0 +1,6 @@
+- [x] 1. Campo `use_parent_retention_sequence` en `res.company` y `res.config.settings`
+- [x] 2. Check en Ajustes visible solo en sucursales
+- [x] 3. `_get_retention_sequence_company` y uso en `get_sequence_retention`
+- [x] 4. Traducciones es_VE
+- [x] 5. Tests de selección de secuencia y de flujo de retención desde sucursal
+- [x] 6. Bump de manifest y spec

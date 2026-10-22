@@ -65,17 +65,42 @@ El sistema DEBE (MUST) rechazar, vía `check_duplicate_vat`, la existencia de ot
 
 ### Requirement: Duplicidad de email en contactos
 
-El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un `res.partner` de tipo `contact` con un email que ya tenga **cualquier** otro partner (el dominio filtra por `email` e `id`, sin filtrar por `type`): en `create` cuando los valores traen `email` y el `type` es `contact` (o no viene), y en `write` cuando traen `email`, evaluando el `type` de cada registro y después del `super().write()`. Igual que en el RIF, los flags de compañía solo determinan si la búsqueda se restringe a `company_id` o es global y qué mensaje se muestra; nunca desactivan el control.
+El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un `res.partner` de tipo `contact` con un email que ya tenga **cualquier** otro partner (el dominio filtra por `email` e `id`, sin filtrar por `type`): en `create` cuando los valores traen `email` y el `type` es `contact` (o no viene), y en `write` cuando traen `email` **distinto del que ya tiene el registro**, evaluando el `type` de cada registro y después del `super().write()`. El filtro `email_changed` de `write` solo observa `email`; un `write` que cambia `type` a `contact` dejando un email ya ajeno no dispara la validación (límite conocido, idéntico al upstream 19.0). Igual que en el RIF, los flags de compañía solo determinan si la búsqueda se restringe a `company_id` o es global y qué mensaje se muestra; nunca desactivan el control.
 
 #### Scenario: Email repetido
 
 - **WHEN** se guarda un contacto de tipo `contact` con un email que ya tiene otro partner dentro del alcance configurado, aunque ese otro partner sea una dirección de entrega o una compañía
 - **THEN** se lanza `ValidationError`
 
+#### Scenario: Reescribir el mismo email
+
+- **WHEN** un `write` envía en `email` el mismo valor que ya tiene el contacto (un formulario, una importación o cualquier proceso que reenvía todos los campos), aunque otro partner ya comparta ese email por datos previos
+- **THEN** no se valida la duplicidad y el `write` se guarda
+
+#### Scenario: Escritura multi-record parcialmente cambiada
+
+- **WHEN** un `write` aplica el mismo `email` sobre un recordset de varios contactos donde al menos uno ya tiene ese email y otro lo está cambiando a un valor que ya existe en otro partner
+- **THEN** se lanza `ValidationError` por el registro cuyo email cambió realmente; el registro que reescribe su email actual no participa en la validación
+
+#### Scenario: Hijos de cualquier tipo con email compartido
+
+- **WHEN** un contacto tiene hijos de tipo `delivery`, `invoice` u `other` que comparten su email y el contacto se reescribe enviando el mismo email (con o sin otros campos)
+- **THEN** no se valida la duplicidad y el `write` se guarda
+
+#### Scenario: Cambio de email a uno ajeno
+
+- **WHEN** un `write` cambia el `email` de un contacto a un valor que ya tiene otro partner
+- **THEN** se lanza `ValidationError`
+
 #### Scenario: Dirección de entrega
 
-- **WHEN** se crea un registro con `type` distinto de `contact` (por ejemplo una dirección de entrega) con un email repetido
+- **WHEN** se escribe un registro con `type` distinto de `contact` (por ejemplo una dirección de entrega) cambiando el email a uno repetido
 - **THEN** la validación de email no se aplica a ese registro
+
+#### Known Limit: cambio de type a contact sin cambiar email
+
+- **WHEN** un `write` cambia el `type` de un registro a `contact` dejando un `email` igual al de otro partner (el `email` no viene en `vals` o viene igual)
+- **THEN** no se valida la duplicidad (`email_changed` queda vacío); comportamiento idéntico al upstream 19.0, documentado sin cambio de lógica
 
 ### Requirement: Los controles de create se omiten si falla la consulta al CNE
 
