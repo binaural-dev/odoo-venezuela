@@ -27,6 +27,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # The cross moves are dated today.
+        cls._create_rate_of_day(40.0)
 
         # A distinct "real bank" account/journal, separate from the
         # payment methods' own transitory account (account_bank for bank
