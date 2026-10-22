@@ -131,29 +131,17 @@ class AccountRetention(models.Model):
 
     retention_resync_pending = fields.Boolean(
         string="Retention Resync Pending",
-        compute="_compute_retention_resync_pending",
+        related="retention_line_ids.move_id.retention_resync_pending",
+        readonly=True,
         help=(
-            "True when this retention's declared base/amount no longer"
-            " match what would be recalculated from its invoice's current"
-            " data (see account.move.retention_resync_pending)."
+            "True when this retention's invoice has some retention whose"
+            " declared base/amount no longer matches what would be"
+            " recalculated from the invoice's current data (see"
+            " account.move.retention_resync_pending). Note: for a"
+            " retention grouping several invoices, this only reflects the"
+            " first one."
         ),
     )
-
-    @api.depends("state", "retention_line_ids.move_id.retention_resync_pending")
-    def _compute_retention_resync_pending(self):
-        for retention in self:
-            if retention.state != "emitted":
-                retention.retention_resync_pending = False
-                continue
-            pending = False
-            for invoice in retention.retention_line_ids.mapped("move_id"):
-                diff = invoice._get_retention_resync_diff()
-                if retention in diff.get("to_cancel", retention.browse()) | diff.get(
-                    "to_rebuild", retention.browse()
-                ):
-                    pending = True
-                    break
-            retention.retention_resync_pending = pending
 
     code_visible = fields.Boolean(related="company_id.code_visible")
 
@@ -495,7 +483,7 @@ class AccountRetention(models.Model):
         self.ensure_one()
         self.write({"state": "draft"})
         if self.payment_ids:
-            self.payment_ids.action_draft()
+            self._unreconcile_and_draft_payments(self.payment_ids)
 
     def action_post(self):
         """
@@ -1081,14 +1069,18 @@ class AccountRetention(models.Model):
         if not payments:
             return
 
-        ctx = dict(self.env.context, bypass_retention_lock=True, force_delete=True)
+        # The payment guard (bypass_retention_lock) is the CALLER's
+        # decision, not this helper's: action_cancel()/the resync flow pass
+        # it in the context, while a plain action_draft() on an emitted
+        # retention must keep being blocked by account.payment.action_draft().
+        payments = payments.with_env(self.env)
         lines = payments.mapped("move_id.line_ids")
         if lines:
-            lines.with_context(ctx).remove_move_reconcile()
+            lines.with_context(force_delete=True).remove_move_reconcile()
 
         for payment in payments:
             if payment.state != 'draft':
-                payment.with_context(ctx).action_draft()
+                payment.action_draft()
 
     def action_cancel(self):
         for rec in self:
@@ -1098,7 +1090,7 @@ class AccountRetention(models.Model):
             if rec.payment_ids:
                 ctx = dict(self.env.context, bypass_retention_lock=True,force_delete=True)
 
-                rec._unreconcile_and_draft_payments(rec.payment_ids)
+                rec.with_context(ctx)._unreconcile_and_draft_payments(rec.payment_ids)
 
                 rec.payment_ids.with_context(ctx).action_cancel()
                 rec.payment_ids.with_context(ctx).write({'retention_id': False, 'is_retention': False, 'payment_type_retention': False, 'retention_ref': False})
