@@ -44,3 +44,5 @@ from . import test_retention_consolidated_duplicates
 from . import test_municipal_retention_pdf
 from . import test_accounting_reports_branches_moves
 from . import test_retention_voucher_buttons
+from . import test_retention_islr_foreign_amount
+from . import test_retention_indexed

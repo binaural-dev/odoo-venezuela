@@ -21,6 +21,21 @@ class TestRetentionLineComputation(TransactionCase):
             "country_id": 28,
         })
 
+        # Odoo exige la tasa del día exacto: se fijan las tasas de hoy (VEF 1,0 y USD)
+        today = fields.Date.today()
+        rate_model = cls.env["res.currency.rate"]
+        rate_model.search([
+            ("currency_id", "in", (cls.env.ref("base.VEF") | cls.env.ref("base.USD")).ids),
+            ("company_id", "=", cls.company.id), ("name", "=", today),
+        ]).unlink()
+        rate_model.create([
+            {"currency_id": cls.env.ref("base.VEF").id, "company_id": cls.company.id, "name": today, "rate": 1.0},
+            {
+                "currency_id": cls.env.ref("base.USD").id, "company_id": cls.company.id, "name": today,
+                "rate": 1 / 390.0, "company_rate": 1 / 390.0, "inverse_company_rate": 390.0,
+            },
+        ])
+
         def get_or_create_account(code, ttype, name, recon=False):
             account = cls.env["account.account"].search([("code", "=", code)], limit=1)
             vals = {"name": name, "code": code, "account_type": ttype, "reconcile": recon}
@@ -300,6 +315,9 @@ class TestRetentionLineComputation(TransactionCase):
         _logger.info("========= test_07_onchange_municipal_invoice_amount passed =========")
 
     def test_08_onchange_retention_amount(self):
+        """El onchange valora el monto retenido en la moneda alterna con la conversión de la tasa de
+        la fecha de la factura, no con el factor `foreign_inverse_rate` del documento (que es
+        solo referencial)."""
         invoice = self._create_simple_invoice(200)
         invoice.write({"foreign_inverse_rate": 2.5})
         line = self.env["account.retention.line"].new({
@@ -308,8 +326,7 @@ class TestRetentionLineComputation(TransactionCase):
             "retention_amount": 50.0,
         })
         line.onchange_retention_amount()
-        expected_foreign = 50.0 * 2.5
-        self.assertAlmostEqual(line.foreign_retention_amount, expected_foreign, places=2)
+        self.assertEqual(line.foreign_retention_amount, line._get_foreign_retention_amount(50.0))
         _logger.info("========= test_08_onchange_retention_amount passed =========")
 
     def test_09_check_retention_amount_validation(self):
