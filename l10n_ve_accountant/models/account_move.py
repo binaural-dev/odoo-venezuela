@@ -829,11 +829,60 @@ class AccountMove(models.Model):
 
         return moves
 
+    RATE_DATE_FIELDS = ("invoice_date", "invoice_date_display", "date")
+
+    def _drop_unchanged_rate_dates(self, vals):
+        """
+        Remove from ``vals`` the date fields that would not change anything on
+        documents that were already confirmed once (``posted_before``).
+
+        Why: ``foreign_rate`` / ``foreign_inverse_rate`` (``_compute_rate``,
+        which depends on ``invoice_date`` and ``date``) and core's
+        ``invoice_currency_rate`` (which depends on ``invoice_date``,
+        ``taxable_supply_date``, ``currency_id`` and ``company_id``) are stored
+        computed fields. Odoo recomputes them every time one of their
+        dependencies is *written*, even when the value written is the one it
+        already has. So ``move.write({'invoice_date': move.invoice_date})`` on
+        a document reset to draft replaces the rates it was confirmed with by
+        the rate of that date *as it is today*, which may have been edited
+        after confirming: the alternate-currency columns stop matching the
+        amounts in company currency.
+
+        The web client does not send an unchanged date on its own (it only
+        sends what the user changed, and the form view does not carry
+        ``foreign_rate``), so this guards against any other caller (RPC,
+        imports, other modules).
+
+        Scope and limits:
+        - Only the date fields in ``RATE_DATE_FIELDS``. Writing the same
+          ``currency_id``, ``company_id`` or ``taxable_supply_date`` still
+          recomputes ``invoice_currency_rate``.
+        - Only when every record of the recordset has ``posted_before``; in a
+          mixed batch nothing is dropped. A draft never confirmed keeps
+          recomputing as before.
+        - A date that really changes is never dropped, so the rates follow it.
+        - It does not look at ``manually_set_rate`` nor at ``state``. On a
+          posted document, an unchanged date is now silently ignored where core
+          used to raise "You cannot modify the following readonly fields on a
+          posted move".
+        """
+        keys = [f for f in self.RATE_DATE_FIELDS if f in vals]
+        if not keys or not self or not all(self.mapped("posted_before")):
+            return vals
+        vals = dict(vals)
+        for fname in keys:
+            new_value = self._fields[fname].convert_to_cache(vals[fname], self)
+            if all(move[fname] == new_value for move in self):
+                del vals[fname]
+        return vals
+
     def write(self, vals):
         """
-        computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
-        the move is edited.
+        Drops date writes that change nothing on documents confirmed before
+        (see ``_drop_unchanged_rate_dates``), then records ``last_foreign_rate``
+        and posts the "rate updated" note when ``foreign_rate`` is edited by hand.
         """
+        vals = self._drop_unchanged_rate_dates(vals)
         # TODO: To be done for flexible integration
         if vals.get("foreign_rate", False):
             for move in self:

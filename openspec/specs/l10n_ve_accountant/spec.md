@@ -53,11 +53,53 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 La tasa que muestra el documento (`move_currency_to_company_currency_rate`) DEBE (MUST) salir de la tasa guardada en él (`invoice_currency_rate`, o `foreign_rate` cuando el documento está en la moneda de la compañía) y solo usar la tasa vigente de la fecha cuando el documento no tiene ninguna guardada. Editar después el registro de tasa del día de un documento ya contabilizado NO DEBE (MUST NOT) cambiar la tasa mostrada, `foreign_rate`, `foreign_inverse_rate` ni `invoice_currency_rate`, y restablecer ese documento a borrador DEBE (MUST) conservarlas junto con los importes de todas sus líneas (ventas, impuestos y cuenta por cobrar), de modo que el histórico de la tasa no se pierde y el asiento no se descuadra.
 
+`foreign_rate` y `foreign_inverse_rate` (`_compute_rate`, que depende de `invoice_date` y `date`) e `invoice_currency_rate` (campo del core, que depende de `invoice_date`, `taxable_supply_date`, `currency_id` y `company_id`) son campos calculados guardados, y Odoo los recalcula cada vez que se **escribe** una de sus dependencias, aunque el valor escrito sea el que ya tenía. Para que un documento que ya se confirmó (`posted_before`) conserve sus tasas, el sistema DEBE (MUST):
+
+1. Comparar en `_apply_product_real_portion` (al sincronizar el borrador) contra `invoice_currency_rate`, no contra la tasa vigente de la fecha.
+2. Descartar, mediante `_drop_unchanged_rate_dates` invocado al inicio de `write` de `account.move`, las escrituras de `invoice_date`, `invoice_date_display` y `date` cuyo valor es igual al actual, siempre que **todos** los documentos escritos tengan `posted_before` (en un lote mixto no se descarta nada). Así una escritura que no cambia la fecha (RPC, importación u otro módulo) no recalcula las tres tasas.
+
+Límites de esa protección, tal como los implementa el código:
+
+- Solo cubre esas tres fechas: escribir el mismo `currency_id`, `company_id` o `taxable_supply_date` sigue recalculando `invoice_currency_rate`.
+- Una fecha que sí cambia nunca se descarta y las tasas la siguen; un borrador que nunca se confirmó (`posted_before` falso) sigue recalculando como siempre.
+- No distingue `manually_set_rate` ni el estado: aplica también a esos documentos, y en un documento `posted` una fecha sin cambios se ignora en silencio en lugar de lanzar el error de campos de solo lectura del core.
+- El cliente web solo envía los campos que el usuario cambió y la vista del formulario de la factura no incluye `foreign_rate`, por lo que guardar el formulario no escribe la tasa alterna; la protección del punto 2 es para los demás llamadores.
+
 #### Scenario: Restablecer a borrador tras editar la tasa del día
 
 - **GIVEN** una factura en USD confirmada con la tasa 884,75 y luego la tasa de ese mismo día editada a 900
 - **WHEN** se restablece la factura a borrador
 - **THEN** el cambio de estado se permite, el asiento queda balanceado y todas sus líneas conservan los importes calculados con 884,75
+
+#### Scenario: Volver a confirmar tras restablecer a borrador
+
+- **GIVEN** la factura del escenario anterior, ya en borrador
+- **WHEN** se confirma de nuevo
+- **THEN** `foreign_rate`, `foreign_inverse_rate`, `invoice_currency_rate` y los balances siguen siendo los de la primera confirmación
+
+#### Scenario: Guardar el formulario del borrador
+
+- **GIVEN** una factura restablecida a borrador tras editar la tasa de su día
+- **WHEN** en el formulario se cambia la fecha del documento y se devuelve a la original antes de guardar
+- **THEN** `foreign_rate` y `foreign_inverse_rate` siguen siendo los de la confirmación y la fecha de tasa queda en la original
+
+#### Scenario: Escritura de la misma fecha en un borrador ya confirmado antes
+
+- **GIVEN** una factura restablecida a borrador tras editar la tasa de su día
+- **WHEN** se escribe `invoice_date` y `date` con los valores que ya tienen
+- **THEN** las escrituras se descartan y las tres tasas no cambian
+
+#### Scenario: Cambio real de fecha
+
+- **GIVEN** una factura restablecida a borrador, y una tasa registrada para el día anterior
+- **WHEN** se escribe `invoice_date` con el día anterior
+- **THEN** `foreign_rate` y la tasa mostrada pasan a la tasa de ese día
+
+#### Scenario: Borrador que nunca se confirmó
+
+- **GIVEN** una factura en borrador con `posted_before` falso y la tasa de su día editada
+- **WHEN** se escribe `invoice_date` con el mismo valor
+- **THEN** `foreign_rate` se recalcula con la tasa vigente
 
 #### Scenario: Tasa mostrada de un documento contabilizado
 
