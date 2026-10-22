@@ -21,9 +21,6 @@
                 <form string="Retention Lines">
                     <group>
                         <field name="name" required="1"/>
-                        <field name="base_ret"/>
-                        <field name="imp_ret"/>
-                        <field name="amount_tax_ret"/>
                         <field name="invoice_amount" />
                         <field name="iva_amount" />
                         <field name="retention_amount" />
