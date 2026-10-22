@@ -1,0 +1,60 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_payment_extension_exchange_difference
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260828\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-22 23:18+0000\n"
+"PO-Revision-Date: 2026-10-22 23:18+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+"Language: es_VE\n"
+
+#. module: l10n_ve_payment_extension_exchange_difference
+#: model:ir.model,name:l10n_ve_payment_extension_exchange_difference.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: l10n_ve_payment_extension_exchange_difference
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension_exchange_difference.selection__account_retention__exchange_difference_treatment__note
+msgid "Debit/Credit note"
+msgstr "Nota de débito/crédito"
+
+#. module: l10n_ve_payment_extension_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension_exchange_difference.field_account_retention__display_name
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension_exchange_difference.field_res_company__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: l10n_ve_payment_extension_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension_exchange_difference.field_account_retention__exchange_difference_treatment
+msgid "Exchange difference"
+msgstr "Diferencia cambiaria"
+
+#. module: l10n_ve_payment_extension_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_payment_extension_exchange_difference.field_account_retention__exchange_difference_treatment
+msgid "How the exchange difference of an indexed retention is documented. Other modules can add their own options. It is only used on indexed retentions."
+msgstr "Cómo se documenta la diferencia cambiaria de una retención indexada. Otros módulos pueden agregar sus propias opciones. Solo se usa en retenciones indexadas."
+
+#. module: l10n_ve_payment_extension_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension_exchange_difference.field_account_retention__id
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension_exchange_difference.field_res_company__id
+msgid "ID"
+msgstr "ID"
+
+#. module: l10n_ve_payment_extension_exchange_difference
+#: model:ir.model,name:l10n_ve_payment_extension_exchange_difference.model_account_retention
+msgid "Retention"
+msgstr "Retención"
+
+#. module: l10n_ve_payment_extension_exchange_difference
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension_exchange_difference/models/account_retention.py:0
+msgid "The company does not use debit/credit notes for the exchange difference."
+msgstr "La compañía no usa notas de débito/crédito para la diferencia cambiaria."
