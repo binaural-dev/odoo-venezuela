@@ -93,7 +93,12 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             })],
         })
         if post:
-            inv.action_post()
+            # l10n_ve_accountant.action_post() shows the confirmation wizard
+            # instead of posting out_invoice/out_refund unless this context
+            # flag is set (normally set by that same wizard's
+            # action_confirm()) -- plain action_post() would silently leave
+            # the move in draft here.
+            inv.with_context(move_action_post_alert=True).action_post()
         return inv
 
     # ------------------------------------------------------------------
@@ -196,3 +201,92 @@ class TestMoveActionPostAlertWizard(TransactionCase):
         entry._tfhka_enqueue_eligible_for_digitalization()
 
         self.assertEqual(entry.tfhka_digitalization_state, "none")
+
+    # ------------------------------------------------------------------
+    # Draft-invoice digitalization bug: a move that action_post() doesn't
+    # actually post must never be enqueued (nor marked not_applicable).
+    # ------------------------------------------------------------------
+
+    def test_wizard_confirm_does_not_enqueue_when_move_is_not_actually_posted(self):
+        # Reproduces the Third Party billing bug without depending on that
+        # module: patches the base action_post() to behave like it does when
+        # child invoices are still in draft -- returning an action instead of
+        # posting the parent. The base wizard's action_confirm() ignores
+        # action_post()'s return value, so move_id.state is the only
+        # reliable signal that the move was actually confirmed.
+        inv = self._create_invoice(post=False)
+        wizard = self.env['move.action.post.alert.wizard'].create({'move_id': inv.id})
+
+        with patch(
+            'odoo.addons.account.models.account_move.AccountMove.action_post',
+            lambda self: {'type': 'ir.actions.act_window'},
+        ):
+            wizard.action_confirm()
+
+        self.assertEqual(inv.state, "draft")
+        self.assertEqual(inv.tfhka_digitalization_state, "none")
+        self.assertFalse(inv.tfhka_queued_at)
+
+    def test_eligible_for_digitalization_requires_posted_state(self):
+        inv = self._create_invoice(post=False)
+
+        self.assertFalse(inv._tfhka_is_eligible_for_digitalization())
+
+        inv.with_context(move_action_post_alert=True).action_post()
+
+        self.assertTrue(inv._tfhka_is_eligible_for_digitalization())
+
+    def test_should_mark_not_applicable_requires_posted_state(self):
+        self.journal.digital_invoice = False
+        inv = self._create_invoice(post=False)
+
+        self.assertFalse(inv._tfhka_should_mark_not_applicable())
+
+        inv.with_context(move_action_post_alert=True).action_post()
+
+        self.assertTrue(inv._tfhka_should_mark_not_applicable())
+
+    # ------------------------------------------------------------------
+    # Validación temprana: diario que factura por series sin serie TFHKA
+    # asignada no debe poder confirmarse (antes solo se descubría dentro
+    # de get_sequence()/_get_series(), ya en pleno posteo o digitalización).
+    # ------------------------------------------------------------------
+
+    def test_posting_allowed_when_journal_invoices_by_series_without_tfhka_serie(self):
+        # Asignar una serie TFHKA no es obligatorio: un diario de una
+        # compañía que factura por series puede seguir sin tfhka_serie_id --
+        # manda serie vacía a TFHKA, no se bloquea el posteo. series_
+        # correlative_sequence_id sigue siendo necesario para el campo
+        # 'correlative' (mecanismo de l10n_ve_invoice, no de TFHKA).
+        self.journal.digital_invoice = True
+        self.company.group_sales_invoicing_series = True
+        self.journal.series_correlative_sequence_id = self.env['ir.sequence'].create({
+            'name': 'Correlativo Serie A', 'padding': 4,
+        }).id
+
+        inv = self._create_invoice(post=True)
+
+        self.assertEqual(inv.state, 'posted')
+
+    def test_posting_allowed_when_journal_has_tfhka_serie(self):
+        self.journal.digital_invoice = True
+        self.company.group_sales_invoicing_series = True
+        self.journal.series_correlative_sequence_id = self.env['ir.sequence'].create({
+            'name': 'Correlativo Serie A', 'padding': 4,
+        }).id
+        serie = self.env['tfhka.serie'].create({'name': 'A', 'company_id': self.company.id})
+        self.journal.tfhka_serie_id = serie.id
+
+        inv = self._create_invoice(post=True)
+
+        self.assertEqual(inv.state, 'posted')
+
+    def test_posting_allowed_without_series_invoicing(self):
+        # Non-regression: compañías que no facturan por series no deben
+        # verse afectadas por esta validación.
+        self.journal.digital_invoice = True
+        self.company.group_sales_invoicing_series = False
+
+        inv = self._create_invoice(post=True)
+
+        self.assertEqual(inv.state, 'posted')

@@ -162,6 +162,19 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             vals = dict(vals, date_state=fields.Datetime.now())
         return super().write(vals)
 
+    def _tfhka_is_confirmed(self):
+        """True when this document is confirmed enough to be digitalized and
+        numbered by TFHKA. Default: no extra requirement, today's behaviour
+        unchanged -- account.move and account.retention override this to
+        require ``state == 'posted'`` (see the draft-invoice digitalization
+        bug on Third Party billing, where a still-draft parent invoice could
+        get queued and the cron would digitalize and number it as if it had
+        been confirmed). stock.picking doesn't override this: "confirmed"
+        there is a different concept (``state == 'done'``) that belongs to
+        ``l10n_ve_dispatch_guide_digital``, out of scope here."""
+        self.ensure_one()
+        return True
+
     def _tfhka_commit(self):
         """Commits the current transaction -- except under the test runner,
         where Odoo's test framework forbids cr.commit()/rollback() (it needs
@@ -298,6 +311,47 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             self.message_post(body=status_message(message, "error"))
             return False
 
+    def _tfhka_process_digitalization_safe(self):
+        """Wraps ``_tfhka_process_digitalization`` in a broad try/except so
+        an unexpected exception (a DB error, a bug in a future change) can't
+        propagate straight out of the cron loop and abort the whole batch's
+        transaction, leaving every other queued document untouched without
+        even a visible error on this one.
+
+        Deliberately NOT wrapped in ``self.env.cr.savepoint()`` (unlike
+        ``_tfhka_reconcile_stuck_processing_safe`` below) -- the protected
+        method's very first action is ``_tfhka_commit()``, a real
+        ``cr.commit()``. Committing destroys any open savepoint; the
+        ``RELEASE SAVEPOINT`` on exit would then fail with
+        ``InvalidSavepointSpecification`` ('savepoint ... does not exist'),
+        itself a raw DB error that poisons the transaction and surfaces as
+        'current transaction is aborted, commands ignored until end of
+        transaction block' on the very next query -- including this
+        except's own recovery write, crashing the whole cron run. That
+        commit already gives this one document its own durability boundary
+        (that's its purpose -- see its docstring), so there is nothing
+        left uncommitted here for a savepoint to protect anyway: an
+        exception after it just leaves the document in 'processing', the
+        same interrupted-run case ``_tfhka_reconcile_stuck_processing``
+        already exists to recover on the next cron tick."""
+        self.ensure_one()
+        try:
+            return self._tfhka_process_digitalization()
+        except Exception as error:
+            _logger.exception(
+                "TFHKA: unexpected error digitalizing %s #%s -- marking as "
+                "error instead of aborting the whole queue run.",
+                self._name, self.id,
+            )
+            self.write({
+                "tfhka_digitalization_state": "error",
+                "tfhka_digitalization_error": str(error),
+            })
+            self.message_post(
+                body=status_message(_("TFHKA digitalization failed: %s") % error, "error"),
+            )
+            return False
+
     def _tfhka_queue_scope_domains(self, states):
         """Partitions this model's queue into independent scopes (see
         ``_tfhka_queue_scope_field``).
@@ -369,11 +423,43 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             order="date_state asc",
         )
         for record in stuck:
-            resolved = record._tfhka_reconcile_stuck_processing()
+            resolved = record._tfhka_reconcile_stuck_processing_safe()
             self._tfhka_commit()
             if not resolved:
                 return False
         return True
+
+    def _tfhka_reconcile_stuck_processing_safe(self):
+        """Wraps ``_tfhka_reconcile_stuck_processing`` in its own savepoint --
+        same reasoning as ``_tfhka_process_digitalization_safe``. This is the
+        method actually implicated in the connection-error incident: an
+        uncaught exception from a query here (before the recovery write)
+        aborted the whole transaction and froze the rest of that run's
+        queue. Resolved=True on the caught-exception path too: the record
+        now has a visible error, there's nothing left in 'processing' to
+        keep halting this scope's queue for."""
+        self.ensure_one()
+        try:
+            with self.env.cr.savepoint():
+                return self._tfhka_reconcile_stuck_processing()
+        except Exception as error:
+            _logger.exception(
+                "TFHKA: unexpected error recovering %s #%s from 'processing' "
+                "-- marking as error instead of aborting the whole queue run.",
+                self._name, self.id,
+            )
+            self.write({
+                "tfhka_digitalization_state": "error",
+                "tfhka_digitalization_error": str(error),
+            })
+            self.message_post(
+                body=status_message(
+                    _("TFHKA digitalization failed while recovering from an interrupted "
+                      "attempt: %s") % error,
+                    "error",
+                ),
+            )
+            return True
 
     def _tfhka_reconcile_stuck_processing(self):
         """Returns True if this record was resolved (success or error),
@@ -457,6 +543,40 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
             "%s must implement _tfhka_reconcile_success_from_log()" % self._name
         )
 
+    def _tfhka_fetch_queued(self, domain_extra):
+        """Queued records ready to digitalize, oldest first, within this
+        scope -- the single place both cron entry points fetch from.
+
+        A queued record that fails ``_tfhka_is_confirmed()`` should never
+        happen: nothing in this module enqueues a document before it's
+        confirmed (see account.move._tfhka_is_eligible_for_digitalization).
+        But if one slips through anyway -- old data, a future caller that
+        forgets the check -- it's pulled out of the queue into 'error' here,
+        with an explicit message, instead of being digitalized and numbered
+        by TFHKA as if it had actually been confirmed."""
+        queued = self.search(
+            [("tfhka_digitalization_state", "=", "queued")] + domain_extra,
+            order="tfhka_queued_at asc, id asc",
+            limit=QUEUE_BATCH_SIZE,
+        )
+        not_confirmed = queued.filtered(lambda record: not record._tfhka_is_confirmed())
+        for record in not_confirmed:
+            record.write({
+                "tfhka_digitalization_state": "error",
+                "tfhka_digitalization_error": _(
+                    "TFHKA digitalization was queued for a document that is not "
+                    "confirmed (state=%s). Confirm it, or discard it, before retrying."
+                ) % record.state,
+            })
+            record.message_post(
+                body=status_message(
+                    _("TFHKA digitalization was queued for a document that is not "
+                      "confirmed. This should not happen -- review how it was enqueued."),
+                    "error",
+                ),
+            )
+        return queued - not_confirmed
+
     def _tfhka_cron_process_queue(self):
         """Cron entry point -- operates on self (the concrete model the
         calling cron is bound to: account.move, account.retention or
@@ -483,13 +603,9 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 continue
             if self.search_count([("tfhka_digitalization_state", "in", ("error", "data_error"))] + domain_extra):
                 continue
-            queued = self.search(
-                [("tfhka_digitalization_state", "=", "queued")] + domain_extra,
-                order="tfhka_queued_at asc, id asc",
-                limit=QUEUE_BATCH_SIZE,
-            )
+            queued = self._tfhka_fetch_queued(domain_extra)
             for record in queued:
-                success = record._tfhka_process_digitalization()
+                success = record._tfhka_process_digitalization_safe()
                 # Commit right after each document so its result is visible in
                 # Odoo immediately, instead of only once the whole batch (up to
                 # QUEUE_BATCH_SIZE documents) finishes processing.
@@ -550,11 +666,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 if model.search_count([("tfhka_digitalization_state", "in", ("error", "data_error"))] + domain_extra):
                     halted.add(key)
                     continue
-                queue = model.search(
-                    [("tfhka_digitalization_state", "=", "queued")] + domain_extra,
-                    order="tfhka_queued_at asc, id asc",
-                    limit=QUEUE_BATCH_SIZE,
-                )
+                queue = model._tfhka_fetch_queued(domain_extra)
                 if queue:
                     queues[key] = queue
 
@@ -564,7 +676,7 @@ class TfhkaDigitalizationMixin(models.AbstractModel):
                 if key in halted or index >= len(queue):
                     continue
                 record = queue[index]
-                success = record._tfhka_process_digitalization()
+                success = record._tfhka_process_digitalization_safe()
                 self._tfhka_commit()
                 if not success:
                     halted.add(key)  # halt only this (model, scope) pair; others keep going

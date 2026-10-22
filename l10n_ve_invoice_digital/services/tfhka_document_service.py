@@ -1,5 +1,4 @@
 import logging
-import re
 
 from odoo import _, fields, models
 from odoo.tools import float_compare, float_is_zero, html2plaintext
@@ -70,13 +69,13 @@ class TfhkaDocumentService(models.AbstractModel):
         return document_type
 
     def _get_series(self, invoice):
-        series = ""
-        if invoice.company_id.group_sales_invoicing_series and invoice.journal_id.series_correlative_sequence_id:
-            if invoice.journal_id.sequence_id and invoice.journal_id.sequence_id.prefix:
-                series = re.sub(r'[^a-zA-Z0-9]', '', invoice.journal_id.sequence_id.prefix)
-            else:
-                raise TfhkaDataError(_("The selected series is not configured"))
-        return series
+        # Fuente única de verdad: account.journal.tfhka_serie_id (ver
+        # _get_tfhka_series()), no el prefijo de una secuencia no relacionada
+        # -- ver el bug de facturas en borrador digitalizadas por compartir
+        # secuencia entre diarios. Asignar una serie NO es obligatorio: un
+        # diario sin tfhka_serie_id simplemente manda serie vacía a TFHKA
+        # (sistema centralizado, ver el instructivo técnico de su API).
+        return invoice.journal_id._get_tfhka_series()
 
     # ------------------------------------------------------------------
     # Orquestación
@@ -602,8 +601,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
                 affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
 
-                if record.debit_origin_id.journal_id.series_correlative_sequence_id:
-                    affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
+                affected_invoice_series = record.debit_origin_id.journal_id._get_tfhka_series()
 
                 affected_invoice_amount = self._get_affected_document_amount(
                     record.debit_origin_id, ctx
@@ -617,8 +615,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
                 affected_invoice_date = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
 
-                if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
-                    affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
+                affected_invoice_series = record.reversed_entry_id.journal_id._get_tfhka_series()
 
                 affected_invoice_amount = self._get_affected_document_amount(
                     record.reversed_entry_id, ctx
