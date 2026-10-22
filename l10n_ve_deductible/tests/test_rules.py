@@ -280,13 +280,13 @@ class TestDeductibleViewsAndTranslation(DeductibleCase):
         self.assertIn("parent.state != 'draft'", amount)
         self.assertIn("parent.global_deductible_type != 'amount'", amount)
 
-    def test_line_percent_column_is_read_only_and_shown_in_both_modes(self):
+    def test_line_percent_column_is_read_only_and_only_for_percentage(self):
         arch = self._arch()
         percent = arch[arch.index('name="global_deductible_discount_percent"'):]
         percent = percent[: percent.index("/>")]
         self.assertIn('readonly="1"', percent)
         self.assertIn("not parent.is_deductible", percent)
-        self.assertNotIn("global_deductible_type", percent)
+        self.assertIn("parent.global_deductible_type != 'percent'", percent)
 
     def test_spanish_translation_file_is_valid(self):
         with file_open("l10n_ve_deductible/i18n/es_VE.po", "rb") as po:

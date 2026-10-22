@@ -4,7 +4,7 @@
 
 Descuento global "deducible" (porcentaje o monto fijo) para facturas de proveedor y de cliente, con o sin impuestos. Se activa por compañía desde Ajustes (`res.company.use_deductible`, bloque "Deducibles") y la opción `deductible_scope` decide en qué documentos se ofrece: facturas de proveedor (`vendor`), facturas de cliente (`customer`, por defecto) o ambas (`both`).
 
-Donde está habilitado, el documento muestra en la pestaña de líneas, justo debajo de "Términos y condiciones" (`narration`): el booleano `is_deductible`, el tipo (`global_deductible_type`: porcentaje o monto fijo), el valor (`global_deductible_percent` o `global_deductible_amount`) y, solo en modo porcentaje, un monto referencial (`global_deductible_reference_amount`). En modo monto fijo el importe que se resta a cada línea se guarda en `account.move.line.global_deductible_line_amount` (monetario, editable en documentos en borrador, visible solo en ese modo); de él, o del porcentaje del documento en modo porcentaje, sale `account.move.line.global_deductible_discount_percent` (Float almacenado, sin redondeo a propósito, de solo lectura y visible como columna «Deducido (%)» en ambos modos mientras el documento es deducible).
+Donde está habilitado, el documento muestra en la pestaña de líneas, justo debajo de "Términos y condiciones" (`narration`): el booleano `is_deductible`, el tipo (`global_deductible_type`: porcentaje o monto fijo), el valor (`global_deductible_percent` o `global_deductible_amount`) y, solo en modo porcentaje, un monto referencial (`global_deductible_reference_amount`). En modo monto fijo el importe que se resta a cada línea se guarda en `account.move.line.global_deductible_line_amount` (monetario, editable en documentos en borrador, visible solo en ese modo); de él, o del porcentaje del documento en modo porcentaje, sale `account.move.line.global_deductible_discount_percent` (Float almacenado, sin redondeo a propósito, de solo lectura; en modo monto fijo es solo un valor interno que usa el cálculo de impuestos y no se muestra; en modo porcentaje se ve como columna «Deducido (%)» con el porcentaje del documento).
 
 El módulo no escribe sobre `discount` ni `discount_fixed`: el porcentaje se enchufa en `_get_effective_discount_percent()`, el gancho que `l10n_ve_accountant` usa para el cálculo de impuestos, el subtotal en moneda alterna, los totales en moneda de la compañía, el detalle de importes y el apunte de las líneas con precio incluido. Depende de `l10n_ve_accountant` y de `l10n_ve_invoice` (de donde sale `discount_fixed`, que el módulo oculta y valida) y se auto-instala cuando ambos están instalados; la dependencia de `l10n_ve_invoice` es intencional. Extiende además `_get_base_line_sync_extra_fields()` para que `_sync_tax_lines` vigile el campo nuevo.
 
@@ -65,7 +65,7 @@ Las líneas con importe bruto menor o igual que 0 no participan del reparto en m
 #### Scenario: Importe escrito a mano en una línea
 
 - **WHEN** un documento con un deducible fijo de 60 y tres líneas de 100, 200 y 300 tiene el importe de la primera línea escrito a mano en 30
-- **THEN** la primera línea conserva 30, queda marcada como escrita a mano y el resto (30) se reparte entre las otras dos (12 y 18); el porcentaje de cada línea se actualiza y la suma sigue siendo 60
+- **THEN** la primera línea conserva 30, queda marcada como escrita a mano y el resto (30) se reparte entre las otras dos (12 y 18); el porcentaje interno de cada línea se actualiza y la suma sigue siendo 60
 
 #### Scenario: Importes escritos a mano que no suman el monto
 

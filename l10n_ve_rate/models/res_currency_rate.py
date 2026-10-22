@@ -33,29 +33,25 @@ class ResCurrencyRate(models.Model):
             The date of the rate that is gonna be searched for the given currency
             (foreign_currency_id).
         raise_if_not_found : bool
-            Whether the absence of a usable rate should raise UserError instead of
-            returning {}. Defaults to True: every search that finds no rate at or
-            before rate_date must stop with "no rate assigned". Pass False only from
+            Whether the absence of a rate should raise UserError instead of
+            returning {}. Defaults to True: every search that finds no rate for
+            rate_date must stop with "no rate assigned". Pass False only from
             a call site that can deliberately work without a rate.
 
-        The search only ever looks backwards in time: it filters rates with
-        name <= rate_date and takes the closest one (name DESC, limit 1). If there
-        is no rate for rate_date itself but there are rates both before and after it,
-        the closest one *before* it is used - rates dated after rate_date are excluded
-        by the domain itself and never considered, regardless of how close they are.
+        La tasa se busca SOLO para la fecha exacta `rate_date`: no se usa la más
+        cercana, ni la anterior, ni la posterior. Si la moneda no tiene un registro
+        con esa fecha, se considera "no encontrada".
 
         Las tasas solo existen en la compañía principal (Odoo 19 no permite tasas en
-        sucursales nativas), por lo que se buscan en la compañía activa y su raíz
-        (`root_id`); una sucursal resuelve así la tasa de la matriz.
+        sucursales nativas). Se busca primero en la compañía activa y, si no hay
+        resultado en ella, en su raíz (`root_id`): una sucursal resuelve así la tasa
+        de la matriz.
 
         Raises
         ------
         UserError
-            If raise_if_not_found is True (default) and there is no rate at or before rate_date
-            for this currency/company - i.e. rate_date is older than every recorded
-            rate (or none exist at all). This does not happen just because there is
-            no rate for that exact date; it only happens when there is no earlier
-            rate to fall back to either.
+            If raise_if_not_found is True (default) and the currency has no rate dated
+            exactly rate_date in the company hierarchy.
 
         Returns
         -------
@@ -71,17 +67,22 @@ class ResCurrencyRate(models.Model):
             return {}
 
         company = self.env.company
-        # las tasas solo viven en la compañía raíz (res.currency.rate._check_company_id)
-        company_ids = (company | company.root_id).ids
+        # las tasas solo viven en la compañía raíz (res.currency.rate._check_company_id);
+        # la compañía activa va primero para que una tasa propia gane a la de la matriz
+        company_ids = list(dict.fromkeys((company | company.root_id).ids))
 
-        rate = self.env["res.currency.rate"].search(
-            [
-                ("currency_id", "=", foreign_currency_id),
-                ("company_id", "in", company_ids),
-                ("name", "<=", rate_date),
-            ],
-            order="name DESC", limit=1,
-        )
+        rate = self.env["res.currency.rate"]
+        for company_id in company_ids:
+            rate = rate.search(
+                [
+                    ("currency_id", "=", foreign_currency_id),
+                    ("company_id", "=", company_id),
+                    ("name", "=", rate_date),
+                ],
+                limit=1,
+            )
+            if rate:
+                break
 
         if not rate:
             if foreign_currency_id == company.currency_id.id:
