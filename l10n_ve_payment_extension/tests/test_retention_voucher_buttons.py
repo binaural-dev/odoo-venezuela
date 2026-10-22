@@ -199,3 +199,41 @@ class TestRetentionVoucherButtons(RetentionTestCommon):
             self.assertIn("<chatter", arch, view_xmlid)
             self.assertIn('duplicate="false"', arch, view_xmlid)
         _logger.info("========= test_14 passed =========")
+
+    def _from_invoice_context(self, move):
+        return {
+            "active_model": "account.move",
+            "active_id": move.id,
+            "active_ids": move.ids,
+        }
+
+    def _assert_report_context_is_retention(self, action, retentions):
+        context = action["context"]
+        self.assertEqual(context["active_model"], "account.retention")
+        self.assertEqual(sorted(context["active_ids"]), sorted(retentions.ids))
+        # l10n_ve_invoice reads active_model/active_ids from the report data: with
+        # account.move the retention ids would be taken as invoice ids.
+        html = self.env["ir.actions.report"]._render_qweb_html(
+            REPORT_REF, retentions.ids, data={"context": context}
+        )
+        self.assertTrue(html)
+
+    def test_15_retention_button_opened_from_invoice_uses_retention_model(self):
+        for retention_type in TYPES:
+            retention = self._create_retention(retention_type)
+            move = retention.retention_line_ids.move_id
+            action = retention.with_context(
+                **self._from_invoice_context(move)
+            ).action_print_retention_voucher_pdf()
+            self._assert_report_context_is_retention(action, retention)
+        _logger.info("========= test_15 passed =========")
+
+    def test_16_document_button_from_invoice_uses_retention_model(self):
+        for retention_type in TYPES:
+            retention = self._create_retention(retention_type)
+            move = retention.retention_line_ids.move_id
+            action = move.with_context(
+                retention_type=retention_type, **self._from_invoice_context(move)
+            ).action_download_retention_voucher()
+            self._assert_report_context_is_retention(action, retention)
+        _logger.info("========= test_16 passed =========")
