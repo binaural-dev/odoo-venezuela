@@ -208,11 +208,6 @@ msgid "Foreign Currency "
 msgstr "Moneda Alterna"
 
 #. module: l10n_ve_sale
-#: model:res.groups,name:l10n_ve_sale.group_foreign_currency_view_sales
-msgid "Foreign Currency View Sales"
-msgstr "Visualizar moneda extranjera en ventas"
-
-#. module: l10n_ve_sale
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order__foreign_inverse_rate
 #: model:ir.model.fields,field_description:l10n_ve_sale.field_sale_order_line__foreign_inverse_rate
 msgid "Foreign Inverse Rate"
