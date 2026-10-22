@@ -44,7 +44,30 @@ class TestRetentionResync(RetentionTestCommon):
         self.assertEqual(retention.state, "emitted")
         return retention
 
-    def _create_emitted_municipal_retention(self, invoice, retention_amount=10.0):
+    def _get_economic_activity(self):
+        country = self.env["res.country"].search([("code", "=", "TC83486")], limit=1) or \
+            self.env["res.country"].create({"name": "Test Country 83486", "code": "TC83486"})
+        state = self.env["res.country.state"].search([("code", "=", "TS83486")], limit=1) or \
+            self.env["res.country.state"].create(
+                {"name": "Test State 83486", "code": "TS83486", "country_id": country.id}
+            )
+        municipality = self.env["res.country.municipality"].search(
+            [("code", "=", "MUN-83486")], limit=1
+        ) or self.env["res.country.municipality"].create({
+            "name": "Test Municipality 83486", "code": "MUN-83486",
+            "country_id": country.id, "state_id": [(6, 0, [state.id])],
+        })
+        branch = self.env["economic.branch"].search([("name", "=", "Branch 83486")], limit=1) or \
+            self.env["economic.branch"].create({"name": "Branch 83486", "status": "active"})
+        return self.env["economic.activity"].search(
+            [("name", "=", "Activity 83486")], limit=1
+        ) or self.env["economic.activity"].create({
+            "name": "Activity 83486", "aliquot": 5.0,
+            "municipality_id": municipality.id, "branch_id": branch.id,
+            "description": "Test", "minimum_monthly": 0, "minimum_annual": 0,
+        })
+
+    def _create_emitted_municipal_retention(self, invoice, retention_amount=10.0, activity=None):
         self.company.write({
             "municipal_supplier_retention_journal_id": self.bank_journal_sup_ret.id,
         })
@@ -57,6 +80,7 @@ class TestRetentionResync(RetentionTestCommon):
                 "invoice_total": invoice.amount_total, "invoice_amount": invoice.amount_untaxed,
                 "retention_amount": retention_amount, "foreign_invoice_amount": invoice.amount_untaxed,
                 "foreign_retention_amount": retention_amount,
+                **({"economic_activity_id": activity.id} if activity else {}),
             })],
         })
         retention.number = "01234567891234"
@@ -284,6 +308,44 @@ class TestRetentionResync(RetentionTestCommon):
         invoice.invalidate_recordset(["retention_resync_pending"])
         self.assertTrue(invoice.retention_resync_pending)
         _logger.info("========= test_09b passed =========")
+
+    # Municipal: a stale line is detected/rebuilt independently of
+    # account.move.write() receiving invoice_line_ids in its vals.
+    def test_09c_municipal_stale_base_is_detected(self):
+        invoice = self._create_prepared_iva_invoice(amount=200)
+        invoice.action_post()
+        retention = self._create_emitted_municipal_retention(invoice, retention_amount=10.0)
+        self.assertFalse(invoice.retention_resync_pending)
+
+        line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
+        line.write({"invoice_amount": line.invoice_amount + 50.0})
+
+        invoice.invalidate_recordset(["retention_resync_pending"])
+        self.assertTrue(invoice.retention_resync_pending)
+        _logger.info("========= test_09c passed =========")
+
+    def test_09d_municipal_repost_with_line_edited_directly_rebuilds(self):
+        activity = self._get_economic_activity()
+        invoice = self._create_prepared_iva_invoice(amount=200)
+        invoice.action_post()
+        retention = self._create_emitted_municipal_retention(
+            invoice, retention_amount=10.0, activity=activity
+        )
+        payment = retention.payment_ids
+
+        invoice.button_draft()
+        # Deliberately NOT invoice.write({"invoice_line_ids": ...}): the
+        # edit that write() would have synced is the path that was covered.
+        invoice.invoice_line_ids.write({"price_unit": 300.0})
+        invoice.action_post()
+
+        self.assertEqual(retention.state, "emitted")
+        self.assertEqual(retention.payment_ids, payment)
+        line = retention.retention_line_ids.filtered(lambda l: l.move_id == invoice)
+        self.assertAlmostEqual(line.invoice_amount, 300.0, places=2)
+        self.assertAlmostEqual(line.retention_amount, 300.0 * activity.aliquot / 100, places=2)
+        self.assertAlmostEqual(payment.amount, line.retention_amount, places=2)
+        _logger.info("========= test_09d passed =========")
 
     # 10. retention_resync_pending/payment.retention_resync_pending
     # propagate the invoice's diff; a non-retention payment never reports
