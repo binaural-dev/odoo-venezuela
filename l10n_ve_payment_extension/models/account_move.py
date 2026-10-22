@@ -1007,10 +1007,18 @@ class AccountMoveRetention(models.Model):
             retention.write({
                 "retention_line_ids": [Command.create(vals) for vals in new_lines_data],
             })
-        # Municipal retention lines are already kept in sync by
-        # account.move.write() (onchange_economic_activity_id) whenever
-        # invoice_line_ids changes - nothing to rebuild here, only the
-        # amount/re-emission below.
+        else:
+            # Municipal lines are not regenerated: they are refreshed in
+            # place with the same onchanges account.move.write() runs, but
+            # unconditionally, since write() only runs them when
+            # invoice_line_ids comes in its vals.
+            lines_of_move = retention.retention_line_ids.filtered(lambda l: l.move_id == self)
+            lines_of_move.write({
+                "invoice_amount": self.tax_totals["base_amount"],
+                "foreign_invoice_amount": self.tax_totals["base_amount_foreign_currency"],
+            })
+            lines_of_move.onchange_economic_activity_id()
+            lines_of_move.onchange_municipal_invoice_amount()
 
         max_invoice_date = retention._get_max_invoice_date()
         if max_invoice_date and retention.date_accounting < max_invoice_date:
@@ -1099,8 +1107,18 @@ class AccountMoveRetention(models.Model):
             if self._retention_lines_amounts_differ(lines_of_move, fresh_amounts, currency):
                 return True
 
-        # Municipal lines are kept in sync automatically by write(); only
-        # the linked payment amount is checked below, for all three types.
+        elif retention.type_retention == "municipal":
+            # Same base the municipal lines take from the invoice in
+            # onchange_economic_activity_id(): checked here independently
+            # of write() (which only syncs them when invoice_line_ids
+            # comes in its vals), so a line edited by any other path is
+            # detected too.
+            base_amount = self.tax_totals["base_amount"]
+            fresh_amounts = [base_amount] * len(lines_of_move)
+            if self._retention_lines_amounts_differ(lines_of_move, fresh_amounts, currency):
+                return True
+
+        # The linked payment amount is checked below, for all three types.
 
         payment = retention.payment_ids[:1]
         if payment:
