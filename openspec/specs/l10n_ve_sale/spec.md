@@ -15,6 +15,11 @@ Toda orden de venta (`sale.order`) DEBE (MUST) inicializar `foreign_currency_id`
 - **WHEN** se crea una orden de venta y la compañía tiene moneda alterna configurada
 - **THEN** `foreign_currency_id` queda en la moneda alterna de la compañía y `foreign_rate`/`foreign_inverse_rate` toman la tasa vigente devuelta por `compute_rate`
 
+#### Scenario: Creación de una orden sin tasa cargada
+
+- **WHEN** se crea una orden de venta y no existe ninguna tasa en o antes de la fecha de hoy para la moneda de la orden
+- **THEN** se lanza el `UserError` de tasa no asignada de `compute_rate` y la orden no se crea (ticket 15923)
+
 ### Requirement: Recálculo de tasa condicionado por configuración
 
 El cómputo `_compute_rate` de la orden DEBE (MUST) recalcular `foreign_rate` y `foreign_inverse_rate` (vía `compute_rate` de `l10n_ve_rate`) cuando cambian `foreign_currency_id` o `date_order`, EXCEPTO cuando: (a) la orden tiene `manually_set_rate` activo, (b) la orden proviene del sitio web (`website_id` establecido), o (c) la compañía tiene `update_sale_order_rate_using_date_order` desactivado y la tasa ya es distinta de cero. El flag `update_sale_order_rate_using_date_order` es configurable por compañía desde ajustes (related en `res.config.settings` con `readonly=False`).
@@ -161,7 +166,7 @@ La acción `action_confirm` DEBE (MUST) rechazar con error la confirmación de u
 
 ### Requirement: Confirmación requiere tasa de moneda alterna
 
-Al confirmar (`action_confirm`), si la orden tiene moneda alterna (`foreign_currency_id`), no tiene `manually_set_rate` activo, y `foreign_rate` es cero, el sistema DEBE (MUST) invocar `compute_rate` con `raise_if_not_found=True`, bloqueando la confirmación con un `UserError` en vez de dejar pasar la orden con `foreign_rate` en cero. Es el único punto del módulo donde se usa `raise_if_not_found=True`: a diferencia de los defaults y del propio `_compute_rate`, `action_confirm` es una acción explícita del usuario, no un camino automático que un error ahí pueda romper.
+Al confirmar (`action_confirm`), si la orden tiene moneda alterna (`foreign_currency_id`), no tiene `manually_set_rate` activo, y `foreign_rate` es cero, el sistema DEBE (MUST) invocar `compute_rate` con `raise_if_not_found=True`, bloqueando la confirmación con un `UserError` en vez de dejar pasar la orden con `foreign_rate` en cero. Desde el ticket 15923 `compute_rate` lanza ese error por defecto, de modo que también los defaults y el `_compute_rate` de la orden fallan sin tasa; aquí se mantiene el argumento explícito por claridad.
 
 #### Scenario: Confirmación sin tasa configurada
 
