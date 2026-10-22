@@ -4,7 +4,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.2.1",
+    "version": "19.0.1.2.2",
     "depends": [
         "l10n_ve_invoice_digital",
         "l10n_ve_stock_account",

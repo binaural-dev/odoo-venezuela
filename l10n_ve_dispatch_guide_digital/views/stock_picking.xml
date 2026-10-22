@@ -39,17 +39,19 @@
         <field name="model">stock.picking</field>
         <field name="inherit_id" ref="l10n_ve_stock_account.stock_picking_form_view_inherited"/>
         <field name="arch" type="xml">
+            <!-- El conductor del día nunca queda bloqueado por transport_data_locked
+                 (Escenario 12): solo el estado de la guía/digitalización lo restringe. -->
             <xpath expr="//field[@name='transport_driver_name']" position="attributes">
-                <attribute name="readonly">transport_data_locked or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_driver_vat']" position="attributes">
-                <attribute name="readonly">transport_data_locked or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_driver_license_type']" position="attributes">
-                <attribute name="readonly">transport_data_locked or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_driver_contact']" position="attributes">
-                <attribute name="readonly">transport_data_locked or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
+                <attribute name="readonly">state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
             </xpath>
             <xpath expr="//field[@name='transport_vehicle_type']" position="attributes">
                 <attribute name="readonly">transport_data_locked or state == 'cancel' or (state == 'done' and tfhka_digitalization_state not in ('error', 'data_error'))</attribute>
