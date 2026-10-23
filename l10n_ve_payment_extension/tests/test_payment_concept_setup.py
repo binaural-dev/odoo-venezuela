@@ -319,7 +319,15 @@ class TestAccountingReportsExtraBranches(RetentionTestCommon):
         # the invoice date back too: this test only cares that a retention
         # dated outside the wizard's report window is excluded, not about the
         # accounting-date-vs-invoice-date relationship.
-        seed_usd_rate(self.env, [fields.Date.subtract(fields.Date.today(), days=90)])
+        # The rate of a purchase is looked up by the invoice's accounting
+        # date, which here lands on the last day of the month of the
+        # moved invoice date.
+        moved_dates = [
+            fields.Date.subtract(fields.Date.today(), days=days) for days in (90, 60)
+        ]
+        seed_usd_rate(
+            self.env, moved_dates + [fields.Date.end_of(d, "month") for d in moved_dates]
+        )
         inv.invoice_date_display = fields.Date.subtract(fields.Date.today(), days=90)
         retention.write({"date_accounting": fields.Date.subtract(fields.Date.today(), days=60)})
         values = wizard.get_retention_iva_values(inv.id)
