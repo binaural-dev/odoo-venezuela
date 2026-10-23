@@ -33,7 +33,8 @@ class TestRetentionISLRForeignAmount(RetentionTestCommon):
         line = invoice.retention_islr_line_ids[0]
 
         self.assertEqual(line.retention_amount, 27.0)
-        self.assertEqual(line.foreign_currency_id, self.currency_vef)
+        # Igual que antes: la moneda foránea de la línea es la alterna de la compañía
+        self.assertEqual(line.foreign_currency_id, line.company_id.foreign_currency_id)
         self.assertEqual(line.foreign_retention_amount, 0.0)
         self.assertEqual(line._get_foreign_retention_amount(27.0), 0.0)
 
