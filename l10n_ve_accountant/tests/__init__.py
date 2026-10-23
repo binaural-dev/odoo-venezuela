@@ -13,3 +13,4 @@ from . import test_foreign_exchange_diff
 from . import test_no_foreign_currency_page
 from . import test_payment_zero_amount
 from . import test_payment_future_date
+from . import test_draft_keeps_posted_rate

@@ -474,9 +474,9 @@ class AccountMoveLine(models.Model):
         the raw exchange rate. This method distributes that difference across
         product lines proportionally so the entry remains balanced.
 
-        The expected total is computed via ``_convert`` (the raw rate from
-        ``res.currency.rate``), not from ``line.currency_rate`` (which is
-        derived from an already-rounded balance and amplifies the error).
+        The expected total uses the document's stored ``invoice_currency_rate``,
+        not ``line.currency_rate`` (derived from an already-rounded balance) nor
+        the rate of the date, which may have been edited after posting.
         """
         for move in lines.move_id:
             if not move.is_invoice(include_receipts=True):
@@ -499,9 +499,13 @@ class AccountMoveLine(models.Model):
 
             total_currency = sum(product_lines.mapped('amount_currency'))
             rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-            expected = cc.round(move.currency_id._convert(
-                total_currency, cc, move.company_id, rate_date
-            ))
+            move_rate = move.invoice_currency_rate
+            if move_rate:
+                expected = cc.round(total_currency / move_rate)
+            else:
+                expected = cc.round(move.currency_id._convert(
+                    total_currency, cc, move.company_id, rate_date
+                ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
 
