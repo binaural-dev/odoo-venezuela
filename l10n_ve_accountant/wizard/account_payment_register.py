@@ -141,13 +141,9 @@ class AccountPaymentRegister(models.TransientModel):
         self.ensure_one()
         comp_curr = self.company_id.currency_id
         sign = 1 if self.payment_type == "inbound" else -1
-        custom_rate = 0.0
-        if self.foreign_inverse_rate:
-            custom_rate = (
-                self.foreign_rate
-                if self.currency_id == self.foreign_currency_id
-                else self.foreign_inverse_rate
-            )
+        custom_rate = self.env["account.payment"]._get_payment_custom_rate(
+            self.currency_id, self.foreign_currency_id, self.foreign_rate, self.foreign_inverse_rate
+        )
         liquidity_balance = sign * abs(self.currency_id._convert(
             abs(self.amount),
             comp_curr,
