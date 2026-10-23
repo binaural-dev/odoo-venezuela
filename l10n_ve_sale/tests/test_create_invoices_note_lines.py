@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo import fields
 from odoo.tests import tagged
 from odoo.tests.common import TransactionCase
 from odoo.fields import Command
@@ -15,6 +16,20 @@ class TestCreateInvoicesNoteLines(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # Sin tasa del día la orden no se crea (compute_rate lanza UserError)
+        company = cls.env.company
+        currency = company.foreign_currency_id or cls.env.ref('base.VEF')
+        if not cls.env['res.currency.rate'].search_count([
+            ('currency_id', '=', currency.id),
+            ('company_id', '=', company.id),
+            ('name', '=', fields.Date.today()),
+        ]):
+            cls.env['res.currency.rate'].create({
+                'currency_id': currency.id,
+                'company_id': company.id,
+                'name': fields.Date.today(),
+                'inverse_company_rate': 50.0,
+            })
         cls.customer = cls.env['res.partner'].create({'name': 'Cliente Nota l10n_ve'})
         cls.product_a = cls.env['product.product'].create({
             'name': 'Producto A Nota',
