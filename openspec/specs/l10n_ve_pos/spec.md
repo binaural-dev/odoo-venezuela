@@ -38,6 +38,11 @@ La conversión entre moneda principal y alterna del PdV DEBE (MUST) hacerse mult
 - **WHEN** ninguna de las dos monedas involucradas es la moneda alterna, o la tasa operativa es cero
 - **THEN** la conversión devuelve `0.0` (y el frontend registra una advertencia en consola una sola vez)
 
+#### Scenario: Caja sin tasa del día
+
+- **WHEN** `pos.config._compute_rate` se calcula un día sin tasa cargada para la moneda alterna
+- **THEN** llama a `compute_rate` con `raise_if_not_found=False` y no lanza error (la configuración de la caja sigue accesible, aunque `l10n_ve_rate.compute_rate` lance `UserError` por defecto)
+
 ### Requirement: Facturación obligatoria de toda orden del PdV
 
 Toda orden del PdV, incluidos los reembolsos, DEBE (MUST) emitir factura: el frontend fuerza `to_invoice = true` en `PosOrder.setup()` y en `setToInvoice()`, el botón nativo "Invoice" de la pantalla de pago se elimina de la plantilla (`payment_screen_button.xml`), y `shouldDownloadInvoice()` devuelve `false` para no descargar el PDF al validar.

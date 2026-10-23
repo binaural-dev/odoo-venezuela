@@ -43,8 +43,12 @@ class PosConfig(models.Model):
         """
         rate = self.env["res.currency.rate"]
         for config in self:
+            # La caja puede abrirse sin tasa del día (la conversión devuelve 0.0):
+            # este compute no debe bloquear la vista de la configuración.
             rate_values = rate.compute_rate(
-                config.foreign_currency_id.id, fields.Date.today()
+                config.foreign_currency_id.id,
+                fields.Date.today(),
+                raise_if_not_found=False,
             )
             config.update(rate_values)
 

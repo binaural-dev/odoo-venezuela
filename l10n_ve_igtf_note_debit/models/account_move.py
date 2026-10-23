@@ -456,6 +456,7 @@ class AccountMove(models.Model):
         'debit_note_ids.amount_total_signed',
     )
     def compute_bi_igtf(self):
+        """Base imponible de IGTF (modo `debit_note`); busca los parciales contra TODAS las cuotas."""
         # 100% opt-in: las compañías en modo 'inline' (o cualquier modo
         # distinto de 'debit_note') delegan enteramente en la implementación
         # base de `l10n_ve_igtf`, sin ninguna diferencia de comportamiento.
@@ -531,7 +532,7 @@ class AccountMove(models.Model):
                         partial = self.env['account.partial.reconcile'].search([
                             '|',
                             '&', ('debit_move_id', 'in', factura_lines.ids), ('credit_move_id', 'in', partner_line.ids),
-                            '&', ('debit_move_id', 'in', partner_line.ids), ('credit_move_id', 'in', factura_lines.ids)
+                            '&', ('debit_move_id', 'in', partner_line.ids), ('credit_move_id', 'in', factura_lines.ids),
                         ])
                         bank_amount = abs(bank_line[0].amount_currency)
                         bank_amount_balance = abs(bank_line[0].balance)
@@ -647,8 +648,11 @@ class AccountMove(models.Model):
             )[:1]
 
             vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
-            is_vef_direct_payment = (
-                payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id
+            is_vef_direct_payment = bool(
+                payment_move
+                and payment_move.currency_id == vef
+                and not payment_move.origin_payment_advanced_payment_id
+                and not payment_move._is_advance_cross()
             )
 
             if payment_move and not is_vef_direct_payment:
@@ -757,7 +761,7 @@ class AccountMove(models.Model):
         line.remove_move_reconcile()
         if counterpart_move.origin_payment_advanced_payment_id:
             advance_payment = counterpart_move.origin_payment_advanced_payment_id
-            counterpart_move.button_draft()
+            counterpart_move.with_context(move_action_cancel_advance_payment=True).button_draft()
             counterpart_move.write({'origin_payment_advanced_payment_id': False})
             counterpart_move.with_context(
                 move_action_cancel_advance_payment=True

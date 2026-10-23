@@ -482,6 +482,16 @@ class AccountTax(models.Model):
         return res
     
     @api.model
+    def _prepare_base_line_for_taxes_computation(self, record, **kwargs):
+        """The discount of an invoice line is its effective discount, so a
+        module that discounts through a field of its own only extends
+        `_get_effective_discount_percent()`."""
+        res = super()._prepare_base_line_for_taxes_computation(record, **kwargs)
+        if record and not isinstance(record, dict) and record._name == "account.move.line":
+            res["discount"] = record._get_effective_discount_percent()
+        return res
+
+    @api.model
     def _prepare_foreign_base_line_for_taxes_computation(self, record, **kwargs):
         """ Convert any representation of a business object ('record') into a base line being a python
         dictionary that will be used to use the generic helpers for the taxes computation.
