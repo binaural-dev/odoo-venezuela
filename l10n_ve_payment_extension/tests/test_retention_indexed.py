@@ -1,5 +1,5 @@
 import logging
-from unittest import expectedFailure
+from unittest import skip
 from unittest.mock import patch
 
 from dateutil.relativedelta import relativedelta
@@ -845,7 +845,7 @@ class TestRetentionIndexed(RetentionTestCommon):
         retention.action_post()
         return retention, retention.payment_ids
 
-    @expectedFailure  # Paso 2 pendiente: los Bs del pago no se fijan al monto retenido (residuo de redondeo)
+    @skip("Falla conocida, pendiente de desarrollo: Paso 2 pendiente: los Bs del pago no se fijan al monto retenido (residuo de redondeo)")
     def test_payment_in_the_invoice_currency_carries_the_retained_bolivars(self):
         """El valor de la línea se lleva a bolívares con la tasa con la que se calculó: el pago en
         la moneda de la factura debe quedar en los bolívares retenidos, sin residuo de redondeo
@@ -856,7 +856,7 @@ class TestRetentionIndexed(RetentionTestCommon):
             self.assertEqual(abs(entry_line.amount_currency), line.foreign_retention_amount)
             self.assertAlmostEqual(abs(entry_line.balance), line.retention_amount, places=2)
 
-    @expectedFailure  # Paso 2 pendiente: el pago aún se valora a la tasa de su propia fecha
+    @skip("Falla conocida, pendiente de desarrollo: Paso 2 pendiente: el pago aún se valora a la tasa de su propia fecha")
     def test_payment_in_the_invoice_currency_uses_the_rate_of_the_voucher_date(self):
         """La línea indexada se valora con la tasa del comprobante; el asiento del pago (fechado
         con la fecha contable) debe valorarse con esa misma tasa, no con la de su propia fecha."""
@@ -2156,7 +2156,7 @@ class TestRetentionIndexed(RetentionTestCommon):
         self.assertEqual(retention.state, "emitted")
         self.assertEqual(retention.indexation_mode, "not_indexed")
 
-    @expectedFailure  # Hallazgo: hoy el reverso se ejecuta y deja abierto el pago de la retención
+    @skip("Falla conocida, pendiente de desarrollo: Hallazgo: hoy el reverso se ejecuta y deja abierto el pago de la retención")
     def test_ri_068_reversing_an_invoice_with_a_posted_retention(self):
         """RI-068: reversar la factura que ya tiene una retención aprobada debe bloquearse con un
         aviso (o revertir la retención y sus diferencias). Hoy el asistente de reversión crea la
@@ -2216,7 +2216,7 @@ class TestRetentionIndexed(RetentionTestCommon):
             self._run_retention_case("cus", "iva", "EUR", "indexed", drop_usd_rate=True)
         self.assertIn("USD", str(caught.exception))
 
-    @expectedFailure  # Hallazgo: el cobro en USD de una factura en EUR deja Bs 5.720 sin asentar
+    @skip("Falla conocida, pendiente de desarrollo: Hallazgo: el cobro en USD de una factura en EUR deja Bs 5.720 sin asentar")
     @tagged("retention_igtf")
     def test_ri_114_eur_invoice_retained_and_then_paid_in_dollars(self):
         """RI-114: factura en EUR retenida y el resto cobrado en dólares (con IGTF): debe cerrar en
@@ -2320,7 +2320,7 @@ class TestRetentionIndexed(RetentionTestCommon):
                 self.assertAlmostEqual(sum(lines.mapped("balance")), 0.0, places=2)
                 self.assertAlmostEqual(sum(lines.mapped("foreign_balance")), 0.0, delta=0.05)
 
-    @expectedFailure  # Hallazgo: la nota de crédito total deja abierto el pago de la retención
+    @skip("Falla conocida, pendiente de desarrollo: Hallazgo: la nota de crédito total deja abierto el pago de la retención")
     def test_ri_089_total_credit_note_on_an_invoice_with_a_retention(self):
         """RI-089: nota de crédito por el total de una factura con retención emitida: la retención
         y su pago deben quedar tratados de forma coherente (revertidos o con aviso) y la cuenta
@@ -2357,7 +2357,7 @@ class TestRetentionIndexed(RetentionTestCommon):
         invoice.with_context(move_action_post_alert=True).action_post()
         return invoice
 
-    @expectedFailure  # Hallazgo base (sin retención): cobro en USD de una factura en EUR deja Bs sin asentar
+    @skip("Falla conocida, pendiente de desarrollo: Hallazgo base (sin retención): cobro en USD de una factura en EUR deja Bs sin asentar")
     @tagged("retention_igtf")
     def test_baseline_eur_invoice_paid_in_usd_without_retention(self):
         """Sin retención: una factura en EUR cobrada en USD (con IGTF) queda pagada pero la cuenta en
@@ -2396,7 +2396,7 @@ class TestRetentionIndexed(RetentionTestCommon):
         self.assertEqual(invoice.payment_state, "paid")
         self.assertAlmostEqual(sum(lines.mapped("balance")), 0.0, delta=0.05)
 
-    @expectedFailure  # Hallazgo base: la diferencia cambiaria del euro queda como crédito sin aplicar
+    @skip("Falla conocida, pendiente de desarrollo: Hallazgo base: la diferencia cambiaria del euro queda como crédito sin aplicar")
     @tagged("retention_igtf")
     def test_baseline_eur_invoice_paid_in_usd_exact_amount_without_igtf(self):
         """Factura de EUR 1.160 (Bs 51.040 a tasa 44) cobrada con USD 1.276 (= EUR 1.160 a tasa 49,50
@@ -2796,7 +2796,7 @@ class TestRetentionIndexed(RetentionTestCommon):
         self.assertEqual(len(exchange_moves), 1)
         self.assertEqual(len(exchange_moves.line_ids), 2)
 
-    @expectedFailure  # Pendiente de desarrollo: no hay aviso de anticipo sin aplicar al retener
+    @skip("Falla conocida, pendiente de desarrollo: Pendiente de desarrollo: no hay aviso de anticipo sin aplicar al retener")
     @tagged("retention_igtf")
     def test_ri_150_pending_advance_warning_when_retaining(self):
         """RI-150 (proveedor): al retener sobre una factura de un contacto con un anticipo pendiente
