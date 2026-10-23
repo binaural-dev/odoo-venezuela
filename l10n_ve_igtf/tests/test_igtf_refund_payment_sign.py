@@ -1,4 +1,4 @@
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import tagged
 
 from odoo.addons.l10n_ve_accountant.tests.test_indexed_payments import TestIndexedPayments
@@ -100,7 +100,10 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
             })],
         })
 
-    def _create_document(self, move_type, amount, currency):
+    def _create_document(self, move_type, amount, currency, lines=1):
+        """`lines` splits `amount` into that many equal product lines: each
+        line is converted and rounded on its own, which is what makes the
+        invoice's balance differ by a cent from the payment's."""
         is_sale = move_type.startswith("out_")
         move = self.env["account.move"].create({
             "move_type": move_type,
@@ -112,10 +115,10 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
             "invoice_line_ids": [Command.create({
                 "product_id": self.product.id,
                 "quantity": 1.0,
-                "price_unit": amount,
+                "price_unit": amount / lines,
                 "account_id": (self.account_income if is_sale else self.account_expense).id,
                 "tax_ids": [Command.set([self.test_tax.id if is_sale else self.test_purchase_tax.id])],
-            })],
+            }) for _line in range(lines)],
         })
         move.with_context(move_action_post_alert=True).action_post()
         return move
@@ -160,7 +163,8 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
                         msg="En moneda de la compañía amount_currency debe igualar al balance.",
                     )
                 else:
-                    self.assertGreaterEqual(
+                    # Strict: a 0 * x product would let an inverted sign through.
+                    self.assertGreater(
                         line.amount_currency * line.balance, 0,
                         "amount_currency y balance deben tener el mismo signo.",
                     )
@@ -253,3 +257,81 @@ class TestIgtfRefundPaymentSign(TestIndexedPayments):
         payments = self._pay(bill, self.journal_vef, self.currency_vef)
         self._assert_payments_consistent(payments, "outbound", 102630.95)
         self._assert_settled(bill)
+
+    # -- tolerancia de redondeo del balance (moneda de la compañía) -----------
+
+    def _activate_currency(self, xmlid, rate):
+        currency = self.env.ref(xmlid)
+        currency.active = True
+        self._set_rate(currency, self.payment_date, rate)
+        return currency
+
+    def _receivable_payable_balance(self, payments):
+        lines = payments.move_id.line_ids.filtered(
+            lambda l: l.account_id.account_type in ("asset_receivable", "liability_payable")
+        )
+        return abs(sum(lines.mapped("balance")))
+
+    def test_09_full_payment_matches_residual_exactly_in_any_currency(self):
+        """El balance (siempre en la moneda de la compañía) del pago total cubre
+        el residual de la factura sin diferencia de redondeo, sea cual sea la
+        moneda del documento y la del diario, incluso con tasas de muchos decimales."""
+        cc = self.company.currency_id
+        eur = self._activate_currency("base.EUR", 39.1234)
+        self._set_rate(self.currency_usd, self.payment_date, 36.4567)
+        journal_eur = self._make_bank_journal("BEUR", eur)
+        cases = [
+            (self.currency_usd, 33.33, self.journal_vef, self.currency_vef),
+            (self.currency_usd, 33.33, self.journal_usd, self.currency_usd),
+            (eur, 77.77, self.journal_vef, self.currency_vef),
+            (eur, 77.77, journal_eur, eur),
+            (self.currency_vef, 1234.56, self.journal_vef, self.currency_vef),
+        ]
+        for doc_currency, amount, journal, pay_currency in cases:
+            for move_type in ("out_invoice", "in_invoice"):
+                with self.subTest(doc=doc_currency.name, pay=pay_currency.name, type=move_type):
+                    doc = self._create_document(move_type, amount, doc_currency)
+                    residual = abs(doc.amount_residual_signed)
+                    payments = self._pay(doc, journal, pay_currency)
+                    self.assertEqual(
+                        cc.compare_amounts(self._receivable_payable_balance(payments), residual), 0,
+                        "El balance del pago debe igualar el residual de la factura.",
+                    )
+                    self._assert_settled(doc)
+
+    def test_12_one_cent_rounding_gap_in_company_currency_is_snapped(self):
+        """Tres líneas de 10.00 USD a 36.4567: la factura suma 3 x 364.57 =
+        1093.71 VEF y el pago de 30.00 USD convierte a 1093.70. Ese centavo de
+        redondeo, igual al de VEF, se ajusta para que el pago cubra el residual."""
+        cc = self.company.currency_id
+        eur = self._activate_currency("base.EUR", 36.4567)
+        self._set_rate(self.currency_usd, self.payment_date, 36.4567)
+        journal_eur = self._make_bank_journal("BEUR", eur)
+        for move_type in ("out_invoice", "in_invoice"):
+            for currency, journal in ((self.currency_usd, self.journal_usd), (eur, journal_eur)):
+                with self.subTest(type=move_type, currency=currency.name):
+                    doc = self._create_document(move_type, 30.0, currency, lines=3)
+                    residual_vef = abs(doc.amount_residual_signed)
+                    self.assertEqual(residual_vef, 1093.71, "Fixture: 3 líneas redondeadas por separado.")
+                    payments = self._pay(doc, journal, currency)
+                    self.assertEqual(
+                        cc.compare_amounts(self._receivable_payable_balance(payments), residual_vef), 0,
+                    )
+                    self._assert_settled(doc)
+
+    def test_13_rounding_gap_is_not_snapped_when_invoice_date_differs_from_payment_date(self):
+        """El ajuste solo corre cuando la fecha de la factura es la del pago.
+        Con la misma tasa y el mismo desfase de 0.01 del caso anterior, una
+        factura de otro día no se ajusta."""
+        cc = self.company.currency_id
+        previous_day = fields.Date.subtract(self.payment_date, days=1)
+        self._set_rate(self.currency_usd, previous_day, 36.4567)
+        self._set_rate(self.currency_usd, self.payment_date, 36.4567)
+        self.invoice_date = previous_day
+        doc = self._create_document("out_invoice", 30.0, self.currency_usd, lines=3)
+        self.assertEqual(abs(doc.amount_residual_signed), 1093.71)
+        payments = self._pay(doc, self.journal_usd, self.currency_usd)
+        self.assertEqual(
+            cc.compare_amounts(self._receivable_payable_balance(payments), 1093.70), 0,
+            "Con fechas distintas el balance del pago no se ajusta al residual.",
+        )
