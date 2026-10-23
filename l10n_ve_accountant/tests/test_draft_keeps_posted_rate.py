@@ -166,6 +166,78 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
             "Guardar el formulario recalculó la tasa alterna.",
         )
 
+    def test_form_real_date_change_on_reset_draft_saves_new_rate(self):
+        """Formulario del borrador restablecido: cambiar la fecha a otro día
+        recalcula la tasa y al guardar debe quedar la del nuevo día."""
+        other_day = fields.Date.subtract(self.invoice_date, days=1)
+        self._set_rate(self.currency_usd, other_day, 870.0)
+        self.invoice.button_draft()
+        self._as_new_request()
+
+        with Form(self.invoice) as form:
+            form.invoice_date_display = other_day
+        self._as_new_request()
+
+        self.assertEqual(self.invoice.invoice_date, other_day)
+        self.assertAlmostEqual(self.invoice.foreign_rate, 870.0, places=4)
+        self.assertAlmostEqual(self.invoice.move_currency_to_company_currency_rate, 870.0, places=4)
+
+    def test_form_rate_date_change_on_reset_draft_saves_new_rate(self):
+        """Igual, pero editando la "Rate Date" (invoice_date) directamente."""
+        other_day = fields.Date.subtract(self.invoice_date, days=1)
+        self._set_rate(self.currency_usd, other_day, 870.0)
+        self.invoice.button_draft()
+        self._as_new_request()
+
+        with Form(self.invoice) as form:
+            form.invoice_date = other_day
+        self._as_new_request()
+
+        self.assertEqual(self.invoice.invoice_date, other_day)
+        self.assertAlmostEqual(self.invoice.foreign_rate, 870.0, places=4)
+        self.assertAlmostEqual(self.invoice.move_currency_to_company_currency_rate, 870.0, places=4)
+
+    def _purchase_invoice_reset_to_draft(self):
+        journal = self.env["account.journal"].sudo().create({
+            "name": "Compras tasa", "type": "purchase", "code": "CMPR",
+            "company_id": self.company.id,
+        })
+        payable = self.env["account.account"].create({
+            "name": "CxP tasa", "code": "211999", "account_type": "liability_payable",
+            "reconcile": True,
+        })
+        self.partner.property_account_payable_id = payable
+        bill = self.env["account.move"].create({
+            "move_type": "in_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": self.invoice_date,
+            "invoice_date_display": self.invoice_date,
+            "date": self.invoice_date,
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product.id, "quantity": 1, "price_unit": 100.0,
+                "account_id": self.account_income.id,
+            })],
+        })
+        bill.with_context(move_action_post_alert=True).action_post()
+        bill.button_draft()
+        self._as_new_request()
+        return bill
+
+    def test_form_rate_date_change_on_purchase_reset_draft_saves_new_rate(self):
+        """Compras: la tasa sale de invoice_date (Rate Date), como en ventas."""
+        other_day = fields.Date.subtract(self.invoice_date, days=1)
+        self._set_rate(self.currency_usd, other_day, 870.0)
+        bill = self._purchase_invoice_reset_to_draft()
+
+        with Form(bill) as form:
+            form.invoice_date = other_day
+        self._as_new_request()
+
+        self.assertEqual(bill.invoice_date, other_day)
+        self.assertAlmostEqual(bill.foreign_rate, 870.0, places=4)
+
     def test_changing_the_date_of_a_reset_draft_does_recompute_rates(self):
         """La protección no congela la tasa si la fecha realmente cambia."""
         other_date = fields.Date.subtract(self.invoice_date, days=1)

@@ -1175,11 +1175,8 @@ class AccountMove(models.Model):
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
 
         Depends on both dates because `_compute_rate_for_documents` reads
-        `invoice_date` for sale documents but `date` (accounting date) for
-        everything else (purchases, entries): without `date` here, editing
-        only the accounting date on a purchase document never re-triggers
-        this compute, leaving `foreign_rate`/`foreign_inverse_rate` stale
-        relative to the date actually used to look them up.
+        `invoice_date` ("Rate Date") and falls back to `date` (accounting
+        date) when it is empty, as on entries.
         """
         self._compute_rate_for_documents(
             self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
@@ -1200,8 +1197,9 @@ class AccountMove(models.Model):
         for move in documents:
             if move.manually_set_rate:
                 continue
-            date_field = "invoice_date" if is_sale else "date"
-            rate_date = getattr(move, date_field) or fields.Date.today()
+            # "Rate Date" (invoice_date) drives the rate for every document,
+            # purchases included; entries have none and use the accounting date.
+            rate_date = move.invoice_date or move.date or fields.Date.today()
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
