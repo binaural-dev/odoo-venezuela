@@ -60,7 +60,7 @@ patch(Payment.prototype, {
 					return;
 				}
 				this.set_amount(
-					this.foreign_amount * 1 / this.order.init_conversion_rate,
+					this.foreign_amount * this.order.init_conversion_rate,
 					true,
 				);
 			}
