@@ -55,12 +55,12 @@ patch(Payment.prototype, {
 			if (this.pos.currency.name == "USD") {
 				if (this.payment_method.is_foreign_currency) {
 					this.set_amount(
-						this.foreign_amount * 1 / this.pos.foreign_currency.inverse_rate,
+						this.foreign_amount * this.pos.foreign_currency.inverse_rate,
 					);
 					return;
 				}
 				this.set_amount(
-					this.foreign_amount * 1 / this.order.init_conversion_rate,
+					this.foreign_amount * this.order.init_conversion_rate,
 					true,
 				);
 			}
