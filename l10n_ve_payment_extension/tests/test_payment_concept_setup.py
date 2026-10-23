@@ -4,6 +4,7 @@ from odoo.exceptions import UserError, ValidationError
 from datetime import date, timedelta
 from .test_withholding_common_VEF import RetentionTestCommon
 import logging
+from .common_rate import seed_usd_rate
 
 _logger = logging.getLogger(__name__)
 
@@ -318,6 +319,7 @@ class TestAccountingReportsExtraBranches(RetentionTestCommon):
         # the invoice date back too: this test only cares that a retention
         # dated outside the wizard's report window is excluded, not about the
         # accounting-date-vs-invoice-date relationship.
+        seed_usd_rate(self.env, [fields.Date.subtract(fields.Date.today(), days=90)])
         inv.invoice_date_display = fields.Date.subtract(fields.Date.today(), days=90)
         retention.write({"date_accounting": fields.Date.subtract(fields.Date.today(), days=60)})
         values = wizard.get_retention_iva_values(inv.id)

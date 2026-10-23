@@ -6,6 +6,7 @@ from odoo.tests import tagged, Form
 
 from .test_withholding_common_VEF import RetentionTestCommon
 import logging
+from .common_rate import seed_usd_rate
 
 _logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
             amount, self.partner_pnr_75,
             "out_invoice", self.sale_journal,
         )
+        seed_usd_rate(self.env, [invoice_date])
         inv.invoice_date = invoice_date
         inv.invoice_date_display = invoice_date
         inv.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
@@ -49,6 +51,7 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
         })
 
     def _make_sale_credit_note(self, amount, invoice_date, reversed_entry_id):
+        seed_usd_rate(self.env, [invoice_date])
         with Form(self.env["account.move"].with_context(
             default_move_type="out_refund", default_journal_id=self.sale_journal.id,
         )) as inv_form:
