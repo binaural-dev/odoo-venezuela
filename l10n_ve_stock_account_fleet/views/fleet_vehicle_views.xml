@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="fleet_vehicle_view_form_inherit_transport" model="ir.ui.view">
+        <field name="name">fleet.vehicle.form.inherit.l10n_ve_stock_account_fleet</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='driver_id']" position="before">
+                <field name="is_trailer"/>
+            </xpath>
+            <xpath expr="//field[@name='driver_id']" position="attributes">
+                <attribute name="domain">['&amp;', ('is_company', '=', False), '|', ('company_id', '=', False), ('company_id', '=', company_id)]</attribute>
+            </xpath>
+            <xpath expr="//field[@name='future_driver_id']" position="attributes">
+                <attribute name="domain">[('is_company', '=', False)]</attribute>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="fleet_vehicle_view_search_inherit_transport" model="ir.ui.view">
+        <field name="name">fleet.vehicle.search.inherit.l10n_ve_stock_account_fleet</field>
+        <field name="model">fleet.vehicle</field>
+        <field name="inherit_id" ref="fleet.fleet_vehicle_view_search"/>
+        <field name="arch" type="xml">
+            <xpath expr="//search" position="inside">
+                <filter string="Trailers" name="is_trailer" domain="[('is_trailer', '=', True)]"/>
+            </xpath>
+        </field>
+    </record>
+</odoo>
