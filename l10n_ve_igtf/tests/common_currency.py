@@ -1,4 +1,4 @@
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import Form, TransactionCase
 
 
@@ -33,6 +33,8 @@ class CurrencyFixtureCommon(TransactionCase):
                 "rate_ids": [
                     Command.create({"name": "2026-01-01", "company_rate": 1 / jan}),
                     Command.create({"name": "2026-08-01", "company_rate": 1 / aug}),
+                    # l10n_ve_rate exige una tasa en la fecha exacta del documento.
+                    Command.create({"name": fields.Date.today(), "company_rate": 1 / aug}),
                 ],
             })
 
