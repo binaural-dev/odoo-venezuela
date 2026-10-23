@@ -2951,3 +2951,28 @@ class TestAccountMoveApiCalls(TransactionCase):
         info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
         self.assertEqual(info["monto"], "100.00")
 
+    def test_209_prepare_additional_information_uses_narration_as_plaintext(self):
+        """infoAdicional siempre reporta narration (Html) convertido a texto
+        plano bajo la clave 'Orservaciones' -- igual que en 19.0 (PR #1485)."""
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
+        )
+        invoice.narration = "<p>Entrega en horario matutino</p>"
+        additional_information = self.env['tfhka.document.service']._prepare_additional_information(invoice)
+        self.assertEqual(
+            additional_information,
+            [{"campo": "PDF", "valor": str({"Orservaciones": "Entrega en horario matutino"})}],
+        )
+
+    def test_210_prepare_additional_information_empty_narration(self):
+        """Sin narration, se sigue enviando el campo PDF, con observaciones vacias
+        (sin cambio de comportamiento respecto a 19.0: el hook nunca retorna [])."""
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
+        )
+        additional_information = self.env['tfhka.document.service']._prepare_additional_information(invoice)
+        self.assertEqual(
+            additional_information,
+            [{"campo": "PDF", "valor": str({"Orservaciones": ""})}],
+        )
+

@@ -3,6 +3,7 @@ import re
 
 from odoo import _, fields, models
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import html2plaintext
 
 _logger = logging.getLogger(__name__)
 
@@ -678,12 +679,18 @@ class TfhkaDocumentService(models.AbstractModel):
         return payment_info
 
     def _prepare_additional_information(self, invoice):
-        additional_information = []
-        # for record in invoice:
-        #     if record.guide_number:
-        #         additional_information.append({
-        #             "campo": "numeroGuia",
-        #             "valor": str(record.guide_number),
-        #         })
+        """Prepara la sección ``infoAdicional`` del documento.
 
-        return additional_information
+        Envía un campo ``PDF`` cuyo valor es la representación en texto de
+        ``{'Orservaciones': <narration en texto plano>}``. ``narration`` es un
+        campo Html (p. ej. ``<p data-oe-version="2.0">...</p>``), así que se
+        convierte con ``html2plaintext`` antes de mandarlo -- TFHKA no espera
+        markup en este campo.
+        """
+        narration = html2plaintext(invoice.narration or "").strip()
+        return [
+            {
+                "campo": "PDF",
+                "valor": str({"Orservaciones": narration}),
+            }
+        ]
