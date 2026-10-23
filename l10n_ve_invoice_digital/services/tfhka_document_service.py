@@ -686,4 +686,11 @@ class TfhkaDocumentService(models.AbstractModel):
         #             "valor": str(record.guide_number),
         #         })
 
+        additional_info_text = (invoice.tfhka_additional_info or "").strip()
+        if additional_info_text:
+            additional_information.append({
+                "campo": "PDF",
+                "valor": str({"Observaciones": additional_info_text}),
+            })
+
         return additional_information
