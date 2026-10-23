@@ -6,6 +6,7 @@ Casos cubiertos:
     1. Pago IGTF sobre factura de compra INTERNACIONAL → sin IGTF
     2. Pago IGTF sobre factura de compra NACIONAL       → IGTF normal
 """
+from odoo import fields
 from odoo.tests import tagged, TransactionCase
 
 
@@ -23,6 +24,17 @@ class TestIgtfInternationalException(TransactionCase):
         if not company.foreign_currency_id:
             company.currency_id = cls.env.ref("base.VEF").id
             company.foreign_currency_id = cls.env.ref("base.USD").id
+
+        # l10n_ve_rate exige una tasa USD en la fecha exacta del documento.
+        usd = cls.env.ref("base.USD")
+        if not cls.env["res.currency.rate"].search_count([
+            ("currency_id", "=", usd.id), ("company_id", "=", company.id),
+            ("name", "=", fields.Date.today()),
+        ]):
+            cls.env["res.currency.rate"].create({
+                "currency_id": usd.id, "company_id": company.id,
+                "name": fields.Date.today(), "company_rate": 1 / 40.0,
+            })
 
         # ── Cuenta de Banco requerida por el diario de pagos ─────────────────
         account_bank_usd = cls.env["account.account"].create({

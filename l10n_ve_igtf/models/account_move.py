@@ -980,7 +980,6 @@ class AccountMove(models.Model):
             return False
         
         
-        igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
         receivable_payable_line = payment_move.line_ids.filtered(
             lambda line: line.account_id.id in [payment_move.partner_id.property_account_payable_id.id,payment_move.partner_id.property_account_receivable_id.id ]
         )[:1]
