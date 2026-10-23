@@ -386,6 +386,59 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "An error in one journal must not block a different journal's queue (unified cron).",
         )
 
+    # HD-15817: journals explicitly allowed to share a TFHKA numbering
+    # stream (third-party invoicing / debit note journal relative to its
+    # parent) must be drained as ONE scope, unlike unrelated journals
+    # (HD-15734, kept independent above) -- otherwise the cron can
+    # interleave their documents and race two calls to TFHKA's "last
+    # document number" against each other.
+    def test_queue_scope_domains_merges_journals_allowed_to_share_a_stream(self):
+        self.journal2.is_debit = True
+        inv1 = self._create_invoice(journal=self.journal)
+        inv1._tfhka_enqueue_digitalization()
+        inv2 = self._create_invoice(journal=self.journal2)
+        inv2._tfhka_enqueue_digitalization()
+
+        scopes = self.env["account.move"]._tfhka_queue_scope_domains(("queued",))
+
+        self.assertEqual(len(scopes), 1, "Journals allowed to share a stream must collapse into one scope.")
+        _scope_key, domain = scopes[0]
+        field, operator, journal_ids = domain[0]
+        self.assertEqual((field, operator), ("journal_id", "in"))
+        self.assertCountEqual(journal_ids, [self.journal.id, self.journal2.id])
+
+    def test_queue_scope_domains_keeps_unrelated_journals_independent(self):
+        inv1 = self._create_invoice(journal=self.journal)
+        inv1._tfhka_enqueue_digitalization()
+        inv2 = self._create_invoice(journal=self.journal2)
+        inv2._tfhka_enqueue_digitalization()
+
+        scopes = self.env["account.move"]._tfhka_queue_scope_domains(("queued",))
+
+        self.assertEqual(len(scopes), 2, "Unrelated journals (HD-15734) must stay independent scopes.")
+
+    def test_cron_process_queue_merges_scopes_for_journals_allowed_to_share_a_stream(self):
+        self.journal2.is_debit = True
+        failing = self._create_invoice(journal=self.journal)
+        failing._tfhka_enqueue_digitalization()
+        sibling = self._create_invoice(journal=self.journal2)
+        sibling._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            if self.journal_id.id == failing.journal_id.id:
+                raise UserError("boom")
+            self.write({"is_digitalized": True})
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(failing.tfhka_digitalization_state, "error")
+        self.assertEqual(
+            sibling.tfhka_digitalization_state, "queued",
+            "Journals allowed to share a TFHKA stream must be drained as one scope -- an "
+            "error in one must halt the other too, instead of running it out of order.",
+        )
+
     def test_cron_process_queue_does_nothing_while_model_has_a_data_error(self):
         data_errored = self._create_invoice()
         data_errored.write({"tfhka_digitalization_state": "data_error", "tfhka_digitalization_error": "bad field"})
@@ -485,6 +538,43 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         self.assertEqual(errored.tfhka_digitalization_state, "error")
         self.assertEqual(queued.tfhka_digitalization_state, "queued")
+
+    def test_retry_reconciles_from_existing_success_log_instead_of_resubmitting(self):
+        # Ticket #15817: a document can end up 'error' even though TFHKA
+        # already accepted it -- e.g. the success write itself failed
+        # locally (account.move._check_tfhka_unique_name catching two
+        # journals racing for the same stream). A naive retry would call
+        # TFHKA again and get a second, duplicate control number for the
+        # same invoice. The retry must reconcile from the existing
+        # successful log instead of resubmitting.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+        self.env["tfhka.api.log"].sudo().create({
+            "company_id": self.company.id,
+            "res_model": "account.move",
+            "res_id": inv.id,
+            "endpoint": "/Emision",
+            "http_method": "POST",
+            "success": True,
+            "status_code": 200,
+            "request_payload": json.dumps({
+                "documentoElectronico": {
+                    "encabezado": {"identificacionDocumento": {"numeroDocumento": "123"}},
+                },
+            }),
+            "response_payload": json.dumps({"resultado": {"numeroControl": "00-00099999"}}),
+        })
+
+        inv.action_tfhka_retry_digitalization()
+        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        mock_generate.assert_not_called()
+        self.assertEqual(inv.tfhka_digitalization_state, "success")
+        self.assertEqual(inv.correlative, "00-00099999")
 
     def test_action_generate_digital_only_enqueues_never_calls_tfhka_inline(self):
         inv = self._create_invoice()
@@ -728,6 +818,38 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertFalse(result)
         self.assertEqual(inv.tfhka_digitalization_state, "error")
         self.assertIn("unexpected db error", inv.tfhka_digitalization_error)
+
+    def test_process_digitalization_duplicate_name_does_not_abort_the_rest_of_the_run(self):
+        # Ticket #15817: a duplicate TFHKA document name slipping through to
+        # the success write (e.g. two journals sharing a stream racing each
+        # other) must not leave the transaction unusable for the rest of
+        # this cron run -- see the bounded savepoint in
+        # _tfhka_process_digitalization, which covers exactly this segment.
+        already_success = self._create_invoice(journal=self.journal)
+        already_success.write({"tfhka_digitalization_state": "success", "name": "DUPLICATE/0001"})
+
+        colliding = self._create_invoice(journal=self.journal)
+        colliding._tfhka_enqueue_digitalization()
+        other_scope = self._create_invoice(journal=self.journal2)
+        other_scope._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            if self.id == colliding.id:
+                self.name = "DUPLICATE/0001"  # triggers _check_tfhka_unique_name on the success write
+            else:
+                self.write({"is_digitalized": True})
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
+
+        self.assertEqual(colliding.tfhka_digitalization_state, "error")
+        self.assertFalse(colliding.is_digitalized)
+        self.assertIn("DUPLICATE/0001", colliding.tfhka_digitalization_error)
+        self.assertEqual(
+            other_scope.tfhka_digitalization_state, "success",
+            "A duplicate-name collision in one journal's success write must not poison the "
+            "transaction for a different journal's scope in the same cron run.",
+        )
 
     def test_reconcile_stuck_processing_safe_catches_unexpected_exception(self):
         inv = self._create_invoice()

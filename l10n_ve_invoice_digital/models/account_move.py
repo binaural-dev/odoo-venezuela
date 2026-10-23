@@ -471,6 +471,77 @@ class AccountMove(models.Model):
                 "sequence irregularity in Odoo first."
             ) % {"name": self.name, "previous_name": previous.name})
 
+    def _tfhka_queue_scope_domains(self, states):
+        """Merges the per-journal scopes from the base implementation when
+        two journals are allowed to share a TFHKA numbering stream -- the
+        exact relationship ``account_journal._tfhka_serie_sharing_is_allowed``
+        already encodes (one of them is the third-party invoicing journal
+        or the debit note journal relative to the other). Deliberately
+        reuses that predicate instead of comparing ``tfhka_serie_id``
+        directly: ``_check_tfhka_serie_id_not_shared`` already guarantees
+        two journals can only end up with the same non-empty series when
+        that relationship holds, and two *unrelated* journals that simply
+        both lack a configured series (the common case for a company not
+        using series at all) must stay independent scopes -- they don't
+        actually share a stream just because neither set one, and merging
+        them anyway would defeat HD-15734 for every such company.
+
+        Processing a shared-stream pair as independent scopes let the cron
+        interleave their documents (that's the whole point of scoping by
+        journal_id in the first place -- see HD-15734), each one
+        independently calling TFHKA's "last document number" and
+        computing its own ``numeroDocumento`` from it: a classic
+        check-then-act race when two such calls land close together on
+        the same stream. That's exactly what happened on ticket #15817 --
+        TFHKA issued two different control numbers for what Odoo
+        considered the same document number, and
+        ``_check_tfhka_unique_name`` only caught the collision *after*
+        both documents were already irreversibly emitted. Grouping
+        journals that share a stream into one scope makes the cron drain
+        that stream strictly one document at a time, in FIFO order,
+        removing the race instead of only detecting it afterward.
+
+        Merged pairwise with a small union-find, not just "does this
+        journal match an already-formed group": with three or more
+        journals sharing a stream (e.g. two third-party journals under
+        different parents happening to be active in the same cron tick),
+        a single linear pass can miss a transitive merge depending on
+        encounter order.
+        """
+        base = super()._tfhka_queue_scope_domains(states)
+        journal_ids = [key for key, _domain in base if key]
+        if len(journal_ids) < 2:
+            return base
+
+        journals = self.env["account.journal"].browse(journal_ids)
+        parent = {journal.id: journal.id for journal in journals}
+
+        def find(journal_id):
+            while parent[journal_id] != journal_id:
+                journal_id = parent[journal_id]
+            return journal_id
+
+        def union(journal_id_a, journal_id_b):
+            root_a, root_b = find(journal_id_a), find(journal_id_b)
+            if root_a != root_b:
+                parent[root_b] = root_a
+
+        for journal in journals:
+            for other in journals:
+                if other.id > journal.id and journal._tfhka_serie_sharing_is_allowed(other):
+                    union(journal.id, other.id)
+
+        groups = {}
+        for journal in journals:
+            groups.setdefault(find(journal.id), []).append(journal.id)
+
+        merged = [
+            (root, [("journal_id", "in", group_journal_ids)])
+            for root, group_journal_ids in groups.items()
+        ]
+        no_field = [(key, domain) for key, domain in base if not key]
+        return merged + no_field
+
     def _tfhka_check_previous_document_queued(self, previous):
         """Hard block: the previous document in this numbering sequence (see
         _tfhka_find_previous_queue_document) must have entered the

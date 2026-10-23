@@ -196,20 +196,19 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.company.account_fiscal_country_id = tax_country
 
         tax_group = self.env['account.tax.group'].create({
-            'name': 'IVA',
+            'name': 'IVA 16%',
             'company_id': self.company.id,
             'country_id': tax_country.id,
         })
 
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
-            'tax_group_id': tax_group.id,
             'country_id': tax_country.id,
             'company_id': self.company.id,
             'amount': 16,
             'amount_type': 'percent',
             'type_tax_use': 'sale',
-            'tax_group_id': self.tax_group.id,
+            'tax_group_id': tax_group.id,
         })
         self.tax_iva16_purchase = self.env['account.tax'].create({
             'name': 'IVA 16% compras',
@@ -269,7 +268,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                     "price_unit": product["price_unit"],
                     "account_id": self.acc_income.id,
                     "tax_ids": product.get("tax_ids", []),
-                    "account_id": self.acc_income.id, 
                 }
             )
             for product in products
@@ -2719,6 +2717,82 @@ class TestAccountMoveApiCalls(TransactionCase):
                     # No se adopta el numero de The Factory (0+1=1): se
                     # conserva el correlativo de Odoo sin renombrar la factura.
                     self.assertTrue(inv.name.endswith("00000251"))
+
+    def test_189_send_document_defends_against_stale_tfhka_last_across_journals(self):
+        # Ticket #15817: dos diarios que comparten stream de numeracion
+        # TFHKA (facturacion a terceros sobre el diario padre) procesados
+        # casi al mismo tiempo pueden hacer que el "ultimo numero" que
+        # devuelve TFHKA llegue rezagado respecto a lo que Odoo ya sabe que
+        # digitalizo con exito segundos antes -- _tfhka_last_known_document_number
+        # es la defensa adicional: toma el maximo entre ambas fuentes en vez
+        # de confiar ciegamente en el "ultimo" de TFHKA.
+        self.journal.digital_invoice = True
+        sibling_sequence = self.env['ir.sequence'].create({
+            'name': 'Secuencia Hermana', 'padding': 8, 'number_next_actual': 1,
+        })
+        sibling_journal = self.env['account.journal'].create({
+            'name': 'Diario Digital Hermano',
+            'code': 'VEN2',
+            'type': 'sale',
+            'sequence_id': sibling_sequence.id,
+            'company_id': self.env.company.id,
+            'digital_invoice': True,
+        })
+        # Posteada directamente en el diario hermano desde la creacion --
+        # Odoo no permite reasignar journal_id a una factura ya posteada
+        # (ya tiene numero de secuencia asignado).
+        already_digitalized = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": sibling_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": fields.Date.context_today(self.env.user),
+            "invoice_date_display": fields.Date.context_today(self.env.user),
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [self.tax_iva16.id],
+            })],
+        })
+        already_digitalized.action_post()
+        already_digitalized.write({
+            "name": "INV/00000300",
+            "tfhka_digitalization_state": "success",
+        })
+        self.assertEqual(already_digitalized.sequence_number, 300)
+
+        # TFHKA todavia no refleja ese 300 en /UltimoDocumento -- justo el
+        # escenario rezagado que el ticket reporta.
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.get_last_document_number',
+            return_value=5,
+        ):
+            with patch(
+                'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.query_numbering',
+                return_value=None,
+            ):
+                with patch(
+                    'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request'
+                ) as mock_call:
+                    mock_call.return_value = {
+                        "codigo": "200",
+                        "resultado": {"numeroControl": "00-00000301"},
+                    }
+                    inv = self._create_invoice(
+                        products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+                    )
+                    inv.generate_document_digital()
+
+                    payload = mock_call.call_args.args[2]
+                    document_number = payload["documentoElectronico"]["encabezado"][
+                        "identificacionDocumento"
+                    ]["numeroDocumento"]
+                    # 301 (300+1, lo que Odoo ya sabia), no 6 (5+1, el
+                    # "ultimo" rezagado de TFHKA) -- de lo contrario se habria
+                    # vuelto a emitir el numero que la factura hermana ya tiene.
+                    self.assertEqual(document_number, "301")
 
     @patch(
         'odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService'
