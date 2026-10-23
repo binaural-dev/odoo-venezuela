@@ -2,6 +2,7 @@ from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
 from odoo.exceptions import UserError
 from odoo import fields
+from .common_rate import seed_usd_rate
 
 @tagged('post_install', '-at_install')
 class TestRetentionISLRTarifa2(TransactionCase):
@@ -13,6 +14,7 @@ class TestRetentionISLRTarifa2(TransactionCase):
         cls.company = cls.env.user.company_id
         cls.company.currency_id = cls.env.ref('base.VEF')
         cls.company.foreign_currency_id = cls.env.ref('base.USD')
+        seed_usd_rate(cls.env)
         
         # Activar el uso de retenciones de ISLR
         cls.env['ir.config_parameter'].sudo().set_param('l10n_ve_payment_extension.use_islr_retention', True)
