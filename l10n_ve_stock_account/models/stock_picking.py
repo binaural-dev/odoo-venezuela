@@ -571,6 +571,31 @@ class StockPicking(models.Model):
                 for line in picking.sale_id.order_line:
                     line.write({"qty_invoiced": line.qty_invoiced + line.qty_delivered})
 
+    def _revert_order_sale_invoiced(self):
+        """Reverse what `_update_order_sale_invoiced` added for this picking.
+
+        `_update_order_sale_invoiced` bumps `qty_invoiced` by hand (outside the
+        native invoicing flow), so cancelling the invoice never recomputes it on
+        its own: it has to be subtracted back by the same amount it was added.
+        """
+        for picking in self:
+            if picking.sale_id:
+                for line in picking.sale_id.order_line:
+                    line.write({
+                        "qty_invoiced": max(line.qty_invoiced - line.qty_delivered, 0.0)
+                    })
+
+    def _revert_guide_dispatch_state(self, cancelled_invoice):
+        """Set `state_guide_dispatch` back to a state consistent with the
+        invoices that remain valid after `cancelled_invoice` was cancelled."""
+        for picking in self:
+            remaining_invoices = picking.invoice_ids.filtered(
+                lambda move: move.id != cancelled_invoice.id and move.state != "cancel"
+            )
+            picking.state_guide_dispatch = (
+                "invoiced_partial" if remaining_invoices else "to_invoice"
+            )
+
     def _get_invoice_lines_for_invoice(self, from_picking_line=False):
         self.ensure_one()
         invoice_line_list = []
@@ -990,7 +1015,10 @@ class StockPicking(models.Model):
     def _compute_invoice_count(self):
         for picking_id in self:
             move_ids = self.env["account.move"].search(
-                [("transfer_ids", "in", picking_id.id)]
+                [
+                    ("transfer_ids", "in", picking_id.id),
+                    ("state", "!=", "cancel"),
+                ]
             )
             picking_id.invoice_count = len(move_ids)
 
