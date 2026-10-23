@@ -97,13 +97,23 @@ class AccountPayment(models.Model):
                 payment.foreign_rate
             )
 
+    @api.model
+    def _get_payment_custom_rate(self, currency, foreign_currency, foreign_rate, foreign_inverse_rate):
+        """
+        Get the rate used to convert the amount of a payment from its currency to the company
+        currency. Shared with the account.payment.register wizard so both compute the same balance.
+        """
+        if not foreign_inverse_rate:
+            return 0.0
+        return foreign_rate if currency == foreign_currency else foreign_inverse_rate
+
     def _prepare_move_line_default_vals(self, write_off_line_vals=None, force_balance=None):
         vals = super()._prepare_move_line_default_vals(write_off_line_vals, force_balance)
         if not self.foreign_inverse_rate or self.currency_id == self.company_id.currency_id:
             return vals
-        custom_rate = self.foreign_inverse_rate
-        if self.currency_id.id == self.foreign_currency_id.id:
-            custom_rate = self.foreign_rate
+        custom_rate = self._get_payment_custom_rate(
+            self.currency_id, self.foreign_currency_id, self.foreign_rate, self.foreign_inverse_rate
+        )
         sign = 1 if self.payment_type == 'inbound' else -1
         liquidity_balance = sign * abs(self.currency_id._convert(
             abs(self.amount),
