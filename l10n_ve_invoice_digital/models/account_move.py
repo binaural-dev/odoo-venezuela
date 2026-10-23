@@ -99,12 +99,6 @@ class AccountMove(models.Model):
         help="Used to hide the TFHKA digitalization fields when the journal is not digital.",
     )
 
-    tfhka_additional_info = fields.Text(
-        string="Información Adicional",
-        help="Texto libre enviado a The Factory HKA al digitalizar el documento, "
-             "dentro de infoAdicional (campo PDF, clave Observaciones).",
-    )
-
     # --- Serie de proveedor (ticket helpdesk #15078) ---
     # No todos los proveedores usan serie, por lo tanto el campo no es
     # obligatorio ni tiene formato forzado: varía por proveedor.

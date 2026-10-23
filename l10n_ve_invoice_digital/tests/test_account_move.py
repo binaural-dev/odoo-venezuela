@@ -2951,55 +2951,28 @@ class TestAccountMoveApiCalls(TransactionCase):
         info = self.env['tfhka.document.service']._build_payment_info(invoice, pay)
         self.assertEqual(info["monto"], "100.00")
 
-    def test_209_prepare_additional_information_empty_by_default(self):
-        """Sin texto en tfhka_additional_info, infoAdicional no se envia (Escenario 3, ta-84817)."""
+    def test_209_prepare_additional_information_uses_narration_as_plaintext(self):
+        """infoAdicional siempre reporta narration (Html) convertido a texto
+        plano bajo la clave 'Orservaciones' -- igual que en 19.0 (PR #1485)."""
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
         )
-        self.assertEqual(
-            self.env['tfhka.document.service']._prepare_additional_information(invoice), []
-        )
-
-    def test_210_prepare_additional_information_with_text(self):
-        """El texto de tfhka_additional_info se envia tal cual bajo
-        infoAdicional -> campo PDF -> clave Observaciones (Escenario 2, ta-84817)."""
-        invoice = self._create_invoice(
-            products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
-        )
-        invoice.tfhka_additional_info = "Entrega en horario matutino"
+        invoice.narration = "<p>Entrega en horario matutino</p>"
         additional_information = self.env['tfhka.document.service']._prepare_additional_information(invoice)
         self.assertEqual(
             additional_information,
-            [{"campo": "PDF", "valor": str({"Observaciones": "Entrega en horario matutino"})}],
+            [{"campo": "PDF", "valor": str({"Orservaciones": "Entrega en horario matutino"})}],
         )
 
-    def test_211_prepare_additional_information_strips_whitespace_only(self):
-        """Texto compuesto solo por espacios equivale a vacio: no se envia (Escenario 3, ta-84817)."""
+    def test_210_prepare_additional_information_empty_narration(self):
+        """Sin narration, se sigue enviando el campo PDF, con observaciones vacias
+        (sin cambio de comportamiento respecto a 19.0: el hook nunca retorna [])."""
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
         )
-        invoice.tfhka_additional_info = "   "
+        additional_information = self.env['tfhka.document.service']._prepare_additional_information(invoice)
         self.assertEqual(
-            self.env['tfhka.document.service']._prepare_additional_information(invoice), []
+            additional_information,
+            [{"campo": "PDF", "valor": str({"Orservaciones": ""})}],
         )
-
-    def test_212_generate_document_data_includes_additional_info_in_payload(self):
-        """Integracion: tfhka_additional_info llega hasta
-        documentoElectronico.infoAdicional en el payload enviado a TFHKA
-        (Escenario 4, ta-84817: se envia el ultimo valor guardado)."""
-        with patch(
-            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.emit'
-        ) as mock_emit:
-            mock_emit.return_value = {"codigo": "200", "resultado": {"numeroControl": "00-00000001"}}
-            invoice = self._create_invoice(
-                products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
-                do_post=False,
-            )
-            invoice.tfhka_additional_info = "Pedido urgente"
-            self.env['tfhka.document.service'].generate_document_data(invoice, "150", "01", "")
-            payload = mock_emit.call_args.args[1]
-            self.assertEqual(
-                payload["documentoElectronico"]["infoAdicional"],
-                [{"campo": "PDF", "valor": str({"Observaciones": "Pedido urgente"})}],
-            )
 

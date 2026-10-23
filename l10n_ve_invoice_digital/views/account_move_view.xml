@@ -68,12 +68,6 @@
                     <field name="vendor_series_tfhka" nolabel="1" class="oe_inline" readonly="state != 'draft'"/>
                 </div>
             </xpath>
-            <!-- Tarea 84817: campo libre que se envía a TFHKA dentro de
-                 infoAdicional (campo PDF, clave Observaciones). Se ubica
-                 justo encima de Términos y condiciones, mismo grupo/colspan. -->
-            <xpath expr="//field[@name='narration'][1]" position="before">
-                <field name="tfhka_additional_info" string="Información Adicional" colspan="2"/>
-            </xpath>
         </field>
     </record>
 
