@@ -3,7 +3,7 @@ import logging
 from unittest.mock import patch
 from odoo.tests import tagged
 from odoo.exceptions import UserError
-from odoo import Command
+from odoo import Command, fields
 
 from .common import StockAccountTestCommon
 
@@ -77,7 +77,10 @@ class TestCreateInvoiceFromPicking(StockAccountTestCommon):
         vals = {
             "partner_id": self.partner.id,
             "document": "dispatch_guide",
-            "date_order": "2026-02-01",
+            # `StockAccountTestCommon` only registers a currency rate for
+            # today's date; `l10n_ve_rate.compute_rate` now requires a rate
+            # for the exact date, so a hardcoded past date here would fail.
+            "date_order": fields.Date.today(),
             "order_line": [Command.create({
                 "product_id": self.product.id,
                 "product_uom_qty": qty,
