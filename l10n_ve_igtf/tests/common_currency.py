@@ -1,5 +1,7 @@
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import Form, TransactionCase
+
+from odoo.addons.l10n_ve_accountant.tests.common_rates import set_rate
 
 
 class CurrencyFixtureCommon(TransactionCase):
@@ -35,6 +37,8 @@ class CurrencyFixtureCommon(TransactionCase):
                     Command.create({"name": "2026-08-01", "company_rate": 1 / aug}),
                 ],
             })
+            # Posting a payment/entry looks up the rate of the day it runs
+            set_rate(env, currency, fields.Date.today(), cls.company, aug)
 
         Account = env["account.account"]
         company_ids = [Command.set([cls.company.id])]
