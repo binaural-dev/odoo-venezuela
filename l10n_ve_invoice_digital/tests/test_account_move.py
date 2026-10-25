@@ -3171,3 +3171,30 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv2.sequence_number = inv1.sequence_number + 2
         inv2._tfhka_check_sequence_gap()
 
+    def test_220_check_sequence_gap_allows_prefix_reset(self):
+        # Hallazgo bloqueante de la ronda 4: con use_date_range el
+        # sequence_number local se reinicia a 1 en cada cambio de prefijo
+        # (p.ej. el reset anual 'INV/2025/9999' -> 'INV/2026/0001'), asi que
+        # comparar sequence_number sin exigir el mismo sequence_prefix
+        # bloqueaba por error la primera factura de cada periodo.
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        inv1 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        inv1.action_tfhka_generate_digital()
+        self.assertEqual(inv1.tfhka_digitalization_state, "queued")
+
+        inv2 = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        # Simula el reset: nuevo prefijo (ej. cambio de anio) con
+        # sequence_number reiniciado a 1, muy lejos del consecutivo del
+        # prefijo anterior -- esto no debe tratarse como un hueco.
+        inv2.name = "INV/2099/00000001"
+        inv2.sequence_prefix = "INV/2099/"
+        inv2.sequence_number = 1
+
+        inv2.action_tfhka_generate_digital()
+        self.assertEqual(inv2.tfhka_digitalization_state, "queued")
+

@@ -422,7 +422,15 @@ class AccountMove(models.Model):
         doesn't affect it. Ported from v19's
         ``AccountMove._tfhka_check_sequence_gap``. No override wizard -- the
         gap must be resolved in Odoo first; TFHKA requires strictly
-        consecutive numbering."""
+        consecutive numbering.
+
+        Only compared when ``previous`` shares this move's
+        ``sequence_prefix``: with ``use_date_range`` sequences,
+        ``sequence_number`` resets to 1 on every prefix change (e.g. the
+        yearly reset from 'INV/2025/9999' to 'INV/2026/0001'), so a
+        cross-prefix predecessor is a legitimate reset, not a gap --
+        checking it as one would block the first document of every year.
+        """
         self.ensure_one()
         if not self.company_id.digitalization_with_payment_tfhka:
             return
@@ -438,7 +446,11 @@ class AccountMove(models.Model):
             order="name desc",
             limit=1,
         )
-        if previous and self.sequence_number != previous.sequence_number + 1:
+        if (
+            previous
+            and previous.sequence_prefix == self.sequence_prefix
+            and self.sequence_number != previous.sequence_number + 1
+        ):
             raise ValidationError(
                 _(
                     "Cannot queue %(name)s for digitalization: there is a "
@@ -573,6 +585,22 @@ class AccountMove(models.Model):
         this is a defensive guard against any other caller triggering a real
         TFHKA call outside the queue on a document that isn't actually
         pending.
+
+        The attempt itself runs inside ``self.env.cr.savepoint()``: without
+        it, a failure partway through ``generate_document_digital()`` (e.g.
+        TFHKA answers 200 but the response is missing an expected field)
+        could leave an earlier partial write -- such as ``is_digitalized``
+        already flipped to True by ``tfhka.document.service`` before the
+        failure -- committed alongside this method's own 'error' state. A
+        retry (``action_tfhka_retry_digitalization``) would then resend an
+        already-submitted document, a fiscal duplicate. The savepoint
+        guarantees 'error' always means nothing from this attempt stuck,
+        matching the actual outcome at TFHKA. This doesn't affect
+        tfhka.api.log: outside tests that's written through its own cursor
+        with an immediate commit (see TfhkaApiClient._log_call), specifically
+        so the record of what was actually sent survives a rollback here --
+        it's what lets _tfhka_reconcile_stuck_processing tell a genuine
+        failure apart from an interrupted-but-received one.
         """
         self.ensure_one()
         if self.tfhka_digitalization_state != "queued":
@@ -583,27 +611,28 @@ class AccountMove(models.Model):
         # visibly 'processing' instead of silently rolling back to 'queued'.
         self._tfhka_commit()
         try:
-            self.generate_document_digital()
-            if not self.is_digitalized:
-                # generate_document_digital() can return without raising --
-                # e.g. no TFHKA document type could be determined (a credit
-                # note created outside the reversal flow, without
-                # reversed_entry_id), or digital invoicing is off for the
-                # company. Nothing was actually sent to TFHKA, so this must
-                # not be recorded as a success.
-                raise UserError(
-                    _(
-                        "TFHKA did not digitalize this document: no document type "
-                        "could be determined, or digital invoicing is disabled for "
-                        "this company. Check the document configuration before "
-                        "retrying."
+            with self.env.cr.savepoint():
+                self.generate_document_digital()
+                if not self.is_digitalized:
+                    # generate_document_digital() can return without raising --
+                    # e.g. no TFHKA document type could be determined (a credit
+                    # note created outside the reversal flow, without
+                    # reversed_entry_id), or digital invoicing is off for the
+                    # company. Nothing was actually sent to TFHKA, so this must
+                    # not be recorded as a success.
+                    raise UserError(
+                        _(
+                            "TFHKA did not digitalize this document: no document type "
+                            "could be determined, or digital invoicing is disabled for "
+                            "this company. Check the document configuration before "
+                            "retrying."
+                        )
                     )
-                )
-            self.write({
-                "tfhka_digitalization_state": "success",
-                "tfhka_digitalization_error": False,
-                "is_digitalized": True,
-            })
+                self.write({
+                    "tfhka_digitalization_state": "success",
+                    "tfhka_digitalization_error": False,
+                    "is_digitalized": True,
+                })
             return True
         except Exception as error:
             self.write({

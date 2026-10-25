@@ -2,7 +2,7 @@ import json
 from datetime import timedelta
 from unittest.mock import patch
 
-from odoo import fields
+from odoo import _, fields
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 
@@ -137,6 +137,31 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertFalse(result)
         self.assertEqual(inv.tfhka_digitalization_state, "error")
         self.assertFalse(inv.is_digitalized)
+
+    def test_process_digitalization_rolls_back_partial_write_on_failure(self):
+        # Hallazgo adicional de la ronda 3 de revision: sin savepoint, una
+        # falla a medias dentro de generate_document_digital() (p.ej. TFHKA
+        # responde 200 pero el payload no trae el campo esperado, ya con
+        # is_digitalized=True escrito por tfhka.document.service) dejaba ese
+        # write parcial comprometido junto al estado 'error' de abajo. Un
+        # reintento manual entonces reenviaba un documento que TFHKA ya
+        # habia recibido -- duplicado fiscal.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            self.write({"is_digitalized": True})
+            raise UserError(_("boom after partial write"))
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            result = inv._tfhka_process_digitalization()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertFalse(
+            inv.is_digitalized,
+            "el savepoint debe revertir el write parcial de is_digitalized",
+        )
 
     def test_process_digitalization_refuses_record_not_queued(self):
         # Defensive guard: only ever called by the cron on a document it
