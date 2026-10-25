@@ -244,12 +244,10 @@ class StockPicking(models.Model):
         return super().action_assign()
 
     def button_validate(self):
+        # The availability is checked before validating: once validated the stock is already
+        # reduced and the quantity to move would be discounted twice.
         if self.env.company.not_allow_negative_stock_movement:
-            res = super(StockPicking, self).button_validate()
-            if isinstance(res, dict) and res.get('res_model') == 'stock.backorder.confirmation':
-                return res
-            else:
-                self._check_stock_availability_for_pickings()
+            self._check_stock_availability_for_pickings()
         return super().button_validate()
         
     def _check_stock_availability_for_pickings(self):
