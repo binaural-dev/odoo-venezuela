@@ -6,7 +6,10 @@ Casos cubiertos:
     1. Pago IGTF sobre factura de compra INTERNACIONAL → sin IGTF
     2. Pago IGTF sobre factura de compra NACIONAL       → IGTF normal
 """
+from odoo import fields
 from odoo.tests import tagged, TransactionCase
+
+from odoo.addons.l10n_ve_accountant.tests.common_rates import set_rate
 
 
 @tagged("international_igtf","post_install", "-at_install", "l10n_ve_igtf")
@@ -46,6 +49,9 @@ class TestIgtfInternationalException(TransactionCase):
             "account_type": "liability_current",
             "company_ids": [(4, company.id)],
         })
+
+        # Una BD sin demo no trae tasa USD para hoy
+        set_rate(cls.env, cls.env.ref("base.USD"), fields.Date.today(), company, 40.0)
 
         # Configura cuentas IGTF en la compañía (necesarias para el cálculo)
         company.write({

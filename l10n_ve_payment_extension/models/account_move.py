@@ -201,8 +201,14 @@ class AccountMoveRetention(models.Model):
             pending = retentions.filtered(lambda r: not r.date_emision)
             pending.write({"date_emision": fields.Date.today()})
             pending.flush_recordset(["date_emision"])
+        # report_action keeps the caller's active_model (account.move here), and
+        # l10n_ve_invoice would read the retention ids as invoices.
         return self.env.ref(
             "l10n_ve_payment_extension.retention_voucher_action"
+        ).with_context(
+            active_model="account.retention",
+            active_id=retentions[:1].id,
+            active_ids=retentions.ids,
         ).report_action(retentions, config=False)
 
     def action_view_retention(self):

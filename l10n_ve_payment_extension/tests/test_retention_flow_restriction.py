@@ -2,7 +2,8 @@
 
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import UserError
-from .common_rate import seed_usd_rate
+
+from .rate_helper import seed_foreign_rate
 
 @tagged('post_install', '-at_install', 'l10n_ve_retention_flow_restriction')
 class TestRetentionFlowRestriction(TransactionCase):
@@ -13,7 +14,7 @@ class TestRetentionFlowRestriction(TransactionCase):
         cls.company = cls.env.user.company_id
         cls.company.currency_id = cls.env.ref('base.VEF')
         cls.company.foreign_currency_id = cls.env.ref("base.USD")
-        seed_usd_rate(cls.env)
+        seed_foreign_rate(cls.env)
 
         cls.partner = cls.env["res.partner"].create({"name": "Test Partner Retention Flow Restriction"})
         cls.product = cls.env["product.product"].create({"name": "Test Service Flow Restriction", "type": "service"})
