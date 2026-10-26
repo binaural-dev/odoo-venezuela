@@ -1,28 +1,5 @@
-import warnings
-
 from . import models
 from . import wizard
-
-# stock.picking.location_id (models/stock_picking.py) is re-declared here
-# with compute="_compute_location_id" (overriding core's own
-# _compute_location_id) to add 'sale_id' to its @api.depends -- but core's
-# location_id/location_dest_id are precompute=True, and the re-declaration
-# doesn't restate that flag, nor is 'sale_id' itself precomputable (core's
-# own compute='_compute_sale_id', no precompute). Odoo escalates that
-# mismatch to a UserWarning on every registry load ("Field
-# stock.picking.location_id/location_dest_id cannot be precomputed..."),
-# harmless at runtime (same category as l10n_ve_accountant's
-# company_currency_id/invoice_currency_rate case -- see that module's
-# __init__.py for the full story and why touching precompute flags here
-# instead was ruled out) but fatal in odoo.sh's test-mode registry build
-# (warnings-as-errors), aborting it before a single test runs.
-warnings.filterwarnings(
-    "ignore",
-    message=r"Field stock\.picking\.location_(id|dest_id) cannot be "
-            r"precomputed as it depends on non-precomputed field "
-            r"stock\.picking\.sale_id",
-    category=UserWarning,
-)
 
 old_module = "binaural_stock_accountant"
 new_module = "l10n_ve_stock_account"
