@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.4.8",
+    "version": "19.0.1.4.10",
     "depends": [
         "account",
         "l10n_ve_igtf",
