@@ -8,7 +8,7 @@ from datetime import datetime, timedelta
 import logging
 import requests
 
-from .common import seed_today_vef_rate
+from .common import make_compute_rate_tolerant, seed_today_vef_rate
 
 _logger = logging.getLogger(__name__)
 
@@ -47,6 +47,7 @@ class TestAccountMoveApiCalls(TransactionCase):
             }
         )
         seed_today_vef_rate(self.env, self.company)
+        make_compute_rate_tolerant(self, self.env)
         self.env.user.company_id = self.company.id
 
         # ───────────────────────────────────────────────────── helpers
