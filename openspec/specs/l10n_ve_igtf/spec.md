@@ -162,7 +162,7 @@ Al generar las líneas del pago (`_prepare_move_line_default_vals`), un pago cre
 
 ### Requirement: Ajuste de balances en pagos del wizard sin IGTF
 
-Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` es cero o negativo, `_prepare_move_line_default_vals` DEBE (MUST) forzar la cuadratura contra el residual real de las facturas origen: cuando el pago trae líneas de write-off y el asiento tiene al menos tres líneas, `_fix_writeoff_balance` fija el balance de la contrapartida (`vals[1]`) en el negativo del residual firmado de las facturas origen (`-amount_residual_signed`), recalcula su `amount_currency` desde ese balance y absorbe la diferencia en la línea de write-off (`vals[2]`); cuando no hay write-off, y siempre que la diferencia entre ese residual y el balance de la línea de liquidez no supere 0,1, todas las facturas origen tengan la misma fecha de documento y esa fecha coincida con la del pago, fija los balances de las dos primeras líneas en ±`amount_residual_signed` según el `partner_type`.
+Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` es cero o negativo, `_prepare_move_line_default_vals` DEBE (MUST) forzar la cuadratura contra el residual real de las facturas origen: cuando el pago trae líneas de write-off y el asiento tiene al menos tres líneas, `_fix_writeoff_balance` fija el balance de la contrapartida (`vals[1]`) en el negativo del residual firmado de las facturas origen (`-amount_residual_signed`), recalcula su `amount_currency` desde ese balance y absorbe la diferencia en la línea de write-off (`vals[2]`); cuando no hay write-off, y siempre que la diferencia entre ese residual y el balance de la línea de liquidez no supere 0,1, todas las facturas origen tengan la misma fecha de documento y esa fecha coincida con la del pago, fija los balances de las dos primeras líneas en ±`amount_residual_signed` según el `payment_type` (liquidez positiva y contrapartida negativa en pagos `inbound`; al revés en `outbound`), de modo que el balance conserve el signo de `amount_currency` también al pagar notas de crédito (NC de cliente = pago `outbound`, NC de proveedor = pago `inbound`).
 
 #### Scenario: Pago con write-off sin IGTF
 
@@ -172,7 +172,17 @@ Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` e
 #### Scenario: Pago exacto en la fecha de la factura
 
 - **WHEN** un pago sin IGTF ni write-off cancela una única factura cuya fecha de documento es la del pago y la diferencia de conversión es menor o igual a 0,1
-- **THEN** los balances de liquidez y contrapartida se fijan en el residual de la factura con los signos correspondientes al tipo de partner
+- **THEN** los balances de liquidez y contrapartida se fijan en el residual de la factura con los signos correspondientes al tipo de pago
+
+#### Scenario: Reembolso de una nota de crédito de cliente sin IGTF
+
+- **WHEN** se paga desde el wizard, en un diario sin IGTF, una nota de crédito de cliente cuya fecha es la del pago (pago `outbound` con `partner_type` cliente)
+- **THEN** la línea de liquidez queda al haber y la contrapartida al debe, y en cada línea `balance` y `amount_currency` conservan el mismo signo, por lo que el asiento no viola `account_move_line_check_amount_currency_balance_sign`
+
+#### Scenario: Reembolso de una nota de crédito de proveedor
+
+- **WHEN** se paga desde el wizard una nota de crédito de proveedor cuya fecha es la del pago (pago `inbound` con `partner_type` proveedor)
+- **THEN** la línea de liquidez queda al debe y la contrapartida al haber, con `balance` y `amount_currency` del mismo signo
 
 ### Requirement: Base imponible del IGTF acumulada en la factura
 
@@ -380,7 +390,7 @@ Tras crear pagos con IGTF desde el wizard (`_create_payments`), cuando el monto 
 
 ### Requirement: Columna IGTF en los libros fiscales
 
-El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoice` con un grupo/columna "IGTF" que muestra el `foreign_igtf_amount` de `tax_totals` de cada documento cuando su `alter_bi_igtf` es mayor que cero (0 en caso contrario), con signo negativo únicamente en las notas de crédito (`out_refund` en el libro de ventas, `in_refund` en el de compras); los flags `not_show_igtf_sale_order` / `not_show_igtf_purchase_order` de la compañía suprimen el grupo de columnas IGTF del Excel.
+El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoice` con un grupo/columna "IGTF" que muestra el `foreign_igtf_amount` de `tax_totals` de cada documento cuando su `alter_bi_igtf` es mayor que cero (0 en caso contrario), con signo negativo únicamente en las notas de crédito (`out_refund` en el libro de ventas, `in_refund` en el de compras); los flags `not_show_igtf_sale_order` / `not_show_igtf_purchase_order` de la compañía del wizard (`company_id`, no la del entorno) suprimen el grupo de columnas IGTF del Excel.
 
 #### Scenario: Factura con IGTF en el libro de ventas
 
@@ -389,7 +399,7 @@ El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoi
 
 #### Scenario: Columna oculta
 
-- **WHEN** la compañía activa `not_show_igtf_sale_order`
+- **WHEN** la compañía del wizard tiene `not_show_igtf_sale_order`
 - **THEN** el libro de ventas se genera sin el grupo de columnas IGTF
 
 ### Requirement: Revalorización de pagos en VEF configurable
