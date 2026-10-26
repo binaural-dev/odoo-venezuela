@@ -114,9 +114,13 @@ class TestBranchChartTemplateDefaults(TransactionCase):
         self.assertFalse(self.env["ir.default"]._get("res.partner", RECEIVABLE, company_id=self.root.id))
 
     def test_branch_creation_with_a_chart_not_loaded_from_the_template(self):
-        """End to end: root with the template, its xmlids gone (migrated chart), then a branch."""
-        root = self.env["res.company"].create({"name": "Migrated root", "country_id": self.env.ref("base.ve").id})
-        self.env["account.chart.template"].try_loading("ve", root, install_demo=False)
+        """End to end: root with the template, its xmlids gone (migrated chart), then a branch.
+
+        Uses `generic_coa` (always available with `account`): loading a localization chart would
+        install its module, which Odoo forbids inside a test.
+        """
+        root = self.env["res.company"].create({"name": "Migrated root"})
+        self.env["account.chart.template"].try_loading("generic_coa", root, install_demo=False)
         defaults = {
             field: self.env["ir.default"]._get("res.partner", field, company_id=root.id)
             for field in (RECEIVABLE, PAYABLE)
@@ -130,6 +134,6 @@ class TestBranchChartTemplateDefaults(TransactionCase):
         branch = self.env["res.company"].create({"name": "Migrated branch", "parent_id": root.id})
         with self.assertLogs(LOGGER, "WARNING"):
             self.env.cr.precommit.run()
-        self.assertEqual(branch.chart_template, "ve")
+        self.assertEqual(branch.chart_template, "generic_coa")
         for field, account_id in defaults.items():
             self.assertEqual(self.env["ir.default"]._get("res.partner", field, company_id=branch.id), account_id)

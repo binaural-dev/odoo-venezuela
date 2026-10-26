@@ -49,5 +49,7 @@ def _post_load_data(self, template_code, company, template_data):
 
 ## Testing
 `tests/test_branch_chart_template_defaults.py` (`post_install`): 6 tests unitarios con el paso del core simulado
-(`unittest.mock.patch`) y 1 de extremo a extremo (matriz con plantilla `ve`, xmlids de cuentas eliminados, creación real de la
-sucursal y `cr.precommit.run()`; comprueba por cobrar y por pagar). Los avisos del log se verifican con `assertLogs`.
+(`unittest.mock.patch`) y 1 de extremo a extremo (matriz con la plantilla `generic_coa`, xmlids de cuentas eliminados, creación real de la
+sucursal y `cr.precommit.run()`; comprueba por cobrar y por pagar). Se usa `generic_coa` porque una plantilla de localización
+obliga a instalar su módulo y Odoo lo prohíbe dentro de un test (en una BD limpia `l10n_ve` no está instalado: su
+`auto_install` depende del país de la compañía). Los avisos del log se verifican con `assertLogs`.
