@@ -6,3 +6,5 @@ from . import test_migration_rounding
 from . import test_account_move_post_batch
 from . import test_move_action_post_alert_wizard
 from . import test_vendor_bill_foreign_balance
+from . import test_foreign_balance_null
+from . import test_migration_null_foreign

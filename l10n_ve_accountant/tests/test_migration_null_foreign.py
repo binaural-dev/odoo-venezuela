@@ -1,0 +1,145 @@
+# Ticket #15729: migration 17.0.0.0.56 left foreign_balance NULL when one side was NULL,
+# and 17.0.0.0.65 repairs the lines it damaged.
+import importlib.util
+from pathlib import Path
+
+from odoo import Command, fields
+from odoo.tests import TransactionCase, tagged
+
+MIGRATIONS = Path(__file__).resolve().parent.parent / "migrations"
+
+
+def _load(version, name):
+    spec = importlib.util.spec_from_file_location(
+        name, MIGRATIONS / version / "post-migration.py"
+    )
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@tagged("post_install", "-at_install", "l10n_ve_migration_null_foreign")
+class TestMigrationNullForeign(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.mig56 = _load("17.0.0.0.56", "l10n_ve_accountant_mig_56_null")
+        cls.mig65 = _load("17.0.0.0.65", "l10n_ve_accountant_mig_65")
+        cls.vef = cls.env.ref("base.VEF")
+        cls.usd = cls.env.ref("base.USD")
+        cls.company = cls.env.ref("base.main_company")
+        cls.company.write({"currency_id": cls.vef.id, "currency_foreign_id": cls.usd.id})
+        cls.env["res.currency.rate"].create({
+            "name": fields.Date.today(), "currency_id": cls.usd.id,
+            "inverse_company_rate": 50.0, "company_id": cls.company.id,
+        })
+        cls.acc_rec = cls._acc("2993", "Null Receivable", "asset_receivable", True)
+        cls.acc_other = cls._acc("2994", "Null Other", "income", False)
+        cls.journal = cls.env["account.journal"].search(
+            [("type", "=", "general"), ("company_id", "=", cls.company.id)], limit=1
+        ) or cls.env["account.journal"].create({
+            "name": "General Mig65", "code": "GM65", "type": "general", "company_id": cls.company.id,
+        })
+        cls.partner = cls.env["res.partner"].create({"name": "Mig65 Partner"})
+
+    @classmethod
+    def _acc(cls, code, name, atype, reconcile):
+        return cls.env["account.account"].search([
+            ("code", "=", code), ("company_id", "=", cls.company.id)], limit=1
+        ) or cls.env["account.account"].create({
+            "code": code, "name": name, "account_type": atype,
+            "company_id": cls.company.id, "reconcile": reconcile,
+        })
+
+    def _entry(self, receivable_debit, amount=100.0):
+        rec = {"account_id": self.acc_rec.id, "partner_id": self.partner.id}
+        oth = {"account_id": self.acc_other.id}
+        if receivable_debit:
+            rec.update(debit=amount, credit=0.0)
+            oth.update(debit=0.0, credit=amount)
+        else:
+            rec.update(debit=0.0, credit=amount)
+            oth.update(debit=amount, credit=0.0)
+        move = self.env["account.move"].create({
+            "move_type": "entry", "journal_id": self.journal.id,
+            "date": fields.Date.today(),
+            "line_ids": [Command.create(rec), Command.create(oth)],
+        })
+        move.action_post()
+        return move, move.line_ids.filtered(lambda l: l.account_id == self.acc_rec)
+
+    def _sql(self, query, params=()):
+        """Raw write: flush pending ORM values first and drop the cache afterwards,
+        otherwise the next flush overwrites the SQL change with cached values."""
+        self.env.flush_all()
+        self.env.cr.execute(query, params)
+        self.env.invalidate_all()
+
+    def _row(self, line_id):
+        self.env.flush_all()
+        self.env.cr.execute(
+            """SELECT foreign_debit, foreign_credit, foreign_balance,
+                      foreign_amount_residual, foreign_amount_residual_currency
+                 FROM account_move_line WHERE id = %s""", [line_id])
+        return self.env.cr.fetchone()
+
+    # --- 17.0.0.0.56 -------------------------------------------------
+    def test_56_rounding_keeps_balance_when_one_side_is_null(self):
+        move, line = self._entry(True)
+        self._sql("""UPDATE account_move_line SET foreign_debit = 1.23456, foreign_credit = NULL,
+                      foreign_balance = NULL WHERE id = %s""", [line.id])
+        self.mig56._do_sql_rounding(
+            self.env.cr, self.company, 2, ("posted",))
+        fd, fc, fb, *_ = self._row(line.id)
+        self.assertEqual((fd, fc, fb), (1.23, 0.0, 1.23))
+
+    # --- 17.0.0.0.65 -------------------------------------------------
+    def test_65_repairs_null_balance(self):
+        move, line = self._entry(True)
+        fd = self._row(line.id)[0]
+        self.assertAlmostEqual(fd, 2.0, places=2)
+        self._sql("""UPDATE account_move_line SET foreign_balance = NULL,
+                      foreign_amount_residual = NULL, foreign_amount_residual_currency = NULL
+                WHERE id = %s""", [line.id])
+        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        fd, fc, fb, residual, residual_currency = self._row(line.id)
+        self.assertAlmostEqual(fb, 2.0, places=2)
+        self.assertAlmostEqual(residual, 2.0, places=2)
+        self.assertAlmostEqual(residual_currency, 2.0, places=2)
+
+    def test_65_rebuilds_partials_and_zero_residual(self):
+        _, debit_line = self._entry(True)
+        _, credit_line = self._entry(False)
+        (debit_line + credit_line).reconcile()
+        partial = self.env["account.partial.reconcile"].search(
+            [("debit_move_id", "=", debit_line.id)])
+        self.assertTrue(partial)
+        self._sql("""UPDATE account_move_line SET foreign_balance = NULL,
+                      foreign_amount_residual = NULL, foreign_amount_residual_currency = NULL
+                WHERE id = %s""", [debit_line.id])
+        # Stale amount, as left behind by the 0.0.56 rebuild that skipped NULL lines.
+        self._sql("""UPDATE account_partial_reconcile SET credit_foreign_amount_currency = 99.0
+                WHERE id = %s""", [partial.id])
+        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        self.env.invalidate_all()
+        partial = partial.browse(partial.id)
+        self.assertAlmostEqual(partial.credit_foreign_amount_currency, 2.0, places=2)
+        self.assertAlmostEqual(partial.foreign_amount, 2.0, places=2)
+        fd, fc, fb, residual, _ = self._row(debit_line.id)
+        self.assertAlmostEqual(fb, 2.0, places=2)
+        self.assertAlmostEqual(residual, 0.0, places=2)
+
+    def test_65_skips_locked_period(self):
+        move, line = self._entry(True)
+        self._sql("UPDATE account_move_line SET foreign_balance = NULL WHERE id = %s", [line.id])
+        self.company.tax_lock_date = fields.Date.today()
+        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        self.assertIsNone(self._row(line.id)[2])
+
+    def test_65_is_idempotent(self):
+        move, line = self._entry(True)
+        self._sql("UPDATE account_move_line SET foreign_balance = NULL WHERE id = %s", [line.id])
+        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        first = self._row(line.id)
+        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        self.assertEqual(self._row(line.id), first)
