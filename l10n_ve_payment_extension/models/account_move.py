@@ -845,6 +845,10 @@ class AccountMoveRetention(models.Model):
 
     def button_cancel(self):
         for move in self.filtered(lambda m: m.move_type in ("in_invoice", "in_refund")):
+            # Same guard as button_draft(): both flows dismantle the
+            # invoice's retentions, so a real payment applied blocks both.
+            move._check_retention_paid_lock()
+
             # Cancel the invoice's non-cancelled retentions explicitly,
             # while the invoice is still posted - account.retention.write()
             # requires the invoices of a third-party retention to be
