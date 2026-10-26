@@ -64,6 +64,28 @@ export class SerialConnection {
     }
 
     /**
+     * Verifica si hay un puerto ya autorizado por el usuario en una sesión
+     * anterior, SIN abrirlo. A diferencia de `autoConnect()`, no reserva el
+     * puerto — Web Serial es exclusivo por puerto/pestaña, así que solo
+     * consultar `navigator.serial.getPorts()` (que no requiere gesto del
+     * usuario) permite saber si "hay algo pareado" sin bloquear a otros
+     * consumidores (otra pestaña/app) que quieran abrirlo de verdad.
+     * @returns {Promise<boolean>}
+     */
+    async isPaired() {
+        try {
+            if (!navigator.serial) {
+                return false;
+            }
+            const ports = await navigator.serial.getPorts();
+            return ports.length > 0;
+        } catch (error) {
+            console.error("SerialConnection:: Error al consultar puertos pareados", error);
+            return false;
+        }
+    }
+
+    /**
      * Intenta reconectar automáticamente al último puerto usado
      * @returns {Promise<boolean>}
      */
@@ -184,6 +206,12 @@ export class SerialConnection {
 
     /**
      * Lee datos del puerto serial hasta encontrar un delimitador o timeout
+     *
+     * An ACK/NAK answer is recognized by the first byte received, not only
+     * when it arrives alone in its chunk: the USB-serial adapter can deliver
+     * it together with a late byte, and waiting for an ETX that never comes
+     * turned a valid ACK into a timeout (ticket #15814).
+     *
      * @param {number} timeout - Tiempo máximo de espera en ms (default: 5000)
      * @param {string} delimiter - Carácter de fin de lectura (default: ETX 0x03)
      * @returns {Promise<Uint8Array|null>}
@@ -213,6 +241,7 @@ export class SerialConnection {
             const chunks = [];
             const decoder = new TextDecoder();
             let buffer = "";
+            let firstByte = null;
 
             this.reader = this.port.readable.getReader();
 
@@ -233,8 +262,11 @@ export class SerialConnection {
                         }
 
                         chunks.push(value);
+                        if (firstByte === null && value.length > 0) {
+                            firstByte = value[0];
+                        }
 
-                        if (value.length === 1 && (value[0] === 0x06 || value[0] === 0x15)) {
+                        if (firstByte === 0x06 || firstByte === 0x15) {
                             break;
                         }
 

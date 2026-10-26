@@ -36,6 +36,15 @@ class TestAccountant(TransactionCase):
                 "company_id": self.company.id,
             }
         )
+        # Tasa de la moneda alterna (VEF): compute_rate lanza error si no existe una para la fecha
+        self.env["res.currency.rate"].create(
+            {
+                "name": fields.Date.today(),
+                "currency_id": self.currency_vef.id,
+                "inverse_company_rate": 120.439,
+                "company_id": self.company.id,
+            }
+        )
 
         # --- Cuenta de banco para default_account_id ---
         self.manual_in = self.env.ref("account.account_payment_method_manual_in")

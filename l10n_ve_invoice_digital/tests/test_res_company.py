@@ -26,7 +26,6 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "url_tfhka": "https://api.tfhka.com",
                 "token_auth_tfhka": "token_fake",
                 "invoice_digital_tfhka": True,
-                "sequence_validation_tfhka": True,
                 "currency_id": self.currency_usd.id,
                 "foreign_currency_id": self.currency_vef.id,
                 "country_id": self.env.ref('base.ve').id,
@@ -116,4 +115,4 @@ class TestAccountMoveApiCalls(TransactionCase):
             type(self.company), '_process_tfhka_response_data', side_effect=ValueError("bad data")
         ):
             with self.assertRaises(ValidationError):
-                self.company._handle_tfhka_response(mock_response)
+                self.company._handle_tfhka_response(mock_response, {"usuario": "u", "clave": "p"})

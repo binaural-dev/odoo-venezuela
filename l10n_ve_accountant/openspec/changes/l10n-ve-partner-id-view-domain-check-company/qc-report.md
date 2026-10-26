@@ -5,7 +5,11 @@
 | Item | Resultado |
 |------|-----------|
 | Fix | Se elimina SOLO el atributo `domain` del nodo `partner_id` en el xpath del form de factura (`views/account_move.xml`) |
+<<<<<<< HEAD
 | Manifest | `19.0.1.0.15` -> `19.0.1.0.16` |
+=======
+| Manifest | `19.0.1.1.4` -> `19.0.1.1.5` |
+>>>>>>> 0859b320588b14f44fa6b0ea88bcfb2572a3cc9e
 | Con el fix, tagged | 3 tests, 0 fallos, 0 errores (1 omitido: el condicional, sin binaural) |
 | Con el fix, conjunta tagged | 3 tests, 0 fallos, 0 omitidos (el condicional se ejecuta) |
 | Con el fix, suite completa | 298 tests, 0 fallos, 0 errores |

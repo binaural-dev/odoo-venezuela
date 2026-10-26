@@ -140,12 +140,27 @@ class TestIndexedPayments(TestForeignBalance):
             "company_id": self.company.id,
             "tax_group_id": self.test_tax_group.id,
         })
+        # Not exercised by any test here -- these payments are never
+        # settled via a purchase document. Assigned only so product
+        # creation doesn't depend on `self.company` (freshly created,
+        # with no chart of accounts) having a default
+        # `account_purchase_tax_id` to fall back on
+        # (`_enforce_single_tax_vals_create`, l10n_ve_accountant).
+        self.test_purchase_tax = self.env["account.tax"].create({
+            "name": "Test Purchase Tax 0%",
+            "amount": 0,
+            "amount_type": "percent",
+            "type_tax_use": "purchase",
+            "company_id": self.company.id,
+            "tax_group_id": self.test_tax_group.id,
+        })
 
         self.product = self.env["product.product"].create({
             "name": "Product Test",
             "type": "service",
             "list_price": 100.0,
             "taxes_id": [(6, 0, [self.test_tax.id])],
+            "supplier_taxes_id": [(6, 0, [self.test_purchase_tax.id])],
         })
 
     # -- helpers (extend the parent's _set_usd_rate to any currency/date) -----
@@ -375,6 +390,9 @@ class TestIndexedPayments(TestForeignBalance):
         confirm the fix is not USD-specific."""
         self._set_rate(self.currency_eur, self.invoice_date, 44.0)
         self._set_rate(self.currency_eur, self.payment_date, 55.0)
+        # the company's alternate currency is USD: its rate must exist too
+        self._set_rate(self.currency_usd, self.invoice_date, 40.0)
+        self._set_rate(self.currency_usd, self.payment_date, 40.0)
 
         invoice = self._create_vef_invoice(amount=880.0)
         residual_vef = invoice.amount_residual

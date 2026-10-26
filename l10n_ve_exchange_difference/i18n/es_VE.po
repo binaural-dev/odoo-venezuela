@@ -28,7 +28,6 @@ msgstr ""
 "real, en vez de un asiento genérico."
 
 #. module: l10n_ve_exchange_difference
-#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_journal__l10n_ve_exchange_use_nd_nc
 #: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_use_nd_nc
 #: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_use_nd_nc
 msgid ""
@@ -379,6 +378,21 @@ msgid "Partial Reconcile"
 msgstr "Conciliación parcial"
 
 #. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_line_id
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_line_id
+msgid ""
+"Receivable/payable line of the source invoice (its installment) whose "
+"reconciliation originated this note. Like Odoo's native exchange difference "
+"entry, one note is issued PER installment with a residual, whichever side -- "
+"invoice or payment -- holds it: breaking a partial reverses only the notes "
+"of its installment."
+msgstr ""
+"Línea por cobrar de la factura de origen (su cuota) cuya conciliación "
+"originó esta nota. Como el asiento de diferencial nativo de Odoo, se emite "
+"una nota POR cada cuota con residual, sin importar de qué lado -- factura o "
+"pago -- quede: al romper un parcial solo se revierten las notas de su cuota."
+
+#. module: l10n_ve_exchange_difference
 #: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_payment_id
 #: model:ir.model.fields,help:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_payment_id
 msgid ""
@@ -483,6 +497,12 @@ msgstr ""
 "Débito (ver `l10n_ve_exchange_original_id`)."
 
 #. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_line_id
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_line_id
+msgid "Source Invoice Line (Exchange Difference)"
+msgstr "Línea de Factura de Origen (Diferencial Cambiario)"
+
+#. module: l10n_ve_exchange_difference
 #: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_bank_statement_line__l10n_ve_exchange_payment_id
 #: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_move__l10n_ve_exchange_payment_id
 msgid "Settled Payment (Exchange Difference)"
@@ -564,7 +584,6 @@ msgstr ""
 " Nota de Débito si alguna vez se rompe su conciliación."
 
 #. module: l10n_ve_exchange_difference
-#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_account_journal__l10n_ve_exchange_use_nd_nc
 #: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_use_nd_nc
 #: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_use_nd_nc
 #: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
@@ -608,6 +627,14 @@ msgstr ""
 
 #. module: l10n_ve_exchange_difference
 #. odoo-python
+#: code:addons/l10n_ve_exchange_difference/models/account_move.py:0
+msgid "You cannot reset to draft an exchange difference Debit/Credit Note."
+msgstr ""
+"No se puede regresar a borrador una Nota de Débito/Crédito de diferencial "
+"cambiario."
+
+#. module: l10n_ve_exchange_difference
+#. odoo-python
 #: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
 msgid "gain"
 msgstr "ganancia"
@@ -617,3 +644,89 @@ msgstr "ganancia"
 #: code:addons/l10n_ve_exchange_difference/models/account_move_line.py:0
 msgid "loss"
 msgstr "pérdida"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_validate_partner_note
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_validate_partner_note
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid "Validate Customer Allows Exchange Difference Note"
+msgstr "Validar que el Cliente Permita la Nota de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_company__l10n_ve_exchange_validate_partner_note
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_config_settings__l10n_ve_exchange_validate_partner_note
+msgid ""
+"With 'Use Debit/Credit Notes for Customer Invoice Exchange Difference' "
+"enabled, also require the CUSTOMER of the invoice being settled to have "
+"'Allow Exchange Difference Note' enabled on its own contact record before "
+"issuing a Debit/Credit Note for it. A customer without that option still "
+"gets the exchange difference reconciled -- just with Odoo's native generic "
+"entry instead of a fiscal Debit/Credit Note. Disabled (default): every "
+"customer gets a Debit/Credit Note, same as before this option existed."
+msgstr ""
+"Con 'Usar Notas de Débito/Crédito para Diferencial Cambiario de Facturas de "
+"Cliente' activado, también exige que el CLIENTE de la factura que se está "
+"liquidando tenga 'Permitir Nota de Diferencial Cambiario' activado en su "
+"propia ficha de contacto antes de emitirle una Nota de Débito/Crédito. Un "
+"cliente sin esa opción igual concilia su diferencial cambiario -- solo que "
+"con el asiento genérico nativo de Odoo en vez de una Nota de Débito/Crédito "
+"fiscal. Desactivado (por defecto): todo cliente recibe una Nota de "
+"Débito/Crédito, igual que antes de que existiera esta opción."
+
+#. module: l10n_ve_exchange_difference
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.res_config_settings_view_form_inherit_l10n_ve_exchange
+msgid ""
+"If enabled, a Debit/Credit Note is only issued for customers with 'Allow "
+"Exchange Difference Note' checked on their contact record. Other customers "
+"settle their exchange difference with Odoo's native generic entry instead. "
+"If disabled, every customer gets a Debit/Credit Note."
+msgstr ""
+"Si está activado, solo se emite Nota de Débito/Crédito a los clientes que "
+"tengan 'Permitir Nota de Diferencial Cambiario' marcado en su ficha de "
+"contacto. Los demás clientes liquidan su diferencial cambiario con el "
+"asiento genérico nativo de Odoo. Si está desactivado, todo cliente recibe "
+"una Nota de Débito/Crédito."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_partner__l10n_ve_exchange_allow_note
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_users__l10n_ve_exchange_allow_note
+#: model_terms:ir.ui.view,arch_db:l10n_ve_exchange_difference.view_partner_form_inherit_l10n_ve_exchange
+msgid "Allow Exchange Difference Note"
+msgstr "Permitir Nota de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_partner__l10n_ve_exchange_allow_note
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_users__l10n_ve_exchange_allow_note
+msgid ""
+"When checked, this customer's invoices settle their exchange difference "
+"through a Debit/Credit Note. When unchecked, Odoo's generic exchange "
+"difference entry is used instead."
+msgstr ""
+"Al estar tildado, las facturas de este cliente liquidan su diferencia en "
+"cambio a través de una Nota de Débito/Crédito. Si no está tildado se "
+"ejecutará el asiento genérico de diferencial en cambiario de Odoo."
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_partner__l10n_ve_exchange_show_allow_note
+#: model:ir.model.fields,field_description:l10n_ve_exchange_difference.field_res_users__l10n_ve_exchange_show_allow_note
+msgid "Show Allow Exchange Difference Note"
+msgstr "Mostrar Permitir Nota de Diferencial Cambiario"
+
+#. module: l10n_ve_exchange_difference
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_partner__l10n_ve_exchange_show_allow_note
+#: model:ir.model.fields,help:l10n_ve_exchange_difference.field_res_users__l10n_ve_exchange_show_allow_note
+msgid ""
+"Technical field: whether the current company has 'Validate Customer Allows "
+"Exchange Difference Note' enabled -- used purely to show/hide "
+"`l10n_ve_exchange_allow_note` on the contact form, never persisted or read "
+"anywhere else. Not company-dependent by record (a partner has no single "
+"fixed company): always reflects `env.company`, the same company whose "
+"settings the form the user is looking at belongs to."
+msgstr ""
+"Campo técnico: si la compañía activa tiene 'Validar que el Cliente Permita "
+"la Nota de Diferencial Cambiario' activado -- se usa únicamente para "
+"mostrar/ocultar `l10n_ve_exchange_allow_note` en la ficha de contacto, "
+"nunca se persiste ni se lee en ningún otro lugar. No depende de la "
+"compañía por registro (un contacto no tiene una única compañía fija): "
+"siempre refleja `env.company`, la misma compañía cuyos ajustes está "
+"mirando el usuario en el formulario."

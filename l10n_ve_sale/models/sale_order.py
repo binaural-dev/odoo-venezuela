@@ -269,12 +269,10 @@ class SaleOrder(models.Model):
         type = dict
             The view of the account move form with the foreign currency symbol added to the page title
         """
-        foreign_currency_symbol = ""
         foreign_currency_id = self.env.company.foreign_currency_id
         res = super().get_view(view_id, view_type, **options)
 
         if foreign_currency_id:
-            foreign_currency_symbol = foreign_currency_id.symbol
             foreign_currency_name = foreign_currency_id.name
             company_currency_id = self.env.company.currency_id
             company_currency_symbol = company_currency_id.symbol or ""
@@ -289,11 +287,6 @@ class SaleOrder(models.Model):
                 foreign_subtotal_order_line = doc.xpath("//notebook/page/field[@name='order_line']/list/field[@name='foreign_subtotal']")
                 if foreign_subtotal_order_line:
                     foreign_subtotal_order_line[0].set("string", _("Subtotal") + " " + foreign_currency_name)
-                page = doc.xpath("//page[@name='foreign_currency']")
-                if page:
-                    page[0].set(
-                        "string", _("Foreign Currency ") + foreign_currency_symbol
-                    )
                 res["arch"] = etree.tostring(doc, encoding="unicode")
             elif view_type == "list":
                 doc = etree.XML(res["arch"])
@@ -413,6 +406,11 @@ class SaleOrder(models.Model):
             # de llegar al or, asi que se comprueba primero.
             rate_date = sale.date_order.date() if sale.date_order else fields.Date.today()
 
+            # TODO(website): confirmar con el responsable de la vertical de
+            # website/e-commerce si esta condicion sigue siendo necesaria y si
+            # el comportamiento (congelar la tasa de ordenes con website_id)
+            # es el correcto. No se toca en la tarea 80063; queda como
+            # oportunidad de analisis para otro momento.
             if (
                 sale.manually_set_rate
                 or "website_id" in sale._fields
@@ -538,7 +536,8 @@ class SaleOrder(models.Model):
         for sale in res:
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
-                sale.foreign_currency_id.id, sale.date_order or fields.Date.today()
+                sale.foreign_currency_id.id,
+                sale.date_order or fields.Date.today(),
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:
@@ -701,6 +700,20 @@ class SaleOrder(models.Model):
 
                     order._block_valid_confirm()
 
+            # A la confirmacion (accion explicita del usuario, no un compute
+            # automatico) le corresponde reaccionar de una vez a la falta de
+            # tasa, en vez de dejar pasar la orden con foreign_rate en 0 en
+            # silencio -- exactamente el punto de entrada que el docstring de
+            # compute_rate() reserva para raise_if_not_found=True.
+            if (
+                order.foreign_currency_id
+                and not order.manually_set_rate
+                and float_is_zero(order.foreign_rate, precision_rounding=order.currency_id.rounding)
+            ):
+                rate_date = order.date_order.date() if order.date_order else fields.Date.today()
+                self.env["res.currency.rate"].compute_rate(
+                    order.foreign_currency_id.id, rate_date, raise_if_not_found=True
+                )
 
         res = super().action_confirm()
         for sale in self:

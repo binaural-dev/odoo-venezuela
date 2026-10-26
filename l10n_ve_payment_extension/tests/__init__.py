@@ -30,6 +30,11 @@ from . import test_data_files
 from . import test_allowed_lines_move_ids
 from . import test_retention_line_compute_amounts
 from . import test_retention_payment_move_date
+<<<<<<< HEAD
+=======
+from . import test_islr_file_rounding
+from . import test_retention_report_currency
+>>>>>>> 0859b320588b14f44fa6b0ea88bcfb2572a3cc9e
 from . import test_retention_duplicate_lines
 from . import test_retention_sequence_no_gap
 from . import test_retention_sequence_branch
@@ -43,3 +48,7 @@ from . import test_retention_duplicate_and_number_unique
 from . import test_retention_consolidated_duplicates
 from . import test_municipal_retention_pdf
 from . import test_accounting_reports_branches_moves
+<<<<<<< HEAD
+=======
+from . import test_retention_voucher_buttons
+>>>>>>> 0859b320588b14f44fa6b0ea88bcfb2572a3cc9e

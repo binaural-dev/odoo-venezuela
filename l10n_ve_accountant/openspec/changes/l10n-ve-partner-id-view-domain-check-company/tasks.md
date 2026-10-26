@@ -49,4 +49,8 @@
 ## 5. Manifests
 
 - [x] 5.1 Bump de versión en `l10n_ve_accountant/__manifest__.py`:
+<<<<<<< HEAD
       `19.0.1.0.15` → `19.0.1.0.16`
+=======
+      `19.0.1.1.4` → `19.0.1.1.5`
+>>>>>>> 0859b320588b14f44fa6b0ea88bcfb2572a3cc9e

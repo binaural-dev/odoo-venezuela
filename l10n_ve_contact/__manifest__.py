@@ -10,9 +10,10 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Contacts/Contacts",
-    "version": "1.4",
+    "version": "19.0.1.8.1",
     "depends": ["base", "contacts", "account", "l10n_ve_rate", "l10n_ve_location"],
     "data": [
+        "security/res_groups.xml",
         "security/ir.model.access.csv",
         "views/res_partner.xml",
         "views/res_config_settings.xml",

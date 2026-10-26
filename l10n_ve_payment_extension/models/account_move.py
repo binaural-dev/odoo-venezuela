@@ -124,6 +124,32 @@ class AccountMoveRetention(models.Model):
             rec.count_municipal_retention = len(muni)
             rec.has_emited_municipal_retention = any(r.state == 'emitted' for r in muni)
 
+    def action_download_retention_voucher(self):
+        """Download the PDF voucher of the emitted retentions of one type.
+
+        The type comes from the `retention_type` context key (iva, islr or
+        municipal). When the document has several emitted retentions of that
+        type, the PDF contains one voucher per retention.
+        """
+        self.ensure_one()
+        retention_type = self.env.context.get("retention_type")
+        if retention_type not in ("iva", "islr", "municipal"):
+            raise UserError(_("Unknown retention type."))
+        retentions = self.env["account.retention"].search([
+            ("retention_line_ids.move_id", "=", self.id),
+            ("type_retention", "=", retention_type),
+            ("state", "=", "emitted"),
+        ])
+        if not retentions:
+            raise UserError(_("There is no emitted retention voucher to download."))
+        if retention_type == "municipal":
+            pending = retentions.filtered(lambda r: not r.date_emision)
+            pending.write({"date_emision": fields.Date.today()})
+            pending.flush_recordset(["date_emision"])
+        return self.env.ref(
+            "l10n_ve_payment_extension.retention_voucher_action"
+        ).report_action(retentions, config=False)
+
     def action_view_retention(self):
         self.ensure_one()
         ret_type = self.env.context.get('retention_type')
@@ -168,6 +194,7 @@ class AccountMoveRetention(models.Model):
     @api.depends(
         "invoice_line_ids",
         "invoice_line_ids.product_id",
+        "invoice_line_ids.product_id.product_tmpl_id.payment_concept",
     )
     def _compute_retention_islr_avalability(self):
         for record in self:
@@ -295,7 +322,7 @@ class AccountMoveRetention(models.Model):
     def _compute_currency_fields(self):
         for retention in self:
             retention.base_currency_is_vef = (
-                self.env.company.currency_id == self.env.ref("base.VEF")
+                self.env.company.currency_id.is_venezuelan_bolivar()
             )
 
     def write(self, vals):
@@ -410,8 +437,11 @@ class AccountMoveRetention(models.Model):
 
 
     def _prepare_retention_vals(self, type_retention, payment=False):
+        invoice_date = self.invoice_date_display or self.invoice_date
+        today = fields.Date.context_today(self)
+        date_accounting = max(self.date, invoice_date) if invoice_date else self.date
         retention_vals = {
-            "date_accounting": self.date,
+            "date_accounting": min(date_accounting, today),
             "date": self.date,
             "type_retention": type_retention,
             "type": self.move_type, 
@@ -544,7 +574,7 @@ class AccountMoveRetention(models.Model):
             ctx.update({
                 'default_partner_id': record.partner_id.id,
                 'default_invoice_id': record.id,
-                'default_date_accounting': fields.Date.today(),
+                'default_date_accounting': fields.Date.context_today(self),
                 'default_type': record.move_type,
                 'default_type_retention': 'islr',
                 'default_islr_lines': payment_concepts,
@@ -574,7 +604,22 @@ class AccountMoveRetention(models.Model):
                     if product_tmpl.type == 'service' and product_tmpl.payment_concept:
 
                         concept_id = product_tmpl.payment_concept.id
-                        base_amount = abs(line.price_unit) if use_price_unit else abs(line.move_id.tax_totals["base_amount"])
+
+                        # Task #82491 asks specifically for a supplier-side
+                        # setting ("retención de ISLR Proveedores"); it must
+                        # not silently change the base of client ISLR
+                        # retentions, which nobody requested.
+                        is_supplier_invoice = rec.move_type in ("in_invoice", "in_refund", "in_debit")
+                        use_service_subtotal = use_price_unit or (
+                            is_supplier_invoice
+                            and self.env.company.islr_prioritize_product_subtotal_base
+                        )
+
+                        base_amount = (
+                            abs(line.balance)
+                            if use_service_subtotal
+                            else abs(line.move_id.tax_totals["base_amount"])
+                        )
                         payment_concepts.append((
                             concept_id,
                             base_amount,
@@ -595,9 +640,12 @@ class AccountMoveRetention(models.Model):
         
             payment_concepts = rec._get_payment_concepts_from_invoice()
 
+            invoice_date = rec.invoice_date_display or rec.invoice_date
+            today = fields.Date.context_today(rec)
+            date_accounting = max(today, invoice_date) if invoice_date else today
             vals = {
                 'partner_id': rec.partner_id.id,
-                'date_accounting': fields.Date.today(),
+                'date_accounting': min(date_accounting, today),
                 'type_retention': 'islr',
             }
             ctx = {

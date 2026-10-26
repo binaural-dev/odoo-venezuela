@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="tax_groups_totals_ve_deductible" inherit_id="l10n_ve_invoice.tax_groups_totals_ve">
+        <xpath expr="//t[@t-foreach='subtotals']" position="before">
+            <t t-if="o.tax_totals.get('is_deductible')">
+                <tr style="line-height:1.2px;" class="mt-2">
+                    <td>Subtotal sin deducible</td>
+                    <td class="text-end">
+                        <span class="text-nowrap" t-out="o.tax_totals.get('formatted_deductible_original_ves')"/>
+                    </td>
+                </tr>
+                <tr style="line-height:1.2px;" class="mt-2">
+                    <td>Deducible</td>
+                    <td class="text-end">
+                        <span class="text-nowrap" t-out="o.tax_totals.get('formatted_deductible_amount_ves')"/>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+    </template>
+    <template id="tax_groups_totals_deductible" inherit_id="l10n_ve_invoice.tax_groups_totals">
+        <xpath expr="//t[@t-foreach='subtotals']" position="before">
+            <t t-if="o.tax_totals.get('is_deductible')">
+                <tr style="line-height:1.2px;" class="mt-2">
+                    <td>Subtotal sin deducible</td>
+                    <td class="text-end">
+                        <span class="text-nowrap" t-out="o.tax_totals.get('formatted_deductible_original_currency')"/>
+                    </td>
+                </tr>
+                <tr style="line-height:1.2px;" class="mt-2">
+                    <td>Deducible</td>
+                    <td class="text-end">
+                        <span class="text-nowrap" t-out="o.tax_totals.get('formatted_deductible_amount_currency')"/>
+                    </td>
+                </tr>
+            </t>
+        </xpath>
+    </template>
+
+    <template id="report_freeform_document_deductible" inherit_id="l10n_ve_invoice.report_freeform_document">
+        <xpath expr="//th[@name='th_discount']" position="attributes">
+            <attribute name="t-if">display_discount or o.is_deductible</attribute>
+        </xpath>
+        <xpath expr="//td[@t-if='display_discount']" position="attributes">
+            <attribute name="t-if">display_discount or o.is_deductible</attribute>
+        </xpath>
+        <xpath expr="//span[@t-field='line.discount']" position="replace">
+            <span class="text-nowrap" t-if="not o.is_deductible" t-field="line.discount"/>
+            <span class="text-nowrap" t-else="" t-out="line.global_deductible_discount_percent"
+                  t-options="{'widget': 'float', 'precision': 2}"/>
+        </xpath>
+    </template>
+</odoo>

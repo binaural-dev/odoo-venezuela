@@ -1,9 +1,11 @@
 import logging
 
-from odoo import _, fields, models
+from odoo import _, models
 from odoo.exceptions import UserError
 
+from ..utils import status_message
 from .tfhka_document_service import EXEMPT_TAX_GROUPS
+from .tfhka_service_base import TfhkaSequenceMismatchError
 
 _logger = logging.getLogger(__name__)
 
@@ -30,37 +32,48 @@ class TfhkaRetentionService(models.AbstractModel):
         if retention.is_digitalized:
             raise UserError(_("The document has already been digitalized."))
         document_type = retention.env.context.get('document_type')
-        company = retention.company_id
-        client = self.env["tfhka.api.client"]
-        client.query_numbering(company)
-        document_number = client.get_last_document_number(company, document_type)
-
-        document_number_str = str(document_number)
-        if len(document_number_str) > 6:
-            document_number = int(document_number_str[6:]) + 1
-        else:
-            document_number = int(document_number_str) + 1
-
-        current_number = int(retention.number[6:])
         validation_sequence = retention.env.context.get('account_retention_alert', False)
 
-        if document_number != current_number and not validation_sequence and retention.company_id.sequence_validation_tfhka:
-            message = _("The document sequence in Odoo (%(odoo_seq)s) does not match the sequence in The Factory (%(factory_seq)s). Do you want to continue anyway?") % {"odoo_seq": current_number, "factory_seq": document_number}
-            return {
-                'type': 'ir.actions.act_window',
-                'res_model': 'account.retention.alert.wizard',
-                'view_mode': 'form',
-                'view_id': retention.env.ref('l10n_ve_invoice_digital.account_retention_alert_wizard').id,
-                'target': 'new',
-                'context': {
-                    'default_move_id': retention.id,
-                    'default_message': message,
-                }
-            }
+        current_number, factory_number = self._tfhka_check_retention_sequence_gap(retention, document_type)
+
+        if factory_number != current_number and not validation_sequence:
+            # No human is present to answer a confirmation wizard here (this
+            # runs off the queue's cron, not an interactive request), so the
+            # mismatch is surfaced as a data_error instead -- see
+            # TfhkaSequenceMismatchError and
+            # account.retention.action_tfhka_review_sequence_mismatch().
+            raise TfhkaSequenceMismatchError(
+                _(
+                    "The document sequence in Odoo (%(odoo_seq)s) does not match the "
+                    "sequence in The Factory (%(factory_seq)s). Do you want to "
+                    "continue anyway?"
+                )
+                % {"odoo_seq": current_number, "factory_seq": factory_number}
+            )
 
         document_number = str(retention.number)
 
         return self.generate_document_data(retention, document_number, document_type, validation_sequence)
+
+    def _tfhka_check_retention_sequence_gap(self, retention, document_type):
+        """(current_number, factory_number): el correlativo de Odoo para esta
+        retención y el próximo número que The Factory espera según su
+        numeración vigente. Solo consulta -- no emite ni modifica nada --
+        para poder reutilizarse tanto desde send_retention() como desde el
+        botón manual de revisión."""
+        company = retention.company_id
+        client = self.env["tfhka.api.client"]
+        client.query_numbering(company, origin=retention)
+        document_number = client.get_last_document_number(company, document_type, origin=retention)
+
+        document_number_str = str(document_number)
+        if len(document_number_str) > 6:
+            factory_number = int(document_number_str[6:]) + 1
+        else:
+            factory_number = int(document_number_str) + 1
+
+        current_number = int(retention.number[6:])
+        return current_number, factory_number
 
     def annul_retention(self, retention, reason):
         """Anula la retención digitalizada en TFHKA (endpoint /Anular).
@@ -88,10 +101,13 @@ class TfhkaRetentionService(models.AbstractModel):
             "horaAnulacion": now_local.strftime("%I:%M:%S %p").lower(),
         }
 
-        self.env["tfhka.api.client"].annul(company, payload)
+        self.env["tfhka.api.client"].annul(company, payload, origin=retention)
         retention.write({"annulled_tfhka": True})
         retention.message_post(
-            body=_("Retention annulled in The Factory HKA. Reason: %s", reason),
+            body=status_message(
+                _("Retention annulled in The Factory HKA. Reason: %s", reason),
+                "error",
+            ),
             message_type='comment',
         )
         return True
@@ -114,24 +130,24 @@ class TfhkaRetentionService(models.AbstractModel):
         }
         payload["documentoElectronico"].update(self._prepare_extra_retention_values(retention))
 
-        response = self.env["tfhka.api.client"].emit(retention.company_id, payload)
+        response = self.env["tfhka.api.client"].emit(retention.company_id, payload, origin=retention)
 
         if response:
-            retention.is_digitalized = True
-            retention.control_number_tfhka = response.get("resultado").get("numeroControl")
-            retention.document_number_tfhka = str(document_number)
-            emission_date = fields.Datetime.now().strftime("%d/%m/%Y")
-            if validation_sequence:
-                retention.message_post(
-                    body=_("Warning accepted: The difference in sequence between Odoo and The Factory is acknowledged and accepted."),
-                    message_type='comment',
-                )
+            self._register_success(retention, response, document_number, validation_sequence)
+
+    def _register_success(self, retention, response, document_number, validation_sequence=False):
+        retention.is_digitalized = True
+        retention.control_number_tfhka = response.get("resultado").get("numeroControl")
+        retention.document_number_tfhka = str(document_number)
+        if validation_sequence:
             retention.message_post(
-                body=_("Document successfully digitized on %(date)s") % {"date": emission_date},
+                body=_("Warning accepted: The difference in sequence between Odoo and The Factory is acknowledged and accepted."),
                 message_type='comment',
             )
-
-            return
+        retention.message_post(
+            body=status_message(_("Document successfully digitized"), "success"),
+            message_type='comment',
+        )
 
     def _prepare_extra_retention_values(self, retention):
         """Hook de extensión: valores extra del payload. Por defecto vacío."""
@@ -226,8 +242,14 @@ class TfhkaRetentionService(models.AbstractModel):
             for line in record.retention_line_ids:
                 line_document_type = type_document.get(line.move_id.move_type, "03") if not line.move_id.debit_origin_id else "03"
                 series = line.move_id.name
-                document_series_ret = ''.join([c for c in series if c.isalpha()])
                 document_number_ret = str(''.join([c for c in series if c.isdigit()]))
+                # Serie capturada por el usuario (ticket helpdesk #15078) tiene
+                # prioridad; si el proveedor no maneja serie, se conserva el
+                # comportamiento anterior (inferida del nombre del documento).
+                document_series_ret = (
+                    (line.move_id.vendor_series_tfhka or '').strip()
+                    or ''.join([c for c in series if c.isalpha()])
+                )
 
                 if record.base_currency_is_vef:
                     invoice_total = str(round(line.invoice_total, 2))

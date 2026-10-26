@@ -1,0 +1,337 @@
+# Translation of Odoo Server.
+# This file contains the translation of the following modules:
+# 	* l10n_ve_deductible
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: Odoo Server 19.0+e-20260828\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-10-17 21:58+0000\n"
+"PO-Revision-Date: 2026-10-17 21:58+0000\n"
+"Last-Translator: \n"
+"Language-Team: \n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: \n"
+"Plural-Forms: \n"
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid "%s: lines cannot have a previous discount."
+msgstr "%s: las líneas no pueden tener un descuento previo."
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move_line.py:0
+msgid ""
+"A deductible document cannot have lines with a discount (percentage or fixed"
+" amount). Remove the discount on %(product)s."
+msgstr "Un documento deducible no puede tener líneas con descuento (porcentaje o monto fijo). Elimine el descuento en %(product)s."
+
+#. module: l10n_ve_deductible
+#: model:ir.model,name:l10n_ve_deductible.model_account_move_reversal
+msgid "Account Move Reversal"
+msgstr "Reversión de asiento contable"
+
+#. module: l10n_ve_deductible
+#: model:ir.model,name:l10n_ve_deductible.model_account_debit_note
+msgid "Add Debit Note wizard"
+msgstr "Asistente para agregar nota de débito"
+
+#. module: l10n_ve_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.view_res_config_settings_l10n_ve_deductible
+msgid ""
+"Allows applying a global deductible (percentage or fixed\n"
+"                                amount) to documents. While active on a\n"
+"                                document, line discounts are disabled."
+msgstr "Permite aplicar un deducible global (porcentaje o monto fijo) a documentos. Mientras esté activo en un documento, los descuentos por línea quedan deshabilitados."
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,help:l10n_ve_deductible.field_res_company__use_deductible
+#: model:ir.model.fields,help:l10n_ve_deductible.field_res_config_settings__use_deductible
+msgid ""
+"Allows applying a global deductible (percentage or fixed amount) to the "
+"documents selected in 'Deductible Applies To'."
+msgstr "Permite aplicar un deducible global (porcentaje o monto fijo) a los documentos seleccionados en 'El deducible aplica a'."
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,help:l10n_ve_deductible.field_account_bank_statement_line__is_deductible
+#: model:ir.model.fields,help:l10n_ve_deductible.field_account_move__is_deductible
+msgid ""
+"Applies a global deductible (percentage or fixed amount) spread over every "
+"line of the document."
+msgstr "Aplica un deducible global (porcentaje o monto fijo) repartido entre todas las líneas del documento."
+
+#. module: l10n_ve_deductible
+#: model:ir.model,name:l10n_ve_deductible.model_res_company
+msgid "Companies"
+msgstr "Compañías"
+
+#. module: l10n_ve_deductible
+#: model:ir.model,name:l10n_ve_deductible.model_res_config_settings
+msgid "Config Settings"
+msgstr "Ajustes de configuración"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields.selection,name:l10n_ve_deductible.selection__res_company__deductible_scope__customer
+msgid "Customer Invoices"
+msgstr "Facturas de cliente"
+
+#. module: l10n_ve_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.tax_groups_totals_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.tax_groups_totals_ve_deductible
+msgid "Deducible"
+msgstr "Deducible"
+
+#. module: l10n_ve_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.view_move_form_l10n_ve_deductible
+msgid "Deducted"
+msgstr "Deducido"
+
+#. module: l10n_ve_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.view_move_form_l10n_ve_deductible
+msgid "Deducted (%)"
+msgstr "Deducido (%)"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_bank_statement_line__global_deductible_reference_amount
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__global_deductible_reference_amount
+msgid "Deducted Amount"
+msgstr "Monto deducido"
+
+#. module: l10n_ve_deductible
+#. odoo-javascript
+#: code:addons/l10n_ve_deductible/static/src/components/tax_totals/tax_totals.xml:0
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_bank_statement_line__is_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__is_deductible
+msgid "Deductible"
+msgstr "Deducible"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_bank_statement_line__global_deductible_percent
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__global_deductible_percent
+msgid "Deductible (%)"
+msgstr "Deducible (%)"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_bank_statement_line__deductible_allowed
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__deductible_allowed
+msgid "Deductible Allowed"
+msgstr "Deducible permitido"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_bank_statement_line__global_deductible_amount
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__global_deductible_amount
+msgid "Deductible Amount"
+msgstr "Monto deducible"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_line__global_deductible_line_amount
+msgid "Deductible Amount (line)"
+msgstr "Monto deducible (línea)"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_company__deductible_scope
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_config_settings__deductible_scope
+msgid "Deductible Applies To"
+msgstr "El deducible aplica a"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_line__global_deductible_manual
+msgid "Deductible Typed by Hand"
+msgstr "Deducible escrito a mano"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_line__global_deductible_discount_percent
+msgid "Deductible Discount (%)"
+msgstr "Descuento deducible (%)"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_bank_statement_line__global_deductible_type
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__global_deductible_type
+msgid "Deductible Type"
+msgstr "Tipo de deducible"
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid "Deductible cannot be enabled"
+msgstr "No se puede activar el deducible"
+
+#. module: l10n_ve_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.view_res_config_settings_l10n_ve_deductible
+msgid "Deductibles"
+msgstr "Deducibles"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_debit_note__display_name
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__display_name
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_line__display_name
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_reversal__display_name
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_company__display_name
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_config_settings__display_name
+msgid "Display Name"
+msgstr "Nombre para mostrar"
+
+#. module: l10n_ve_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.view_res_config_settings_l10n_ve_deductible
+msgid "Documents on which the deductible can be activated."
+msgstr "Documentos en los que se puede activar el deducible."
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,help:l10n_ve_deductible.field_account_move_line__global_deductible_discount_percent
+msgid ""
+"Exact percentage of the line's gross subtotal removed by the deductible of "
+"the document. Deliberately NOT rounded (no digits): any rounding changes the"
+" cent of the line subtotal, so the result would no longer match the native "
+"discount / discount_fixed."
+msgstr "Porcentaje exacto del subtotal bruto de la línea que descuenta el deducible del documento. Se deja SIN redondear a propósito: cualquier redondeo cambia el centavo del subtotal de la línea y dejaría de coincidir con el descuento nativo / discount_fixed."
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields.selection,name:l10n_ve_deductible.selection__account_move__global_deductible_type__amount
+msgid "Fixed Amount"
+msgstr "Monto fijo"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_debit_note__id
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move__id
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_line__id
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_account_move_reversal__id
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_company__id
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_config_settings__id
+msgid "ID"
+msgstr "ID"
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid "Invalid lines for a deductible document"
+msgstr "Líneas inválidas para un documento deducible"
+
+#. module: l10n_ve_deductible
+#: model:ir.model,name:l10n_ve_deductible.model_account_move
+msgid "Journal Entry"
+msgstr "Asiento contable"
+
+#. module: l10n_ve_deductible
+#: model:ir.model,name:l10n_ve_deductible.model_account_move_line
+msgid "Journal Item"
+msgstr "Apunte contable"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields.selection,name:l10n_ve_deductible.selection__account_move__global_deductible_type__percent
+msgid "Percentage"
+msgstr "Porcentaje"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,help:l10n_ve_deductible.field_account_bank_statement_line__global_deductible_reference_amount
+#: model:ir.model.fields,help:l10n_ve_deductible.field_account_move__global_deductible_reference_amount
+msgid "Reference: total amount removed from the document by the deductible."
+msgstr "Referencia: monto total que el deducible descuenta del documento."
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,help:l10n_ve_deductible.field_account_move_line__global_deductible_line_amount
+msgid ""
+"Share of the fixed deductible amount of the document that is taken off this "
+"line, in the document currency: proportional to its gross subtotal, with the"
+" cents lost to rounding given back by largest remainder, so the lines always"
+" add up to the amount entered on the document. Only used when the deductible"
+" is a fixed amount; read only."
+msgstr "Parte del monto deducible fijo del documento que se resta a esta línea, en la moneda del documento: proporcional a su subtotal bruto, devolviendo por mayor residuo los centavos perdidos por el redondeo, de modo que las líneas siempre sumen el monto ingresado en el documento. Solo se usa cuando el deducible es un monto fijo; solo lectura."
+
+#. module: l10n_ve_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.tax_groups_totals_deductible
+#: model_terms:ir.ui.view,arch_db:l10n_ve_deductible.tax_groups_totals_ve_deductible
+msgid "Subtotal sin deducible"
+msgstr "Subtotal sin deducible"
+
+#. module: l10n_ve_deductible
+#. odoo-javascript
+#: code:addons/l10n_ve_deductible/static/src/components/tax_totals/tax_totals.xml:0
+msgid "Subtotal without deductible"
+msgstr "Subtotal sin deducible"
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid ""
+"The amounts deducted on the lines (%(lines)s) must add up to the deductible "
+"amount (%(total)s)."
+msgstr "Los montos deducidos en las líneas (%(lines)s) deben sumar el monto deducible (%(total)s)."
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,help:l10n_ve_deductible.field_account_bank_statement_line__deductible_allowed
+#: model:ir.model.fields,help:l10n_ve_deductible.field_account_move__deductible_allowed
+msgid "The company enables the deductible for this type of document."
+msgstr "La compañía habilita el deducible para este tipo de documento."
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid ""
+"The deductible amount must be greater than 0 and less than the original "
+"document total (%s): 100%% of a document cannot be deducted."
+msgstr "El monto deducible debe ser mayor que 0 y menor que el total original del documento (%s): no se puede deducir el 100%% de un documento."
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid ""
+"The deductible can only be changed on draft documents. Reset %s to draft "
+"first."
+msgstr "El deducible solo se puede cambiar en documentos en borrador. Restablezca %s a borrador primero."
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid "The deductible can only be used on vendor bills and customer invoices."
+msgstr "El deducible solo puede usarse en facturas de proveedor y de cliente."
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid ""
+"The deductible cannot be applied:\n"
+"%s"
+msgstr "No se puede aplicar el deducible:\n%s"
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid ""
+"The deductible is not enabled for this company and type of document. Enable "
+"it in the accounting settings."
+msgstr "El deducible no está habilitado para esta compañía y tipo de documento. Habilítelo en los ajustes de contabilidad."
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move.py:0
+msgid ""
+"The deductible percentage must be greater than 0 and less than 100: 100% of "
+"a document cannot be deducted."
+msgstr "El porcentaje deducible debe ser mayor que 0 y menor que 100: no se puede deducir el 100% de un documento."
+
+#. module: l10n_ve_deductible
+#. odoo-python
+#: code:addons/l10n_ve_deductible/models/account_move_line.py:0
+msgid ""
+"The deductible taken off %(product)s must be less than its subtotal "
+"(%(subtotal)s)."
+msgstr "El deducible que se resta a %(product)s debe ser menor que su subtotal (%(subtotal)s)."
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_company__use_deductible
+#: model:ir.model.fields,field_description:l10n_ve_deductible.field_res_config_settings__use_deductible
+msgid "Use Deductibles"
+msgstr "Usar deducibles"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields.selection,name:l10n_ve_deductible.selection__res_company__deductible_scope__vendor
+msgid "Vendor Bills"
+msgstr "Facturas de proveedor"
+
+#. module: l10n_ve_deductible
+#: model:ir.model.fields.selection,name:l10n_ve_deductible.selection__res_company__deductible_scope__both
+msgid "Vendor Bills and Customer Invoices"
+msgstr "Facturas de proveedor y de cliente"

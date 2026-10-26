@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - reglas para listas de precio",
-    "version": "1.4",
+    "version": "19.0.1.4.0",
     "license": "LGPL-3",
     "summary": "Módulo para gestionar reglas de listas de precio en Venezuela",
     "description": """

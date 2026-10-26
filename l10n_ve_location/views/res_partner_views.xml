@@ -39,6 +39,14 @@
 					</div>
 				</xpath>
 
+				<xpath expr="//form/sheet/group[1]/group[1]/div[@name='l10n_ve_address_format']//field[@name='parish_id']" position="after">
+					<field
+						name="zone_id"
+						class="o_address_state"
+						placeholder="Zona"
+					/>
+				</xpath>
+
 				<xpath expr="//sheet/notebook/page[@name='contact_addresses']/field[@name='child_ids']/form//field[@name='city']" position="replace">
 					<field name="city_id" placeholder="Ciudad" domain="[('state_id', '=', state_id)]" />
 					<field name="city" invisible="1" />

@@ -1,0 +1,17 @@
+<odoo>
+    <data noupdate="1">
+        <!-- Sin default: el paperformat por defecto es dispatch_guide_paperformat. -->
+        <record id="dispatch_note_paperformat" model="report.paperformat">
+            <field name="name">Dispatch Note Paperformat</field>
+            <field name="format">A4</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">8</field>
+            <field name="margin_bottom">8</field>
+            <field name="margin_left">8</field>
+            <field name="margin_right">8</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">3</field>
+            <field name="dpi">110</field>
+        </record>
+    </data>
+</odoo>
