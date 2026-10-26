@@ -6,8 +6,28 @@ from odoo.exceptions import UserError
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service import (
     VES_CURRENCY_NAMES,
 )
+from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import (
+    TfhkaDataError,
+)
 
 DOCUMENT_TYPE = "04"
+
+# Datos de transporte sin campo propio en guiaDespacho: van en infoAdicional.
+# (campo enviado a TFHKA, campo de stock.picking)
+TRANSPORT_INFO_FIELDS = (
+    ("marcaVehiculo", "transport_vehicle_brand"),
+    ("modeloVehiculo", "transport_vehicle_model"),
+    ("placaBatea", "transport_trailer_plate"),
+)
+
+# Texto enviado a TFHKA en conductor.tipoLicencia.
+DRIVER_LICENSE_LABELS = {
+    "1": "1er grado",
+    "2": "2do grado",
+    "3": "3er grado",
+    "4": "4to grado",
+    "5": "5to grado",
+}
 
 
 class TfhkaDispatchGuideService(models.AbstractModel):
@@ -31,9 +51,6 @@ class TfhkaDispatchGuideService(models.AbstractModel):
     def _get_party_source(self, picking):
         picking.ensure_one()
         return picking.partner_id.parent_id or picking.partner_id
-
-    def _get_party_address(self, partner):
-        return partner.contact_address_complete or "no definida"
 
     # ------------------------------------------------------------------
     # Orquestación
@@ -70,6 +87,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
         return self.generate_document_data(picking, document_number, DOCUMENT_TYPE)
 
     def generate_document_data(self, picking, document_number, document_type):
+        self._check_transport_data(picking)
         document_identification = self._prepare_identification(picking, document_type, document_number)
         buyer = self._get_fiscal_party(picking)
         details_items = self._prepare_detail_lines(picking)
@@ -239,7 +257,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             else:
                 transfer_reason = record.transfer_reason_id.name
 
-            return {
+            dispatch_guide = {
                 "esGuiaDespacho": "1",
                 "motivoTraslado": transfer_reason,
                 "descripcionServicio": description,
@@ -247,6 +265,8 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                 "origenProducto": product_origin,
                 "pesoOVolumenTotal": weight,
             }
+            dispatch_guide.update(self._prepare_transport_data(record))
+            return dispatch_guide
 
     def _prepare_additional_information(self, picking):
         additional_information = []
@@ -254,6 +274,68 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             if record.partner_id:
                 additional_information.append({
                     "campo": "direccionEntrega",
-                    "valor": record.partner_id.contact_address_complete or "no definida",
+                    "valor": self._get_party_address(record.partner_id),
                 })
+            additional_information.extend(self._prepare_transport_additional_information(record))
         return additional_information
+
+    # ------------------------------------------------------------------
+    # Datos de transporte (l10n_ve_stock_account). Se leen solo los campos
+    # de texto de la transferencia: el envío es el mismo si los datos se
+    # escribieron a mano o se copiaron desde Flota.
+    # ------------------------------------------------------------------
+
+    def _split_driver_identification(self, vat):
+        """(tipo, número) de la cédula del conductor: V12345678 -> (V, 12345678)."""
+        if not vat:
+            return "", ""
+        if vat[0].isalpha():
+            return vat[0], vat[1:]
+        return "", vat
+
+    def _prepare_transport_data(self, picking):
+        """Nodos conductor y vehiculo de guiaDespacho. Omite los valores vacíos."""
+        picking.ensure_one()
+        transport = {}
+        id_type, id_number = self._split_driver_identification(picking.transport_driver_vat)
+        driver = {
+            "nombreCompleto": picking.transport_driver_name,
+            "tipoIdentificacion": id_type,
+            "numeroIdentificacion": id_number,
+            "tipoLicencia": DRIVER_LICENSE_LABELS.get(picking.transport_driver_license_type),
+            "infoContacto": picking.transport_driver_contact,
+        }
+        driver = {key: value for key, value in driver.items() if value}
+        if driver:
+            transport["conductor"] = driver
+        vehicle = {
+            "tipoVehiculo": picking.transport_vehicle_type,
+            "numeroTransporte": picking.transport_vehicle_number,
+            "numeroPlaca": picking.transport_vehicle_plate,
+        }
+        vehicle = {key: value for key, value in vehicle.items() if value}
+        if vehicle:
+            transport["vehiculo"] = vehicle
+        return transport
+
+    def _prepare_transport_additional_information(self, picking):
+        """Marca, modelo y placa de la batea en formato infoAdicional. Omite los vacíos."""
+        picking.ensure_one()
+        return [
+            {"campo": campo, "valor": picking[fname]}
+            for campo, fname in TRANSPORT_INFO_FIELDS
+            if picking[fname]
+        ]
+
+    def _check_transport_data(self, picking):
+        """Red de seguridad en el cron: la validación principal está en
+        button_validate (l10n_ve_stock_account). Si algo se cuela (p. ej. una
+        guía encolada antes de activar la exigencia) queda en Data Error, no
+        en Error, porque es un dato corregible del documento."""
+        if picking._must_check_transport_data():
+            missing = picking._get_transport_missing_fields()
+            if missing:
+                raise TfhkaDataError(
+                    _("The dispatch guide is missing transport data: %s")
+                    % ", ".join(missing)
+                )

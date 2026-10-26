@@ -17,6 +17,7 @@ from odoo import fields
 from odoo.addons.point_of_sale.models.pos_config import PosConfig as CorePosConfig
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
+from odoo.tools import SQL
 
 from .test_pos_session_accounting_common import TestPosSessionAccountingBase
 
@@ -26,6 +27,8 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        # The cross moves are dated today.
+        cls._create_rate_of_day(40.0)
 
         # A distinct "real bank" account/journal, separate from the
         # payment methods' own transitory account (account_bank for bank
@@ -1044,10 +1047,12 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
     def _clear_cross_journal_payment_accounts(self, direction):
         """Vacia la cuenta de las lineas de pago de ``real_bank_journal``.
 
-        Se escribe sobre la linea y no sobre el diario: la restriccion de
-        ``l10n_ve_accountant`` (``_check_payment_method_line_accounts``) solo
-        mira los diarios de banco y solo cuando se escribe el diario; un
-        diario de efectivo del core ya nace con estas lineas sin cuenta.
+        Se escribe por SQL: ``l10n_ve_accountant``
+        (``_check_payment_account_id_required_for_bank``) ya no deja vaciarla
+        por el ORM en un diario de banco. El chequeo del cruce sigue cubriendo
+        las lineas que quedaron sin cuenta antes de esa restriccion o que se
+        crearon en ``install_mode``; esto simula esos datos. Un diario de
+        efectivo del core ya nace con estas lineas sin cuenta.
         """
         journal = self.real_bank_journal
         lines = (
@@ -1055,7 +1060,14 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
             if direction == "inbound"
             else journal.outbound_payment_method_line_ids
         )
-        lines.write({"payment_account_id": False})
+        self.env.flush_all()
+        self.env.cr.execute(
+            SQL(
+                "UPDATE account_payment_method_line SET payment_account_id = NULL WHERE id IN %s",
+                tuple(lines.ids),
+            )
+        )
+        lines.invalidate_recordset(["payment_account_id"])
 
     def test_open_check_requires_cross_journal_payment_accounts(self):
         """Abrir la sesion exige la cuenta de las lineas de pago del
