@@ -11,6 +11,21 @@ class TestMoveActionPostAlertWizard(TransactionCase):
         self.company = self.env.ref("base.main_company")
         self.currency_usd = self.env.ref("base.USD")
         self.currency_vef = self.env.ref("base.VEF")
+        self.currency_vef.active = True
+        # l10n_ve_accountant.AccountMove.create() llama incondicionalmente a
+        # Rate.compute_rate(foreign_currency_id, invoice_date) -- sin una fila
+        # de res.currency.rate con fecha exacta de hoy, cualquier factura
+        # creada aqui explota con "no rate assigned" (ver
+        # test_account_move.TestAccountMoveApiCalls.setUp para el mismo fix).
+        today = fields.Date.today()
+        self.env["res.currency.rate"].create({
+            "name": today, "currency_id": self.currency_vef.id,
+            "inverse_company_rate": 38.0, "company_id": self.company.id,
+        })
+        self.env["res.currency.rate"].create({
+            "name": today, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 1 / 38.0, "company_id": self.company.id,
+        })
         self.company.write({
             "currency_id": self.currency_usd.id,
             "foreign_currency_id": self.currency_vef.id,

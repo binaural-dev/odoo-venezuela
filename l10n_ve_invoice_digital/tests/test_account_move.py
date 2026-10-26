@@ -28,10 +28,30 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         # En una base sin datos de demo el VEF viene inactivo, y los tests que
         # fuerzan la compañia a VEF (_force_company_currency) no pueden validar
-        # la factura: action_post rechaza las monedas inactivas. No se carga
-        # ninguna tasa a proposito -- los tests de este archivo fijan el rate a
-        # mano (manually_set_rate).
+        # la factura: action_post rechaza las monedas inactivas.
         self.currency_vef.active = True
+
+        # l10n_ve_accountant.AccountMove.create() llama incondicionalmente a
+        # Rate.compute_rate(move.foreign_currency_id.id, move.invoice_date)
+        # ANTES de que manually_set_rate tenga efecto -- "fijar el rate a mano"
+        # en los vals de create() no evita esa búsqueda, solo decide qué pasa
+        # después si el resultado no coincide. Sin una fila de res.currency.rate
+        # con fecha exacta de hoy, ese create() explota con "no rate assigned"
+        # para cualquier factura con fecha de hoy -- es decir, todas las de
+        # este archivo. Mismo patrón que ya usa
+        # l10n_ve_accountant.tests.test_account_move_core (fecha dinámica, no
+        # fija, para no quedar desactualizado con el paso de los días); se
+        # siembran ambas monedas porque _force_company_currency cambia cuál de
+        # las dos es la "moneda de la compañía" en algunos tests.
+        today = fields.Date.today()
+        self.env["res.currency.rate"].create({
+            "name": today, "currency_id": self.currency_vef.id,
+            "inverse_company_rate": 38.0, "company_id": self.company.id,
+        })
+        self.env["res.currency.rate"].create({
+            "name": today, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 1 / 38.0, "company_id": self.company.id,
+        })
 
         self.company.write(
             {
@@ -2427,6 +2447,16 @@ class TestAccountMoveApiCalls(TransactionCase):
             post_context={"move_action_post_alert": True},
         )
         inv1.is_digitalized = True
+        # Rate.compute_rate() en l10n_ve_accountant.AccountMove.create() busca
+        # por la fecha exacta de invoice_date (no la de hoy) -- esta factura
+        # se crea deliberadamente con fecha de hace 3 dias, asi que necesita
+        # su propia fila de tasa para esa fecha (la sembrada en setUp solo
+        # cubre la de hoy).
+        past_date = fields.Date.today() - timedelta(days=3)
+        self.env["res.currency.rate"].create({
+            "name": past_date, "currency_id": self.currency_vef.id,
+            "inverse_company_rate": 38.0, "company_id": self.company.id,
+        })
         inv2 = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
@@ -2438,8 +2468,8 @@ class TestAccountMoveApiCalls(TransactionCase):
             "manually_set_rate": True,
             # O19: la validacion de orden de emision compara
             # invoice_date_display (la fecha fiscal), no invoice_date.
-            "invoice_date": fields.Date.today() - timedelta(days=3),
-            "invoice_date_display": fields.Date.today() - timedelta(days=3),
+            "invoice_date": past_date,
+            "invoice_date_display": past_date,
             "invoice_line_ids": [(0, 0, {
                 "product_id": self.product.id,
                 "quantity": 1,
