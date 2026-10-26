@@ -286,6 +286,28 @@ class TestRetentionResync(RetentionTestCommon):
         self.assertEqual(invoice.state, "cancel")
         _logger.info("========= test_07 passed =========")
 
+    # 7b. button_cancel() is blocked, with no side effects, when the invoice
+    # has a REAL payment applied (same guard as button_draft(), test_06).
+    def test_07b_button_cancel_blocked_by_real_payment(self):
+        invoice = self._create_prepared_iva_invoice()
+        retention = self._emit_iva_retention(invoice)
+
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+
+        with self.assertRaises(UserError):
+            invoice.button_cancel()
+
+        self.assertEqual(invoice.state, "posted")
+        self.assertEqual(retention.state, "emitted")
+        _logger.info("========= test_07b passed =========")
+
     # 8. action_cancel() of a retention whose payment was already drafted
     # by a previous resync (button_draft()) no longer fails.
     def test_08_action_cancel_after_resync_draft(self):
