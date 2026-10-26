@@ -314,7 +314,12 @@ class AccountRetentionLine(models.Model):
                 line.foreign_invoice_amount = origin_foreign_invoice_amount
             else:
                 if origin_invoice_amount > 0:
-                    line.foreign_invoice_amount = origin_invoice_amount * line.foreign_currency_rate
+                    # foreign_currency_rate is Bs per USD (move.foreign_rate): Bs -> USD divides.
+                    line.foreign_invoice_amount = (
+                        origin_invoice_amount / line.foreign_currency_rate
+                        if line.foreign_currency_rate
+                        else origin_foreign_invoice_amount
+                    )
                 else:
                     line.foreign_invoice_amount = origin_foreign_invoice_amount
                 line.invoice_amount = origin_invoice_amount
@@ -397,8 +402,17 @@ class AccountRetentionLine(models.Model):
                 * (record.related_percentage_tax_base / 100)
                 * (record.related_percentage_fees / 100)
             )
+            # The subtrahend (amount_subtract) is stored in Bs. With VEF as company
+            # currency the foreign amount is USD, so it has to be converted too
+            # (foreign_rate is Bs per USD); with a foreign base currency the foreign
+            # amount is already in Bs.
+            foreign_subtract_fees = (
+                record.related_amount_subtract_fees / foreign_rate
+                if base_currency_is_vef
+                else record.related_amount_subtract_fees
+            )
             record.foreign_retention_amount = abs(
-                foreign_retention_base - record.related_amount_subtract_fees
+                foreign_retention_base - foreign_subtract_fees
             )
 
     @api.onchange("economic_activity_id", "move_id")
