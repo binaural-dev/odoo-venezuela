@@ -1,10 +1,12 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import json
 import logging
 import calendar
+import pytz
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
 from odoo.tools import format_date, float_compare, float_round, float_is_zero
+from odoo.addons.l10n_ve_base.models.res_partner import DEFAULT_TZ
 
 _logger = logging.getLogger(__name__)
 
@@ -509,14 +511,45 @@ class AccountMove(models.Model):
                 entry['discount_type'] = 'amount'
             move.company_currency_line_totals = totals
 
+    @api.model
+    def _get_invoice_date_display_tz(self, company=None):
+        """Zona horaria con la que se arma invoice_date_display_datetime: la de
+        la compañía (el documento fiscal es suyo), luego la del usuario y, si
+        ninguna está definida, America/Caracas."""
+        company = company or self.env.company
+        try:
+            return pytz.timezone(company.partner_id.tz or self.env.user.tz or DEFAULT_TZ)
+        except pytz.UnknownTimeZoneError:
+            return pytz.timezone(DEFAULT_TZ)
+
+    @api.model
+    def _build_invoice_date_display_datetime(self, date_value, tz, now=None):
+        """Fecha de la factura + hora local actual, devuelto en UTC naive.
+
+        No se puede hacer ``fields.Datetime.now().replace(day=...)``: mezcla la
+        fecha local con la hora UTC y, desde las 20:00 en UTC-4, el valor queda
+        en el día anterior (HD #15992).
+        """
+        if not date_value:
+            return False
+        date_part = fields.Date.to_date(date_value)
+        now_utc = pytz.utc.localize(now or fields.Datetime.now())
+        local_time = now_utc.astimezone(tz).time().replace(tzinfo=None)
+        local_dt = tz.localize(datetime.combine(date_part, local_time))
+        return local_dt.astimezone(pytz.utc).replace(tzinfo=None)
+
     @api.model_create_multi
     def create(self, vals_list):
         now = fields.Datetime.now()
         for vals in vals_list:
             if vals.get("invoice_date_display"):
-                date_part = fields.Date.to_date(vals["invoice_date_display"])
-                vals["invoice_date_display_datetime"] = now.replace(
-                    year=date_part.year, month=date_part.month, day=date_part.day
+                company = self.env["res.company"].browse(vals.get("company_id"))
+                vals["invoice_date_display_datetime"] = (
+                    self._build_invoice_date_display_datetime(
+                        vals["invoice_date_display"],
+                        self._get_invoice_date_display_tz(company),
+                        now=now,
+                    )
                 )
             elif "invoice_date_display" in vals and not vals.get(
                 "invoice_date_display"
@@ -526,9 +559,12 @@ class AccountMove(models.Model):
 
         for move in moves:
             if move.invoice_date_display and not move.invoice_date_display_datetime:
-                date_part = move.invoice_date_display
-                move.invoice_date_display_datetime = now.replace(
-                    year=date_part.year, month=date_part.month, day=date_part.day
+                move.invoice_date_display_datetime = (
+                    self._build_invoice_date_display_datetime(
+                        move.invoice_date_display,
+                        self._get_invoice_date_display_tz(move.company_id),
+                        now=now,
+                    )
                 )
 
         for move in moves:
@@ -808,10 +844,11 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         if vals.get("invoice_date_display"):
-            date_part = fields.Date.to_date(vals["invoice_date_display"])
-            now = fields.Datetime.now()
-            vals["invoice_date_display_datetime"] = now.replace(
-                year=date_part.year, month=date_part.month, day=date_part.day
+            vals["invoice_date_display_datetime"] = (
+                self._build_invoice_date_display_datetime(
+                    vals["invoice_date_display"],
+                    self._get_invoice_date_display_tz(self.company_id[:1]),
+                )
             )
         elif "invoice_date_display" in vals and not vals.get("invoice_date_display"):
             vals["invoice_date_display_datetime"] = False

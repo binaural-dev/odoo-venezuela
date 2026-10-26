@@ -913,7 +913,9 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return "03-ANU"
 
     def search_moves(self):
-        order = "invoice_date_display asc"
+        # invoice_date_display es Date: sin desempate, las facturas de un mismo
+        # día salen en el orden que devuelva PostgreSQL (HD #15994).
+        order = "invoice_date_display asc, invoice_date_display_datetime asc, id asc"
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
