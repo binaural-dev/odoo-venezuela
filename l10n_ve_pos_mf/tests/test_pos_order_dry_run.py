@@ -3,6 +3,7 @@ from unittest.mock import patch, MagicMock
 
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
+from odoo import _
 from odoo.exceptions import UserError
 
 @tagged('post_install', '-at_install', 'l10n_ve_pos_mf')
@@ -53,7 +54,7 @@ class TestPosOrderDryRun(TransactionCase):
 
         def create_from_ui_side_effect(_orders):
             self.sequence.write({'number_next_actual': self.sequence.number_next_actual + 1})
-            raise UserError('Simulated failure')
+            raise UserError(_('Simulated failure'))
 
         session_mock = MagicMock()
         session_mock.config_id.sequence_id = self.sequence
