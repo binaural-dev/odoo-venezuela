@@ -157,9 +157,11 @@ class StockPicking(models.Model):
     transport_trailer_plate = fields.Char(string="Trailer Plate", copy=False, tracking=True)
     transport_data_source = fields.Selection(related="company_id.transport_data_source")
     # Overridden by l10n_ve_stock_account_fleet: True cuando los datos de
-    # transporte provienen de un vehículo/batea de Flota ya elegido, para
+    # vehículo provienen de un vehículo/batea de Flota ya elegido, para
     # bloquear solo esas guías y no todas las que usan la fuente 'fleet'
-    # (p. ej. un transportista externo sin ficha en Flota).
+    # (p. ej. un transportista externo sin ficha en Flota). Solo se usa en
+    # las vistas para bloquear los campos de VEHÍCULO: el conductor del día
+    # siempre debe poder corregirse a mano, aunque haya un vehículo elegido.
     transport_data_locked = fields.Boolean(compute="_compute_transport_data_locked")
 
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)

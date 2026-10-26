@@ -7,6 +7,8 @@ from datetime import datetime, timedelta
 
 _logger = logging.getLogger(__name__)
 
+from odoo.exceptions import UserError
+
 
 class StockReturnInvoicePicking(models.TransientModel):
     _inherit = "stock.return.picking"

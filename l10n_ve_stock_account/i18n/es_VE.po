@@ -224,6 +224,11 @@ msgid "Allowed Reasons"
 msgstr "Razones Permitidas"
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "Allows printing dispatch notes from transfers."
+msgstr "Permite imprimir notas de despacho desde los traslados."
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_location__partner_id
 msgid "Assigned Customer"
 msgstr "Cliente asignado"
@@ -401,10 +406,21 @@ msgid "Default Document"
 msgstr "Documento predeterminado"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__internal_transfer_reason_id
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__internal_transfer_reason_id
+msgid "Default Internal Transfer Reason"
+msgstr "Motivo de traslado interno por defecto"
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_partner__default_document
 #: model:ir.model.fields,help:l10n_ve_stock_account.field_res_users__default_document
 msgid "Default document for importing documents."
 msgstr "Documento predeterminado para importar documentos."
+
+#. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "Default reason for internal transfers. Can be changed per transfer."
+msgstr "Motivo por defecto de los traslados internos. Se puede cambiar en cada traslado."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -429,9 +445,19 @@ msgid "Dispatch Guide Controls"
 msgstr "Controles de guía de despacho"
 
 #. module: l10n_ve_stock_account
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.l10n_ve_stock_inherit_l10n_ve_stock_account
+msgid "Dispatch Guide Settings"
+msgstr "Ajustes de guía de despacho"
+
+#. module: l10n_ve_stock_account
 #: model:ir.ui.menu,name:l10n_ve_stock_account.menuitem_stock_dispatch_guides
 msgid "Dispatch Guides"
 msgstr "Guías de Despacho"
+
+#. module: l10n_ve_stock_account
+#: model:ir.actions.report,name:l10n_ve_stock_account.action_dispatch_note
+msgid "Dispatch Note"
+msgstr "Nota de Despacho"
 
 #. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_account_move__display_name
@@ -579,6 +605,11 @@ msgstr "Ocultar campo de peso en la guía"
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_transfer_reason__id
 msgid "ID"
 msgstr "ID"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__dispatch_note_invoice_names
+msgid "Invoice numbers of the related sale order, shown in the dispatch note."
+msgstr "Números de factura de la orden de venta relacionada, mostrados en la nota de despacho."
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_body
@@ -945,6 +976,13 @@ msgid "Pricelist"
 msgstr "Tarifa"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_company__group_dispatch_note_print
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_res_config_settings__group_dispatch_note_print
+#: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_picking_form_view_inherited
+msgid "Print Dispatch Note"
+msgstr "Imprimir nota de despacho"
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.stock_move_line_consignation_report_tree
 msgid "Product"
 msgstr "Producto"
@@ -1000,6 +1038,13 @@ msgid "Reason for transfer for other reasons"
 msgstr "Motivo de traslado por otras causas"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_company__internal_transfer_reason_id
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_res_config_settings__internal_transfer_reason_id
+msgid ""
+"Reason prefilled on new internal transfers. It can be changed per transfer."
+msgstr "Motivo precargado en los nuevos traslados internos. Se puede cambiar en cada traslado."
+
+#. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.dispatch_layout_footer
 msgid "Recibido por"
 msgstr ""
@@ -1013,6 +1058,16 @@ msgstr "Reporte de guía de despacho"
 #: model:ir.model,name:l10n_ve_stock_account.model_stock_return_picking
 msgid "Return Picking"
 msgstr "Recolección de devolución"
+
+#. module: l10n_ve_stock_account
+#: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__dispatch_note_invoice_names
+msgid "Sale Invoices"
+msgstr "Facturas de venta"
+
+#. module: l10n_ve_stock_account
+#: model:res.groups,name:l10n_ve_stock_account.group_dispatch_note_print
+msgid "Show button dispatch note print"
+msgstr "Mostrar botón de imprimir nota de despacho"
 
 #. module: l10n_ve_stock_account
 #: model_terms:ir.ui.view,arch_db:l10n_ve_stock_account.template_free_form_l10_ve_stock_account

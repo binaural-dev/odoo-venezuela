@@ -134,9 +134,10 @@ class TestTransportFleet(TransactionCase):
             self.assertEqual(form.transport_driver_name, "Pedro Pérez Conductor")
             form.transport_trailer_id = self.trailer
             self.assertEqual(form.transport_trailer_plate, "B45EF6G")
-            # Con origen "Flota", los campos que se completan solos quedan
-            # bloqueados: no se puede corregir el conductor a mano.
-            self.assertTrue(form._get_modifier("transport_driver_name", "readonly"))
+            # Con origen "Flota", los campos de VEHÍCULO que se completan
+            # solos quedan bloqueados, pero el conductor del día siempre se
+            # puede corregir a mano (Escenario 12).
+            self.assertFalse(form._get_modifier("transport_driver_name", "readonly"))
             self.assertTrue(form._get_modifier("transport_vehicle_plate", "readonly"))
             self.assertTrue(form._get_modifier("transport_trailer_plate", "readonly"))
         picking = form.record
@@ -173,6 +174,42 @@ class TestTransportFleet(TransactionCase):
         self.assertTrue(picking.transport_data_locked)
         picking.write({"transport_vehicle_id": False, "transport_trailer_id": False})
         self.assertFalse(picking.transport_data_locked)
+
+    def test_write_driver_name_with_vehicle_already_chosen(self):
+        # Escenario 12: con un vehículo de Flota ya elegido, el usuario debe
+        # poder corregir a mano "el conductor del día" sin quitar el
+        # vehículo ni perder la selección.
+        picking = self._create_picking(transport_vehicle_id=self.vehicle.id)
+        self.assertEqual(picking.transport_driver_name, "Pedro Pérez Conductor")
+        picking.write({
+            "transport_driver_name": "Suplente del día",
+            "transport_driver_vat": "V11223344",
+        })
+        self.assertEqual(picking.transport_driver_name, "Suplente del día")
+        self.assertEqual(picking.transport_driver_vat, "V11223344")
+        self.assertEqual(picking.transport_vehicle_id, self.vehicle)
+        self.assertEqual(picking.transport_vehicle_plate, "A12BC3D")
+
+    def test_onchange_driver_field_stays_editable_with_vehicle_chosen(self):
+        with Form(self.env["stock.picking"]) as form:
+            form.picking_type_id = self.picking_type
+            form.partner_id = self.partner
+            form.transfer_reason_id = self.reason_other_causes
+            form.other_causes_transfer_reason = "Prueba Flota"
+            form.transport_vehicle_id = self.vehicle
+            self.assertFalse(form._get_modifier("transport_driver_name", "readonly"))
+            form.transport_driver_name = "Suplente del día"
+        picking = form.record
+        self.assertEqual(picking.transport_driver_name, "Suplente del día")
+        self.assertEqual(picking.transport_vehicle_id, self.vehicle)
+
+    def test_vehicle_field_rejects_trailer(self):
+        with self.assertRaises(ValidationError):
+            self._create_picking(transport_vehicle_id=self.trailer.id)
+
+    def test_trailer_field_rejects_non_trailer_vehicle(self):
+        with self.assertRaises(ValidationError):
+            self._create_picking(transport_trailer_id=self.vehicle.id)
 
     def test_manual_source_leaves_fields_editable(self):
         self.company.transport_data_source = "manual"
