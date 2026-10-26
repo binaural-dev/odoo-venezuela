@@ -906,6 +906,11 @@ msgid "Discount field shown on invoice lines: percentage or fixed amount."
 msgstr "Campo de descuento mostrado en las líneas de factura: porcentaje o importe fijo."
 
 #. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
+msgid "Free Form"
+msgstr "Forma Libre"
+
+#. module: l10n_ve_invoice
 #. odoo-python
 #: code:addons/l10n_ve_invoice/models/account_move.py:0
 msgid ""
@@ -954,9 +959,3 @@ msgid ""
 msgstr ""
 "La fecha contable (%(date)s) de una nota no puede ser anterior a su "
 "%(field)s (%(value)s)."
-
-#. module: l10n_ve_invoice
-#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_account_move_form_l10n_ve_invoice
-msgid "Free Form"
-msgstr "Forma Libre"
-

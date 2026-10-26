@@ -261,9 +261,10 @@ class ProductTemplate(models.Model):
         return records
 
     def _validate_single_sale_tax(self):
-        # Combo products carry no taxes of their own (their taxes come from
-        # the component products), so the single-tax rule does not apply to
-        # them - same exemption as l10n_ve_accountant (#14405).
+        # Combo products are exempt, as in `l10n_ve_accountant` (FIX-061) and
+        # core: a combo carries no taxes of its own (core hides and clears
+        # them, #14405), the taxes live on the lines of its component
+        # products, so the single-tax rule does not apply to them.
         for product in self.filtered(lambda p: p.type != "combo"):
             taxes_by_company = defaultdict(int)
             for tax in product.taxes_id.sudo():

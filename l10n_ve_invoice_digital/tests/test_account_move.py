@@ -123,6 +123,11 @@ class TestAccountMoveApiCalls(TransactionCase):
                 [("type", "=", "bank"), ("currency_id", "=", self.currency_usd.id)],
                 limit=1,
             )
+            # O19: l10n_ve_accountant._check_payment_method_line_accounts exige
+            # cuenta en cada línea de método de pago de un diario bancario. Odoo
+            # las autocrea sin payment_account_id y sin plan de cuentas cargado no
+            # hay de dónde resolverla, así que se usa el mismo escape que la
+            # propia restricción contempla para el bootstrap.
             or Journal.with_context(install_mode=True, chart_template_load=True).create(
                 {
                     "name": "Banco USD",
@@ -191,11 +196,13 @@ class TestAccountMoveApiCalls(TransactionCase):
             'street': 'Calle Falsa 123',
         })
 
+        # El mapeo de TFHKA usa el nombre del GRUPO de impuesto, que en el
+        # plan de cuentas venezolano real es "IVA 16%" / "Exento".
         # Crear impuesto IVA 16%
         tax_country = self.env.ref('base.ve')
         self.company.account_fiscal_country_id = tax_country
 
-        tax_group = self.env['account.tax.group'].create({
+        self.tax_group = self.env['account.tax.group'].create({
             'name': 'IVA 16%',
             'company_id': self.company.id,
             'country_id': tax_country.id,
@@ -203,7 +210,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
-            'tax_group_id': tax_group.id,
+            'tax_group_id': self.tax_group.id,
             'country_id': tax_country.id,
             'company_id': self.company.id,
             'amount': 16,
@@ -212,7 +219,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         })
         self.tax_iva16_purchase = self.env['account.tax'].create({
             'name': 'IVA 16% compras',
-            'tax_group_id': tax_group.id,
+            'tax_group_id': self.tax_group.id,
             'country_id': tax_country.id,
             'company_id': self.company.id,
             'amount': 16,
@@ -295,6 +302,9 @@ class TestAccountMoveApiCalls(TransactionCase):
             "invoice_date": fields.Date.context_today(self.env.user),
             "invoice_date_display": fields.Date.context_today(self.env.user),
             "journal_id": self.journal.id,
+            # O19: l10n_ve_invoice._check_correlative prohibe repetir el
+            # numero de control entre facturas confirmadas, asi que cada
+            # factura del fixture necesita el suyo.
             "correlative": self._next_correlative() if correlative == 1 else correlative,
         }
 

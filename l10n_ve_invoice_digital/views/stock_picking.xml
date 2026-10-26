@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_stock_form_inherit" model="ir.ui.view">
+        <field name="name">stock.picking.form.inherit</field>
+        <field name="model">stock.picking</field>
+        <field name="inherit_id" ref="stock.view_picking_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//field[@name='partner_id']" position="after">
+                <field name="show_digital_dispatch_guide" invisible="1"/>
+                <field name="is_digitalized" string="Digitized" invisible="show_digital_dispatch_guide" readonly="True"/>
+                <field name="control_number_tfhka" string="Control Number" invisible="show_digital_dispatch_guide" readonly="True"/>
+            </xpath>
+            <xpath expr="//button[@name='print_dispatch_guide']" position="attributes">
+                <attribute name="invisible">not dispatch_guide_controls or is_digitalized</attribute>
+            </xpath>
+        </field>
+    </record>
+</odoo>
