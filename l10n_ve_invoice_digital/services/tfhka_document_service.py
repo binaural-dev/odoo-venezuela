@@ -1,7 +1,7 @@
 import logging
 
 from odoo import _, fields, models
-from odoo.tools import float_compare, float_is_zero
+from odoo.tools import float_compare, float_is_zero, html2plaintext
 
 from ..utils import status_message
 from .tfhka_service_base import TfhkaDataError
@@ -1285,7 +1285,18 @@ class TfhkaDocumentService(models.AbstractModel):
         )
 
     def _prepare_additional_information(self, invoice):
-        """Hook de extensión: información adicional del documento (sección
-        ``infoAdicional``). Por defecto vacío -- el número de guía ya se
-        reporta vía ``_get_dispatch_guide_reference`` (sección ``FacturaGuia``)."""
-        return []
+        """Prepara la sección ``infoAdicional`` del documento.
+
+        Envía un campo ``PDF`` cuyo valor es la representación en texto de
+        ``{'Orservaciones': <narration en texto plano>}``. ``narration`` es un
+        campo Html (p. ej. ``<p data-oe-version="2.0">...</p>``), así que se
+        convierte con ``html2plaintext`` antes de mandarlo -- TFHKA no espera
+        markup en este campo.
+        """
+        narration = html2plaintext(invoice.narration or "").strip()
+        return [
+            {
+                "campo": "PDF",
+                "valor": str({"Orservaciones": narration}),
+            }
+        ]

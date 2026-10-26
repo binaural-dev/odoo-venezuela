@@ -29,8 +29,10 @@ class TestForeignExchangeDiff(TransactionCase):
         self.today = fields.Date.today()
         # Distinct dates for booking vs. settlement -- `res.currency.rate`
         # has a real unique constraint of one rate per (currency, day).
-        self.booking_date = self.today - timedelta(days=5)
-        self.settlement_date = self.today
+        # Settlement installments go up to `settlement_date` + 6 days: keep them
+        # all in the past (a payment cannot be dated after today).
+        self.booking_date = self.today - timedelta(days=20)
+        self.settlement_date = self.today - timedelta(days=10)
 
         self.company.write({
             "currency_id": self.currency_vef.id,
@@ -140,13 +142,49 @@ class TestForeignExchangeDiff(TransactionCase):
         `inverse_company_rate` convention: `company_rate` = USD per VEF,
         `inverse_company_rate` = VEF per USD).
         """
+        vals = {
+            "company_rate": 1.0 / ves_per_usd,
+            "inverse_company_rate": ves_per_usd,
+        }
+        existing = self.Rate.search([
+            ("name", "=", date),
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+        ], limit=1)
+        if existing:
+            existing.write(vals)
+            return existing
         return self.Rate.create({
             "name": date,
             "currency_id": self.currency_usd.id,
             "company_id": self.company.id,
-            "company_rate": 1.0 / ves_per_usd,
-            "inverse_company_rate": ves_per_usd,
+            **vals,
         })
+
+    def _ensure_usd_rate(self, *dates):
+        """`compute_rate` solo usa la tasa de la fecha exacta y lanza error si
+        no existe. Para las fechas donde el escenario del test no declara una
+        tasa propia (p. ej. hoy, o el dia de un pago sin cambio de tasa), se
+        carga una copia de la ultima tasa anterior: es decir, "la tasa no
+        cambia ese dia".
+        """
+        auto_dates = self.__dict__.setdefault("_auto_rate_dates", set())
+        for date in dates:
+            exists = self.Rate.search_count([
+                ("name", "=", date),
+                ("currency_id", "=", self.currency_usd.id),
+                ("company_id", "=", self.company.id),
+            ])
+            if exists and date not in auto_dates:
+                continue  # tasa declarada por el propio test
+            previous = self.Rate.search([
+                ("name", "<", date),
+                ("currency_id", "=", self.currency_usd.id),
+                ("company_id", "=", self.company.id),
+            ], order="name desc", limit=1)
+            if previous:
+                self._set_usd_rate(date, previous.inverse_company_rate)
+                auto_dates.add(date)
 
     def _create_invoice(self, amount=100.0, currency=None, booking_ves_per_usd=None):
         # Doesn't force `foreign_inverse_rate` manually: as long as the
@@ -178,6 +216,7 @@ class TestForeignExchangeDiff(TransactionCase):
         currency = currency or self.currency_vef
         journal = self.bank_journal_usd if currency == self.currency_usd else self.bank_journal
         amount = move.amount_total if amount is None else amount
+        self._ensure_usd_rate(date or self.settlement_date, self.today)
         payment = self.env["account.payment"].with_company(self.company).create({
             "amount": amount,
             "date": date or self.settlement_date,
@@ -665,6 +704,7 @@ class TestForeignExchangeDiff(TransactionCase):
         """
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
         self._set_usd_rate(self.settlement_date, 50.0)
+        self._ensure_usd_rate(self.settlement_date, self.today)
         payment = self.env["account.payment"].with_company(self.company).create({
             "amount": move.amount_total,
             "date": self.settlement_date,
@@ -698,6 +738,7 @@ class TestForeignExchangeDiff(TransactionCase):
         """
         move = self._create_invoice(100.0, booking_ves_per_usd=40.0)
         self._set_usd_rate(self.settlement_date, 50.0)
+        self._ensure_usd_rate(self.settlement_date, self.today)
         payment = self.env["account.payment"].with_company(self.company).create({
             "amount": move.amount_total,
             "date": self.settlement_date,

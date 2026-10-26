@@ -17,7 +17,7 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
 
 #### Scenario: Factura de venta
 
@@ -38,6 +38,16 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 - **WHEN** un documento tiene `manually_set_rate` en verdadero
 - **THEN** el recálculo automático no modifica su tasa
+
+#### Scenario: Documento con fecha sin tasa cargada
+
+- **WHEN** se crea o contabiliza un documento cuya fecha de tasa no tiene registro de tasa para la moneda alterna, aunque existan tasas de otras fechas
+- **THEN** se lanza un `UserError` "There is no rate assigned for <moneda> on <fecha>" y, una vez cargada la tasa de esa fecha, el mismo documento se contabiliza con ella
+
+#### Scenario: Cambio de la tasa después de contabilizar
+
+- **WHEN** se modifica el registro de tasa de la fecha de un documento ya contabilizado y luego se recalcula y cancela el documento
+- **THEN** el asiento sigue cuadrado (débito igual a crédito)
 
 ### Requirement: Prohibición de tasas negativas o cero
 
@@ -267,7 +277,7 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 
 Cuando el usuario pertenece al grupo `l10n_ve_accountant.group_fiscal_config_support`, el formulario de factura DEBE (MUST) permitir editar manualmente el monto de un grupo de impuesto directamente en el widget `tax_totals`, mientras la factura está en borrador (`state == 'draft'`) -- con el mismo ícono de lápiz (`fa fa-pencil`) que el widget nativo de Odoo junto al monto editable, no solo el click habilitado sin esa señal visual. Usuarios fuera de ese grupo NO DEBEN (SHALL NOT) poder aplicar el cambio aunque lo intenten por escritura directa (no solo oculto en la vista): `_inverse_tax_totals` DEBE (MUST) rechazar la escritura con un `UserError` del lado servidor.
 
-El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los tres widgets de totales: el nativo (`account-tax-totals-field`, pestaña principal), el de moneda alterna y el de VES. Los tres comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
+El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los dos widgets de totales presentes en el formulario de factura: el nativo (`account-tax-totals-field`, pestaña principal) y el de VES (`account-tax-ves-totals-field`). Los dos comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
 
 `tax_totals_edit_tolerance` DEBE (MUST) estar entre 0 y 1 (constraint de `res.company`); fuera de ese rango se rechaza el guardado.
 
@@ -297,7 +307,7 @@ Core escribe `tax_totals` dos veces por cada `write()` de la factura: una transi
 
 - **GIVEN** un usuario fuera de `group_fiscal_config_support`
 - **WHEN** abre el formulario o intenta escribir `tax_totals`
-- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los tres widgets de totales incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
+- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los dos widgets de totales (nativo y VES) incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
 
 #### Scenario: Edición fuera de tolerancia se rechaza
 
@@ -505,14 +515,94 @@ Al crear un diario o cambiar su tipo, los usuarios sin el grupo `l10n_ve_account
 - **WHEN** un usuario sin el grupo de soporte crea un diario de tipo venta
 - **THEN** se lanza un error de permisos y el diario no se crea
 
+### Requirement: Cuenta bancaria obligatoria en diarios tipo banco
+
+Todo diario de tipo `bank` DEBE (MUST) tener `default_account_id` ("Cuenta Bancaria") asignado (constraint `_check_default_account_id_required_for_bank` de `account.journal`). Esto es independiente de la propagación a los métodos de pago (ver el siguiente requirement): un diario banco sin esta cuenta no se puede guardar bajo ninguna circunstancia.
+
+#### Scenario: Diario banco sin cuenta bancaria
+
+- **WHEN** se crea o guarda un diario de tipo `bank` sin `default_account_id`
+- **THEN** se lanza un error "Bank journals require a default account (Bank Account)."
+
+### Requirement: Propagación automática de la cuenta bancaria a los métodos de pago
+
+Cuando un diario de tipo `bank` tiene `default_account_id` asignado, esa cuenta DEBE (MUST) propagarse automáticamente a `payment_account_id` en todas sus líneas de método de pago (entrantes y salientes) que no tengan ya una cuenta propia (`_fill_payment_account_id_from_default` de `account.journal`), sin intervención manual del usuario. Esto aplica tanto a las líneas generadas por el compute nativo de Odoo al crear/editar el diario, como a líneas de método de pago agregadas manualmente después, vía el `default` de `payment_account_id` en `account.payment.method.line` (`_default_payment_account_id`, usa el contexto `default_journal_id`).
+
+Editar `default_account_id` en un diario ya guardado con líneas de método de pago adicionales (más allá de las nativas) NO DEBE (MUST NOT) desvincular ni eliminar esas líneas extra, ni los pagos que ya las usan -- la propagación solo rellena cuentas vacías, nunca reconstruye las líneas desde cero.
+
+#### Scenario: Creación del diario en una sola llamada API
+
+- **WHEN** se crea un diario de tipo `bank` con `default_account_id` ya en los valores, sin pasar por ningún onchange
+- **THEN** todas las líneas de método de pago generadas (entrantes y salientes) toman esa cuenta en `payment_account_id`
+
+#### Scenario: Línea de método de pago agregada manualmente
+
+- **WHEN** se crea una `account.payment.method.line` para un diario `bank` existente (con el contexto `default_journal_id` del diario)
+- **THEN** la línea toma `default_account_id` del diario como su `payment_account_id`, sin que el usuario la configure a mano
+
+#### Scenario: Edición de la cuenta bancaria no borra líneas extra
+
+- **WHEN** se edita `default_account_id` en un diario `bank` ya guardado que tiene una línea de método de pago agregada manualmente (además de las nativas)
+- **THEN** esa línea extra sigue existiendo, vinculada al mismo diario, con su nombre intacto
+
+#### Scenario: Diario no bancario no hereda cuenta
+
+- **WHEN** se crea una línea de método de pago para un diario de tipo distinto a `bank` (ej. `cash`)
+- **THEN** `payment_account_id` queda vacío, sin tomar ninguna cuenta por defecto
+
 ### Requirement: Métodos de pago bancarios con cuenta obligatoria
 
-Todo método de pago (entrante o saliente) de un diario de tipo `bank` DEBE (MUST) tener `payment_account_id` asignada (constraint `_check_payment_method_line_accounts`), salvo durante la carga de plantillas contables o instalación.
+Todo método de pago (entrante o saliente) de un diario de tipo `bank` DEBE (MUST) tener `payment_account_id` asignada. Esto se garantiza con dos constraints independientes, salvo durante la carga de plantillas contables o instalación:
 
-#### Scenario: Método sin cuenta
+- `_check_payment_method_line_accounts` de `account.journal` -- se dispara cuando cambia la relación o two2many `inbound_payment_method_line_ids`/`outbound_payment_method_line_ids` del diario (ej. al guardar el diario con líneas sin cuenta, o al vaciar la colección de un lado).
+- `_check_payment_account_id_required_for_bank` de `account.payment.method.line` -- se dispara al escribir directamente sobre la línea, camino que el constrains del diario NO cubre (Odoo no reevalúa un constrains sobre un campo o2m cuando se edita un campo propio del registro hijo). Su propio `create()` rellena `payment_account_id` desde `default_account_id` del diario ANTES de validar, para que este constrains pueda ser estricto sin romper la creación de diarios banco por ningún camino (compute nativo, `_auto_link_payment_methods`, payment providers).
 
-- **WHEN** se guarda un diario bancario con una línea de método de pago sin cuenta
+Un diario `bank` también DEBE (MUST) tener al menos una línea de método de pago entrante y una saliente.
+
+#### Scenario: Diario sin líneas entrantes o salientes
+
+- **WHEN** se vacía `inbound_payment_method_line_ids` o `outbound_payment_method_line_ids` de un diario `bank` ya guardado
+- **THEN** se lanza un error indicando que el diario debe tener al menos un método de pago de ese lado
+
+#### Scenario: Ninguna línea tiene cuenta
+
+- **WHEN** se guarda un diario bancario donde ninguna línea de método de pago (entrante ni saliente) tiene cuenta
 - **THEN** se lanza un error "All payment methods must have an assigned account."
+
+#### Scenario: Una línea con cuenta y otra sin
+
+- **WHEN** un diario bancario tiene una línea con cuenta asignada y otra sin, del mismo lado (entrante o saliente)
+- **THEN** se lanza el mismo error -- el constrains falla si CUALQUIER línea carece de cuenta, no solo cuando todas carecen
+
+#### Scenario: Escritura directa sobre la línea
+
+- **WHEN** se escribe `payment_account_id = False` directamente sobre una línea de un diario `bank`, sin pasar por el campo o2m del diario
+- **THEN** se lanza un error "must have an assigned account" (vía el constrains propio de `account.payment.method.line`)
+
+#### Scenario: Diario de caja no se ve afectado
+
+- **WHEN** se crea o edita un diario de tipo `cash` con líneas de método de pago sin cuenta
+- **THEN** no se lanza ningún error -- ambos constraints están acotados a `type == 'bank'`
+
+### Requirement: Bloqueo de confirmación de pagos de banco sin cuenta contable
+
+Un `account.payment` cuyo diario es de tipo `bank` y cuya línea de método de pago (`payment_method_line_id`) no tiene `payment_account_id` NO DEBE (MUST NOT) poder confirmarse (`action_post`), ni quedar con un asiento contable generado usando una cuenta genérica distinta a la configurada.
+
+El core de Odoo, al confirmar un pago sin `outstanding_account_id`, normalmente cae en un fallback silencioso (`company.transfer_account_id` o una cuenta del chart template) cuando la app completa de Contabilidad no está instalada, o directamente omite ese fallback -- dejando el pago confirmado sin asiento y sin error -- cuando sí está instalada. `_get_outstanding_account` (override de `account.payment`) DEBE (MUST) deshabilitar ese fallback para diarios `bank` sin cuenta en su línea, dejando `outstanding_account_id` en `False`; `action_post` (override de `account.payment`) DEBE (MUST) rechazar la confirmación en ese caso con un error explícito, antes de intentar generar el asiento.
+
+#### Scenario: Pago correctamente configurado
+
+- **WHEN** se confirma un pago cuyo diario `bank` y método de pago tienen cuenta asignada
+- **THEN** el pago genera su asiento contable normalmente
+
+#### Scenario: Línea sin cuenta, app de Contabilidad no instalada
+
+- **WHEN** se crea y confirma un pago contra una línea de método de pago de un diario `bank` sin `payment_account_id` (incluso si la compañía tiene `transfer_account_id` configurado, que en otro caso habría sido usado en silencio)
+- **THEN** el pago se crea con `outstanding_account_id` en `False`, y `action_post` lanza un error explícito en vez de confirmar sin asiento
+
+### Requirement: Migración de diarios banco existentes sin cuenta
+
+Al actualizar el módulo, los diarios de tipo `bank` ya existentes cuyas líneas de método de pago no tengan `payment_account_id` DEBEN (MUST) recibir automáticamente la cuenta de `default_account_id` del propio diario (migración `19.0.1.0.28`, idempotente), para no quedar bloqueados por los constraints de este documento apenas se actualice el sistema. Los diarios que tampoco tengan `default_account_id` configurado quedan registrados en el log del servidor, sin bloquear la migración.
 
 ### Requirement: Un único diario de compra internacional
 
@@ -719,3 +809,76 @@ Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MU
 - **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
 - **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
 
+### Requirement: Sin página "Foreign currency" ni grupo de visibilidad en la factura
+
+El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_currency` ni el widget `account-tax-foreign-totals-field`, y el grupo `l10n_ve_accountant.group_foreign_currency_view_accountant` NO DEBE (MUST NOT) existir (eliminados por ti-83943: la página era invisible en la práctica y el grupo solo gobernaba su visibilidad). Los montos y la tasa alternos siguen disponibles en las líneas, en las vistas de lista y en `tax_totals` (claves `*_foreign_currency`), que no dependen de esa página. El widget `account-tax-foreign-totals-field` permanece registrado en el frontend pero ningún formulario lo usa.
+
+#### Scenario: Formulario de factura con moneda alterna configurada
+
+- **WHEN** se obtiene el formulario de `account.move` en una compañía con `foreign_currency_id`
+- **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
+
+### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
+
+`account.move.line._get_effective_discount_percent()` DEBE (MUST) devolver el porcentaje de descuento que realmente se aplica a la línea (por defecto `discount or 0.0`) y ser la única fuente que lean el cálculo de impuestos de la línea (override de `account.tax._prepare_base_line_for_taxes_computation`, que asigna `discount` solo cuando el registro es un `account.move.line`), `_compute_foreign_subtotal`, `company_currency_line_totals`, `detailed_amounts` y la reconstrucción del apunte de las líneas con impuesto de precio incluido (`_price_included_split`). Un módulo que descuenta a través de un campo propio DEBE (MUST) extender solo este método. Sin ninguna extensión el comportamiento es idéntico al de leer `discount`. `l10n_ve_deductible` lo extiende; `discount_fixed` de `l10n_ve_invoice` mantiene su propio override.
+
+#### Scenario: Módulo con descuento propio
+
+- **WHEN** un módulo extiende `_get_effective_discount_percent()` para devolver su porcentaje en una línea con `discount = 0`
+- **THEN** el subtotal, el total, el apunte, el subtotal en moneda alterna, el desglose en moneda de la compañía y el detalle de importes de esa línea usan ese porcentaje
+
+### Requirement: `_sync_tax_lines` resincroniza los apuntes cuando cambian los campos de `_get_base_line_sync_extra_fields()`
+
+`account.move._get_base_line_sync_extra_fields()` DEBE (MUST) devolver los campos de línea de factura, además de los de agrupación, cuyo cambio obliga a `_sync_tax_lines` a resincronizar los apuntes (por defecto `price_unit`, `quantity` y `discount`). Un módulo que altera los importes de la línea con un campo propio DEBE (MUST) añadirlo extendiendo este método; de lo contrario, cambiar solo ese campo en una factura guardada no actualizaría los apuntes.
+
+#### Scenario: Cambia solo el campo propio de un módulo
+
+- **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
+- **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
+
+### Requirement: No se puede confirmar un pago con importe cero
+
+`account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.
+
+#### Scenario: Confirmar un pago con importe 0.0
+
+- **WHEN** se confirma desde la vista de pagos un pago cuyo importe es 0.0
+- **THEN** se lanza un `UserError` y el pago permanece en borrador
+
+#### Scenario: Confirmar un pago con importe mayor a cero
+
+- **WHEN** se confirma un pago con importe mayor a cero
+- **THEN** el pago se confirma con normalidad
+
+#### Scenario: Registrar pago por wizard en divisa cuyo importe convertido redondea a 0.0
+
+- **GIVEN** una factura en Bs cuyo saldo, convertido a USD, es menor a 0,01 USD
+- **WHEN** se registra el pago con `account.payment.register` en un diario USD con IGTF
+- **THEN** se lanza un `UserError` que indica la moneda y que el importe convertido es menor a la unidad mínima
+- **AND** no se crea ni concilia ningún pago, y la factura conserva su saldo
+
+#### Scenario: Cierre de sesión POS con neto cero
+
+- **WHEN** el cierre de sesión POS crea el pago agrupado de un método de banco cuyo neto es 0 (contexto `from_pos`)
+- **THEN** la guarda no aplica y la sesión puede cerrarse
+### Requirement: Un pago no puede tener fecha futura
+
+La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
+(`account.payment.register.payment_date`) NO PUEDEN (MUST NOT) ser posteriores a `fields.Date.context_today` (zona
+horaria del usuario). La validación es una constraint de guardado, de modo que aplica al crear y al escribir desde el
+formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15682.
+
+#### Scenario: Pago con fecha de hoy o pasada
+
+- **WHEN** se crea un pago con fecha de hoy o anterior
+- **THEN** se crea con normalidad
+
+#### Scenario: Pago con fecha futura desde el formulario
+
+- **WHEN** se crea un pago con fecha posterior a hoy, o se cambia la fecha de un pago existente a una fecha posterior a hoy
+- **THEN** se lanza un error de validación y no se guarda
+
+#### Scenario: Asistente de registrar pago con fecha futura
+
+- **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
+- **THEN** se lanza un error de validación antes de crear ningún pago

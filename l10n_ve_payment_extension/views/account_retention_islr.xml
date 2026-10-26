@@ -10,6 +10,8 @@
             <field name="arch" type="xml">
                 <form string="Retention" duplicate="false">
                     <header>
+                        <button name="action_print_retention_voucher_pdf" type="object"
+                            string="Download voucher PDF" invisible="state != 'emitted'" />
                         <button name="action_draft" type="object"
                             string="Convert to draft"
                             invisible="type != 'out_invoice' or state != 'cancel'" />
