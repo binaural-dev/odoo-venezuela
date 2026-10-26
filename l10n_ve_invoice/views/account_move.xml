@@ -23,11 +23,21 @@
                 <attribute name="invisible">move_type not in ('in_invoice', 'in_refund',
                     'in_receipt') and not posted_before and not is_contingency</attribute>
             </xpath>
+            <!-- Odoo only shows the number field when there is a number, a
+                 sequence preview (name_placeholder) or quick edit mode, and
+                 shows a fixed "Draft" otherwise. Moving a draft to another
+                 journal clears its number, and there is no preview once the
+                 journal has any previous number. On a contingency journal the
+                 number is typed by hand, so it must stay editable anyway. -->
             <field name="name" position="attributes">
+                <attribute name="invisible">not (name or name_placeholder or quick_edit_mode or is_contingency)</attribute>
                 <attribute name="readonly">(move_type in ('out_invoice', 'out_refund') or not is_contingency) and state == 'posted'</attribute>
 		        <attribute name="required">move_type in ('in_invoice', 'in_refund', 'in_receipt') or is_contingency</attribute>
                 <attribute name="placeholder">JRNL/2016/00001</attribute>
             </field>
+            <xpath expr="//div[hasclass('oe_title')]/h1/span" position="attributes">
+                <attribute name="invisible">name or name_placeholder or quick_edit_mode or is_contingency</attribute>
+            </xpath>
             <xpath expr="//div[hasclass('oe_title')]/h1" position="after">
                 <div class="inline-block"></div>
                 <label for="correlative"

@@ -230,7 +230,7 @@ Durante el cierre de sesión, el sistema DEBE (MUST) acumular `foreign_amount` d
 
 ### Requirement: Cross moves de compensación para métodos en divisa
 
-Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago que pase `_is_cross_move_eligible` —`is_foreign_currency`, tipo distinto de `pay_later`, `cross_account_journal` y `cross_journal` presentes Y una cuenta transitoria resoluble— el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR (`state="draft"`) que trasladan el saldo de la cuenta transitoria del método hacia la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate = True`, la tasa del pago (`foreign_rate`, también en el encabezado junto con `foreign_currency_id`) y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios se omite en silencio.
+Al cerrar la sesión (`action_pos_session_close` → `_validate_cross_move`), por cada método de pago que pase `_is_cross_move_eligible` —`is_foreign_currency`, tipo distinto de `pay_later`, `cross_account_journal` y `cross_journal` presentes Y una cuenta transitoria resoluble— el sistema DEBE (MUST) crear en `cross_account_journal` asientos EN BORRADOR (`state="draft"`) que trasladan el saldo de la cuenta transitoria del método hacia la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate = True`, la tasa del pago (`foreign_rate`, también en el encabezado junto con `foreign_currency_id`) y una referencia (`ref`) que identifica sesión/orden/pago; el número secuencial (`name`) se deja vacío para que lo asigne el diario al contabilizar. Un método sin alguno de los dos diarios se omite en silencio (change `l10n-ve-pos-cross-move-accounts-check` de `l10n_ve_pos`: la sesión no abre si al cruce le faltan sus cuentas; en el cierre, una transitoria que falte omite el cruce con un aviso en el log y una cuenta de las líneas de pago que falte da un error legible).
 
 La cuenta transitoria la resuelve `_get_cross_transitory_account`: para `cash`, `journal_id.default_account_id`; para el resto, `outstanding_account_id` o, si está vacía, `journal_id.default_account_id`; y como último recurso, en ambos casos, `company_id.account_default_pos_receivable_account_id`. La cuenta real la resuelve `_get_cross_real_account` con la `payment_account_id` de las líneas de método de pago entrantes o salientes del `cross_journal` según el signo. Existe además una variante `use_suspense=True` (usada desde fuera, p. ej. `binaural_pos_close` para cash in/out) que drena `journal_id.suspense_account_id` hacia `cross_journal.suspense_account_id` invirtiendo el sentido del asiento.
 
@@ -371,6 +371,8 @@ El controlador DEBE (MUST) exponer las rutas JSON `/validate_products_order` y `
 
 Es decir, `sell_kit_from_another_store` exime únicamente los productos ausentes del almacén de la caja; nunca el stock insuficiente.
 
+En O19 ningún JS del PdV llama estas rutas (son código heredado de O17). El bloqueo por stock antes del pago con "Cantidad en 0" lo hace `pos.config.check_stock_availability` (ver el requirement «"Cantidad en 0" bloquea el pago sin stock a mano»), con otra semántica: stock a mano de la ubicación origen de la caja, sin kits de otra tienda.
+
 #### Scenario: Stock insuficiente en el almacén de la caja
 
 - **WHEN** se llama `/validate_products_in_warehouse` con una cantidad mayor a la disponible en el almacén del picking type, con `sell_kit_from_another_store` verdadero
@@ -380,6 +382,35 @@ Es decir, `sell_kit_from_another_store` exime únicamente los productos ausentes
 
 - **WHEN** el producto no tiene quants en el almacén del picking type y se pasa `sell_kit_from_another_store` verdadero
 - **THEN** la respuesta vuelve con `msg_error` en `False` y la venta se permite
+
+### Requirement: "Cantidad en 0" bloquea el pago sin stock a mano
+
+Con `amount_to_zero` activo en la caja, al pulsar "Pago" (o al validar con el pago rápido) el PdV DEBE (MUST) comparar la cantidad pedida por producto almacenable (suma de líneas positivas) contra el stock a mano de la ubicación origen de la caja (`pos.config.check_stock_availability`) y, si alguna la supera, mostrar "Stock insuficiente" con el detalle y no pasar a la pantalla de pago. Lo reservado por otras órdenes no reduce el stock a comparar.
+
+#### Scenario: Stock a mano suficiente aunque esté reservado por otra orden
+
+- **WHEN** hay 8 a mano, otra orden confirmada reservó 7 y la orden del PdV lleva 7
+- **THEN** el PdV pasa a la pantalla de pago
+
+#### Scenario: Stock a mano insuficiente
+
+- **WHEN** hay 1 a mano y la orden del PdV lleva 7
+- **THEN** se muestra "Stock insuficiente" con "pedido 7, a mano 1" y no se abre la pantalla de pago ni se imprime en la MF
+
+#### Scenario: Check apagado o producto no almacenable
+
+- **WHEN** la caja no tiene `amount_to_zero`, o el producto es servicio/consumible no almacenable
+- **THEN** no se valida stock
+
+#### Scenario: Pago rápido
+
+- **WHEN** la caja usa el pago rápido y la orden lleva más de lo que hay a mano
+- **THEN** se muestra "Stock insuficiente" y la orden no se valida ni se imprime en la MF
+
+#### Scenario: Producto que ya no existe
+
+- **WHEN** la orden trae el id de un producto borrado después de que la caja lo cargó
+- **THEN** ese producto se omite y el resto de la orden se valida normalmente
 
 ### Requirement: Formulario reducido de contacto exclusivo del PdV
 

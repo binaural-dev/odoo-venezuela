@@ -1,0 +1,13 @@
+## Why
+
+En el PdV con doble moneda (Bs. base + USD alterna), el asiento de la factura de una **venta normal** descuadra en la moneda alterna (USD): el PdV cobra el total convertido UNA sola vez (correcto, es lo que se ve en pantalla), pero la factura reconstruye el alterno **línea por línea** desde `pos.order.line.foreign_price`, que se estaba guardando **redondeado a 2 decimales**. La causa: en el JS `l10n_ve_pos/static/src/overrides/models/pos_order_line.js`, el helper `_foreignUnitPriceDp()` leía `this.pos.dp["Foreign Product Price"]` — un accesor de Odoo 17 que **no existe en Odoo 19** (en la orderline las `decimal.precision` llegan en `this.models["decimal.precision"]`, y `this.pos` ni siquiera existe en la línea), así que devolvía `undefined` y caía SIEMPRE al fallback de 2 decimales. Con el precio unitario foráneo redondeado a 2 dp, `foreign_price × cantidad` se desvía del total (p. ej. 11,25 × 4 = 45,00 en vez de 44,98), y la suma de las líneas no cuadra con lo cobrado. El error crece con la cantidad. Con IVA incluido (p. ej. 2doce) no se nota porque el `foreign_price` ya es el monto final; con IVA excluido (jose-leandro7) descuadra en cada venta. (Ticket #15106.)
+
+## What Changes
+
+- `l10n_ve_pos`: en `pos.order.line._foreignUnitPriceDp()` (JS), leer la precisión decimal **"Foreign Product Price"** desde `this.models["decimal.precision"].find(...)` (patrón Odoo 19, el mismo que usa el core en la orderline y que el módulo ya usa para la dp "Tasa" en `pos_order.js`), en vez del inexistente `this.pos.dp`. Así el precio unitario foráneo se redondea a la precisión de catálogo (p. ej. 6) y el PdV persiste `foreign_price` a **plena precisión**, para que el asiento de la factura —que deriva el alterno de cada línea de ese `foreign_price` vía `pos.order._get_invoice_lines_values`— sume exactamente lo que el PdV cobró, con cada línea consistente (precio × cantidad = subtotal).
+
+## Impact
+
+- Specs afectadas: `l10n_ve_pos` (nueva requirement "Precisión del precio unitario en moneda alterna").
+- Código: `l10n_ve_pos/static/src/overrides/models/pos_order_line.js` (`_foreignUnitPriceDp`). Test JS `l10n_ve_pos/static/tests/unit/pos_order_line_foreign_dp.test.js`. Bump de manifest 1.13 → 1.14.
+- Solo afecta ventas **nuevas** del PdV (las órdenes ya sincronizadas con `foreign_price` a 2 dp no se reprocesan; su corrección sería un data-fix aparte). No cambia importes en Bs., ni la partida doble base. No toca IGTF (sus montos viven en el asiento del PAGO, congelados con `not_foreign_recalculate`, no en la factura de venta). Las facturas manuales del backend ya redondeaban `foreign_price` con la precisión de catálogo y no cambian.

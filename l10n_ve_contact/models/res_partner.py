@@ -1,5 +1,6 @@
 import logging
 import re
+from collections import Counter
 from odoo import models, fields, api, _
 from odoo.exceptions import MissingError, ValidationError
 from ...tools import binaural_cne_query
@@ -186,7 +187,20 @@ class ResPartner(models.Model):
                     vals.get("prefix_vat"), vals.get("vat"))
             if "email" in vals and vals.get("type", "contact") == "contact":
                 self.check_duplicate_email(vals.get("email"))
-        return super(ResPartner, self).create(vals_list)
+        partners = super(ResPartner, self).create(vals_list)
+        # The check above only sees partners already in the database, so two
+        # contacts of the same batch (an import) with the same email let each
+        # other in. Once created they can see each other. Only contacts are
+        # counted: an address of the batch sharing a contact's email doesn't
+        # trigger the check.
+        batch_emails = Counter(
+            partner.email for partner in partners
+            if partner.type == "contact" and partner.email
+        )
+        for partner in partners:
+            if partner.type == "contact" and batch_emails[partner.email] > 1:
+                partner.check_duplicate_email(partner.email)
+        return partners
 
     def write(self, vals):
         # Only the contacts whose email really changes are checked: writing back

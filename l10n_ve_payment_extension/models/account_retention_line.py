@@ -43,9 +43,6 @@ class AccountRetentionLine(models.Model):
     retention_rate = fields.Float(store=True, digits="Tasa")
     move_id = fields.Many2one("account.move", "move", ondelete="cascade", store=True)
     is_retention_client = fields.Boolean(default=True)
-    display_invoice_number = fields.Char(
-        string="Invoice Number", compute="_compute_display_invoice_number", store=True
-    )
     invoice_amount = fields.Monetary(
         currency_field="company_currency_id",
         string="Taxable income",
@@ -621,7 +618,7 @@ class AccountRetentionLine(models.Model):
 
     @api.depends("invoice_amount", "foreign_invoice_amount", "move_id")
     def _compute_amounts(self):
-        base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
+        base_currency_is_vef = self.env.company.currency_id.is_venezuelan_bolivar()
         if not base_currency_is_vef:
             for line in self:
                 if line.move_id and line.invoice_amount > 0 and line.foreign_invoice_amount > 0:
@@ -650,7 +647,7 @@ class AccountRetentionLine(models.Model):
         This compute is used to get the retention amount from the payment concept of the partner
         to generate the ISLR retention line.
         """
-        base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
+        base_currency_is_vef = self.env.company.currency_id.is_venezuelan_bolivar()
 
         islr_supplier_retention_lines = self.filtered(
             lambda l: (not l.retention_id and l.payment_concept_id)
@@ -859,7 +856,7 @@ class AccountRetentionLine(models.Model):
 
     def check_retention_amount(self):
         for record in self:
-            is_vef_the_base_currency = record.env.company.currency_id == record.env.ref("base.VEF")
+            is_vef_the_base_currency = record.env.company.currency_id.is_venezuelan_bolivar()
             is_client_retention = record.retention_id and record.retention_id.type == "out_invoice"
             if (
                 is_vef_the_base_currency
@@ -924,7 +921,7 @@ class AccountRetentionLine(models.Model):
             # of the partials that are not related with the retention payments.
             invoice_paid_amount_not_related_with_retentions = sum(
                 partial.debit_amount_currency
-                if partial.debit_currency_id == self.env.ref("base.VEF")
+                if partial.debit_currency_id.is_venezuelan_bolivar()
                 else partial.debit_amount_currency * partial.debit_move_id.foreign_inverse_rate
                 for partial in partials.filtered(
                     lambda p: p.debit_move_id not in retention_payments.mapped("move_id.line_ids")
