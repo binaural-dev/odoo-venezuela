@@ -5,4 +5,8 @@
     <field name="implied_ids" eval="[(4, ref('base.group_user'))]" />
     <field name="user_ids" eval="[(4,ref('base.user_root')),(4, ref('base.user_admin'))]"/>
   </record>
+  <!-- Grupo técnico (sin category/privilege, igual que en integra): lo asigna el toggle de Ajustes. -->
+  <record id="group_dispatch_note_print" model="res.groups">
+    <field name="name">Show button dispatch note print</field>
+  </record>
 </odoo>

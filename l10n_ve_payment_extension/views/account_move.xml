@@ -97,6 +97,18 @@
 
                 </xpath>
 
+                <xpath expr="//header" position="inside">
+                    <button name="action_download_retention_voucher" type="object"
+                            string="Download IVA voucher" context="{'retention_type': 'iva'}"
+                            invisible="not has_emited_iva_retention"/>
+                    <button name="action_download_retention_voucher" type="object"
+                            string="Download ISLR voucher" context="{'retention_type': 'islr'}"
+                            invisible="not has_emited_islr_retention"/>
+                    <button name="action_download_retention_voucher" type="object"
+                            string="Download municipal voucher" context="{'retention_type': 'municipal'}"
+                            invisible="not has_emited_municipal_retention"/>
+                </xpath>
+
                 <xpath expr="//header" position="after">
                     <field name="count_islr_retention" invisible="1"/>
                     <field name="has_emited_islr_retention" invisible="1"/>

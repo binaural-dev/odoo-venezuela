@@ -5,6 +5,44 @@ from odoo.exceptions import UserError
 class AccountMoveLine(models.Model):
     _inherit = 'account.move.line'
 
+    def _skip_foreign_compute(self):
+        """Exchange difference Debit/Credit Notes behave like Odoo's own
+        exchange difference entry: they never carry alternate currency
+        amounts (`foreign_debit`/`foreign_credit` stay 0.0). The alternate
+        currency difference, if any, lives in its own entry."""
+        if self._is_exchange_note_line():
+            return True
+        return super()._skip_foreign_compute()
+
+    def _is_exchange_note_line(self):
+        move = self.move_id[:1]
+        return bool(move) and move._is_exchange_difference_note_document()
+
+    def _zero_foreign_amounts_on_exchange_notes(self):
+        """Other flows (payment term / tax line sync in `l10n_ve_accountant`)
+        write `foreign_balance` directly, bypassing the compute -- so the
+        invariant is enforced here, on whatever was just written."""
+        to_zero = self.filtered(
+            lambda l: l._is_exchange_note_line()
+            and (l.foreign_debit or l.foreign_credit or l.foreign_balance)
+        )
+        if to_zero:
+            super(AccountMoveLine, to_zero).write({
+                'foreign_debit': 0.0, 'foreign_credit': 0.0, 'foreign_balance': 0.0,
+            })
+
+    @api.model_create_multi
+    def create(self, vals_list):
+        lines = super().create(vals_list)
+        lines._zero_foreign_amounts_on_exchange_notes()
+        return lines
+
+    def write(self, vals):
+        res = super().write(vals)
+        if any(f in vals for f in ('foreign_debit', 'foreign_credit', 'foreign_balance', 'move_id')):
+            self._zero_foreign_amounts_on_exchange_notes()
+        return res
+
     def reconcile(self):
         """When reconciling customer invoices (`out_invoice`/`out_refund`)
         whose company has the exchange difference Debit/Credit Note flow
@@ -26,7 +64,28 @@ class AccountMoveLine(models.Model):
         `_prepare_exchange_difference_move_vals` only receives the
         line(s) needing a fix, not the counterpart they were reconciled
         against.
+
+        Retention payments are excluded WITHOUT any hard dependency on
+        the module that implements them (`l10n_ve_payment_extension`):
+        that module reconciles a retention against the invoice's
+        receivable line with `l10n_ve_exchange_is_retention_reconcile=True`
+        in context (`account_retention.py::_reconcile_all_payments`) -- an
+        EXPLICIT, module-owned key set for exactly this purpose, not the
+        generic native `no_exchange_difference` key. That native key is
+        also set on the SAME call (to suppress Odoo's own generic entry)
+        but is deliberately NOT read here: it is a widely reused Odoo
+        core convention, and this module itself sets it elsewhere for an
+        unrelated reason (closing its own note's receivable line, see
+        `_create_exchange_difference_note` below) -- relying on it here
+        would misidentify ANY future caller that legitimately sets
+        `no_exchange_difference` for a different reason as a retention.
+        Coordinated purely via this context key (no shared dependency in
+        either direction): `l10n_ve_payment_extension` sets it without
+        depending on this module, and this module reads it without
+        depending on that one.
         """
+        if self.env.context.get('l10n_ve_exchange_is_retention_reconcile'):
+            return super().reconcile()
         invoice_lines = self.filtered(
             lambda l: (
                 l.account_type == 'asset_receivable'
@@ -111,10 +170,22 @@ class AccountMoveLine(models.Model):
                 credit_keys=', '.join(credit_values.keys()),
             ))
         self.env.cr._l10n_ve_exchange_current_partial_amls = (debit_values['aml'], credit_values['aml'])
+        residual_currency_before = (
+            debit_values['amount_residual_currency'], credit_values['amount_residual_currency'],
+        )
         try:
-            return super()._prepare_reconciliation_single_partial(
+            res = super()._prepare_reconciliation_single_partial(
                 debit_values, credit_values, shadowed_aml_values=shadowed_aml_values,
             )
+            # Solo si el parcial es de la nota: el contexto sigue vivo en conciliaciones anidadas
+            # (p. ej. asientos de caja de impuestos) donde ninguna línea es de nota.
+            if self.env.context.get('l10n_ve_exchange_closing_note') and (
+                debit_values['aml']._is_exchange_note_line() or credit_values['aml']._is_exchange_note_line()
+            ):
+                self._l10n_ve_neutralize_foreign_amount_of_note_partial(
+                    res, debit_values, credit_values, residual_currency_before,
+                )
+            return res
         finally:
             # `try/finally`, no un simple `return` -- este stash vive en
             # un atributo plano del CURSOR, no en una transacción ORM:
@@ -132,6 +203,53 @@ class AccountMoveLine(models.Model):
             # podría filtrarse a un partial NO relacionado en un intento
             # posterior sobre el mismo cursor.
             self.env.cr._l10n_ve_exchange_current_partial_amls = None
+
+    @api.model
+    def _prepare_move_line_residual_amounts(
+        self, aml_values, counterpart_currency, shadowed_aml_values=None, other_aml_values=None,
+    ):
+        """Al cerrar la nota (`l10n_ve_exchange_closing_note`) su línea no ofrece residual en divisa.
+        Así el motor concilia en moneda de la compañía y la nota cierra con un único parcial
+        exacto; si no, concilia en la divisa y el monto en Bs sale de `min()` entre dos tasas
+        (varios parciales sucesivos)."""
+        result = super()._prepare_move_line_residual_amounts(
+            aml_values, counterpart_currency,
+            shadowed_aml_values=shadowed_aml_values, other_aml_values=other_aml_values,
+        )
+        aml = aml_values['aml']
+        if (
+            self.env.context.get('l10n_ve_exchange_closing_note')
+            and aml._is_exchange_note_line()
+            and counterpart_currency != aml.company_currency_id
+        ):
+            result.pop(counterpart_currency, None)
+        return result
+
+    def _l10n_ve_neutralize_foreign_amount_of_note_partial(
+        self, res, debit_values, credit_values, residual_currency_before,
+    ):
+        """Deja en 0 el monto en divisa de la línea cerrada (factura o pago) en el parcial de la nota.
+        Una diferencia cambiaria solo ajusta el balance en VEF, como el asiento nativo; si no, el
+        motor convertía la nota a la divisa y la descontaba (ej. $450 - $100 - $9,19 = $340,81).
+        Se hace antes de crear el parcial: el residual almacenado no se recalcula al cambiar
+        sus montos. Omite las líneas en moneda de la compañía, incluida la propia nota."""
+        partial = (res or {}).get('partial_values')
+        if not partial:
+            return
+        for side, values, before in (
+            ('debit', debit_values, residual_currency_before[0]),
+            ('credit', credit_values, residual_currency_before[1]),
+        ):
+            aml = values['aml']
+            if aml.currency_id == aml.company_currency_id:
+                continue
+            partial[f'{side}_amount_currency'] = 0.0
+            values['amount_residual_currency'] = before
+            fully_matched = (
+                aml.currency_id.is_zero(before)
+                and aml.company_currency_id.is_zero(values['amount_residual'])
+            )
+            res[f'{side}_values'] = None if fully_matched else values
 
     def _prepare_exchange_difference_move_vals(
         self, amounts_list, company=None, exchange_date=None, **kwargs
@@ -227,6 +345,7 @@ class AccountMoveLine(models.Model):
                 and not invoice.debit_origin_id
                 and not invoice.reversed_entry_id
                 and not getattr(invoice, 'l10n_ve_igtf_note_debit_origin', False)
+                and company_of_line._l10n_ve_exchange_note_allowed_for_partner(invoice.partner_id)
             )
             residual = amounts.get('amount_residual')
             if (
@@ -237,6 +356,7 @@ class AccountMoveLine(models.Model):
             ):
                 pending_notes.append({
                     'line': line, 'invoice': invoice, 'payment': payment, 'residual': residual,
+                    'invoice_line': invoice_line,
                 })
             else:
                 remaining_lines.append(line)
@@ -323,6 +443,7 @@ class AccountMoveLine(models.Model):
             for descriptor in pending_notes:
                 descriptor['line']._create_exchange_difference_note(
                     descriptor['invoice'], descriptor['payment'], descriptor['residual'],
+                    invoice_line=descriptor['invoice_line'],
                 )
 
             # Nuestras notas NUNCA se incluyen en el recordset retornado: el
@@ -353,7 +474,7 @@ class AccountMoveLine(models.Model):
             # corresponde a nada, sin ningún error visible.
             self.env.cr._l10n_ve_exchange_pending_notes = []
 
-    def _create_exchange_difference_note(self, invoice, payment, residual):
+    def _create_exchange_difference_note(self, invoice, payment, residual, invoice_line=None):
         """Settles the exchange difference (exact `residual` amount, in
         company currency, taken directly from Odoo's own
         `_prepare_exchange_difference_move_vals` computation) with a real
@@ -379,13 +500,16 @@ class AccountMoveLine(models.Model):
         against a re-derived, possibly stale invoice line could.
 
         Does nothing if an exchange difference Debit/Credit Note already
-        exists for this (invoice, payment) pair -- guards against two
-        queued entries from near-simultaneous reconciliations of the
+        exists for this (invoice, payment, invoice line) -- guards against
+        two queued entries from near-simultaneous reconciliations of the
         SAME payment, without blocking a genuinely distinct exchange
         difference from a LATER, separate partial payment on the same
-        invoice.
+        invoice. One note per installment (`invoice_line`); notes issued
+        before `l10n_ve_exchange_line_id` carry no line and cover the pair.
         """
         self.ensure_one()
+        if invoice_line is None:
+            invoice_line = self if self.move_id == invoice else self.browse()
         # `l10n_ve_exchange_invoice_line_ids`/`l10n_ve_exchange_payment_line_ids`
         # (stashed by `reconcile()` above) also need clearing here, not
         # just `skip_invoice_sync` -- the note we're about to `create()`
@@ -425,12 +549,25 @@ class AccountMoveLine(models.Model):
         # re-asignar el pago encontraría la nota vieja ya revertida y
         # saldría aquí sin crear una nueva NI conciliar nada -- el
         # residual quedaría sin ningún documento que lo respalde.
-        existing_note = self.env['account.move'].search([
+
+        # Un mismo parcial puede dejar diferencial en la factura Y en el
+        # pago (sobrepago): para la línea del pago `invoice_line` es la
+        # contraparte, así que ambas notas comparten (factura, pago,
+        # cuota). Solo cuenta como existente la que cierra contra ESTA
+        # línea (`self`), como el nativo, que da un ajuste por cada línea.
+        candidates = self.env['account.move'].search([
             ('l10n_ve_exchange_invoice_id', '=', invoice.id),
             ('l10n_ve_exchange_payment_id', '=', payment.id),
+            ('l10n_ve_exchange_line_id', 'in', [invoice_line.id, False]),
             ('state', '!=', 'cancel'),
             ('reversal_move_ids', '=', False),
-        ], order='id desc', limit=1)
+        ], order='id desc')
+
+        def _closes_against_self(note):
+            note_line = note.line_ids.filtered(lambda l: l.account_type == 'asset_receivable')
+            return self in (note_line.matched_debit_ids.debit_move_id | note_line.matched_credit_ids.credit_move_id)
+
+        existing_note = candidates.filtered(_closes_against_self)[:1]
         if existing_note:
             return existing_note
 
@@ -669,8 +806,12 @@ class AccountMoveLine(models.Model):
                     'l10n_ve_exchange_is_credit_note': False,
                     'l10n_ve_exchange_invoice_id': invoice.id,
                     'l10n_ve_exchange_payment_id': payment.id,
+                    'l10n_ve_exchange_line_id': invoice_line.id,
                 })
-                note.with_context(move_action_post_alert=True).action_post()
+                note.with_context(
+                    move_action_post_alert=True,
+                    l10n_ve_skip_future_date_check=True,
+                ).action_post()
             else:
                 # `account_id` ya viene fijado arriba en `line_vals`
                 # (rama `is_credit_note` -> cuenta de PÉRDIDA) -- sin
@@ -713,6 +854,7 @@ class AccountMoveLine(models.Model):
                     'l10n_ve_exchange_is_credit_note': True,
                     'l10n_ve_exchange_invoice_id': invoice.id,
                     'l10n_ve_exchange_payment_id': payment.id,
+                    'l10n_ve_exchange_line_id': invoice_line.id,
                 })
                 # NO se re-calcula/escribe `foreign_rate` acá -- a
                 # propósito, a diferencia de una versión anterior de
@@ -743,6 +885,7 @@ class AccountMoveLine(models.Model):
                 note.with_context(
                     move_action_post_alert=True,
                     l10n_ve_skip_refund_origin_validation=True,
+                    l10n_ve_skip_future_date_check=True,
                 ).action_post()
 
         note_line = note.line_ids.filtered(lambda l: l.account_type == 'asset_receivable')
@@ -770,9 +913,9 @@ class AccountMoveLine(models.Model):
         # `reconciled_lines_ids` inverse) would re-enter the exchange
         # difference engine and could queue a SPURIOUS residual for this
         # note's own closing line.
-        note_line.with_context(no_exchange_difference=True).write(
-            {'reconciled_lines_ids': [Command.set(self.ids)]}
-        )
+        note_line.with_context(
+            no_exchange_difference=True, l10n_ve_exchange_closing_note=True,
+        ).write({'reconciled_lines_ids': [Command.set(self.ids)]})
 
         if is_credit_note:
             # `reversed_entry_id` se setea AQUÍ, DESPUÉS de que la NC ya

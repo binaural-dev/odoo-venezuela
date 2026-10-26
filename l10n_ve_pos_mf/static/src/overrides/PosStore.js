@@ -59,6 +59,24 @@ patch(PosStore.prototype, {
   },
 
   /**
+   * Antes de pasar a la pantalla de pago, sustituye por el mínimo fiscal
+   * (0,01) cualquier línea cuyo descuento (de línea o global) la haya dejado
+   * en 0, para que el total y el pago ya reflejen 0,01 y la MF pueda imprimir
+   * la línea (no acepta 0,00). El caso normal ya lo resuelve el override de
+   * `PosOrderline.setDiscount` al aplicar el descuento; este respaldo cubre
+   * órdenes cargadas/reanudadas cuyas líneas ya venían al 100%. Ticket #15105.
+   */
+  async pay() {
+    const order = this.getOrder();
+    if (order) {
+      for (const line of [...(order.lines || [])]) {
+        line.mfEnsureNonZeroFiscalPrice?.();
+      }
+    }
+    return super.pay(...arguments);
+  },
+
+  /**
    * Obtiene la instancia del driver de la máquina fiscal
    * @returns {TfhkaDriver|null}
    */
@@ -435,6 +453,7 @@ patch(PosStore.prototype, {
           ? line.price_unit
           : line.get_foreign_unit_price?.() ?? line.price_unit;
 
+        const isFiscalMin = Boolean(line.mfIsFiscalMinLine?.());
         const taxes = line.tax_ids || [];
         const fiscalCode =
           taxes.length > 0
@@ -450,6 +469,17 @@ patch(PosStore.prototype, {
           ),
           code: line.product_id?.default_code,
           tax: fiscalCode,
+          // Línea facturada en el mínimo fiscal (descuento 100% → subtotal 0,01),
+          // reconocida por la marca o por sus datos, que sobreviven a recargar
+          // la caja y a reimprimir pedidos pendientes. Ver
+          // _convertOrderForDriver. #15105
+          _mf_fiscal_min: isFiscalMin,
+          // Unidad de los productos pesados, para imprimir la cantidad real en
+          // la descripción de las líneas de mínimo fiscal. #15105
+          _mf_uom_name:
+            isFiscalMin && line.product_id?.to_weight
+              ? this.normalizeProductName(line.product_id?.uom_id?.name || "")
+              : "",
         };
       });
 
@@ -689,6 +719,23 @@ patch(PosStore.prototype, {
     return round_pr(value, this.currency?.rounding || 0.01);
   },
 
+  /**
+   * Descripción para la MF de una línea de mínimo fiscal con cantidad
+   * fraccionaria. La MF la recibe como 1 × 0,01, así que la cantidad real de
+   * la orden se antepone al nombre para que quede impresa:
+   * "CANT 1,25 KG - PRODUCTO". Va al inicio para que, si el nombre es largo,
+   * se trunque el nombre y no la cantidad. Ticket #15105.
+   */
+  _mfFiscalMinProductName(line) {
+    const qty = Math.abs(Number(line.quantity || 0));
+    const qtyText = qty
+      .toFixed(3)
+      .replace(/\.?0+$/, "")
+      .replace(".", ",");
+    const uom = line._mf_uom_name ? ` ${String(line._mf_uom_name).toUpperCase()}` : "";
+    return `CANT ${qtyText}${uom} - ${line.name || ""}`.trim();
+  },
+
   _isGlobalDiscountProductLine(line) {
     const discountProduct = this.config?.discount_product_id;
     const discountProductId = Array.isArray(discountProduct)
@@ -789,6 +836,16 @@ patch(PosStore.prototype, {
       return order._mf_global_discount_meta || null;
     }
 
+    // En la aplicación manual se usa el % que tecleó el cajero. Inferirlo del
+    // monto de pos_discount falla si hay líneas en el mínimo fiscal: el monto
+    // se calcula sobre su subtotal de 0,01 y la base de la inferencia no
+    // coincide (p.ej. un 50% tras un global de 100% salía 0,01%). #15105
+    const appliedPercent =
+      expectedPercent != null
+        ? Math.min(Math.max(Number(expectedPercent) || 0, 0), 100)
+        : inference.inferredPercent;
+    const appliedClamped = expectedPercent != null ? false : inference.clamped;
+
     // Remover primero las líneas de descuento global para que
     // globalDiscountPc sea 0 antes de modificar líneas y evitar
     // re-disparos del debounce de pos_discount.
@@ -816,33 +873,38 @@ patch(PosStore.prototype, {
       return quantity > 0 && unitPrice >= 0;
     });
 
-    for (const line of positiveLines) {
-      if (typeof line.setDiscount === "function") {
-        line.setDiscount(inference.inferredPercent);
-      } else {
-        line.discount = inference.inferredPercent;
-      }
-    }
-
+    // Base del descuento con el precio real, ANTES de aplicarlo: con un global
+    // del 100% `setDiscount` sustituye el precio por el mínimo fiscal (0,01) y
+    // el monto informativo (DESC. GLOBAL) saldría como Σ 0,01 × cantidad.
+    // Ticket #15105.
     let rawTotal = 0;
     for (const line of positiveLines) {
       const quantity = Math.abs(Number(line.getQuantity?.() ?? line.qty ?? 0));
       const unitPrice = Number(line.getUnitPrice?.() ?? line.price_unit ?? 0);
       rawTotal += Math.abs(unitPrice * quantity);
     }
+
+    for (const line of positiveLines) {
+      if (typeof line.setDiscount === "function") {
+        line.setDiscount(appliedPercent);
+      } else {
+        line.discount = appliedPercent;
+      }
+    }
+
     const correctedAmount = round_pr(
-      (rawTotal * inference.inferredPercent) / 100,
+      (rawTotal * appliedPercent) / 100,
       this.currency?.rounding || 0.01
     );
 
     order._mf_global_discount_applied = true;
     order._mf_global_discount_meta = {
       global_discount_amount: correctedAmount,
-      global_discount_rate: inference.inferredPercent,
-      global_clamped: inference.clamped,
+      global_discount_rate: appliedPercent,
+      global_clamped: appliedClamped,
     };
     order._mf_last_applied_discount_percent = Number(
-      expectedPercent ?? inference.inferredPercent ?? 0
+      appliedPercent ?? 0
     );
 
     return order._mf_global_discount_meta;
@@ -899,6 +961,39 @@ patch(PosStore.prototype, {
     }
 
     const lines = POSITIVE_LINES.map((line) => {
+      // Línea de mínimo fiscal (descuento 100% → subtotal de línea 0,01 en
+      // Odoo con la cantidad intacta): la MF arma cada línea como
+      // precio × cantidad con 2 decimales y no puede repartir 0,01 entre N
+      // unidades. Con cantidad entera se manda N × 0,01 más un descuento por
+      // monto sobre el ítem de (N − 1) × 0,01 (`q-` en el driver): la línea
+      // fiscal suma 0,01, el cierre 199 cuadra y la MF imprime la cantidad
+      // real. Ticket #15105.
+      if (line._mf_fiscal_min) {
+        const qty = Math.abs(Number(line.quantity || 0));
+        const wholeQty = Math.round(qty);
+        if (wholeQty >= 1 && Math.abs(qty - wholeQty) < 1e-9) {
+          return {
+            product_name: line.name,
+            product_code: line.code || line.default_code,
+            price_unit: 0.01,
+            quantity: wholeQty,
+            fiscal_code: line.tax,
+            discount: 0,
+            discount_amount: round_pr((wholeQty - 1) * 0.01, 0.01),
+          };
+        }
+        // Cantidad fraccionaria (productos pesados): no se sabe cómo redondea
+        // la MF 0,01 × cantidad, así que va como 1 × 0,01 con la cantidad
+        // real en la descripción.
+        return {
+          product_name: this._mfFiscalMinProductName(line),
+          product_code: line.code || line.default_code,
+          price_unit: 0.01,
+          quantity: 1,
+          fiscal_code: line.tax,
+          discount: 0,
+        };
+      }
       const priceUnit = Number(line.price_unit || 0);
       const lineDiscount = Number(line.discount || 0);
       const netAfterLineDiscount = this._applyDiscount(priceUnit, lineDiscount);

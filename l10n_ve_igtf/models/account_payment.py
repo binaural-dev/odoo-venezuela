@@ -18,7 +18,7 @@ class AccountPaymentAndIgtf(models.Model):
         "account.move",
         "origin_payment_advanced_payment_id",
         string="Asientos de Anticipo",
-        domain="[('move_type', '=', 'entry'), ('state', 'not in', ('draft', 'cancel'))]",
+        domain=[('move_type', '=', 'entry'), ('state', 'not in', ('draft', 'cancel'))],
         help="Anticipos (account.move) aplicados a este pago.",
         copy=False,
     )
@@ -522,11 +522,23 @@ class AccountPaymentAndIgtf(models.Model):
 
                 if float_compare(rec.igtf_amount, 0.0, precision_digits=precision) > 0.0:
                     base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
-                    if self._is_same_within_rounding(amount, base_residual, comp_curr):
+                    # Comparing only in VEF misses a full payment on a VEF
+                    # invoice paid in foreign currency: converting the debt to
+                    # USD and back leaves a few-bolivar leftover from rounding,
+                    # not a real difference. Also compare in the PAYMENT
+                    # currency to catch that case and force the exact residual.
+                    base_residual_in_payment_curr = comp_curr._convert(
+                        base_residual, currency, rec.company_id, conversion_date,
+                    )
+                    same_in_company_currency = self._is_same_within_rounding(amount, base_residual, comp_curr)
+                    same_in_payment_currency = self._is_same_within_rounding(
+                        abs(credit_line), base_residual_in_payment_curr, currency,
+                    )
+                    if same_in_company_currency or same_in_payment_currency:
                         amount = base_residual
                     if not write_off_line_vals:
-                        
-                        
+
+
                         vals[1].update({"amount_currency": credit_line, "balance": -amount})
                     else:
                         if conversion_date != rec.date: 
@@ -634,7 +646,16 @@ class AccountPaymentAndIgtf(models.Model):
 
                 if float_compare(rec.igtf_amount, 0.0, precision_digits=precision) > 0.0:
                     base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
-                    if self._is_same_within_rounding(amount, base_residual, comp_curr):
+                    # See the matching comment in `_prepare_inbound_move_line_igtf_vals`:
+                    # also compare in the payment currency, not just VEF.
+                    base_residual_in_payment_curr = comp_curr._convert(
+                        base_residual, currency, rec.company_id, conversion_date,
+                    )
+                    same_in_company_currency = self._is_same_within_rounding(amount, base_residual, comp_curr)
+                    same_in_payment_currency = self._is_same_within_rounding(
+                        abs(debit_line), base_residual_in_payment_curr, currency,
+                    )
+                    if same_in_company_currency or same_in_payment_currency:
                         amount = base_residual
                     if not write_off_line_vals:
 
@@ -667,6 +688,19 @@ class AccountPaymentAndIgtf(models.Model):
                 
                 rec._create_outbound_move_line_igtf_vals(vals, igtf_base)
 
+    def _cancel_draft_advance_crosses(self):
+        """`advanced_move_ids` solo trae cruces publicados. Un cruce que quedó en borrador ligado a este pago
+        (p. ej. si falló su publicación) no tiene nada que confirmar: se cancela y se desliga junto con el pago,
+        porque sus botones propios no pueden hacerlo."""
+        self.ensure_one()
+        drafts = self.env["account.move"].search([
+            ("origin_payment_advanced_payment_id", "=", self.id),
+            ("is_advance_move", "=", True),
+            ("state", "=", "draft"),
+        ])
+        drafts.with_context(move_action_cancel_advance_payment=True).button_cancel()
+        drafts.write({"origin_payment_advanced_payment_id": False})
+
     def action_cancel(self):
         for record in self:
             if record.advanced_move_ids:
@@ -697,6 +731,7 @@ class AccountPaymentAndIgtf(models.Model):
             # de desconciliar, o `remove_move_reconcile()` (que rompe TODOS
             # los parciales del asiento de una sola vez) deja el IGTF/ND de
             # las facturas restantes huérfano y posteado.
+            record._cancel_draft_advance_crosses()
             move_lines = record.move_id.line_ids
             partial_recs = move_lines.matched_debit_ids | move_lines.matched_credit_ids
             for partial_rec in partial_recs:
@@ -727,6 +762,7 @@ class AccountPaymentAndIgtf(models.Model):
             # Ver nota equivalente en `action_cancel`: procesar TODOS los
             # parciales de conciliación del asiento, no solo el primero,
             # antes de romperlos todos con `remove_move_reconcile()`.
+            record._cancel_draft_advance_crosses()
             move_lines = record.move_id.line_ids
             partial_recs = move_lines.matched_debit_ids | move_lines.matched_credit_ids
             for partial_rec in partial_recs:

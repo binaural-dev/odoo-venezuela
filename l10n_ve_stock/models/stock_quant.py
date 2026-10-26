@@ -38,7 +38,7 @@ class StockQuan(models.Model):
                 ("product_id", "=", record.product_id.id),
                 ("location_id.usage", "=", "internal"),
             ]
-            if not isinstance(record.id, models.NewId):
+            if not isinstance(record.id, api.NewId):
                 domain.append(("id", "!=", record.id))
 
             record.product_alter_location_ids = record.search(domain)

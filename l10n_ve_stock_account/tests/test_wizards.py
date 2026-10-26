@@ -5,27 +5,18 @@ from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import UserError
 from odoo import Command
 
+from .common import StockAccountTestCommon
+
 _logger = logging.getLogger(__name__)
 
 
 @tagged("post_install", "-at_install", "test_wizards")
-class TestPickingInvoiceWizard(TransactionCase):
+class TestPickingInvoiceWizard(StockAccountTestCommon):
     """Tests for picking.invoice.wizard entry point, validation, and dispatch."""
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-
-        cls.currency_usd = cls.env.ref("base.USD")
-        cls.currency_usd.active = True
-        cls.currency_vef = cls.env.ref("base.VEF")
-        cls.currency_vef.active = True
-
-        cls.company = cls.env.company
-        cls.company.write({
-            "currency_id": cls.currency_vef.id,
-            "foreign_currency_id": cls.currency_usd.id,
-        })
 
         # --- Journals ---
         cls.sale_journal = cls.env["account.journal"].create({
@@ -43,23 +34,6 @@ class TestPickingInvoiceWizard(TransactionCase):
             "company_id": cls.company.id,
         })
         cls.company.vendor_journal_id = cls.purchase_journal.id
-
-        # --- Taxes ---
-        cls.sale_tax = cls.env["account.tax"].create({
-            "name": "Sale Tax 16%",
-            "amount": 16,
-            "type_tax_use": "sale",
-            "company_id": cls.company.id,
-        })
-        cls.company.account_sale_tax_id = cls.sale_tax.id
-
-        cls.purchase_tax = cls.env["account.tax"].create({
-            "name": "Purchase Tax 16%",
-            "amount": 16,
-            "type_tax_use": "purchase",
-            "company_id": cls.company.id,
-        })
-        cls.company.account_purchase_tax_id = cls.purchase_tax.id
 
         # --- Account ---
         cls.income_account = cls.env["account.account"].create({

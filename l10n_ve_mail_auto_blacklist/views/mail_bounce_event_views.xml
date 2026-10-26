@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="mail_bounce_event_view_list" model="ir.ui.view">
+        <field name="name">mail.bounce.event.view.list</field>
+        <field name="model">mail.bounce.event</field>
+        <field name="arch" type="xml">
+            <list create="0" edit="0">
+                <field name="event_date"/>
+                <field name="email"/>
+                <field name="event_type"/>
+                <field name="bounce_type" widget="badge"
+                       decoration-danger="bounce_type == 'hard'"
+                       decoration-warning="bounce_type == 'soft'"/>
+                <field name="reason" optional="hide"/>
+                <field name="active" column_invisible="True"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="mail_bounce_event_view_form" model="ir.ui.view">
+        <field name="name">mail.bounce.event.view.form</field>
+        <field name="model">mail.bounce.event</field>
+        <field name="arch" type="xml">
+            <form create="0" edit="0">
+                <sheet>
+                    <widget name="web_ribbon" title="Archived" bg_color="text-bg-danger" invisible="active"/>
+                    <group>
+                        <field name="email"/>
+                        <field name="event_date"/>
+                        <field name="event_type"/>
+                        <field name="bounce_type"/>
+                        <field name="active" invisible="1"/>
+                    </group>
+                    <field name="reason"/>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <record id="mail_bounce_event_view_search" model="ir.ui.view">
+        <field name="name">mail.bounce.event.view.search</field>
+        <field name="model">mail.bounce.event</field>
+        <field name="arch" type="xml">
+            <search>
+                <field name="email"/>
+                <filter name="filter_bounce" string="Bounces" domain="[('event_type', '=', 'bounce')]"/>
+                <filter name="filter_smtp_error" string="SMTP Refusals" domain="[('event_type', '=', 'smtp_error')]"/>
+                <separator/>
+                <filter name="filter_hard" string="Hard (Permanent)" domain="[('bounce_type', '=', 'hard')]"/>
+                <filter name="filter_soft" string="Soft (Temporary)" domain="[('bounce_type', '=', 'soft')]"/>
+                <separator/>
+                <filter name="filter_archived" string="Archived" domain="[('active', '=', False)]"/>
+                <group>
+                    <filter name="group_by_email" string="Email" context="{'group_by': 'email'}"/>
+                    <filter name="group_by_type" string="Type" context="{'group_by': 'event_type'}"/>
+                    <filter name="group_by_bounce_type" string="Severity" context="{'group_by': 'bounce_type'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+    <record id="mail_bounce_event_action" model="ir.actions.act_window">
+        <field name="name">Email Delivery Failures</field>
+        <field name="res_model">mail.bounce.event</field>
+        <field name="view_mode">list,form</field>
+        <field name="context">{'search_default_group_by_email': 1}</field>
+    </record>
+</odoo>

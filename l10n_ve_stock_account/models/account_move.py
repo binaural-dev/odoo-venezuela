@@ -21,19 +21,21 @@ class AccountMove(models.Model):
             list_guide_number = [picking.guide_number for picking in record.picking_ids]
             record.guide_number = "/".join(list_guide_number)
 
-    def button_cancel(self):
-        """Revert the dispatch-guide invoicing state created by `create_invoice`.
-
-        `stock.picking.create_invoice()` sets `state_guide_dispatch` and bumps
-        `sale.order.line.qty_invoiced` by hand when the invoice is created, outside
-        Odoo's native invoicing flow. Cancelling the invoice never undoes that on
-        its own (nothing is wired to listen for it), which leaves the guide stuck
-        as "Invoiced" and the sale order permanently "Fully Invoiced" with no way
-        to re-invoice the delivery. Mirror the creation-time side effects here.
+    def _get_tax_grouped_lines(self):
         """
-        pickings_by_move = {move: move.transfer_ids for move in self if move.transfer_ids}
-        res = super().button_cancel()
-        for move, pickings in pickings_by_move.items():
-            pickings._revert_guide_dispatch_state(move)
-            pickings._revert_order_sale_invoiced()
-        return res
+        Agrupa las líneas de factura por el conjunto de impuestos que tienen aplicados.
+        Retorna un diccionario: { tuple(ids_impuestos): {'base_amount': suma_base, 'taxes': recordset_impuestos} }
+        """
+        self.ensure_one()
+        tax_groups = {}
+        for line in self.invoice_line_ids:
+            tax_ids = line.tax_ids.ids
+            tax_key = tuple(sorted(tax_ids))
+
+            if tax_key not in tax_groups:
+                tax_groups[tax_key] = {
+                    'base_amount': 0.0,
+                    'taxes': line.tax_ids,
+                }
+            tax_groups[tax_key]['base_amount'] += line.price_subtotal
+        return tax_groups

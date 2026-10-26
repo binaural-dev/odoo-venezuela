@@ -2,6 +2,7 @@
 
 import { describe, expect, test } from "@odoo/hoot";
 import { FiscalProtocol } from "@l10n_ve_mf_base/core/FiscalProtocol";
+import { SerialConnection } from "@l10n_ve_mf_base/core/SerialConnection";
 import { StatusParser } from "@l10n_ve_mf_base/core/StatusParser";
 import { TfhkaDriver } from "@l10n_ve_mf_base/drivers/TfhkaDriver";
 import { MockSerialConnection } from "./MockSerialConnection";
@@ -31,6 +32,51 @@ function buildS1Payload({
     ];
 
     return `S1${fields.join("\n")}`;
+}
+
+function buildS2Payload({ base = 0, paymentCount = 0 }) {
+    const amount = (value) => ` ${String(Math.round(value * 100)).padStart(13, "0")}`;
+    const fields = [
+        amount(base),
+        amount(base * 0.16),
+        amount(base * 1.16),
+        "000000",
+        amount(base * 1.16),
+        String(paymentCount).padStart(4, "0"),
+        "1",
+    ];
+    return `S2${fields.join("\n")}\n`;
+}
+
+function lostAckOrder(payment_lines = [{ payment_method_code: "01", amount: 17316.0 }]) {
+    return {
+        partner: { vat: "V14739206", name: "MARIA VASQUEZ" },
+        lines: [
+            { product_code: "IFN-36W", product_name: "PANEL LED", fiscal_code: "1", quantity: 1, price_unit: 9298.04 },
+            { product_code: "ECA96", product_name: "EXTENSION", fiscal_code: "1", quantity: 1, price_unit: 5629.54 },
+        ],
+        payment_lines,
+        additional_lines: [],
+        flag_21: "00",
+        has_cashbox: false,
+    };
+}
+
+async function connectedDriver() {
+    const driver = new TfhkaDriver();
+    driver.connection = new MockSerialConnection();
+    driver.retryDelay = 0;
+    await driver.connection.requestPort();
+    driver.isConnected = true;
+    driver.connection.setS1Payload(buildS1Payload({ lastInvoiceNumber: 455, serialMachine: "Z7C7047972" }));
+    return driver;
+}
+
+function sentCommands(driver) {
+    return driver.connection
+        .getSentCommands()
+        .map((cmd) => driver.connection._extractCommandFromFrame(cmd.raw))
+        .filter((cmd) => cmd && cmd !== "ENQ");
 }
 
 /**
@@ -727,6 +773,124 @@ describe("TFHKA - TfhkaDriver (con MockSerialConnection)", () => {
         expect(Boolean(result.global_clamped)).toBe(false); // Sin clamp en este caso
     });
 
+    test("Descuento por monto en ítem (mínimo fiscal) envía q- tras el ítem", async () => {
+        const driver = new TfhkaDriver();
+        driver.connection = new MockSerialConnection();
+        driver.retryDelay = 0;
+
+        await driver.connection.requestPort();
+        driver.isConnected = true;
+
+        // Línea de 10 unidades con descuento 100% en el PdV: se factura en el
+        // mínimo fiscal como 10 × 0,01 con descuento de 0,09 sobre el ítem.
+        const orderWithFiscalMinLine = {
+            partner: {
+                vat: "J123456789",
+                name: "CLIENTE MINIMO FISCAL",
+            },
+            lines: [
+                {
+                    product_name: "Producto A",
+                    product_code: "A001",
+                    fiscal_code: "1",
+                    quantity: 10,
+                    price_unit: 0.01,
+                    discount_amount: 0.09,
+                },
+                {
+                    product_name: "Producto B",
+                    product_code: "B001",
+                    fiscal_code: "1",
+                    quantity: 1,
+                    price_unit: 5,
+                },
+            ],
+            payment_lines: [{ payment_method_code: "01", amount: 5.01 }],
+            additional_lines: [],
+            flag_21: "00",
+            has_cashbox: false,
+        };
+
+        driver.connection.setNextResponse("STATUS");
+        driver.connection.setResponseSequence(new Array(30).fill("ACK"));
+        driver.connection.setS1Payload(buildS1Payload({
+            lastInvoiceNumber: 999,
+            dailyClosureCounter: 20,
+            serialMachine: "Z1F0022949",
+        }));
+
+        const result = await driver.printInvoice(orderWithFiscalMinLine);
+        expect(Boolean(result.success)).toBe(true); // Factura con línea de mínimo fiscal impresa
+
+        // Sólo tramas de comando (<STX>...), sin sondeos de estado intermedios
+        const frames = driver.connection
+            .getSentCommands()
+            .map((cmd) => cmd.ascii)
+            .filter((cmd) => cmd.includes("<STX>"));
+        const itemIndex = frames.findIndex((cmd) =>
+            cmd.includes("<STX>!000000000100010000|A001|Producto A<ETX>")
+        );
+        expect(itemIndex >= 0).toBe(true); // Ítem enviado como 0,01 × 10,000 (cantidad real)
+        expect(frames[itemIndex + 1].includes("<STX>q-000000009<ETX>")).toBe(true); // q- de 0,09 justo después del ítem
+        expect(frames.filter((cmd) => cmd.includes("<STX>q-")).length).toBe(1); // Solo el ítem con descuento lleva q-
+    });
+
+    test("Nota de crédito con descuento por monto en ítem envía q- tras el ítem", async () => {
+        const driver = new TfhkaDriver();
+        driver.connection = new MockSerialConnection();
+        driver.retryDelay = 0;
+
+        await driver.connection.requestPort();
+        driver.isConnected = true;
+
+        // Devolución de una línea de mínimo fiscal de 3 unidades: 3 × 0,01
+        // con descuento de 0,02 sobre el ítem (neto 0,01).
+        const creditNoteOrder = {
+            partner: { vat: "V17527041", name: "Cliente NC Minimo Fiscal" },
+            invoice_affected: {
+                number: "900",
+                serial_machine: "Z1F0022949",
+                date: "20/06/2026",
+            },
+            lines: [
+                {
+                    product_name: "Producto Devuelto",
+                    product_code: "P001",
+                    fiscal_code: "1",
+                    quantity: 3,
+                    price_unit: 0.01,
+                    discount_amount: 0.02,
+                },
+            ],
+            payment_lines: [{ payment_method_code: "01", amount: 0.01 }],
+            additional_lines: [],
+            flag_21: "00",
+            has_cashbox: false,
+        };
+
+        driver.connection.setNextResponse("STATUS");
+        driver.connection.setResponseSequence(new Array(20).fill("ACK"));
+        driver.connection.setS1Payload(buildS1Payload({
+            lastInvoiceNumber: 900,
+            lastNCNumber: 1235,
+            dailyClosureCounter: 20,
+            serialMachine: "Z1F0022949",
+        }));
+
+        const result = await driver.printCreditNote(creditNoteOrder);
+        expect(Boolean(result.success)).toBe(true); // NC con línea de mínimo fiscal impresa
+
+        const frames = driver.connection
+            .getSentCommands()
+            .map((cmd) => cmd.ascii)
+            .filter((cmd) => cmd.includes("<STX>"));
+        const itemIndex = frames.findIndex((cmd) =>
+            cmd.includes("<STX>d1000000000100003000|P001|Producto Devuelto<ETX>")
+        );
+        expect(itemIndex >= 0).toBe(true); // Ítem devuelto como 0,01 × 3,000
+        expect(frames[itemIndex + 1].includes("<STX>q-000000002<ETX>")).toBe(true); // q- de 0,02 justo después del ítem
+    });
+
     test("Descuento global (Strategy A) emite aviso adicional cuando es clampado", async () => {
         const driver = new TfhkaDriver();
         driver.connection = new MockSerialConnection();
@@ -868,5 +1032,139 @@ describe("TFHKA - TfhkaDriver (con MockSerialConnection)", () => {
 
         expect(Boolean(result.success)).toBe(false); // No imprime si la impresora está desconectada
         expect(Boolean(result.error.includes("Impresora no conectada"))).toBe(true); // Retorna mensaje de conexión
+    });
+
+    // ============ LOST ACK (ticket #15814) ============
+
+    test("_parseS2Data reads base and payment count from a real S2 frame", () => {
+        const driver = new TfhkaDriver();
+        const totals = driver._parseS2Data(
+            "S2 0000000000200\n 0000000000032\n 0000000000239\n000000\n 0000000000232\n0000\n1\n"
+        );
+
+        expect(totals).toEqual({ base: 2, paymentCount: 0 });
+        expect(driver._parseS2Data("ACK")).toBe(null);
+    });
+
+    test("Unanswered item registered by the printer is not resent", async () => {
+        const driver = await connectedDriver();
+        let itemAnswered = false;
+        driver.connection.setResponseHandler((command) => {
+            if (command.includes("|ECA96|") && !itemAnswered) {
+                itemAnswered = true;
+                return null;
+            }
+            if (command === "S2") {
+                return FiscalProtocol.buildFrame(buildS2Payload({ base: 14927.58 }));
+            }
+            return undefined;
+        });
+
+        const result = await driver.printInvoice(lostAckOrder());
+
+        expect(result.success).toBe(true);
+        expect(result.invoiceNumber).toBe("455");
+        const commands = sentCommands(driver);
+        expect(commands.filter((cmd) => cmd.includes("|ECA96|")).length).toBe(1);
+        expect(commands.includes("S2")).toBe(true);
+        expect(commands.includes("7")).toBe(false);
+    });
+
+    test("Unanswered item not registered by the printer is resent once", async () => {
+        const driver = await connectedDriver();
+        let itemAnswered = false;
+        let s2Reads = 0;
+        driver.connection.setResponseHandler((command) => {
+            if (command.includes("|ECA96|") && !itemAnswered) {
+                itemAnswered = true;
+                return null;
+            }
+            if (command === "S2") {
+                s2Reads++;
+                const base = s2Reads === 1 ? 9298.04 : 14927.58;
+                return FiscalProtocol.buildFrame(buildS2Payload({ base }));
+            }
+            return undefined;
+        });
+
+        const result = await driver.printInvoice(lostAckOrder());
+
+        expect(result.success).toBe(true);
+        expect(sentCommands(driver).filter((cmd) => cmd.includes("|ECA96|")).length).toBe(2);
+    });
+
+    test("Unanswered item that S2 cannot explain cancels the document with 7", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setResponseHandler((command) => {
+            if (command.includes("|ECA96|")) {
+                driver.connection.setStatus({ fiscalTransactionInProgress: true });
+                return null;
+            }
+            if (command === "S2") {
+                return FiscalProtocol.buildFrame(buildS2Payload({ base: 20557.12 }));
+            }
+            return undefined;
+        });
+
+        const result = await driver.printInvoice(lostAckOrder());
+
+        expect(result.success).toBe(false);
+        const commands = sentCommands(driver);
+        expect(commands.filter((cmd) => cmd.includes("|ECA96|")).length).toBe(1);
+        expect(commands.includes("7")).toBe(true);
+        expect(commands.some((cmd) => /^1\d{2}$/.test(cmd))).toBe(false);
+    });
+
+    test("Unanswered partial payment registered by the printer is not resent", async () => {
+        const driver = await connectedDriver();
+        let paymentAnswered = false;
+        driver.connection.setResponseHandler((command) => {
+            if (command.startsWith("202") && !paymentAnswered) {
+                paymentAnswered = true;
+                return null;
+            }
+            if (command === "S2") {
+                return FiscalProtocol.buildFrame(buildS2Payload({ base: 14927.58, paymentCount: 1 }));
+            }
+            return undefined;
+        });
+
+        const result = await driver.printInvoice(
+            lostAckOrder([
+                { payment_method_code: "01", amount: 10000.0 },
+                { payment_method_code: "02", amount: 7316.0 },
+            ])
+        );
+
+        expect(result.success).toBe(true);
+        expect(sentCommands(driver).filter((cmd) => cmd.startsWith("202")).length).toBe(1);
+    });
+
+    test("abortTransaction cancels with 7 before trying 9", async () => {
+        const driver = await connectedDriver();
+        driver.connection.setStatus({ fiscalTransactionInProgress: true });
+
+        const aborted = await driver.abortTransaction();
+
+        expect(aborted).toBe(true);
+        expect(sentCommands(driver)).toEqual(["7"]);
+    });
+});
+
+describe("TFHKA - SerialConnection", () => {
+    test("read() returns an ACK delivered together with a late byte", async () => {
+        const connection = new SerialConnection();
+        connection.isConnected = true;
+        connection.port = {
+            readable: new ReadableStream({
+                start(controller) {
+                    controller.enqueue(new Uint8Array([FiscalProtocol.ACK, FiscalProtocol.ACK]));
+                },
+            }),
+        };
+
+        const response = await connection.read(200);
+
+        expect(FiscalProtocol.isACK(response)).toBe(true);
     });
 });
