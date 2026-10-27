@@ -4,6 +4,7 @@ from unittest.mock import patch
 from odoo import Command, fields
 from odoo.tests import tagged, Form
 
+from .rate_helper import seed_foreign_rate
 from .test_withholding_common_VEF import RetentionTestCommon
 import logging
 
@@ -14,6 +15,7 @@ _logger = logging.getLogger(__name__)
 class TestSaleBookRetentionLines(RetentionTestCommon):
 
     def _make_sale_invoice(self, amount, invoice_date):
+        seed_foreign_rate(self.env, invoice_date)
         inv = self._create_invoice_reten_iva(
             amount, self.partner_pnr_75,
             "out_invoice", self.sale_journal,
@@ -49,6 +51,7 @@ class TestSaleBookRetentionLines(RetentionTestCommon):
         })
 
     def _make_sale_credit_note(self, amount, invoice_date, reversed_entry_id):
+        seed_foreign_rate(self.env, invoice_date)
         with Form(self.env["account.move"].with_context(
             default_move_type="out_refund", default_journal_id=self.sale_journal.id,
         )) as inv_form:
