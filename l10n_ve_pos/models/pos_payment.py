@@ -82,9 +82,31 @@ class PosPayment(models.Model):
         # exist yet. Supplying a Venezuela fallback via context (instead of
         # writing .date() after the fact) keeps the move's date right from
         # creation -- a posted move's date can't be rewritten afterwards.
+        #
+        # IMPORTANT: the fallback chain below reads the tz from the
+        # ORDER's cashier field (order.user_id.tz), never from
+        # self.env.context.get("tz"). Odoo freezes a logged-in user's
+        # context -- tz included -- into the session cookie once, at LOGIN
+        # time (odoo/http.py's finalize(), via res.users.context_get()),
+        # and never refreshes it for that session afterwards. A cashier
+        # whose tz was blank/wrong at the moment they logged in keeps that
+        # stale value in self.env.context for the rest of the shift, even
+        # after someone later fixes their user profile to "America/
+        # Caracas" -- so reading self.env.context.get("tz") here would
+        # silently reproduce the exact bug this fix closes, just moved
+        # from the invoice date to the payment move's date. order.user_id
+        # .tz is a plain field read straight from the DB on every call, so
+        # it always reflects the CURRENT profile value regardless of how
+        # stale the request's session context is.
+        #
+        # Every payment in self belongs to the same order: the only
+        # caller, point_of_sale's _generate_pos_order_invoice, invokes
+        # this with one order's payment_ids, never a mix -- so reading it
+        # once from the first payment is safe.
         # "America/Caracas": same fallback as
         # res.currency.rate._local_date_from_datetime (l10n_ve_rate).
-        tz_name = self.env.context.get("tz") or self.env.user.tz or "America/Caracas"
+        order = self.mapped("pos_order_id")[:1]
+        tz_name = (order.user_id.tz if order else False) or self.env.user.tz or "America/Caracas"
         moves = self.with_context(tz=tz_name)._create_payment_moves_by_method(is_reverse)
         for payment_move in moves:
             payments = payment_move.pos_payment_ids
