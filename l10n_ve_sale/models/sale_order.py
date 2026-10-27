@@ -402,9 +402,12 @@ class SaleOrder(models.Model):
         # If the user doesn't want to update the foreign rate using the date order, then don't
         # compute the rate when it is not zero.
         for sale in self:
-            # date_order es Datetime: si viene vacio, .date() reventaria antes
-            # de llegar al or, asi que se comprueba primero.
-            rate_date = sale.date_order.date() if sale.date_order else fields.Date.today()
+            # date_order es un Datetime en UTC: se convierte a la zona
+            # horaria de Venezuela (ver res_currency_rate.py
+            # ::_local_date_from_datetime) antes de extraer el dia -- un
+            # .date()/fields.Date.today() crudo usa el dia UTC/del
+            # servidor, que ya es "manana" en Venezuela desde la noche.
+            rate_date = Rate._local_date_from_datetime(sale.date_order or fields.Datetime.now())
 
             # TODO(website): confirmar con el responsable de la vertical de
             # website/e-commerce si esta condicion sigue siendo necesaria y si
@@ -545,7 +548,7 @@ class SaleOrder(models.Model):
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id,
-                sale.date_order or fields.Date.today(),
+                Rate._local_date_from_datetime(sale.date_order or fields.Datetime.now()),
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:

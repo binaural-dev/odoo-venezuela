@@ -1,12 +1,44 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError
 import logging
+import pytz
 
 _logger = logging.getLogger(__name__)
+
+# Fallback timezone for rate_date resolution: this localization only ever
+# operates in Venezuela, so when neither the acting user nor an explicit
+# tz is configured, "today"/"the calendar day of this timestamp" must mean
+# Venezuela's day, never the server's (commonly UTC in Docker/cloud
+# deployments, which silently drifts a day ahead of Caracas every evening).
+DEFAULT_RATE_TZ = "America/Caracas"
 
 
 class ResCurrencyRate(models.Model):
     _inherit = "res.currency.rate"
+
+    @api.model
+    def _local_date_from_datetime(self, dt, tz_name=None):
+        """Calendar date of ``dt`` converted to ``tz_name`` (or the acting
+        user's tz), falling back to Venezuela's timezone instead of UTC or
+        the server's local clock.
+
+        Use this wherever a rate lookup needs "the day this moment falls
+        on" -- never reduce a Datetime to a date with a bare ``.date()``
+        or default to ``fields.Date.today()``: both read the server's
+        clock/UTC, which lands on the wrong calendar day every evening in
+        Venezuela (UTC-4).
+        """
+        if not dt:
+            return dt
+        dt = fields.Datetime.to_datetime(dt)
+        if dt.tzinfo is None:
+            dt = pytz.UTC.localize(dt)
+        tz_name = tz_name or self.env.user.tz or DEFAULT_RATE_TZ
+        try:
+            timezone = pytz.timezone(tz_name)
+        except Exception:
+            timezone = pytz.timezone(DEFAULT_RATE_TZ)
+        return dt.astimezone(timezone).date()
 
     @api.model
     def compute_rate(self, foreign_currency_id, rate_date, raise_if_not_found=True):
