@@ -6,6 +6,8 @@ from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import Tfhk
 from unittest.mock import patch, MagicMock
 import logging
 
+from odoo.addons.l10n_ve_invoice.tests.rate_utils import seed_rate
+
 _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "retention_digital") 
@@ -101,13 +103,16 @@ class TestAccumulatedRate(TransactionCase):
         # _compute_rate contra res.currency.rate, no lo toma del valor que se le
         # pase a la linea) y las lineas de retencion violan el constraint
         # _constraint_amounts_in_zero de l10n_ve_payment_extension.
+        # l10n_ve_rate busca la tasa de la fecha EXACTA del documento, asi que
+        # hay que sembrarla para hoy (las facturas usan fields.Date.today()).
         self.currency_vef.active = True
-        self.env["res.currency.rate"].create({
-            "name": date(2020, 1, 1),
-            "currency_id": self.currency_vef.id,
-            "company_rate": 2.0,
-            "company_id": self.company.id,
-        })
+        seed_rate(
+            self.env,
+            self.company,
+            self.currency_vef,
+            rate_date=fields.Date.today(),
+            rate=2.0,
+        )
 
 
         iva_sequence = self.env["ir.sequence"].create({

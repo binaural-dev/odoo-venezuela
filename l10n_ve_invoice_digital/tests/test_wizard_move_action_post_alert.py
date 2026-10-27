@@ -2,6 +2,8 @@ from odoo.tests import TransactionCase, tagged
 from odoo import Command, fields
 from unittest.mock import patch
 
+from odoo.addons.l10n_ve_invoice.tests.rate_utils import seed_rate
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "move_action_post_alert")
 class TestMoveActionPostAlertWizard(TransactionCase):
@@ -19,6 +21,7 @@ class TestMoveActionPostAlertWizard(TransactionCase):
             "token_auth_tfhka": "token_fake",
             "country_id": self.env.ref('base.ve').id,
         })
+        seed_rate(self.env, self.company, self.currency_vef)
 
         seq = self.env['ir.sequence'].create({
             'name': 'Sec Test',

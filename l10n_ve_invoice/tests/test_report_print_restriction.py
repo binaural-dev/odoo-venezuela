@@ -3,6 +3,8 @@ from odoo import fields, Command
 from odoo.exceptions import UserError
 from unittest.mock import patch
 
+from .rate_utils import seed_rate
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestReportPrintRestriction(TransactionCase):
@@ -12,6 +14,7 @@ class TestReportPrintRestriction(TransactionCase):
         self.company = self.env.user.company_id
         self.company.currency_id = self.env.ref('base.VEF')
         self.company.foreign_currency_id = self.env.ref('base.USD')
+        seed_rate(self.env, self.company, self.env.ref('base.USD'))
 
         self.account_receivable = self.env['account.account'].create({
             'name': 'Receivable', 'code': '1111111',

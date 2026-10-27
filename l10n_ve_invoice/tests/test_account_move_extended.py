@@ -4,6 +4,8 @@ from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
+from .rate_utils import seed_rate
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestAccountMoveExtended(TransactionCase):
@@ -14,6 +16,13 @@ class TestAccountMoveExtended(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.company.currency_id = self.currency_vef
         self.company.foreign_currency_id = self.currency_usd
+        seed_rate(self.env, self.company, self.currency_usd)
+        seed_rate(
+            self.env,
+            self.company,
+            self.currency_usd,
+            fields.Date.today() - timedelta(days=5),
+        )
 
         self.account_receivable = self.env["account.account"].create(
             {

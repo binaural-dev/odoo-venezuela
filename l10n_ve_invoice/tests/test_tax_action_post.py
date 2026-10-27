@@ -3,6 +3,8 @@ from odoo import fields
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
 
+from .rate_utils import seed_rate
+
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestInvoiceTaxConstraint(TransactionCase):
     def setUp(self):
@@ -17,6 +19,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
                 "foreign_currency_id": self.currency_vef.id,
             }
         )
+        seed_rate(self.env, self.company, self.currency_vef, rate=38.0)
 
         self.partner = self.env["res.partner"].create({"name": "Test customer"})
         

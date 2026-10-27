@@ -8,6 +8,8 @@ from datetime import datetime, timedelta
 import logging
 import requests
 
+from odoo.addons.l10n_ve_invoice.tests.rate_utils import seed_rate
+
 _logger = logging.getLogger(__name__)
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice_digital", "invoice_digital") 
@@ -28,9 +30,10 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         # En una base sin datos de demo el VEF viene inactivo, y los tests que
         # fuerzan la compañia a VEF (_force_company_currency) no pueden validar
-        # la factura: action_post rechaza las monedas inactivas. No se carga
-        # ninguna tasa a proposito -- los tests de este archivo fijan el rate a
-        # mano (manually_set_rate).
+        # la factura: action_post rechaza las monedas inactivas. Los tests de
+        # este archivo fijan el rate a mano (manually_set_rate), pero
+        # account.move.create() consulta igualmente la tasa de la fecha exacta
+        # del documento, asi que hay que sembrarla.
         self.currency_vef.active = True
 
         self.company.write(
@@ -41,6 +44,16 @@ class TestAccountMoveApiCalls(TransactionCase):
                 "country_id": self.env.ref('base.ve').id,
             }
         )
+        # Algunos tests crean facturas con fechas relativas (p. ej. hoy - 3
+        # dias), y create() exige la tasa de esa fecha exacta.
+        today = fields.Date.context_today(self.env.user)
+        for days_back in (0, 3):
+            seed_rate(
+                self.env,
+                self.company,
+                self.currency_vef,
+                rate_date=today - timedelta(days=days_back),
+            )
         self.env.user.company_id = self.company.id
 
         # ───────────────────────────────────────────────────── helpers
@@ -338,6 +351,19 @@ class TestAccountMoveApiCalls(TransactionCase):
         company.invalidate_recordset(["currency_id"])
         self.env.cr.execute("UPDATE product_pricelist SET currency_id = %s", (currency.id,))
         self.env["product.pricelist"].search([]).invalidate_recordset(["currency_id"])
+        # account.move.create() consulta la tasa de la fecha exacta del
+        # documento para toda moneda distinta de la de la compañía; tras el
+        # UPDATE la "otra" moneda (la que queda como extranjera) necesita su
+        # tasa sembrada.
+        other_currency = (
+            self.currency_usd if currency == self.currency_vef else self.currency_vef
+        )
+        seed_rate(
+            self.env,
+            company,
+            other_currency,
+            rate_date=fields.Date.context_today(self.env.user),
+        )
 
     def _create_subsidiary(self, name="Sucursal prueba"):
         analytic_plan = self.env['account.analytic.plan'].create({
