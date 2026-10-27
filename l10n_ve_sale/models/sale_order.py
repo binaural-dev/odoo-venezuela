@@ -47,10 +47,9 @@ class SaleOrder(models.Model):
         type = float
             The rate of the payment
         """
-        Rate = self.env["res.currency.rate"]
-        rate_values = Rate.compute_rate(
+        rate_values = self.env["res.currency.rate"].compute_rate(
             self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
-            Rate._local_date_from_datetime(self.date_order or fields.Datetime.now()),
+            self.date_order or fields.Date.today(),
         )
         return rate_values.get("foreign_rate", 0)
 
@@ -63,10 +62,9 @@ class SaleOrder(models.Model):
         type = float
             The inverse rate of the payment
         """
-        Rate = self.env["res.currency.rate"]
-        rate_values = Rate.compute_rate(
+        rate_values = self.env["res.currency.rate"].compute_rate(
             self.env.company.foreign_currency_id.id or self.env.ref("base.VEF").id,
-            Rate._local_date_from_datetime(self.date_order or fields.Datetime.now()),
+            self.date_order or fields.Date.today(),
         )
         return rate_values.get("foreign_inverse_rate", 0)
 
@@ -536,9 +534,7 @@ class SaleOrder(models.Model):
             # tasa (incluso si quedo congelada). Asi la factura convierte con
             # la misma tasa que la orden, via _convert(), sin heredar el rate.
             rate_date = self.foreign_rate_date or (
-                self.env["res.currency.rate"]._local_date_from_datetime(self.date_order)
-                if self.date_order
-                else False
+                self.date_order.date() if self.date_order else False
             )
             if rate_date:
                 invoice_vals["invoice_date"] = rate_date
@@ -725,9 +721,8 @@ class SaleOrder(models.Model):
                 and not order.manually_set_rate
                 and float_is_zero(order.foreign_rate, precision_rounding=order.currency_id.rounding)
             ):
-                Rate = self.env["res.currency.rate"]
-                rate_date = Rate._local_date_from_datetime(order.date_order or fields.Datetime.now())
-                Rate.compute_rate(
+                rate_date = order.date_order.date() if order.date_order else fields.Date.today()
+                self.env["res.currency.rate"].compute_rate(
                     order.foreign_currency_id.id, rate_date, raise_if_not_found=True
                 )
 
