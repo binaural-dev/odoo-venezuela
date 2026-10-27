@@ -9,3 +9,4 @@ from . import test_ta80647_invoice_currency
 from . import test_documented_behaviour
 from . import test_action_confirm_requires_rate
 from . import test_no_foreign_currency_page
+from . import test_consolidated_invoices

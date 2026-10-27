@@ -5,10 +5,9 @@ from odoo import fields
 
 @tagged("post_install", "-at_install", "l10n_ve_sale")
 class TestActionConfirmRequiresRate(TransactionCase):
-    """action_confirm() is a user-triggered action (not an automatic
-    default/compute path), so it's the one place where compute_rate()'s
-    raise_if_not_found=True is safe to use - see the docstring of
-    compute_rate() for why every automatic caller passes False instead.
+    """compute_rate() raises by default when there is no rate for the date,
+    so an order can no longer be created without one; action_confirm()
+    keeps its own check for orders whose foreign_rate ended up at 0.
     """
 
     def setUp(self):
@@ -24,6 +23,14 @@ class TestActionConfirmRequiresRate(TransactionCase):
             "list_price": 100.0,
         })
 
+    def _create_rate(self):
+        return self.env["res.currency.rate"].create({
+            "currency_id": self.usd.id,
+            "company_id": self.company.id,
+            "name": fields.Date.today(),
+            "rate": 1.0 / 380.0,
+        })
+
     def _create_order(self, date_order):
         so = self.env["sale.order"].create({
             "partner_id": self.partner.id,
@@ -37,23 +44,25 @@ class TestActionConfirmRequiresRate(TransactionCase):
         })
         return so
 
+    def test_create_without_rate_raises(self):
+        """No USD rate exists for the date - creating the order raises the
+        "no rate assigned" UserError of compute_rate()."""
+        with self.assertRaises(UserError):
+            self._create_order(fields.Date.today())
+
     def test_confirm_without_rate_raises(self):
-        """No USD rate exists for any date - the order is created with
-        foreign_rate at 0 (compute_rate() stays silent, as always), but
-        confirming it must raise instead of letting it through silently."""
+        """An order whose foreign_rate ended up at 0 and has no rate for its
+        date must not be confirmed silently."""
+        rate = self._create_rate()
         so = self._create_order(fields.Date.today())
-        self.assertEqual(so.foreign_rate, 0.0)
+        rate.unlink()
+        so.foreign_rate = 0.0
 
         with self.assertRaises(UserError):
             so.action_confirm()
 
     def test_confirm_with_rate_is_allowed(self):
-        self.env["res.currency.rate"].create({
-            "currency_id": self.usd.id,
-            "company_id": self.company.id,
-            "name": fields.Date.today(),
-            "rate": 1.0 / 380.0,
-        })
+        self._create_rate()
         so = self._create_order(fields.Date.today())
         self.assertNotEqual(so.foreign_rate, 0.0)
 
@@ -64,8 +73,10 @@ class TestActionConfirmRequiresRate(TransactionCase):
         """manually_set_rate freezes the rate from outside compute_rate()
         entirely, so a missing currency-rate record must not block
         confirmation in that case."""
+        rate = self._create_rate()
         so = self._create_order(fields.Date.today())
         so.write({"manually_set_rate": True, "foreign_rate": 123.0})
+        rate.unlink()
 
         so.action_confirm()
         self.assertEqual(so.state, "sale")
