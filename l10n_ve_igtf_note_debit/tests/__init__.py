@@ -4,4 +4,3 @@ from . import test_igtf_note_debit_config
 from . import test_igtf_note_debit_advance_payment
 from . import test_igtf_note_debit_wizard
 from . import test_igtf_note_debit_unit
-from . import test_igtf_note_debit_installments

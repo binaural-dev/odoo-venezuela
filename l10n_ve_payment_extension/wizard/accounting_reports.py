@@ -48,7 +48,7 @@ class WizardAccountingReports(models.TransientModel):
                             )
                         )
                     )
-
+                    
                     for move in credit_notes
                 ]
             )
@@ -108,7 +108,7 @@ class WizardAccountingReports(models.TransientModel):
         )
         return res_book
 
-
+    
     def _get_sale_book_field_groups(self):
         sale_groups = super()._get_sale_book_field_groups()
 
@@ -117,14 +117,14 @@ class WizardAccountingReports(models.TransientModel):
             {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
             {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
         ]
-
+        
         sale_groups.append({
-            'header': 'RETENCIONES',
+            'header': 'RETENCIONES', 
             'fields': retention_fields
         })
 
         return sale_groups
-
+    
     def _fields_purchase_book_line(self, move, taxes):
         fields_purchase_book_line = super()._fields_purchase_book_line(move, taxes)
 
@@ -139,7 +139,7 @@ class WizardAccountingReports(models.TransientModel):
             )
 
         return fields_purchase_book_line
-
+    
     def _fields_sale_book_line(self, move, taxes):
         fields_sale_book_line = super()._fields_sale_book_line(move, taxes)
 
@@ -189,16 +189,16 @@ class WizardAccountingReports(models.TransientModel):
         )
 
     def _get_purchase_book_field_groups(self):
-        purchase_groups = super()._get_purchase_book_field_groups()
+        purchase_groups = super()._get_purchase_book_field_groups() 
 
         retention_fields = [
             {"name": "Fecha Retención", "field": "retention_date", "format": "string", "size": 15},
             {"name": "N° Retención", "field": "retention_number", "format": "string", "size": 15},
             {"name": "IVA retenido", "field": "iva_withheld", "format": "number", "size": 15},
         ]
-
+        
         purchase_groups.append({
-            'header': 'RETENCIONES',
+            'header': 'RETENCIONES', 
             'fields': retention_fields
         })
 
@@ -313,7 +313,7 @@ class WizardAccountingReports(models.TransientModel):
 
         if not ret_lines:
             return ret_vals
-
+        
         for ret_line in ret_lines:
 
             if ret_line and self._check_future_retention_dates(ret_line.retention_id.date_accounting):
@@ -331,12 +331,12 @@ class WizardAccountingReports(models.TransientModel):
 
     def _sum_retention_total(self, lines):
         is_check_currency_system = self.currency_system
-
+        
         total = 0.0
         for line in lines:
             if line.move_id.state == "cancel":
                 continue
-
+                
             retention = line.retention_id
             if (
                 self.report == "purchase"

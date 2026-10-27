@@ -969,8 +969,7 @@ class AccountMove(models.Model):
         if not payment_move:
             return False
         vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
-        igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
-        if (payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id) or not igtf_line:
+        if payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id and not payment_move._is_advance_cross():
             return 
 
         igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
@@ -985,6 +984,7 @@ class AccountMove(models.Model):
             return False
         
         
+        igtf_line = payment_move.line_ids.filtered(lambda line: line.account_id.id in igtf_account_ids)
         receivable_payable_line = payment_move.line_ids.filtered(
             lambda line: line.account_id.id in [payment_move.partner_id.property_account_payable_id.id,payment_move.partner_id.property_account_receivable_id.id ]
         )[:1]

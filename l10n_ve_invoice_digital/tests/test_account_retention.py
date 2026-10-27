@@ -1,5 +1,5 @@
 from odoo.tests import TransactionCase, tagged, Form
-from datetime import date
+from datetime import timedelta, date
 from odoo.exceptions import UserError
 from odoo import Command, fields
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaSequenceMismatchError
