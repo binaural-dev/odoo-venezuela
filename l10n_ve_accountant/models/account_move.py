@@ -174,7 +174,7 @@ class AccountMove(models.Model):
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
             self.currency_id.id or self.env.company.currency_id.id,
-            fields.Date.today(),
+            fields.Date.context_today(self),
         )
         return rate_values.get("foreign_rate", 0)
 
@@ -199,7 +199,7 @@ class AccountMove(models.Model):
         """
         rate_values = self.env["res.currency.rate"].compute_rate(
             self.currency_id.id or self.env.company.currency_id.id,
-            fields.Date.today(),
+            fields.Date.context_today(self),
         )
         return rate_values.get("foreign_inverse_rate", 0)
     
@@ -629,7 +629,7 @@ class AccountMove(models.Model):
                     move.amount_untaxed,
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(self),
                 )
             else:
                 move.foreign_untaxed_total = move.tax_totals.get(
@@ -670,7 +670,7 @@ class AccountMove(models.Model):
                     move.amount_total,
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(self),
                 )
                 move.foreign_debit = total
                 move.foreign_credit = total
@@ -808,7 +808,7 @@ class AccountMove(models.Model):
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
+                move.foreign_currency_id.id, move.invoice_date or fields.Date.context_today(self)
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
@@ -1144,7 +1144,7 @@ class AccountMove(models.Model):
             if move.manually_set_rate:
                 continue
             date_field = "invoice_date" if is_sale else "date"
-            rate_date = getattr(move, date_field) or fields.Date.today()
+            rate_date = getattr(move, date_field) or fields.Date.context_today(self)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)
@@ -2094,7 +2094,7 @@ class AccountMove(models.Model):
                     abs(move.amount_total),
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(self),
                 )
                 total_debit = aggregate
                 total_credit = aggregate

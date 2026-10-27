@@ -882,3 +882,12 @@ formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15
 
 - **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
 - **THEN** se lanza un error de validación antes de crear ningún pago
+
+### Requirement: Las fechas de tasa de facturas, asientos y pagos son las del usuario
+
+Todo cálculo de tasa o conversión de `account.move` y `account.payment` que use una fecha de respaldo (`invoice_date`, `date` o `l10n_ve_conversion_date` vacíos) DEBE (MUST) usar `fields.Date.context_today`, nunca `fields.Date.today()`. Las facturas, asientos y pagos creados sin fecha explícita ya toman su fecha de `invoice_date_display` / `date`, que usan `context_today`, y DEBEN (MUST) seguir haciéndolo.
+
+#### Scenario: Factura, asiento o pago a las 8:30 pm en Caracas
+
+- **WHEN** se crea una factura de venta o compra, un asiento o un pago sin fecha explícita a las 00:30 UTC del día siguiente, con tasa del día del usuario y no del día UTC
+- **THEN** el documento toma la tasa del día del usuario y no se lanza error de tasa
