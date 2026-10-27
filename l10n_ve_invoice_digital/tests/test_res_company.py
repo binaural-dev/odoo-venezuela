@@ -161,3 +161,22 @@ class TestAccountMoveApiCalls(TransactionCase):
             self.company.generate_token_tfhka()  # no debe propagar la excepcion
 
         self.assertEqual(self.company.token_auth_tfhka, "tok123")
+
+    # ------------------------------------------------------------------
+    # Capa 2 (unico punto de salida HTTP)
+    # ------------------------------------------------------------------
+
+    def test_12_generate_token_tfhka_routes_through_api_client(self):
+        with patch.object(
+            type(self.env["tfhka.api.client"]), "authenticate"
+        ) as mock_authenticate:
+            mock_authenticate.return_value.status_code = 200
+            mock_authenticate.return_value.json.return_value = {
+                "codigo": 200,
+                "token": "token_fake_2",
+            }
+            self.company.generate_token_tfhka()
+            mock_authenticate.assert_called_once_with(
+                self.company, {"usuario": "usuario_prueba", "clave": "clave_prueba"}
+            )
+        _logger.info("Test passed: generate_token_tfhka no longer performs its own requests.post.")

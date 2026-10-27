@@ -114,7 +114,6 @@ class TestAccumulatedRate(TransactionCase):
             "company_id": self.company.id,
         })
 
-
         iva_sequence = self.env["ir.sequence"].create({
             "name": "Secuencia de iva para proveedores",
             "code": "payment.retention.iva",
