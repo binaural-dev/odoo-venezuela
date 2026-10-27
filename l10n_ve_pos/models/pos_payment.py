@@ -73,7 +73,19 @@ class PosPayment(models.Model):
         ``pos_payment_ids``, not by amount: a move merging a payment and its change carries
         their net.
         """
-        moves = self._create_payment_moves_by_method(is_reverse)
+        # Core sets the move's date with fields.Date.context_today(order,
+        # order.date_order), which reads self._context.get("tz") or
+        # self.env.user.tz, falling back to UTC when neither is set --
+        # common for a POS/cashier account. In Venezuela (UTC-4), from the
+        # evening onward the UTC day is already "tomorrow", which then
+        # makes l10n_ve_rate's compute_rate() look for a rate that doesn't
+        # exist yet. Supplying a Venezuela fallback via context (instead of
+        # writing .date() after the fact) keeps the move's date right from
+        # creation -- a posted move's date can't be rewritten afterwards.
+        # "America/Caracas": same fallback as
+        # res.currency.rate._local_date_from_datetime (l10n_ve_rate).
+        tz_name = self.env.context.get("tz") or self.env.user.tz or "America/Caracas"
+        moves = self.with_context(tz=tz_name)._create_payment_moves_by_method(is_reverse)
         for payment_move in moves:
             payments = payment_move.pos_payment_ids
             payment = payments.filtered(lambda p: not p.is_change)[:1] or payments[:1]

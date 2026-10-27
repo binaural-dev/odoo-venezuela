@@ -62,6 +62,17 @@ class PosOrder(models.Model):
         self.ensure_one()
         res = super()._prepare_invoice_vals()
         res.update(self.config_id._get_move_foreign_rate_vals(self.foreign_currency_rate))
+        # Core's own _prepare_invoice_vals converts date_order to
+        # self.env.user.tz, falling back to UTC when no tz is configured --
+        # common for a cashier/POS account. In Venezuela (UTC-4), from the
+        # evening onward the UTC day is already "tomorrow", which then
+        # makes l10n_ve_rate's compute_rate() look for a rate that doesn't
+        # exist yet. Recompute invoice_date with Venezuela as the fallback
+        # instead of UTC (mirrors l10n_ve_pos_mf's own fix for the same
+        # issue, via the shared l10n_ve_rate helper).
+        res["invoice_date"] = self.env["res.currency.rate"]._local_date_from_datetime(
+            self.date_order, tz_name=self.user_id.tz
+        )
         return res
 
     def _amount_to_foreign(self, amount):
