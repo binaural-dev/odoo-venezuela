@@ -428,6 +428,61 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual(errored.tfhka_digitalization_state, "error")
         self.assertEqual(queued.tfhka_digitalization_state, "queued")
 
+    def test_retry_action_recovers_from_log_instead_of_resubmitting(self):
+        """A failed attempt can still have reached TFHKA -- e.g. the HTTP
+        response to /Emision was lost to a network timeout right after TFHKA
+        had already processed the document. Reproduced directly at the state
+        level (same end state a real interrupted response would leave: the
+        document in 'error' with a success log already on record for its
+        last attempt) rather than through a live HTTP failure, since under
+        the test runner tfhka.api.log writes share the caller's cursor (see
+        TfhkaApiClient._log_call) and would be rolled back by the savepoint
+        in _tfhka_process_digitalization along with everything else -- unlike
+        production, where that log survives on its own cursor precisely so
+        this scenario can be told apart from a genuine failure."""
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.write({
+            "tfhka_digitalization_state": "error",
+            "tfhka_digitalization_error": "Error connecting to the API: simulated timeout",
+            "tfhka_last_attempt_at": fields.Datetime.now(),
+        })
+        self.env["tfhka.api.log"].sudo().create({
+            "company_id": self.company.id,
+            "res_model": "account.move",
+            "res_id": inv.id,
+            "endpoint": "/Emision",
+            "http_method": "POST",
+            "success": True,
+            "status_code": 200,
+            "request_payload": json.dumps({
+                "documentoElectronico": {
+                    "encabezado": {"identificacionDocumento": {"numeroDocumento": "321"}},
+                },
+            }),
+            "response_payload": json.dumps({"resultado": {"numeroControl": "00-00088888"}}),
+        })
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            inv.action_tfhka_retry_digitalization()
+
+        mock_generate.assert_not_called()
+        self.assertEqual(inv.tfhka_digitalization_state, "success")
+        self.assertTrue(inv.is_digitalized)
+        self.assertEqual(inv.correlative, "00-00088888")
+
+    def test_retry_action_requeues_blindly_when_last_attempt_not_recorded(self):
+        """Documents that errored before tfhka_last_attempt_at existed never
+        have it set -- must still behave like a plain requeue instead of
+        erroring out on the log lookup."""
+        inv = self._create_invoice()
+        inv.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+
+        inv.action_tfhka_retry_digitalization()
+
+        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+        self.assertFalse(inv.is_digitalized)
+
     def test_action_generate_digital_only_enqueues_never_calls_tfhka_inline(self):
         inv = self._create_invoice()
 
@@ -482,7 +537,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         inv = self._create_invoice()
         started_at = fields.Datetime.now() - timedelta(hours=1)
         inv.write({"tfhka_digitalization_state": "processing"})
-        inv.write({"date_state": started_at})
+        inv.write({"date_state": started_at, "tfhka_last_attempt_at": started_at})
         self.env["tfhka.api.log"].sudo().create({
             "company_id": self.company.id,
             "res_model": "account.move",
@@ -509,7 +564,7 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         inv = self._create_invoice()
         started_at = fields.Datetime.now() - timedelta(minutes=2)
         inv.write({"tfhka_digitalization_state": "processing"})
-        inv.write({"date_state": started_at})
+        inv.write({"date_state": started_at, "tfhka_last_attempt_at": started_at})
         # A successful call did happen for this document after the attempt
         # started, but not the submission itself -- must not count as proof
         # that TFHKA actually received the document.

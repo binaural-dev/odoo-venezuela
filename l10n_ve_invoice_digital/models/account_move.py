@@ -15,9 +15,9 @@ _logger = logging.getLogger(__name__)
 TFHKA_QUEUE_BATCH_SIZE = 200
 
 # Safety margin absorbing clock drift between the Odoo app server (which
-# stamps date_state via fields.Datetime.now()) and the database server
-# (which stamps tfhka.api.log's create_date) when checking whether a log
-# postdates a given attempt in _tfhka_reconcile_stuck_processing.
+# stamps tfhka_last_attempt_at via fields.Datetime.now()) and the database
+# server (which stamps tfhka.api.log's create_date) when checking whether a
+# log postdates a given attempt in _tfhka_find_success_log.
 TFHKA_CLOCK_SKEW_MARGIN = timedelta(seconds=30)
 
 # How long a document can sit in 'processing' with no matching success log
@@ -77,6 +77,17 @@ class AccountMove(models.Model):
         help="When tfhka_digitalization_state last changed. Used by the cron "
              "to tell a healthy 'processing' attempt from one abandoned by an "
              "interrupted run (see TFHKA_STUCK_PROCESSING_GRACE_PERIOD).",
+    )
+    tfhka_last_attempt_at = fields.Datetime(
+        string="TFHKA Last Attempt At",
+        copy=False,
+        help="When the most recent /Emision attempt for this document "
+             "started. Unlike date_state (overwritten on every state change, "
+             "including the later 'error' write), this survives past the "
+             "attempt that set it -- it's what lets a retry look up "
+             "tfhka.api.log for a response to *this* attempt even after the "
+             "document has already moved on to 'error' (see "
+             "_tfhka_find_success_log).",
     )
     tfhka_digitalization_error = fields.Text(
         string="TFHKA Digitalization Error",
@@ -605,7 +616,10 @@ class AccountMove(models.Model):
         self.ensure_one()
         if self.tfhka_digitalization_state != "queued":
             return self.tfhka_digitalization_state == "success"
-        self.write({"tfhka_digitalization_state": "processing"})
+        self.write({
+            "tfhka_digitalization_state": "processing",
+            "tfhka_last_attempt_at": fields.Datetime.now(),
+        })
         # Committed right away -- durable proof that this specific attempt
         # started, so a kill during the TFHKA call below leaves the document
         # visibly 'processing' instead of silently rolling back to 'queued'.
@@ -679,22 +693,37 @@ class AccountMove(models.Model):
                 return False
         return True
 
-    def _tfhka_reconcile_stuck_processing(self):
-        """Returns True if this record was resolved (success or error),
-        False if it's still within TFHKA_STUCK_PROCESSING_GRACE_PERIOD and
-        was left untouched in 'processing'."""
+    def _tfhka_find_success_log(self):
+        """Returns the most recent successful ``/Emision`` log entry for this
+        document since its last send attempt (``tfhka_last_attempt_at``), or
+        an empty recordset if none. Shared by
+        ``_tfhka_reconcile_stuck_processing`` (an attempt interrupted by a
+        killed cron) and ``action_tfhka_retry_digitalization`` (an attempt
+        that landed in 'error', e.g. a network timeout, after TFHKA had
+        already accepted the document) -- both cases where the queue state
+        alone can't tell whether TFHKA already has this document, and
+        resending would risk a fiscal duplicate."""
         self.ensure_one()
-        log_entry = self.env["tfhka.api.log"].sudo().search(
+        if not self.tfhka_last_attempt_at:
+            return self.env["tfhka.api.log"]
+        return self.env["tfhka.api.log"].sudo().search(
             [
                 ("res_model", "=", self._name),
                 ("res_id", "=", self.id),
                 ("endpoint", "=", TFHKA_ENDPOINTS["emision"]),
                 ("success", "=", True),
-                ("create_date", ">=", self.date_state - TFHKA_CLOCK_SKEW_MARGIN),
+                ("create_date", ">=", self.tfhka_last_attempt_at - TFHKA_CLOCK_SKEW_MARGIN),
             ],
             order="create_date desc",
             limit=1,
         )
+
+    def _tfhka_reconcile_stuck_processing(self):
+        """Returns True if this record was resolved (success or error),
+        False if it's still within TFHKA_STUCK_PROCESSING_GRACE_PERIOD and
+        was left untouched in 'processing'."""
+        self.ensure_one()
+        log_entry = self._tfhka_find_success_log()
         if log_entry:
             self._tfhka_reconcile_success_from_log(log_entry)
             self.write({
@@ -826,12 +855,37 @@ class AccountMove(models.Model):
         that resets tfhka_queued_at to now, which would send the document
         to the back of the FIFO queue -- behind every document queued while
         it sat in 'error'. A retry must resume the queue at the same
-        position it halted it."""
+        position it halted it.
+
+        Before re-queuing, checks tfhka.api.log for a successful /Emision
+        response already recorded for the attempt that landed this document
+        in 'error' (see _tfhka_find_success_log): e.g. the HTTP response was
+        lost to a network timeout after TFHKA had already processed the
+        document, so blindly resending would submit a fiscal duplicate. If
+        found, recovers that result instead of resubmitting."""
         eligible = self.filtered(lambda record: record.tfhka_digitalization_state == "error")
-        eligible.write({
-            "tfhka_digitalization_state": "queued",
-            "tfhka_digitalization_error": False,
-        })
+        for record in eligible:
+            log_entry = record._tfhka_find_success_log()
+            if not log_entry:
+                record.write({
+                    "tfhka_digitalization_state": "queued",
+                    "tfhka_digitalization_error": False,
+                })
+                continue
+            record._tfhka_reconcile_success_from_log(log_entry)
+            record.write({
+                "tfhka_digitalization_state": "success",
+                "tfhka_digitalization_error": False,
+                "is_digitalized": True,
+            })
+            record.message_post(
+                body=_(
+                    "TFHKA digitalization had errored, but the API log shows the "
+                    "attempt actually succeeded (see The Factory HKA API Log "
+                    "#%s). Recovered automatically instead of resubmitting.",
+                    log_entry.id,
+                ),
+            )
 
     @api.depends('state', 'debit_origin_id', 'reversed_entry_id', 'is_digitalized')
     def _compute_invisible_check(self):

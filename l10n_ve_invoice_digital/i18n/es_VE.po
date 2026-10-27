@@ -1353,6 +1353,20 @@ msgstr ""
 "reenvió."
 
 #. module: l10n_ve_invoice_digital
+#. odoo-python
+#: code:addons/l10n_ve_invoice_digital/models/account_move.py:0
+#: code:addons/odoo-venezuela/l10n_ve_invoice_digital/models/account_move.py:0
+#, python-format
+msgid ""
+"TFHKA digitalization had errored, but the API log shows the attempt "
+"actually succeeded (see The Factory HKA API Log #%s). Recovered "
+"automatically instead of resubmitting."
+msgstr ""
+"La digitalización TFHKA había fallado, pero el log de la API muestra que "
+"el intento sí tuvo éxito (ver The Factory HKA API Log #%s). Se recuperó "
+"automáticamente en lugar de reenviarse."
+
+#. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__tfhka_digitalization_error
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__tfhka_digitalization_error
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__tfhka_digitalization_error
@@ -1373,6 +1387,13 @@ msgstr "Fecha de estado de digitalización TFHKA"
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice_digital.view_account_invoice_filter_inherit_tfhka_digitalization
 msgid "TFHKA Digitalization Status"
 msgstr "Estado de digitalización TFHKA"
+
+#. module: l10n_ve_invoice_digital
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__tfhka_last_attempt_at
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_move__tfhka_last_attempt_at
+#: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_payment__tfhka_last_attempt_at
+msgid "TFHKA Last Attempt At"
+msgstr "Último intento TFHKA"
 
 #. module: l10n_ve_invoice_digital
 #: model:ir.model.fields,field_description:l10n_ve_invoice_digital.field_account_bank_statement_line__tfhka_queued_at
