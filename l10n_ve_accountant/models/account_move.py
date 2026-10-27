@@ -807,8 +807,29 @@ class AccountMove(models.Model):
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
+            # invoice_date carries business meaning -- "the date the rate was
+            # taken from" -- only for an actual invoice/refund/receipt (sale
+            # OR purchase); core gives it a "today" DEFAULT regardless of
+            # move_type, so a plain journal entry (e.g. a POS session's
+            # closing entry) always has a non-empty invoice_date too, even
+            # though nothing meaningful set it. Checking "invoice_date or
+            # date" then always wins with that meaningless default over the
+            # move's own, already-correct `date`. is_invoice() (not
+            # is_sale_document(): a vendor bill needs its invoice_date
+            # honored here too, confirmed by test_48_post_vendor_bill_
+            # without_exact_date_rate_raises) is what decides whether
+            # invoice_date is actually meaningful for this move. Only fall
+            # back to "now" (Venezuela-aware) when the relevant date is
+            # somehow still empty.
+            is_invoice_like = move.is_invoice(include_receipts=True)
+            rate_date = (
+                (move.invoice_date if is_invoice_like else move.date)
+                or move.date
+                or move.invoice_date
+                or Rate._local_date_from_datetime(fields.Datetime.now())
+            )
             rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
+                move.foreign_currency_id.id, rate_date
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
