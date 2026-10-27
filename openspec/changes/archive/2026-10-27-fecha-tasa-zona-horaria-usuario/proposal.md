@@ -4,6 +4,7 @@ Caracas es UTC-4. A las 8:00 pm el reloj del servidor (UTC) ya marca el día sig
 
 ## What Changes
 
+- `l10n_ve_sale`: helper `_l10n_ve_rate_date()` (igual al de la PR #1531) para convertir `date_order` a la fecha local; `binaural_account_asset` incorpora el fix de la PR #3134 (asientos de depreciación con la tasa del activo).
 - `l10n_ve_rate`: `compute_rate` convierte un `datetime` con `fields.Date.context_today` y usa el «hoy» del usuario si la fecha llega vacía.
 - Fuentes corregidas para usar `context_today`: `l10n_ve_sale` (orden, línea, factura desde la orden, facturas vencidas), `l10n_ve_pos` (`pos.config`), `l10n_ve_accountant` (`account.move`, `account.payment`), `l10n_ve_igtf` (utilidades de conversión), `l10n_ve_payment_extension` (línea de retención y defaults de los wizards de retención IVA/ISLR), `l10n_ve_suggested_amount`, `l10n_ve_fiscal_lock_days`, `l10n_ve_accountant/wizard/invoices_details`.
 - Los defaults de los wizards (`date.today().replace(day=1)`) se evaluaban al importar el módulo y quedaban fijos hasta reiniciar: ahora son `lambda` con `context_today`.

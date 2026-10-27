@@ -14,6 +14,7 @@
 - [x] 3.2 Reproducen el error antes de la corrección: `l10n_ve_sale` (3), `binaural_purchase` (2), `l10n_ve_pos` (1), `binaural_payment` (1)
 - [x] 3.3 Guarda de regresión que ya pasaba: `l10n_ve_accountant` (6: factura de venta/compra, asiento, pago)
 - [x] 3.4 `binaural_foreign_cost/tests/test_stock_move.py`: carga la tasa de hoy que necesita
+- [x] 3.5 Se incorporan las pruebas de la PR #1531 (`test_rate_date_user_tz.py`, `test_sale_order_rate_tz.py`): factura sin fecha a las 9 pm toma la tasa del día local y una `invoice_date` explícita no se corrige
 
 ## 4. Verificación
 
