@@ -351,7 +351,28 @@ class AccountMove(models.Model):
         always False in that mode), so it's the only place that can stop a
         sequence gap or an un-queued predecessor before the document reaches
         'queued'. Validated BEFORE calling super() (the mixin's write to the
-        queue) so a failure here never touches tfhka_digitalization_state."""
+        queue) so a failure here never touches tfhka_digitalization_state.
+
+        Also the only place blocking a still-draft move from reaching the
+        queue through THIS entry point: unlike the automatic path (posting
+        always enqueues through _tfhka_enqueue_eligible_for_digitalization,
+        which runs after the move is already 'posted'), this button can be
+        clicked directly on a draft. _tfhka_fetch_queued's own guard would
+        eventually catch it and mark it 'error' -- but by then it's already
+        sitting in that journal's queue, halting every other document behind
+        it until a human notices and resolves it. Rejecting here means a
+        draft never enters the queue at all."""
+        not_posted = self.filtered(lambda move: move.state != "posted")
+        if not_posted:
+            raise UserError(
+                _(
+                    "Cannot generate digital invoice for %(names)s: not confirmed yet "
+                    "(state=%(state)s). Confirm it first."
+                ) % {
+                    "names": ", ".join(not_posted.mapped("display_name")),
+                    "state": not_posted[0].state,
+                }
+            )
         for move in self:
             move._tfhka_validate_sequence_before_queue()
         self._check_tfhka_payment_required()

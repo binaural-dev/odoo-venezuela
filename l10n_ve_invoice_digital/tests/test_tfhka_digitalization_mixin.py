@@ -585,6 +585,25 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         mock_generate.assert_not_called()
         self.assertEqual(inv.tfhka_digitalization_state, "queued")
 
+    def test_action_generate_digital_rejects_draft_before_it_reaches_the_queue(self):
+        # Review follow-up on ticket #15817: calling this button directly on
+        # a draft used to enqueue it anyway -- the cron would eventually
+        # catch it via _tfhka_fetch_queued's confirmed-state guard and mark
+        # it 'error', but by then it was already sitting in that journal's
+        # queue, halting every other document behind it. Rejecting here
+        # means a draft never enters the queue at all.
+        draft = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+        })
+        self.assertEqual(draft.state, "draft")
+
+        with self.assertRaises(UserError):
+            draft.action_tfhka_generate_digital()
+
+        self.assertEqual(draft.tfhka_digitalization_state, "none")
+
     # ------------------------------------------------------------------
     # _tfhka_recover_stuck_processing (crash-recovery on the next cron tick)
     # ------------------------------------------------------------------
