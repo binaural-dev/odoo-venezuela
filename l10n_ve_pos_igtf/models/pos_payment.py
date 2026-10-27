@@ -50,15 +50,7 @@ class PosPayment(models.Model):
                 .create(
                     {
                         "journal_id": journal.id,
-                        # fields.Date.context_today(order, order.date_order)
-                        # falls back to UTC when neither the cashier nor the
-                        # context carry a tz. In Venezuela (UTC-4), from the
-                        # evening onward the UTC day is already "tomorrow",
-                        # which then makes l10n_ve_rate's compute_rate() look
-                        # for a rate that doesn't exist yet.
-                        "date": self.env["res.currency.rate"]._local_date_from_datetime(
-                            order.date_order, tz_name=order.user_id.tz
-                        ),
+                        "date": fields.Date.context_today(order, order.date_order),
                         "ref": _("Invoice payment for %s (%s) using %s")
                         % (order.name, order.account_move.name, payment_method.name),
                         "pos_payment_ids": payment.ids,

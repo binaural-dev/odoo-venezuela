@@ -24,13 +24,7 @@ class TestSaleOrderRate(TransactionCase):
         self.company.foreign_currency_id = self.usd
         
         self.today = fields.Date.today()
-        # date_order needs a timestamp away from midnight UTC:
-        # _compute_rate() now resolves rate_date in America/Caracas, and
-        # midnight UTC is still the PREVIOUS day's evening there (UTC-4), so
-        # a bare Date (implicitly midnight) would spuriously look for
-        # yesterday's rate. Noon UTC safely falls within "today" in Caracas.
-        self.now = fields.Datetime.to_datetime(self.today) + timedelta(hours=12)
-
+        
         # Create a rate for USD
         # 1 USD = 380 VES
         self.usd_rate_val = 1.0 / 380.0
@@ -66,7 +60,7 @@ class TestSaleOrderRate(TransactionCase):
 
         so = self.env['sale.order'].create({
             'partner_id': self.partner.id,
-            'date_order': self.now,
+            'date_order': self.today,
         })
         _logger.info("Verifying Foreign Rate assignments...")
         _logger.info("Sale Order Foreign Rate: %s (Should be > 1.0 and != 1.0 for EUR)", so.foreign_rate)
@@ -92,7 +86,7 @@ class TestSaleOrderRate(TransactionCase):
         # Create SO
         so = self.env['sale.order'].create({
             'partner_id': self.partner.id,
-            'date_order': self.now,
+            'date_order': self.today,
         })
         
         line = self.env['sale.order.line'].create({
@@ -145,7 +139,7 @@ class TestSaleOrderRate(TransactionCase):
         # SO in EUR
         so = self.env['sale.order'].create({
             'partner_id': self.partner.id,
-            'date_order': self.now,
+            'date_order': self.today,
             'pricelist_id': pricelist_eur.id,
             'currency_id': self.eur.id
         })
@@ -185,7 +179,7 @@ class TestSaleOrderRate(TransactionCase):
         # Create Sale Order in USD (Foreign Currency) using the pricelist
         so = self.env['sale.order'].create({
             'partner_id': self.partner.id,
-            'date_order': self.now,
+            'date_order': self.today,
             'pricelist_id': pricelist_usd.id,
         })
         
@@ -225,7 +219,7 @@ class TestSaleOrderRate(TransactionCase):
         # Case 2: SO in Company Currency (VES)
         so_ves = self.env['sale.order'].create({
             'partner_id': self.partner.id,
-            'date_order': self.now,
+            'date_order': self.today,
             'currency_id': self.ves.id,
         })
         

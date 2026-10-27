@@ -1,5 +1,3 @@
-import datetime
-
 from odoo.exceptions import UserError
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
@@ -24,11 +22,6 @@ class TestActionConfirmRequiresRate(TransactionCase):
             "name": "Test Product",
             "list_price": 100.0,
         })
-        # date_order needs a timestamp away from midnight UTC: _compute_rate()
-        # resolves rate_date in America/Caracas, and midnight UTC is still
-        # the PREVIOUS day's evening there (UTC-4). Noon UTC safely falls
-        # within "today" in Caracas.
-        self.today_noon = fields.Datetime.to_datetime(fields.Date.today()) + datetime.timedelta(hours=12)
 
     def _create_rate(self):
         return self.env["res.currency.rate"].create({
@@ -55,13 +48,13 @@ class TestActionConfirmRequiresRate(TransactionCase):
         """No USD rate exists for the date - creating the order raises the
         "no rate assigned" UserError of compute_rate()."""
         with self.assertRaises(UserError):
-            self._create_order(self.today_noon)
+            self._create_order(fields.Date.today())
 
     def test_confirm_without_rate_raises(self):
         """An order whose foreign_rate ended up at 0 and has no rate for its
         date must not be confirmed silently."""
         rate = self._create_rate()
-        so = self._create_order(self.today_noon)
+        so = self._create_order(fields.Date.today())
         rate.unlink()
         so.foreign_rate = 0.0
 
@@ -70,7 +63,7 @@ class TestActionConfirmRequiresRate(TransactionCase):
 
     def test_confirm_with_rate_is_allowed(self):
         self._create_rate()
-        so = self._create_order(self.today_noon)
+        so = self._create_order(fields.Date.today())
         self.assertNotEqual(so.foreign_rate, 0.0)
 
         so.action_confirm()
@@ -81,7 +74,7 @@ class TestActionConfirmRequiresRate(TransactionCase):
         entirely, so a missing currency-rate record must not block
         confirmation in that case."""
         rate = self._create_rate()
-        so = self._create_order(self.today_noon)
+        so = self._create_order(fields.Date.today())
         so.write({"manually_set_rate": True, "foreign_rate": 123.0})
         rate.unlink()
 
