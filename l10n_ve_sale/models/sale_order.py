@@ -479,26 +479,34 @@ class SaleOrder(models.Model):
         It also sends the custom rate of the order to the invoice
         """
         invoices = self.env["account.move"]
-        for order in self:
+
+        def _pending_lines(order):
             # Las líneas de sección/nota cuentan SIEMPRE como "invoiceable" para
             # el core (sale/models/sale_order.py, _get_invoiceable_lines incluye
             # display_type sin condición de cantidad), así que no sirven para
-            # decidir si queda algo por facturar: con una nota en la orden el
-            # while re-entraba después del último lote y el core reventaba con
-            # "No items are available to invoice".
-            invoiceable_lines = order._get_invoiceable_lines(final).filtered(
+            # decidir si queda algo por facturar.
+            return order._get_invoiceable_lines(final).filtered(
                 lambda line: not line.display_type
             )
-            while invoiceable_lines:
-                invoices |= super()._create_invoices(grouped, final, date)
-                remaining = order._get_invoiceable_lines(final).filtered(
-                    lambda line: not line.display_type
-                )
-                if remaining == invoiceable_lines:
-                    # Si el lote no consumió ninguna línea, cortar en vez de
-                    # iterar infinito (misma protección que el caso de notas).
-                    break
-                invoiceable_lines = remaining
+
+        pending = {order: _pending_lines(order) for order in self}
+        orders = self.filtered(lambda order: pending[order])
+        while orders:
+            # Un solo llamado al core por lote, solo con las órdenes que aún
+            # tienen líneas pendientes: así la facturación consolidada genera
+            # una factura por lote y ninguna orden se factura dos veces.
+            invoices |= super(SaleOrder, orders)._create_invoices(grouped, final, date)
+            next_orders = self.browse()
+            for order in orders:
+                remaining = _pending_lines(order)
+                # Si el lote no consumió líneas de la orden (p. ej. una
+                # suscripción cuya factura quedó en borrador sigue saliendo
+                # como facturable), se corta para no refacturarla ni iterar
+                # infinito.
+                if remaining and remaining != pending[order]:
+                    pending[order] = remaining
+                    next_orders |= order
+            orders = next_orders
 
         return invoices
 
