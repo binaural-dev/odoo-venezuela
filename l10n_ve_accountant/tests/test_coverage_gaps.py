@@ -1048,6 +1048,57 @@ class TestCoverageGaps(TransactionCase):
         invoice.with_context(move_action_post_alert=True).action_post()
         self.assertEqual(invoice.foreign_amount_residual, invoice.amount_total * invoice.foreign_inverse_rate)
 
+    def test_foreign_amount_residual_zero_when_paid_at_different_rate(self):
+        """Ticket #15971/#16009: an invoice fully paid in the company
+        currency must show 0 in its alterno-currency residual, even if the
+        payment was reconciled at a different alterno rate than the one the
+        invoice was raised at (a later/earlier payment date, an advance).
+        Before the fix, `_compute_foreign_amount_residual` mixed the
+        invoice's own alterno balance (frozen at the invoice's rate) with
+        the payment's alterno amount (at the payment's own rate), leaving a
+        leftover difference that the cashier read as still owed.
+        """
+        old_date = fields.Date.today() - timedelta(days=10)
+        old_rate = 65.0
+        today_rate = 30.0
+
+        self.env["res.currency.rate"].create({
+            "name": old_date, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": old_rate, "company_id": self.company.id,
+        })
+        self.env["res.currency.rate"].search([
+            ("currency_id", "=", self.currency_usd.id),
+            ("company_id", "=", self.company.id),
+            ("name", "=", fields.Date.today()),
+        ]).write({"inverse_company_rate": today_rate})
+
+        invoice = self._create_invoice(self.currency_usd, 100.0, tax=False)
+        invoice.write({"date": old_date, "invoice_date": old_date})
+        invoice.with_context(move_action_post_alert=True).action_post()
+        self.assertAlmostEqual(invoice.foreign_rate, old_rate, places=2)
+        self.assertNotAlmostEqual(invoice.foreign_amount_residual, 0.0, places=2)
+
+        action = invoice.action_register_payment()
+        wizard_form = Form(
+            self.env["account.payment.register"].with_context(**action["context"])
+        )
+        wizard = wizard_form.save()
+        wizard._create_payments()
+
+        self.assertIn(invoice.payment_state, ("paid", "in_payment"))
+        self.assertAlmostEqual(invoice.amount_residual, 0.0, places=2)
+        self.assertNotAlmostEqual(
+            invoice.foreign_rate, today_rate, places=2,
+            msg="Sanity check: invoice and payment must use different rates",
+        )
+        self.assertAlmostEqual(
+            invoice.foreign_amount_residual, 0.0, places=2,
+            msg="A fully paid invoice must not show a Bs residual just because the "
+                "payment was reconciled at a different alterno rate",
+        )
+        payment_term_line = invoice.line_ids.filtered(lambda l: l.display_type == "payment_term")
+        self.assertAlmostEqual(payment_term_line.foreign_amount_residual, 0.0, places=2)
+
     # ═══════════════════════════════════════════════════════════════
     # account_move.py - _onchange_move_type
     # ═══════════════════════════════════════════════════════════════
