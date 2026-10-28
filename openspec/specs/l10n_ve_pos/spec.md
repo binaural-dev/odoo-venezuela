@@ -553,6 +553,15 @@ El módulo DEBE (MUST) definir el grupo `l10n_ve_pos.group_authorized_discount_p
 - **WHEN** un administrador edita un usuario
 - **THEN** el grupo "Authorized discount pos" está disponible dentro del privilegio del Punto de Venta
 
+### Requirement: La tasa de la caja es la del día del usuario
+
+`pos.config._compute_rate` DEBE (MUST) buscar la tasa de `fields.Date.context_today` y no la de `fields.Date.today()`. Como esa búsqueda usa `raise_if_not_found=False`, usar la fecha UTC dejaba la caja con tasa `0` sin avisar después de las 8 pm de Caracas.
+
+#### Scenario: Caja consultada a las 8:30 pm en Caracas
+
+- **WHEN** se calcula la tasa de la caja a las 00:30 UTC del día siguiente y hay tasa del día del usuario
+- **THEN** `foreign_rate` toma la tasa del día del usuario y no queda en 0
+
 ### Requirement: Stock actual al abrir la caja con "Mostrar solamente los productos disponibles"
 
 Con el flag activo, `pos.session.load_data` DEBE (MUST) cargar `product.template` y `product.product` sin el filtro por `write_date` de la carga incremental, porque un movimiento de stock no lo cambia: una sesión nueva o la entrada desde el backend traen el stock actual aunque la caja tenga caché. F5 con la sesión abierta no consulta al servidor: para eso lo recomendado es "Volver a cargar datos" → "Limitado".

@@ -47,7 +47,7 @@ class PosConfig(models.Model):
             # este compute no debe bloquear la vista de la configuración.
             rate_values = rate.compute_rate(
                 config.foreign_currency_id.id,
-                fields.Date.today(),
+                fields.Date.context_today(config),
                 raise_if_not_found=False,
             )
             config.update(rate_values)
