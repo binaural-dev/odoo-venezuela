@@ -518,7 +518,7 @@ class AccountRetentionLine(models.Model):
                                 record.foreign_invoice_amount = concept_foreign_base
 
                     else:
-                        invoice_date = record.move_id.invoice_date_display or fields.Date.today()
+                        invoice_date = record.move_id.invoice_date_display or fields.Date.context_today(self)
 
                         fiscalyear_last_day = int(record.company_id.fiscalyear_last_day)
                         fiscalyear_last_month = int(record.company_id.fiscalyear_last_month)
