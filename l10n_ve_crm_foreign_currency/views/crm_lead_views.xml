@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="crm_lead_view_form_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.lead.view.form.foreign.currency</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_lead_view_form"/>
+        <field name="arch" type="xml">
+            <!-- Fila principal: se reemplazan los campos en moneda de la compañía por los de moneda comercial -->
+            <field name="expected_revenue" position="replace">
+                <field name="foreign_currency_id" invisible="1"/>
+                <field
+                    name="expected_revenue_foreign"
+                    class="o_input_13ch"
+                    widget="monetary"
+                    options="{'currency_field': 'foreign_currency_id'}"
+                />
+            </field>
+            <field name="recurring_revenue" position="replace">
+                <field
+                    name="recurring_revenue_foreign"
+                    class="o_input_10ch mx-auto mx-sm-0"
+                    widget="monetary"
+                    options="{'currency_field': 'foreign_currency_id'}"
+                    groups="crm.group_use_recurring_revenues"
+                />
+            </field>
+
+            <!-- Segunda fila: los campos originales en moneda de la compañía, de solo lectura y atenuados -->
+            <xpath expr="//div[hasclass('d-flex', 'flex-wrap', 'align-items-baseline')]" position="after">
+                <div class="d-flex flex-wrap align-items-baseline text-muted small">
+                    <field
+                        name="expected_revenue"
+                        class="o_input_13ch"
+                        readonly="1"
+                        widget="monetary"
+                        options="{'currency_field': 'company_currency'}"
+                    />
+                    <span class="opacity-50 p-2" groups="crm.group_use_recurring_revenues"> + </span>
+                    <span class="opacity-50 p-2" groups="!crm.group_use_recurring_revenues"> at </span>
+                    <field
+                        name="recurring_revenue"
+                        class="o_input_10ch mx-auto mx-sm-0"
+                        readonly="1"
+                        widget="monetary"
+                        options="{'currency_field': 'company_currency'}"
+                        groups="crm.group_use_recurring_revenues"
+                    />
+                </div>
+            </xpath>
+        </field>
+    </record>
+
+    <record id="crm_quick_create_opportunity_form_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.quick.create.opportunity.form.foreign.currency</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.quick_create_opportunity_form"/>
+        <field name="arch" type="xml">
+            <field name="expected_revenue" position="replace">
+                <field name="foreign_currency_id" invisible="1"/>
+                <field
+                    name="expected_revenue_foreign"
+                    class="oe_inline me-5 o_field_highlight mb-0"
+                    widget="monetary"
+                    options="{'currency_field': 'foreign_currency_id'}"
+                />
+            </field>
+            <field name="recurring_revenue" position="replace">
+                <field
+                    name="recurring_revenue_foreign"
+                    class="oe_inline mb-0 o_field_highlight"
+                    widget="monetary"
+                    options="{'currency_field': 'foreign_currency_id'}"
+                    groups="crm.group_use_recurring_revenues"
+                />
+            </field>
+        </field>
+    </record>
+
+    <record id="crm_case_kanban_view_leads_foreign_currency" model="ir.ui.view">
+        <field name="name">crm.lead.kanban.lead.foreign.currency</field>
+        <field name="model">crm.lead</field>
+        <field name="inherit_id" ref="crm.crm_case_kanban_view_leads"/>
+        <field name="arch" type="xml">
+            <field name="company_currency" position="after">
+                <field name="foreign_currency_id"/>
+                <field name="expected_revenue_foreign"/>
+                <field name="recurring_revenue_foreign"/>
+            </field>
+            <progressbar position="attributes">
+                <attribute name="sum_field">expected_revenue_foreign</attribute>
+                <attribute name="recurring_revenue_sum_field">recurring_revenue_foreign</attribute>
+            </progressbar>
+            <!-- El div original se deja en el árbol (no se elimina) para no romper
+                 crm.lead.view.kanban.forecast, que también hereda de esta vista y hace su
+                 propio xpath sobre field[@name='expected_revenue']; simplemente se oculta. -->
+            <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]" position="attributes">
+                <attribute name="class" add="d-none" separator=" "/>
+            </xpath>
+            <xpath expr="//t[@t-name='card']//div[hasclass('o_kanban_card_crm_lead_revenue')]" position="after">
+                <div id="o_kanban_card_crm_lead_revenue_foreign" class="o_kanban_card_crm_lead_revenue">
+                    <t t-if="record.expected_revenue_foreign.raw_value">
+                        <field name="expected_revenue_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}"/>
+                        <span t-if="record.recurring_revenue_foreign and record.recurring_revenue_foreign.raw_value" groups="crm.group_use_recurring_revenues"> + </span>
+                    </t>
+                    <t t-if="record.recurring_revenue_foreign and record.recurring_revenue_foreign.raw_value">
+                        <field class="me-1" name="recurring_revenue_foreign" widget="monetary" options="{'currency_field': 'foreign_currency_id'}" groups="crm.group_use_recurring_revenues"/>
+                        <field name="recurring_plan" groups="crm.group_use_recurring_revenues"/>
+                    </t>
+                </div>
+            </xpath>
+        </field>
+    </record>
+</odoo>
