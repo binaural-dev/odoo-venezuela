@@ -97,6 +97,17 @@ class TaxVesTotalsComponent extends TaxTotalsComponent {
   get readonly() {
     return this.props.readonly;
   }
+
+  // Documento en moneda de la compañía: el bloque inferior muestra los
+  // montos de la moneda de referencia en lugar de los de la compañía.
+  get showForeign() {
+    const totals = this.totals;
+    return Boolean(totals) && totals.currency_id === totals.ves_currency_id;
+  }
+
+  get hasAlternate() {
+    return !this.showForeign || Boolean(this.props.record.data.foreign_currency_id);
+  }
 }
 TaxVesTotalsComponent.template = "l10n_ve_accountant.TaxVesTotalsField";
 TaxVesTotalsComponent.props = { ...standardFieldProps };
