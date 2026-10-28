@@ -81,8 +81,7 @@
                             <div class="o_setting_right_pane">
                                 <label for="pos_show_just_products_with_available_qty" />
                                 <p class="text-muted">
-                                    Deletes automatically products without free qty on
-                                    POS
+                                    Hide storable products without stock on hand in the PoS warehouse
                                 </p>
                             </div>
                         </div>

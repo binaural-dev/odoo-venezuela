@@ -26,12 +26,14 @@ class ProductProduct(models.Model):
           to the PoS config currency (``_convert_pos_data_currency``). The
           Odoo 17 conversion kept here converted it twice.
         * Propagate the PoS warehouse context so ``free_qty`` /
-          ``qty_available`` are computed against the right warehouse.
+          ``qty_available`` are computed against the right warehouse. The
+          key is ``warehouse_id``: ``stock`` ignores the O17 ``warehouse``
+          key and computed the quantity over every warehouse.
         * Enrich the payload with the full ``categ`` object and a boolean
           ``image_128`` flag (matches the legacy Odoo 17 contract).
         """
         warehouse_id = config.picking_type_id.warehouse_id.id
-        records = records.with_context(warehouse=warehouse_id)
+        records = records.with_context(warehouse_id=warehouse_id)
         res = super()._load_pos_data_read(records, config) or []
 
         categ_records = self.env['product.category']._load_pos_data_read(
