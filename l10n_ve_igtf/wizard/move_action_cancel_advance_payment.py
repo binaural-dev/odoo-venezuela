@@ -30,7 +30,9 @@ class MoveActionCancelAdvancePayment(models.TransientModel):
             for move in wizard.cross_move_ids:
                
                     
-                move.line_ids.remove_move_reconcile()
+                # El wizard ya cancela el cruce: el contexto evita que `account.partial.reconcile.unlink`
+                # lo cancele otra vez.
+                move.line_ids.with_context(move_action_cancel_advance_payment=True).remove_move_reconcile()
                 move.with_context(move_action_cancel_advance_payment=True).button_draft()
                 move.write({'origin_payment_advanced_payment_id': False})
                 move.with_context(
@@ -51,7 +53,9 @@ class MoveActionCancelAdvancePayment(models.TransientModel):
                 
             if partial_id:
                 wizard.payment_id.move_id.remove_igtf_from_account_move(partial_id)
-                wizard.payment_id.move_id.line_ids.remove_move_reconcile()
+                wizard.payment_id.move_id.line_ids.with_context(
+                    move_action_cancel_advance_payment=True
+                ).remove_move_reconcile()
 
         self.flush_recordset() 
     
