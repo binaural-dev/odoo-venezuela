@@ -6,7 +6,7 @@ asi que HOY ESTAS PRUEBAS PASAN: el flujo estandar de `account.move` y
 `account.payment` no reproduce el error. Fallarian si alguien cambia esas fechas
 por `fields.Date.today()` (fecha UTC), que buscaria la tasa de "manana" y lanzaria
 "no hay tasa asignada". Los sitios que SI reproducen el error estan en
-l10n_ve_sale, l10n_ve_pos, binaural_purchase y binaural_payment.
+l10n_ve_sale, l10n_ve_pos y binaural_purchase.
 """
 
 import logging
