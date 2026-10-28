@@ -53,17 +53,18 @@ class TestFiscalLockDays(TransactionCase):
 
         self.company.write(
             {
-                "currency_id": self.currency_usd.id,
-                "foreign_currency_id": self.currency_vef.id,  
+                "currency_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_usd.id,
             }
         )
 
-        # Las facturas piden la tasa de VEF del dia: la del usuario y la del servidor
-        # pueden ser dias distintos cerca de la medianoche, asi que se cargan ambas.
+        # Moneda de la compania VEF y alterna USD: las facturas piden la tasa de la
+        # alterna del dia. La del usuario y la del servidor pueden ser dias distintos
+        # cerca de la medianoche, asi que se cargan ambas.
         for rate_date in {date.today(), fields.Date.context_today(self.env.user)}:
             self.env["res.currency.rate"].create({
                 "name": rate_date,
-                "currency_id": self.currency_vef.id,
+                "currency_id": self.currency_usd.id,
                 "company_id": self.company.id,
                 "inverse_company_rate": 50.0,
             })
