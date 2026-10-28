@@ -15,6 +15,7 @@ class TestFiscalLockDays(TransactionCase):
         self.company.lock_date_tax_validation = True
         self.company.tax_lock_date = date.today() + timedelta(days=15)  # Set lock date 15 days ahead of today for consistent test behavior.
         self.company.country_id = self.env.ref('base.ve')
+        self.company.account_fiscal_country_id = self.company.country_id
         self.partner = self.env['res.partner'].create({'name': 'Test Partner'})
         self.journal = self.env['account.journal'].create({
             'name': 'Diario de Ventas',
@@ -22,7 +23,11 @@ class TestFiscalLockDays(TransactionCase):
             'type': 'sale',
             'company_id': self.company.id,
         })
-        self.tax_group_iva16 = self.env["account.tax.group"].create({"name": "IVA 16%"})
+        self.tax_group_iva16 = self.env["account.tax.group"].create({
+            "name": "IVA 16%",
+            "company_id": self.company.id,
+            "country_id": self.company.country_id.id,
+        })
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
             'amount': 16,
