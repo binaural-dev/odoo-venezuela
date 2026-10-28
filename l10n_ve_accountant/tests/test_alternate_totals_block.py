@@ -130,12 +130,12 @@ class TestAlternateTotalsBlock(TransactionCase):
         self.assertNotIn("currency_id", (ves.getparent().get("invisible") or ""))
         self.assertFalse(arch.xpath("//page[@name='foreign_currency']"))
 
-    def test_residual_in_company_currency_hidden_when_document_is_company_currency(self):
-        """`amount_residual_company` esta en la moneda de la compañia: con el documento ya en esa
-        moneda repite el "Amount Due" nativo y no debe verse bajo el bloque alterno."""
+    def test_alternate_block_has_no_residual_amount(self):
+        """El unico monto adeudado es el nativo (`amount_residual`): el bloque alterno solo
+        muestra `tax_totals`, sin `amount_residual_company`, en ninguna moneda del documento."""
         arch = etree.fromstring(self.env["account.move"].get_view(view_type="form")["arch"])
-        group = arch.xpath("//field[@name='amount_residual_company']/parent::group")[0]
-        self.assertEqual(group.get("invisible"), "currency_id == company_currency_id")
+        self.assertFalse(arch.xpath("//field[@name='amount_residual_company']"))
+        self.assertTrue(arch.xpath("//field[@name='amount_residual']"))
 
     def test_company_without_reference_currency(self):
         """Sin moneda de referencia no hay montos alternos que mostrar."""
