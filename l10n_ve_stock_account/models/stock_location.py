@@ -42,3 +42,22 @@ class StockLocation(models.Model):
             record.is_consignation_warehouse = bool(
                 warehouse and warehouse.is_consignation_warehouse
             )
+
+    def get_warehouse(self):
+        """Return the warehouse associated with this stock location, or False if none found.
+
+        Declared here, where the constraint and the compute above use it, and not only
+        in l10n_ve_donation (which depends on this module): without that module
+        installed the call raised AttributeError when creating any location.
+        """
+        if not self.id:
+            return False
+
+        return self.env["stock.warehouse"].search(
+            [
+                "|",
+                ("lot_stock_id", "=", self.id),
+                ("view_location_id", "parent_of", self.id),
+            ],
+            limit=1,
+        )
