@@ -135,7 +135,8 @@
                             
                         </group>
                         <group
-                            class="oe_subtotal_footer px-4">
+                            class="oe_subtotal_footer px-4"
+                            invisible="currency_id == company_currency_id">
                              <field name="amount_residual_company" readonly="1" force_save="1"  class="oe_subtotal_footer_separator" />
                         </group>
                             
