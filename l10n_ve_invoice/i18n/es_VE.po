@@ -407,6 +407,12 @@ msgid "Free Form Binaural"
 msgstr "Forma Libre (Binaural)"
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_bank_statement_line__free_form_copy_number
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_account_move__free_form_copy_number
+msgid "Free Form Copy Number"
+msgstr "Nro. de copia de formulario libre"
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.wizard_binaural_facturacion_reportes_view
 msgid "Generar Informe"
 msgstr ""
