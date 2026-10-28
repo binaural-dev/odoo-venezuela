@@ -56,6 +56,11 @@
                 <attribute name="options">{'no_quick_create': True, 'no_create_edit': True, 'no_create': True}</attribute>
             </xpath>
 
+            <!-- Segundo bloque de totales: VES si la orden esta en otra moneda; moneda de referencia si esta en la de la compania -->
+            <xpath expr="//group[@name='sale_total']" position="inside">
+                <field name="foreign_currency_id" invisible="1" />
+                <field name="tax_totals" widget="account-tax-ves-totals-field" nolabel="1" readonly="1" />
+            </xpath>
 
             <xpath expr="//button[@id='create_invoice'][1]" position="replace">
                 <button id="create_invoice" name="%(sale.action_view_sale_advance_payment_inv)d"
