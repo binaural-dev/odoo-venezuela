@@ -8,7 +8,7 @@ busca la tasa de "manana", que aun no existe, y `compute_rate` lanza UserError.
 
 from datetime import date
 
-from freezegun import freeze_time  # noqa: F401  (se reexporta para las pruebas)
+from odoo.tests import freeze_time  # noqa: F401  (se reexporta para las pruebas)
 
 from odoo import fields
 
