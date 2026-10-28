@@ -882,3 +882,17 @@ formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15
 
 - **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
 - **THEN** se lanza un error de validación antes de crear ningún pago
+
+### Requirement: El bloque de totales en VES no se muestra cuando la factura ya está en la moneda de la compañía
+
+El formulario de factura DEBE (MUST) mostrar el bloque de totales en VES (grupo "ONLY VES", widget `account-tax-ves-totals-field`, con "Importe adeudado" `amount_residual_company`) únicamente cuando la moneda del documento (`currency_id`) es distinta de la moneda de la compañía (`company_currency_id`). Cuando ambas coinciden, el widget nativo (`account-tax-totals-field`) ya muestra los mismos montos en la moneda de la compañía, por lo que el bloque VES NO DEBE (MUST NOT) renderizarse: repetiría subtotal, grupos de impuesto, total, IGTF y monto adeudado. La condición se suma a las ya existentes (tipo de documento con totales y `payment_state != 'invoicing_legacy'`).
+
+#### Scenario: Factura en la moneda de la compañía
+
+- **WHEN** se abre una factura cuya `currency_id` es igual a `company_currency_id`
+- **THEN** el pie de totales muestra un solo bloque (el nativo) y no el bloque de totales en VES
+
+#### Scenario: Factura en moneda distinta a la de la compañía
+
+- **WHEN** se abre una factura cuya `currency_id` es distinta de `company_currency_id`
+- **THEN** se muestran el widget nativo en la moneda del documento y el bloque de totales en VES
