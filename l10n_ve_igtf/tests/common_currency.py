@@ -1,4 +1,4 @@
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import Form, TransactionCase
 
 
@@ -35,6 +35,13 @@ class CurrencyFixtureCommon(TransactionCase):
                     Command.create({"name": "2026-08-01", "company_rate": 1 / aug}),
                 ],
             })
+
+        # `l10n_ve_rate` exige tasa en la fecha exacta del documento: los pagos y asientos que se crean con la
+        # fecha de hoy necesitan la suya (se busca antes de crear: hay una tasa única por moneda y día).
+        today = fields.Date.context_today(env.user)
+        for currency, rate in ((cls.usd, 38.0), (cls.eur, 47.0), (cls.jpy, 0.26), (cls.kwd, 125.0)):
+            if not currency.rate_ids.filtered(lambda r: r.name == today and r.company_id in (cls.company, env["res.company"])):
+                currency.write({"rate_ids": [Command.create({"name": today, "company_rate": 1 / rate})]})
 
         Account = env["account.account"]
         company_ids = [Command.set([cls.company.id])]
