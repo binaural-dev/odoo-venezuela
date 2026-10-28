@@ -5,6 +5,8 @@ from odoo.tests import tagged
 from odoo.exceptions import UserError
 from odoo import Command
 
+from odoo.addons.l10n_ve_accountant.tests.common_rates import set_rate
+
 from .common import StockAccountTestCommon
 
 _logger = logging.getLogger(__name__)
@@ -66,6 +68,10 @@ class TestCreateInvoiceFromPicking(StockAccountTestCommon):
             "currency_id": cls.currency_vef.id,
             "company_id": cls.company.id,
         })
+
+        # `compute_rate` busca la tasa solo en la fecha exacta y una BD sin demo
+        # no trae tasa USD para la `date_order` de `_create_sale_order`.
+        set_rate(cls.env, cls.currency_usd, "2026-02-01", cls.company, 40.0)
 
     # =========================================================================
     # Helpers

@@ -3,7 +3,9 @@ import logging
 from unittest.mock import patch
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
-from odoo import Command
+from odoo import Command, fields
+
+from odoo.addons.l10n_ve_accountant.tests.common_rates import set_rate
 
 _logger = logging.getLogger(__name__)
 
@@ -140,6 +142,9 @@ class TestConsignationSaleOrder(TransactionCase):
             "currency_id": cls.currency_vef.id,
             "foreign_currency_id": cls.currency_usd.id,
         })
+        # `sale.order.default_rate` busca la tasa USD de hoy (fecha exacta) y una
+        # BD sin demo no la trae.
+        set_rate(cls.env, cls.currency_usd, fields.Date.today(), cls.company, 40.0)
 
         cls.partner = cls.env["res.partner"].create({
             "name": "Consignation Customer",
