@@ -320,7 +320,7 @@ La opción de apagarla existe solo por criterio del consultor, para ajustes o ca
 
 ### Requirement: Registro de la fecha-hora de emisión
 
-Al crear o modificar `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora local actual, y limpiarlo cuando la fecha se vacía. La hora local es la de la zona horaria de la compañía del documento; si no tiene, la del usuario y, si tampoco, `America/Caracas`. El valor se guarda en UTC, como todo `Datetime`, de modo que al mostrarlo en hora local el día DEBE (MUST) coincidir siempre con `invoice_date_display`.
+Al crear un documento o al cambiar su `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora local actual, y limpiarlo cuando la fecha se vacía. Día y hora DEBEN (MUST) salir de la misma zona horaria: la del contexto o la del usuario, la misma que usa `context_today` para el default de `invoice_date_display`. Si el documento se crea sin fecha se toma la de hoy en esa zona horaria. El valor se guarda en UTC, como todo `Datetime`, de modo que al mostrarlo en hora local el día coincide con `invoice_date_display`. Un `write()` que no cambia `invoice_date_display` NO DEBE (MUST NOT) cambiar la hora. Al instalar el módulo, el `post_init_hook` completa los documentos sin fecha-hora con el mismo cálculo, en la zona horaria de la compañía (`America/Caracas` si no tiene).
 
 #### Scenario: Establecer la fecha de factura
 
@@ -329,12 +329,17 @@ Al crear o modificar `invoice_date_display`, el sistema DEBE (MUST) almacenar en
 
 #### Scenario: Registro después de las 20:00 en Venezuela
 
-- **WHEN** se registra una factura con `invoice_date_display` 30/09 a las 20:41 en Caracas (01/10 00:41 UTC)
-- **THEN** `invoice_date_display_datetime` muestra 30/09 20:41 en hora local, no 29/09
+- **WHEN** un usuario con zona horaria `America/Caracas` registra una factura el 14/09 a las 22:30 (15/09 02:30 UTC)
+- **THEN** `invoice_date_display_datetime` muestra 14/09 22:30 en hora local, no 13/09
+
+#### Scenario: Fecha retroactiva
+
+- **WHEN** ese mismo usuario registra una factura con fecha 10/09
+- **THEN** `invoice_date_display_datetime` muestra 10/09 22:30 en hora local
 
 #### Scenario: Registros guardados con el día anterior
 
-- **WHEN** se actualiza el módulo a `19.0.1.0.27` y hay documentos cuyo `invoice_date_display_datetime`, en la zona horaria de su compañía, cae en un día distinto de `invoice_date_display`
+- **WHEN** se actualiza el módulo a `19.0.1.0.27` y hay documentos cuyo `invoice_date_display_datetime`, en la zona horaria de su compañía (`America/Caracas` si no tiene), cae en un día distinto de `invoice_date_display`
 - **THEN** se les pone el día de `invoice_date_display` conservando la hora local, y el resto de los documentos no se toca
 
 ### Requirement: Período fiscal según tipo de contribuyente

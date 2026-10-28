@@ -512,59 +512,34 @@ class AccountMove(models.Model):
             move.company_currency_line_totals = totals
 
     @api.model
-    def _get_invoice_date_display_tz(self, company=None):
-        """Zona horaria con la que se arma invoice_date_display_datetime: la de
-        la compañía (el documento fiscal es suyo), luego la del usuario y, si
-        ninguna está definida, America/Caracas."""
-        company = company or self.env.company
-        try:
-            return pytz.timezone(company.partner_id.tz or self.env.user.tz or DEFAULT_TZ)
-        except pytz.UnknownTimeZoneError:
-            return pytz.timezone(DEFAULT_TZ)
+    def _get_invoice_date_display_datetime(self, date_value):
+        """Fecha de la factura con la hora local actual, en UTC naive.
 
-    @api.model
-    def _build_invoice_date_display_datetime(self, date_value, tz, now=None):
-        """Fecha de la factura + hora local actual, devuelto en UTC naive.
-
-        No se puede hacer ``fields.Datetime.now().replace(day=...)``: mezcla la
-        fecha local con la hora UTC y, desde las 20:00 en UTC-4, el valor queda
-        en el día anterior (HD #15992).
+        Día y hora salen de la misma zona horaria (la del contexto o la del
+        usuario), la misma que usa ``context_today`` para el default de
+        ``invoice_date_display``. Sin fecha se toma la de hoy. No se puede
+        hacer ``fields.Datetime.now().replace(day=...)``: mezcla la fecha local
+        con la hora UTC y, desde las 20:00 en UTC-4, el valor queda en el día
+        anterior (HD #15992).
         """
-        if not date_value:
-            return False
-        date_part = fields.Date.to_date(date_value)
-        now_utc = pytz.utc.localize(now or fields.Datetime.now())
-        local_time = now_utc.astimezone(tz).time().replace(tzinfo=None)
-        local_dt = tz.localize(datetime.combine(date_part, local_time))
+        date_value = fields.Date.to_date(date_value) or fields.Date.context_today(self)
+        now_local = fields.Datetime.context_timestamp(self, fields.Datetime.now())
+        local_dt = self.env.tz.localize(datetime.combine(date_value, now_local.time()))
         return local_dt.astimezone(pytz.utc).replace(tzinfo=None)
 
     @api.model_create_multi
     def create(self, vals_list):
-        now = fields.Datetime.now()
         for vals in vals_list:
             if vals.get("invoice_date_display"):
-                company = self.env["res.company"].browse(vals.get("company_id"))
                 vals["invoice_date_display_datetime"] = (
-                    self._build_invoice_date_display_datetime(
-                        vals["invoice_date_display"],
-                        self._get_invoice_date_display_tz(company),
-                        now=now,
-                    )
+                    self._get_invoice_date_display_datetime(vals["invoice_date_display"])
                 )
-            elif "invoice_date_display" in vals and not vals.get(
-                "invoice_date_display"
-            ):
-                vals["invoice_date_display_datetime"] = False
         moves = super().create(vals_list)
 
         for move in moves:
-            if move.invoice_date_display and not move.invoice_date_display_datetime:
+            if not move.invoice_date_display_datetime:
                 move.invoice_date_display_datetime = (
-                    self._build_invoice_date_display_datetime(
-                        move.invoice_date_display,
-                        self._get_invoice_date_display_tz(move.company_id),
-                        now=now,
-                    )
+                    self._get_invoice_date_display_datetime(move.invoice_date_display)
                 )
 
         for move in moves:
@@ -844,12 +819,17 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         if vals.get("invoice_date_display"):
-            vals["invoice_date_display_datetime"] = (
-                self._build_invoice_date_display_datetime(
-                    vals["invoice_date_display"],
-                    self._get_invoice_date_display_tz(self.company_id[:1]),
+            # Solo se renueva la hora de los documentos cuya fecha cambia.
+            new_date = fields.Date.to_date(vals["invoice_date_display"])
+            changed = self.filtered(lambda m: m.invoice_date_display != new_date)
+            if changed and changed != self:
+                (self - changed).write(vals)
+                return changed.write(vals)
+            if changed:
+                vals = dict(
+                    vals,
+                    invoice_date_display_datetime=self._get_invoice_date_display_datetime(new_date),
                 )
-            )
         elif "invoice_date_display" in vals and not vals.get("invoice_date_display"):
             vals["invoice_date_display_datetime"] = False
         res = super().write(vals)

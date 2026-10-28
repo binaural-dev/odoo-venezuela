@@ -6,9 +6,11 @@ What: for each company, takes the moves whose invoice_date_display_datetime, rea
 
 Why: account.move create/write built the field as fields.Datetime.now() (UTC) with the day replaced
     by invoice_date_display (a local date). From 20:00 in Venezuela (UTC-4) the UTC time is already
-    the next day, so the field showed the previous day. The code now uses the local time; this
-    script fixes what was already stored. The time shown to the user was right, only the day was off,
-    so the local time is kept.
+    the next day, so the field showed the previous day. The code now takes day and time from the
+    same time zone (the user's, as context_today does); this script fixes what was already stored.
+    The user who registered each move is not known here, so the company time zone is used, which is
+    the one l10n_ve_base gives the users by default. The time shown to the user was right, only the
+    day was off, so the local time is kept.
 
 If it does not run: the documents registered after 20:00 keep showing the previous day, and the
     sales book and the TFHKA digital invoice (which take their date/time from this field) keep it.
