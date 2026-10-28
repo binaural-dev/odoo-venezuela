@@ -4,7 +4,7 @@ import "@l10n_ve_pos/overrides/models/product_template";
 
 // TI-16064: con "Mostrar solamente los productos disponibles"
 // (pos_show_just_products_with_available_qty) la cuadrícula oculta los
-// almacenables sin stock a mano en el almacén de la caja.
+// almacenables sin stock a mano en la ubicación de origen de la caja.
 
 function makeTemplate({
     showOnlyAvailable = true,
@@ -12,8 +12,11 @@ function makeTemplate({
     quantities = [0],
     active = true,
     availableInPos = true,
+    withConfig = true,
 } = {}) {
-    const config = { pos_show_just_products_with_available_qty: showOnlyAvailable };
+    const config = withConfig
+        ? { pos_show_just_products_with_available_qty: showOnlyAvailable }
+        : undefined;
     return {
         active,
         available_in_pos: availableInPos,
@@ -51,6 +54,10 @@ describe("l10n_ve_pos ProductTemplate canBeDisplayed", () => {
 
     test("ajuste apagado: el almacenable sin stock se muestra", () => {
         expect(canBeDisplayed(makeTemplate({ showOnlyAvailable: false }))).toBe(true);
+    });
+
+    test("sin caja cargada no se filtra", () => {
+        expect(canBeDisplayed(makeTemplate({ withConfig: false }))).toBe(true);
     });
 
     test("con stock no se muestra lo que el core ya oculta", () => {

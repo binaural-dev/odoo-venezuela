@@ -14,9 +14,10 @@ INCREMENTAL_CONTEXT = {
 @tagged("post_install", "-at_install", "l10n_ve_pos")
 class TestPosProductAvailableQty(TransactionCase):
     """TI-16064: the PoS loader sends ``qty_available`` / ``free_qty`` of the
-    PoS warehouse, the quantity "Mostrar solamente los productos disponibles"
-    hides products by, and with that setting every load brings the current
-    stock, not only the products modified since the browser cache."""
+    source location of the PoS (the stock "Cantidad en 0" checks), the
+    quantity "Mostrar solamente los productos disponibles" hides products by,
+    and with that setting every load brings the current stock, not only the
+    products modified since the browser cache."""
 
     @classmethod
     def setUpClass(cls):
@@ -55,6 +56,7 @@ class TestPosProductAvailableQty(TransactionCase):
         ) or cls.env["stock.warehouse"].create(
             {"name": "VE WH", "code": "VEWH", "company_id": cls.company.id}
         )
+        cls.stock_location = cls.warehouse.pos_type_id.default_location_src_id
         cls.other_warehouse = cls.env["stock.warehouse"].create(
             {"name": "Other WH", "code": "OWH", "company_id": cls.company.id}
         )
@@ -94,32 +96,47 @@ class TestPosProductAvailableQty(TransactionCase):
             self._new_config(),
         )
 
-    def _set_on_hand(self, qty, warehouse):
+    def _set_on_hand(self, qty, location=None):
         self.env["stock.quant"]._update_available_quantity(
-            self.product, warehouse.lot_stock_id, qty
+            self.product, location or self.stock_location, qty
         )
 
-    def test_quantity_of_the_pos_warehouse(self):
-        self._set_on_hand(2, self.warehouse)
-        self._set_on_hand(5, self.other_warehouse)
+    def _new_internal_location(self, name, parent):
+        return self.env["stock.location"].create(
+            {"name": name, "location_id": parent.id, "usage": "internal"}
+        )
+
+    def test_quantity_of_the_pos_source_location(self):
+        """The source location and its children count."""
+        self._set_on_hand(2)
+        self._set_on_hand(1, self._new_internal_location("Shelf", self.stock_location))
+        self._set_on_hand(5, self.other_warehouse.lot_stock_id)
         data = self._load_product()
-        self.assertEqual(data["qty_available"], 2)
-        self.assertEqual(data["free_qty"], 2)
+        self.assertEqual(data["qty_available"], 3)
+        self.assertEqual(data["free_qty"], 3)
 
     def test_stock_of_other_warehouse_does_not_count(self):
-        self._set_on_hand(10, self.other_warehouse)
+        self._set_on_hand(10, self.other_warehouse.lot_stock_id)
         data = self._load_product()
         self.assertEqual(data["qty_available"], 0)
         self.assertEqual(data["free_qty"], 0)
 
+    def test_stock_outside_the_source_location_does_not_count(self):
+        """Same warehouse, but a location the PoS does not sell from: it would
+        show a product "Cantidad en 0" then blocks."""
+        outside = self._new_internal_location("Outside", self.warehouse.view_location_id)
+        self._set_on_hand(4, outside)
+        data = self._load_product()
+        self.assertEqual(data["qty_available"], 0)
+
     def test_incremental_load_skips_products_not_modified(self):
         """Without the setting the core filter stays: a stock move does not
         change the product ``write_date``, so the PoS keeps its cache."""
-        self._set_on_hand(3, self.warehouse)
+        self._set_on_hand(3)
         self.assertEqual(self._load_variants_incrementally(), [])
 
     def test_setting_reloads_the_current_stock(self):
-        self._set_on_hand(3, self.warehouse)
+        self._set_on_hand(3)
         [data] = self._load_variants_incrementally(pos_reload_stock_dependent_data=True)
         self.assertEqual(data["id"], self.product.id)
         self.assertEqual(data["qty_available"], 3)

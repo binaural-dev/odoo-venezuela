@@ -210,8 +210,8 @@ msgstr ""
 
 #. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
-msgid "Hide storable products without stock on hand in the PoS warehouse"
-msgstr "Oculta los productos almacenables sin stock a mano en el almacén de la caja"
+msgid "Hide storable products without stock on hand in the PoS source location"
+msgstr "Oculta los productos almacenables sin stock a mano en la ubicación de origen de la caja"
 
 #. module: l10n_ve_pos
 #. odoo-javascript
