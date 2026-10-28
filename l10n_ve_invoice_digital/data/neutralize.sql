@@ -4,5 +4,7 @@
 -- stop outbound calls; this only clears the credentials so a stale token
 -- can't be reused if the guard is ever bypassed by hand.
 UPDATE res_company
-   SET password_tfhka = NULL,
+   SET username_tfhka = NULL,
+       password_tfhka = NULL,
+       url_tfhka = NULL,
        token_auth_tfhka = NULL;
