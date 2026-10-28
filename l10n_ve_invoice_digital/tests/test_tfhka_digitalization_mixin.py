@@ -6,7 +6,7 @@ from odoo import Command, fields
 from odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin import MAX_CONNECTION_RETRIES
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_client import TfhkaBusinessError, TfhkaConnectionError
 from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import TfhkaDataError
-from odoo.exceptions import UserError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
 GENERATE_DIGITAL_PATCH = "odoo.addons.l10n_ve_invoice_digital.models.account_move.AccountMove.generate_document_digital"
@@ -102,7 +102,12 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
                 "tax_ids": [Command.set([self.tax_iva16.id])],
             })],
         })
-        inv.action_post()
+        # l10n_ve_accountant.action_post() shows the confirmation wizard
+        # instead of posting out_invoice/out_refund unless this context flag
+        # is set (normally set by that wizard's action_confirm()) -- plain
+        # action_post() would silently leave the move in draft, which
+        # _tfhka_is_confirmed() would then (correctly) reject as unconfirmed.
+        inv.with_context(move_action_post_alert=True).action_post()
         return inv
 
     # ------------------------------------------------------------------
@@ -381,6 +386,59 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
             "An error in one journal must not block a different journal's queue (unified cron).",
         )
 
+    # HD-15817: journals explicitly allowed to share a TFHKA numbering
+    # stream (third-party invoicing / debit note journal relative to its
+    # parent) must be drained as ONE scope, unlike unrelated journals
+    # (HD-15734, kept independent above) -- otherwise the cron can
+    # interleave their documents and race two calls to TFHKA's "last
+    # document number" against each other.
+    def test_queue_scope_domains_merges_journals_allowed_to_share_a_stream(self):
+        self.journal2.is_debit = True
+        inv1 = self._create_invoice(journal=self.journal)
+        inv1._tfhka_enqueue_digitalization()
+        inv2 = self._create_invoice(journal=self.journal2)
+        inv2._tfhka_enqueue_digitalization()
+
+        scopes = self.env["account.move"]._tfhka_queue_scope_domains(("queued",))
+
+        self.assertEqual(len(scopes), 1, "Journals allowed to share a stream must collapse into one scope.")
+        _scope_key, domain = scopes[0]
+        field, operator, journal_ids = domain[0]
+        self.assertEqual((field, operator), ("journal_id", "in"))
+        self.assertCountEqual(journal_ids, [self.journal.id, self.journal2.id])
+
+    def test_queue_scope_domains_keeps_unrelated_journals_independent(self):
+        inv1 = self._create_invoice(journal=self.journal)
+        inv1._tfhka_enqueue_digitalization()
+        inv2 = self._create_invoice(journal=self.journal2)
+        inv2._tfhka_enqueue_digitalization()
+
+        scopes = self.env["account.move"]._tfhka_queue_scope_domains(("queued",))
+
+        self.assertEqual(len(scopes), 2, "Unrelated journals (HD-15734) must stay independent scopes.")
+
+    def test_cron_process_queue_merges_scopes_for_journals_allowed_to_share_a_stream(self):
+        self.journal2.is_debit = True
+        failing = self._create_invoice(journal=self.journal)
+        failing._tfhka_enqueue_digitalization()
+        sibling = self._create_invoice(journal=self.journal2)
+        sibling._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            if self.journal_id.id == failing.journal_id.id:
+                raise UserError("boom")
+            self.write({"is_digitalized": True})
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        self.assertEqual(failing.tfhka_digitalization_state, "error")
+        self.assertEqual(
+            sibling.tfhka_digitalization_state, "queued",
+            "Journals allowed to share a TFHKA stream must be drained as one scope -- an "
+            "error in one must halt the other too, instead of running it out of order.",
+        )
+
     def test_cron_process_queue_does_nothing_while_model_has_a_data_error(self):
         data_errored = self._create_invoice()
         data_errored.write({"tfhka_digitalization_state": "data_error", "tfhka_digitalization_error": "bad field"})
@@ -481,6 +539,43 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         self.assertEqual(errored.tfhka_digitalization_state, "error")
         self.assertEqual(queued.tfhka_digitalization_state, "queued")
 
+    def test_retry_reconciles_from_existing_success_log_instead_of_resubmitting(self):
+        # Ticket #15817: a document can end up 'error' even though TFHKA
+        # already accepted it -- e.g. the success write itself failed
+        # locally (account.move._check_tfhka_unique_name catching two
+        # journals racing for the same stream). A naive retry would call
+        # TFHKA again and get a second, duplicate control number for the
+        # same invoice. The retry must reconcile from the existing
+        # successful log instead of resubmitting.
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "boom"})
+        self.env["tfhka.api.log"].sudo().create({
+            "company_id": self.company.id,
+            "res_model": "account.move",
+            "res_id": inv.id,
+            "endpoint": "/Emision",
+            "http_method": "POST",
+            "success": True,
+            "status_code": 200,
+            "request_payload": json.dumps({
+                "documentoElectronico": {
+                    "encabezado": {"identificacionDocumento": {"numeroDocumento": "123"}},
+                },
+            }),
+            "response_payload": json.dumps({"resultado": {"numeroControl": "00-00099999"}}),
+        })
+
+        inv.action_tfhka_retry_digitalization()
+        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        mock_generate.assert_not_called()
+        self.assertEqual(inv.tfhka_digitalization_state, "success")
+        self.assertEqual(inv.correlative, "00-00099999")
+
     def test_action_generate_digital_only_enqueues_never_calls_tfhka_inline(self):
         inv = self._create_invoice()
 
@@ -489,6 +584,25 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
 
         mock_generate.assert_not_called()
         self.assertEqual(inv.tfhka_digitalization_state, "queued")
+
+    def test_action_generate_digital_rejects_draft_before_it_reaches_the_queue(self):
+        # Review follow-up on ticket #15817: calling this button directly on
+        # a draft used to enqueue it anyway -- the cron would eventually
+        # catch it via _tfhka_fetch_queued's confirmed-state guard and mark
+        # it 'error', but by then it was already sitting in that journal's
+        # queue, halting every other document behind it. Rejecting here
+        # means a draft never enters the queue at all.
+        draft = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.journal.id,
+        })
+        self.assertEqual(draft.state, "draft")
+
+        with self.assertRaises(UserError):
+            draft.action_tfhka_generate_digital()
+
+        self.assertEqual(draft.tfhka_digitalization_state, "none")
 
     # ------------------------------------------------------------------
     # _tfhka_recover_stuck_processing (crash-recovery on the next cron tick)
@@ -652,3 +766,193 @@ class TestTfhkaDigitalizationMixin(TransactionCase):
         alerts = self.env["account.move"].with_user(portal_user)._tfhka_digitalization_alert_data(["account.move"])
 
         self.assertEqual(alerts, [])
+
+    # ------------------------------------------------------------------
+    # _tfhka_fetch_queued: the cron's own safety net against digitalizing
+    # a document that was never actually confirmed (draft-invoice bug).
+    # ------------------------------------------------------------------
+
+    def test_fetch_queued_pulls_out_unconfirmed_document(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.state = "draft"  # should never happen once enqueued, but simulates stale/corrupt data
+
+        result = self.env["account.move"]._tfhka_fetch_queued([])
+
+        self.assertNotIn(inv, result)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertIn("not confirmed", inv.tfhka_digitalization_error)
+
+    def test_fetch_queued_keeps_confirmed_documents(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        result = self.env["account.move"]._tfhka_fetch_queued([])
+
+        self.assertIn(inv, result)
+        self.assertEqual(inv.tfhka_digitalization_state, "queued")
+
+    def test_cron_process_queue_does_not_digitalize_unconfirmed_document(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.state = "draft"
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            self.env["account.move"]._tfhka_cron_process_queue()
+
+        mock_generate.assert_not_called()
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    def test_cron_process_queue_multi_does_not_digitalize_unconfirmed_document(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+        inv.state = "draft"
+
+        with patch(GENERATE_DIGITAL_PATCH) as mock_generate:
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
+
+        mock_generate.assert_not_called()
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+
+    # ------------------------------------------------------------------
+    # Error isolation: an unexpected exception (outside the failures
+    # _tfhka_process_digitalization/_tfhka_reconcile_stuck_processing
+    # already handle) must not abort the whole queue run. Only the
+    # reconcile side uses a real savepoint for this -- see
+    # _tfhka_process_digitalization_safe's docstring for why a savepoint
+    # there is actively incompatible with _tfhka_commit().
+    # ------------------------------------------------------------------
+
+    def test_process_digitalization_safe_catches_unexpected_exception(self):
+        inv = self._create_invoice()
+        inv._tfhka_enqueue_digitalization()
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin."
+            "TfhkaDigitalizationMixin._tfhka_process_digitalization",
+            side_effect=RuntimeError("unexpected db error"),
+        ):
+            result = inv._tfhka_process_digitalization_safe()
+
+        self.assertFalse(result)
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertIn("unexpected db error", inv.tfhka_digitalization_error)
+
+    def test_process_digitalization_duplicate_name_does_not_abort_the_rest_of_the_run(self):
+        # Ticket #15817: a duplicate TFHKA document name slipping through to
+        # the success write (e.g. two journals sharing a stream racing each
+        # other) must not leave the transaction unusable for the rest of
+        # this cron run -- see the bounded savepoint in
+        # _tfhka_process_digitalization, which covers exactly this segment.
+        already_success = self._create_invoice(journal=self.journal)
+        already_success.write({"tfhka_digitalization_state": "success", "name": "DUPLICATE/0001"})
+
+        colliding = self._create_invoice(journal=self.journal)
+        colliding._tfhka_enqueue_digitalization()
+        other_scope = self._create_invoice(journal=self.journal2)
+        other_scope._tfhka_enqueue_digitalization()
+
+        def fake_generate(self):
+            if self.id == colliding.id:
+                self.name = "DUPLICATE/0001"  # triggers _check_tfhka_unique_name on the success write
+            else:
+                self.write({"is_digitalized": True})
+
+        with patch(GENERATE_DIGITAL_PATCH, fake_generate):
+            self.env["account.move"]._tfhka_cron_process_queue_multi(["account.move"])
+
+        self.assertEqual(colliding.tfhka_digitalization_state, "error")
+        self.assertFalse(colliding.is_digitalized)
+        self.assertIn("DUPLICATE/0001", colliding.tfhka_digitalization_error)
+        self.assertEqual(
+            other_scope.tfhka_digitalization_state, "success",
+            "A duplicate-name collision in one journal's success write must not poison the "
+            "transaction for a different journal's scope in the same cron run.",
+        )
+
+    def test_reconcile_stuck_processing_safe_catches_unexpected_exception(self):
+        inv = self._create_invoice()
+        inv.write({
+            "tfhka_digitalization_state": "processing",
+            "date_state": fields.Datetime.now() - timedelta(minutes=5),
+        })
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin."
+            "TfhkaDigitalizationMixin._tfhka_reconcile_stuck_processing",
+            side_effect=RuntimeError("boom sql"),
+        ):
+            result = inv._tfhka_reconcile_stuck_processing_safe()
+
+        self.assertTrue(result, "Resolved (as error) -- nothing left in 'processing' to keep halting on.")
+        self.assertEqual(inv.tfhka_digitalization_state, "error")
+        self.assertIn("boom sql", inv.tfhka_digitalization_error)
+
+    def test_recover_stuck_processing_one_failure_does_not_abort_the_others(self):
+        stuck1 = self._create_invoice()
+        stuck1.write({
+            "tfhka_digitalization_state": "processing",
+            "date_state": fields.Datetime.now() - timedelta(minutes=5),
+        })
+        stuck2 = self._create_invoice()
+        stuck2.write({
+            "tfhka_digitalization_state": "processing",
+            "date_state": fields.Datetime.now() - timedelta(minutes=5),
+        })
+
+        def fake_reconcile(self):
+            if self.id == stuck1.id:
+                raise RuntimeError("boom")
+            self.write({"tfhka_digitalization_state": "error", "tfhka_digitalization_error": "resolved fine"})
+            return True
+
+        with patch(
+            "odoo.addons.l10n_ve_invoice_digital.models.tfhka_digitalization_mixin."
+            "TfhkaDigitalizationMixin._tfhka_reconcile_stuck_processing",
+            fake_reconcile,
+        ):
+            result = self.env["account.move"]._tfhka_recover_stuck_processing()
+
+        self.assertTrue(result)
+        self.assertEqual(stuck1.tfhka_digitalization_state, "error")
+        self.assertIn("boom", stuck1.tfhka_digitalization_error)
+        self.assertEqual(stuck2.tfhka_digitalization_state, "error")
+        self.assertEqual(stuck2.tfhka_digitalization_error, "resolved fine")
+
+    # ------------------------------------------------------------------
+    # Unicidad de numero (red de seguridad): dos diarios que comparten
+    # secuencia no deben dejar a dos facturas digitalizadas con el mismo
+    # name en la misma compania.
+    # ------------------------------------------------------------------
+
+    def test_unique_name_constraint_blocks_cross_journal_duplicate(self):
+        inv1 = self._create_invoice(journal=self.journal)
+        inv1.write({"tfhka_digitalization_state": "success"})
+        inv2 = self._create_invoice(journal=self.journal2)
+
+        with self.assertRaises(ValidationError):
+            inv2.write({"name": inv1.name, "tfhka_digitalization_state": "success"})
+
+    def test_unique_name_constraint_ignores_non_digitalized_documents(self):
+        # Non-regression: two plain (never digitalized) documents sharing a
+        # name shouldn't happen under Odoo's own per-journal sequence, but
+        # this constraint is scoped to digitalization and must not react to
+        # it either way.
+        inv1 = self._create_invoice(journal=self.journal)
+        inv2 = self._create_invoice(journal=self.journal2)
+
+        inv2.write({"name": inv1.name})  # does not raise
+
+        self.assertEqual(inv1.name, inv2.name)
+
+    def test_unique_name_constraint_ignores_different_move_type(self):
+        inv1 = self._create_invoice(journal=self.journal)
+        inv1.write({"tfhka_digitalization_state": "success"})
+        refund = self.env["account.move"].create({
+            "move_type": "out_refund",
+            "journal_id": self.journal.id,
+            "partner_id": self.partner.id,
+            "name": inv1.name,
+        })
+
+        refund.write({"tfhka_digitalization_state": "success"})  # does not raise

@@ -1,5 +1,4 @@
 import logging
-import re
 
 from odoo import _, fields, models
 from odoo.tools import float_compare, float_is_zero, html2plaintext
@@ -70,13 +69,13 @@ class TfhkaDocumentService(models.AbstractModel):
         return document_type
 
     def _get_series(self, invoice):
-        series = ""
-        if invoice.company_id.group_sales_invoicing_series and invoice.journal_id.series_correlative_sequence_id:
-            if invoice.journal_id.sequence_id and invoice.journal_id.sequence_id.prefix:
-                series = re.sub(r'[^a-zA-Z0-9]', '', invoice.journal_id.sequence_id.prefix)
-            else:
-                raise TfhkaDataError(_("The selected series is not configured"))
-        return series
+        # Fuente única de verdad: account.journal.tfhka_serie_id (ver
+        # _get_tfhka_series()), no el prefijo de una secuencia no relacionada
+        # -- ver el bug de facturas en borrador digitalizadas por compartir
+        # secuencia entre diarios. Asignar una serie NO es obligatorio: un
+        # diario sin tfhka_serie_id simplemente manda serie vacía a TFHKA
+        # (sistema centralizado, ver el instructivo técnico de su API).
+        return invoice.journal_id._get_tfhka_series()
 
     # ------------------------------------------------------------------
     # Orquestación
@@ -111,11 +110,21 @@ class TfhkaDocumentService(models.AbstractModel):
         elif company.digitalization_with_payment_tfhka:
             document_number = invoice.sequence_number
         else:
-            last = client.get_last_document_number(company, document_type, series, origin=invoice)
+            tfhka_last = client.get_last_document_number(company, document_type, series, origin=invoice)
             try:
-                last = int(last)
+                tfhka_last = int(tfhka_last)
             except (ValueError, TypeError):
-                last = 0
+                tfhka_last = 0
+            # Defensa adicional contra el bug de números duplicados (ticket
+            # #15817): el "último" de TFHKA puede quedarse rezagado respecto
+            # a lo que Odoo ya sabe que digitalizó con éxito, si dos diarios
+            # comparten el mismo stream de numeración y se procesaron casi
+            # al mismo tiempo (ver account.move._tfhka_queue_scope_domains,
+            # la corrección real de esa condición de carrera). Se toma el
+            # máximo entre ambas fuentes, igual criterio que ya usa
+            # tfhka_batch_service._last_reserved_batch_number para lotes.
+            odoo_last = self._tfhka_last_known_document_number(company, document_type, series)
+            last = max(tfhka_last, odoo_last)
             # last == 0 significa que la imprenta no devolvió un número (serie
             # sin documentos previos o 203+validaciones) -- no asumir que el
             # siguiente es el 1, sino respetar el correlativo que Odoo ya le
@@ -125,6 +134,52 @@ class TfhkaDocumentService(models.AbstractModel):
         document_number = str(document_number)
 
         return self.generate_document_data(invoice, document_number, document_type, series)
+
+    def _tfhka_last_known_document_number(self, company, document_type, series):
+        """Mayor ``document_number`` que Odoo ya sabe que usó con éxito para
+        este stream exacto (``document_type``, ``series``) -- mismo
+        criterio de defensa en profundidad que
+        ``tfhka_batch_service._last_reserved_batch_number`` (que compara el
+        "último" de TFHKA contra lo que Odoo ya reservó para un lote),
+        aplicado aquí al camino normal de emisión, uno a la vez.
+
+        Solo cuenta ``tfhka_digitalization_state == 'success'``: un
+        documento todavía 'processing' no tiene asignado su número final de
+        TFHKA, así que no sirve como cota.
+
+        Busca primero por diario (acotando a los que comparten serie con
+        ``series``, igual criterio que
+        ``account.move._tfhka_queue_scope_domains``) y ordena por
+        ``sequence_number desc`` con un límite chico -- evita escanear el
+        historial completo de facturas digitalizadas de la compañía en cada
+        emisión; las facturas (``document_type`` "01"/"03") son mucho más
+        frecuentes que las notas de crédito ("02") dentro de un mismo
+        stream, así que el primer candidato que calce con ``document_type``
+        normalmente aparece dentro de ese límite.
+        """
+        journals = self.env["account.journal"].search([
+            ("company_id", "=", company.id),
+            ("digital_invoice", "=", True),
+        ]).filtered(lambda journal: journal._get_tfhka_series() == (series or ""))
+        if not journals:
+            return 0
+
+        candidates = self.env["account.move"].search(
+            [
+                ("journal_id", "in", journals.ids),
+                ("tfhka_digitalization_state", "=", "success"),
+            ],
+            order="sequence_number desc",
+            limit=50,
+        )
+        for move in candidates:
+            if self._get_document_type(move) != document_type:
+                continue
+            try:
+                return int(move.sequence_number or 0)
+            except (ValueError, TypeError):
+                continue
+        return 0
 
     def generate_document_data(self, invoice, document_number, document_type, series):
         currency_context = self._get_currency_context(invoice)
@@ -602,8 +657,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
                 affected_invoice_date = record.debit_origin_id.invoice_date.strftime("%d/%m/%Y") if record.debit_origin_id.invoice_date else ""
 
-                if record.debit_origin_id.journal_id.series_correlative_sequence_id:
-                    affected_invoice_series = record.debit_origin_id.journal_id.sequence_id.prefix if record.debit_origin_id.journal_id.sequence_id.prefix else ""
+                affected_invoice_series = record.debit_origin_id.journal_id._get_tfhka_series()
 
                 affected_invoice_amount = self._get_affected_document_amount(
                     record.debit_origin_id, ctx
@@ -617,8 +671,7 @@ class TfhkaDocumentService(models.AbstractModel):
 
                 affected_invoice_date = record.reversed_entry_id.invoice_date.strftime("%d/%m/%Y") if record.reversed_entry_id.invoice_date else ""
 
-                if record.reversed_entry_id.journal_id.series_correlative_sequence_id:
-                    affected_invoice_series = record.reversed_entry_id.journal_id.sequence_id.prefix if record.reversed_entry_id.journal_id.sequence_id.prefix else ""
+                affected_invoice_series = record.reversed_entry_id.journal_id._get_tfhka_series()
 
                 affected_invoice_amount = self._get_affected_document_amount(
                     record.reversed_entry_id, ctx

@@ -216,15 +216,22 @@ class AccountMove(models.Model):
 
     def _tfhka_is_eligible_for_digitalization(self):
         """True when this move should be queued for normal digitalization:
-        digital journal, not already digitalized, and not in "digitalization
-        with payment" mode (driven by payment reconciliation instead -- see
-        ``digitalization_with_payment_tfhka``). Extracted from
+        posted, digital journal, not already digitalized, and not in
+        "digitalization with payment" mode (driven by payment reconciliation
+        instead -- see ``digitalization_with_payment_tfhka``). Extracted from
         ``_tfhka_enqueue_eligible_for_digitalization`` so
         ``_tfhka_should_mark_not_applicable`` can reason about the same
-        criteria without duplicating them."""
+        criteria without duplicating them.
+
+        ``state == 'posted'`` is required here, not just in the wizard that
+        normally calls this: a caller further down the chain (e.g. a Third
+        Party child invoice enqueued once its parent posts) could otherwise
+        slip a still-draft move into the queue, which the cron would then
+        digitalize and number as if it had been confirmed."""
         self.ensure_one()
         return (
-            not self.is_digitalized
+            self.state == "posted"
+            and not self.is_digitalized
             and self.journal_id.digital_invoice
             and not self.company_id.digitalization_with_payment_tfhka
         )
@@ -243,13 +250,28 @@ class AccountMove(models.Model):
         manual button itself is hidden without one too (see
         ``_compute_invisible_check``, which guards ``show_digital_invoice``
         on the same ``journal_id.digital_invoice`` check). A non-digital
-        journal is a dead end either way."""
+        journal is a dead end either way.
+
+        ``state == 'posted'`` for the same reason as
+        ``_tfhka_is_eligible_for_digitalization``: a still-draft move must
+        not be marked 'not_applicable' before it's even confirmed."""
         self.ensure_one()
         return (
-            self.company_id.invoice_digital_tfhka
+            self.state == "posted"
+            and self.company_id.invoice_digital_tfhka
             and self.move_type in ("out_invoice", "out_refund")
             and not self.journal_id.digital_invoice
         )
+
+    def _tfhka_is_confirmed(self):
+        """See ``tfhka.digitalization.mixin._tfhka_is_confirmed``: the cron's
+        own safety net, independent of ``_tfhka_is_eligible_for_digitalization``
+        (which only runs once, at enqueue time). A queued move that is
+        somehow still in draft when the cron gets to it -- old/corrupt data,
+        or a future enqueue path that forgets the check above -- must not be
+        digitalized or numbered as if it had been confirmed."""
+        self.ensure_one()
+        return self.state == "posted"
 
     def _tfhka_enqueue_eligible_for_digitalization(self):
         """Enqueues each eligible move for TFHKA digitalization (queue
@@ -329,7 +351,28 @@ class AccountMove(models.Model):
         always False in that mode), so it's the only place that can stop a
         sequence gap or an un-queued predecessor before the document reaches
         'queued'. Validated BEFORE calling super() (the mixin's write to the
-        queue) so a failure here never touches tfhka_digitalization_state."""
+        queue) so a failure here never touches tfhka_digitalization_state.
+
+        Also the only place blocking a still-draft move from reaching the
+        queue through THIS entry point: unlike the automatic path (posting
+        always enqueues through _tfhka_enqueue_eligible_for_digitalization,
+        which runs after the move is already 'posted'), this button can be
+        clicked directly on a draft. _tfhka_fetch_queued's own guard would
+        eventually catch it and mark it 'error' -- but by then it's already
+        sitting in that journal's queue, halting every other document behind
+        it until a human notices and resolves it. Rejecting here means a
+        draft never enters the queue at all."""
+        not_posted = self.filtered(lambda move: move.state != "posted")
+        if not_posted:
+            raise UserError(
+                _(
+                    "Cannot generate digital invoice for %(names)s: not confirmed yet "
+                    "(state=%(state)s). Confirm it first."
+                ) % {
+                    "names": ", ".join(not_posted.mapped("display_name")),
+                    "state": not_posted[0].state,
+                }
+            )
         for move in self:
             move._tfhka_validate_sequence_before_queue()
         self._check_tfhka_payment_required()
@@ -448,6 +491,77 @@ class AccountMove(models.Model):
                 "between it and the previous document, %(previous_name)s. Fix the "
                 "sequence irregularity in Odoo first."
             ) % {"name": self.name, "previous_name": previous.name})
+
+    def _tfhka_queue_scope_domains(self, states):
+        """Merges the per-journal scopes from the base implementation when
+        two journals are allowed to share a TFHKA numbering stream -- the
+        exact relationship ``account_journal._tfhka_serie_sharing_is_allowed``
+        already encodes (one of them is the third-party invoicing journal
+        or the debit note journal relative to the other). Deliberately
+        reuses that predicate instead of comparing ``tfhka_serie_id``
+        directly: ``_check_tfhka_serie_id_not_shared`` already guarantees
+        two journals can only end up with the same non-empty series when
+        that relationship holds, and two *unrelated* journals that simply
+        both lack a configured series (the common case for a company not
+        using series at all) must stay independent scopes -- they don't
+        actually share a stream just because neither set one, and merging
+        them anyway would defeat HD-15734 for every such company.
+
+        Processing a shared-stream pair as independent scopes let the cron
+        interleave their documents (that's the whole point of scoping by
+        journal_id in the first place -- see HD-15734), each one
+        independently calling TFHKA's "last document number" and
+        computing its own ``numeroDocumento`` from it: a classic
+        check-then-act race when two such calls land close together on
+        the same stream. That's exactly what happened on ticket #15817 --
+        TFHKA issued two different control numbers for what Odoo
+        considered the same document number, and
+        ``_check_tfhka_unique_name`` only caught the collision *after*
+        both documents were already irreversibly emitted. Grouping
+        journals that share a stream into one scope makes the cron drain
+        that stream strictly one document at a time, in FIFO order,
+        removing the race instead of only detecting it afterward.
+
+        Merged pairwise with a small union-find, not just "does this
+        journal match an already-formed group": with three or more
+        journals sharing a stream (e.g. two third-party journals under
+        different parents happening to be active in the same cron tick),
+        a single linear pass can miss a transitive merge depending on
+        encounter order.
+        """
+        base = super()._tfhka_queue_scope_domains(states)
+        journal_ids = [key for key, _domain in base if key]
+        if len(journal_ids) < 2:
+            return base
+
+        journals = self.env["account.journal"].browse(journal_ids)
+        parent = {journal.id: journal.id for journal in journals}
+
+        def find(journal_id):
+            while parent[journal_id] != journal_id:
+                journal_id = parent[journal_id]
+            return journal_id
+
+        def union(journal_id_a, journal_id_b):
+            root_a, root_b = find(journal_id_a), find(journal_id_b)
+            if root_a != root_b:
+                parent[root_b] = root_a
+
+        for journal in journals:
+            for other in journals:
+                if other.id > journal.id and journal._tfhka_serie_sharing_is_allowed(other):
+                    union(journal.id, other.id)
+
+        groups = {}
+        for journal in journals:
+            groups.setdefault(find(journal.id), []).append(journal.id)
+
+        merged = [
+            (root, [("journal_id", "in", group_journal_ids)])
+            for root, group_journal_ids in groups.items()
+        ]
+        no_field = [(key, domain) for key, domain in base if not key]
+        return merged + no_field
 
     def _tfhka_check_previous_document_queued(self, previous):
         """Hard block: the previous document in this numbering sequence (see
@@ -731,6 +845,37 @@ class AccountMove(models.Model):
                         "concatenating the raw prefix."
                     )
                     % {"name": move.name}
+                )
+
+    @api.constrains('name', 'tfhka_digitalization_state')
+    def _check_tfhka_unique_name(self):
+        """Red de seguridad: dos diarios que comparten la misma secuencia de
+        numeración (p. ej. un diario de facturación a terceros configurado
+        sobre la secuencia del diario padre) pueden dejar a TFHKA asignando
+        el mismo ``name`` a dos facturas distintas de la misma compañía. Odoo
+        ya evita duplicados dentro de un mismo diario; esto cubre el caso que
+        se le escapa, entre diarios. Acotado a documentos que pasaron por la
+        digitalización -- no es una regla general de numeración de facturas,
+        es la red de seguridad propia de este módulo."""
+        for move in self:
+            if move.tfhka_digitalization_state == "none" or not move.name or move.name == "/":
+                continue
+            duplicate = self.search([
+                ("id", "!=", move.id),
+                ("company_id", "=", move.company_id.id),
+                ("move_type", "=", move.move_type),
+                ("name", "=", move.name),
+                ("tfhka_digitalization_state", "!=", "none"),
+                ("state", "!=", "cancel"),
+            ], limit=1)
+            if duplicate:
+                raise ValidationError(
+                    _(
+                        "'%(name)s' is already used by another digitalized document "
+                        "(#%(other_id)s) in this company. This usually means two "
+                        "journals share the same numbering sequence."
+                    )
+                    % {"name": move.name, "other_id": duplicate.id}
                 )
 
     def copy_data(self, default=None):

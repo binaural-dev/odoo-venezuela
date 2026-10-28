@@ -215,6 +215,22 @@ class TfhkaApiClient(models.AbstractModel):
             self._log_call(company, endpoint, payload, origin, None, str(e), False)
             raise TfhkaConnectionError(_("Error connecting to the API: %(error)s") % {"error": e})
 
+    def authenticate(self, company, payload):
+        """POST /Autenticacion. Único punto de salida HTTP para el login de
+        company -- antes vivía directamente en ``res.company.generate_token_tfhka``
+        con su propio ``requests.post``, sin pasar por este cliente ni por el
+        guard de ambiente. Transporte puro: devuelve la ``Response`` cruda,
+        la interpretación de negocio (guardar token, sincronizar series, ...)
+        sigue en ``res.company`` porque necesita escribir en ese registro
+        específico."""
+        url = f"{self._base_url(company)}/Autenticacion"
+        try:
+            return requests.post(url, json=payload, timeout=TFHKA_TIMEOUT)
+        except requests.exceptions.RequestException as e:
+            _logger.error("Error connecting to the TFHKA API: %s", e)
+            self._log_call(company, "/Autenticacion", payload, None, None, str(e), False)
+            raise ValidationError(_("Error connecting to the TFHKA API: %s", e)) from e
+
     # ------------------------------------------------------------------
     # Endpoints
     # ------------------------------------------------------------------
@@ -309,4 +325,16 @@ class TfhkaApiClient(models.AbstractModel):
             if not approves:
                 raise UserError(_("The numbering range is exhausted. Please contact the administrator."))
 
-            return
+    def list_numberings(self, company, origin=None):
+        """POST /ConsultaNumeraciones sin filtros: trae todas las numeraciones
+        (series) que la compañía ya tiene registradas en TFHKA.
+
+        A diferencia de ``query_numbering`` (que valida UNA serie puntual
+        durante la emisión y levanta ``UserError`` si falta o está agotada),
+        esto no valida nada -- es una simple lectura, usada para sincronizar
+        ``tfhka.serie`` después de generar el token. Devuelve la lista cruda
+        de ``numeraciones`` tal cual la entrega TFHKA (vacía si la compañía
+        todavía no registró ninguna vía /AsignarNumeraciones)."""
+        payload = {"serie": "", "tipoDocumento": "", "prefix": ""}
+        response = self._request(company, "consulta_numeraciones", payload, origin=origin)
+        return (response or {}).get("numeraciones", [])

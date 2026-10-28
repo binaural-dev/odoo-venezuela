@@ -28,10 +28,30 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         # En una base sin datos de demo el VEF viene inactivo, y los tests que
         # fuerzan la compañia a VEF (_force_company_currency) no pueden validar
-        # la factura: action_post rechaza las monedas inactivas. No se carga
-        # ninguna tasa a proposito -- los tests de este archivo fijan el rate a
-        # mano (manually_set_rate).
+        # la factura: action_post rechaza las monedas inactivas.
         self.currency_vef.active = True
+
+        # l10n_ve_accountant.AccountMove.create() llama incondicionalmente a
+        # Rate.compute_rate(move.foreign_currency_id.id, move.invoice_date)
+        # ANTES de que manually_set_rate tenga efecto -- "fijar el rate a mano"
+        # en los vals de create() no evita esa búsqueda, solo decide qué pasa
+        # después si el resultado no coincide. Sin una fila de res.currency.rate
+        # con fecha exacta de hoy, ese create() explota con "no rate assigned"
+        # para cualquier factura con fecha de hoy -- es decir, todas las de
+        # este archivo. Mismo patrón que ya usa
+        # l10n_ve_accountant.tests.test_account_move_core (fecha dinámica, no
+        # fija, para no quedar desactualizado con el paso de los días); se
+        # siembran ambas monedas porque _force_company_currency cambia cuál de
+        # las dos es la "moneda de la compañía" en algunos tests.
+        today = fields.Date.today()
+        self.env["res.currency.rate"].create({
+            "name": today, "currency_id": self.currency_vef.id,
+            "inverse_company_rate": 38.0, "company_id": self.company.id,
+        })
+        self.env["res.currency.rate"].create({
+            "name": today, "currency_id": self.currency_usd.id,
+            "inverse_company_rate": 1 / 38.0, "company_id": self.company.id,
+        })
 
         self.company.write(
             {
@@ -203,12 +223,12 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
-            'tax_group_id': tax_group.id,
             'country_id': tax_country.id,
             'company_id': self.company.id,
             'amount': 16,
             'amount_type': 'percent',
             'type_tax_use': 'sale',
+            'tax_group_id': tax_group.id,
         })
         self.tax_iva16_purchase = self.env['account.tax'].create({
             'name': 'IVA 16% compras',
@@ -439,6 +459,35 @@ class TestAccountMoveApiCalls(TransactionCase):
 
         # Verificamos que la respuesta fue la esperada
         self.assertEqual(response, None)
+
+    # API de TFHKA para listar todas las numeraciones registradas (sync de tfhka.serie)
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
+    def test_01b_list_numberings_returns_raw_numeraciones(self, mock_call):
+        mock_call.return_value = {
+            "numeraciones": [
+                {"serie": "NO APLICA", "prefijo": "00", "estado": "True"},
+                {"serie": "A", "prefijo": "A-", "estado": "True"},
+            ],
+            "codigo": "200",
+            "mensaje": "Consulta realizada exitosamente",
+        }
+
+        result = self.env['tfhka.api.client'].list_numberings(self.company)
+
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[1]["serie"], "A")
+        # No valida nada (a diferencia de query_numbering): una sola llamada,
+        # sin el loop de "existe la serie / le queda rango" que haría esto
+        # fallar si una de las numeraciones estuviera agotada.
+        mock_call.assert_called_once_with(self.company, "consulta_numeraciones", {"serie": "", "tipoDocumento": "", "prefix": ""}, origin=None)
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
+    def test_01c_list_numberings_empty_when_nothing_registered(self, mock_call):
+        mock_call.return_value = {"numeraciones": [], "codigo": "200", "mensaje": "Consulta realizada exitosamente"}
+
+        result = self.env['tfhka.api.client'].list_numberings(self.company)
+
+        self.assertEqual(result, [])
 
     # API de TFHKA para obtener el último número de documento
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
@@ -683,10 +732,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             'padding': 8,
             "number_next_actual": 2,
         })
+        tfhka_serie = self.env['tfhka.serie'].create({'name': 'A', 'company_id': self.company.id})
         self.company.group_sales_invoicing_series = True
         self.journal.write({
             'series_correlative_sequence_id': control_number_series.id,
             'sequence_id': serie_secuencial.id,
+            'tfhka_serie_id': tfhka_serie.id,
         })
 
         self.invoice = self._create_invoice(
@@ -705,8 +756,10 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     # Validacion de Series
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
-    def test_09_generate_document_digital_series_prefix_error(self, mock_call):
-
+    def test_09_generate_document_digital_without_tfhka_serie_sends_empty_series(self, mock_call):
+        # Asignar una serie NO es obligatorio: un diario que factura por
+        # series pero sin tfhka_serie_id debe seguir digitalizando con
+        # normalidad, mandando serie vacía a TFHKA.
         control_number_series = self.env['ir.sequence'].create({
             'name': 'Número de Control para Series A',
             'prefix': '',
@@ -736,11 +789,11 @@ class TestAccountMoveApiCalls(TransactionCase):
             ]
         )
 
-        with self.assertRaises(UserError) as e:
-            self.invoice.generate_document_digital()
-            _logger.error(e.exception)
+        self.assertEqual(self.env['tfhka.document.service']._get_series(self.invoice), "")
+        self.invoice.generate_document_digital()
+        self.assertTrue(self.invoice.is_digitalized)
 
-        _logger.info("Test passed: Series prefix validation error raised as expected.")
+        _logger.info("Test passed: journal without TFHKA series still digitalizes, with an empty series.")
 
     # API de TFHKA para consultar numeraciones con número de serie agotado
     @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request')
@@ -2027,7 +2080,9 @@ class TestAccountMoveApiCalls(TransactionCase):
         with self.assertRaises(ValidationError):
             inv._tfhka_validate_mixed_invoicing()
 
-    def test_80_get_series_no_prefix(self):
+    def test_80_get_series_empty_without_tfhka_serie_id(self):
+        # No es obligatorio asignar tfhka_serie_id: sin uno, _get_series()
+        # devuelve vacío en vez de fallar.
         self.company.group_sales_invoicing_series = True
         seq = self.env['ir.sequence'].create({
             'name': 'Serie Sin Prefix',
@@ -2041,8 +2096,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
         )
-        with self.assertRaises(UserError):
-            self.env['tfhka.document.service']._get_series(inv)
+        self.assertEqual(self.env['tfhka.document.service']._get_series(inv), "")
 
     def test_83_call_tfhka_api_request_exception(self):
         inv = self._create_invoice(
@@ -2152,7 +2206,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         self.assertEqual(doc_type, "")
         self.assertEqual(series, "")
 
-    def test_99_get_series_with_prefix(self):
+    def test_99_get_series_with_tfhka_serie_id(self):
         self.company.group_sales_invoicing_series = True
         seq = self.env['ir.sequence'].create({
             'name': 'Serie Con Prefix',
@@ -2160,9 +2214,11 @@ class TestAccountMoveApiCalls(TransactionCase):
             'prefix': 'INV-',
             'padding': 4,
         })
+        tfhka_serie = self.env['tfhka.serie'].create({'name': 'INV', 'company_id': self.company.id})
         self.journal.write({
             'series_correlative_sequence_id': seq.id,
             'sequence_id': seq.id,
+            'tfhka_serie_id': tfhka_serie.id,
         })
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
@@ -2391,6 +2447,16 @@ class TestAccountMoveApiCalls(TransactionCase):
             post_context={"move_action_post_alert": True},
         )
         inv1.is_digitalized = True
+        # Rate.compute_rate() en l10n_ve_accountant.AccountMove.create() busca
+        # por la fecha exacta de invoice_date (no la de hoy) -- esta factura
+        # se crea deliberadamente con fecha de hace 3 dias, asi que necesita
+        # su propia fila de tasa para esa fecha (la sembrada en setUp solo
+        # cubre la de hoy).
+        past_date = fields.Date.today() - timedelta(days=3)
+        self.env["res.currency.rate"].create({
+            "name": past_date, "currency_id": self.currency_vef.id,
+            "inverse_company_rate": 38.0, "company_id": self.company.id,
+        })
         inv2 = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
@@ -2402,8 +2468,8 @@ class TestAccountMoveApiCalls(TransactionCase):
             "manually_set_rate": True,
             # O19: la validacion de orden de emision compara
             # invoice_date_display (la fecha fiscal), no invoice_date.
-            "invoice_date": fields.Date.today() - timedelta(days=3),
-            "invoice_date_display": fields.Date.today() - timedelta(days=3),
+            "invoice_date": past_date,
+            "invoice_date_display": past_date,
             "invoice_line_ids": [(0, 0, {
                 "product_id": self.product.id,
                 "quantity": 1,
@@ -2645,6 +2711,82 @@ class TestAccountMoveApiCalls(TransactionCase):
                     # conserva el correlativo de Odoo sin renombrar la factura.
                     self.assertTrue(inv.name.endswith("00000251"))
 
+    def test_189_send_document_defends_against_stale_tfhka_last_across_journals(self):
+        # Ticket #15817: dos diarios que comparten stream de numeracion
+        # TFHKA (facturacion a terceros sobre el diario padre) procesados
+        # casi al mismo tiempo pueden hacer que el "ultimo numero" que
+        # devuelve TFHKA llegue rezagado respecto a lo que Odoo ya sabe que
+        # digitalizo con exito segundos antes -- _tfhka_last_known_document_number
+        # es la defensa adicional: toma el maximo entre ambas fuentes en vez
+        # de confiar ciegamente en el "ultimo" de TFHKA.
+        self.journal.digital_invoice = True
+        sibling_sequence = self.env['ir.sequence'].create({
+            'name': 'Secuencia Hermana', 'padding': 8, 'number_next_actual': 1,
+        })
+        sibling_journal = self.env['account.journal'].create({
+            'name': 'Diario Digital Hermano',
+            'code': 'VEN2',
+            'type': 'sale',
+            'sequence_id': sibling_sequence.id,
+            'company_id': self.env.company.id,
+            'digital_invoice': True,
+        })
+        # Posteada directamente en el diario hermano desde la creacion --
+        # Odoo no permite reasignar journal_id a una factura ya posteada
+        # (ya tiene numero de secuencia asignado).
+        already_digitalized = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": sibling_journal.id,
+            "currency_id": self.currency_usd.id,
+            "invoice_date": fields.Date.context_today(self.env.user),
+            "invoice_date_display": fields.Date.context_today(self.env.user),
+            "invoice_line_ids": [Command.create({
+                "product_id": self.product.id,
+                "quantity": 1,
+                "price_unit": 1,
+                "account_id": self.acc_income.id,
+                "tax_ids": [self.tax_iva16.id],
+            })],
+        })
+        already_digitalized.action_post()
+        already_digitalized.write({
+            "name": "INV/00000300",
+            "tfhka_digitalization_state": "success",
+        })
+        self.assertEqual(already_digitalized.sequence_number, 300)
+
+        # TFHKA todavia no refleja ese 300 en /UltimoDocumento -- justo el
+        # escenario rezagado que el ticket reporta.
+        with patch(
+            'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.get_last_document_number',
+            return_value=5,
+        ):
+            with patch(
+                'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient.query_numbering',
+                return_value=None,
+            ):
+                with patch(
+                    'odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request'
+                ) as mock_call:
+                    mock_call.return_value = {
+                        "codigo": "200",
+                        "resultado": {"numeroControl": "00-00000301"},
+                    }
+                    inv = self._create_invoice(
+                        products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+                    )
+                    inv.generate_document_digital()
+
+                    payload = mock_call.call_args.args[2]
+                    document_number = payload["documentoElectronico"]["encabezado"][
+                        "identificacionDocumento"
+                    ]["numeroDocumento"]
+                    # 301 (300+1, lo que Odoo ya sabia), no 6 (5+1, el
+                    # "ultimo" rezagado de TFHKA) -- de lo contrario se habria
+                    # vuelto a emitir el numero que la factura hermana ya tiene.
+                    self.assertEqual(document_number, "301")
+
     @patch(
         'odoo.addons.l10n_ve_invoice_digital.services.tfhka_document_service.TfhkaDocumentService'
         '._prepare_additional_information',
@@ -2724,10 +2866,12 @@ class TestAccountMoveApiCalls(TransactionCase):
             'padding': 8,
             'number_next_actual': 2,
         })
+        tfhka_serie = self.env['tfhka.serie'].create({'name': 'B', 'company_id': self.company.id})
         self.company.group_sales_invoicing_series = True
         self.journal.write({
             'series_correlative_sequence_id': control_seq.id,
             'sequence_id': serie_seq.id,
+            'tfhka_serie_id': tfhka_serie.id,
         })
         inv = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],

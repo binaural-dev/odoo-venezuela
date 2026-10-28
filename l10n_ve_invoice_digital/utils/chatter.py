@@ -5,6 +5,7 @@ from markupsafe import Markup
 STATUS_COLORS = {
     "success": "#28a745",
     "error": "#dc3545",
+    "warning": "#ffc107",
 }
 
 
