@@ -255,7 +255,7 @@ class AccountPayment(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for payment in self:
-            conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment.date or fields.Date.today()
+            conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment.date or fields.Date.context_today(payment)
             rate_values = Rate.compute_rate(
                 payment.foreign_currency_id.id, conversion_date
             )
@@ -268,7 +268,7 @@ class AccountPayment(models.Model):
         """
         Rate = self.env["res.currency.rate"]
         for payment in self:
-            conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment.date or fields.Date.today()
+            conversion_date = self.env.context.get('l10n_ve_conversion_date') or payment.date or fields.Date.context_today(payment)
             if (
                 payment.currency_id != payment.company_id.currency_id
                 and payment.currency_id != payment.company_id.foreign_currency_id
