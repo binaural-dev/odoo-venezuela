@@ -137,3 +137,17 @@ El método DEBE (MUST) lanzar `UserError` («No hay una tasa asignada, configúr
 
 - **WHEN** se invoca `compute_inverse_rate` con `0`, `None` o `False`
 - **THEN** se lanza `UserError` indicando que no hay tasa asignada
+
+### Requirement: La fecha de búsqueda se interpreta en la zona horaria del usuario
+
+`compute_rate` DEBE (MUST) buscar la tasa de la fecha del usuario y no la del servidor. Si `rate_date` llega como `datetime` (por ejemplo `date_order`, que Odoo guarda en UTC) DEBE (MUST) convertirlo con `fields.Date.context_today` (zona horaria del contexto o del usuario), no con su `.date()` en UTC. Si `rate_date` llega vacío DEBE (MUST) usar el «hoy» del usuario (`context_today`), no `fields.Date.today()` ni una búsqueda con `name = None`. Caracas es UTC-4: a las 8:00 pm del 10 ya son las 00:00 UTC del 11, y la tasa del día 11 aún no existe aunque la del día 10 sí.
+
+#### Scenario: Datetime UTC después de las 8 pm de Caracas
+
+- **WHEN** se invoca `compute_rate` con `2026-03-11 00:30:00` (UTC) y el usuario está en `America/Caracas`, con tasa publicada el 2026-03-10 y ninguna el 2026-03-11
+- **THEN** devuelve la tasa del 2026-03-10 y no lanza `UserError`
+
+#### Scenario: Fecha vacía
+
+- **WHEN** se invoca `compute_rate` con `rate_date` vacío
+- **THEN** busca la tasa del «hoy» del usuario (`context_today`)

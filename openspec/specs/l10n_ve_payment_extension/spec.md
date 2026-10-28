@@ -717,3 +717,12 @@ El módulo DEBE (MUST) extender `wizard.accounting.reports` para que las retenci
 
 - **WHEN** el alcance es `main` y la retención pertenece a una sucursal
 - **THEN** la retención no aparece en el libro
+
+### Requirement: Fechas por defecto de los wizards y respaldo de la línea de retención
+
+Las fechas por defecto de los wizards de retención IVA e ISLR DEBEN (MUST) evaluarse al abrir el wizard con `fields.Date.context_today`, no al importar el módulo (`date.today()` quedaba fijo hasta reiniciar el servidor). El respaldo de fecha de la línea de retención DEBE (MUST) usar `context_today`.
+
+#### Scenario: Wizard abierto un mes después de arrancar el servidor
+
+- **WHEN** se abre el wizard de retención IVA o ISLR
+- **THEN** el rango por defecto es el del mes actual del usuario

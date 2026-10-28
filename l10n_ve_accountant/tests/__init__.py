@@ -10,6 +10,7 @@ from . import test_product_template
 from . import test_action_cancel
 from . import test_account_journal_bank_account
 from . import test_foreign_exchange_diff
+from . import test_chart_template_relink
 from . import test_no_foreign_currency_page
 from . import test_payment_zero_amount
 from . import test_payment_future_date
@@ -17,3 +18,6 @@ from . import test_credit_limit_scope
 from . import test_reversal_foreign_rate
 from . import test_invoice_price_unit_pricelist
 from . import test_partner_id_domain
+from . import test_server_date_vs_user_tz
+from . import test_rate_date_user_tz
+from . import test_entry_rate_date
