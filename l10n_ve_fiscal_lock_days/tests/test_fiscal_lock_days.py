@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from odoo import fields
 from odoo.tests.common import TransactionCase, tagged
 from odoo.exceptions import ValidationError
 import logging
@@ -56,6 +57,16 @@ class TestFiscalLockDays(TransactionCase):
                 "foreign_currency_id": self.currency_vef.id,  
             }
         )
+
+        # Las facturas piden la tasa de VEF del dia: la del usuario y la del servidor
+        # pueden ser dias distintos cerca de la medianoche, asi que se cargan ambas.
+        for rate_date in {date.today(), fields.Date.context_today(self.env.user)}:
+            self.env["res.currency.rate"].create({
+                "name": rate_date,
+                "currency_id": self.currency_vef.id,
+                "company_id": self.company.id,
+                "inverse_company_rate": 50.0,
+            })
 
         self.sale_order = self.env["sale.order"].create({
             "partner_id": self.partner.id,
