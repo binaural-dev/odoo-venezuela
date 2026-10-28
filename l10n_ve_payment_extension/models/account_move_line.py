@@ -8,7 +8,7 @@ class AccountMoveLine(models.Model):
         
         self.ensure_one()
         payment = self.move_id.origin_payment_id
-        if payment and payment.is_retention:
+        if payment and payment.is_retention and not payment._is_indexed_retention():
             invoice = payment.retention_line_ids.mapped("move_id")
             if len(invoice) == 1:
                 invoice_date = invoice.invoice_date or invoice.date

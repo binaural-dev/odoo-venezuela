@@ -56,6 +56,15 @@
 
                             <field name="date_emision" 
                                 readonly="state in ['emitted', 'cancel']" force_save="1" />
+                            <field name="use_indexed_retentions" invisible="1" />
+                            <field name="show_indexation" invisible="1" />
+                            <field name="indexation_mode"
+                                invisible="not show_indexation"
+                                readonly="state != 'draft'" />
+                            <field name="show_exchange_difference_treatment" invisible="1" />
+                            <field name="exchange_difference_treatment"
+                                invisible="not show_exchange_difference_treatment"
+                                readonly="state != 'draft'" />
                         </group>
                     </group>
                    
@@ -121,10 +130,21 @@
                                         name="foreign_retention_amount"
                                         widget="monetary"
                                         options="{'currency_field': 'foreign_currency_id'}"
-                                        force_save="1"
-                                        column_invisible="parent.base_currency_is_vef"
-                                        readonly="parent.type == 'in_invoice'"/>
-                                    <field name="foreign_currency_rate" optional="hide" />
+                                        column_invisible="not parent.show_indexation"
+                                        readonly="1"
+                                        force_save="1"/>
+                                    <field
+                                        name="foreign_currency_rate"
+                                        column_invisible="not parent.show_indexation"
+                                        readonly="1"
+                                        force_save="1"/>
+                                    <field name="allowed_payment_currency_ids" column_invisible="True" />
+                                    <field
+                                        name="payment_currency_id"
+                                        column_invisible="parent.indexation_mode != 'indexed'"
+                                        domain="[('id', 'in', allowed_payment_currency_ids)]"
+                                        options="{'no_create': True, 'no_open': True}"
+                                        force_save="1"/>
                                 </list>
                             </field>
                             <group col="2" colspan="2"
@@ -242,6 +262,9 @@
                     <field name="partner_id" string="Business Name" filter_domain="[('partner_id','ilike',self)]" />
                     <field name="date" string="Vocher date" filter_domain="[('date','ilike',self)]" />
                     <field name="date_accounting" string="Fecha Contable" filter_domain="[('date_accounting','ilike',self)]" />
+                    <filter name="indexed" string="Indexed" domain="[('indexation_mode', '=', 'indexed')]" />
+                    <filter name="not_indexed" string="Non-indexed" domain="[('indexation_mode', '=', 'not_indexed')]" />
+                    <filter name="group_indexation_mode" string="Group by Indexation" context="{'group_by':'indexation_mode'}" />
                     <filter name="group_state" string="Group by State" context="{'group_by':'state'}" />
                     <filter name="group_partner" string="Group by Business Name" context="{'group_by':'partner_id'}" />
                     <filter name="group_date_accounting" string="Group by Fecha Contable" context="{'group_by':'date_accounting'}" />

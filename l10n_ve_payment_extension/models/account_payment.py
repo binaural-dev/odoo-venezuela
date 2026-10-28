@@ -66,6 +66,11 @@ class AccountPayment(models.Model):
         compute="_compute_retention_foreign_amount", store=True, copy=False
     )
 
+    def _is_indexed_retention(self):
+        """True when the payment belongs to a retention with the indexed modality."""
+        self.ensure_one()
+        return bool(self.is_retention and self.retention_id.indexation_mode == "indexed")
+
     def _synchronize_to_moves(self, changed_fields):
         """
         Override the original method to change the name of the move based on the retention type
@@ -97,7 +102,16 @@ class AccountPayment(models.Model):
                     f"-{retention_line_id.economic_activity_id.branch_id.name}"
                 )
 
-            vals_to_change = {"name": move_name, "is_manually_modified": True, "foreign_rate": retention_line_id.move_id.foreign_rate, "foreign_inverse_rate": retention_line_id.move_id.foreign_inverse_rate}
+            vals_to_change = {"name": move_name, "is_manually_modified": True}
+            if not payment._is_indexed_retention():
+                # A non-indexed retention is settled with the rate of the invoice, so it generates
+                # no exchange difference. An indexed one keeps the rate of the date of its entry.
+                vals_to_change.update(
+                    {
+                        "foreign_rate": retention_line_id.move_id.foreign_rate,
+                        "foreign_inverse_rate": retention_line_id.move_id.foreign_inverse_rate,
+                    }
+                )
             move.write(vals_to_change)
         return res
 
@@ -115,8 +129,13 @@ class AccountPayment(models.Model):
         Compute the amount from the retention lines.
         """
         for payment in self:
-            payment.amount = sum(
-                payment.retention_line_ids.mapped("retention_amount"))
+            lines = payment.retention_line_ids
+            # The amount is the retained amount in the currency of the payment: in the currency of
+            # the company, or in the currency of the invoice (indexed retentions).
+            if payment.currency_id == payment.company_id.currency_id:
+                payment.amount = sum(lines.mapped("retention_amount"))
+            else:
+                payment.amount = payment.currency_id.round(sum(lines.mapped("foreign_retention_amount")))
 
     @api.depends("retention_line_ids")
     def _compute_retention_foreign_amount(self):

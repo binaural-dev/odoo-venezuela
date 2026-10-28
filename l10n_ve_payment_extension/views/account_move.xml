@@ -268,7 +268,7 @@
                                     options="{'currency_field': 'foreign_currency_id'}"
                                     column_invisible="parent.base_currency_is_vef"
                                 />
-                                <field name="foreign_currency_rate" optional="hide"/>
+                                <field name="foreign_currency_rate" force_save="1" readonly="1" optional="hide"/>
                                 <field name="state"/>
                             </list>
                         </field>

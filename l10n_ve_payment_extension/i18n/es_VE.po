@@ -3885,3 +3885,207 @@ msgstr ""
 "municipal de esta sucursal usan el correlativo de la empresa matriz en lugar "
 "de una secuencia independiente. Solo aplica si la sucursal comparte el RIF "
 "de la empresa matriz."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.retention_voucher_indexation_info
+msgid "<span> | Rate used:</span>"
+msgstr "<span> | Tasa usada:</span>"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.retention_voucher_indexation_info
+msgid "<strong>Modality:</strong>"
+msgstr "<strong>Modalidad:</strong>"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__allowed_payment_currency_ids
+msgid "Allowed Payment Currency"
+msgstr "Moneda de pago permitida"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__use_indexed_retentions
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_company__use_indexed_retentions
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_config_settings__use_indexed_retentions
+msgid ""
+"Allows choosing, on each retention voucher, whether the amounts in the "
+"currency of foreign-currency invoices are valued with the invoice rate (non-"
+"indexed, the default) or with the rate of the voucher date (indexed). The "
+"retained amount in bolivars is the same in both modes."
+msgstr "Permite elegir, en cada comprobante de retención, si los montos en la moneda de las facturas en moneda extranjera se valoran con la tasa de la factura (no indexada, por defecto) o con la tasa de la fecha del comprobante (indexada). El monto retenido en bolívares es el mismo en ambas modalidades."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention_line__foreign_currency_id
+msgid ""
+"Currency of the foreign amounts of the line: the one of the invoice or, for "
+"an indexed retention over an invoice in bolivars, the alternate currency of "
+"the company."
+msgstr "Moneda de los montos en moneda extranjera de la línea: la de la factura o, en una retención indexada sobre una factura en bolívares, la moneda alterna de la compañía."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention_line__payment_currency_id
+msgid ""
+"Currency of the payment of the retention of this invoice. In an indexed "
+"retention it is chosen between the currency of the company and the currency "
+"of the invoice; the lines of the same invoice (for example with different "
+"aliquots) share it. A non-indexed retention is always paid in the currency "
+"of the company."
+msgstr "Moneda del pago de la retención de esta factura. En una retención indexada se elige entre la moneda de la compañía y la de la factura; las líneas de una misma factura (por ejemplo con alícuotas distintas) la comparten. Una retención no indexada siempre se paga en la moneda de la compañía."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__retention_indexation_mode
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__retention_indexation_mode
+msgid "Default retention indexation"
+msgstr "Indexación de retenciones por defecto"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__exchange_difference_treatment
+msgid "Exchange difference"
+msgstr "Diferencia cambiaria"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__exchange_difference_treatment__entry
+msgid "Exchange entry"
+msgstr "Asiento de diferencia cambiaria"
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_l10n_ve_payment_extension
+msgid "Group by Indexation"
+msgstr "Agrupar por indexación"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__exchange_difference_treatment
+msgid ""
+"How the exchange difference of an indexed retention is documented. Other "
+"modules can add their own options. It is only used on indexed retentions."
+msgstr "Cómo se documenta la diferencia cambiaria de una retención indexada. Otros módulos pueden agregar sus propias opciones. Solo se usa en retenciones indexadas."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__indexation_mode
+msgid "Indexation"
+msgstr "Indexación"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__indexation_mode__indexed
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__res_partner__retention_indexation_mode__indexed
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.retention_voucher_indexation_info
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_l10n_ve_payment_extension
+msgid "Indexed"
+msgstr "Indexada"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "Indexed retentions are not enabled for this company."
+msgstr "Las retenciones indexadas no están habilitadas para esta compañía."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_partner__retention_indexation_mode
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_res_users__retention_indexation_mode
+msgid ""
+"Initial value of the indexation of the retention vouchers of this contact. "
+"The voucher inherits it and it can be changed in the voucher itself. Without"
+" a value the voucher starts non-indexed."
+msgstr "Valor inicial de la indexación de los comprobantes de retención de este contacto. El comprobante lo hereda y se puede cambiar en el propio comprobante. Sin valor, el comprobante inicia no indexado."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid ""
+"Lets each retention voucher value the foreign-currency invoices with the "
+"rate of the voucher date. The retained amount in bolivars does not change."
+msgstr "Permite que cada comprobante de retención valore las facturas en moneda extranjera con la tasa de la fecha del comprobante. El monto retenido en bolívares no cambia."
+
+#. module: l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.retention_voucher_indexation_info
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_iva_search_l10n_ve_payment_extension
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.view_retention_municipal_search_l10n_ve_payment_extension
+msgid "Non-indexed"
+msgstr "No indexada"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__account_retention__indexation_mode__not_indexed
+#: model:ir.model.fields.selection,name:l10n_ve_payment_extension.selection__res_partner__retention_indexation_mode__not_indexed
+msgid "Non-indexed (invoice rate)"
+msgstr "No indexada (tasa de la factura)"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention_line__payment_currency_id
+msgid "Payment Currency"
+msgstr "Moneda de pago"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__show_exchange_difference_treatment
+msgid "Show Exchange Difference Treatment"
+msgstr "Mostrar tratamiento de la diferencia cambiaria"
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__show_indexation
+msgid "Show Indexation"
+msgstr "Mostrar indexación"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "The dates of an emitted retention cannot be changed."
+msgstr "Las fechas de una retención emitida no se pueden cambiar."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "The exchange difference treatment can only be changed in draft."
+msgstr "El tratamiento de la diferencia cambiaria solo se puede cambiar en borrador."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid "The indexation of a retention can only be changed in draft."
+msgstr "La indexación de una retención solo se puede cambiar en borrador."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,help:l10n_ve_payment_extension.field_account_retention__show_indexation
+msgid ""
+"The indexation only exists for invoices in foreign currency: the selector is"
+" shown when the company enables it and the voucher has no lines yet or has "
+"at least one invoice in foreign currency."
+msgstr "La indexación solo existe para facturas en moneda extranjera: el selector se muestra cuando la compañía la habilita y el comprobante aún no tiene líneas o tiene al menos una factura en moneda extranjera."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
+msgid "The lines of %s must have the same payment currency."
+msgstr "Las líneas de %s deben tener la misma moneda de pago."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention_line.py:0
+msgid ""
+"The payment currency of %(invoice)s must be one of: %(currencies)s. The "
+"currency of the invoice is only available in indexed retentions."
+msgstr "La moneda de pago de %(invoice)s debe ser una de: %(currencies)s. La moneda de la factura solo está disponible en retenciones indexadas."
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"The retained amount of the invoice %(invoice)s cannot be valued in "
+"%(currency)s on %(date)s: there is no rate for that date or the amount is "
+"too small."
+msgstr "El monto retenido de la factura %(invoice)s no se puede valorar en %(currency)s el %(date)s: no hay tasa para esa fecha o el monto es demasiado pequeño."
+
+#. module: l10n_ve_payment_extension
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_account_retention__use_indexed_retentions
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_company__use_indexed_retentions
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_config_settings__use_indexed_retentions
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_partner__use_indexed_retentions
+#: model:ir.model.fields,field_description:l10n_ve_payment_extension.field_res_users__use_indexed_retentions
+#: model_terms:ir.ui.view,arch_db:l10n_ve_payment_extension.res_config_settings_l10n_ve_payment_extension
+msgid "Use Indexed Retentions"
+msgstr "Usar retenciones indexadas"
+
+#. module: l10n_ve_payment_extension
+#. odoo-python
+#: code:addons/l10n_ve_payment_extension/models/account_retention.py:0
+msgid ""
+"Voucher number %(number)s is already used by another %(type_retention)s "
+"retention (%(other)s) for %(partner)s."
+msgstr "El número de comprobante %(number)s ya está en uso por otra retención de %(type_retention)s (%(other)s) para %(partner)s."
