@@ -5,7 +5,7 @@
 ## 2. Llamadores
 
 - [x] 2.1 `l10n_ve_sale`, `l10n_ve_pos`, `l10n_ve_accountant`, `l10n_ve_igtf`, `l10n_ve_payment_extension`, `l10n_ve_suggested_amount`, `l10n_ve_fiscal_lock_days`
-- [x] 2.2 `binaural_purchase`, `binaural_payment`, `binaural_foreign_cost`, `binaural_last_cost`, `binaural_appointment`, `binaural_invoice_lots`, `binaural_stock_advance`, `binaural_stock_landed_foreign_costs`, `binaural_mobile_igtf`, `binaural_website_sale`, `payment_megasoft`
+- [x] 2.2 `binaural_purchase`, `binaural_payment`, `binaural_foreign_cost`, `binaural_last_cost`, `binaural_appointment`, `binaural_invoice_lots`, `binaural_stock_advance`, `binaural_stock_landed_foreign_costs`, `binaural_mobile_igtf`, `binaural_website_sale`
 - [x] 2.3 Defaults de wizards evaluados al abrir, no al importar
 
 ## 3. Tests
@@ -20,4 +20,4 @@
 
 - [x] 4.1 1148 pruebas de los módulos tocados: sin fallos nuevos
 - [x] 4.2 `binaural_clinics_sale` y `l10n_ve_suggested_amount`: sin fallos nuevos frente a la rama sin cambios
-- [ ] 4.3 Sin pruebas o sin poder correrse: `binaural_mobile_igtf`, `binaural_invoice_lots`, `binaural_stock_advance`, `binaural_stock_landed_foreign_costs`, `binaural_appointment`, `binaural_website_sale`, `payment_megasoft` (falta `xmltodict`), `binaural_last_cost` (instalación)
+- [ ] 4.3 Sin pruebas o sin poder correrse: `binaural_mobile_igtf`, `binaural_invoice_lots`, `binaural_stock_advance`, `binaural_stock_landed_foreign_costs`, `binaural_appointment`, `binaural_website_sale`, `binaural_last_cost` (instalación)

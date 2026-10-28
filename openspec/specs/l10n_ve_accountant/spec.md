@@ -891,3 +891,8 @@ Todo cálculo de tasa o conversión de `account.move` y `account.payment` que us
 
 - **WHEN** se crea una factura de venta o compra, un asiento o un pago sin fecha explícita a las 00:30 UTC del día siguiente, con tasa del día del usuario y no del día UTC
 - **THEN** el documento toma la tasa del día del usuario y no se lanza error de tasa
+
+#### Scenario: Asiento con fecha contable distinta de hoy
+
+- **WHEN** se crea un asiento (`entry`) con `date` pasada o futura, hay tasa para esa fecha y no la hay para el día de hoy
+- **THEN** el asiento toma la tasa de su `date`; la consulta de tasa del `create` usa `date` en los asientos y `invoice_date` (o el «hoy» del usuario) en los demás documentos

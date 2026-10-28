@@ -15,3 +15,4 @@ from . import test_payment_zero_amount
 from . import test_payment_future_date
 from . import test_server_date_vs_user_tz
 from . import test_rate_date_user_tz
+from . import test_entry_rate_date
