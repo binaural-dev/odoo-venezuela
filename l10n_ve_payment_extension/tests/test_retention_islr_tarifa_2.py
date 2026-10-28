@@ -2,6 +2,7 @@ from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
 from odoo.exceptions import UserError
 from odoo import fields
+from .rate_helper import seed_foreign_rate
 
 @tagged('post_install', '-at_install')
 class TestRetentionISLRTarifa2(TransactionCase):
@@ -13,21 +14,7 @@ class TestRetentionISLRTarifa2(TransactionCase):
         cls.company = cls.env.user.company_id
         cls.company.currency_id = cls.env.ref('base.VEF')
         cls.company.foreign_currency_id = cls.env.ref('base.USD')
-
-        # Odoo exige la tasa del día exacto: se fijan las tasas de hoy (VEF 1,0 y USD)
-        today = fields.Date.today()
-        rate_model = cls.env["res.currency.rate"]
-        rate_model.search([
-            ("currency_id", "in", (cls.env.ref("base.VEF") | cls.env.ref("base.USD")).ids),
-            ("company_id", "=", cls.company.id), ("name", "=", today),
-        ]).unlink()
-        rate_model.create([
-            {"currency_id": cls.env.ref("base.VEF").id, "company_id": cls.company.id, "name": today, "rate": 1.0},
-            {
-                "currency_id": cls.env.ref("base.USD").id, "company_id": cls.company.id, "name": today,
-                "rate": 1 / 390.0, "company_rate": 1 / 390.0, "inverse_company_rate": 390.0,
-            },
-        ])
+        seed_foreign_rate(cls.env)
         
         # Activar el uso de retenciones de ISLR
         cls.env['ir.config_parameter'].sudo().set_param('l10n_ve_payment_extension.use_islr_retention', True)

@@ -46,3 +46,4 @@ from . import test_accounting_reports_branches_moves
 from . import test_retention_voucher_buttons
 from . import test_retention_islr_foreign_amount
 from . import test_retention_indexed
+from . import test_retention_resync

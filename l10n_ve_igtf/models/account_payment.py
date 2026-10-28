@@ -180,12 +180,12 @@ class AccountPaymentAndIgtf(models.Model):
 
                             # FIX balances when diference is decimal
                            
-                            if rec.partner_type == "customer":
-                                vals[0].update({"balance": total_base_residual})
-                                vals[1].update({"balance": -total_base_residual})
-                            else:
-                                vals[0].update({"balance": -total_base_residual})
-                                vals[1].update({"balance": total_base_residual})
+                            # The sign follows the money direction (payment_type), not the
+                            # partner type: a refund (NC) paid to a customer is outbound and
+                            # one received from a supplier is inbound.
+                            sign = 1 if rec.payment_type == "inbound" else -1
+                            vals[0].update({"balance": sign * total_base_residual})
+                            vals[1].update({"balance": -sign * total_base_residual})
 
             return vals
     

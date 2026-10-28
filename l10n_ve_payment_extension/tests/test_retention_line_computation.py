@@ -1,6 +1,7 @@
 from odoo.tests import TransactionCase, tagged, Form
 from odoo import Command, fields
 from odoo.exceptions import UserError, ValidationError
+from .rate_helper import seed_foreign_rate
 import logging, random
 
 _logger = logging.getLogger(__name__)
@@ -20,6 +21,7 @@ class TestRetentionLineComputation(TransactionCase):
             "foreign_currency_id": cls.currency_usd.id,
             "country_id": 28,
         })
+        seed_foreign_rate(cls.env)
 
         # Odoo exige la tasa del día exacto: se fijan las tasas de hoy (VEF 1,0 y USD)
         today = fields.Date.today()
