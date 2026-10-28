@@ -176,26 +176,30 @@ class AccountMoveRetention(models.Model):
         action_name = names.get(ret_type, _('Retentions'))
 
         if retentions:
+            # Without explicit views Odoo opens the first account.retention
+            # form it finds (not necessarily the one of this retention type).
+            module = "l10n_ve_payment_extension"
+            form_ref = f"{module}.view_retention_{ret_type if ret_type in ('iva', 'islr') else 'municipal'}_form_{module}"
+            list_ref = f"{module}.view_retention_{ret_type if ret_type == 'iva' else 'municipal'}_list_{module}"
+            form_id = self.env.ref(form_ref).id
             if len(retentions) == 1:
-                
                 return {
                     'name': action_name,
                     'type': 'ir.actions.act_window',
                     'res_model': 'account.retention',
-                    'view_mode': 'form',
+                    'views': [(form_id, 'form')],
                     'res_id': retentions.id,
                     'target': 'current',
                 }
-            else:
-                return {
-                    'name': action_name,
-                    'type': 'ir.actions.act_window',
-                    'res_model': 'account.retention',
-                    'view_mode': 'list,form',
-                    'domain': [('id', 'in', retentions.ids)],
-                    'target': 'current',
-                }
-        
+            list_id = False if ret_type == 'islr' else self.env.ref(list_ref).id
+            return {
+                'name': action_name,
+                'type': 'ir.actions.act_window',
+                'res_model': 'account.retention',
+                'views': [(list_id, 'list'), (form_id, 'form')],
+                'domain': [('id', 'in', retentions.ids)],
+                'target': 'current',
+            }
 
     @api.depends(
         "invoice_line_ids",
