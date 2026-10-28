@@ -419,3 +419,19 @@ La tasa de la orden (`_compute_rate`, `create`, `default_rate`/`default_inverse_
 
 - **WHEN** se confirma una orden sin tasa cargada en ese mismo escenario
 - **THEN** la validación de tasa usa el día del usuario y la confirmación continúa
+
+### Requirement: Segundo bloque de totales en la orden de venta
+
+El formulario de `sale.order` DEBE (MUST) mostrar, debajo del widget de totales nativo (`account-tax-totals-field`, grupo `sale_total`), el widget `account-tax-ves-totals-field` de `l10n_ve_accountant`, con el campo `foreign_currency_id` cargado en la vista para que el widget pueda formatear la moneda alterna. Si la orden está en la moneda de la compañía muestra los montos en la moneda alterna (claves `*_foreign_currency` de `tax_totals`); si está en otra moneda muestra los montos en VES. Los montos provienen de `tax_totals` y no se recalculan en la vista (ti-85450).
+
+#### Scenario: Orden en la moneda de la compañía
+
+- **GIVEN** una compañía con moneda VEF y `foreign_currency_id` USD, y una orden en VEF por 3.800
+- **WHEN** se abre el formulario de la orden
+- **THEN** debajo de los totales en VEF se ven los totales en USD (10,00 a una tasa de 380) (`test_alternate_totals_block`)
+
+#### Scenario: Orden en moneda extranjera
+
+- **GIVEN** una orden en USD por 10,00
+- **WHEN** se abre el formulario de la orden
+- **THEN** debajo de los totales en USD se ven los totales en VES (3.800,00) (`test_alternate_totals_block`)
