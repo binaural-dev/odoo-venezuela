@@ -617,3 +617,17 @@ Exención: la ND/NC de diferencial cambiario (`l10n_ve_exchange_difference`) tom
 - **WHEN** se edita la fecha contable (`date`) de una nota para que sea anterior a su `invoice_date_display` y se guarda
 - **THEN** se lanza un error de validación y no se guarda
 
+
+### Requirement: Filtro por diario de débito encendido por defecto en compañías nuevas
+
+La configuración `auto_select_debit_note_journal` (modelo `res.company`, Ajustes de facturación, "Filtrar por Diario de Débito") DEBE (MUST) estar **encendida por defecto** (`default=True`) en las compañías nuevas. Con ella encendida, el asistente de nota de débito (`account.debit.note`, `_compute_filter_enabled`) restringe la elección del diario a los diarios adecuados para la nota de débito. El cambio de valor por defecto NO DEBE (MUST NOT) alterar las compañías ya existentes: no hay migración, de modo que quienes ya operan conservan su valor actual y pueden encenderla desde Ajustes.
+
+#### Scenario: Compañía nueva
+
+- **WHEN** se crea una compañía nueva
+- **THEN** `auto_select_debit_note_journal` queda en `True`
+
+#### Scenario: Compañía existente en producción
+
+- **WHEN** se actualiza el módulo en una base donde la compañía ya tenía la configuración apagada
+- **THEN** la configuración permanece apagada
