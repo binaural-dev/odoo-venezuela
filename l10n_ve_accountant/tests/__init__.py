@@ -16,3 +16,4 @@ from . import test_payment_future_date
 from . import test_no_foreign_currency_page
 from . import test_payment_zero_amount
 from . import test_draft_keeps_posted_rate
+from . import test_alternate_totals_block
