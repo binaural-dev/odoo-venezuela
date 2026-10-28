@@ -110,6 +110,20 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
                         same_ret._check_duplicate_invoices_all_states()
                     self.assertIn(other.display_name, str(e.exception))
 
+    def test_check_blocks_when_other_line_has_blank_aliquot(self):
+        """Una línea IVA con alícuota 0 en otra retención no esconde el
+        duplicado: la misma factura con alícuota 16 debe bloquearse."""
+        inv = self._post_invoice()
+        for other_state in ("draft", "emitted"):
+            with self.subTest(other_state=other_state):
+                other = self._create_retention("iva", inv, aliquot=0.0)
+                other.state = other_state
+                current = self._create_retention("iva", inv, aliquot=16.0)
+                with self.assertRaises(UserError) as e:
+                    current._check_duplicate_invoices_all_states()
+                self.assertIn(other.display_name, str(e.exception))
+                other.state = "cancel"
+
     def test_check_ignores_cancelled_other_type_and_same_retention(self):
         inv = self._post_invoice()
         cancelled = self._create_retention("islr", inv)
