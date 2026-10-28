@@ -53,7 +53,7 @@ class AccountPaymentRegister(models.TransientModel):
             )
 
             if three_currencies_distinct:
-                pay_date = record.payment_date or fields.Date.today()
+                pay_date = record.payment_date or fields.Date.context_today(self)
                 invoice_date = False
 
                 if record.line_ids:
