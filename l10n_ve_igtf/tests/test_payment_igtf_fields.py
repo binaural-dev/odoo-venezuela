@@ -62,7 +62,7 @@ class TestIGTFPurchasePaymentFields(IGTFTestCommonPurchaseBook):
 
         payment_amount = 2000.0
         expected_igtf = 60.0
-        expected_residual = 741.20
+        expected_residual = 681.20
 
         ctx = invoice.action_register_payment()['context']
         with Form(self.env['account.payment.register'].with_context(ctx)) as pay_form:

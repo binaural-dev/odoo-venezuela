@@ -20,9 +20,9 @@ class TestIgtfSalesBook(IGTFTestCommonSaleBook):
         invoice = self._create_invoice_usd(invoice_amount)
         invoice.with_context(move_action_post_alert=True).action_post()        
      
-        cxc_credit_amount = payment_amount - expected_igtf 
+        cxc_credit_amount = payment_amount
 
-        expected_residual = 741.2
+        expected_residual = 681.2
 
         action_data = invoice.action_register_payment()
 
