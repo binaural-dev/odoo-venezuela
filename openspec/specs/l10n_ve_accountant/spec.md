@@ -882,3 +882,46 @@ formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15
 
 - **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
 - **THEN** se lanza un error de validación antes de crear ningún pago
+
+### Requirement: Una sucursal hereda las cuentas por defecto de la matriz cuando falta el xmlid de la plantilla
+
+Al crear una sucursal (`res.company` con `parent_id`) de una compañía con `chart_template`, `account.chart.template._post_load_data`
+DEBE (MUST) resolver los defaults de propiedad de cuenta (`property_account_receivable_id`, `property_account_payable_id`) sin
+fallar aunque el plan de la matriz no se haya cargado desde la plantilla. Cuando el xmlid de la plantilla (`account.<id_matriz>_<xmlid>`)
+no existe, la sucursal toma el `ir.default` que la compañía raíz ya tiene para ese campo. Si el default es global (sin compañía) no se
+copia nada porque la sucursal ya lo recibe. Si no hay default de la matriz ni global: para la cuenta por cobrar o por pagar de
+`res.partner` el sistema DEBE (MUST) lanzar **un solo** `UserError` que nombre la matriz y liste todas las faltantes con su xmlid, sin
+escribir ningún default; para cualquier otra propiedad DEBE (MUST) dejar un `warning` y crear la sucursal sin ese default. Las
+propiedades cuyo modelo es `res.company`, las compañías sin padre y las sucursales de una matriz sin `chart_template` NO SE VEN
+AFECTADAS (MUST NOT). Tarea 84815.
+
+#### Scenario: Matriz con plan propio sin xmlids de plantilla
+
+- **WHEN** se crea una sucursal de una matriz con `chart_template` definido, sin xmlids de cuentas de la plantilla y con defaults de cuenta por cobrar y por pagar
+- **THEN** la sucursal se crea y sus defaults de cuenta por cobrar y por pagar son los de la matriz, con un aviso en el log
+
+#### Scenario: Default global en la matriz
+
+- **WHEN** se crea una sucursal y el default de la cuenta por cobrar de la matriz es global (sin compañía)
+- **THEN** la sucursal se crea sin escribir un default propio para ese campo
+
+#### Scenario: Matriz sin default de por cobrar o por pagar
+
+- **WHEN** se crea una sucursal y no existe default de la cuenta por cobrar ni de la por pagar, ni de la matriz ni global
+- **THEN** se lanza un solo `UserError` que nombra la matriz y lista ambas propiedades con su xmlid, y no se crea la sucursal
+
+#### Scenario: Propiedad no obligatoria sin default
+
+- **WHEN** se crea una sucursal y una propiedad distinta de por cobrar y por pagar no tiene xmlid ni default que heredar
+- **THEN** la sucursal se crea y se registra un `warning` por esa propiedad
+
+#### Scenario: Matriz sin `chart_template`
+
+- **WHEN** se crea una sucursal de una matriz sin `chart_template`
+- **THEN** el core no carga la plantilla en la sucursal y no se escribe ningún default de este respaldo
+
+#### Scenario: Matriz con xmlids de plantilla
+
+- **WHEN** se crea una sucursal de una matriz cuyo plan sí se cargó desde la plantilla
+- **THEN** el core resuelve los defaults con los xmlids y el respaldo no interviene
+
