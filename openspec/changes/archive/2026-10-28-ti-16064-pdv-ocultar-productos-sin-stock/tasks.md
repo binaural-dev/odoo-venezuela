@@ -18,7 +18,7 @@
       no la de otra ubicación del almacén ni la de otro almacén; la carga incremental sin el ajuste no reenvía la
       variante y con el ajuste la trae con el stock actual; solo los modelos de producto pierden el filtro;
       `load_data` marca el contexto según el ajuste
-      (`odoo --test-tags /l10n_ve_pos:TestPosProductAvailableQty`: 9 en verde, más los 8 de "Cantidad en 0")
+      (`odoo --test-tags /l10n_ve_pos:TestPosProductAvailableQty`: 7 en verde, más los 8 de "Cantidad en 0": 15)
 - [x] 2.2 `static/tests/unit/product_template_available_qty.test.js`: ajuste activo/apagado, almacenable con y sin stock,
       variantes, no almacenables, producto archivado o no disponible en el PdV
       y sin caja cargada (`/web/tests?filter=l10n_ve_pos%20ProductTemplate%20canBeDisplayed`: 7/7 en verde)
@@ -44,3 +44,10 @@
       `binaural_pos_multicurrency`; para F5 con la sesión abierta queda la recomendación de la recarga limitada
 - [x] 3.3 2026-10-28: medir el stock en la ubicación de origen de la caja, como "Cantidad en 0", y no en todo el almacén
       (hallazgo del code review)
+
+## 4. Correcciones del code review (segunda ronda)
+
+- [x] 4.1 Merge de `origin/19.0` (conflictos de solo agregados en `tests/__init__.py` y en la spec principal)
+- [x] 4.2 Conteo de tests corregido en 2.1
+- [x] 4.3 Entrada de la ayuda en `i18n/es_VE.po` en su orden alfabético
+- [x] 4.4 Comentarios de "Cantidad en 0" (`pos_store.js`) y docstring de `pos_load_mixin.py`: ubicación de origen, no almacén

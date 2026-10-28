@@ -209,11 +209,6 @@ msgid "Delete"
 msgstr ""
 
 #. module: l10n_ve_pos
-#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
-msgid "Hide storable products without stock on hand in the PoS source location"
-msgstr "Oculta los productos almacenables sin stock a mano en la ubicación de origen de la caja"
-
-#. module: l10n_ve_pos
 #. odoo-javascript
 #: code:addons/l10n_ve_pos/static/src/overrides/components/closing_popup/closing_popup.xml:0
 msgid "Difference"
@@ -406,6 +401,11 @@ msgstr ""
 #: model:ir.model.fields.selection,name:l10n_ve_pos.selection__pos_payment_report__type_report__general
 msgid "General"
 msgstr ""
+
+#. module: l10n_ve_pos
+#: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
+msgid "Hide storable products without stock on hand in the PoS source location"
+msgstr "Oculta los productos almacenables sin stock a mano en la ubicación de origen de la caja"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,field_description:l10n_ve_pos.field_account_move__id

@@ -6,7 +6,7 @@ class PosLoadMixin(models.AbstractModel):
 
     @api.model
     def _pos_stock_dependent_models(self):
-        """Models whose PoS data carries the stock of the PoS warehouse:
+        """Models whose PoS data carries the stock of the PoS source location:
         ``product.product`` (``qty_available`` / ``free_qty``) and
         ``product.template``, whose loaded ids decide which variants load."""
         return {"product.template", "product.product"}
