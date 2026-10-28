@@ -9,6 +9,8 @@ Casos cubiertos:
 from odoo import fields
 from odoo.tests import tagged, TransactionCase
 
+from odoo.addons.l10n_ve_accountant.tests.common_rates import set_rate
+
 
 @tagged("international_igtf","post_install", "-at_install", "l10n_ve_igtf")
 class TestIgtfInternationalException(TransactionCase):
@@ -49,12 +51,7 @@ class TestIgtfInternationalException(TransactionCase):
         })
 
         # Una BD sin demo no trae tasa USD para hoy
-        cls.env["res.currency.rate"].create({
-            "name": fields.Date.today(),
-            "currency_id": cls.env.ref("base.USD").id,
-            "inverse_company_rate": 40.0,
-            "company_id": company.id,
-        })
+        set_rate(cls.env, cls.env.ref("base.USD"), fields.Date.today(), company, 40.0)
 
         # Configura cuentas IGTF en la compañía (necesarias para el cálculo)
         company.write({

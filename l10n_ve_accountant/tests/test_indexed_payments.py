@@ -4,6 +4,7 @@ from datetime import timedelta
 from odoo.tests import tagged, Form
 from odoo import fields, Command
 
+from .common_rates import set_rate
 from .test_foreign_balance import TestForeignBalance
 
 _logger = logging.getLogger(__name__)
@@ -172,26 +173,7 @@ class TestIndexedPayments(TestForeignBalance):
     # -- helpers (extend the parent's _set_usd_rate to any currency/date) -----
 
     def _set_rate(self, currency, date, rate):
-        currency_rate = self.env["res.currency.rate"].search(
-            [
-                ("name", "=", date),
-                ("currency_id", "=", currency.id),
-                ("company_id", "=", self.company.id),
-            ],
-            limit=1,
-        )
-        if currency_rate:
-            currency_rate.write({"inverse_company_rate": rate})
-            return currency_rate
-
-        return self.env["res.currency.rate"].create(
-            {
-                "name": date,
-                "currency_id": currency.id,
-                "inverse_company_rate": rate,
-                "company_id": self.company.id,
-            }
-        )
+        return set_rate(self.env, currency, date, self.company, rate)
 
     def _get_foreign_bank_journal(self, currency):
         journal = self.env["account.journal"].search(

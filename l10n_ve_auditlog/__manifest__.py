@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Technical",
-    "version": "1.4",
+    "version": "1.5",
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",
