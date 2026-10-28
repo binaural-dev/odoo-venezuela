@@ -2953,7 +2953,7 @@ class TestAccountMoveApiCalls(TransactionCase):
 
     def test_209_prepare_additional_information_uses_narration_as_plaintext(self):
         """infoAdicional siempre reporta narration (Html) convertido a texto
-        plano bajo la clave 'Orservaciones' -- igual que en 19.0 (PR #1485)."""
+        plano bajo la clave 'Observaciones' -- igual que en 19.0 (PR #1485)."""
         invoice = self._create_invoice(
             products=[{"product_id": self.product.id, "price_unit": 100, "tax_ids": [self.tax_iva16.id]}],
         )
@@ -2961,7 +2961,7 @@ class TestAccountMoveApiCalls(TransactionCase):
         additional_information = self.env['tfhka.document.service']._prepare_additional_information(invoice)
         self.assertEqual(
             additional_information,
-            [{"campo": "PDF", "valor": str({"Orservaciones": "Entrega en horario matutino"})}],
+            [{"campo": "PDF", "valor": str({"Observaciones": "Entrega en horario matutino"})}],
         )
 
     def test_210_prepare_additional_information_empty_narration(self):
@@ -2973,6 +2973,6 @@ class TestAccountMoveApiCalls(TransactionCase):
         additional_information = self.env['tfhka.document.service']._prepare_additional_information(invoice)
         self.assertEqual(
             additional_information,
-            [{"campo": "PDF", "valor": str({"Orservaciones": ""})}],
+            [{"campo": "PDF", "valor": str({"Observaciones": ""})}],
         )
 

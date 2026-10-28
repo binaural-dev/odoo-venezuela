@@ -682,7 +682,7 @@ class TfhkaDocumentService(models.AbstractModel):
         """Prepara la sección ``infoAdicional`` del documento.
 
         Envía un campo ``PDF`` cuyo valor es la representación en texto de
-        ``{'Orservaciones': <narration en texto plano>}``. ``narration`` es un
+        ``{'Observaciones': <narration en texto plano>}``. ``narration`` es un
         campo Html (p. ej. ``<p data-oe-version="2.0">...</p>``), así que se
         convierte con ``html2plaintext`` antes de mandarlo -- TFHKA no espera
         markup en este campo.
@@ -691,6 +691,6 @@ class TfhkaDocumentService(models.AbstractModel):
         return [
             {
                 "campo": "PDF",
-                "valor": str({"Orservaciones": narration}),
+                "valor": str({"Observaciones": narration}),
             }
         ]
