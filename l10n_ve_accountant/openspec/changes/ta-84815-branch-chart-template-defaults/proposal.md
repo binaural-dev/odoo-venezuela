@@ -52,21 +52,23 @@ sin ese respaldo. No se toca el core: se extiende el método desde la localizaci
 
 Sobrescribir `_post_load_data` en `l10n_ve_accountant`. Solo para sucursales: quitar del `template_data` las propiedades cuyo
 xmlid no se resuelve, llamar al `super()` y copiar después, desde `ir.default`, el valor de la matriz. Si el default de la matriz es global
-(sin compañía) no se copia nada, porque la sucursal ya lo recibe. Sin ninguno →
-`UserError`.
+(sin compañía) no se copia nada, porque la sucursal ya lo recibe. Sin ninguno: si la propiedad es obligatoria (cuenta por cobrar
+o por pagar) → un solo `UserError` que lista todas las faltantes; si no es obligatoria → `warning` y la sucursal se crea sin ella.
 
 ## Riesgos
 
 | Riesgo | Mitigación |
 |---|---|
-| Ocultar un error real de plantilla | Solo actúa en sucursales, solo para propiedades de cuenta y deja un `warning` en el log; sin default en la matriz falla |
+| Ocultar un error real de plantilla | Solo actúa en sucursales, solo para propiedades de cuenta y deja un `warning` en el log; sin default en la matriz de por cobrar o por pagar falla |
 | Método privado del core que cambie entre versiones | Cubierto por tests (incluye caso de extremo a extremo con creación real de la sucursal) |
 | La matriz tiene el default de otra cuenta que la "esperada" por la plantilla | Es el comportamiento buscado: la sucursal hereda lo que el cliente ya configuró |
 
 ## Criterios de aceptación
 
 - Crear una sucursal de una matriz sin xmlids de plantilla funciona y deja los mismos defaults que la matriz.
-- Sin default en la matriz (ni global), el error nombra el xmlid, la matriz y el campo.
+- Sin default de por cobrar o por pagar (ni de la matriz ni global), un solo error lista todas las faltantes con su xmlid y nombra la matriz.
+- Una propiedad no obligatoria sin default solo deja un `warning`; la sucursal se crea.
+- Una matriz sin `chart_template` no cambia de comportamiento (el core no carga la plantilla en la sucursal).
 - Un default global de la matriz no bloquea la creación de la sucursal.
 - Una matriz con plan de plantilla y las compañías sin padre no cambian de comportamiento.
 - `TestBranchChartTemplateDefaults` pasa; sin el cambio, falla.

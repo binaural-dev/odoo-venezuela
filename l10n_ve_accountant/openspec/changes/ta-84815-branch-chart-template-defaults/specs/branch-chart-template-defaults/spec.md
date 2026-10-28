@@ -14,9 +14,10 @@ para la compañía matriz, la sucursal SHALL tomar el valor por defecto que la m
 - **WHEN** se crea una sucursal
 - **THEN** el core resuelve ese default; el respaldo no interviene
 
-### REQ-BCT-002: Matriz sin default
-Si el xmlid no existe y no hay valor por defecto para el campo (ni de la matriz ni global), la creación de la sucursal MUST fallar con
-un `UserError` que nombre el xmlid, la matriz y el campo.
+### REQ-BCT-002: Matriz sin default de por cobrar o por pagar
+Si el xmlid no existe y no hay valor por defecto (ni de la matriz ni global) para la cuenta por cobrar o por pagar de `res.partner`, la
+creación de la sucursal MUST fallar con **un solo** `UserError` que nombre la matriz y liste todas las propiedades faltantes con su xmlid.
+No se escribe ningún default de la sucursal cuando falla.
 
 ### REQ-BCT-003: Compañías sin padre
 La carga de la plantilla sobre una compañía sin padre MUST NOT cambiar.
@@ -34,3 +35,22 @@ Las propiedades de `res.company` de la plantilla (p. ej. `downpayment_account_id
 
 ### REQ-BCT-006: Sucursales de varios niveles
 Los valores copiados SHALL provenir de la compañía raíz, no de una sucursal intermedia.
+
+### REQ-BCT-007: Propiedades no obligatorias
+Si el xmlid no existe y no hay default que heredar para una propiedad distinta de la cuenta por cobrar y por pagar, el sistema SHALL
+dejar un `warning` y crear la sucursal sin ese default.
+
+#### Scenario: Propiedad no obligatoria sin default
+- **GIVEN** una matriz con defaults de por cobrar y por pagar, y una propiedad adicional de la plantilla sin xmlid ni default
+- **WHEN** se crea una sucursal
+- **THEN** la sucursal se crea, hereda por cobrar y por pagar, y se registra un `warning` por la propiedad faltante
+
+### REQ-BCT-008: Matriz sin `chart_template`
+Una sucursal de una matriz sin `chart_template` MUST NOT verse afectada: el core no carga la plantilla en la sucursal y no se escribe
+ningún default ni log de este respaldo.
+
+#### Scenario: Matriz sin plantilla
+- **GIVEN** una matriz sin `chart_template`
+- **WHEN** se crea una sucursal y se confirma la transacción
+- **THEN** la sucursal se crea sin `chart_template`, sin defaults propios y sin avisos de este módulo
+

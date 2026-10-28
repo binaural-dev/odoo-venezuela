@@ -10,7 +10,7 @@ Capturar el `ValueError` a mitad del bucle del core abortaría el resto de `_pos
 
 ## D3. La fuente del valor es `ir.default` de la matriz
 `ir.default._get(model, field, company_id=root.id)` devuelve lo que el cliente configuró. No se adivina una cuenta por código o
-nombre. Sin valor → `UserError` (falla ruidosa, no silenciosa).
+nombre. Sin valor → falla ruidosa para lo obligatorio (D8), no silenciosa.
 
 ## D4. Solo sucursales
 `if not company.parent_id: return super()...` deja intacto el camino de compañías raíz.
@@ -18,7 +18,7 @@ nombre. Sin valor → `UserError` (falla ruidosa, no silenciosa).
 ## D5. Un default global ya lo hereda la sucursal
 `ir.default._get(model, field, company_id=root.id)` solo encuentra defaults de esa compañía. Una BD migrada desde `ir.property` puede
 tener el default sin compañía (global); el contacto de la sucursal ya lo recibe, así que no hay nada que copiar ni por qué fallar.
-Si no hay default de la matriz pero sí uno global, se omite (log `info`). Solo sin ninguno de los dos se lanza `UserError`.
+Si no hay default de la matriz pero sí uno global, se omite (log `info`). Solo sin ninguno de los dos se actúa según D8 (`UserError` si es obligatoria, `warning` si no).
 
 ## D6. Propiedades de `res.company` se dejan al core
 `_get_property_accounts` incluye campos de la propia compañía (p. ej. `downpayment_account_id`, agregado por `sale`). No son defaults de
@@ -44,12 +44,23 @@ def _post_load_data(self, template_code, company, template_data):
             unresolved.append((field, model, xmlid))
             data.pop(field)
     res = super()._post_load_data(template_code, company, data)
-    ...  # por cada propiedad sin resolver: copia ir.default de company.root_id; si solo hay uno global, lo omite; si no, UserError
+    ...  # por cada propiedad sin resolver: copia ir.default de company.root_id; si solo hay uno global, lo omite;
+    ...  # si no hay ninguno: obligatoria -> se acumula y se lanza UN UserError; no obligatoria -> warning
 ```
 
+## D8. Obligatorias vs. no obligatorias, y un solo mensaje
+Solo la cuenta por cobrar y la por pagar de `res.partner` (`BRANCH_REQUIRED_DEFAULTS`) impiden crear la sucursal: sin ellas sus contactos
+no pueden facturarse. Cualquier otra propiedad de la plantilla sin default que heredar solo deja un `warning` (la sucursal queda sin ese
+valor por defecto). Las obligatorias faltantes se acumulan y se reportan **juntas** en un único `UserError`; no se
+escribe ningún default hasta saber que no falta ninguna.
+
+## D9. Condición de disparo
+El core solo carga la plantilla en una sucursal si su raíz tiene `chart_template` (`account/models/company.py`, `create`). Sin
+`chart_template` en la matriz el override nunca corre; un test lo fija.
+
 ## Testing
-`tests/test_branch_chart_template_defaults.py` (`post_install`): 6 tests unitarios con el paso del core simulado
-(`unittest.mock.patch`) y 1 de extremo a extremo (matriz con la plantilla `generic_coa`, xmlids de cuentas eliminados, creación real de la
+`tests/test_branch_chart_template_defaults.py` (`post_install`): 9 tests (la mayoría con el paso del core simulado con
+`unittest.mock.patch`) y 1 de extremo a extremo (matriz con la plantilla `generic_coa`, xmlids de cuentas eliminados, creación real de la
 sucursal y `cr.precommit.run()`; comprueba por cobrar y por pagar). Se usa `generic_coa` porque una plantilla de localización
 obliga a instalar su módulo y Odoo lo prohíbe dentro de un test (en una BD limpia `l10n_ve` no está instalado: su
 `auto_install` depende del país de la compañía). Los avisos del log se verifican con `assertLogs`.

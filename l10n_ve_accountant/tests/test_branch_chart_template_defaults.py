@@ -62,13 +62,22 @@ class TestBranchChartTemplateDefaults(TransactionCase):
         self.assertEqual(len(logs.records), 2, "One warning for each default taken from the root")
         self.assertIn(RECEIVABLE_XMLID, logs.output[0])
 
-    def test_branch_without_root_default_raises(self):
+    def test_branch_without_root_default_raises_once_for_all_the_missing_ones(self):
         with self.assertRaises(UserError) as error:
             self._post_load(self.branch)
         message = str(error.exception)
-        self.assertIn(RECEIVABLE_XMLID, message)
         self.assertIn(self.root.display_name, message)
-        self.assertIn(f"res.partner.{RECEIVABLE}", message)
+        for field, xmlid in ((RECEIVABLE, RECEIVABLE_XMLID), (PAYABLE, PAYABLE_XMLID)):
+            self.assertIn(f"res.partner.{field} ('{xmlid}')", message)
+
+    def test_only_the_missing_required_defaults_are_listed(self):
+        self.env["ir.default"].set("res.partner", RECEIVABLE, self.receivable.id, company_id=self.root.id)
+        with self.assertRaises(UserError) as error:
+            self._post_load(self.branch)
+        message = str(error.exception)
+        self.assertIn(f"res.partner.{PAYABLE} ('{PAYABLE_XMLID}')", message)
+        self.assertNotIn(RECEIVABLE_XMLID, message)
+        self.assertFalse(self._branch_default(RECEIVABLE), "Nothing is written when the creation fails")
 
     def test_global_default_is_not_copied_nor_raises(self):
         """A default for all the companies is already inherited by the branch."""
@@ -108,6 +117,22 @@ class TestBranchChartTemplateDefaults(TransactionCase):
         self.assertEqual(received.get("downpayment_account_id"), "account_not_in_the_database")
         self.assertNotIn(RECEIVABLE, received)
 
+    def test_property_that_is_not_required_only_warns(self):
+        """A branch is still created when the root has no default for a property it can work without."""
+        self._set_root_defaults()
+        field = "property_account_income_categ_id"
+        data = {**self.template_data, field: "account_not_in_the_database"}
+        with patch.object(
+            type(self.env["account.chart.template"]),
+            "_get_property_accounts",
+            lambda self, additional: {RECEIVABLE: "res.partner", PAYABLE: "res.partner", field: "product.category"},
+        ), self.assertLogs(LOGGER, "WARNING") as logs:
+            received = self._post_load(self.branch, data)
+        self.assertNotIn(field, received, "The core must not resolve the missing xmlid")
+        self.assertTrue(any(field in line and "created without it" in line for line in logs.output))
+        self.assertFalse(self.env["ir.default"]._get("product.category", field, company_id=self.branch.id))
+        self.assertEqual(self._branch_default(RECEIVABLE), self.receivable.id)
+
     def test_root_company_is_not_affected(self):
         received = self._post_load(self.root)
         self.assertEqual(received, self.template_data)
@@ -137,3 +162,13 @@ class TestBranchChartTemplateDefaults(TransactionCase):
         self.assertEqual(branch.chart_template, "generic_coa")
         for field, account_id in defaults.items():
             self.assertEqual(self.env["ir.default"]._get("res.partner", field, company_id=branch.id), account_id)
+
+    def test_branch_of_a_root_without_chart_template_is_not_affected(self):
+        """The core only loads the template on a branch when its root has one: the override never runs."""
+        self.assertFalse(self.root.chart_template)
+        branch = self.env["res.company"].create({"name": "Plain branch", "parent_id": self.root.id})
+        with self.assertNoLogs(LOGGER):
+            self.env.cr.precommit.run()
+        self.assertFalse(branch.chart_template)
+        for field in (RECEIVABLE, PAYABLE):
+            self.assertFalse(self.env["ir.default"]._get("res.partner", field, company_id=branch.id))

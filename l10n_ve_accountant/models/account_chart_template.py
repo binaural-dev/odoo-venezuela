@@ -5,6 +5,13 @@ from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
 
+# Defaults a branch cannot work without: with no receivable/payable account its contacts cannot be invoiced.
+# The other properties of the template only warn when the root has no default to inherit.
+BRANCH_REQUIRED_DEFAULTS = {
+    ('res.partner', 'property_account_receivable_id'),
+    ('res.partner', 'property_account_payable_id'),
+}
+
 
 class AccountChartTemplate(models.AbstractModel):
     _inherit = 'account.chart.template'
@@ -37,22 +44,33 @@ class AccountChartTemplate(models.AbstractModel):
         res = super()._post_load_data(template_code, company, data)
 
         root = company.root_id
+        to_copy, missing = [], []
         for field, model, xmlid in unresolved:
             default = self.env['ir.default']._get(model, field, company_id=root.id)
-            if not default and self.env['ir.default']._get(model, field):
+            if default:
+                to_copy.append((field, model, xmlid, default))
+            elif self.env['ir.default']._get(model, field):
                 # A default for all the companies: the branch already gets it, nothing to copy.
                 _logger.info(
                     "Branch %s: the xmlid '%s' of the chart template %s does not exist, "
                     "using the default for all the companies of %s.%s.",
                     company.display_name, xmlid, template_code, model, field,
                 )
-                continue
-            if not default:
-                raise UserError(_(
-                    "The branch %(branch)s cannot be created: the chart template xmlid '%(xmlid)s' does not exist "
-                    "and its parent company %(root)s has no default value for %(model)s.%(field)s.",
-                    branch=company.display_name, xmlid=xmlid, root=root.display_name, model=model, field=field,
-                ))
+            elif (model, field) in BRANCH_REQUIRED_DEFAULTS:
+                missing.append("%s.%s ('%s')" % (model, field, xmlid))
+            else:
+                _logger.warning(
+                    "Branch %s: the xmlid '%s' of the chart template %s does not exist and %s has no default "
+                    "for %s.%s: the branch is created without it.",
+                    company.display_name, xmlid, template_code, root.display_name, model, field,
+                )
+        if missing:
+            raise UserError(_(
+                "The branch %(branch)s cannot be created: the chart template xmlids do not exist and its parent "
+                "company %(root)s has no default value for: %(missing)s.",
+                branch=company.display_name, root=root.display_name, missing=", ".join(missing),
+            ))
+        for field, model, xmlid, default in to_copy:
             _logger.warning(
                 "Branch %s: the xmlid '%s' of the chart template %s does not exist, using the default of %s for %s.%s.",
                 company.display_name, xmlid, template_code, root.display_name, model, field,
