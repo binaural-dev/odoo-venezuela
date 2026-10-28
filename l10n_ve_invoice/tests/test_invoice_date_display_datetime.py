@@ -59,6 +59,17 @@ class TestInvoiceDateDisplayDatetime(TransactionCase):
             "America/Caracas",
         )
 
+    def test_tz_ignores_user(self):
+        """Mismo respaldo que la migración 19.0.1.0.27: compañía → Caracas,
+        sin pasar por la zona horaria del usuario."""
+        company = self.env.company
+        company.partner_id.tz = False
+        self.env.user.tz = "Europe/Madrid"
+        self.assertEqual(
+            self.move_model._get_invoice_date_display_tz(company).zone,
+            "America/Caracas",
+        )
+
     def test_create_and_write_after_8pm(self):
         """create() y write() usan la hora local de la compañía."""
         self.env.company.partner_id.tz = "America/Caracas"

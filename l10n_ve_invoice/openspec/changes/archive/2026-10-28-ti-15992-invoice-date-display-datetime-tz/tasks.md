@@ -2,5 +2,8 @@
 - [x] Migración `19.0.1.0.27` que corrige el día de los documentos existentes
 - [x] Orden del libro por fecha, fecha-hora de emisión e `id` (HD #15994)
 - [x] Tests (después de las 20:00, antes, fecha distinta de hoy, fecha vacía, fallback de zona horaria, create/write)
+- [x] `post_init_hook` con el mismo helper que `create()`/`write()`
+- [x] Zona horaria de respaldo compañía → `America/Caracas` (igual que la migración)
+- [x] Tests del orden del libro (mismo día con horas distintas; borrador publicado después)
 - [x] Bump de versión `19.0.1.0.27`
 - [x] Spec `openspec/specs/l10n_ve_invoice/spec.md`

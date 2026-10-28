@@ -514,11 +514,11 @@ class AccountMove(models.Model):
     @api.model
     def _get_invoice_date_display_tz(self, company=None):
         """Zona horaria con la que se arma invoice_date_display_datetime: la de
-        la compañía (el documento fiscal es suyo), luego la del usuario y, si
-        ninguna está definida, America/Caracas."""
+        la compañía (el documento fiscal es suyo) y, si no está definida,
+        America/Caracas. Es el mismo respaldo que usa la migración 19.0.1.0.27."""
         company = company or self.env.company
         try:
-            return pytz.timezone(company.partner_id.tz or self.env.user.tz or DEFAULT_TZ)
+            return pytz.timezone(company.partner_id.tz or DEFAULT_TZ)
         except pytz.UnknownTimeZoneError:
             return pytz.timezone(DEFAULT_TZ)
 

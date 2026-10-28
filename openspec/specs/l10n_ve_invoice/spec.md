@@ -320,7 +320,7 @@ La opción de apagarla existe solo por criterio del consultor, para ajustes o ca
 
 ### Requirement: Registro de la fecha-hora de emisión
 
-Al crear o modificar `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora local actual, y limpiarlo cuando la fecha se vacía. La hora local es la de la zona horaria de la compañía del documento; si no tiene, la del usuario y, si tampoco, `America/Caracas`. El valor se guarda en UTC, como todo `Datetime`, de modo que al mostrarlo en hora local el día DEBE (MUST) coincidir siempre con `invoice_date_display`.
+Al crear o modificar `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora local actual, y limpiarlo cuando la fecha se vacía. La hora local es la de la zona horaria de la compañía del documento y, si no tiene, `America/Caracas` (no depende del usuario que registra). Al instalar el módulo sobre una base con documentos que tienen `invoice_date_display` y no tienen `invoice_date_display_datetime`, el `post_init_hook` DEBE (MUST) completarlos con el mismo cálculo. El valor se guarda en UTC, como todo `Datetime`, de modo que al mostrarlo en hora local el día DEBE (MUST) coincidir siempre con `invoice_date_display`.
 
 #### Scenario: Establecer la fecha de factura
 
@@ -457,6 +457,11 @@ El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los 
 
 - **WHEN** se genera el libro de ventas y hay varias facturas con la misma fecha de documento
 - **THEN** salen ordenadas por la fecha-hora en que se registraron, y el orden se repite igual en cada generación
+
+#### Scenario: Borrador creado antes y publicado después
+
+- **WHEN** una factura se crea en borrador, luego se crea y publica otra del mismo día, y por último se publica el borrador
+- **THEN** el borrador sale primero en el libro aunque su correlativo sea mayor, porque la fecha-hora de emisión se fija al crear o al cambiar la fecha, no al publicar
 
 ### Requirement: Alcance del libro con sucursales nativas
 

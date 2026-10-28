@@ -1,6 +1,7 @@
-from datetime import date, timedelta
+from datetime import date, datetime, time, timedelta
 from io import BytesIO
 import unittest
+from unittest.mock import patch
 
 from odoo import fields
 from odoo.exceptions import UserError
@@ -453,6 +454,55 @@ class TestAccountingReports(TransactionCase):
         moves = wizard.search_moves()
         self.assertIn(m1.id, moves.ids)
         self.assertIn(m2.id, moves.ids)
+
+    def _create_move_at(self, utc_hour, **kwargs):
+        """Crea una factura de venta de hoy registrada a ``utc_hour`` (UTC):
+        create() toma esa hora para invoice_date_display_datetime."""
+        frozen = datetime.combine(fields.Date.today(), time(utc_hour))
+        with patch.object(fields.Datetime, "now", return_value=frozen):
+            return self._create_move(
+                "out_invoice", self.journal_sale, [self.tax_sale_16.id], **kwargs
+            )
+
+    def _post_sale(self, moves):
+        # l10n_ve_accountant abre un wizard de alerta en lugar de publicar las
+        # facturas de venta si no viene este contexto.
+        moves.with_context(move_action_post_alert=True).action_post()
+
+    def test_search_moves_same_day_ordered_by_datetime(self):
+        """HD #15994: facturas del mismo día creadas en otro orden salen
+        ordenadas por la fecha-hora de emisión."""
+        self.company.partner_id.tz = "America/Caracas"
+        late = self._create_move_at(19, correlative="T15994-3")
+        early = self._create_move_at(13, correlative="T15994-1")
+        middle = self._create_move_at(16, correlative="T15994-2")
+        self._post_sale(late | early | middle)
+
+        moves = self._create_wizard("sale").search_moves()
+        ours = moves.filtered(lambda m: m in (late | early | middle))
+        self.assertEqual(ours.ids, [early.id, middle.id, late.id])
+
+    def test_search_moves_draft_posted_later_keeps_creation_time(self):
+        """La fecha-hora se fija al crear (o al cambiar la fecha), no al
+        publicar: un borrador creado antes y publicado después sale antes en el
+        libro aunque su correlativo sea mayor. Es el comportamiento esperado:
+        el libro sigue la fecha-hora de emisión, no el correlativo."""
+        self.company.partner_id.tz = "America/Caracas"
+        draft_first = self._create_move_at(13, correlative=False)
+        posted_first = self._create_move_at(14, correlative=False)
+        self._post_sale(posted_first)
+        self._post_sale(draft_first)
+
+        self.assertLess(
+            draft_first.invoice_date_display_datetime,
+            posted_first.invoice_date_display_datetime,
+        )
+        self.assertTrue(posted_first.correlative and draft_first.correlative)
+        self.assertLess(posted_first.correlative, draft_first.correlative)
+
+        moves = self._create_wizard("sale").search_moves()
+        ours = moves.filtered(lambda m: m in (draft_first | posted_first))
+        self.assertEqual(ours.ids, [draft_first.id, posted_first.id])
 
     # ============================================================
     # Phase 4: _determinate_amount_taxeds
