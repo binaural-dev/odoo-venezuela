@@ -87,14 +87,14 @@ class TestFiscalLockDays(TransactionCase):
         self.assertFalse(self.company.lock_date_tax_validation)
 
     def test_invoice_blocked_by_lock_date(self):
-        move = self.env['account.move'].create({
-            'move_type': 'out_invoice',
-            'partner_id': self.partner.id,
-            'journal_id': self.journal.id,
-            'company_id': self.company.id,
-        })
+        # create() ya valida el bloqueo fiscal, asi que la factura se rechaza al crearla.
         with self.assertRaises(ValidationError):
-            move._check_tax_lock_date()
+            self.env['account.move'].create({
+                'move_type': 'out_invoice',
+                'partner_id': self.partner.id,
+                'journal_id': self.journal.id,
+                'company_id': self.company.id,
+            })
 
     def test_invoice_allowed_when_lock_date_matches(self):
         # Set tax_lock_date to last day of previous fortnight
