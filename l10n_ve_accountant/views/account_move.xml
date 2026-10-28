@@ -126,7 +126,7 @@
                     <group colspan="4">
                         <field name="can_edit_tax_totals" invisible="1" />
                         <group class="oe_subtotal_footer"
-                            invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt') or payment_state == 'invoicing_legacy'">
+                            invisible="move_type not in ('out_invoice', 'out_refund', 'in_invoice', 'in_refund', 'out_receipt', 'in_receipt') or payment_state == 'invoicing_legacy' or currency_id == company_currency_id">
                             <field name="tax_totals"
                                 widget="account-tax-ves-totals-field"
                                 nolabel="1"
