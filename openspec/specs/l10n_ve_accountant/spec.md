@@ -899,7 +899,7 @@ Todo cálculo de tasa o conversión de `account.move` y `account.payment` que us
 
 ### Requirement: Segundo bloque de totales con la moneda alterna cuando el documento está en la moneda de la compañía
 
-El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pestaña principal, debajo del nativo) DEBE (MUST) mostrar los montos de `tax_totals` según la moneda del documento: si `currency_id` es distinta de la moneda de la compañía muestra los montos en VES (`*_currency_ves`); si `currency_id` es la moneda de la compañía muestra los montos en la moneda alterna (`foreign_currency_id`: claves `*_foreign_currency` de subtotal, Total G de cada grupo de impuestos, impuesto y total), formateados con esa moneda. Si el documento está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el bloque NO DEBE (MUST NOT) mostrarse. El widget solo presenta los montos que `_get_tax_totals_summary` ya calcula; no los recalcula (ti-85450).
+El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pestaña principal, debajo del nativo) DEBE (MUST) mostrar los montos de `tax_totals` según la moneda del documento: si `currency_id` es distinta de la moneda de la compañía muestra los montos en VES (`*_currency_ves`); si `currency_id` es la moneda de la compañía muestra los montos en la moneda alterna (`foreign_currency_id`: claves `*_foreign_currency` de subtotal, Total G de cada grupo de impuestos, impuesto y total), formateados con esa moneda. Si el documento está en la moneda de la compañía y la compañía no tiene `foreign_currency_id`, el bloque NO DEBE (MUST NOT) mostrarse. El widget solo presenta los montos que `_get_tax_totals_summary` ya calcula; no los recalcula (ti-85450). El campo `amount_residual_company` ("residual amount", en la moneda de la compañía) NO DEBE (MUST NOT) mostrarse cuando el documento ya está en la moneda de la compañía, porque repite el monto adeudado del widget nativo y no pertenece a la moneda alterna del bloque.
 
 #### Scenario: Factura en la moneda de la compañía con moneda alterna configurada
 
@@ -912,6 +912,12 @@ El widget `account-tax-ves-totals-field` (segundo bloque de totales de la pesta�
 - **GIVEN** una factura en USD en una compañía con moneda VEF
 - **WHEN** se abre la pestaña principal de la factura
 - **THEN** el bloque inferior muestra los totales en VEF, sin cambios respecto al comportamiento previo (`test_alternate_totals_block`)
+
+#### Scenario: Monto adeudado en la moneda de la compañía
+
+- **GIVEN** una factura en la moneda de la compañía
+- **WHEN** se abre la pestaña principal
+- **THEN** `amount_residual_company` no se muestra; con la factura en otra moneda sí se muestra (`test_alternate_totals_block`)
 
 #### Scenario: Compañía sin moneda alterna
 
