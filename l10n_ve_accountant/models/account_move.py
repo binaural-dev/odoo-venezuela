@@ -867,13 +867,16 @@ class AccountMove(models.Model):
           mixed batch nothing is dropped. A draft never confirmed keeps
           recomputing as before.
         - A date that really changes is never dropped, so the rates follow it.
-        - It does not look at ``manually_set_rate`` nor at ``state``. On a
-          posted document, an unchanged date is now silently ignored where core
-          used to raise "You cannot modify the following readonly fields on a
-          posted move".
+        - Nothing is dropped if any record is ``posted``: core keeps raising
+          its read-only error there. It does not look at ``manually_set_rate``.
         """
         keys = [f for f in self.RATE_DATE_FIELDS if f in vals]
-        if not keys or not self or not all(self.mapped("posted_before")):
+        if (
+            not keys
+            or not self
+            or not all(self.mapped("posted_before"))
+            or any(move.state == "posted" for move in self)
+        ):
             return vals
         vals = dict(vals)
         for fname in keys:
@@ -881,6 +884,14 @@ class AccountMove(models.Model):
             if all(move[fname] == new_value for move in self):
                 del vals[fname]
         return vals
+
+    def _clear_transient_rate_caches(self):
+        """Forget the per-transaction "already done" marks, as a new web
+        request would start without them."""
+        cache = self.env.cr.cache
+        for move in self:
+            cache.pop(("_real_portion_distributed", move.id), None)
+        cache.pop("_dynamic_lines_in_progress", None)
 
     def write(self, vals):
         """
@@ -1203,8 +1214,9 @@ class AccountMove(models.Model):
         for move in documents:
             if move.manually_set_rate:
                 continue
-            date_field = "invoice_date" if is_sale else "date"
-            rate_date = getattr(move, date_field) or fields.Date.context_today(move)
+            # "Rate Date" (invoice_date) drives the rate for every document,
+            # purchases included; entries have none and use the accounting date.
+            rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)

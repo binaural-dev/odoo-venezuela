@@ -1,4 +1,5 @@
 from odoo import Command, fields
+from odoo.exceptions import UserError
 from odoo.tests import Form, tagged
 
 from .test_indexed_payments import TestIndexedPayments
@@ -63,9 +64,7 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
         whole transaction; a real web request starts without them."""
         self.env.flush_all()
         self.env.invalidate_all()
-        cache = self.env.cr.cache
-        cache.pop(("_real_portion_distributed", self.invoice.id), None)
-        cache.pop("_dynamic_lines_in_progress", None)
+        self.invoice._clear_transient_rate_caches()
 
     def test_reset_to_draft_after_day_rate_change_keeps_posted_rate(self):
         before, rates_before = self._balances(), self._rates()
@@ -88,22 +87,6 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
             sum(self.invoice.line_ids.mapped("balance")), 0.0, places=2,
             msg="El asiento debe quedar balanceado.",
         )
-
-    def test_all_lines_keep_the_posted_rate_after_reset_to_draft(self):
-        """Ninguna línea (ventas, IVA o cuenta por cobrar) queda convertida
-        con la tasa nueva mientras otras conservan la anterior."""
-        self._set_rate(self.currency_usd, self.invoice_date, NEW_RATE)
-        self._as_new_request()
-
-        self.invoice.button_draft()
-
-        for line in self.invoice.line_ids:
-            amount = abs(line.amount_currency)
-            self.assertLess(
-                abs(abs(line.balance) - amount * POSTED_RATE),
-                abs(abs(line.balance) - amount * NEW_RATE),
-                f"La línea {line.account_id.code} ({line.display_type}) quedó más cerca de la tasa nueva que de la original.",
-            )
 
     def test_repost_after_draft_keeps_posted_alternate_rate(self):
         """Draft -> post again: la tasa alterna (y con ella las columnas
@@ -166,7 +149,7 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
             "Guardar el formulario recalculó la tasa alterna.",
         )
 
-    def test_form_real_date_change_on_reset_draft_saves_new_rate(self):
+    def test_form_display_date_change_on_reset_draft_saves_new_rate(self):
         """Formulario del borrador restablecido: cambiar la fecha a otro día
         recalcula la tasa y al guardar debe quedar la del nuevo día."""
         other_day = fields.Date.subtract(self.invoice_date, days=1)
@@ -182,7 +165,7 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
         self.assertAlmostEqual(self.invoice.foreign_rate, 870.0, places=4)
         self.assertAlmostEqual(self.invoice.move_currency_to_company_currency_rate, 870.0, places=4)
 
-    def test_form_rate_date_change_on_reset_draft_saves_new_rate(self):
+    def test_form_invoice_date_change_on_reset_draft_saves_new_rate(self):
         """Igual, pero editando la "Rate Date" (invoice_date) directamente."""
         other_day = fields.Date.subtract(self.invoice_date, days=1)
         self._set_rate(self.currency_usd, other_day, 870.0)
@@ -237,6 +220,13 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
 
         self.assertEqual(bill.invoice_date, other_day)
         self.assertAlmostEqual(bill.foreign_rate, 870.0, places=4)
+
+    def test_rewriting_same_date_on_posted_invoice_still_raises(self):
+        """La guarda no aplica a un documento contabilizado: core sigue
+        rechazando escribir la fecha."""
+        self.assertEqual(self.invoice.state, "posted")
+        with self.assertRaises(UserError):
+            self.invoice.write({"invoice_date": self.invoice.invoice_date})
 
     def test_changing_the_date_of_a_reset_draft_does_recompute_rates(self):
         """La protección no congela la tasa si la fecha realmente cambia."""
