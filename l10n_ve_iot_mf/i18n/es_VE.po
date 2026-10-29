@@ -238,6 +238,17 @@ msgstr ""
 "                                y es usado para pagar facturas y notas de credito"
 
 #. module: l10n_ve_iot_mf
+#. odoo-python
+#: code:addons/l10n_ve_iot_mf/models/account_journal.py:0
+#, python-format
+msgid ""
+"El diario '%(name)s' tiene activado IGTF. El Método de Pago Fiscal debe "
+"estar entre 20 y 24. Valor actual: '%(code)s'."
+msgstr ""
+"El diario '%(name)s' tiene activado IGTF. El Método de Pago Fiscal debe "
+"estar entre 20 y 24. Valor actual: '%(code)s'."
+
+#. module: l10n_ve_iot_mf
 #: model:ir.model.fields,field_description:l10n_ve_iot_mf.field_account_tax__fiscal_code
 msgid "Fiscal Code"
 msgstr "Código en Maquina fiscal"
