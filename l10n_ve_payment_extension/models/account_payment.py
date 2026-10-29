@@ -22,6 +22,23 @@ class AccountPayment(models.Model):
     )
     retention_id = fields.Many2one("account.retention", ondelete="cascade")
 
+    retention_resync_pending = fields.Boolean(
+        string="Retention Resync Pending",
+        compute="_compute_retention_resync_pending",
+        help=(
+            "True when this is a retention payment and its retention no"
+            " longer matches its invoice's current data (see"
+            " account.retention.retention_resync_pending)."
+        ),
+    )
+
+    @api.depends("is_retention", "retention_id.retention_resync_pending")
+    def _compute_retention_resync_pending(self):
+        for payment in self:
+            payment.retention_resync_pending = bool(
+                payment.is_retention and payment.retention_id.retention_resync_pending
+            )
+
     retention_line_ids = fields.One2many(
         "account.retention.line",
         "payment_id",
