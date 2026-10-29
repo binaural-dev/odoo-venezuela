@@ -822,7 +822,7 @@ class AccountMove(models.Model):
             if move.move_type == "entry":
                 rate_date = move.date or fields.Date.context_today(move)
             else:
-                rate_date = move.invoice_date or fields.Date.context_today(move)
+                rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
@@ -1192,31 +1192,29 @@ class AccountMove(models.Model):
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
 
         Depends on both dates because `_compute_rate_for_documents` reads
-        `invoice_date` ("Rate Date") and falls back to `date` (accounting
-        date) when it is empty, as on entries.
+        `invoice_date` ("Rate Date") for invoices and `date` (accounting
+        date) for entries, falling back to `date` when `invoice_date` is empty.
         """
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
-            is_sale=True,
-        )
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
-            is_sale=False,
-        )
+        self._compute_rate_for_documents(self)
 
     @api.model
-    def _compute_rate_for_documents(self, documents, is_sale):
+    def _compute_rate_for_documents(self, documents):
         """
-        Compute the rate for a set of documents (either sale invoices or purchase invoices/moves).
+        Compute the rate for a set of documents (sale or purchase invoices, entries).
         """
         Rate = self.env["res.currency.rate"]
 
         for move in documents:
             if move.manually_set_rate:
                 continue
-            # "Rate Date" (invoice_date) drives the rate for every document,
-            # purchases included; entries have none and use the accounting date.
-            rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+            # "Rate Date" (invoice_date) drives the rate for every invoice,
+            # purchases included. An entry's invoice_date is just the default
+            # "today", so entries use the accounting date.
+            if move.move_type == "entry":
+                rate_date = move.date
+            else:
+                rate_date = move.invoice_date or move.date
+            rate_date = rate_date or fields.Date.context_today(move)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)

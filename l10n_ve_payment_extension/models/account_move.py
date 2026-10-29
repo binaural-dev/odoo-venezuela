@@ -584,8 +584,8 @@ class AccountMoveRetention(models.Model):
         return True
 
     @api.model
-    def _compute_rate_for_documents(self, documents, is_sale):
-        res = super()._compute_rate_for_documents(documents, is_sale)
+    def _compute_rate_for_documents(self, documents):
+        res = super()._compute_rate_for_documents(documents)
         for move in documents:
             if move.origin_payment_id.is_retention:
                 move.foreign_rate = move.origin_payment_id.foreign_rate
