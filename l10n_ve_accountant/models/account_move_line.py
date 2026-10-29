@@ -605,15 +605,28 @@ class AccountMoveLine(models.Model):
 
     @api.depends(
         'foreign_debit', 'foreign_credit','amount_residual',
-        'foreign_balance', 'account_id',
+        'foreign_balance', 'account_id', 'reconciled',
         'matched_debit_ids',
         'matched_credit_ids',
         'matched_debit_ids.debit_foreign_amount_currency',
         'matched_credit_ids.credit_foreign_amount_currency',
     )
     def _compute_foreign_amount_residual(self):
+        """`reconciled` is already true/false based on both `amount_residual`
+        and `amount_residual_currency` being zero (core's own
+        `_compute_amount_residual`), so a fully settled line has no real
+        debt left in any currency it was raised in. Without this check, a
+        line paid off with a reconciliation booked at a different VEF rate
+        than the invoice (a later/earlier payment date, an advance) still
+        dragged a leftover `foreign_amount_residual` from mixing the
+        invoice's Bs rate with the payment's Bs rate -- even though the
+        obligation itself (ticket #15971/#16009) was already paid in full.
+        """
         for line in self:
-            if line.account_id.reconcile or line.account_id.account_type in ('asset_cash', 'liability_credit_card'):
+            if line.reconciled:
+                line.foreign_amount_residual = 0.0
+                line.foreign_amount_residual_currency = 0.0
+            elif line.account_id.reconcile or line.account_id.account_type in ('asset_cash', 'liability_credit_card'):
                 debit_foreign = sum(line.matched_debit_ids.mapped('debit_foreign_amount_currency'))
                 credit_foreign = sum(line.matched_credit_ids.mapped('credit_foreign_amount_currency'))
                 line.foreign_amount_residual = line.foreign_balance - credit_foreign + debit_foreign
