@@ -1,21 +1,10 @@
 # Ticket #15729: migration 17.0.0.0.56 left foreign_balance NULL when one side was NULL,
 # and 17.0.0.0.66 repairs the lines it damaged.
-import importlib.util
-from pathlib import Path
 
 from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
-MIGRATIONS = Path(__file__).resolve().parent.parent / "migrations"
-
-
-def _load(version, name):
-    spec = importlib.util.spec_from_file_location(
-        name, MIGRATIONS / version / "post-migration.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+from .migration_helpers import load_migration
 
 
 @tagged("post_install", "-at_install", "l10n_ve_migration_null_foreign")
@@ -23,8 +12,8 @@ class TestMigrationNullForeign(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.mig56 = _load("17.0.0.0.56", "l10n_ve_accountant_mig_56_null")
-        cls.mig66null = _load("17.0.0.0.66", "l10n_ve_accountant_mig_66_null")
+        cls.mig56 = load_migration("17.0.0.0.56", "l10n_ve_accountant_mig_56_null")
+        cls.mig66null = load_migration("17.0.0.0.66", "l10n_ve_accountant_mig_66_null")
         cls.vef = cls.env.ref("base.VEF")
         cls.usd = cls.env.ref("base.USD")
         cls.company = cls.env.ref("base.main_company")

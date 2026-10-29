@@ -112,11 +112,31 @@ class TestVendorBillForeignBalance(TransactionCase):
         bill.action_post()
         self._assert_balanced_usd(bill)
 
-    def test_rounding_gap_never_lands_on_the_tax_line(self):
-        """The tax line keeps its own per-line USD conversion; the gap goes to PT/product lines."""
-        bill = self._bill([5033.50, 1234.57, 987.65, 4321.09])
-        self.env.flush_all()
-        tax_line = bill.line_ids.filtered(lambda l: l.display_type == "tax")
-        self.assertTrue(tax_line)
-        expected = self.usd.round(abs(tax_line.balance) / 50.0)
-        self.assertAlmostEqual(abs(tax_line.foreign_balance), expected, places=2)
+    def test_rounding_gap_keeps_cxp_on_the_total_and_product_lines_untouched(self):
+        """Converting line by line does not add up to the converted total (CxP = total / rate).
+
+        The bill is balanced by moving the gap to the TAX line, at most one cent per product
+        line; product lines keep their own conversion and the CxP is never the one that drifts.
+        (The branch that moves the gap onto a product line is for a third currency, which
+        `_check_currency_id` makes unreachable for invoices.)
+        """
+        for prices in ([1234.57, 987.65], [7.77, 8.88, 9.99]):
+            with self.subTest(prices=prices):
+                bill = self._bill(prices)
+                self.env.flush_all()
+                products = bill.line_ids.filtered(lambda l: l.display_type == "product")
+                tax = bill.line_ids.filtered(lambda l: l.display_type == "tax")
+                independent_products = {l: self.usd.round(l.balance / 50.0) for l in products}
+                independent_tax = self.usd.round(tax.balance / 50.0)
+                independent_sum = sum(independent_products.values()) + independent_tax
+                expected_cxp = self.usd.round(bill.amount_total / 50.0)
+                self.assertNotEqual(
+                    independent_sum, expected_cxp, "scenario without a rounding gap proves nothing")
+                for line, value in independent_products.items():
+                    self.assertAlmostEqual(line.foreign_balance, value, places=2,
+                                           msg="a product line absorbed the rounding gap")
+                self.assertAlmostEqual(self._payment_term_usd(bill), expected_cxp, places=2)
+                self.assertLessEqual(
+                    abs(tax.foreign_balance - independent_tax),
+                    self.usd.rounding * len(products) + 1e-9)
+                self._assert_balanced_usd(bill)

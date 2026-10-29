@@ -1,22 +1,11 @@
 # Ticket #15694: migration 17.0.0.0.67 equalises the CxP USD amount of posted vendor bills.
-import importlib.util
 import os
-from pathlib import Path
 from unittest import mock
 
 from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
-MIGRATIONS = Path(__file__).resolve().parent.parent / "migrations"
-
-
-def _load(version, name):
-    spec = importlib.util.spec_from_file_location(
-        name, MIGRATIONS / version / "post-migration.py"
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
+from .migration_helpers import load_migration
 
 
 @tagged("post_install", "-at_install", "l10n_ve_migration_vendor_bill_foreign")
@@ -24,7 +13,7 @@ class TestMigrationVendorBillForeignAmounts(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.mig67 = _load("17.0.0.0.67", "l10n_ve_accountant_mig_67")
+        cls.mig67 = load_migration("17.0.0.0.67", "l10n_ve_accountant_mig_67")
         cls.vef = cls.env.ref("base.VEF")
         cls.usd = cls.env.ref("base.USD")
         cls.company = cls.env.ref("base.main_company")
@@ -102,6 +91,15 @@ class TestMigrationVendorBillForeignAmounts(TransactionCase):
         bill = self._bill()
         self._break_pt(bill, 0.0)
         self.company.tax_lock_date = fields.Date.today()
+        self._migrate()
+        self.assertAlmostEqual(self._row(self._pt(bill))[0], 0.0, places=2)
+
+    def test_skips_company_with_usd_base(self):
+        """Like 17.0.0.0.56, a base-USD company (foreign VEF) is 'draft only': posted data is left alone."""
+        bill = self._bill()
+        self._break_pt(bill, 0.0)
+        self._sql("UPDATE res_company SET currency_id = %s, currency_foreign_id = %s WHERE id = %s",
+                  [self.usd.id, self.vef.id, self.company.id])
         self._migrate()
         self.assertAlmostEqual(self._row(self._pt(bill))[0], 0.0, places=2)
 
