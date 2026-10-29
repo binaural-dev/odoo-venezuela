@@ -1,28 +1,8 @@
 import logging
-import os
 
 from odoo import api, SUPERUSER_ID
 
 _logger = logging.getLogger(__name__)
-
-LOCK = "m.date > %(tax_lock)s AND m.date > %(fy_lock)s"
-# Net USD (foreign_balance) the payment term line of a vendor document must hold: the
-# opposite of everything else on the entry.
-EXPECTED = """
-    SELECT pt.id AS pt_id, pt.move_id,
-           ROUND(-SUM(o.foreign_balance), %(prec)s) AS expected
-      FROM account_move_line pt
-      JOIN account_move m ON m.id = pt.move_id
-      JOIN account_move_line o ON o.move_id = pt.move_id AND o.display_type IS DISTINCT FROM 'payment_term'
-     WHERE pt.display_type = 'payment_term'
-       AND m.company_id = %(company_id)s
-       AND m.state = 'posted'
-       AND m.move_type IN ('in_invoice', 'in_refund')
-       AND """ + LOCK + """
-       AND (SELECT COUNT(*) FROM account_move_line x
-             WHERE x.move_id = m.id AND x.display_type = 'payment_term') = 1
-     GROUP BY pt.id, pt.move_id
-"""
 
 
 def _lock_params(company, fc_precision):
@@ -34,83 +14,46 @@ def _lock_params(company, fc_precision):
     }
 
 
-def _report_manual_review(cr, params):
-    """Moves this step cannot fix on its own: several payment term lines or a payment
-    term line with the wrong sign. They are only listed."""
-    cr.execute("""
-        SELECT m.id, m.name,
-               (SELECT COUNT(*) FROM account_move_line x
-                 WHERE x.move_id = m.id AND x.display_type = 'payment_term') AS pt_count
-          FROM account_move m
-         WHERE m.company_id = %(company_id)s
-           AND m.state = 'posted'
-           AND m.move_type IN ('in_invoice', 'in_refund')
-           AND """ + LOCK + """
-           AND (SELECT COUNT(*) FROM account_move_line x
-                 WHERE x.move_id = m.id AND x.display_type = 'payment_term') > 1
-           AND ABS((SELECT COALESCE(SUM(x.foreign_balance), 0) FROM account_move_line x
-                     WHERE x.move_id = m.id)) >= 10 ^ -%(prec)s
-    """, params)
-    for move_id, name, count in cr.fetchall():
-        _logger.warning("  REVIEW by hand: %s (id %s) has %s payment term lines and is unbalanced in USD",
-                        name, move_id, count)
-    cr.execute("""
-        WITH e AS (""" + EXPECTED + """)
-        SELECT m.id, m.name, e.expected, pt.foreign_balance
-          FROM e
-          JOIN account_move_line pt ON pt.id = e.pt_id
-          JOIN account_move m ON m.id = e.move_id
-         WHERE ROUND(COALESCE(pt.foreign_balance, 0) - e.expected, %(prec)s) <> 0
-           AND e.expected <> 0
-           AND SIGN(e.expected) <> CASE WHEN m.move_type = 'in_invoice' THEN -1 ELSE 1 END
-    """, params)
-    for move_id, name, expected, current in cr.fetchall():
-        _logger.warning("  REVIEW by hand: %s (id %s) unexpected sign (expected %s, CxP %s)",
-                        name, move_id, expected, current)
+LOCK = "m.date > %(tax_lock)s AND m.date > %(fy_lock)s"
 
 
-def _find_affected(cr, params):
-    """Payment term lines whose USD amount is not the opposite of the rest of the entry.
+def _repair_null_lines(cr, params):
+    """Set NULL foreign_debit/foreign_credit to 0 and rebuild foreign_balance.
 
-    Their ids are kept in `l10n_ve_vb_lines` for the next steps.
+    Affected line ids are kept in `l10n_ve_fb_null_lines` for the next steps.
     """
     cr.execute("""
-        CREATE TEMP TABLE IF NOT EXISTS l10n_ve_vb_lines (
-            id integer PRIMARY KEY, expected numeric
-        ) ON COMMIT DROP
+        CREATE TEMP TABLE IF NOT EXISTS l10n_ve_fb_null_lines (id integer PRIMARY KEY) ON COMMIT DROP
     """)
     cr.execute("""
-        INSERT INTO l10n_ve_vb_lines (id, expected)
-        SELECT e.pt_id, e.expected
-          FROM (""" + EXPECTED + """) e
-          JOIN account_move_line pt ON pt.id = e.pt_id
-          JOIN account_move m ON m.id = e.move_id
-         WHERE ROUND(COALESCE(pt.foreign_balance, 0) - e.expected, %(prec)s) <> 0
-           AND e.expected <> 0
-           AND SIGN(e.expected) = CASE WHEN m.move_type = 'in_invoice' THEN -1 ELSE 1 END
-        ON CONFLICT DO NOTHING
+        WITH upd AS (
+            UPDATE account_move_line l
+               SET foreign_debit = COALESCE(l.foreign_debit, 0.0),
+                   foreign_credit = COALESCE(l.foreign_credit, 0.0),
+                   foreign_balance = ROUND(COALESCE(l.foreign_debit, 0.0)
+                                           - COALESCE(l.foreign_credit, 0.0), %(prec)s)
+              FROM account_move m
+             WHERE m.id = l.move_id
+               AND m.company_id = %(company_id)s
+               AND """ + LOCK + """
+               AND (l.foreign_debit IS NULL OR l.foreign_credit IS NULL OR l.foreign_balance IS NULL)
+            RETURNING l.id
+        )
+        INSERT INTO l10n_ve_fb_null_lines (id) SELECT id FROM upd ON CONFLICT DO NOTHING
     """, params)
-    cr.execute("SELECT COUNT(*) FROM l10n_ve_vb_lines")
-    count = cr.fetchone()[0]
-    _logger.info("  vendor documents with a wrong payment term USD amount: %s", count)
-    return count
-
-
-def _fix_payment_terms(cr, params):
-    cr.execute("""
-        UPDATE account_move_line l
-           SET foreign_debit = GREATEST(t.expected, 0),
-               foreign_credit = GREATEST(-t.expected, 0),
-               foreign_balance = t.expected
-          FROM l10n_ve_vb_lines t
-         WHERE l.id = t.id
-    """, params)
-    _logger.info("  payment term lines fixed: %s", cr.rowcount)
+    _logger.info("  foreign_* NULL repaired on %s move lines", cr.rowcount)
 
 
 def _rebuild_partials(cr, params, side):
-    """Give each partial of the fixed lines the line's foreign balance pro rata of
-    its native `amount`; the last one absorbs the rounding when the line is settled.
+    """Rebuild the foreign amounts of the partials of the repaired lines.
+
+    17.0.0.0.56 `_rebuild_reconciled_partials` skipped every line whose
+    foreign_balance was NULL, so their partials still hold stale amounts (often
+    the counterpart's full balance). Keeping them, as .56 does, makes the last
+    partial absorb a large negative remainder; instead each partial gets the
+    line's foreign balance pro rata of its native `amount` over the line's
+    native balance. When the line is fully settled in company currency the last
+    partial absorbs the rounding so the foreign residual is exactly zero.
 
     side='debit': credit_foreign_amount_currency allocated by debit_move_id.
     side='credit': debit_foreign_amount_currency allocated by credit_move_id.
@@ -125,7 +68,7 @@ def _rebuild_partials(cr, params, side):
                    ABS(l.balance) AS balance_abs,
                    l.amount_residual = 0 AS settled
               FROM account_partial_reconcile p
-              JOIN l10n_ve_vb_lines n ON n.id = p.{line_col}
+              JOIN l10n_ve_fb_null_lines n ON n.id = p.{line_col}
               JOIN account_move_line l ON l.id = p.{line_col}
               JOIN account_move m ON m.id = l.move_id
              WHERE m.company_id = %(company_id)s
@@ -161,29 +104,39 @@ def _rebuild_partials(cr, params, side):
     _logger.info("  %s-side partials rebuilt: %s", side, cr.rowcount)
 
 
-def _refresh_partial_foreign_amount(cr):
+def _refresh_partial_foreign_amount(cr, params):
     cr.execute("""
         UPDATE account_partial_reconcile p
            SET foreign_amount = LEAST(COALESCE(p.debit_foreign_amount_currency, 0),
                                       COALESCE(p.credit_foreign_amount_currency, 0))
-         WHERE (p.debit_move_id IN (SELECT id FROM l10n_ve_vb_lines)
-                OR p.credit_move_id IN (SELECT id FROM l10n_ve_vb_lines))
+         WHERE (p.debit_move_id IN (SELECT id FROM l10n_ve_fb_null_lines)
+                OR p.credit_move_id IN (SELECT id FROM l10n_ve_fb_null_lines))
            AND p.foreign_amount IS DISTINCT FROM LEAST(COALESCE(p.debit_foreign_amount_currency, 0),
                                                        COALESCE(p.credit_foreign_amount_currency, 0))
-    """)
+    """, params)
     _logger.info("  partial foreign_amount refreshed: %s", cr.rowcount)
 
 
 def _recompute_residuals(cr, params):
-    """Same formula as AccountMoveLine._compute_foreign_amount_residual, for the fixed lines."""
+    """Same formula as AccountMoveLine._compute_foreign_amount_residual, for the
+    repaired lines plus any line still holding a NULL residual."""
     cr.execute("""
-        WITH t AS (
+        WITH lines AS (
+            SELECT l.id
+              FROM account_move_line l
+              JOIN account_move m ON m.id = l.move_id
+             WHERE m.company_id = %(company_id)s
+               AND (l.id IN (SELECT id FROM l10n_ve_fb_null_lines)
+                    OR l.foreign_amount_residual IS NULL
+                    OR l.foreign_amount_residual_currency IS NULL)
+        ),
+        t AS (
             SELECT x.id,
                    COALESCE((SELECT SUM(p.credit_foreign_amount_currency) FROM account_partial_reconcile p
                               WHERE p.debit_move_id = x.id), 0.0) AS credit_foreign,
                    COALESCE((SELECT SUM(p.debit_foreign_amount_currency) FROM account_partial_reconcile p
                               WHERE p.credit_move_id = x.id), 0.0) AS debit_foreign
-              FROM l10n_ve_vb_lines x
+              FROM lines x
         )
         UPDATE account_move_line l
            SET foreign_amount_residual = CASE
@@ -200,32 +153,24 @@ def _recompute_residuals(cr, params):
 
 
 def migrate(cr, version):
-    """Equalise the payment term (CxP) USD amount of posted vendor bills (ticket 15694).
+    """Repair foreign_* NULLs left by the 17.0.0.0.56 rounding migration (ticket 15691).
 
-    Bills created before `_distribute_foreign_pt_residual` spread the rounding could
-    have the CxP line at 0 USD, at a stale amount, or off by the per-line rounding gap
-    against the product + tax lines. Each such CxP is set to the opposite of the rest
-    of the entry and its reconciliations are rebuilt. Locked periods are never
-    touched; bills with several payment term lines or an unexpected sign are only
-    logged for manual review. Set the env var DRY_RUN=1 to log the affected bills
-    without changing anything (run it first in staging).
+    That migration computed `foreign_balance` in SQL as
+    `ROUND(foreign_debit) - ROUND(foreign_credit)`: whenever one side was NULL the
+    whole balance became NULL, its `_rebuild_reconciled_partials` skipped those
+    lines and `_recompute_residuals` copied the NULL into
+    `foreign_amount_residual(_currency)`. Reports summing `foreign_balance`
+    either crashed (aged/advance reports, ticket 15690) or under-reported USD.
+    Locked periods are never touched.
     """
-    dry_run = bool(os.environ.get('DRY_RUN'))
     env = api.Environment(cr, SUPERUSER_ID, {})
     companies = env['res.company'].search([('currency_foreign_id', '!=', False)])
     for company in companies:
-        fc = company.currency_foreign_id
-        if not company.currency_id or company.currency_id == fc:
-            continue
-        params = _lock_params(company, fc.decimal_places)
-        _logger.info("Vendor bill USD amounts for %s%s", company.name, " (DRY_RUN)" if dry_run else "")
-        _report_manual_review(cr, params)
-        if not _find_affected(cr, params) or dry_run:
-            cr.execute("TRUNCATE l10n_ve_vb_lines")
-            continue
-        _fix_payment_terms(cr, params)
+        params = _lock_params(company, company.currency_foreign_id.decimal_places)
+        _logger.info("Repairing foreign_* NULLs for %s", company.name)
+        _repair_null_lines(cr, params)
         _rebuild_partials(cr, params, 'debit')
         _rebuild_partials(cr, params, 'credit')
-        _refresh_partial_foreign_amount(cr)
+        _refresh_partial_foreign_amount(cr, params)
         _recompute_residuals(cr, params)
-        cr.execute("TRUNCATE l10n_ve_vb_lines")
+        cr.execute("TRUNCATE l10n_ve_fb_null_lines")

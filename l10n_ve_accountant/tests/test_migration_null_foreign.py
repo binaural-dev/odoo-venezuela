@@ -1,5 +1,5 @@
 # Ticket #15729: migration 17.0.0.0.56 left foreign_balance NULL when one side was NULL,
-# and 17.0.0.0.65 repairs the lines it damaged.
+# and 17.0.0.0.66 repairs the lines it damaged.
 import importlib.util
 from pathlib import Path
 
@@ -24,7 +24,7 @@ class TestMigrationNullForeign(TransactionCase):
     def setUpClass(cls):
         super().setUpClass()
         cls.mig56 = _load("17.0.0.0.56", "l10n_ve_accountant_mig_56_null")
-        cls.mig65 = _load("17.0.0.0.65", "l10n_ve_accountant_mig_65")
+        cls.mig66null = _load("17.0.0.0.66", "l10n_ve_accountant_mig_66_null")
         cls.vef = cls.env.ref("base.VEF")
         cls.usd = cls.env.ref("base.USD")
         cls.company = cls.env.ref("base.main_company")
@@ -93,7 +93,7 @@ class TestMigrationNullForeign(TransactionCase):
         fd, fc, fb, *_ = self._row(line.id)
         self.assertEqual((fd, fc, fb), (1.23, 0.0, 1.23))
 
-    # --- 17.0.0.0.65 -------------------------------------------------
+    # --- 17.0.0.0.66 -------------------------------------------------
     def test_65_repairs_null_balance(self):
         move, line = self._entry(True)
         fd = self._row(line.id)[0]
@@ -101,7 +101,7 @@ class TestMigrationNullForeign(TransactionCase):
         self._sql("""UPDATE account_move_line SET foreign_balance = NULL,
                       foreign_amount_residual = NULL, foreign_amount_residual_currency = NULL
                 WHERE id = %s""", [line.id])
-        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
         fd, fc, fb, residual, residual_currency = self._row(line.id)
         self.assertAlmostEqual(fb, 2.0, places=2)
         self.assertAlmostEqual(residual, 2.0, places=2)
@@ -120,7 +120,7 @@ class TestMigrationNullForeign(TransactionCase):
         # Stale amount, as left behind by the 0.0.56 rebuild that skipped NULL lines.
         self._sql("""UPDATE account_partial_reconcile SET credit_foreign_amount_currency = 99.0
                 WHERE id = %s""", [partial.id])
-        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
         self.env.invalidate_all()
         partial = partial.browse(partial.id)
         self.assertAlmostEqual(partial.credit_foreign_amount_currency, 2.0, places=2)
@@ -133,13 +133,13 @@ class TestMigrationNullForeign(TransactionCase):
         move, line = self._entry(True)
         self._sql("UPDATE account_move_line SET foreign_balance = NULL WHERE id = %s", [line.id])
         self.company.tax_lock_date = fields.Date.today()
-        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
         self.assertIsNone(self._row(line.id)[2])
 
     def test_65_is_idempotent(self):
         move, line = self._entry(True)
         self._sql("UPDATE account_move_line SET foreign_balance = NULL WHERE id = %s", [line.id])
-        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
         first = self._row(line.id)
-        self.mig65.migrate(self.env.cr, "17.0.0.0.64")
+        self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
         self.assertEqual(self._row(line.id), first)

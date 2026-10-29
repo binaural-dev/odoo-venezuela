@@ -1,4 +1,4 @@
-# Ticket #15694: migration 17.0.0.0.66 equalises the CxP USD amount of posted vendor bills.
+# Ticket #15694: migration 17.0.0.0.67 equalises the CxP USD amount of posted vendor bills.
 import importlib.util
 import os
 from pathlib import Path
@@ -24,7 +24,7 @@ class TestMigrationVendorBillForeignAmounts(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.mig66 = _load("17.0.0.0.66", "l10n_ve_accountant_mig_66")
+        cls.mig67 = _load("17.0.0.0.67", "l10n_ve_accountant_mig_67")
         cls.vef = cls.env.ref("base.VEF")
         cls.usd = cls.env.ref("base.USD")
         cls.company = cls.env.ref("base.main_company")
@@ -73,7 +73,7 @@ class TestMigrationVendorBillForeignAmounts(TransactionCase):
         return self.env.cr.fetchone()
 
     def _migrate(self):
-        self.mig66.migrate(self.env.cr, "17.0.0.0.65")
+        self.mig67.migrate(self.env.cr, "17.0.0.0.66")
         self.env.invalidate_all()
 
     def test_fixes_cxp_in_zero_usd(self):
