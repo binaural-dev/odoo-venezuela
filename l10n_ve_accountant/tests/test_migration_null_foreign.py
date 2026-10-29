@@ -175,11 +175,17 @@ class TestMigrationNullForeign(TransactionCase):
         locked_date = fields.Date.subtract(fields.Date.today(), days=10)
         self._sql("UPDATE account_move SET date = %s WHERE id = %s", [locked_date, move_locked.id])
         self._sql("UPDATE account_move_line SET foreign_balance = NULL WHERE id = %s", [debit_line.id])
-        self._sql("UPDATE account_partial_reconcile SET foreign_amount = 99.0 WHERE id = %s", [partial.id])
+        self._sql("""UPDATE account_partial_reconcile SET foreign_amount = 99.0,
+                      credit_foreign_amount_currency = 55.0 WHERE id = %s""", [partial.id])
+        stale_credit = 55.0
         self.company.tax_lock_date = locked_date
         self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
-        self.env.cr.execute("SELECT foreign_amount FROM account_partial_reconcile WHERE id = %s", [partial.id])
-        self.assertEqual(self.env.cr.fetchone()[0], 99.0)
+        self.env.cr.execute(
+            "SELECT foreign_amount, credit_foreign_amount_currency FROM account_partial_reconcile WHERE id = %s",
+            [partial.id])
+        foreign_amount, credit_foreign = self.env.cr.fetchone()
+        self.assertEqual(foreign_amount, 99.0)
+        self.assertEqual(credit_foreign, stale_credit)
 
     def test_66_residual_of_null_line_in_locked_period_is_not_recomputed(self):
         """A line with a NULL residual that was never in the repaired set is still left alone if locked."""

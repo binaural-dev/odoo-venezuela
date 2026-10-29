@@ -131,6 +131,12 @@ def _rebuild_partials(cr, params, side):
              WHERE m.company_id = %(company_id)s
                AND m.state = 'posted'
                AND """.format(line_col=line_col) + LOCK + """
+               AND NOT EXISTS (
+                   SELECT 1
+                     FROM account_move_line l2
+                     JOIN account_move m2 ON m2.id = l2.move_id
+                    WHERE l2.id IN (p.debit_move_id, p.credit_move_id)
+                      AND NOT (""" + LOCK.replace("m.", "m2.") + """))
              GROUP BY p.{line_col}, ABS(l.foreign_balance), ABS(l.balance), l.amount_residual
         ),
         ranked AS (
