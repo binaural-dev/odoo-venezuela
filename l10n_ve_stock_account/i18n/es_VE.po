@@ -676,6 +676,15 @@ msgid "Is Donation"
 msgstr "Es Donación"
 
 #. module: l10n_ve_stock_account
+#: model:ir.model.fields,help:l10n_ve_stock_account.field_stock_picking__is_donation
+msgid ""
+"Marks the picking as a donation. It is set by the Donations menu or when the "
+"picking is created from a donation sale order."
+msgstr ""
+"Marca el picking como una donación. Se establece desde el menú Donaciones o "
+"cuando el picking se crea a partir de una orden de venta de donación."
+
+#. module: l10n_ve_stock_account
 #: model:ir.model.fields,field_description:l10n_ve_stock_account.field_stock_picking__is_return
 msgid "Is Return"
 msgstr "Es devolución"

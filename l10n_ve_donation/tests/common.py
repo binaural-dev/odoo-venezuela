@@ -143,21 +143,29 @@ class TestDonationCommon(TransactionCase):
             "is_donation_warehouse": True,
         })
 
-        # Picking type donation
-        cls.picking_type_donation = cls.env["stock.picking.type"].search([
-            ("warehouse_id", "=", cls.warehouse_donation.id),
-            ("code", "=", "outgoing"),
-        ], limit=1)
-        if not cls.picking_type_donation:
-            cls.picking_type_donation = cls.env["stock.picking.type"].create({
-                "name": "Donation Picking",
-                "code": "DON",
-                "warehouse_id": cls.warehouse_donation.id,
-                "sequence_code": "DON",
-                "is_donation_picking_type": True,
-            })
-        else:
-            cls.picking_type_donation.is_donation_picking_type = True
+        # Donation destination: the default destination of the donation
+        # delivery operation type must be an `inventory` location of the
+        # donation warehouse with its incoming valuation account set.
+        cls.location_donation = cls.env["stock.location"].create({
+            "name": "Donations",
+            "usage": "inventory",
+            "location_id": cls.warehouse_donation.view_location_id.id,
+            "company_id": cls.company.id,
+            "valuation_in_account_id": cls.account_expense.id,
+        })
+
+        # Picking type donation: a dedicated outgoing type (as the real
+        # "Donations" type of a donation warehouse), not the standard
+        # "Delivery Orders" type that Odoo creates with every warehouse.
+        cls.picking_type_donation = cls.env["stock.picking.type"].create({
+            "name": "Donation Picking",
+            "code": "outgoing",
+            "warehouse_id": cls.warehouse_donation.id,
+            "sequence_code": "DWHDON",
+            "default_location_src_id": cls.warehouse_donation.lot_stock_id.id,
+            "default_location_dest_id": cls.location_donation.id,
+            "is_donation_picking_type": True,
+        })
 
         # Asset data
         cls.asset_account = cls.env["account.account"].create({
