@@ -18,7 +18,7 @@ If it does not run: the documents registered after 20:00 keep showing the previo
 How to revert: not reversible from the data: once fixed, those moves cannot be told apart from the
     rest. Only the moves whose local day did not match invoice_date_display are touched.
 
-Ticket: HD #15992
+Ticket: HD #15954
 """
 
 import logging

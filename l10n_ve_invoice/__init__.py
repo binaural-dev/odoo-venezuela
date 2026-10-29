@@ -11,7 +11,7 @@ def post_init_hook(env):
     # Mismo cálculo que create()/write(). Al instalar no hay usuario del
     # cliente, así que se usa la tz de la compañía (America/Caracas si no
     # tiene). Con NOW() se mezclaba la fecha local con la hora UTC y desde las
-    # 20:00 en UTC-4 quedaba el día anterior (HD #15992).
+    # 20:00 en UTC-4 quedaba el día anterior (HD #15954).
     env.cr.execute("""
         SELECT company_id, invoice_date_display
           FROM account_move

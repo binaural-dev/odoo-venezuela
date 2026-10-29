@@ -8,7 +8,7 @@ from odoo.tests import TransactionCase, tagged
 from odoo.addons.l10n_ve_invoice import post_init_hook
 
 # 2026-09-15 02:30 UTC es todavía 2026-09-14 22:30 en Caracas (UTC-4): la
-# forma exacta de HD #15992, un documento registrado después de las 20:00.
+# forma exacta de HD #15954, un documento registrado después de las 20:00.
 _FROZEN_UTC_NOW = real_datetime(2026, 9, 15, 2, 30, 0)
 
 
@@ -36,7 +36,7 @@ def _frozen():
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
 class TestInvoiceDateDisplayDatetime(TransactionCase):
-    """HD #15992: invoice_date_display_datetime toma día y hora de la misma
+    """HD #15954: invoice_date_display_datetime toma día y hora de la misma
     zona horaria (la del usuario, como context_today) y, a las 22:30 en
     Caracas, no cae en el día anterior."""
 
@@ -45,8 +45,8 @@ class TestInvoiceDateDisplayDatetime(TransactionCase):
         super().setUpClass()
         cls.tz = pytz.timezone("America/Caracas")
         group = cls.env.ref("account.group_account_invoice")
-        cls.user_caracas = cls._create_user("ti_15992_caracas", "America/Caracas", group)
-        cls.user_no_tz = cls._create_user("ti_15992_no_tz", False, group)
+        cls.user_caracas = cls._create_user("ti_15954_caracas", "America/Caracas", group)
+        cls.user_no_tz = cls._create_user("ti_15954_no_tz", False, group)
 
     @classmethod
     def _create_user(cls, login, tz, group):
@@ -133,6 +133,17 @@ class TestInvoiceDateDisplayDatetime(TransactionCase):
             {"move_type": "entry", "invoice_date_display": date(2026, 9, 10)}
         )
         move.write({"invoice_date_display": False})
+        self.assertFalse(move.invoice_date_display_datetime)
+
+    def test_create_empty_date_leaves_datetime_empty(self):
+        """Asiento Diario guardado desde el formulario: el onchange de
+        l10n_ve_accountant manda invoice_date_display=False y la fecha-hora
+        tiene que quedar vacía, no con la de hoy."""
+        with _frozen():
+            move = self._moves_as(self.user_caracas).create(
+                {"move_type": "entry", "invoice_date_display": False}
+            )
+        self.assertFalse(move.invoice_date_display)
         self.assertFalse(move.invoice_date_display_datetime)
 
     def test_post_init_hook_uses_company_tz(self):

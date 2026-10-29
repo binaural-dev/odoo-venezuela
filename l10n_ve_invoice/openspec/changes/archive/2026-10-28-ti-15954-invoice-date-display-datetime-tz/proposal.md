@@ -2,7 +2,7 @@
 
 ## Why
 
-Ticket Helpdesk #15992 (https://binaural.odoo.com/odoo/helpdesk/action-389/15992), reportado por
+Ticket Helpdesk #15954 (https://binaural.odoo.com/odoo/all-tickets/15954), reportado por
 Jumpi Rides.
 
 `invoice_date_display_datetime` se armaba con `fields.Datetime.now()`, que está en UTC, y se le
@@ -35,11 +35,11 @@ la localización, sobre `maintenance-19.0`.
   importar la compañía de los vals en `create()` o de los documentos en `write()`.
 - **La migración y el hook usan la zona horaria de la compañía.** No se conoce el usuario que
   registró cada documento; la de la compañía es la que `l10n_ve_base` da por defecto a los usuarios.
-- **El orden del libro (#15994) va en un PR aparte.**
+- **El orden del libro (#15956) va en un PR aparte.**
 
 ## Non-goals
 
-- Desempate por fecha-hora e `id` en `search_moves()` (HD #15994).
+- Desempate por fecha-hora e `id` en `search_moves()` (HD #15956).
 - `l10n_ve_iot_mf` y `l10n_ve_account_mf` tienen su propio orden del libro y no se modifican.
 
 ## Tests

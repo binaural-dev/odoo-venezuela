@@ -519,7 +519,7 @@ class AccountMove(models.Model):
         ``invoice_date_display``. Sin fecha se toma la de hoy. No se puede
         hacer ``fields.Datetime.now().replace(day=...)``: mezcla la fecha local
         con la hora UTC y, desde las 20:00 en UTC-4, el valor queda en el día
-        anterior (HD #15992).
+        anterior (HD #15954).
         """
         date_value = fields.Date.to_date(date_value) or fields.Date.context_today(self)
         now_local = fields.Datetime.context_timestamp(self, fields.Datetime.now())
@@ -533,10 +533,12 @@ class AccountMove(models.Model):
                 vals["invoice_date_display_datetime"] = (
                     self._get_invoice_date_display_datetime(vals["invoice_date_display"])
                 )
+            elif "invoice_date_display" in vals and not vals.get("invoice_date_display"):
+                vals["invoice_date_display_datetime"] = False
         moves = super().create(vals_list)
 
         for move in moves:
-            if not move.invoice_date_display_datetime:
+            if move.invoice_date_display and not move.invoice_date_display_datetime:
                 move.invoice_date_display_datetime = (
                     self._get_invoice_date_display_datetime(move.invoice_date_display)
                 )
@@ -817,21 +819,25 @@ class AccountMove(models.Model):
         return action
 
     def write(self, vals):
+        changed = self.browse()
         if vals.get("invoice_date_display"):
             # Solo se renueva la hora de los documentos cuya fecha cambia.
             new_date = fields.Date.to_date(vals["invoice_date_display"])
             changed = self.filtered(lambda m: m.invoice_date_display != new_date)
-            if changed and changed != self:
-                (self - changed).write(vals)
-                return changed.write(vals)
             if changed:
-                vals = dict(
-                    vals,
-                    invoice_date_display_datetime=self._get_invoice_date_display_datetime(new_date),
-                )
+                new_datetime = self._get_invoice_date_display_datetime(new_date)
+                if changed == self:
+                    vals = dict(vals, invoice_date_display_datetime=new_datetime)
+                    changed = self.browse()
         elif "invoice_date_display" in vals and not vals.get("invoice_date_display"):
             vals["invoice_date_display_datetime"] = False
         res = super().write(vals)
+        if changed:
+            # Lote mixto: el lote pasa una sola vez por la cadena de write() y
+            # después se escribe solo la hora de los que cambiaron de fecha.
+            super(AccountMove, changed).write(
+                {"invoice_date_display_datetime": new_datetime}
+            )
         for move in self:
             if move.is_purchase_international and move.declaration_unique_of_customs:
                 if move.correlative != move.declaration_unique_of_customs:
