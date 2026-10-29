@@ -161,16 +161,22 @@ def _rebuild_partials(cr, params, side):
     _logger.info("  %s-side partials rebuilt: %s", side, cr.rowcount)
 
 
-def _refresh_partial_foreign_amount(cr):
+def _refresh_partial_foreign_amount(cr, params):
     cr.execute("""
         UPDATE account_partial_reconcile p
            SET foreign_amount = LEAST(COALESCE(p.debit_foreign_amount_currency, 0),
                                       COALESCE(p.credit_foreign_amount_currency, 0))
          WHERE (p.debit_move_id IN (SELECT id FROM l10n_ve_vb_lines)
                 OR p.credit_move_id IN (SELECT id FROM l10n_ve_vb_lines))
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM account_move_line l
+                 JOIN account_move m ON m.id = l.move_id
+                WHERE l.id IN (p.debit_move_id, p.credit_move_id)
+                  AND NOT (""" + LOCK + """))
            AND p.foreign_amount IS DISTINCT FROM LEAST(COALESCE(p.debit_foreign_amount_currency, 0),
                                                        COALESCE(p.credit_foreign_amount_currency, 0))
-    """)
+    """, params)
     _logger.info("  partial foreign_amount refreshed: %s", cr.rowcount)
 
 
@@ -226,6 +232,6 @@ def migrate(cr, version):
         _fix_payment_terms(cr, params)
         _rebuild_partials(cr, params, 'debit')
         _rebuild_partials(cr, params, 'credit')
-        _refresh_partial_foreign_amount(cr)
+        _refresh_partial_foreign_amount(cr, params)
         _recompute_residuals(cr, params)
         cr.execute("TRUNCATE l10n_ve_vb_lines")

@@ -111,6 +111,12 @@ def _refresh_partial_foreign_amount(cr, params):
                                       COALESCE(p.credit_foreign_amount_currency, 0))
          WHERE (p.debit_move_id IN (SELECT id FROM l10n_ve_fb_null_lines)
                 OR p.credit_move_id IN (SELECT id FROM l10n_ve_fb_null_lines))
+           AND NOT EXISTS (
+               SELECT 1
+                 FROM account_move_line l
+                 JOIN account_move m ON m.id = l.move_id
+                WHERE l.id IN (p.debit_move_id, p.credit_move_id)
+                  AND NOT (""" + LOCK + """))
            AND p.foreign_amount IS DISTINCT FROM LEAST(COALESCE(p.debit_foreign_amount_currency, 0),
                                                        COALESCE(p.credit_foreign_amount_currency, 0))
     """, params)
@@ -126,6 +132,7 @@ def _recompute_residuals(cr, params):
               FROM account_move_line l
               JOIN account_move m ON m.id = l.move_id
              WHERE m.company_id = %(company_id)s
+               AND """ + LOCK + """
                AND (l.id IN (SELECT id FROM l10n_ve_fb_null_lines)
                     OR l.foreign_amount_residual IS NULL
                     OR l.foreign_amount_residual_currency IS NULL)

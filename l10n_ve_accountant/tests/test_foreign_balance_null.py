@@ -32,10 +32,10 @@ class TestForeignBalanceNull(TransactionCase):
             "code": code, "name": name, "account_type": atype, "company_id": cls.company.id,
         })
 
-    def _entry(self, amount=100.0, **line_extra):
+    def _entry(self, amount=100.0, journal=None, **line_extra):
         return self.env["account.move"].create({
             "move_type": "entry",
-            "journal_id": self.journal.id,
+            "journal_id": (journal or self.journal).id,
             "date": fields.Date.today(),
             "line_ids": [
                 Command.create(dict({"account_id": self.acc_a.id, "debit": amount, "credit": 0.0}, **line_extra)),
@@ -72,8 +72,10 @@ class TestForeignBalanceNull(TransactionCase):
             "name": "Exchange Null", "code": "XNUL", "type": "general", "company_id": self.company.id,
         })
         self.company.currency_exchange_journal_id = exchange
-        move = self._entry()
-        move.journal_id = exchange
+        # Created straight in the exchange journal: the compute only skips the line
+        # when it is evaluated for the first time with that journal.
+        move = self._entry(journal=exchange)
+        self.assertEqual(move.journal_id, exchange)
         self.assertEqual(self._null_lines(move), [])
 
     def test_foreign_balance_without_foreign_values(self):

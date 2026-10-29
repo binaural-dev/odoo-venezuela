@@ -143,3 +143,51 @@ class TestMigrationNullForeign(TransactionCase):
         first = self._row(line.id)
         self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
         self.assertEqual(self._row(line.id), first)
+
+    def test_66_rebuilds_several_partials_pro_rata(self):
+        """A bill paid in two instalments: each partial gets its share, the last absorbs the rounding."""
+        _, debit_line = self._entry(True, amount=300.0)
+        _, credit_1 = self._entry(False, amount=100.0)
+        _, credit_2 = self._entry(False, amount=200.0)
+        (debit_line + credit_1 + credit_2).reconcile()
+        partials = self.env["account.partial.reconcile"].search(
+            [("debit_move_id", "=", debit_line.id)], order="amount, id")
+        self.assertEqual(len(partials), 2)
+        self._sql("""UPDATE account_move_line SET foreign_balance = NULL,
+                      foreign_amount_residual = NULL, foreign_amount_residual_currency = NULL
+                WHERE id = %s""", [debit_line.id])
+        self._sql("""UPDATE account_partial_reconcile SET credit_foreign_amount_currency = 99.0
+                WHERE id IN %s""", [tuple(partials.ids)])
+        self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
+        self.env.invalidate_all()
+        partials = partials.browse(partials.ids).sorted(lambda p: (p.amount, p.id))
+        self.assertAlmostEqual(partials[0].credit_foreign_amount_currency, 2.0, places=2)  # 100 Bs / 50
+        self.assertAlmostEqual(partials[1].credit_foreign_amount_currency, 4.0, places=2)  # 200 Bs / 50
+        self.assertAlmostEqual(sum(partials.mapped("credit_foreign_amount_currency")), 6.0, places=2)
+        self.assertAlmostEqual(self._row(debit_line.id)[3], 0.0, places=2)
+
+    def test_66_does_not_touch_partial_whose_other_side_is_locked(self):
+        move_open, debit_line = self._entry(True)
+        move_locked, credit_line = self._entry(False)
+        (debit_line + credit_line).reconcile()
+        partial = self.env["account.partial.reconcile"].search(
+            [("debit_move_id", "=", debit_line.id)])
+        locked_date = fields.Date.subtract(fields.Date.today(), days=10)
+        self._sql("UPDATE account_move SET date = %s WHERE id = %s", [locked_date, move_locked.id])
+        self._sql("UPDATE account_move_line SET foreign_balance = NULL WHERE id = %s", [debit_line.id])
+        self._sql("UPDATE account_partial_reconcile SET foreign_amount = 99.0 WHERE id = %s", [partial.id])
+        self.company.tax_lock_date = locked_date
+        self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
+        self.env.cr.execute("SELECT foreign_amount FROM account_partial_reconcile WHERE id = %s", [partial.id])
+        self.assertEqual(self.env.cr.fetchone()[0], 99.0)
+
+    def test_66_residual_of_null_line_in_locked_period_is_not_recomputed(self):
+        """A line with a NULL residual that was never in the repaired set is still left alone if locked."""
+        move, line = self._entry(True)
+        self._sql("""UPDATE account_move_line SET foreign_amount_residual = NULL,
+                      foreign_amount_residual_currency = NULL WHERE id = %s""", [line.id])
+        self.company.tax_lock_date = fields.Date.today()
+        self.mig66null.migrate(self.env.cr, "17.0.0.0.65")
+        self.env.cr.execute(
+            "SELECT foreign_amount_residual FROM account_move_line WHERE id = %s", [line.id])
+        self.assertIsNone(self.env.cr.fetchone()[0])
