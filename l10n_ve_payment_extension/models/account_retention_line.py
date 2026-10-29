@@ -1,5 +1,6 @@
 from odoo import models, fields, api, _
 from odoo.exceptions import UserError, ValidationError
+from odoo.tools import float_is_zero
 import logging
 _logger = logging.getLogger(__name__)
 
@@ -290,11 +291,12 @@ class AccountRetentionLine(models.Model):
                             record.foreign_invoice_amount = record.foreign_invoice_amount or 0
 
 
-    @api.depends("invoice_amount", "foreign_invoice_amount")
+    @api.depends("invoice_amount", "foreign_invoice_amount", "foreign_currency_rate")
     def _compute_amounts(self):
         # Both fields must be assigned here on every record, or Odoo resets the
         # untouched one to 0 on recompute. _origin preserves the persisted value.
         base_currency_is_vef = self.env.company.currency_id == self.env.ref("base.VEF")
+        rate_digits = self.env["decimal.precision"].precision_get("Tasa")
         for line in self:
             if not line._origin:
                 # Brand-new (unsaved) line: there is no persisted value to
@@ -316,9 +318,9 @@ class AccountRetentionLine(models.Model):
                 if origin_invoice_amount > 0:
                     # foreign_currency_rate is Bs per USD (move.foreign_rate): Bs -> USD divides.
                     line.foreign_invoice_amount = (
-                        origin_invoice_amount / line.foreign_currency_rate
-                        if line.foreign_currency_rate
-                        else origin_foreign_invoice_amount
+                        origin_foreign_invoice_amount
+                        if float_is_zero(line.foreign_currency_rate, precision_digits=rate_digits)
+                        else origin_invoice_amount / line.foreign_currency_rate
                     )
                 else:
                     line.foreign_invoice_amount = origin_foreign_invoice_amount
@@ -381,7 +383,9 @@ class AccountRetentionLine(models.Model):
             )
 
         for record in islr_supplier_retention_lines:
-            foreign_rate = record.move_id.foreign_rate
+            # Use the rate snapshot stored on the line (the one _compute_amounts uses),
+            # so a later rate change on the invoice doesn't rewrite posted retentions.
+            foreign_rate = record.foreign_currency_rate or record.move_id.foreign_rate
             if not foreign_rate:
                 foreign_rate = 1
             if not base_currency_is_vef:

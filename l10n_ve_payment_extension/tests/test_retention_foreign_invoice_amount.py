@@ -81,7 +81,7 @@ class TestRetentionForeignInvoiceAmount(TransactionCase):
         not the raw Bs figure (19.29 Bs made a 0.38 USD retention come out as 18.91)."""
         draft = self._islr_draft(19.29)
         draft._compute_retention_amount()
-        rate = self.invoice.foreign_rate or 1
+        rate = draft.foreign_currency_rate
         self.assertAlmostEqual(draft.retention_amount, 10000.0 * 0.03 - 19.29, places=2)
         self.assertAlmostEqual(
             draft.foreign_retention_amount, 12.70 * 0.03 - 19.29 / rate, places=2
@@ -95,3 +95,19 @@ class TestRetentionForeignInvoiceAmount(TransactionCase):
         draft = self._islr_draft(0.0)
         draft._compute_retention_amount()
         self.assertAlmostEqual(draft.foreign_retention_amount, 12.70 * 0.03, places=2)
+
+    def test_depends_cover_line_rate(self):
+        """The stored computes must be recomputed when the line rate changes."""
+        Line = self.env["account.retention.line"]
+        self.assertIn("foreign_currency_rate", Line._fields["foreign_invoice_amount"].get_depends(Line)[0])
+        self.assertIn("foreign_currency_rate", Line._fields["foreign_retention_amount"].get_depends(Line)[0])
+
+    def test_islr_uses_line_rate_not_invoice_rate(self):
+        """A later change of the invoice rate must not alter the retention: the
+        conversion uses the rate stored on the line."""
+        draft = self._islr_draft(19.29)
+        self.invoice.foreign_rate = 1000.0
+        draft._compute_retention_amount()
+        self.assertAlmostEqual(
+            draft.foreign_retention_amount, 12.70 * 0.03 - 19.29 / 787.52, places=2
+        )
