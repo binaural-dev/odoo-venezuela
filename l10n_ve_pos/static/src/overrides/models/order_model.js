@@ -46,7 +46,8 @@ patch(Order.prototype, {
       return this.pos.config.foreign_inverse_rate;
     }
     if (this.pos.currency.name == "USD") {
-      return this.pos.config.foreign_rate;
+      // foreign_rate is display-only (2 decimals); use foreign_inverse_rate for calculations.
+      return this.pos.config.foreign_inverse_rate;
     }
   },
   get_display_rate() {
