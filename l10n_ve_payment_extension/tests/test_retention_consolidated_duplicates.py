@@ -122,7 +122,7 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
                 with self.assertRaises(UserError) as e:
                     current._check_duplicate_invoices_all_states()
                 self.assertIn(other.display_name, str(e.exception))
-                other.state = "cancel"
+                (other | current).state = "cancel"
 
     def test_check_ignores_cancelled_other_type_and_same_retention(self):
         inv = self._post_invoice()
