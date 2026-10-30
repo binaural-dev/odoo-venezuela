@@ -619,13 +619,10 @@ class TestAccountMoveCore(TransactionCase):
             ],
         })
 
-    def test_26_compute_rate_purchase_date_only_change(self):
-        """_compute_rate: para documentos que no son de venta (is_sale=False),
-        `_compute_rate_for_documents` busca la tasa con `date` (fecha contable),
-        no con `invoice_date`. Antes del fix, `_compute_rate` solo dependía de
-        `invoice_date`, así que cambiar únicamente `date` nunca disparaba el
-        recompute y `foreign_rate` quedaba obsoleto. Este test comprueba la
-        solución: cambiar solo `date` SÍ debe actualizar `foreign_rate`."""
+    def test_26_compute_rate_purchase_follows_invoice_date(self):
+        """_compute_rate: igual que en ventas, en compras la tasa sale de
+        `invoice_date` (Rate Date). Cambiar solo `date` no la mueve; cambiar
+        `invoice_date` sí."""
         old_date = fields.Date.to_date("2025-01-15")
         new_date = fields.Date.to_date("2025-06-15")
         self._set_usd_rate(old_date, 50.0)
@@ -636,16 +633,18 @@ class TestAccountMoveCore(TransactionCase):
         )
         self.assertAlmostEqual(invoice.foreign_rate, 50.0, places=4)
 
-        # Cambia SOLO `date`, sin tocar `invoice_date`.
         invoice.write({"date": new_date})
         invoice.invalidate_recordset()
+        self.assertAlmostEqual(
+            invoice.foreign_rate, 50.0, places=4,
+            msg="Cambiar solo `date` no debe mover la tasa de una compra.",
+        )
 
-        self.assertEqual(invoice.invoice_date, old_date)
-        self.assertEqual(invoice.date, new_date)
+        invoice.write({"invoice_date": new_date})
+        invoice.invalidate_recordset()
         self.assertAlmostEqual(
             invoice.foreign_rate, 150.0, places=4,
-            msg="foreign_rate debe seguir la nueva `date`, no quedar congelado "
-                "con la tasa de la `invoice_date` original.",
+            msg="La tasa de una compra debe seguir a `invoice_date`.",
         )
 
     def test_27_compute_rate_sale_invoice_date_change_not_regressed(self):
