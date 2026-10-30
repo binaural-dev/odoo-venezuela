@@ -16,15 +16,6 @@ class IrActionsReport(models.Model):
                     "Only posted documents can be printed."
                 ))
             res_ids = valid.ids
-        if report and res_ids and report.model == 'sale.order':
-            docs = self.env['sale.order'].browse(res_ids)
-            valid = docs.filtered(lambda d: d.state != 'draft')
-            if not valid:
-                raise UserError(_(
-                    "None of the selected sale orders are confirmed.\n"
-                    "Only non-draft orders can be printed."
-                ))
-            res_ids = valid.ids
         return super()._render_qweb_pdf_prepare_streams(report_ref, data, res_ids=res_ids)
 
     def _render_qweb_html(self, report_ref, docids, data=None):
@@ -41,15 +32,6 @@ class IrActionsReport(models.Model):
                 raise UserError(_(
                     "None of the selected documents are posted.\n"
                     "Only posted documents can be printed."
-                ))
-            return super()._render_qweb_html(report_ref, valid.ids, data=data)
-        if model == 'sale.order' and ids:
-            docs = self.env[model].browse(ids)
-            valid = docs.filtered(lambda d: d.state != 'draft')
-            if not valid:
-                raise UserError(_(
-                    "None of the selected sale orders are confirmed.\n"
-                    "Only non-draft orders can be printed."
                 ))
             return super()._render_qweb_html(report_ref, valid.ids, data=data)
         return super()._render_qweb_html(report_ref, docids, data=data)

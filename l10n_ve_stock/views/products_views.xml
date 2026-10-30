@@ -55,9 +55,25 @@
                 <field name="liters_per_unit" groups="l10n_ve_stock.group_block_liters_per_unit"/>
             </xpath>
             <xpath expr="//group[@name='inventory']" position="inside">
+                <field name="show_physical_locations" invisible="1"/>
                 <group>
-                    <field name="physical_location_id" options="{'no_create': True}"/>
+                    <field name="physical_locations_ids" 
+                        widget="many2many_tags" 
+                        options="{'no_create': True}" 
+                        placeholder="Locations..."
+                        domain="[('location_id', '!=', False), ('child_ids', '=', False)]"
+                        invisible="not show_physical_locations"/>
+                    <field name="physical_location_id" options="{'no_create': True}"
+                        invisible="not show_physical_locations"/>
                 </group>
+                <field name="show_physical_relocation_reserved_warning" invisible="1"/>
+                <div class="alert alert-info mb-0" role="alert"
+                    invisible="not show_physical_relocation_reserved_warning">
+                    Some of the stock in the location(s) being replaced is reserved. The
+                    automatic internal transfer will only move the freely available
+                    quantity to the new location; if there is no available quantity, no
+                    transfer will be generated.
+                </div>
             </xpath>
             <xpath expr="//field[@name='categ_id']/following-sibling::field[@name='company_id']" position="before">
                 <field name="can_edit_company_id" invisible="1"/>

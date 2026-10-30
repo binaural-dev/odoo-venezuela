@@ -1,7 +1,7 @@
 <templates id="template" xml:space="preserve">
     <t t-name="PaymentScreenDue" t-inherit="point_of_sale.PaymentScreenDue" t-inherit-mode="extension">
         <xpath expr="//section[hasclass('paymentlines-container')]/div[hasclass('total')]" position="after">
-            <div class="total text-center text-muted fs-3">
+            <div class="total text-center text-muted fs-2">
                 <t t-out="foreignTotalDueText"/>
             </div>
             <!-- Solo mostrar botón en reembolsos -->

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates id="template" xml:space="preserve">
+    <t t-name="l10n_ve_pos_self_order.KioskStepper">
+        <div t-if="selfOrder.kioskMode and step" class="o_kiosk_stepper d-flex align-items-center justify-content-center w-100">
+            <t t-foreach="steps" t-as="s" t-key="s.number">
+                <div t-attf-class="o_kiosk_stepper_step d-flex align-items-center gap-2 {{ stepState(s.number) }}">
+                    <span class="o_kiosk_stepper_circle d-flex align-items-center justify-content-center rounded-circle flex-shrink-0">
+                        <i t-if="stepState(s.number) === 'done'" class="fa fa-check"/>
+                        <t t-else="" t-esc="s.number"/>
+                    </span>
+                    <span class="o_kiosk_stepper_label" t-esc="s.label"/>
+                </div>
+                <div t-if="s.number &lt; 3" t-attf-class="o_kiosk_stepper_line {{ stepState(s.number) === 'done' ? 'done' : '' }}"/>
+            </t>
+        </div>
+    </t>
+</templates>
