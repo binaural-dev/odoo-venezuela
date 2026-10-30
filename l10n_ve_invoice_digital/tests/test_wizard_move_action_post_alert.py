@@ -180,3 +180,28 @@ class TestMoveActionPostAlertWizard(TransactionCase):
         wizard.action_confirm()
         self.assertEqual(inv.state, "posted")
         self.assertEqual(inv.tfhka_digitalization_state, "none")
+
+    def test_07_wizard_invalid_sales_series_excludes_from_queue_without_blocking_post(self):
+        # Hallazgo adicional de la ronda 3 de revision:
+        # _tfhka_get_document_type_and_series() puede lanzar UserError por su
+        # cuenta (serie correlativa de venta activa sin prefijo configurado
+        # en el diario), no solo devolver un tipo vacio. Antes de este fix,
+        # _tfhka_is_eligible_for_digitalization() dejaba propagar ese error
+        # desde action_confirm(), abortando el posteo completo de una
+        # factura normal en vez de solo excluirla de la cola.
+        self.company.group_sales_invoicing_series = True
+        self.journal.sequence_id.prefix = ""
+        control_number_series = self.env['ir.sequence'].create({
+            'name': 'Numero de control de serie sin prefijo',
+            'code': 'series.invoice.correlative',
+            'padding': 5,
+        })
+        self.journal.series_correlative_sequence_id = control_number_series.id
+
+        inv = self._create_invoice(post=False)
+        wizard = self.env['move.action.post.alert.wizard'].create({'move_id': inv.id})
+
+        wizard.action_confirm()
+
+        self.assertEqual(inv.state, "posted")
+        self.assertEqual(inv.tfhka_digitalization_state, "none")
