@@ -26,7 +26,7 @@ class TestAccountMoveRemaining(RetentionTestCommon):
         action = inv.with_context(retention_type="islr").action_view_retention()
         self.assertEqual(action["res_model"], "account.retention")
         self.assertEqual(action["res_id"], retention.id)
-        self.assertEqual(action["view_mode"], "form")
+        self.assertEqual([v[1] for v in action["views"]], ["form"])
         _logger.info("========= test_01 passed =========")
 
     def test_02_action_view_retention_municipal_multi(self):
@@ -56,7 +56,7 @@ class TestAccountMoveRemaining(RetentionTestCommon):
         })
         action = inv.with_context(retention_type="municipal").action_view_retention()
         self.assertEqual(action["res_model"], "account.retention")
-        self.assertEqual(action["view_mode"], "list,form")
+        self.assertEqual([v[1] for v in action["views"]], ["list", "form"])
         self.assertIn(ret1.id, action["domain"][0][2])
         self.assertIn(ret2.id, action["domain"][0][2])
         _logger.info("========= test_02 passed =========")
