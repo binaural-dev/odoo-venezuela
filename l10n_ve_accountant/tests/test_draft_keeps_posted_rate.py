@@ -48,16 +48,18 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
         })
         self.invoice.with_context(move_action_post_alert=True).action_post()
 
-    def _rates(self):
+    def _rates(self, move=None):
+        move = move or self.invoice
         return (
-            self.invoice.foreign_rate,
-            self.invoice.foreign_inverse_rate,
-            self.invoice.invoice_currency_rate,
-            self.invoice.move_currency_to_company_currency_rate,
+            move.foreign_rate,
+            move.foreign_inverse_rate,
+            move.invoice_currency_rate,
+            move.move_currency_to_company_currency_rate,
         )
 
-    def _balances(self):
-        return {line.id: (line.balance, line.amount_currency) for line in self.invoice.line_ids}
+    def _balances(self, move=None):
+        move = move or self.invoice
+        return {line.id: (line.balance, line.amount_currency) for line in move.line_ids}
 
     def _as_new_request(self):
         """The 'already distributed' marks live in the cursor's cache for the
@@ -180,7 +182,7 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
         self.assertAlmostEqual(self.invoice.foreign_rate, 870.0, places=4)
         self.assertAlmostEqual(self.invoice.move_currency_to_company_currency_rate, 870.0, places=4)
 
-    def _purchase_invoice_reset_to_draft(self):
+    def _posted_purchase_invoice(self):
         journal = self.env["account.journal"].sudo().create({
             "name": "Compras tasa", "type": "purchase", "code": "CMPR",
             "company_id": self.company.id,
@@ -204,6 +206,10 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
             })],
         })
         bill.with_context(move_action_post_alert=True).action_post()
+        return bill
+
+    def _purchase_invoice_reset_to_draft(self):
+        bill = self._posted_purchase_invoice()
         bill.button_draft()
         self._as_new_request()
         return bill
@@ -220,6 +226,87 @@ class TestDraftKeepsPostedRate(TestIndexedPayments):
 
         self.assertEqual(bill.invoice_date, other_day)
         self.assertAlmostEqual(bill.foreign_rate, 870.0, places=4)
+
+    def test_reset_to_draft_with_reconciled_payment_keeps_posted_rate(self):
+        """Con un pago conciliado, restablecer a borrador tras editar la tasa
+        del día no falla ni recalcula las líneas con la tasa nueva."""
+        self._register_payment(
+            self.invoice, self.currency_usd, indexed_default=True
+        )._create_payments()
+        before, rates_before = self._balances(), self._rates()
+        self._set_rate(self.currency_usd, self.invoice_date, NEW_RATE)
+        self._as_new_request()
+
+        self.invoice.button_draft()  # must not raise "The entry is not balanced."
+
+        self.assertEqual(self.invoice.state, "draft")
+        self.assertEqual(self._rates(), rates_before)
+        self.assertEqual(self._balances(), before)
+
+    def test_reset_to_draft_with_credit_note_keeps_posted_rate(self):
+        """Con una nota de crédito conciliada, la factura conserva su tasa."""
+        today = fields.Date.context_today(self.invoice)
+        self._set_rate(self.currency_usd, today, POSTED_RATE)
+        with Form(
+            self.env["account.move.reversal"].with_context(
+                active_model="account.move", active_ids=self.invoice.ids
+            )
+        ) as wizard:
+            wizard.date = today
+        credit_note = self.env["account.move"].browse(
+            wizard.record.refund_moves()["res_id"]
+        )
+        credit_note.action_post()
+        before, rates_before = self._balances(), self._rates()
+        self._set_rate(self.currency_usd, self.invoice_date, NEW_RATE)
+        self._as_new_request()
+
+        self.invoice.button_draft()
+
+        self.assertEqual(self.invoice.state, "draft")
+        self.assertEqual(self._rates(), rates_before)
+        self.assertEqual(self._balances(), before)
+
+    def test_purchase_reset_to_draft_with_reconciled_payment_keeps_posted_rate(self):
+        """Proveedores: con un pago normal conciliado (sin retenciones),
+        restablecer a borrador tras editar la tasa del día conserva tasas y
+        balances."""
+        bill = self._posted_purchase_invoice()
+        self._register_payment(
+            bill, self.currency_usd, indexed_default=True
+        )._create_payments()
+        before, rates_before = self._balances(bill), self._rates(bill)
+        self._set_rate(self.currency_usd, self.invoice_date, NEW_RATE)
+        self._as_new_request()
+
+        bill.button_draft()  # must not raise "The entry is not balanced."
+
+        self.assertEqual(bill.state, "draft")
+        self.assertEqual(self._rates(bill), rates_before)
+        self.assertEqual(self._balances(bill), before)
+
+    def test_purchase_reset_to_draft_with_credit_note_keeps_posted_rate(self):
+        """Proveedores: con una nota de crédito conciliada, la factura
+        conserva su tasa al restablecerla a borrador."""
+        bill = self._posted_purchase_invoice()
+        today = fields.Date.context_today(bill)
+        self._set_rate(self.currency_usd, today, POSTED_RATE)
+        with Form(
+            self.env["account.move.reversal"].with_context(
+                active_model="account.move", active_ids=bill.ids
+            )
+        ) as wizard:
+            wizard.date = today
+        self.env["account.move"].browse(wizard.record.refund_moves()["res_id"]).action_post()
+        before, rates_before = self._balances(bill), self._rates(bill)
+        self._set_rate(self.currency_usd, self.invoice_date, NEW_RATE)
+        self._as_new_request()
+
+        bill.button_draft()
+
+        self.assertEqual(bill.state, "draft")
+        self.assertEqual(self._rates(bill), rates_before)
+        self.assertEqual(self._balances(bill), before)
 
     def test_rewriting_same_date_on_posted_invoice_still_raises(self):
         """La guarda no aplica a un documento contabilizado: core sigue
