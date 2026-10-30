@@ -1,0 +1,20 @@
+<odoo>
+
+    <!-- Functional gate for the partial-application widget (js_assign_outstanding_line)
+         and, per its `groups` attribute, for the "Pagos Parciales" section in
+         Binaural Settings. Users outside this group get the unmodified
+         l10n_ve_igtf behavior (full-residual reconciliation, no popover);
+         see account_move.py and account_payment_field_partial.js. -->
+    <record id="group_partial_payment_apply" model="res.groups">
+        <field name="name">Can apply partial payments</field>
+        <field name="privilege_id" ref="account.res_groups_privilege_accounting"/>
+    </record>
+
+    <!-- Granted by default to Accounting Administrators (T1 scope, section
+         6.13). Appends to the core group's implied_ids instead of touching
+         its other fields. -->
+    <record id="account.group_account_manager" model="res.groups">
+        <field name="implied_ids" eval="[(4, ref('group_partial_payment_apply'))]"/>
+    </record>
+
+</odoo>
