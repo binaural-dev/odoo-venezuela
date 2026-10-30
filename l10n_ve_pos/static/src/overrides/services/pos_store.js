@@ -21,6 +21,34 @@ patch(PosStore.prototype, {
     return context;
   },
 
+  /**
+   * "Permitir crear productos" (allow_product_creation_in_pos), apagado por
+   * defecto. Solo un true explícito la enciende: con la sesión abierta antes
+   * de actualizar el módulo, la caja sale de la caché del PdV sin el campo
+   * (undefined) hasta "Volver a cargar datos", y en la base ya vale false.
+   */
+  get isProductCreationAllowed() {
+    return this.config.allow_product_creation_in_pos === true;
+  },
+
+  // El core muestra "Crear producto" del menú según este getter.
+  get hasProductCreationAccess() {
+    return this.isProductCreationAllowed && super.hasProductCreationAccess;
+  },
+
+  /**
+   * editProduct() sin producto abre el formulario de producto nuevo: lo usan
+   * "Crear producto" del menú y "Crear manualmente" de la pantalla de
+   * productos vacía. Con la creación apagada no se abre; editar un producto
+   * existente no cambia.
+   */
+  async editProduct(product) {
+    if (!product && !this.isProductCreationAllowed) {
+      return;
+    }
+    return await super.editProduct(...arguments);
+  },
+
   async pay() {
     if (!(await this._checkOrderBeforePayment(this.getOrder()))) {
       return;

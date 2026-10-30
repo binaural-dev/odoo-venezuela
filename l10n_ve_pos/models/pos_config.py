@@ -35,6 +35,11 @@ class PosConfig(models.Model):
         help="Activate product entry with barcode in strict mode"
     )
     validate_phone_in_pos = fields.Boolean(default=False)
+    allow_product_creation_in_pos = fields.Boolean(
+        "Allow product creation",
+        default=False,
+        help="Allow creating products from the PoS screen",
+    )
 
     @api.depends("foreign_currency_id", "foreign_inverse_rate", "foreign_rate")
     def _compute_rate(self):
