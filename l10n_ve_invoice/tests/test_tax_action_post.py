@@ -1,10 +1,12 @@
 
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
+
+from .common import RateSeedMixin
 from odoo.exceptions import ValidationError
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestInvoiceTaxConstraint(TransactionCase):
+class TestInvoiceTaxConstraint(RateSeedMixin, TransactionCase):
     def setUp(self):
         super(TestInvoiceTaxConstraint, self).setUp()
         self.company = self.env.ref("base.main_company")
@@ -17,6 +19,7 @@ class TestInvoiceTaxConstraint(TransactionCase):
                 "foreign_currency_id": self.currency_vef.id,
             }
         )
+        self._seed_foreign_rates(fields.Date.today())
 
         self.partner = self.env["res.partner"].create({"name": "Test customer"})
         

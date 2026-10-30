@@ -1,9 +1,11 @@
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
+from .common import RateSeedMixin
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestAccountDebitNote(TransactionCase):
+class TestAccountDebitNote(RateSeedMixin, TransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.ref("base.main_company")
@@ -11,6 +13,7 @@ class TestAccountDebitNote(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.company.currency_id = self.currency_vef
         self.company.foreign_currency_id = self.currency_usd
+        self._seed_foreign_rates(fields.Date.today())
 
         self.partner = self.env["res.partner"].create({"name": "Test DN Partner"})
 
