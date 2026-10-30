@@ -54,9 +54,7 @@ guessed):
   already used in ``l10n_ve_accountant/tests/test_foreign_balance.py``.
 """
 
-from datetime import date, timedelta
-
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -71,6 +69,10 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
                 "name": "Test VE Kiosk Invoice Foreign Co",
                 "currency_id": usd.id,
                 "country_id": cls.env.ref("base.ve").id,
+                # Not under test here, and on by default: it needs the
+                # exchange journal and gain/loss accounts to reconcile the
+                # payment (l10n_ve_accountant/models/account_move_line.py).
+                "l10n_ve_use_foreign_exchange_diff": False,
             }
         )
         vef = (
@@ -110,10 +112,13 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
         # of its own) — see ``l10n_ve_pos/tests/
         # test_pos_config_convert_precision.py::_set_bs_per_usd_rate`` for
         # the same reasoning, applied there across many rates.
+        #
+        # Dated today: ``compute_rate`` (``l10n_ve_rate``) only accepts a row
+        # of the exact date it is asked for (the order's and the invoice's).
         cls.bs_per_usd_rate = 36.5
         cls.env["res.currency.rate"].create(
             {
-                "name": "2026-01-01",
+                "name": fields.Date.today(),
                 "currency_id": cls.foreign_currency.id,
                 "rate": cls.bs_per_usd_rate,
                 "company_id": cls.company.id,
@@ -292,33 +297,30 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
         )
 
     def _set_bs_per_usd_rate(self, bs_per_usd):
-        """Add a new, later-dated VEF rate row so a single test can sweep
-        several rates, meaning "1 USD = bs_per_usd VEF".
+        """Set the VEF rate in effect to mean "1 USD = bs_per_usd VEF", so a
+        single test can sweep several rates.
 
         Sets the PLAIN ``rate`` field (not ``inverse_company_rate``) — see
         ``l10n_ve_pos/tests/test_pos_config_convert_precision.py::
-        _set_bs_per_usd_rate`` for why. Creates a FRESH row (never
-        overwrites the ``setUpClass`` one in place): ``compute_rate``
-        always picks the LATEST row with ``name <= today``, so a strictly
-        later date makes each new row the one in effect without ever
-        touching the previous one.
+        _set_bs_per_usd_rate`` for why — on the row dated today:
+        ``compute_rate`` (``l10n_ve_rate``) only accepts a row of the exact
+        date it is asked for. Each call overwrites the ``setUpClass`` row
+        (one rate per currency and day).
 
         Also invalidates ``self.config``'s cache: ``pos.config.
         _compute_rate``'s ``@api.depends`` does NOT include
         ``res.currency.rate``, so ``foreign_rate``/``foreign_inverse_rate``
         would otherwise keep returning the FIRST rate ever read for the
-        rest of the test method regardless of any new row created
-        afterwards (verified empirically — see the sibling file's
-        docstring for the full story)."""
-        self._rate_seq = getattr(self, "_rate_seq", 0) + 1
-        self.env["res.currency.rate"].create(
-            {
-                "name": date(2026, 1, 1) + timedelta(days=self._rate_seq),
-                "currency_id": self.foreign_currency.id,
-                "company_id": self.company.id,
-                "rate": bs_per_usd,
-            }
-        )
+        rest of the test method regardless of any later change (verified
+        empirically — see the sibling file's docstring for the full
+        story)."""
+        self.env["res.currency.rate"].search(
+            [
+                ("name", "=", fields.Date.today()),
+                ("currency_id", "=", self.foreign_currency.id),
+                ("company_id", "=", self.company.id),
+            ]
+        ).rate = bs_per_usd
         self.config.invalidate_recordset(["foreign_rate", "foreign_inverse_rate"])
 
     def _create_kiosk_order(self, *, qty=1.0, price_unit=1.0):
@@ -474,13 +476,15 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
         self.assertEqual(line.foreign_debit, 0.0)
 
     def test_kiosk_invoice_foreign_rate_pinned_from_order_not_recomputed(self):
-        """``l10n_ve_pos._prepare_invoice_vals`` pins ``foreign_rate`` AND
-        ``foreign_inverse_rate`` on the invoice to the SAME single
-        ``pos.order.foreign_currency_rate`` value, with
-        ``manually_set_rate=True`` — this must survive posting untouched
-        (``account.move._compute_rate_for_documents`` skips manually-set
-        rates), otherwise the invoice could silently use a different rate
-        than what the Kiosk customer was charged against."""
+        """``l10n_ve_pos._prepare_invoice_vals`` pins the invoice rates to the
+        order's ``pos.order.foreign_currency_rate``, with
+        ``manually_set_rate=True`` (``pos.config._get_move_foreign_rate_vals``):
+        ``foreign_inverse_rate`` is that multiplier and ``foreign_rate`` its
+        inverse, the same pair ``l10n_ve_rate`` gives every other move. This
+        must survive posting untouched (``account.move.
+        _compute_rate_for_documents`` skips manually-set rates), otherwise the
+        invoice could silently use a different rate than what the Kiosk
+        customer was charged against."""
         order = self._create_kiosk_order(qty=1.0, price_unit=1.0)
         invoice = self._pay_and_invoice(order)
 
@@ -491,10 +495,10 @@ class TestKioskInvoiceForeignDebitCredit(TransactionCase):
             "test setup must exercise a real conversion rate",
         )
         self.assertAlmostEqual(
-            invoice.foreign_rate, order.foreign_currency_rate, places=6
+            invoice.foreign_inverse_rate, order.foreign_currency_rate, places=6
         )
         self.assertAlmostEqual(
-            invoice.foreign_inverse_rate, order.foreign_currency_rate, places=6
+            invoice.foreign_rate, 1 / order.foreign_currency_rate, places=6
         )
 
     def test_kiosk_invoice_foreign_balance_squares(self):
