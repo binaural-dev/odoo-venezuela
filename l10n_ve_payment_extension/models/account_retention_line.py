@@ -342,6 +342,7 @@ class AccountRetentionLine(models.Model):
         "related_amount_subtract_fees",
         "foreign_currency_rate",
         "move_id",
+        "move_id.foreign_rate",
     )
     def _compute_retention_amount(self):
         """
