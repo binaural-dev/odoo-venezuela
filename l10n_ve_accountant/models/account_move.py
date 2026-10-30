@@ -636,12 +636,20 @@ class AccountMove(models.Model):
                     "base_amount_foreign_currency", 0
                 )
          
-    @api.depends('currency_id', 'invoice_date')
+    @api.depends('currency_id', 'invoice_date', 'invoice_currency_rate', 'foreign_rate')
     def _compute_move_currency_to_company_currency_rate(self):
         '''
-        Compute the move currency to company currency rate'''
+        Rate of the move currency read from the document's stored rate, so it
+        keeps the one it was confirmed with. Falls back to the rate of the date
+        when the document has none.'''
         for move in self:
             if move.currency_id == move.company_currency_id:
+                stored_rate = move.foreign_rate
+            else:
+                stored_rate = 1 / move.invoice_currency_rate if move.invoice_currency_rate else 0.0
+            if stored_rate:
+                move.move_currency_to_company_currency_rate = stored_rate
+            elif move.currency_id == move.company_currency_id:
                 move.move_currency_to_company_currency_rate = move.currency_id._get_conversion_rate(
                     from_currency=move.foreign_currency_id,
                     to_currency=move.company_currency_id,
@@ -814,7 +822,7 @@ class AccountMove(models.Model):
             if move.move_type == "entry":
                 rate_date = move.date or fields.Date.context_today(move)
             else:
-                rate_date = move.invoice_date or fields.Date.context_today(move)
+                rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
@@ -827,11 +835,71 @@ class AccountMove(models.Model):
 
         return moves
 
+    RATE_DATE_FIELDS = ("invoice_date", "invoice_date_display", "date")
+
+    def _drop_unchanged_rate_dates(self, vals):
+        """
+        Remove from ``vals`` the date fields that would not change anything on
+        documents that were already confirmed once (``posted_before``).
+
+        Why: ``foreign_rate`` / ``foreign_inverse_rate`` (``_compute_rate``,
+        which depends on ``invoice_date`` and ``date``) and core's
+        ``invoice_currency_rate`` (which depends on ``invoice_date``,
+        ``taxable_supply_date``, ``currency_id`` and ``company_id``) are stored
+        computed fields. Odoo recomputes them every time one of their
+        dependencies is *written*, even when the value written is the one it
+        already has. So ``move.write({'invoice_date': move.invoice_date})`` on
+        a document reset to draft replaces the rates it was confirmed with by
+        the rate of that date *as it is today*, which may have been edited
+        after confirming: the alternate-currency columns stop matching the
+        amounts in company currency.
+
+        The web client does not send an unchanged date on its own (it only
+        sends what the user changed, and the form view does not carry
+        ``foreign_rate``), so this guards against any other caller (RPC,
+        imports, other modules).
+
+        Scope and limits:
+        - Only the date fields in ``RATE_DATE_FIELDS``. Writing the same
+          ``currency_id``, ``company_id`` or ``taxable_supply_date`` still
+          recomputes ``invoice_currency_rate``.
+        - Only when every record of the recordset has ``posted_before``; in a
+          mixed batch nothing is dropped. A draft never confirmed keeps
+          recomputing as before.
+        - A date that really changes is never dropped, so the rates follow it.
+        - Nothing is dropped if any record is ``posted``: core keeps raising
+          its read-only error there. It does not look at ``manually_set_rate``.
+        """
+        keys = [f for f in self.RATE_DATE_FIELDS if f in vals]
+        if (
+            not keys
+            or not self
+            or not all(self.mapped("posted_before"))
+            or any(move.state == "posted" for move in self)
+        ):
+            return vals
+        vals = dict(vals)
+        for fname in keys:
+            new_value = self._fields[fname].convert_to_cache(vals[fname], self)
+            if all(move[fname] == new_value for move in self):
+                del vals[fname]
+        return vals
+
+    def _clear_transient_rate_caches(self):
+        """Forget the per-transaction "already done" marks, as a new web
+        request would start without them."""
+        cache = self.env.cr.cache
+        for move in self:
+            cache.pop(("_real_portion_distributed", move.id), None)
+        cache.pop("_dynamic_lines_in_progress", None)
+
     def write(self, vals):
         """
-        computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
-        the move is edited.
+        Drops date writes that change nothing on documents confirmed before
+        (see ``_drop_unchanged_rate_dates``), then records ``last_foreign_rate``
+        and posts the "rate updated" note when ``foreign_rate`` is edited by hand.
         """
+        vals = self._drop_unchanged_rate_dates(vals)
         # TODO: To be done for flexible integration
         if vals.get("foreign_rate", False):
             for move in self:
@@ -1131,33 +1199,29 @@ class AccountMove(models.Model):
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
 
         Depends on both dates because `_compute_rate_for_documents` reads
-        `invoice_date` for sale documents but `date` (accounting date) for
-        everything else (purchases, entries): without `date` here, editing
-        only the accounting date on a purchase document never re-triggers
-        this compute, leaving `foreign_rate`/`foreign_inverse_rate` stale
-        relative to the date actually used to look them up.
+        `invoice_date` ("Rate Date") for invoices and `date` (accounting
+        date) for entries, falling back to `date` when `invoice_date` is empty.
         """
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
-            is_sale=True,
-        )
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
-            is_sale=False,
-        )
+        self._compute_rate_for_documents(self)
 
     @api.model
-    def _compute_rate_for_documents(self, documents, is_sale):
+    def _compute_rate_for_documents(self, documents):
         """
-        Compute the rate for a set of documents (either sale invoices or purchase invoices/moves).
+        Compute the rate for a set of documents (sale or purchase invoices, entries).
         """
         Rate = self.env["res.currency.rate"]
 
         for move in documents:
             if move.manually_set_rate:
                 continue
-            date_field = "invoice_date" if is_sale else "date"
-            rate_date = getattr(move, date_field) or fields.Date.context_today(move)
+            # "Rate Date" (invoice_date) drives the rate for every invoice,
+            # purchases included. An entry's invoice_date is just the default
+            # "today", so entries use the accounting date.
+            if move.move_type == "entry":
+                rate_date = move.date
+            else:
+                rate_date = move.invoice_date or move.date
+            rate_date = rate_date or fields.Date.context_today(move)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             move.foreign_rate = rate_values.get("foreign_rate", 0)
             move.foreign_inverse_rate = rate_values.get("foreign_inverse_rate", 0)

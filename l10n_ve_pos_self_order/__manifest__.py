@@ -5,7 +5,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Point of Sale",
-    "version": "19.0.1.6.0",
+    "version": "19.0.1.7.0",
     "depends": [
         "l10n_ve_pos",
         "l10n_ve_location",

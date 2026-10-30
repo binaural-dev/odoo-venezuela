@@ -1,6 +1,6 @@
 """Un asiento (entry) toma la tasa de su fecha contable (`date`), no la de "hoy".
 
-`_compute_rate_for_documents` ya usa `date` para todo lo que no es documento de venta,
+`_compute_rate_for_documents` usa `date` para los asientos (`entry`),
 pero el `create` de `account.move` consultaba ademas la tasa de `invoice_date or hoy`:
 en un asiento `invoice_date` esta vacio, asi que un asiento con fecha pasada o futura
 (p. ej. depreciacion) fallaba si hoy no tenia tasa aunque la de su `date` existiera.
