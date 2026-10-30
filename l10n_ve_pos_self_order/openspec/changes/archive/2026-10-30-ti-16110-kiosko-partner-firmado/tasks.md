@@ -12,8 +12,10 @@
 - [x] 2.1 `tests/test_kiosk_public_routes.py`: `identify`, `identify/create`
       (nuevo y dedup) y `set_phone` devuelven un id firmado que el core
       resuelve al partner
-- [x] 2.2 `tests/test_kiosk_public_routes.py`: `_check_pos_order` con el id
-      que devolvió `identify` guarda la orden con ese `partner_id`; con el id
+- [x] 2.2 `tests/test_kiosk_public_routes.py`: siguiendo los pasos de
+      `process_order`, `_check_pos_order` con el id que devolvió `identify`,
+      `sync_from_ui` deja la `pos.order` con ese `partner_id` y
+      `_generate_return_values` devuelve el mismo id firmado; con el id
       numérico no asigna cliente (contrato del core que motivó el fix)
 - [x] 2.3 Los tests existentes que leían el partner de la respuesta resuelven
       el id firmado (`_partner_from_result`)
@@ -28,6 +30,13 @@
       con ese id guarda la orden 55 con `partner_id = 91094` y la respuesta trae
       el mismo id firmado; con el id numérico la orden 56 queda sin cliente.
       Ambas órdenes de prueba canceladas con `remove-order`
+- [x] 2.6 CI del PR #1552 en rojo solo por `test_kiosk_invoice_foreign_debit_credit`
+      (1 fallo con 12 subtests y 4 errores, igual que en 19.0): se trae el
+      commit `[TEST]` cafc4c49f del PR #1545 (`cherry-pick -x`, solo tests:
+      tasa de la fecha exacta, sin diferencia de cambio alterna, sin depender
+      de las tasas ni de los RIF de la base). Con el código de la rama, en base
+      nueva: `odoo -i l10n_ve_pos_self_order --test-tags /l10n_ve_pos_self_order`
+      → 0 failed, 0 error(s) of 66 tests (2 de la máquina fiscal se saltan)
 
 ## 3. Prueba funcional
 
