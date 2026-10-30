@@ -16,8 +16,9 @@ Dos bloques:
   no-sobrescritura del número fiscal.
 """
 
+import uuid
 from contextlib import ExitStack, contextmanager
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from odoo import Command
 from odoo.tests import TransactionCase, tagged
@@ -835,8 +836,10 @@ class TestKioskPublicRoutes(TransactionCase):
 
     def test_kiosk_order_keeps_identified_partner(self):
         """La orden que el Kiosko manda a ``process-order`` con el partner que
-        devolvió ``identify`` se guarda con ese ``partner_id``. Con el id
-        numérico el core lo descartaba y la orden quedaba sin cliente."""
+        devolvió ``identify`` se guarda con ese ``partner_id``, y la respuesta
+        devuelve el mismo id, así que el Kiosko no pierde el cliente al conectar
+        la respuesta. Con el id numérico el core lo descartaba y la orden
+        quedaba sin cliente."""
         partner = self._make_partner("V", "15151515", phone="0412-1515151")
         result = self._self_order(
             "l10n_ve_kiosk_identify",
@@ -844,8 +847,10 @@ class TestKioskPublicRoutes(TransactionCase):
             prefix_vat="V",
             vat="15151515",
         )
+        signed_id = result["res.partner"][0]["id"]
         payload = {
-            "partner_id": result["res.partner"][0]["id"],
+            "uuid": str(uuid.uuid4()),
+            "partner_id": signed_id,
             "lines": [],
             "amount_total": 0.0,
             "amount_tax": 0.0,
@@ -853,12 +858,26 @@ class TestKioskPublicRoutes(TransactionCase):
             "amount_return": 0.0,
         }
         PosOrder = self.env["pos.order"]
+        # Mismos pasos que PosSelfOrderController.process_order.
         vals = PosOrder._check_pos_order(self.config, payload, "kiosk")
         self.assertEqual(vals["partner_id"], partner.id)
+        synced = (
+            PosOrder.sudo()
+            .with_company(self.company.id)
+            .sync_from_ui([vals])
+        )
+        order = PosOrder.browse(synced["pos.order"][0]["id"])
+        self.assertEqual(order.partner_id, partner)
+        # ``_generate_return_values`` lee ``self.env`` del request.
+        with patch.object(
+            PosSelfOrderController, "env", new_callable=PropertyMock, return_value=self.env
+        ):
+            response = PosSelfOrderController()._generate_return_values(order, self.config)
+        self.assertEqual(response["pos.order"][0]["partner_id"], signed_id)
 
         # Contrato del core que motivó el fix: el id sin firmar se descarta.
         vals = PosOrder._check_pos_order(
-            self.config, dict(payload, partner_id=partner.id), "kiosk"
+            self.config, dict(payload, uuid=str(uuid.uuid4()), partner_id=partner.id), "kiosk"
         )
         self.assertFalse(vals["partner_id"])
 
