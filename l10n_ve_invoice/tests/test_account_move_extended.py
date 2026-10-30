@@ -4,9 +4,11 @@ from odoo import fields
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 
+from .common import RateSeedMixin
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestAccountMoveExtended(TransactionCase):
+class TestAccountMoveExtended(RateSeedMixin, TransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.ref("base.main_company")
@@ -14,6 +16,8 @@ class TestAccountMoveExtended(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.company.currency_id = self.currency_vef
         self.company.foreign_currency_id = self.currency_usd
+        today = fields.Date.today()
+        self._seed_foreign_rates(today, today - timedelta(days=5))
 
         self.account_receivable = self.env["account.account"].create(
             {

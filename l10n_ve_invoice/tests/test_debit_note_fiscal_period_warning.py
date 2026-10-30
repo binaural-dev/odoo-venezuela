@@ -1,9 +1,11 @@
 from odoo import fields
 from odoo.tests import TransactionCase, tagged
 
+from .common import RateSeedMixin
+
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestDebitNoteFiscalPeriodWarning(TransactionCase):
+class TestDebitNoteFiscalPeriodWarning(RateSeedMixin, TransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.ref("base.main_company")
@@ -11,6 +13,11 @@ class TestDebitNoteFiscalPeriodWarning(TransactionCase):
         self.currency_usd = self.env.ref("base.USD")
         self.company.currency_id = self.currency_vef
         self.company.foreign_currency_id = self.currency_usd
+        # fechas de las facturas/notas de estos tests (ver _create_posted_bill)
+        self._seed_foreign_rates(
+            "2026-01-15", "2026-01-20", "2026-03-01", "2026-03-05",
+            "2026-03-10", "2026-09-02", "2026-09-10", "2026-09-16",
+        )
 
         self.partner = self.env["res.partner"].create({"name": "Test DN Period Partner"})
 
