@@ -5,3 +5,4 @@ from . import test_product_payment_concept
 from . import test_iva_eligible_partners
 from . import test_retention_credit_note
 from . import test_payment_register_retention
+from . import test_retention_foreign_invoice_amount
