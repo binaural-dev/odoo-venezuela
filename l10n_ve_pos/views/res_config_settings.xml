@@ -117,6 +117,18 @@
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 o_setting_box"
+                            id="l10n_ve_pos_div_allow_product_creation_in_pos">
+                            <div class="o_setting_left_pane">
+                                <field name="allow_product_creation_in_pos" />
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="allow_product_creation_in_pos" />
+                                <div class="text-muted">
+                                    Allow creating products from the PoS screen
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 o_setting_box"
                             id="l10n_ve_pos_div_amount_to_zero">
                             <div class="o_setting_left_pane">
                                 <field name="amount_to_zero" />
