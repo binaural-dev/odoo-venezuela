@@ -103,6 +103,70 @@ class AccountMove(models.Model):
                 if not from_pos and not from_loyalty and not is_official_discount and not is_reward:
                     raise ValidationError(_("An invoice cannot have a line with a negative price unless it is a registered discount or reward"))
 
+    @api.depends("invoice_date", "company_id")
+    def _compute_date(self):
+        """Keep the registration date as accounting date of vendor documents.
+
+        ``_compute_date`` is a private core compute, but it is the only place
+        where the native behavior (accounting date moved to the last day of the
+        journal period) is applied, both in forms and in ``create()``.
+        Changing ``journal_id`` marks ``company_id`` and then ``date`` to be
+        recomputed (journal_id -> company_id -> date), so this method is
+        re-executed and the core would overwrite the date. Therefore, for
+        draft purchase documents of companies with the setting enabled we do
+        not call ``super()``: an existing value is always kept (idempotent),
+        and only when there is no value (creation) it is set to today, or to
+        the invoice date if the sync setting is enabled.
+        ``_get_accounting_date`` is not overridden because it is shared with
+        reconciliation, exchange differences, etc.
+        ``_post`` only recomputes the date if it violates a lock date, so the
+        date set here survives posting.
+        If the candidate date violates a lock date, the native compute is used.
+        """
+        keep = self.filtered(
+            lambda m: m.is_purchase_document(include_receipts=True)
+            and m.state == "draft"
+            and m.company_id.vendor_bill_accounting_date_on_registration
+        )
+        res = super(AccountMove, self - keep)._compute_date()
+        for move in keep:
+            if move.date:
+                continue
+            company = move.company_id
+            if company.sync_vendor_bill_accounting_date_with_invoice_date and move.invoice_date:
+                candidate = move.invoice_date
+            else:
+                candidate = fields.Date.context_today(move)
+            if move._get_violated_lock_dates(candidate, move._affect_tax_report()):
+                super(AccountMove, move)._compute_date()
+                continue
+            move.date = candidate
+            # Same follow-up as the native compute
+            self.env.add_to_compute(move.line_ids._fields["date"], move.line_ids)
+            self.env.add_to_compute(self._fields["name"], move)
+        return res
+
+    @api.onchange("invoice_date")
+    def _onchange_invoice_date_sync_accounting_date(self):
+        """Sync the accounting date with the invoice date (form only).
+
+        Only when both settings are enabled. Limitation: it does not act on
+        ORM ``write()`` calls, only on form onchanges.
+        """
+        for move in self:
+            company = move.company_id
+            if (
+                not company.vendor_bill_accounting_date_on_registration
+                or not company.sync_vendor_bill_accounting_date_with_invoice_date
+                or not move.is_purchase_document(include_receipts=True)
+                or move.state != "draft"
+                or not move.invoice_date
+                or move.quick_edit_mode
+                or move._get_violated_lock_dates(move.invoice_date, move._affect_tax_report())
+            ):
+                continue
+            move.date = move.invoice_date
+
     def action_post(self):
         for record in self:
             sequence = record.env["ir.sequence"].sudo().search([("code", "=", "invoice.correlative"), ("company_id", "=", self.env.company.id)], limit=1)

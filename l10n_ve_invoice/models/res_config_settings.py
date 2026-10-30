@@ -30,6 +30,16 @@ class ResConfigSettings(models.TransientModel):
         readonly=False
     )
 
+    vendor_bill_accounting_date_on_registration = fields.Boolean(
+        related="company_id.vendor_bill_accounting_date_on_registration",
+        readonly=False,
+    )
+
+    sync_vendor_bill_accounting_date_with_invoice_date = fields.Boolean(
+        related="company_id.sync_vendor_bill_accounting_date_with_invoice_date",
+        readonly=False,
+    )
+
     mandatory_contact_in_payable_or_receivable_accounting_accounts = fields.Boolean(
         related="company_id.mandatory_contact_in_payable_or_receivable_accounting_accounts",
         readonly=False
