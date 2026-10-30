@@ -29,6 +29,16 @@ BCV_WINDOW_END_HOUR = 7
 BCV_RETRY_INTERVAL_MINUTES = 30
 VEF_CURRENCY_CODE = "VEF"
 
+# Mapping of ISO currency codes to BCV website HTML element IDs.
+# The BCV publishes exchange rates for these 5 currencies in VEF.
+BCV_CURRENCIES = {
+    "EUR": "euro",
+    "CNY": "yuan",
+    "TRY": "lira",
+    "RUB": "rublo",
+    "USD": "dolar",
+}
+
 _logger = logging.getLogger(__name__)
 
 
@@ -50,25 +60,232 @@ class ResCompany(models.Model):
         return result
 
     @api.model
+    def _get_bcv_currency_rates(self, available_currencies):
+        """Scrape BCV website for all requested currencies in a single request.
+
+        Only processes currencies present in both ``available_currencies``
+        and ``BCV_CURRENCIES``.  Each currency is extracted by its HTML ID
+        (e.g. ``#euro``, ``#yuan``, ``#lira``, ``#rublo``, ``#dolar``).
+
+        :param list available_currencies: ISO codes of currencies to fetch
+        :return: ``{code: (rate_VEF, published_date)}`` or ``{}`` on error
+        :rtype: dict
+        """
+        target = {
+            code for code in available_currencies
+            if code in BCV_CURRENCIES
+        }
+        if not target:
+            return {}
+
+        for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
+            try:
+                response = self._bcv_http_get(BCV_URL, timeout=30)
+                response.raise_for_status()
+                soup = BeautifulSoup(response.text, "html.parser")
+
+                # Shared publication date — the BCV only publishes one date
+                published_date = None
+                date_node = soup.find(
+                    "span", class_="date-display-single",
+                )
+                if date_node and date_node.get("content"):
+                    published_date = self._parse_source_date(
+                        date_node["content"],
+                    )
+
+                result = {}
+                for code in target:
+                    html_id = BCV_CURRENCIES[code]
+                    container = soup.find(id=html_id)
+                    if not container:
+                        _logger.warning(
+                            "BCV scraping did not find #%s on attempt %s/%s",
+                            html_id, attempt, SOURCE_MAX_ATTEMPTS,
+                        )
+                        continue
+
+                    raw = (
+                        container.text.replace("\n", "")
+                        .replace(code, "")
+                        .replace(",", ".")
+                        .strip()
+                    )
+                    try:
+                        rate = float(raw)
+                    except (ValueError, TypeError):
+                        _logger.warning(
+                            "BCV scraping could not parse %s value '%s'",
+                            code, raw,
+                        )
+                        continue
+                    if rate <= 0:
+                        _logger.warning(
+                            "BCV scraping rejected %s rate %s (<= 0)",
+                            code, rate,
+                        )
+                        continue
+
+                    if published_date:
+                        result[code] = (rate, published_date)
+
+                if result:
+                    return result
+
+                _logger.warning(
+                    "BCV scraping returned no valid currency rates "
+                    "on attempt %s/%s", attempt, SOURCE_MAX_ATTEMPTS,
+                )
+            except Exception as exc:
+                _logger.warning(
+                    "BCV multi-currency scraping failed on attempt %s/%s: %s",
+                    attempt, SOURCE_MAX_ATTEMPTS, exc,
+                )
+        return {}
+
+    @api.model
+    def _normalize_currency_rate(self, result, currency_code, vef_rate, current_date):
+        """Normalise a VEF-denominated rate into USD terms and add to result.
+
+        The BCV publishes rates as VEF per unit of foreign currency.
+        Because ``_parse_bcv_data()`` uses USD as its base (``USD = 1.0``),
+        secondary currencies need to be expressed as a ratio against USD.
+
+        :param dict result: result dict (mutated in-place)
+        :param str currency_code: ISO code (e.g. ``"EUR"``)
+        :param float vef_rate: rate in VEF per unit of ``currency_code``
+        :param date current_date: rate date
+        """
+        usd_vef = result.get("VEF")
+        if isinstance(usd_vef, tuple):
+            usd_vef = usd_vef[0]
+        if usd_vef and vef_rate:
+            # Expression: (VEF per 1 USD) / (VEF per 1 FOREIGN)
+            #           = FOREIGN per 1 USD  ← parsed data convention
+            result[currency_code] = (usd_vef / vef_rate, current_date)
+        elif not usd_vef:
+            _logger.warning(
+                "Skipping %s rate: USD/VEF reference rate is missing.",
+                currency_code,
+            )
+        else:
+            _logger.warning(
+                "Skipping %s rate: scraped VEF rate is missing or zero (%s).",
+                currency_code, vef_rate,
+            )
+
+    @api.model
+    def _get_last_system_rate_for_currency(self, currency_code, current_date):
+        """Get the last stored ``company_rate`` for any currency (fallback).
+
+        :param str currency_code: ISO code (e.g. ``"EUR"``, ``"USD"``)
+        :param date current_date: reference date for fallback search
+        :return: ``company_rate`` or ``None``
+        """
+        company = self[:1] or self.env.company
+        currency = (
+            self.env["res.currency"]
+            .with_context(active_test=False)
+            .search([("name", "=", currency_code)], limit=1)
+        )
+        if not currency:
+            return None
+
+        rate_model = self.env["res.currency.rate"]
+        last_rate = rate_model.search(
+            [
+                ("company_id", "=", company.id),
+                ("currency_id", "=", currency.id),
+                ("name", "<=", current_date),
+            ],
+            order="name desc, id desc",
+            limit=1,
+        )
+        if not last_rate:
+            last_rate = rate_model.search(
+                [
+                    ("company_id", "=", company.id),
+                    ("currency_id", "=", currency.id),
+                ],
+                order="name desc, id desc",
+                limit=1,
+            )
+        return last_rate.company_rate if last_rate else None
+
+    @api.model
     def _parse_bcv_data(self, available_currencies):
+        """Parse BCV exchange rates for all active currencies.
+
+        Keeps the existing two-tier strategy for USD:
+          1. DolarAPI (primary)
+          2. BCV website scraping (fallback)
+
+        For any other active BCV currency (EUR, CNY, TRY, RUB) the BCV
+        website is scraped in a single additional HTTP request.  All rates
+        are normalised against ``USD = 1.0``.
+
+        .. note::
+
+           ``available_currencies`` is a ``res.currency`` **recordset**
+           (passed by the enterprise ``update_currency_rates()`` method).
+           All other ``_parse_*_data()`` providers in
+           ``currency_rate_live`` convert it via ``.mapped('name')``
+           before iterating — we do the same here.
+        """
         current_date = fields.Date.to_date(fields.Date.context_today(self))
         result = {"USD": (1.0, current_date)}
-        fallback_rate = None
+        available_currency_names = available_currencies.mapped("name")
+        target_currencies = {
+            c for c in available_currency_names if c in BCV_CURRENCIES
+        }
 
-        rate_value, published_date = self._get_bcv_rate(expected_date=current_date)
+        rate_value, published_date = self._get_bcv_rate(
+            expected_date=current_date,
+        )
         if not rate_value or not published_date:
             fallback_rate = self._get_last_system_rate(current_date)
-            if fallback_rate is not None and not bool(self[:1].can_update_habil_days):
+            if fallback_rate is not None and not bool(
+                self[:1].can_update_habil_days,
+            ):
                 result["VEF"] = (fallback_rate, current_date)
             return result
 
         if not self._is_valid_rate_date(current_date, published_date):
             fallback_rate = self._get_last_system_rate(current_date)
-            if fallback_rate is not None and not bool(self[:1].can_update_habil_days):
+            if fallback_rate is not None and not bool(
+                self[:1].can_update_habil_days,
+            ):
                 result["VEF"] = (fallback_rate, current_date)
             return result
 
         result["VEF"] = (rate_value, current_date)
+
+        # Include any other active BCV currencies. The BCV does not publish
+        # rates on weekends, so skip this extra scraping request when the
+        # company only accepts rates on business days.
+        skip_weekend_scraping = (
+            self[:1].can_update_habil_days and current_date.isoweekday() > 5
+        )
+        non_usd = [c for c in target_currencies if c != "USD"]
+        if non_usd and not skip_weekend_scraping:
+            bc_rates = self._get_bcv_currency_rates(non_usd)
+            for code in non_usd:
+                vef_rate, pub_date = bc_rates.get(code, (None, None))
+                if vef_rate and self._is_valid_rate_date(current_date, pub_date):
+                    self._normalize_currency_rate(
+                        result, code, vef_rate, current_date,
+                    )
+                else:
+                    fallback_rate = self._get_last_system_rate_for_currency(
+                        code, current_date,
+                    )
+                    if fallback_rate is not None:
+                        result[code] = (fallback_rate, current_date)
+                    else:
+                        _logger.warning(
+                            "No BCV rate or fallback available for %s.", code,
+                        )
+
         return result
 
     @api.model
@@ -183,6 +400,33 @@ class ResCompany(models.Model):
             return None
 
     @api.model
+    def _bcv_http_get(self, url, timeout):
+        """GET a BCV URL, preferring TLS verification; fall back to
+        ``verify=False`` only on an explicit SSL failure, logging it.
+
+        Isolating this here means both scraping call-sites (multi-currency
+        and legacy USD-only) share one auditable TLS-fallback path instead
+        of disabling verification unconditionally.
+
+        :param str url: target URL (``BCV_URL``)
+        :param int timeout: request timeout in seconds
+        :return: ``requests.Response``
+        :raises requests.exceptions.RequestException: on non-TLS failures
+        """
+        try:
+            return requests.get(url, timeout=timeout, headers=BCV_HEADERS)
+        except requests.exceptions.SSLError as exc:
+            _logger.error(
+                "BCV TLS certificate verification failed for %s (%s); "
+                "retrying without verification as a documented fallback.",
+                url, exc,
+            )
+            disable_warnings(InsecureRequestWarning)
+            return requests.get(
+                url, verify=False, timeout=timeout, headers=BCV_HEADERS,
+            )
+
+    @api.model
     def _get_bcv_rate_from_api(self, expected_date=None):
         for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
             try:
@@ -245,15 +489,9 @@ class ResCompany(models.Model):
 
     @api.model
     def _scrape_bcv_rate(self):
-        disable_warnings(InsecureRequestWarning)
         for attempt in range(1, SOURCE_MAX_ATTEMPTS + 1):
             try:
-                response = requests.get(
-                    BCV_URL,
-                    verify=False,
-                    timeout=SCRAPING_TIMEOUT,
-                    headers=BCV_HEADERS,
-                )
+                response = self._bcv_http_get(BCV_URL, timeout=30)
                 response.raise_for_status()
                 soup = BeautifulSoup(response.text, "html.parser")
 
@@ -348,32 +586,38 @@ class ResCompany(models.Model):
             )
             missing_rate = False
             for company in bcv_companies:
+                already_today = Rate.search_count(
+                    [
+                        ("company_id", "=", company.id),
+                        ("currency_id", "=", vef.id),
+                        ("name", "=", today),
+                    ]
+                )
+                if already_today:
+                    continue
                 try:
-                    already_today = Rate.search_count(
-                        [
-                            ("company_id", "=", company.id),
-                            ("currency_id", "=", vef.id),
-                            ("name", "=", today),
-                        ]
-                    )
-                    if already_today:
-                        continue
-                    company.with_context(suppress_errors=True).update_currency_rates()
-                    company_updated = Rate.search_count(
-                        [
-                            ("company_id", "=", company.id),
-                            ("currency_id", "=", vef.id),
-                            ("name", "=", today),
-                        ]
-                    )
-                    if not company_updated:
-                        missing_rate = True
+                    with self.env.cr.savepoint():
+                        company.with_context(
+                            suppress_errors=True
+                        ).update_currency_rates()
                 except Exception:
                     missing_rate = True
-                    _logger.exception(
-                        "BCV currency update failed for company %s",
-                        company.display_name,
+                    _logger.error(
+                        "BCV rate update failed for company %s (id=%s); "
+                        "continuing with remaining companies.",
+                        company.display_name, company.id,
+                        exc_info=True,
                     )
+                    continue
+                company_updated = Rate.search_count(
+                    [
+                        ("company_id", "=", company.id),
+                        ("currency_id", "=", vef.id),
+                        ("name", "=", today),
+                    ]
+                )
+                if not company_updated:
+                    missing_rate = True
 
             if missing_rate:
                 retry_at = self._get_next_bcv_retry_time(now_local)

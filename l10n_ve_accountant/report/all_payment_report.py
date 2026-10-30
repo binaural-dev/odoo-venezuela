@@ -24,7 +24,7 @@ class ReportAllPayments(models.AbstractModel):
                 name_user = obj_uid.name
         form = data.get("form", False)
         if not form:
-            raise UserError("Error en formulario de reporte")
+            raise UserError(_("Error en formulario de reporte"))
         pt = form.get("payment_type")
         journal = self.env["account.journal"].sudo().search([("id", "=", form.get("journal_id"))])
         search_domain = []

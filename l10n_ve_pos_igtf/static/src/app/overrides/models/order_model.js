@@ -1,15 +1,12 @@
 /** @odoo-module */
 
-import { Order, Payment } from "@point_of_sale/app/store/models";
+import { Order } from "@point_of_sale/app/store/models";
 import { patch } from "@web/core/utils/patch";
 import {
-  formatFloat,
   floatIsZero,
-  roundDecimals as round_di,
   roundPrecision as round_pr,
 } from "@web/core/utils/numbers";
 
-// New orders are now associated with the current table, if any.
 patch(Order.prototype, {
   setup(_defaultObj, options) {
     super.setup(...arguments);
@@ -34,343 +31,158 @@ patch(Order.prototype, {
     json["foreign_bi_igtf"] = this.foreign_bi_igtf;
     return json;
   },
-  update_igtf() {
-    var rounding = this.pos.currency.rounding;
-    const paymentlines = this.get_paymentlines();
-    let igtf_payment_methods = paymentlines.filter(
-      (payment) => payment.payment_method.apply_igtf,
+
+  // --- Helpers de moneda ---
+  _isBsBase() {
+    return this.pos.currency.name === "VEF" || this.pos.currency.name === "VES";
+  },
+  _getBsRate() {
+    if (this._isBsBase()) return 1;
+    return this.pos.config.foreign_rate || 1;
+  },
+  _baseToBs(amount) {
+    return amount * this._getBsRate();
+  },
+  _bsToBase(amount) {
+    return amount / this._getBsRate();
+  },
+  _igtfRoundLocal(amount) {
+    return round_pr(amount, this.pos.currency.rounding);
+  },
+  _igtfToForeign(amount) {
+    return round_pr(
+      amount * (this._isBsBase() ? this.pos.foreign_currency.rate : this._getBsRate()),
+      this.pos.foreign_currency.rounding,
     );
-    let last_igtf_amount = 0;
-    let last_foreign_igtf_amount = 0;
-
-    if (paymentlines.length > 0) {
-      last_igtf_amount = this.igtf_amount;
-      last_foreign_igtf_amount = this.foreign_igtf_amount;
+  },
+  _paidAmount() {
+    let paid = 0;
+    for (const line of this.get_paymentlines()) {
+      if (!(line.amount < 0)) {
+        paid += line.amount || 0;
+      }
     }
+    return paid;
+  },
 
-    let is_return = this.get_total_without_igtf() < 0;
+  // --- Algoritmo central IGTF ---
+  _igtfBaseState(excludeLine = null) {
+    const total = this.get_total_without_igtf();
+    const sign = total < 0 ? -1 : 1;
+    let remainingBase = this._igtfRoundLocal(sign * total);
+    let unpaidIgtf = 0;
+    const lines = [];
+    for (const payment of this.get_paymentlines()) {
+      if (excludeLine && payment === excludeLine) continue;
+      const amt = this._igtfRoundLocal(sign * (payment.amount || 0));
+      const isIgtf = Boolean(payment.payment_method?.apply_igtf);
+      const isChange = amt < 0;
+      if (isChange || floatIsZero(amt, this.pos.currency.decimal_places)) {
+        lines.push({ payment, base: 0, newIgtf: 0, isChange, isIgtf });
+        continue;
+      }
+      const base = amt < remainingBase ? amt : remainingBase;
+      remainingBase = this._igtfRoundLocal(remainingBase - base);
+      let newIgtf = 0;
+      if (isIgtf) {
+        newIgtf = this.compute_igtf_amount(base);
+        unpaidIgtf = this._igtfRoundLocal(unpaidIgtf + newIgtf);
+      }
+      const excess = this._igtfRoundLocal(amt - base);
+      if (excess > 0) {
+        unpaidIgtf = excess < unpaidIgtf
+          ? this._igtfRoundLocal(unpaidIgtf - excess)
+          : 0;
+      }
+      lines.push({ payment, base, newIgtf, isChange, isIgtf });
+    }
+    return { sign, remainingBase, unpaidIgtf, lines };
+  },
+  update_igtf() {
+    const paymentlines = this.get_paymentlines();
 
     this.igtf_amount = 0;
     this.foreign_igtf_amount = 0;
     this.bi_igtf = 0;
     this.foreign_bi_igtf = 0;
 
-    let bi_igtf = 0;
-    let foreign_bi_igtf = 0;
-    let repeat_same_method = [];
-    let bi_payments = [];
-
-    let igtf_amount = 0;
-    let foreign_igtf_amount = 0;
-
     paymentlines.forEach((payment) => {
       payment.set_include_igtf(false);
+      payment.set_igtf_amount(0);
+      payment.set_foreign_igtf_amount(0);
     });
 
     if (!this.to_invoice) {
-      return;
+      return this.igtf_amount;
     }
 
-    paymentlines.forEach((payment) => {
-      let is_change = false;
-      if (!is_return) {
-        is_change = payment.amount < 0;
-      } else {
-        is_change = payment.amount > 0;
-      }
+    const { sign, lines } = this._igtfBaseState();
+    let totalIgtf = 0;
+    let totalBase = 0;
 
-      if (
-        payment.payment_method.apply_igtf &&
-        last_igtf_amount == payment.amount
-      ) {
-        return;
-      }
-
-      if (
-        !payment.payment_method.apply_igtf &&
-        igtf_payment_methods.length <= 0
-      ) {
-        foreign_bi_igtf = this.get_foreign_total_without_igtf();
-        igtf_amount = 0;
-        foreign_igtf_amount = 0;
-
-        let payment_without_change = paymentlines.filter((payment) => {
-          if (!bi_payments.includes(payment.cid)) {
-            return false;
-          }
-
-          let is_change = false;
-          if (!is_return) {
-            is_change = payment.amount < 0;
-          } else {
-            is_change = payment.amount > 0;
-          }
-
-          if (is_change) {
-            return false;
-          }
-
-          return true;
-        });
-
-        if (payment_without_change.length > 0) {
-          payment_without_change.forEach((payment) => {
-            if (!payment.include_igtf) {
-              payment.set_igtf_amount(
-                igtf_amount / payment_without_change.length,
-              );
-              payment.set_foreign_igtf_amount(
-                foreign_igtf_amount / payment_without_change.length,
-              );
-              return;
-            }
-            // payment.set_igtf_amount(igtf_amount / payment_without_change.length)
-            // payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
-          });
-        }
-        return;
-      }
-
-      bi_igtf += round_pr(payment.amount, rounding);
-      foreign_bi_igtf += round_pr(payment.get_foreign_amount(), this.pos.foreign_currency.rounding);
-      repeat_same_method.push(payment.payment_method.id);
-      bi_payments.push(payment.cid);
-
-      if (payment.payment_method.apply_igtf) {
-        payment.set_include_igtf(true);
-      }
-      let amount_to_pay = payment.amount;
-      let foreign_amount_to_pay = payment.get_foreign_amount();
-
-      if (
-        (payment.amount > this.get_total_with_tax() && !is_return) ||
-        (payment.amount < this.get_total_with_tax() && is_return)
-      ) {
-        amount_to_pay = this.get_total_with_tax();
-        foreign_amount_to_pay = this.get_foreign_total_with_tax();
-      }
-
-      if (!is_change) {
-        payment.set_igtf_amount(this.compute_igtf_amount(amount_to_pay));
-        payment.set_foreign_igtf_amount(
-          this.compute_igtf_amount(foreign_amount_to_pay, true),
-        );
-
-        igtf_amount += payment.igtf_amount;
-        foreign_igtf_amount += payment.foreign_igtf_amount;
-      } else {
-        payment.set_include_igtf(false);
-      }
-    });
-
-    if (
-      bi_igtf !== 0 &&
-      bi_igtf >= this.get_total_without_igtf() &&
-      !is_return
-    ) {
-      bi_igtf = this.get_total_without_igtf();
-      foreign_bi_igtf = this.get_foreign_total_without_igtf();
-      igtf_amount = this.compute_igtf_amount(bi_igtf);
-      foreign_igtf_amount = this.compute_igtf_amount(foreign_bi_igtf);
-
-      let payment_without_change = paymentlines.filter((payment) => {
-        if (!bi_payments.includes(payment.cid)) {
-          return false;
-        }
-
-        let is_change = false;
-        if (!is_return) {
-          is_change = payment.amount < 0;
-        } else {
-          is_change = payment.amount > 0;
-        }
-
-        if (is_change) {
-          return false;
-        }
-
-        return true;
-      });
-
-      if (payment_without_change.length > 0) {
-        payment_without_change.forEach((payment) => {
-          if (!payment.include_igtf) {
-            return;
-          }
-          // payment.set_igtf_amount(igtf_amount / payment_without_change.length)
-          // payment.set_foreign_igtf_amount(foreign_igtf_amount / payment_without_change.length)
-        });
-      }
+    for (const { payment, base, newIgtf, isChange, isIgtf } of lines) {
+      if (!isIgtf || isChange) continue;
+      payment.set_include_igtf(true);
+      payment.set_igtf_amount(sign * newIgtf);
+      payment.set_foreign_igtf_amount(this._igtfToForeign(sign * newIgtf));
+      totalIgtf += newIgtf;
+      totalBase += base;
     }
 
-    if (igtf_payment_methods.length > 0) {
-      let amount_sum = 0;
-      let foreign_amount_sum = 0;
-      let igtf_amount_sum = 0;
-      let foreign_igtf_amount_sum = 0;
-
-      for (let payments of igtf_payment_methods) {
-        amount_sum += payments.amount;
-        foreign_amount_sum += payments.foreign_amount;
-        igtf_amount_sum += payments.igtf_amount;
-        foreign_igtf_amount_sum += payments.foreign_igtf_amount;
-      }
-      this.bi_igtf = amount_sum;
-      this.foreign_bi_igtf = foreign_amount_sum;
-      this.igtf_amount = igtf_amount_sum;
-
-      // Usamos el IGTF acumulado por pago (no el de la base total del pedido).
-      // Para pago parcial: 153,24 Bs (3% de $10 pagado).
-      // Para pago total: 529,71 Bs (3% de 17.657,06 Bs, calculado en el loop).
-      this.foreign_igtf_amount = foreign_igtf_amount_sum;
-    }
+    this.igtf_amount = this._igtfRoundLocal(sign * totalIgtf);
+    this.foreign_igtf_amount = this._igtfToForeign(this.igtf_amount);
+    this.bi_igtf = this._igtfRoundLocal(sign * totalBase);
+    this.foreign_bi_igtf = this._igtfToForeign(this.bi_igtf);
     return this.igtf_amount;
   },
-  compute_igtf_amount(amount) {
-    var rounding = this.pos.currency.rounding;
-    return round_pr(amount * (this.pos.config.igtf_percentage / 100), rounding);
+  compute_igtf_amount(baseAmount) {
+    const bsAmount = this._baseToBs(baseAmount);
+    const igtfInBs = this._igtfRoundLocal(bsAmount * (this.pos.config.igtf_percentage / 100));
+    return this._bsToBase(igtfInBs);
   },
 
   get_bi_igtf() {
     return this.bi_igtf;
   },
-
-  get_total_without_igtf() {
-    const res = super.get_total_with_tax(...arguments);
-    return res;
-  },
-  get_foreign_total_without_igtf() {
-    const res = super.get_foreign_total_with_tax(...arguments);
-    return res;
-  },
-  get_total_with_tax() {
-    const res = super.get_total_with_tax(...arguments);
-    let paymentlines = this.get_paymentlines();
-    if (paymentlines.length > 0) {
-      let igtf_payment_methods = paymentlines.filter(
-        (payment) => payment.payment_method.apply_igtf,
-      );
-      if (igtf_payment_methods.length === 0) {
-        return res;
-      } else {
-        for (let payment of paymentlines) {
-          if (payment.payment_method.apply_igtf) {
-            return res + this.igtf_amount;
-          }
-        }
-      }
-    } else {
-      return res;
-    }
-  },
-  get_foreign_total_with_tax() {
-    const res = super.get_foreign_total_with_tax(...arguments);
-    let paymentlines = this.get_paymentlines();
-    if (paymentlines.length > 0) {
-      let igtf_payment_methods = paymentlines.filter(
-        (payment) => payment.payment_method.apply_igtf,
-      );
-      if (igtf_payment_methods.length === 0) {
-        return res;
-      } else {
-        for (let payment of paymentlines) {
-          if (payment.payment_method.apply_igtf) {
-            return res + this.foreign_igtf_amount;
-          }
-        }
-      }
-    } else {
-      return res;
-    }
-  },
-  get_max_total_with_igtf() {
-    const result =
-      this.compute_igtf_amount(super.get_foreign_total_with_tax(), true) +
-      this.props.order.get_foreign_rounding_applied();
-    return result;
-  },
-
   get_igtf_amount() {
     return this.igtf_amount;
   },
-
   get_foreign_igtf_amount() {
     return this.foreign_igtf_amount;
   },
-  add_paymentline(payment_method) {
-    let is_change = false;
-    let is_return = this.get_total_without_igtf() < 0;
-    if (!is_return) {
-      is_change = this.get_due() < 0;
-    } else {
-      is_change = this.get_due() > 0;
-    }
-
-    var rounding = this.pos.currency.rounding;
-    // Capturar ANTES de super.add_paymentline() porque después get_due() = 0
-    const due_before = round_pr(this.get_due(), rounding);
-    const igtf_before = round_pr(this.get_igtf_amount(), rounding);
-    // Contar pagos no-IGTF existentes ANTES de añadir el nuevo.
-    // Solo el primero (EFECTIVO BS) debe pre-fillarse con el monto IGTF.
-    const non_igtf_count_before = this.get_paymentlines().filter(
-      (p) => !p.payment_method.apply_igtf
-    ).length;
-
-    if (
-      !payment_method.apply_igtf ||
-      round_pr(this.get_due(), rounding) <= round_pr(this.get_igtf_amount(), rounding) ||
-      is_change
-    ) {
-      let res = super.add_paymentline(...arguments);
-      this.update_igtf();
-      if (
-        res &&
-        !payment_method.apply_igtf &&
-        !is_change &&
-        this.get_paymentlines().some((p) => p.payment_method.apply_igtf)
-      ) {
-        // Odoo base pre-fill amount = get_due() (antes de añadir = $24,87).
-        // EFECTIVO BS solo cubre el IGTF ($0,30). Corregimos usando due_before.
-        // Solo lo hacemos para el PRIMER pago no-IGTF.
-        if (due_before >= igtf_before && non_igtf_count_before === 0) {
-          res.set_amount(this.get_igtf_amount());
-          // Asignación directa para evitar que el setter dispare reconversiones locas
-          res.foreign_amount = this.get_foreign_igtf_amount();
-        }
-      }
-      return res;
-    }
-    let res_igtf = this.add_paymentline_without_igtf(...arguments);
-    this.update_igtf();
-    return res_igtf;
+  get_total_without_igtf() {
+    return super.get_total_with_tax(...arguments);
+  },
+  get_foreign_total_without_igtf() {
+    return super.get_foreign_total_with_tax(...arguments);
+  },
+  get_total_with_tax() {
+    const res = super.get_total_with_tax(...arguments);
+    return this._igtfRoundLocal(res + (this.igtf_amount || 0));
+  },
+  get_foreign_total_with_tax() {
+    return this._igtfToForeign(this.get_total_with_tax());
   },
 
-
-  add_paymentline_without_igtf(payment_method) {
-    this.assert_editable();
-    if (this.electronic_payment_in_progress()) {
-      return false;
-    } else {
-      var newPaymentline = new Payment(
-        { env: this.env },
-        { order: this, payment_method: payment_method, pos: this.pos },
-      );
-      this.paymentlines.add(newPaymentline);
-      this.select_paymentline(newPaymentline);
-      if (this.pos.config.cash_rounding) {
-        this.selected_paymentline.set_amount(0);
-      }
-
-      newPaymentline.set_foreign_amount(
-        this.get_foreign_due() - this.get_foreign_igtf_amount(),
-        true,
-      );
-      newPaymentline.set_amount(this.get_due() - this.get_igtf_amount(), true);
-
-      if (payment_method.payment_terminal) {
-        newPaymentline.set_payment_status("pending");
-      }
-      return newPaymentline;
+  // get_due incluye recargo IGTF para que la precarga de pagos sea correcta
+  get_due() {
+    const igtf = this._igtfRoundLocal(this.igtf_amount || 0);
+    if (igtf === 0 || !this.to_invoice) {
+      return super.get_due();
     }
+    const total = this.get_total_without_igtf();
+    const paid = this._paidAmount();
+    const sign = total < 0 ? -1 : 1;
+    const remaining = this._igtfRoundLocal(total + igtf - paid);
+    if (sign * remaining <= 0) {
+      return 0;
+    }
+    return remaining;
+  },
+
+  add_paymentline(payment_method) {
+    const res = super.add_paymentline(...arguments);
+    this.update_igtf();
+    return res;
   },
 });
