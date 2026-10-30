@@ -22,13 +22,13 @@ patch(PosStore.prototype, {
   },
 
   /**
-   * "Permitir crear productos" (allow_product_creation_in_pos). Solo un false
-   * explícito la apaga: con la sesión abierta antes de actualizar el módulo,
-   * la caja sale de la caché del PdV sin el campo (undefined) hasta "Volver a
-   * cargar datos", y el valor por defecto es permitir.
+   * "Permitir crear productos" (allow_product_creation_in_pos), apagado por
+   * defecto. Solo un true explícito la enciende: con la sesión abierta antes
+   * de actualizar el módulo, la caja sale de la caché del PdV sin el campo
+   * (undefined) hasta "Volver a cargar datos", y en la base ya vale false.
    */
   get isProductCreationAllowed() {
-    return this.config.allow_product_creation_in_pos !== false;
+    return this.config.allow_product_creation_in_pos === true;
   },
 
   // El core muestra "Crear producto" del menú según este getter.
