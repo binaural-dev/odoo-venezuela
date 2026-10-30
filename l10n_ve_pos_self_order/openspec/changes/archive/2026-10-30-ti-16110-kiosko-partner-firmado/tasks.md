@@ -31,12 +31,13 @@
 
 ## 3. Prueba funcional
 
-- [ ] 3.1 Copia del staging de Monfarmacia (`monfarmacia_20261030`),
+- [x] 3.1 Copia del staging de Monfarmacia (`monfarmacia_20261030`),
       Autopago CCCT 1: identificarse (cliente existente y cliente nuevo),
       agregar productos, elegir un método Megasoft → no aparece "Cliente sin
-      cédula" y la `pos.order` queda con el `partner_id` del cliente
+      cédula" y la `pos.order` queda con el `partner_id` del cliente.
+      Probado en el navegador el 2026-10-30: funciona
 
 ## 4. Cierre
 
-- [ ] 4.1 Archivar el change y volcarlo en
+- [x] 4.1 Archivar el change y volcarlo en
       `openspec/specs/pos-self-order-kiosk-identification/spec.md`
