@@ -210,43 +210,41 @@ class AccountMoveRetention(models.Model):
     def action_view_retention(self):
         self.ensure_one()
         ret_type = self.env.context.get('retention_type')
-        
-        retentions = False
-        if ret_type == 'iva':
-           retentions = self.retention_iva_line_ids.mapped('retention_id')
-        elif ret_type == 'islr':
-            retentions = self.retention_islr_line_ids.mapped('retention_id')
-        else:
-            retentions = self.retention_municipal_line_ids.mapped('retention_id')
-
-        names = {
-            'iva': _('IVA Retentions'),
-            'islr': _('ISLR Retentions'),
-            'municipal': _('Municipal Retentions'),
+        module = "l10n_ve_payment_extension"
+        # type -> (lines field, name, form view suffix, list view suffix). Without explicit
+        # views Odoo opens the first account.retention form it finds (not
+        # necessarily the one of this retention type). ISLR has no list view.
+        config = {
+            'iva': ('retention_iva_line_ids', _('IVA Retentions'), 'iva', 'iva'),
+            'islr': ('retention_islr_line_ids', _('ISLR Retentions'), 'islr', None),
+            'municipal': ('retention_municipal_line_ids', _('Municipal Retentions'), 'municipal', 'municipal'),
         }
-        action_name = names.get(ret_type, _('Retentions'))
+        if ret_type not in config:
+            return
+        lines_field, action_name, form_suffix, list_suffix = config[ret_type]
+        retentions = self[lines_field].mapped('retention_id')
+        if not retentions:
+            return
 
-        if retentions:
-            if len(retentions) == 1:
-                
-                return {
-                    'name': action_name,
-                    'type': 'ir.actions.act_window',
-                    'res_model': 'account.retention',
-                    'view_mode': 'form',
-                    'res_id': retentions.id,
-                    'target': 'current',
-                }
-            else:
-                return {
-                    'name': action_name,
-                    'type': 'ir.actions.act_window',
-                    'res_model': 'account.retention',
-                    'view_mode': 'list,form',
-                    'domain': [('id', 'in', retentions.ids)],
-                    'target': 'current',
-                }
-        
+        form_id = self.env.ref(f"{module}.view_retention_{form_suffix}_form_{module}").id
+        if len(retentions) == 1:
+            return {
+                'name': action_name,
+                'type': 'ir.actions.act_window',
+                'res_model': 'account.retention',
+                'views': [(form_id, 'form')],
+                'res_id': retentions.id,
+                'target': 'current',
+            }
+        list_id = self.env.ref(f"{module}.view_retention_{list_suffix}_list_{module}").id if list_suffix else False
+        return {
+            'name': action_name,
+            'type': 'ir.actions.act_window',
+            'res_model': 'account.retention',
+            'views': [(list_id, 'list'), (form_id, 'form')],
+            'domain': [('id', 'in', retentions.ids)],
+            'target': 'current',
+        }
 
     @api.depends(
         "invoice_line_ids",

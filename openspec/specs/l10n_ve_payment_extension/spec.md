@@ -715,6 +715,12 @@ En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el 
 - **WHEN** se emite cualquiera de ellos
 - **THEN** no se lanza el error de duplicidad
 
+#### Scenario: Diferenciador vacío no actúa como comodín
+
+- **GIVEN** dos comprobantes del mismo tipo y partner sobre la misma factura, donde el diferenciador de uno está vacío (alícuota 0, sin concepto de pago o sin actividad económica) y el del otro tiene valor
+- **WHEN** se emite cualquiera de ellos
+- **THEN** no se lanza el error de duplicidad, en ningún sentido; el vacío se trata como un valor más y solo bloquea contra otro comprobante igualmente vacío
+
 #### Scenario: Comprobantes de terceros distintos sobre la misma factura
 
 - **GIVEN** dos comprobantes del mismo tipo con partners distintos sobre la misma factura
@@ -725,6 +731,22 @@ En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el 
 
 - **WHEN** la otra retención con la misma factura está `cancel`, o es de otro `type_retention`
 - **THEN** no se lanza el error de duplicidad
+
+### Requirement: Los botones de retenciones de la factura abren las vistas de su tipo
+
+`account.move.action_view_retention` DEBE (MUST) abrir las retenciones de la factura según `retention_type` del contexto (`iva`, `islr` o `municipal`) con las vistas de ese tipo indicadas de forma explícita (formulario, y lista cuando hay más de una; ISLR no tiene lista propia). Con una sola retención abre su formulario; con varias, la lista filtrada por esas retenciones. Un `retention_type` ausente o desconocido, o una factura sin retenciones de ese tipo, no devuelve acción.
+
+#### Scenario: Retención ISLR única
+
+- **GIVEN** una factura con una retención ISLR
+- **WHEN** se pulsa el botón de retención ISLR
+- **THEN** se abre el formulario ISLR de esa retención, no el de otro tipo
+
+#### Scenario: Varias retenciones municipales
+
+- **GIVEN** una factura con dos retenciones municipales
+- **WHEN** se pulsa el botón de retención municipal
+- **THEN** se abre la lista municipal filtrada por esas dos retenciones y, al abrir una, el formulario municipal
 
 ### Requirement: Retenciones de IVA en los libros fiscales según el alcance del libro
 
