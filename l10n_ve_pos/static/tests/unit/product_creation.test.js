@@ -43,11 +43,11 @@ describe("l10n_ve_pos creación de productos", () => {
         expect(hasAccess(makeStore({ allowed: true, canCreate: false }).store)).toBe(false);
     });
 
-    test("caja en caché sin el campo (undefined) sigue permitiendo crear", async () => {
+    test("caja en caché sin el campo (undefined) no permite crear", async () => {
         const { store, actions } = makeStore({ allowed: undefined });
-        expect(hasAccess(store)).toBe(true);
+        expect(hasAccess(store)).toBe(false);
         await PosStore.prototype.editProduct.call(store);
-        expect(actions).toEqual([ADD_ACTION]);
+        expect(actions).toEqual([]);
     });
 
     test("apagada no abre el formulario de producto nuevo", async () => {
