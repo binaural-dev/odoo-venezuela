@@ -1587,15 +1587,8 @@ class AccountRetention(models.Model):
                     ('move_id', '=', line.move_id.id),
                 ]
                 if differentiator:
-                    value = getattr(line[differentiator], 'id', line[differentiator])
-                    # A blank differentiator (aliquot 0, no concept/activity)
-                    # proves nothing about the lines being different, so it
-                    # must still clash with any other retention of the same
-                    # invoice, and a blank one on the other side clashes with
-                    # any value.
-                    if value:
-                        blanks = [False, 0.0] if differentiator == 'aliquot' else [False]
-                        domain.append((differentiator, 'in', [value] + blanks))
+                    value = line[differentiator]
+                    domain.append((differentiator, '=', getattr(value, 'id', value)))
                 duplicate_line = self.env['account.retention.line'].search(domain, limit=1)
                 if duplicate_line:
                     break

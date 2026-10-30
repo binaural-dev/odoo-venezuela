@@ -110,19 +110,29 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
                         same_ret._check_duplicate_invoices_all_states()
                     self.assertIn(other.display_name, str(e.exception))
 
-    def test_check_blocks_when_other_line_has_blank_aliquot(self):
-        """Una línea IVA con alícuota 0 en otra retención no esconde el
-        duplicado: la misma factura con alícuota 16 debe bloquearse."""
-        inv = self._post_invoice()
-        for other_state in ("draft", "emitted"):
-            with self.subTest(other_state=other_state):
-                other = self._create_retention("iva", inv, aliquot=0.0)
-                other.state = other_state
-                current = self._create_retention("iva", inv, aliquot=16.0)
+    def test_check_blank_differentiator_is_not_a_wildcard(self):
+        """Un diferenciador vacío (alícuota 0, sin concepto o actividad) es
+        un valor más: no bloquea contra otro distinto, en ningún sentido,
+        pero sí contra otro igualmente vacío."""
+        activity = self._create_activity("C15531", 5.0)
+        cases = {
+            "iva": ({"aliquot": 0.0}, {"aliquot": 16.0}),
+            "islr": ({"payment_concept_id": False}, {"payment_concept_id": self.concept_one.id}),
+            "municipal": ({"economic_activity_id": False}, {"economic_activity_id": activity.id}),
+        }
+        for type_retention, (blank, valued) in cases.items():
+            for first, second in ((blank, valued), (valued, blank)):
+                with self.subTest(type_retention=type_retention, first=first):
+                    inv = self._post_invoice()
+                    self._create_retention(type_retention, inv, **first)
+                    self._create_retention(type_retention, inv, **second)._check_duplicate_invoices_all_states()
+
+            with self.subTest(type_retention=type_retention, both_blank=True):
+                inv = self._post_invoice()
+                other = self._create_retention(type_retention, inv, **blank)
                 with self.assertRaises(UserError) as e:
-                    current._check_duplicate_invoices_all_states()
+                    self._create_retention(type_retention, inv, **blank)._check_duplicate_invoices_all_states()
                 self.assertIn(other.display_name, str(e.exception))
-                (other | current).state = "cancel"
 
     def test_check_ignores_cancelled_other_type_and_same_retention(self):
         inv = self._post_invoice()

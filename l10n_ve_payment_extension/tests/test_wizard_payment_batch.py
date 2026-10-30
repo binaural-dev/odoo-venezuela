@@ -27,6 +27,10 @@ class TestAccountMoveRemaining(RetentionTestCommon):
         self.assertEqual(action["res_model"], "account.retention")
         self.assertEqual(action["res_id"], retention.id)
         self.assertEqual([v[1] for v in action["views"]], ["form"])
+        self.assertEqual(
+            action["views"][0][0],
+            self.env.ref("l10n_ve_payment_extension.view_retention_islr_form_l10n_ve_payment_extension").id,
+        )
         _logger.info("========= test_01 passed =========")
 
     def test_02_action_view_retention_municipal_multi(self):
@@ -57,9 +61,25 @@ class TestAccountMoveRemaining(RetentionTestCommon):
         action = inv.with_context(retention_type="municipal").action_view_retention()
         self.assertEqual(action["res_model"], "account.retention")
         self.assertEqual([v[1] for v in action["views"]], ["list", "form"])
+        self.assertEqual(
+            action["views"][0][0],
+            self.env.ref("l10n_ve_payment_extension.view_retention_municipal_list_l10n_ve_payment_extension").id,
+        )
+        self.assertEqual(
+            action["views"][1][0],
+            self.env.ref("l10n_ve_payment_extension.view_retention_municipal_form_l10n_ve_payment_extension").id,
+        )
         self.assertIn(ret1.id, action["domain"][0][2])
         self.assertIn(ret2.id, action["domain"][0][2])
         _logger.info("========= test_02 passed =========")
+
+    def test_03_action_view_retention_unknown_type_returns_nothing(self):
+        inv = self._create_invoice_islr(
+            500, self.partner_pnr_75,
+            "in_invoice", self.purchase_journal,
+        )
+        self.assertFalse(inv.action_view_retention())
+        self.assertFalse(inv.with_context(retention_type="other").action_view_retention())
 
     def test_03_action_view_retention_iva_no_retentions(self):
         inv = self._create_invoice_reten_iva(
