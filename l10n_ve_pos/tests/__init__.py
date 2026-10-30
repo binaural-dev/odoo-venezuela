@@ -17,3 +17,4 @@ from . import test_pos_split_payment_foreign_rate
 from . import test_pos_config_stock_availability
 from . import test_server_date_vs_user_tz
 from . import test_pos_config_product_creation
+from . import test_pos_product_available_qty
