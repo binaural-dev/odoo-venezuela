@@ -405,3 +405,17 @@ El formulario de `sale.order` NO DEBE (MUST NOT) incluir la página `foreign_cur
 
 - **WHEN** se obtiene el formulario de `sale.order` en una compañía con `foreign_currency_id`
 - **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
+
+### Requirement: La fecha de la tasa de la orden es el día del usuario
+
+La tasa de la orden (`_compute_rate`, `create`, `default_rate`/`default_inverse_rate`, la tasa del precio de línea y la fecha de factura generada desde la orden) DEBE (MUST) tomar la fecha del usuario: `_l10n_ve_rate_date()` convierte `date_order` (Datetime en UTC) a la fecha local con `fields.Datetime.context_timestamp` (o usa `fields.Date.context_today` si no hay fecha), nunca `date_order.date()` ni `fields.Date.today()`; los defaults de tasa usan `fields.Date.context_today`. El chequeo de facturas vencidas del cliente DEBE (MUST) usar también el «hoy» del usuario.
+
+#### Scenario: Orden creada a las 8:30 pm en Caracas
+
+- **WHEN** se crea una orden a las 00:30 UTC del día siguiente, con usuario en `America/Caracas` y tasa del día del usuario pero no del día UTC
+- **THEN** la orden toma la tasa del día del usuario, `foreign_rate_date` es ese día y no se lanza error de tasa
+
+#### Scenario: Confirmación sin tasa en la orden a las 8:30 pm
+
+- **WHEN** se confirma una orden sin tasa cargada en ese mismo escenario
+- **THEN** la validación de tasa usa el día del usuario y la confirmación continúa

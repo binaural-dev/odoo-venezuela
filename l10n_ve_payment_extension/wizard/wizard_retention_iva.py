@@ -8,8 +8,8 @@ class TxtWizard(models.TransientModel):
     _name = "wizard.retention.iva"
     _description = "File IVA taxes with the SENIAT"
 
-    date_start = fields.Date(default=date.today().replace(day=1))
-    date_end = fields.Date(default=date.today().replace(day=1) + relativedelta(months=1, days=-1))
+    date_start = fields.Date(default=lambda self: fields.Date.context_today(self).replace(day=1))
+    date_end = fields.Date(default=lambda self: fields.Date.context_today(self).replace(day=1) + relativedelta(months=1, days=-1))
 
     def generate_txt(self):
         company_id = self.env.company.id

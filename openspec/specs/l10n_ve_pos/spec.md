@@ -491,3 +491,12 @@ El módulo DEBE (MUST) definir el grupo `l10n_ve_pos.group_authorized_discount_p
 
 - **WHEN** un administrador edita un usuario
 - **THEN** el grupo "Authorized discount pos" está disponible dentro del privilegio del Punto de Venta
+
+### Requirement: La tasa de la caja es la del día del usuario
+
+`pos.config._compute_rate` DEBE (MUST) buscar la tasa de `fields.Date.context_today` y no la de `fields.Date.today()`. Como esa búsqueda usa `raise_if_not_found=False`, usar la fecha UTC dejaba la caja con tasa `0` sin avisar después de las 8 pm de Caracas.
+
+#### Scenario: Caja consultada a las 8:30 pm en Caracas
+
+- **WHEN** se calcula la tasa de la caja a las 00:30 UTC del día siguiente y hay tasa del día del usuario
+- **THEN** `foreign_rate` toma la tasa del día del usuario y no queda en 0
