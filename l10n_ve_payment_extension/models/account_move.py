@@ -135,11 +135,7 @@ class AccountMoveRetention(models.Model):
             if move.move_type not in ("in_invoice", "in_refund"):
                 move.has_pending_retention_to_cancel = False
                 continue
-            retentions = (
-                move.retention_islr_line_ids
-                | move.retention_iva_line_ids
-                | move.retention_municipal_line_ids
-            ).mapped("retention_id").filtered(lambda r: r.state != "cancel")
+            retentions = move._get_all_retentions().filtered(lambda r: r.state != "cancel")
             move.has_pending_retention_to_cancel = bool(retentions)
 
     @api.depends(
@@ -588,8 +584,8 @@ class AccountMoveRetention(models.Model):
         return True
 
     @api.model
-    def _compute_rate_for_documents(self, documents, is_sale):
-        res = super()._compute_rate_for_documents(documents, is_sale)
+    def _compute_rate_for_documents(self, documents):
+        res = super()._compute_rate_for_documents(documents)
         for move in documents:
             if move.origin_payment_id.is_retention:
                 move.foreign_rate = move.origin_payment_id.foreign_rate
@@ -836,11 +832,7 @@ class AccountMoveRetention(models.Model):
         for move in self.filtered(lambda m: m.move_type in ("in_invoice", "in_refund")):
             move._check_retention_paid_lock()
 
-            retentions = (
-                move.retention_islr_line_ids
-                | move.retention_iva_line_ids
-                | move.retention_municipal_line_ids
-            ).mapped("retention_id").filtered(lambda r: r.state != "cancel")
+            retentions = move._get_all_retentions().filtered(lambda r: r.state != "cancel")
 
             move._draft_retentions_for_resync(retentions)
 
@@ -850,7 +842,8 @@ class AccountMoveRetention(models.Model):
     def button_cancel(self):
         for move in self.filtered(lambda m: m.move_type in ("in_invoice", "in_refund")):
             # Same guard as button_draft(): both flows dismantle the
-            # invoice's retentions, so a real payment applied blocks both.
+            # invoice's retentions, so a real payment applied blocks both
+            # (only when the invoice has emitted/mid-resync retentions).
             move._check_retention_paid_lock()
 
             # Cancel the invoice's non-cancelled retentions explicitly,
@@ -858,11 +851,7 @@ class AccountMoveRetention(models.Model):
             # requires the invoices of a third-party retention to be
             # posted, so this must happen before super() moves the
             # invoice to 'cancel'.
-            retentions = (
-                move.retention_islr_line_ids
-                | move.retention_iva_line_ids
-                | move.retention_municipal_line_ids
-            ).mapped("retention_id").filtered(lambda r: r.state != "cancel")
+            retentions = move._get_all_retentions().filtered(lambda r: r.state != "cancel")
             if retentions:
                 retentions.action_cancel()
 
@@ -923,14 +912,27 @@ class AccountMoveRetention(models.Model):
 
             retention.with_context(bypass_retention_lock=True).action_draft()
 
+    def _get_all_retentions(self):
+        """Retention vouchers (any type, any state) this invoice belongs to."""
+        self.ensure_one()
+        return (
+            self.retention_islr_line_ids
+            | self.retention_iva_line_ids
+            | self.retention_municipal_line_ids
+        ).mapped("retention_id")
+
     def _check_retention_paid_lock(self):
         """
-        Shared guard for button_draft() (paso 2) and
-        action_recalculate_retentions() (paso 5): once an invoice has a
-        REAL payment applied - anything other than its own retention's
-        payment, which is reconciled against it as a side effect of
-        emitting the retention itself, not an external payment - its
-        retentions can no longer be safely desmontadas/reconstruidas.
+        Shared guard for button_draft(), button_cancel() and
+        action_recalculate_retentions(): once an invoice that has retentions
+        to desmontar has a REAL payment applied - anything other than its
+        own retention's payment, which is reconciled against it as a side
+        effect of emitting the retention itself, not an external payment -
+        those retentions can no longer be safely desmontadas/reconstruidas.
+        Retentions that count are the emitted ones and the ones caught
+        mid-resync (draft with payment_ids, see _get_retentions_pending_resync);
+        a draft retention without payments has nothing to rebuild, and an
+        invoice without retentions is never blocked by a plain payment.
         Evaluated before anything is desmontado, since the reconciliation
         state no longer reflects the original one afterwards. Using
         payment_state in ("paid", "in_payment") here would also block the
@@ -938,6 +940,11 @@ class AccountMoveRetention(models.Model):
         reconciled against the invoice - that case is safe to resync.
         """
         self.ensure_one()
+        retentions = self._get_all_retentions().filtered(
+            lambda r: r.state == "emitted" or (r.state == "draft" and r.payment_ids)
+        )
+        if not retentions:
+            return
         real_payments = self._get_reconciled_payments().filtered(
             lambda p: not p.is_retention
         )
@@ -1156,11 +1163,7 @@ class AccountMoveRetention(models.Model):
         banner/button, and what action_recalculate_retentions() drafts).
         """
         self.ensure_one()
-        all_retentions = (
-            self.retention_islr_line_ids
-            | self.retention_iva_line_ids
-            | self.retention_municipal_line_ids
-        ).mapped("retention_id")
+        all_retentions = self._get_all_retentions()
 
         mid_resync = all_retentions.filtered(lambda r: r.state == "draft" and r.payment_ids)
 
