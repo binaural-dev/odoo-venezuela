@@ -296,6 +296,15 @@ class TestKioskPublicRoutes(TransactionCase):
             }
         )
 
+    def _partner_from_result(self, result):
+        """Partner de la respuesta de identificación. El ``id`` viene firmado
+        (``"<id>-<hmac>"``), así que se resuelve igual que lo hace el core al
+        recibir la orden; un id sin firmar da un recordset vacío."""
+        signed_id = result["res.partner"][0]["id"]
+        return self.env["pos.order"]._get_self_partner_from_token(
+            self.config, signed_id
+        ) or self.env["res.partner"]
+
     # -- identify ------------------------------------------------------------
 
     def test_identify_not_found_returns_empty(self):
@@ -434,7 +443,7 @@ class TestKioskPublicRoutes(TransactionCase):
             name="Cliente Nuevo",
             phone="0414-1234567",
         )
-        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        partner = self._partner_from_result(result)
         self.assertEqual(partner.phone, "0414-1234567")
 
     # -- identify_create: dirección ------------------------------------------
@@ -490,7 +499,7 @@ class TestKioskPublicRoutes(TransactionCase):
         finally:
             self.config.self_ordering_require_address = False
         self.assertFalse(result["error"])
-        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        partner = self._partner_from_result(result)
         self.assertEqual(partner.state_id, state)
         self.assertEqual(partner.municipality, municipality)
         self.assertEqual(partner.street, "Av. Siempre Viva")
@@ -615,7 +624,7 @@ class TestKioskPublicRoutes(TransactionCase):
             municipality_id=municipality.id,
         )
         self.assertFalse(result["error"])
-        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        partner = self._partner_from_result(result)
         self.assertEqual(partner.state_id, state)
         self.assertEqual(partner.municipality, municipality)
 
@@ -678,7 +687,7 @@ class TestKioskPublicRoutes(TransactionCase):
             street="Calle 1",
         )
         self.assertFalse(result["error"])
-        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        partner = self._partner_from_result(result)
         self.assertEqual(partner.state_id, state_b)
         self.assertEqual(partner.municipality, municipality_b)
         self.assertFalse(partner.city_id)
@@ -698,7 +707,7 @@ class TestKioskPublicRoutes(TransactionCase):
             state_id=state_b.id,
         )
         self.assertFalse(result["error"])
-        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        partner = self._partner_from_result(result)
         self.assertEqual(partner.state_id, state_b)
         self.assertFalse(partner.municipality)
         self.assertFalse(partner.city_id)
@@ -715,7 +724,7 @@ class TestKioskPublicRoutes(TransactionCase):
             phone="0412-9990011",
         )
         self.assertFalse(result["error"])
-        partner = self.env["res.partner"].browse(result["res.partner"][0]["id"])
+        partner = self._partner_from_result(result)
         company_partner = self.company.partner_id
         self.assertEqual(partner.state_id, company_partner.state_id)
         self.assertEqual(partner.municipality, company_partner.municipality)
@@ -774,6 +783,84 @@ class TestKioskPublicRoutes(TransactionCase):
         )
         self.assertTrue(result["error"])
         self.assertFalse(p_empty.phone)
+
+    # -- id firmado del partner (ticket 16110) -------------------------------
+
+    def test_identify_returns_signed_partner_id(self):
+        """``identify`` devuelve el id firmado, que el core resuelve al partner."""
+        partner = self._make_partner("V", "12121212", phone="0412-1212121")
+        result = self._self_order(
+            "l10n_ve_kiosk_identify",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="12121212",
+        )
+        signed_id = result["res.partner"][0]["id"]
+        self.assertIsInstance(signed_id, str)
+        self.assertEqual(self._partner_from_result(result), partner)
+
+    def test_identify_create_returns_signed_partner_id(self):
+        """Creación nueva y dedup devuelven el id firmado."""
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="13131313",
+            name="Cliente Nuevo",
+            phone="0412-1313131",
+        )
+        created = self._partner_from_result(result)
+        self.assertEqual(created.vat, "13131313")
+
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_create",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="13131313",
+            name="Otro Nombre",
+            phone="0412-1313132",
+        )
+        self.assertEqual(self._partner_from_result(result), created)
+
+    def test_set_phone_returns_signed_partner_id(self):
+        partner = self._make_partner("V", "14141414")
+        result = self._self_order(
+            "l10n_ve_kiosk_identify_set_phone",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="14141414",
+            phone="0412-1414141",
+        )
+        self.assertEqual(self._partner_from_result(result), partner)
+
+    def test_kiosk_order_keeps_identified_partner(self):
+        """La orden que el Kiosko manda a ``process-order`` con el partner que
+        devolvió ``identify`` se guarda con ese ``partner_id``. Con el id
+        numérico el core lo descartaba y la orden quedaba sin cliente."""
+        partner = self._make_partner("V", "15151515", phone="0412-1515151")
+        result = self._self_order(
+            "l10n_ve_kiosk_identify",
+            access_token=self.config.access_token,
+            prefix_vat="V",
+            vat="15151515",
+        )
+        payload = {
+            "partner_id": result["res.partner"][0]["id"],
+            "lines": [],
+            "amount_total": 0.0,
+            "amount_tax": 0.0,
+            "amount_paid": 0.0,
+            "amount_return": 0.0,
+        }
+        PosOrder = self.env["pos.order"]
+        vals = PosOrder._check_pos_order(self.config, payload, "kiosk")
+        self.assertEqual(vals["partner_id"], partner.id)
+
+        # Contrato del core que motivó el fix: el id sin firmar se descarta.
+        vals = PosOrder._check_pos_order(
+            self.config, dict(payload, partner_id=partner.id), "kiosk"
+        )
+        self.assertFalse(vals["partner_id"])
 
     # -- session_orders ------------------------------------------------------
 
