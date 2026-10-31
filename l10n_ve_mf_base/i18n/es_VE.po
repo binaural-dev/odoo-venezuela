@@ -32,3 +32,23 @@ msgid "The fiscal printer subtotal (%s) does not match the document sent (%s)."
 msgstr ""
 "El subtotal de la máquina fiscal (%s) no coincide con el documento enviado "
 "(%s)."
+
+#. module: l10n_ve_mf_base
+#. odoo-javascript
+#: code:addons/l10n_ve_mf_base/static/src/drivers/TfhkaDriver.js:0
+msgid ""
+"The fiscal printer did not confirm whether the document was printed. Do not "
+"print it again until it is verified."
+msgstr ""
+"La máquina fiscal no confirmó si emitió el documento. No lo vuelva a "
+"imprimir hasta verificarlo."
+
+#. module: l10n_ve_mf_base
+#. odoo-javascript
+#: code:addons/l10n_ve_mf_base/static/src/drivers/TfhkaDriver.js:0
+msgid ""
+"The fiscal printer did not confirm whether the document was printed. Do not "
+"print it again until it is verified. Detail: %(error)s"
+msgstr ""
+"La máquina fiscal no confirmó si emitió el documento. No lo vuelva a "
+"imprimir hasta verificarlo. Detalle: %(error)s"
