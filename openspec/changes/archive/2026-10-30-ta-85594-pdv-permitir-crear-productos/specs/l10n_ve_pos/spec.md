@@ -2,7 +2,7 @@
 
 ### Requirement: "Permitir crear productos" por caja
 
-`pos.config` DEBE (MUST) tener `allow_product_creation_in_pos` ("Permitir crear productos"), encendido por defecto y editable desde Ajustes. Apagado, el PdV DEBE (MUST) ocultar "Crear producto" del menú y "Crear manualmente" de la pantalla de productos vacía, y `PosStore.editProduct()` sin producto NO DEBE (MUST NOT) abrir el formulario. Solo un `false` explícito apaga la creación.
+`pos.config` DEBE (MUST) tener `allow_product_creation_in_pos` ("Permitir crear productos"), apagado por defecto y editable desde Ajustes. Apagado, el PdV DEBE (MUST) ocultar "Crear producto" del menú y "Crear manualmente" de la pantalla de productos vacía, y `PosStore.editProduct()` sin producto NO DEBE (MUST NOT) abrir el formulario. Solo un `true` explícito la enciende.
 
 #### Scenario: Creación permitida
 
@@ -22,9 +22,9 @@
 #### Scenario: Caja cargada antes de actualizar el módulo
 
 - **WHEN** el PdV trae `pos.config` de su caché sin el campo (`undefined`)
-- **THEN** la creación se trata como permitida
+- **THEN** la creación se trata como no permitida
 
 #### Scenario: Cajas existentes al actualizar
 
 - **WHEN** se actualiza `l10n_ve_pos` en una base con cajas creadas antes
-- **THEN** todas quedan con "Permitir crear productos" encendido
+- **THEN** todas quedan con "Permitir crear productos" apagado hasta que se encienda en Ajustes

@@ -58,6 +58,12 @@ msgid "A partner with the same email already exists."
 msgstr "Ya existe un usuario con el mismo correo electrónico."
 
 #. module: l10n_ve_contact
+#. odoo-javascript
+#: code:addons/l10n_ve_contact/static/src/fields/vat_field/vat_field.js:0
+msgid "CI/RIF (digits only)"
+msgstr "CI/RIF (solo dígitos)"
+
+#. module: l10n_ve_contact
 #: model_terms:ir.ui.view,arch_db:l10n_ve_contact.res_partner_l10n_ve_form_contacts
 msgid "CI/RIF: 12345678"
 msgstr ""

@@ -37,7 +37,7 @@ class PosConfig(models.Model):
     validate_phone_in_pos = fields.Boolean(default=False)
     allow_product_creation_in_pos = fields.Boolean(
         "Allow product creation",
-        default=True,
+        default=False,
         help="Allow creating products from the PoS screen",
     )
 

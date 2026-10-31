@@ -14,7 +14,7 @@ del empleado. No hay un ajuste por caja para apagarlo. Hay un segundo acceso,
 ## What Changes
 
 - **Nuevo ajuste por caja** "Permitir crear productos" (`pos.config.allow_product_creation_in_pos`,
-  `Boolean`, **encendido por defecto**), con su related en `res.config.settings` y
+  `Boolean`, **apagado por defecto**), con su related en `res.config.settings` y
   un toggle en el bloque "POS Configuration" de Ajustes, junto a los demás de la
   caja. Mismo nombre en los dos modelos, como `amount_to_zero` o
   `sell_kit_from_another_store` (un nombre con prefijo `pos_` haría que
@@ -25,10 +25,13 @@ del empleado. No hay un ajuste por caja para apagarlo. Hay un segundo acceso,
   - no abre el formulario de producto nuevo si algo llama a `editProduct()` sin
     producto.
 - Editar un producto existente (`editProduct(product)`) no cambia.
-- **Solo un `false` explícito apaga la creación** (getter `PosStore.isProductCreationAllowed`):
+- **Solo un `true` explícito enciende la creación** (getter `PosStore.isProductCreationAllowed`):
   una caja con la sesión abierta antes de actualizar el módulo trae `pos.config`
-  de IndexedDB sin el campo (`undefined`) hasta "Volver a cargar datos", y no debe
-  perder la opción.
+  de IndexedDB sin el campo (`undefined`) hasta "Volver a cargar datos", y en la
+  base ya vale `false`.
+- **Apagado por defecto** (decidido el 2026-10-30): ninguna caja crea productos
+  desde el PdV hasta que alguien lo encienda, para evitar productos creados sin
+  control.
 - Traducción es_VE de la etiqueta y del help.
 - Tests Python (valor por defecto, guardado desde Ajustes, campo en la vista) y
   Hoot (getter y `editProduct`, también con el campo `undefined`).
@@ -57,6 +60,8 @@ del empleado. No hay un ajuste por caja para apagarlo. Hay un segundo acceso,
   #1545 también choca `tests/__init__.py`, porque los dos agregan una línea al
   final: se conservan las dos.
 - **Despliegue:** `-u l10n_ve_pos`. Columna nueva en `pos_config`; al actualizar,
-  las cajas existentes quedan con la creación permitida, como hoy.
+  **todas las cajas existentes quedan sin "Crear producto"**. Si alguna caja tiene
+  que seguir creando productos, hay que encender "Permitir crear productos" en
+  Ajustes para esa caja.
 - **Ajustes:** el toggle está en Ajustes → Binaural Settings → POS Configuration y
   se aplica a la caja elegida en ese bloque.

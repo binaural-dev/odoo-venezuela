@@ -562,28 +562,9 @@ El módulo DEBE (MUST) definir el grupo `l10n_ve_pos.group_authorized_discount_p
 - **WHEN** se calcula la tasa de la caja a las 00:30 UTC del día siguiente y hay tasa del día del usuario
 - **THEN** `foreign_rate` toma la tasa del día del usuario y no queda en 0
 
-### Requirement: Stock actual al abrir la caja con "Mostrar solamente los productos disponibles"
-
-Con el flag activo, `pos.session.load_data` DEBE (MUST) cargar `product.template` y `product.product` sin el filtro por `write_date` de la carga incremental, porque un movimiento de stock no lo cambia: una sesión nueva o la entrada desde el backend traen el stock actual aunque la caja tenga caché. F5 con la sesión abierta no consulta al servidor: para eso lo recomendado es "Volver a cargar datos" → "Limitado".
-
-#### Scenario: Stock cambiado con la caja ya cargada
-
-- **WHEN** el flag está activo, la caja cargó un producto almacenable y después su stock cambia en la ubicación de origen de la caja (se repone o se agota) sin que cambie el producto
-- **THEN** al abrir una sesión nueva o entrar desde el backend el producto aparece o desaparece según el stock actual
-
-#### Scenario: F5 con la sesión abierta
-
-- **WHEN** el flag está activo, la sesión sigue abierta y se repone el stock de un producto oculto
-- **THEN** tras F5 sigue oculto, y aparece tras "Volver a cargar datos" → "Limitado", que vacía la caché del navegador igual que "Completo" y recarga hasta `point_of_sale.limited_product_count` plantillas
-
-#### Scenario: Flag apagado
-
-- **WHEN** la compañía no activa el flag y la caja abre con caché
-- **THEN** la carga incremental conserva el filtro por `write_date` del core y solo reenvía los productos modificados
-
 ### Requirement: "Permitir crear productos" por caja
 
-`pos.config` DEBE (MUST) tener `allow_product_creation_in_pos` ("Permitir crear productos"), encendido por defecto y editable desde Ajustes. Apagado, el PdV DEBE (MUST) ocultar "Crear producto" del menú y "Crear manualmente" de la pantalla de productos vacía, y `PosStore.editProduct()` sin producto NO DEBE (MUST NOT) abrir el formulario. Solo un `false` explícito apaga la creación.
+`pos.config` DEBE (MUST) tener `allow_product_creation_in_pos` ("Permitir crear productos"), apagado por defecto y editable desde Ajustes. Apagado, el PdV DEBE (MUST) ocultar "Crear producto" del menú y "Crear manualmente" de la pantalla de productos vacía, y `PosStore.editProduct()` sin producto NO DEBE (MUST NOT) abrir el formulario. Solo un `true` explícito la enciende.
 
 #### Scenario: Creación permitida
 
@@ -603,9 +584,27 @@ Con el flag activo, `pos.session.load_data` DEBE (MUST) cargar `product.template
 #### Scenario: Caja cargada antes de actualizar el módulo
 
 - **WHEN** el PdV trae `pos.config` de su caché sin el campo (`undefined`)
-- **THEN** la creación se trata como permitida
+- **THEN** la creación se trata como no permitida
 
 #### Scenario: Cajas existentes al actualizar
 
 - **WHEN** se actualiza `l10n_ve_pos` en una base con cajas creadas antes
-- **THEN** todas quedan con "Permitir crear productos" encendido
+- **THEN** todas quedan con "Permitir crear productos" apagado hasta que se encienda en Ajustes
+### Requirement: Stock actual al abrir la caja con "Mostrar solamente los productos disponibles"
+
+Con el flag activo, `pos.session.load_data` DEBE (MUST) cargar `product.template` y `product.product` sin el filtro por `write_date` de la carga incremental, porque un movimiento de stock no lo cambia: una sesión nueva o la entrada desde el backend traen el stock actual aunque la caja tenga caché. F5 con la sesión abierta no consulta al servidor: para eso lo recomendado es "Volver a cargar datos" → "Limitado".
+
+#### Scenario: Stock cambiado con la caja ya cargada
+
+- **WHEN** el flag está activo, la caja cargó un producto almacenable y después su stock cambia en la ubicación de origen de la caja (se repone o se agota) sin que cambie el producto
+- **THEN** al abrir una sesión nueva o entrar desde el backend el producto aparece o desaparece según el stock actual
+
+#### Scenario: F5 con la sesión abierta
+
+- **WHEN** el flag está activo, la sesión sigue abierta y se repone el stock de un producto oculto
+- **THEN** tras F5 sigue oculto, y aparece tras "Volver a cargar datos" → "Limitado", que vacía la caché del navegador igual que "Completo" y recarga hasta `point_of_sale.limited_product_count` plantillas
+
+#### Scenario: Flag apagado
+
+- **WHEN** la compañía no activa el flag y la caja abre con caché
+- **THEN** la carga incremental conserva el filtro por `write_date` del core y solo reenvía los productos modificados

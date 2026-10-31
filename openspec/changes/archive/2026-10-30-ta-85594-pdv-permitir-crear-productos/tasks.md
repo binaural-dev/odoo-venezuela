@@ -1,8 +1,8 @@
 ## 1. Implementación
 
-- [x] 1.1 `pos.config.allow_product_creation_in_pos` (encendido por defecto), related en
+- [x] 1.1 `pos.config.allow_product_creation_in_pos` (apagado por defecto, ver 3.2), related en
       `res.config.settings` y toggle en el bloque "POS Configuration" de Ajustes
-- [x] 1.2 `PosStore.isProductCreationAllowed` (solo `false` apaga), `hasProductCreationAccess`
+- [x] 1.2 `PosStore.isProductCreationAllowed` (solo `true` enciende), `hasProductCreationAccess`
       y `editProduct()` sin producto
 - [x] 1.3 "Crear manualmente" con `t-if` en la extensión de `point_of_sale.ProductScreen`
 - [x] 1.4 Traducciones es_VE de la etiqueta y del help
@@ -16,7 +16,7 @@
 
 - [x] 2.1 Instancia posconsultoria, base `posconsultoria_85594` (copia de `pos_consultor`),
       checkout local `local/posconsultoria-ta85594c` = `88b097b27` (ticket 16064) + esta rama.
-      Al actualizar, las 7 cajas quedaron con la creación permitida.
+      Al actualizar, las 7 cajas quedaron con la creación permitida (default anterior, `True`).
 - [x] 2.2 Tests Python: `--test-tags /l10n_ve_pos:TestPosConfigProductCreation`, 3/3.
       En base nueva con solo `origin/19.0` + esta rama (`scripts/odoo-test l10n_ve_pos
       --container odoo-posconsultoria --addons .../odoo-venezuela/l10n_ve_pos --recursive`):
@@ -40,3 +40,7 @@
       `tests/__init__.py` con #1545 y la nota de "Crear manualmente" (2.5).
 
 - [x] 3.1 Archivar el change y volcarlo en `openspec/specs/l10n_ve_pos/spec.md`
+- [x] 3.2 (2026-10-30, ya con el PR #1550 abierto) El ajuste pasa a **apagado por defecto**,
+      para evitar que se creen productos sin control. El getter cuenta como permitido solo
+      un `true` explícito (una caja en caché sin el campo queda sin creación, igual que en la
+      base). Tests Python y Hoot ajustados. Va en commits nuevos, sin reescribir la rama.

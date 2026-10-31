@@ -13,7 +13,7 @@ Este añade los siguientes campos:
 * Mostrar cantidades disponibles en stock
 * Mostrar solamente los productos disponibles: Eliminar automáticamente los productos sin disponibilidad del POS
 * Cantidad en 0 : No permitir ventas si no hay disponibilidad suficiente
-* Permitir crear productos: Mostrar u ocultar la opción de crear productos desde el PdV
+* Permitir crear productos: Mostrar u ocultar la opción de crear productos desde el PdV (apagado por defecto)
 * (res.group) permitir descuentos
 * (res.group) Grupo para administrar cantidades en POS
 * (res.group) Grupo para Cambiar el precio en POS
