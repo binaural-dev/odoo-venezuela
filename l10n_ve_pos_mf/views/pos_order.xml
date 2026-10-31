@@ -10,6 +10,15 @@
                 <field name="mf_invoice_number"/>
                 <field name="fiscal_machine"/>
             </xpath>
+            <xpath expr="//sheet" position="before">
+                <div class="alert alert-warning mb-0" role="alert" invisible="not mf_print_verification">
+                    It is not known whether the fiscal printer printed this order: check it
+                    on the fiscal printer and resolve it before printing it again.
+                    <button name="action_mf_resolve_print_verification" type="object"
+                            string="Resolve fiscal print" class="btn-link"
+                            groups="point_of_sale.group_pos_manager"/>
+                </div>
+            </xpath>
         </field>
     </record>
 </odoo>
