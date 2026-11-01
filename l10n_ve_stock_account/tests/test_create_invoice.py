@@ -67,6 +67,16 @@ class TestCreateInvoiceFromPicking(StockAccountTestCommon):
             "company_id": cls.company.id,
         })
 
+        # _create_sale_order() fija date_order en "2026-02-01": compute_rate()
+        # exige una tasa con esa fecha EXACTA (no la mas cercana), distinta de
+        # la tasa de "hoy" que ya crea StockAccountTestCommon.
+        cls.env["res.currency.rate"].create({
+            "currency_id": cls.currency_usd.id,
+            "company_id": cls.company.id,
+            "name": "2026-02-01",
+            "rate": 1.0 / 380.0,
+        })
+
     # =========================================================================
     # Helpers
     # =========================================================================

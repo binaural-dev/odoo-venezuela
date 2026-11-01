@@ -65,32 +65,22 @@ El sistema DEBE (MUST) rechazar, vía `check_duplicate_vat`, la existencia de ot
 
 ### Requirement: Duplicidad de email en contactos
 
-El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un `res.partner` de tipo `contact` con un email que ya tenga **cualquier** otro partner (el dominio filtra por `email` e `id`, sin filtrar por `type`): en `create` cuando los valores traen `email` y el `type` es `contact` (o no viene), y en `write` cuando traen `email` **distinto del que ya tiene el registro**, evaluando el `type` de cada registro y después del `super().write()`. El filtro `email_changed` de `write` solo observa `email`; un `write` que cambia `type` a `contact` dejando un email ya ajeno no dispara la validación (límite conocido, idéntico al upstream 19.0). Igual que en el RIF, los flags de compañía solo determinan si la búsqueda se restringe a `company_id` o es global y qué mensaje se muestra; nunca desactivan el control.
+El sistema DEBE (MUST) rechazar, vía `check_duplicate_email`, que se guarde un `res.partner` de tipo `contact` con un email que ya tenga **cualquier** otro partner (el dominio filtra por `email` e `id`, sin filtrar por `type`): en `create` cuando los valores traen `email` y el `type` es `contact` (o no viene), y en `write` cuando traen `email` **distinto del que ya tiene el registro**, evaluando el `type` de cada registro y después del `super().write()`. En `create`, además, una vez creado el lote se vuelve a validar cada contacto cuyo email se repite en otro contacto del mismo lote (las direcciones del lote no cuentan para esa repetición), porque el control previo solo ve los partners que ya existían. Igual que en el RIF, los flags de compañía solo determinan si la búsqueda se restringe a `company_id` o es global y qué mensaje se muestra; nunca desactivan el control.
 
 #### Scenario: Email repetido
 
 - **WHEN** se guarda un contacto de tipo `contact` con un email que ya tiene otro partner dentro del alcance configurado, aunque ese otro partner sea una dirección de entrega o una compañía
 - **THEN** se lanza `ValidationError`
 
+#### Scenario: Email repetido dentro del mismo lote
+
+- **WHEN** se crean en una sola llamada (por ejemplo una importación) dos contactos de tipo `contact` con el mismo email que no existía antes
+- **THEN** se lanza `ValidationError` y no se crea ninguno
+
 #### Scenario: Reescribir el mismo email
 
 - **WHEN** un `write` envía en `email` el mismo valor que ya tiene el contacto (un formulario, una importación o cualquier proceso que reenvía todos los campos), aunque otro partner ya comparta ese email por datos previos
 - **THEN** no se valida la duplicidad y el `write` se guarda
-
-#### Scenario: Escritura multi-record parcialmente cambiada
-
-- **WHEN** un `write` aplica el mismo `email` sobre un recordset de varios contactos donde al menos uno ya tiene ese email y otro lo está cambiando a un valor que ya existe en otro partner
-- **THEN** se lanza `ValidationError` por el registro cuyo email cambió realmente; el registro que reescribe su email actual no participa en la validación
-
-#### Scenario: Hijos de cualquier tipo con email compartido
-
-- **WHEN** un contacto tiene hijos de tipo `delivery`, `invoice` u `other` que comparten su email y el contacto se reescribe enviando el mismo email (con o sin otros campos)
-- **THEN** no se valida la duplicidad y el `write` se guarda
-
-#### Scenario: Cambio de email a uno ajeno
-
-- **WHEN** un `write` cambia el `email` de un contacto a un valor que ya tiene otro partner
-- **THEN** se lanza `ValidationError`
 
 #### Scenario: Dirección de entrega
 

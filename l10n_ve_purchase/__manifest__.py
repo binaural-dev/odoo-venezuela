@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Compras",
-    "version": "1.0",
+    "version": "19.0.1.0.0",
     "license": "LGPL-3",
     "summary": "Módulo para gestionar compras en Venezuela",
     "description": """

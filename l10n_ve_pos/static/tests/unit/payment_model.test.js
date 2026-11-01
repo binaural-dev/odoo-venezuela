@@ -108,6 +108,106 @@ describe("l10n_ve_pos set_foreign_amount", () => {
     });
 });
 
+// Reembolso con la TASA EXACTA del pago foráneo original (ticket #15114): la
+// línea de pago foránea debe espejar al centavo lo que el cliente pagó, en vez
+// de re-derivar una tasa de los totales agregados (que deriva unos céntimos).
+// La tasa exacta la precarga la pantalla de pago (get_refund_foreign_rate) y
+// dispara la rama directa de set_foreign_amount.
+describe("l10n_ve_pos set_foreign_amount — reembolso a tasa exacta", () => {
+    const EXACT_RATE = 40; // Bs por $ del pago original
+    const REFUND_DUE = -3600; // deuda del reembolso: -$90 a la tasa exacta
+
+    const makeExactRefund = () =>
+        makeOrderStub({ totalDue: REFUND_DUE, refundExactRate: EXACT_RATE });
+
+    test("cubre la deuda: fija la deuda local exacta (snap, sin deriva)", () => {
+        const p = callSetForeignAmount(makeExactRefund(), 90);
+        expect(p.amount).toBe(REFUND_DUE); // -3600 exacto
+        expect(p.foreign_amount).toBe(-90); // signo de reembolso
+    });
+
+    test("sobrepago: espeja el tender directo (foráneo × tasa exacta)", () => {
+        const p = callSetForeignAmount(makeExactRefund(), 100);
+        expect(p.amount).toBe(-4000); // 100 × 40, NO -3600 + excedente
+        expect(p.foreign_amount).toBe(-100);
+    });
+
+    test("parcial: conversión directa a la tasa exacta", () => {
+        const p = callSetForeignAmount(makeExactRefund(), 45);
+        expect(p.amount).toBe(-1800); // 45 × 40
+        expect(p.foreign_amount).toBe(-45);
+    });
+
+    test("el signo tecleado no importa (usa magnitud, línea siempre negativa)", () => {
+        const pPos = callSetForeignAmount(makeExactRefund(), 100);
+        const pNeg = callSetForeignAmount(makeExactRefund(), -100);
+        expect(pNeg.amount).toBe(pPos.amount); // -4000 en ambos
+        expect(pNeg.foreign_amount).toBe(-100);
+    });
+
+    test("snap solo dentro de un paso foráneo de la deuda mostrada", () => {
+        // Deuda mostrada 90,00 $. 90,01 está a un paso → snap a -3600.
+        expect(callSetForeignAmount(makeExactRefund(), 90.01).amount).toBe(REFUND_DUE);
+        // 90,05 → 3602,00 (fuera) → conversión directa.
+        expect(callSetForeignAmount(makeExactRefund(), 90.05).amount).toBe(-3602);
+    });
+
+    test("snap también un paso por debajo, y no a dos pasos (tarea 83148, H20)", () => {
+        // 89,99 → 3599,60: a un céntimo de $ de la deuda → snap.
+        expect(callSetForeignAmount(makeExactRefund(), 89.99).amount).toBe(REFUND_DUE);
+        // 89,98 → 3599,20: a dos céntimos → espeja lo tecleado.
+        expect(callSetForeignAmount(makeExactRefund(), 89.98).amount).toBe(-3599.2);
+    });
+
+    test("moneda sin resolver: mismo límite con la tolerancia manual", () => {
+        const order = makeOrderStub({
+            totalDue: REFUND_DUE,
+            refundExactRate: EXACT_RATE,
+            fc: makeBareCurrency(),
+        });
+        expect(callSetForeignAmount(order, 90.01).amount).toBe(REFUND_DUE);
+        expect(callSetForeignAmount(order, 89.99).amount).toBe(REFUND_DUE);
+        expect(callSetForeignAmount(order, 89.98).amount).toBe(-3599.2);
+        expect(callSetForeignAmount(order, 90.05).amount).toBe(-3602);
+    });
+
+    test("deuda que no cae en el céntimo: el paso se cuenta desde la deuda mostrada", () => {
+        // -3600,25 Bs a 40 = 90,00625 $, mostrada 90,01 $.
+        const order = makeOrderStub({ totalDue: -3600.25, refundExactRate: EXACT_RATE });
+        expect(callSetForeignAmount(order, 90.02).amount).toBe(-3600.25); // un paso
+        expect(callSetForeignAmount(order, 90).amount).toBe(-3600.25); // un paso
+        expect(callSetForeignAmount(order, 89.99).amount).toBe(-3599.6); // dos: espejo
+    });
+
+    test("tasa no entera: el ruido de 1/tasa no mueve el límite", () => {
+        // 36,5 Bs por $: deuda -3285 Bs = 90 $ (3285 × 1/36,5 = 89,999…).
+        const order = makeOrderStub({ totalDue: -3285, refundExactRate: 36.5 });
+        expect(callSetForeignAmount(order, 90).amount).toBe(-3285);
+        expect(callSetForeignAmount(order, 90.01).amount).toBe(-3285);
+        expect(callSetForeignAmount(order, 90.02).amount).toBe(-3285.73);
+    });
+
+    test("sin tasa exacta cae al camino de respaldo (agregada, con snap de venta)", () => {
+        // refundRate (agregada) sin refundExactRate: rama general, no la directa.
+        const order = makeOrderStub({ totalDue: REFUND_DUE, rate: 36.5, refundRate: 40 });
+        const p = callSetForeignAmount(order, -90);
+        expect(p.amount).toBe(REFUND_DUE); // cubre la deuda -> snap
+    });
+
+    test("_recomputeForeignFromLocal (método local Bs) usa la tasa exacta", () => {
+        const order = makeExactRefund();
+        const payment = {
+            pos_order_id: order,
+            amount: REFUND_DUE, // -3600 Bs
+            foreign_amount: 0,
+            payment_method_id: { is_foreign_currency: false },
+        };
+        PosPayment.prototype._recomputeForeignFromLocal.call(payment);
+        // -3600 / 40 (exacta) = -90.
+        expect(payment.foreign_amount).toBe(-90);
+    });
+});
+
 // _recomputeForeignFromLocal corre en TODO pago (setAmount), sin importar
 // is_foreign_currency: un pago en Bs también necesita su equivalente en USD
 // para la contabilidad dual (openspec/migration-lessons.md, "Pendientes por
@@ -146,5 +246,39 @@ describe("l10n_ve_pos _recomputeForeignFromLocal", () => {
         };
         PosPayment.prototype._recomputeForeignFromLocal.call(payment);
         expect(payment.foreign_amount).toBe(0);
+    });
+});
+
+// Reembolso SIN tasa exacta (proporción agregada de la orden): el pago lleva el
+// signo del reembolso aunque el cajero teclee el monto en positivo, y el
+// excedente se suma con el signo de la deuda (tarea 83148, H1).
+describe("l10n_ve_pos set_foreign_amount — signo en reembolso agregado", () => {
+    const REFUND_DUE = -3600; // -$90 a la tasa agregada de 40
+    const makeAggregateRefund = () =>
+        makeOrderStub({ totalDue: REFUND_DUE, rate: 36.5, refundRate: 40 });
+
+    test("monto tecleado en positivo queda negativo", () => {
+        const p = callSetForeignAmount(makeAggregateRefund(), 90);
+        expect(p.foreign_amount).toBe(-90);
+        expect(p.amount).toBe(REFUND_DUE);
+    });
+
+    test("excedente: deuda más el excedente convertido, ambos negativos", () => {
+        // $100 contra una deuda de $90: excedente $10 × 40 = 400 Bs.
+        const p = callSetForeignAmount(makeAggregateRefund(), -100);
+        expect(p.foreign_amount).toBe(-100);
+        expect(p.amount).toBe(REFUND_DUE - 400);
+    });
+
+    test("parcial tecleado en positivo se convierte con el signo del reembolso", () => {
+        const p = callSetForeignAmount(makeAggregateRefund(), 50);
+        expect(p.foreign_amount).toBe(-50);
+        expect(p.amount).toBe(-2000);
+    });
+
+    test("en una venta el monto negativo tecleado se respeta", () => {
+        const p = callSetForeignAmount(makeOrderStub({ totalDue: 3650 }), -10);
+        expect(p.foreign_amount).toBe(-10);
+        expect(p.amount).toBe(-365);
     });
 });

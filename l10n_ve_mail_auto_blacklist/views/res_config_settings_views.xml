@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="res_config_settings_view_form" model="ir.ui.view">
+        <field name="name">res.config.settings.view.form.inherit.l10n_ve.mail.auto.blacklist</field>
+        <field name="model">res.config.settings</field>
+        <field name="inherit_id" ref="mass_mailing.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+            <xpath expr="//app[@name='mass_mailing']" position="inside">
+                <block title="Automatic Blacklist" name="l10n_ve_auto_blacklist_setting_container">
+                    <setting id="l10n_ve_auto_blacklist_setting" groups="base.group_system"
+                             help="Blacklist addresses after a configurable number of delivery failures and stop sending them any email (marketing and transactional) until they are manually removed from the blacklist.">
+                        <field name="l10n_ve_auto_blacklist_enabled"/>
+                        <div class="content-group" invisible="not l10n_ve_auto_blacklist_enabled">
+                            <div class="row mt16">
+                                <label for="l10n_ve_auto_blacklist_threshold" class="col-lg-5 o_light_label"/>
+                                <field name="l10n_ve_auto_blacklist_threshold" class="oe_inline"/>
+                            </div>
+                            <div class="text-muted">Number of delivery failures (bounces or SMTP refusals) an address must reach before being automatically blacklisted.</div>
+                            <div class="row">
+                                <label for="l10n_ve_auto_blacklist_window_days" class="col-lg-5 o_light_label"/>
+                                <field name="l10n_ve_auto_blacklist_window_days" class="oe_inline"/>
+                            </div>
+                            <div class="text-muted">Only failures of the last X days are counted. 0 = no time limit.</div>
+                            <div class="row">
+                                <label for="l10n_ve_auto_blacklist_min_spread_days" class="col-lg-5 o_light_label"/>
+                                <field name="l10n_ve_auto_blacklist_min_spread_days" class="oe_inline"/>
+                            </div>
+                            <div class="text-muted">Minimum number of days between the first and the last counted failure, to avoid blacklisting because of a temporary server issue. 0 = no constraint.</div>
+                            <div class="row">
+                                <label for="l10n_ve_auto_blacklist_count_smtp_errors" class="col-lg-5 o_light_label"/>
+                                <field name="l10n_ve_auto_blacklist_count_smtp_errors"/>
+                            </div>
+                            <div class="text-muted">Also count emails refused by the SMTP server because of the recipient address (e.g. 550 mailbox unavailable), not only bounces received afterwards.</div>
+                            <div class="mt8">
+                                <button type="action" name="%(l10n_ve_mail_auto_blacklist.mail_bounce_event_action)d"
+                                        string="Delivery Failures" icon="oi-arrow-right" class="oe_link"/>
+                                <button type="action" name="%(mail.mail_blacklist_action)d"
+                                        string="Blacklist" icon="oi-arrow-right" class="oe_link"/>
+                            </div>
+                        </div>
+                    </setting>
+                </block>
+            </xpath>
+        </field>
+    </record>
+</odoo>

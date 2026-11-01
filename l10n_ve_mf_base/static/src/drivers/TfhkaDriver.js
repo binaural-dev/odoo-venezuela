@@ -1,5 +1,6 @@
 /** @odoo-module */
 
+import { _t } from "@web/core/l10n/translation";
 import { SerialConnection } from "../core/SerialConnection";
 import { FiscalProtocol } from "../core/FiscalProtocol";
 
@@ -54,6 +55,9 @@ export class TfhkaDriver {
         this.lastStatus = null;
         this.retryAttempts = 3;
         this.retryDelay = 500; // ms
+        // Promesa de conexión en curso (mutex): serializa a los múltiples
+        // llamadores de connect() (montaje, listener USB, click, reclaim).
+        this._connecting = null;
     }
 
     _isWaitingState(sts1) {
@@ -105,29 +109,78 @@ export class TfhkaDriver {
      * Conecta con la impresora fiscal
      * @returns {Promise<boolean>}
      */
-    async connect({ requestPermission = false } = {}) {
+    async connect(opts = {}) {
+        // Mutex: varias rutas (montaje, listener USB "connect", click del botón,
+        // reclaim del hand-off) pueden llamar connect() casi a la vez. Sin
+        // serializar, dos autoConnect() se interleavean en
+        // SerialConnection._openPort (uno abre, el otro cierra+reabre) y
+        // corrompen el estado. Reusar la promesa en curso evita la carrera.
+        if (this._connecting) {
+            return this._connecting;
+        }
+        this._connecting = this._doConnect(opts).finally(() => {
+            this._connecting = null;
+        });
+        return this._connecting;
+    }
+
+    async _doConnect({ requestPermission = false } = {}) {
         try {
-            // Intentar reconexión automática primero
+            // 1) Reconexión silenciosa a un puerto ya autorizado (por VID/PID).
             let connected = await this.connection.autoConnect();
-            
-            // Solo solicitar permiso si se indica explícitamente
-            // (requestPort() requiere un gesto del usuario)
+            if (connected) {
+                if (await this._verifyAndPersist()) {
+                    return true;
+                }
+                // El puerto abrió pero no responde como máquina fiscal (p.ej.
+                // autoConnect adoptó otro serial, como la balanza). Soltarlo
+                // para no retener el COM ni ensuciar nada, y seguir al prompt.
+                // Nota: connection.disconnect() (nivel bajo), NO this.disconnect(),
+                // que esperaría a este mismo _connecting y haría deadlock.
+                await this.connection.disconnect();
+                this.isConnected = false;
+                connected = false;
+            }
+
+            // 2) Prompt de selección de puerto (requiere gesto del usuario).
             if (!connected && requestPermission) {
                 connected = await this.connection.requestPort();
+                if (connected) {
+                    if (await this._verifyAndPersist()) {
+                        return true;
+                    }
+                    // connection.disconnect() (nivel bajo): ver nota arriba.
+                    await this.connection.disconnect();
+                    this.isConnected = false;
+                }
             }
-            
-            if (connected) {
-                // Verificar que la impresora responda
-                const status = await this.getStatus();
-                this.isConnected = status !== null;
-                return this.isConnected;
-            }
-            
+
+            this.isConnected = false;
             return false;
         } catch (error) {
             console.error("TfhkaDriver:: Error al conectar", error);
+            this.isConnected = false;
             return false;
         }
+    }
+
+    /**
+     * Verifica que el puerto abierto responda como máquina fiscal (getStatus)
+     * y SOLO entonces marca conectado y persiste la identidad USB (VID/PID).
+     * Persistir únicamente tras verificar evita guardar la balanza (u otro
+     * serial que autoConnect pudo adoptar) como identidad de la MF.
+     * @private
+     * @returns {Promise<boolean>}
+     */
+    async _verifyAndPersist() {
+        const status = await this.getStatus();
+        if (status !== null) {
+            this.isConnected = true;
+            this.connection._saveDeviceInfo();
+            return true;
+        }
+        this.isConnected = false;
+        return false;
     }
 
     /**
@@ -135,8 +188,28 @@ export class TfhkaDriver {
      * @returns {Promise<void>}
      */
     async disconnect() {
+        // Si hay una conexión en curso, esperarla para no cerrar el puerto
+        // mientras otra ruta lo está abriendo (corrompería los streams/locks).
+        if (this._connecting) {
+            try {
+                await this._connecting;
+            } catch (e) {
+                // da igual el resultado del connect; igual vamos a cerrar
+            }
+        }
         await this.connection.disconnect();
         this.isConnected = false;
+    }
+
+    /**
+     * Verifica si hay un puerto pareado (autorizado en una sesión anterior)
+     * SIN abrirlo/reservarlo. Útil para chequeos de arranque que no deben
+     * competir por el puerto con otro consumidor (ver `isPaired` en
+     * `SerialConnection`).
+     * @returns {Promise<boolean>}
+     */
+    async isPaired() {
+        return await this.connection.isPaired();
     }
 
     /**
@@ -145,9 +218,13 @@ export class TfhkaDriver {
      * @param {number} timeout - Timeout en ms
      * @param {boolean} checkStatus - Verificar status antes de enviar (default: true)
      * @param {boolean} skipFlush - Saltar flushBuffer (para comandos dentro de una transacción)
-     * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
+     * @param {Object} [options]
+     * @param {boolean} [options.resendOnNoResponse=true] - When false, a
+     *   missing answer returns `{ noResponse: true }` instead of resending:
+     *   the printer may have executed the command and only its ACK was lost.
+     * @returns {Promise<Object>} - { success: boolean, data: string, error: string, noResponse?: boolean }
      */
-    async sendCommand(command, timeout = null, checkStatus = true, skipFlush = false) {
+    async sendCommand(command, timeout = null, checkStatus = true, skipFlush = false, { resendOnNoResponse = true } = {}) {
         if (!this.isConnected) {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
@@ -216,6 +293,14 @@ export class TfhkaDriver {
 
                 const response = await this.connection.read(timeout);
                 if (!response) {
+                    if (!resendOnNoResponse) {
+                        return {
+                            success: false,
+                            data: "",
+                            error: "No se recibió respuesta de la impresora",
+                            noResponse: true,
+                        };
+                    }
                     throw new Error("No se recibió respuesta de la impresora");
                 }
 
@@ -257,6 +342,13 @@ export class TfhkaDriver {
     /**
      * Aborta una transacción fiscal que quedó abierta
      * Se usa para recuperar la impresora cuando un intento anterior falló a mitad
+     *
+     * The open document is cancelled with "7" first and "9" as fallback:
+     * TFHKA printers with serial prefix Z7C answer NAK to "9" with or without
+     * payments and only cancel with "7" (verified on hardware, ticket
+     * #15814), so trying "9" alone left the document open and the next sale
+     * blocked until the printer was restarted.
+     *
      * @returns {Promise<boolean>} - true si se abortó exitosamente
      */
     async abortTransaction() {
@@ -266,26 +358,25 @@ export class TfhkaDriver {
             if (this._isWaitingState(stsBefore)) {
                 return true;
             }
-            
+
             await this.connection.flushBuffer();
 
-            // Intentar cancelar el documento actual con "9" (Anular Documento)
-            const frame9 = FiscalProtocol.buildFrame("9");
-            await this.connection.write(frame9);
-            const response9 = await this.connection.read(3000);
-            
-            if (response9 && FiscalProtocol.isACK(response9)) {
-                await new Promise(resolve => setTimeout(resolve, 500));
-                return true;
+            for (const cancelCommand of ["7", "9"]) {
+                await this.connection.write(FiscalProtocol.buildFrame(cancelCommand));
+                const cancelResponse = await this.connection.read(3000);
+
+                if (cancelResponse && FiscalProtocol.isACK(cancelResponse)) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    return true;
+                }
+
+                const statusAfterCancel = await this.getStatus();
+                if (this._isWaitingState(statusAfterCancel?.raw?.sts1)) {
+                    return true;
+                }
             }
 
-            const statusAfter9 = await this.getStatus();
-            const stsAfter9 = statusAfter9?.raw?.sts1;
-            if (this._isWaitingState(stsAfter9)) {
-                return true;
-            }
-
-            // Si "9" no funcionó, intentar con "199" (Fin de Documento)
+            // Si "7" y "9" no funcionaron, intentar con "199" (Fin de Documento)
             console.warn("TfhkaDriver:: Comando 9 no respondió, intentando 199...");
             const frame199 = FiscalProtocol.buildFrame("199");
             await this.connection.write(frame199);
@@ -315,6 +406,69 @@ export class TfhkaDriver {
             console.error("TfhkaDriver:: Error al abortar transacción:", error);
             return false;
         }
+    }
+
+    /**
+     * Envía una secuencia de líneas/comandos crudos al protocolo TFHKA, en el
+     * mismo orden y sin transformarlas — equivalente Web Serial de la acción
+     * "logger_multi" del driver IoT legacy (ver `SerialFiscalDriver.py`,
+     * método `logger_multi`: por cada línea del array llama `SendCmd(line)`
+     * tal cual, sin validar el resultado individualmente).
+     *
+     * Uso: módulos que imprimen vouchers de pago o reportes de cierre con
+     * líneas de formato libre (ej. "800REPORTE DE VENTAS", "810") que no
+     * son una factura/NC/ND fiscal completa (para eso usar printInvoice/
+     * printCreditNote/printDebitNote).
+     *
+     * A diferencia del driver legacy, aquí SÍ se valida cada comando: si
+     * una línea falla se aborta la transacción y se retorna error (evita
+     * dejar la impresora en un estado intermedio silenciosamente, cosa que
+     * el driver IoT legacy no detectaba).
+     *
+     * @param {Array<string>} lines - Líneas de comando en el orden a enviar
+     * @returns {Promise<Object>} - { success: boolean, error: string }
+     */
+    async printRawLines(lines) {
+        if (!this.isConnected) {
+            return { success: false, error: "Impresora no conectada" };
+        }
+
+        if (!Array.isArray(lines) || lines.length === 0) {
+            return { success: false, error: "No hay líneas para imprimir" };
+        }
+
+        const statusBefore = await this.getStatus();
+        if (!statusBefore) {
+            return { success: false, error: "No se puede leer el estado de la impresora" };
+        }
+
+        const sts1Before = statusBefore.raw?.sts1;
+        if (!this._isWaitingState(sts1Before)) {
+            console.warn(
+                "TfhkaDriver:: printRawLines - impresora no está en reposo (STS1=" +
+                    this._formatSts(sts1Before) +
+                    "), intentando abortar..."
+            );
+            const aborted = await this.abortTransaction();
+            if (!aborted) {
+                return {
+                    success: false,
+                    error: `La impresora tiene una transacción previa abierta (STS1=${this._formatSts(sts1Before)}). Reiníciala.`,
+                };
+            }
+        }
+
+        for (let i = 0; i < lines.length; i++) {
+            const line = String(lines[i]);
+            const result = await this.sendCommand(line, null, false, i > 0);
+            if (!result.success) {
+                console.error("TfhkaDriver:: printRawLines - comando falló:", line, result.error);
+                await this.abortTransaction();
+                return { success: false, error: `Error en línea [${line}]: ${result.error}` };
+            }
+        }
+
+        return { success: true, error: "" };
     }
 
     /**
@@ -748,6 +902,55 @@ export class TfhkaDriver {
         return { success: true, data, error: "" };
     }
 
+    /**
+     * Parses the S2 answer (totals of the document in progress). Only the
+     * fields the driver relies on are returned: the base subtotal (first
+     * field, two implicit decimals) and the number of payments (sixth
+     * field). The article count (fourth field) is not used because TFHKA
+     * printers with serial prefix Z7C always report it as zero.
+     *
+     * @param {string} rawData - Frame data, starting with "S2"
+     * @returns {{base: number, paymentCount: number}|null}
+     */
+    _parseS2Data(rawData) {
+        const payload = String(rawData || "");
+        if (!payload.startsWith("S2")) {
+            return null;
+        }
+
+        const fields = payload
+            .slice(2)
+            .split("\n")
+            .map((value) => value.replace(/\r/g, "").trim())
+            .filter((value) => value.length > 0);
+        if (fields.length < 6) {
+            return null;
+        }
+
+        return {
+            base: this._decodeImplicit2Decimals(fields[0]),
+            paymentCount: parseInt(fields[5], 10) || 0,
+        };
+    }
+
+    /**
+     * Reads S2 for the document in progress. The query is idempotent, so it
+     * is repeated when the answer is not an S2 frame (e.g. a late ACK of the
+     * unanswered command arriving right before it).
+     *
+     * @returns {Promise<{base: number, paymentCount: number}|null>}
+     */
+    async _readS2Data() {
+        for (let attempt = 0; attempt < this.retryAttempts; attempt++) {
+            const response = await this.sendCommand("S2", 5000, false);
+            const parsed = response.success ? this._parseS2Data(response.data) : null;
+            if (parsed) {
+                return parsed;
+            }
+        }
+        return null;
+    }
+
     _parseS4Data(rawData) {
         if (!rawData) {
             return null;
@@ -835,6 +1038,24 @@ export class TfhkaDriver {
      * @param {number} decPart - Dígitos de la parte decimal
      * @returns {string} - Número formateado (ej: "0000010050" para 100.50)
      */
+    /**
+     * Descuento por monto sobre el ítem recién agregado a `commands`: `q-`
+     * enviado antes del subtotal (`3`) rebaja el último ítem (manual HKA
+     * V8.5.0, págs. 27 y 34-35; válido también en nota de crédito, pág. 37).
+     * Lo usa el PdV para las líneas de mínimo fiscal: N × 0,01 con descuento
+     * (N − 1) × 0,01 → la línea suma 0,01 mostrando la cantidad real.
+     *
+     * @param {Array} commands - Buffer de comandos fiscales
+     * @param {Object} line - Línea del documento (`discount_amount` opcional)
+     * @param {Object} config - Formato numérico según flag 21
+     */
+    _appendItemDiscount(commands, line, config) {
+        const amount = Number(line?.discount_amount || 0);
+        if (amount > 0) {
+            commands.push(`q-${this._formatAmount(amount, config.disc_int, config.disc_decimal)}`);
+        }
+    }
+
     _formatAmount(num, intPart, decPart) {
         const fixed = Number(num).toFixed(decPart);
         const [integer, decimal] = fixed.split('.');
@@ -1132,6 +1353,191 @@ export class TfhkaDriver {
     }
 
     /**
+     * Running state of the fiscal document in progress, built from the
+     * commands the printer acknowledged: base subtotal, number of partial
+     * payments, amount commands added since the last S2 reading, and whether
+     * an unanswered command had to be recovered.
+     *
+     * @returns {Object}
+     */
+    _newDocumentLedger() {
+        return { base: 0, payments: 0, unsyncedAmounts: 0, recovered: false };
+    }
+
+    /**
+     * Base subtotal change produced by an item (invoice, credit or debit
+     * note) or by an amount discount (`q-`), or null for any other command.
+     *
+     * @param {string} command
+     * @param {Object} config - Number format for the active flag 21
+     * @returns {number|null}
+     */
+    _commandBaseDelta(command, config) {
+        const priceDigits = config.max_amount_int + config.max_amount_decimal;
+        const qtyDigits = config.max_qty_int + config.max_qty_decimal;
+        const item = new RegExp(
+            `^(?:[ !"#]|[d\`]t?[0-3])(\\d{${priceDigits}})(\\d{${qtyDigits}})`
+        ).exec(command);
+        if (item) {
+            const price = Number(item[1]) / 10 ** config.max_amount_decimal;
+            const quantity = Number(item[2]) / 10 ** config.max_qty_decimal;
+            return Math.round(price * quantity * 100) / 100;
+        }
+
+        const discount = /^q-(\d+)$/.exec(command);
+        if (discount) {
+            return -Number(discount[1]) / 10 ** config.disc_decimal;
+        }
+        return null;
+    }
+
+    _isPartialPaymentCommand(command) {
+        return /^2\d{2}\d{10,}$/.test(command);
+    }
+
+    _addToLedger(ledger, baseDelta, isPayment) {
+        if (isPayment) {
+            ledger.payments += 1;
+            return;
+        }
+        ledger.base = Math.round((ledger.base + baseDelta) * 100) / 100;
+        ledger.unsyncedAmounts += 1;
+    }
+
+    /**
+     * The printer rounds every line to cents, so the base built by the
+     * driver may drift one cent per amount command not yet checked against
+     * S2.
+     */
+    _ledgerTolerance(ledger) {
+        return 0.01 * (ledger.unsyncedAmounts + 1) + 1e-9;
+    }
+
+    /**
+     * Tells from S2 whether an unanswered command was registered, and
+     * realigns `ledger` with the printer. Items and discounts are compared by
+     * base subtotal, payments by count. Returns null when S2 cannot be read
+     * or matches neither case.
+     *
+     * @param {Object} ledger
+     * @param {number|null} baseDelta - See `_commandBaseDelta`
+     * @param {boolean} isPayment
+     * @returns {Promise<boolean|null>}
+     */
+    async _wasCommandRegistered(ledger, baseDelta, isPayment) {
+        const totals = await this._readS2Data();
+        if (!totals) {
+            return null;
+        }
+
+        if (isPayment) {
+            if (![ledger.payments, ledger.payments + 1].includes(totals.paymentCount)) {
+                return null;
+            }
+            const registered = totals.paymentCount === ledger.payments + 1;
+            ledger.payments = totals.paymentCount;
+            return registered;
+        }
+
+        const tolerance = this._ledgerTolerance(ledger);
+        const matchesRegistered = Math.abs(totals.base - (ledger.base + baseDelta)) <= tolerance;
+        const matchesPending = Math.abs(totals.base - ledger.base) <= tolerance;
+        if (matchesRegistered === matchesPending) {
+            return null;
+        }
+        ledger.base = totals.base;
+        ledger.unsyncedAmounts = 0;
+        return matchesRegistered;
+    }
+
+    /**
+     * Sends a command of the fiscal document in progress and keeps `ledger`
+     * up to date.
+     *
+     * Items, amount discounts and partial payments are not idempotent: when
+     * the printer registers one but its ACK is lost, resending it blindly
+     * prints the line again and the document closes with a total Odoo does
+     * not know (ticket #15814). For those commands a missing answer is
+     * resolved by reading S2: the command is resent only if the printer did
+     * not register it, and the call fails, so the caller cancels the
+     * document, when S2 cannot tell. Any other command keeps the generic
+     * retry of `sendCommand`.
+     *
+     * @param {string} command
+     * @param {Object} ledger - See `_newDocumentLedger`
+     * @param {Object} config - Number format for the active flag 21
+     * @param {boolean} skipFlush - Forwarded to `sendCommand`
+     * @returns {Promise<Object>} - Same shape as `sendCommand`
+     */
+    async _sendDocumentCommand(command, ledger, config, skipFlush = true) {
+        const baseDelta = this._commandBaseDelta(command, config);
+        const isPayment = this._isPartialPaymentCommand(command);
+        if (baseDelta === null && !isPayment) {
+            return this.sendCommand(command, null, false, skipFlush);
+        }
+
+        for (let attempt = 0; attempt < this.retryAttempts; attempt++) {
+            const result = await this.sendCommand(command, null, false, skipFlush || attempt > 0, {
+                resendOnNoResponse: false,
+            });
+            if (!result.noResponse) {
+                if (result.success) {
+                    this._addToLedger(ledger, baseDelta, isPayment);
+                }
+                return result;
+            }
+
+            ledger.recovered = true;
+            const registered = await this._wasCommandRegistered(ledger, baseDelta, isPayment);
+            if (registered === null) {
+                return {
+                    success: false,
+                    data: "",
+                    error: _t(
+                        "The fiscal printer did not confirm the command and it could not be verified whether it was registered."
+                    ),
+                };
+            }
+            if (registered) {
+                console.warn(`TfhkaDriver:: [${command}] got no answer but the printer registered it, not resending`);
+                return { success: true, data: "ACK", error: "" };
+            }
+            console.warn(`TfhkaDriver:: [${command}] got no answer and the printer did not register it, resending`);
+        }
+
+        return { success: false, data: "", error: "Máximo de reintentos alcanzado" };
+    }
+
+    /**
+     * After a recovered command, checks before the payments that the base
+     * subtotal of the printer matches the one built from the acknowledged
+     * commands, so a desynchronized document is cancelled instead of
+     * charged. Documents without recoveries skip the S2 reading, keeping the
+     * normal sale as fast as before.
+     *
+     * @param {Object} ledger
+     * @returns {Promise<Object>} - { success: boolean, error: string }
+     */
+    async _verifyRecoveredDocument(ledger) {
+        if (!ledger.recovered) {
+            return { success: true, error: "" };
+        }
+
+        const totals = await this._readS2Data();
+        if (totals && Math.abs(totals.base - ledger.base) <= this._ledgerTolerance(ledger)) {
+            return { success: true, error: "" };
+        }
+        return {
+            success: false,
+            error: _t(
+                "The fiscal printer subtotal (%s) does not match the document sent (%s).",
+                totals ? totals.base.toFixed(2) : "?",
+                ledger.base.toFixed(2)
+            ),
+        };
+    }
+
+    /**
      * Imprime una factura fiscal (secuencia completa TFHKA)
      * @param {Object} orderData - Datos de la orden del POS
      * @param {Object} flag21Config - Configuración de formato numérico según flag 21
@@ -1220,6 +1626,7 @@ export class TfhkaDriver {
                 }
 
                 phase1Commands.push(`${taxChar}${price}${qty}${code}${desc}`);
+                this._appendItemDiscount(phase1Commands, line, config);
             }
 
             // 7. Subtotal
@@ -1227,13 +1634,21 @@ export class TfhkaDriver {
             console.log("TfhkaDriver::printInvoice - FASE 1: items:", orderData.lines?.length, "comandos:", phase1Commands.length);
 
             // Enviar FASE 1 a la impresora
+            const ledger = this._newDocumentLedger();
             for (let i = 0; i < phase1Commands.length; i++) {
-                const result = await this.sendCommand(phase1Commands[i], null, false, i > 0);
+                const result = await this._sendDocumentCommand(phase1Commands[i], ledger, config, i > 0);
                 if (!result.success) {
                     console.error("TfhkaDriver:: FASE 1 - comando falló:", phase1Commands[i], result.error);
                     await this.abortTransaction();
                     return { success: false, data: "", error: `Error en comando FASE 1 [${phase1Commands[i]}]: ${result.error}` };
                 }
+            }
+
+            const verification = await this._verifyRecoveredDocument(ledger);
+            if (!verification.success) {
+                console.error("TfhkaDriver:: printInvoice - document out of sync with the printer:", verification.error);
+                await this.abortTransaction();
+                return { success: false, data: "", error: verification.error };
             }
 
             // ================================================================
@@ -1264,7 +1679,7 @@ export class TfhkaDriver {
             let payment199Result = null;
             for (let i = 0; i < phase2Commands.length; i++) {
                 const cmd = phase2Commands[i];
-                const result = await this.sendCommand(cmd, null, false, true);
+                const result = await this._sendDocumentCommand(cmd, ledger, config);
 
                 if (cmd === "199") {
                     payment199Result = result;
@@ -1444,6 +1859,7 @@ export class TfhkaDriver {
                 }
 
                 phase1Commands.push(`d${fiscalCode}${price}${qty}${code}${desc}`);
+                this._appendItemDiscount(phase1Commands, line, config);
             }
 
             // 9. Subtotal
@@ -1456,13 +1872,21 @@ export class TfhkaDriver {
             }
 
             // Enviar FASE 1
+            const ledger = this._newDocumentLedger();
             for (let i = 0; i < phase1Commands.length; i++) {
-                const result = await this.sendCommand(phase1Commands[i], null, false, i > 0);
+                const result = await this._sendDocumentCommand(phase1Commands[i], ledger, config, i > 0);
                 if (!result.success) {
                     console.error("TfhkaDriver:: NC FASE 1 - comando falló:", phase1Commands[i], result.error);
                     await this.abortTransaction();
                     return { success: false, data: "", error: `Error NC [${phase1Commands[i]}]: ${result.error}` };
                 }
+            }
+
+            const verification = await this._verifyRecoveredDocument(ledger);
+            if (!verification.success) {
+                console.error("TfhkaDriver:: printCreditNote - document out of sync with the printer:", verification.error);
+                await this.abortTransaction();
+                return { success: false, data: "", error: verification.error };
             }
 
             // ================================================================
@@ -1487,7 +1911,7 @@ export class TfhkaDriver {
 
             for (let i = 0; i < phase2Commands.length; i++) {
                 const cmd = phase2Commands[i];
-                const result = await this.sendCommand(cmd, null, false, true);
+                const result = await this._sendDocumentCommand(cmd, ledger, config);
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
                     if (is1xx) {
@@ -1648,13 +2072,21 @@ export class TfhkaDriver {
                 phase1Commands.push(`q-${discount}`);
             }
 
+            const ledger = this._newDocumentLedger();
             for (let i = 0; i < phase1Commands.length; i++) {
-                const result = await this.sendCommand(phase1Commands[i], null, false, i > 0);
+                const result = await this._sendDocumentCommand(phase1Commands[i], ledger, config, i > 0);
                 if (!result.success) {
                     console.error("TfhkaDriver:: ND FASE 1 - comando falló:", phase1Commands[i], result.error);
                     await this.abortTransaction();
                     return { success: false, data: "", error: `Error ND [${phase1Commands[i]}]: ${result.error}` };
                 }
+            }
+
+            const verification = await this._verifyRecoveredDocument(ledger);
+            if (!verification.success) {
+                console.error("TfhkaDriver:: printDebitNote - document out of sync with the printer:", verification.error);
+                await this.abortTransaction();
+                return { success: false, data: "", error: verification.error };
             }
 
             // ================================================================
@@ -1679,7 +2111,7 @@ export class TfhkaDriver {
 
             for (let i = 0; i < phase2Commands.length; i++) {
                 const cmd = phase2Commands[i];
-                const result = await this.sendCommand(cmd, null, false, true);
+                const result = await this._sendDocumentCommand(cmd, ledger, config);
                 const is1xx = cmd.length === 3 && cmd.startsWith("1");
                 if (!result.success) {
                     if (is1xx) {

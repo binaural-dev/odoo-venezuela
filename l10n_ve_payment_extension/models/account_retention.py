@@ -32,7 +32,7 @@ class AccountRetention(models.Model):
         default=lambda self: self.env.company.foreign_currency_id.id,
     )
     base_currency_is_vef = fields.Boolean(
-        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
+        default=lambda self: self.env.company.currency_id.is_venezuelan_bolivar(),
     )
 
     is_third_party_retention = fields.Boolean(
