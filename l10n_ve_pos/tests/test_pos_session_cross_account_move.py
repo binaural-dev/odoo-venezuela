@@ -9,8 +9,11 @@ Verifies the cruce automatico in ``pos_session.py``: ``_validate_cross_move``
 Spec: ``openspec/changes/l10n-ve-pos-cross-move-by-split-transactions/specs/pos-cross-account-move/spec.md``
 Spec (venta en efectivo entre transitorias, ticket 15219):
 ``openspec/changes/cruce-venta-efectivo-entre-transitorias/specs/l10n_ve_pos/spec.md``
+Spec (fecha del cruce en el dia del usuario, ticket 16145):
+``openspec/specs/l10n_ve_pos/spec.md``
 """
 
+from datetime import date
 from unittest.mock import patch
 
 from odoo import fields
@@ -1163,3 +1166,82 @@ class TestPosSessionCrossAccountMove(TestPosSessionAccountingBase):
                 self.assertIn(self.real_bank_journal.name, str(error.exception))
                 savepoint.rollback()
         self.assertFalse(self._cross_moves())
+
+    # ------------------------------------------------------------------
+    # Fecha del cruce: el dia del usuario, no el dia UTC (ticket 16145)
+    # ------------------------------------------------------------------
+    # 2026-03-11 00:30 UTC == 2026-03-10 20:30 en Caracas (UTC-4): el servidor
+    # ya esta en el dia siguiente, que todavia no tiene tasa.
+    NIGHT_UTC = "2026-03-11 00:30:00"
+    CARACAS_DAY = date(2026, 3, 10)
+
+    def _night_session(self, method):
+        """Sesion de un cajero en Caracas con una venta en ``method`` y tasa
+        cargada solo para el dia local: el dia UTC no la tiene."""
+        self.env["res.currency.rate"].create(
+            {
+                "name": self.CARACAS_DAY,
+                "currency_id": self.foreign_currency.id,
+                "company_id": self.company.id,
+                "rate": 40.0,
+            }
+        )
+        self._configure_cross(method)
+        self._configure_use_suspense_accounts(method)
+        session = (
+            self._new_session()
+            .with_company(self.company)
+            .with_context(tz="America/Caracas")
+        )
+        self._create_paid_order(
+            session,
+            method=method,
+            amount=58.0,
+            tax_amount=8.0,
+            foreign_rate=36.5,
+            name="OL/CROSS/NIGHT",
+        )
+        return session
+
+    def test_combine_cross_move_closed_at_night_takes_the_user_day(self):
+        """Cierre a las 8:30 pm de Caracas: el cruce queda del dia local.
+
+        El metodo agrupado se fecha con ``stop_at``, que es un Datetime en
+        UTC. ``account.move.date`` es Date y lo truncaba con ``.date()`` al
+        dia UTC (el siguiente): ``l10n_ve_accountant`` pedia la tasa de ese
+        dia, que no existe, y el cierre se detenia con "No hay una tasa
+        asignada para USD al <manana>" (Nova, sesion AV. VICTORIA/00029).
+        """
+        session = self._night_session(self.combined_cash_method)
+        session.stop_at = self.NIGHT_UTC
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertEqual(
+            move.date,
+            self.CARACAS_DAY,
+            "el cruce del cierre va en el dia del cajero, no en el dia UTC",
+        )
+
+    def test_split_cross_move_paid_at_night_takes_the_user_day(self):
+        """Pago registrado a las 8:30 pm de Caracas en un metodo con
+        "Identificar cliente": su cruce, fechado con el ``create_date`` del
+        pago (UTC), tambien queda del dia local."""
+        session = self._night_session(self.split_cash_method)
+        payment = session.order_ids.payment_ids
+        self.env.cr.execute(
+            SQL(
+                "UPDATE pos_payment SET create_date = %s WHERE id = %s",
+                self.NIGHT_UTC,
+                payment.id,
+            )
+        )
+        payment.invalidate_recordset(["create_date"])
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertEqual(move.date, self.CARACAS_DAY)
