@@ -176,7 +176,9 @@ class PosSession(models.Model):
                             foreign_amount=payment.foreign_amount,
                             foreign_rate=payment.foreign_rate,
                             partner=payment.partner_id,
-                            date=payment.create_date,
+                            # Datetime UTC -> fecha del usuario: a las 8 pm de Caracas el dia UTC ya
+                            # es "manana" y l10n_ve_rate no tiene su tasa.
+                            date=fields.Date.context_today(session, payment.create_date),
                             ref=session._cross_move_ref(payment),
                             use_suspense=use_suspense,
                         )
@@ -197,7 +199,9 @@ class PosSession(models.Model):
                     foreign_rate=method_payments[0].foreign_rate,
                     # No partner, matching the native combined account.payment.
                     partner=session.env["res.partner"],
-                    date=session.stop_at or fields.Datetime.now(),
+                    date=fields.Date.context_today(
+                        session, session.stop_at or fields.Datetime.now()
+                    ),
                     ref=session._cross_move_ref(),
                     use_suspense=use_suspense,
                 )
@@ -663,7 +667,7 @@ class PosSession(models.Model):
             payment_method (pos.payment.method): method being cleared.
             line_vals (list): ``Command`` list of move lines to create.
             foreign_rate (float): operative rate stamped on the move.
-            date (datetime): accounting date of the move.
+            date (date): accounting date of the move, the user's day (not the UTC one).
             ref (str): reference identifying what is being cleared (see
                 ``_cross_move_ref``).
             partner (res.partner): partner for the move header; empty under
