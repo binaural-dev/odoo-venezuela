@@ -274,6 +274,88 @@ class TestRetentionResync(RetentionTestCommon):
         self.assertEqual(retention.state, "draft")
         _logger.info("========= test_06b passed =========")
 
+    # 6d. A real payment on an invoice WITHOUT retentions blocks nothing:
+    # the lock only protects retentions that would have to be rebuilt.
+    def test_06d_real_payment_without_retentions_does_not_block(self):
+        invoice = self._create_prepared_iva_invoice()
+        invoice.action_post()
+        self.assertFalse(invoice.retention_iva_line_ids)
+
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+
+        invoice._check_retention_paid_lock()  # must not raise
+        invoice.button_draft()
+        self.assertEqual(invoice.state, "draft")
+        invoice.action_post()
+        invoice.button_cancel()  # same guard as button_draft()
+        self.assertEqual(invoice.state, "cancel")
+
+    def _paid_invoice_with_draft_retention(self, keep_payments):
+        """Invoice with an emitted IVA retention and a real payment, whose
+        retention is then forced to draft (mid-resync shape when
+        `keep_payments`; a draft with nothing to rebuild otherwise)."""
+        invoice = self._create_prepared_iva_invoice()
+        retention = self._emit_iva_retention(invoice)
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+
+        retention_payments = retention.payment_ids
+        self.env.cr.execute(
+            "UPDATE account_retention SET state = 'draft' WHERE id = %s", (retention.id,)
+        )
+        if not keep_payments:
+            self.env.cr.execute(
+                "UPDATE account_payment SET retention_id = NULL WHERE id IN %s",
+                (tuple(retention_payments.ids),),
+            )
+        self.env.invalidate_all()
+        self.assertEqual(bool(retention.payment_ids), keep_payments)
+        return invoice
+
+    # 6e. A retention caught mid-resync (draft WITH payment_ids) still counts
+    # for the lock: a real payment blocks "Recalcular retenciones" there.
+    def test_06e_paid_lock_counts_mid_resync_retention(self):
+        invoice = self._paid_invoice_with_draft_retention(keep_payments=True)
+
+        with self.assertRaises(UserError):
+            invoice.action_recalculate_retentions()
+
+    # 6f. A draft retention WITHOUT payments has nothing to rebuild: the
+    # real payment alone does not block.
+    def test_06f_paid_lock_ignores_draft_retention_without_payments(self):
+        invoice = self._paid_invoice_with_draft_retention(keep_payments=False)
+
+        invoice._check_retention_paid_lock()  # must not raise
+
+    # 6g. "Recalcular retenciones" on an invoice with no retentions at all is
+    # not blocked by a plain payment either (it just has nothing to do).
+    def test_06g_recalculate_without_retentions_is_not_blocked_by_payment(self):
+        invoice = self._create_prepared_iva_invoice()
+        invoice.action_post()
+        wizard = self.env["account.payment.register"].with_context(
+            active_ids=invoice.ids, active_model="account.move",
+        ).create({
+            "amount": invoice.amount_residual,
+            "payment_date": fields.Date.today(),
+            "journal_id": self.bank_journal_sub.id,
+        })
+        wizard.action_create_payments()
+
+        invoice.action_recalculate_retentions()  # must not raise
+
     # 7. button_cancel() of the invoice cancels its emitted retention(s)
     # before the invoice itself is cancelled.
     def test_07_button_cancel_cancels_retention(self):

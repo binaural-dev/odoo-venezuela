@@ -61,6 +61,12 @@ class AccountMoveLine(models.Model):
     international_purchase_exent_product = fields.Boolean(string="International Purchase Exent Product")
     is_purchase_international = fields.Boolean(related="move_id.journal_id.is_purchase_international")
 
+    technical_price_unit = fields.Float(
+        copy=False,
+        help="Technical field for price computation: last unit price computed "
+        "from the product or the pricelist.",
+    )
+
     def _get_foreign_rate_date(self):
         """Fecha con la que se busca la tasa para convertir montos de esta linea.
 
@@ -71,9 +77,29 @@ class AccountMoveLine(models.Model):
         localizacion es la fecha de la tasa (la fecha visible del documento es
         invoice_date_display). Asientos manuales y de pago: la fecha contable
         (date), que es la unica que tienen.
+
+        Reversos (NC/ND y reintegro/reembolso del asiento de un pago): se valoran
+        a la fecha de tasa del asiento ORIGINAL revertido, para que el reverso
+        devuelva EXACTAMENTE el monto en moneda alterna que quedo registrado,
+        aunque la tasa haya cambiado entre la fecha del original y la del
+        reverso. Sin esto, el reverso del asiento de un pago (move_type 'entry')
+        recalculaba el USD a la tasa del dia del reverso y descuadraba la moneda
+        alterna (ticket #15114). El caso NC/ND ya quedaba correcto porque su
+        invoice_date se hereda del original; aqui se unifica el criterio para
+        que el reverso del pago tambien lo herede.
         """
         self.ensure_one()
-        move = self.move_id
+        return self._foreign_rate_date_for_move(self.move_id)
+
+    def _foreign_rate_date_for_move(self, move):
+        """Fecha de tasa de un asiento, siguiendo la cadena de reversos.
+
+        Un reverso apunta con reversed_entry_id a su asiento original (siempre
+        hacia atras en el tiempo, sin ciclos), asi que hereda la fecha del
+        original recursivamente.
+        """
+        if move.reversed_entry_id:
+            return self._foreign_rate_date_for_move(move.reversed_entry_id)
         if move.is_invoice(include_receipts=True):
             return move.invoice_date or move.date or fields.Date.context_today(self)
         return move.date or fields.Date.context_today(self)
@@ -111,6 +137,36 @@ class AccountMoveLine(models.Model):
             and l.account_id.account_type == "asset_receivable"
         ):
             line.name = line.move_id.name
+        return res
+
+    def _has_manual_price(self):
+        """The unit price is not the last one computed from the product or the
+        pricelist: it was typed by hand or came from another document (reversed
+        invoice, sale order, synchronization). technical_price_unit is not
+        copied, so a line created or copied with a price is flagged as manual.
+        """
+        self.ensure_one()
+        currency = (
+            self.currency_id
+            or self.move_id.currency_id
+            or self.company_id.currency_id
+            or self.env.company.currency_id
+        )
+        return bool(currency.compare_amounts(self.technical_price_unit, self.price_unit))
+
+    def _compute_price_unit(self):
+        """account_invoice_pricelist adds `quantity` as a trigger, so changing
+        the quantity reset the price to the pricelist one even when it was typed
+        by hand or came from the reversed invoice (task 84438). Same rule as
+        Odoo's sale.order.line: a manual price is only recomputed with
+        force_price_recomputation ("Update prices" button).
+        """
+        lines = self
+        if not self.env.context.get("force_price_recomputation"):
+            lines = self.filtered(lambda line: not line._has_manual_price())
+        res = super(AccountMoveLine, lines)._compute_price_unit()
+        for line in lines:
+            line.technical_price_unit = line.price_unit
         return res
 
     @api.depends(
@@ -474,9 +530,9 @@ class AccountMoveLine(models.Model):
         the raw exchange rate. This method distributes that difference across
         product lines proportionally so the entry remains balanced.
 
-        The expected total is computed via ``_convert`` (the raw rate from
-        ``res.currency.rate``), not from ``line.currency_rate`` (which is
-        derived from an already-rounded balance and amplifies the error).
+        The expected total uses the document's stored ``invoice_currency_rate``,
+        not ``line.currency_rate`` (derived from an already-rounded balance) nor
+        the rate of the date, which may have been edited after posting.
         """
         for move in lines.move_id:
             if not move.is_invoice(include_receipts=True):
@@ -499,9 +555,13 @@ class AccountMoveLine(models.Model):
 
             total_currency = sum(product_lines.mapped('amount_currency'))
             rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
-            expected = cc.round(move.currency_id._convert(
-                total_currency, cc, move.company_id, rate_date
-            ))
+            move_rate = move.invoice_currency_rate
+            if move_rate:
+                expected = cc.round(total_currency / move_rate)
+            else:
+                expected = cc.round(move.currency_id._convert(
+                    total_currency, cc, move.company_id, rate_date
+                ))
             actual = sum(product_lines.mapped('balance'))
             diff = cc.round(expected - actual)
 

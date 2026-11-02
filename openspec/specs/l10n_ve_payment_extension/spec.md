@@ -472,6 +472,28 @@ El sistema DEBE (MUST) impedir pasar a borrador o cancelar un pago marcado con `
 - **WHEN** se intenta eliminar desde la factura la conciliación de un pago de retención
 - **THEN** se lanza un `UserError` indicando que debe cancelarse el comprobante
 
+### Requirement: Un pago real bloquea el borrador solo si la factura tiene retenciones
+
+`_check_retention_paid_lock`, compartida por `button_draft`, `button_cancel` y `action_recalculate_retentions` de las facturas de proveedor, DEBE (MUST) lanzar un `UserError` cuando la factura tiene un pago real conciliado (cualquiera que no sea `is_retention`) **y** al menos una retención emitida (`state == "emitted"`) o en resync (`draft` con `payment_ids`); las de borrador sin pagos y las canceladas no cuentan (`retention_islr_line_ids`, `retention_iva_line_ids` o `retention_municipal_line_ids`), porque en ese caso las retenciones tendrían que desmontarse y reconstruirse. En una factura sin retenciones emitidas ni en resync la guarda NO DEBE (MUST NOT) bloquear: un pago normal conciliado no impide restablecer a borrador, cancelar ni recalcular.
+
+#### Scenario: Pago real sobre una factura con retención
+
+- **GIVEN** una factura de proveedor con una retención emitida y un pago real conciliado
+- **WHEN** se intenta restablecerla a borrador, cancelarla o recalcular sus retenciones
+- **THEN** se lanza un `UserError` indicando que tiene un pago real aplicado
+
+#### Scenario: Pago real con la retención en resync
+
+- **GIVEN** una factura de proveedor cuya retención quedó en borrador con sus pagos (a medio resincronizar) y un pago real conciliado
+- **WHEN** se pulsa "Recalcular retenciones"
+- **THEN** se lanza un `UserError` indicando que tiene un pago real aplicado
+
+#### Scenario: Pago real sobre una factura sin retenciones
+
+- **GIVEN** una factura de proveedor confirmada, sin retenciones, con un pago normal conciliado
+- **WHEN** se restablece a borrador
+- **THEN** el cambio de estado se permite
+
 ### Requirement: Cancelación del comprobante revierte sus pagos
 
 `action_cancel` DEBE (MUST): desconciliar los apuntes conciliados de los pagos del comprobante, pasarlos a borrador y cancelarlos (con `bypass_retention_lock`), desmarcarlos como retención y desvincularlos, limpiar los números de comprobante en las facturas y dejar el comprobante en estado `cancel` sin pagos asociados.

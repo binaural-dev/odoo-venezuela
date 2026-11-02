@@ -17,17 +17,27 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha de tasa del documento: `invoice_date` ("Rate Date") para todas las facturas, ventas y compras por igual, con `date` como respaldo si está vacía; los asientos (`entry`) usan siempre `date`, porque su `invoice_date` solo trae el "hoy" por defecto; si ninguna está definida usa la fecha actual del usuario (`context_today`). La regla es la misma para todos los tipos de documento: `_compute_rate_for_documents` recibe solo los documentos, sin distinguir ventas de compras. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, porque `date` es el respaldo cuando `invoice_date` está vacía: editar únicamente `date` en un documento sin `invoice_date` DEBE (MUST) recalcular la tasa, mientras que en un documento con `invoice_date` (por ejemplo una compra) cambiar solo `date` NO DEBE (MUST NOT) moverla. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
 
 #### Scenario: Factura de venta
 
 - **WHEN** se establece o cambia la fecha de factura de un documento de venta sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a esa fecha
 
+#### Scenario: Factura de compra con la fecha de tasa editada
+
+- **WHEN** se edita `invoice_date` (Rate Date) en un documento de compra (`in_invoice`) sin tasa manual, incluso restablecido a borrador desde el formulario
+- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a esa fecha, igual que en una factura de venta, y al guardar el formulario queda esa tasa
+
 #### Scenario: Factura de compra con solo la fecha contable editada
 
-- **WHEN** se edita únicamente `date` (sin tocar `invoice_date`) en un documento que no es de venta (por ejemplo `in_invoice`), sin tasa manual
-- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`, en vez de quedar congelados con la tasa de la fecha anterior
+- **WHEN** se edita únicamente `date` (sin tocar `invoice_date`) en un documento de compra con `invoice_date` definida, sin tasa manual
+- **THEN** `foreign_rate` y `foreign_inverse_rate` conservan la tasa de `invoice_date`
+
+#### Scenario: Asiento sin fecha de tasa con solo la fecha contable editada
+
+- **WHEN** se edita `date` en un asiento (`entry`), o en un documento sin `invoice_date`, sin tasa manual
+- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`
 
 #### Scenario: Factura de proveedor recién creada
 
@@ -48,6 +58,80 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 - **WHEN** se modifica el registro de tasa de la fecha de un documento ya contabilizado y luego se recalcula y cancela el documento
 - **THEN** el asiento sigue cuadrado (débito igual a crédito)
+
+### Requirement: Restablecer a borrador conserva la tasa de confirmación
+
+La tasa que muestra el documento (`move_currency_to_company_currency_rate`) DEBE (MUST) salir de la tasa guardada en él (`invoice_currency_rate`, o `foreign_rate` cuando el documento está en la moneda de la compañía) y solo usar la tasa vigente de la fecha cuando el documento no tiene ninguna guardada. Editar después el registro de tasa del día de un documento ya contabilizado NO DEBE (MUST NOT) cambiar la tasa mostrada, `foreign_rate`, `foreign_inverse_rate` ni `invoice_currency_rate`, y restablecer ese documento a borrador DEBE (MUST) conservarlas junto con los importes de todas sus líneas (ventas, impuestos y cuenta por cobrar), de modo que el histórico de la tasa no se pierde y el asiento no se descuadra.
+
+`foreign_rate` y `foreign_inverse_rate` (`_compute_rate`, que depende de `invoice_date` y `date`) e `invoice_currency_rate` (campo del core, que depende de `invoice_date`, `taxable_supply_date`, `currency_id` y `company_id`) son campos calculados guardados, y Odoo los recalcula cada vez que se **escribe** una de sus dependencias, aunque el valor escrito sea el que ya tenía. Para que un documento que ya se confirmó (`posted_before`) conserve sus tasas, el sistema DEBE (MUST):
+
+1. Comparar en `_apply_product_real_portion` (al sincronizar el borrador) contra `invoice_currency_rate`, no contra la tasa vigente de la fecha.
+2. Descartar, mediante `_drop_unchanged_rate_dates` invocado al inicio de `write` de `account.move`, las escrituras de `invoice_date`, `invoice_date_display` y `date` cuyo valor es igual al actual, siempre que **todos** los documentos escritos tengan `posted_before` y ninguno esté `posted` (en un lote mixto no se descarta nada; sobre un documento `posted` el core sigue lanzando su error de campos de solo lectura). Así una escritura que no cambia la fecha (RPC, importación u otro módulo) no recalcula las tres tasas.
+
+Límites de esa protección, tal como los implementa el código:
+
+- Solo cubre esas tres fechas: escribir el mismo `currency_id`, `company_id` o `taxable_supply_date` sigue recalculando `invoice_currency_rate`.
+- Una fecha que sí cambia nunca se descarta y las tasas la siguen; un borrador que nunca se confirmó (`posted_before` falso) sigue recalculando como siempre.
+- No distingue `manually_set_rate`: aplica también a esos documentos. Un documento `posted` queda fuera de la protección, así que escribirle la misma fecha sigue lanzando el error de campos de solo lectura del core.
+- El cliente web solo envía los campos que el usuario cambió y la vista del formulario de la factura no incluye `foreign_rate`, por lo que guardar el formulario no escribe la tasa alterna; la protección del punto 2 es para los demás llamadores.
+
+#### Scenario: Restablecer a borrador tras editar la tasa del día
+
+- **GIVEN** una factura en USD confirmada con la tasa 884,75 y luego la tasa de ese mismo día editada a 900
+- **WHEN** se restablece la factura a borrador
+- **THEN** el cambio de estado se permite, el asiento queda balanceado y todas sus líneas conservan los importes calculados con 884,75
+
+#### Scenario: Restablecer a borrador con un pago conciliado o una nota de crédito
+
+- **GIVEN** una factura confirmada con la tasa 884,75, con un pago conciliado (o una nota de crédito aplicada) y la tasa de ese día editada después a 900
+- **WHEN** se restablece la factura a borrador
+- **THEN** el cambio de estado se permite y las tasas y los balances de todas sus líneas siguen siendo los de la confirmación
+
+#### Scenario: Factura de proveedor con pago normal conciliado
+
+- **GIVEN** una factura de proveedor confirmada, sin retenciones, con un pago normal conciliado y la tasa de ese día editada después
+- **WHEN** se restablece a borrador
+- **THEN** el cambio de estado se permite y las tasas y los balances siguen siendo los de la confirmación (el bloqueo por pago real de `l10n_ve_payment_extension` solo aplica a facturas con retenciones)
+
+#### Scenario: Volver a confirmar tras restablecer a borrador
+
+- **GIVEN** la factura del escenario anterior, ya en borrador
+- **WHEN** se confirma de nuevo
+- **THEN** `foreign_rate`, `foreign_inverse_rate`, `invoice_currency_rate` y los balances siguen siendo los de la primera confirmación
+
+#### Scenario: Guardar el formulario del borrador
+
+- **GIVEN** una factura restablecida a borrador tras editar la tasa de su día
+- **WHEN** en el formulario se cambia la fecha del documento y se devuelve a la original antes de guardar
+- **THEN** `foreign_rate` y `foreign_inverse_rate` siguen siendo los de la confirmación y la fecha de tasa queda en la original
+
+#### Scenario: Escritura de la misma fecha en un borrador ya confirmado antes
+
+- **GIVEN** una factura restablecida a borrador tras editar la tasa de su día
+- **WHEN** se escribe `invoice_date` y `date` con los valores que ya tienen
+- **THEN** las escrituras se descartan y las tres tasas no cambian
+
+#### Scenario: Cambio real de fecha
+
+- **GIVEN** una factura restablecida a borrador, y una tasa registrada para el día anterior
+- **WHEN** se escribe `invoice_date` con el día anterior
+- **THEN** `foreign_rate` y la tasa mostrada pasan a la tasa de ese día
+
+#### Scenario: Borrador que nunca se confirmó
+
+- **GIVEN** una factura en borrador con `posted_before` falso y la tasa de su día editada
+- **WHEN** se escribe `invoice_date` con el mismo valor
+- **THEN** `foreign_rate` se recalcula con la tasa vigente
+
+#### Scenario: Tasa mostrada de un documento contabilizado
+
+- **WHEN** se abre una factura contabilizada cuya tasa del día se editó después de confirmarla
+- **THEN** el formulario muestra la tasa con la que se confirmó y no la tasa vigente
+
+#### Scenario: Factura en la moneda de la compañía
+
+- **WHEN** se restablece a borrador una factura en la moneda de la compañía tras editar la tasa de su día
+- **THEN** sus columnas de la moneda alterna (`foreign_debit`, `foreign_credit`, `foreign_balance`) y su `foreign_rate` no cambian
 
 ### Requirement: Prohibición de tasas negativas o cero
 
@@ -213,7 +297,7 @@ Al sincronizar las líneas dinámicas de una factura **en borrador** (`_distribu
 
 Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) corregir las diferencias de redondeo introducidas por el redondeo línea a línea, en dos pasos independientes que corren en etapas distintas del ciclo de sincronización:
 
-1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa cruda del documento (`currency_id._convert` a la fecha de factura), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
+1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa guardada del documento (`invoice_currency_rate`; solo si el documento no la tiene cae a `currency_id._convert` a la fecha de factura, nunca a la tasa vigente de esa fecha si esta se editó después de contabilizar), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
 2. Durante `_sync_tax_lines` (bloque "Fix multi-currency rounding" de `account.move`), tras calcular `tax_results` con el motor estándar de impuestos: el balance de cada línea de impuesto cuyo repartition line pertenece a un impuesto `amount_type = 'percent'` se recalcula NATIVAMENTE en VEF, sumando el `balance` fresco (ya calculado en este mismo ciclo, NO el campo `record.balance` desactualizado) de las líneas de producto que usan ese impuesto y aplicando `% del impuesto x factor_percent de la línea de reparto`; `amount_currency` se deriva multiplicando ese balance por `move.invoice_currency_rate` y redondeando con `move.currency_id` (la moneda del documento, NO la de la compañía -- VEF es el monto "maestro" para `balance`, pero `amount_currency` debe respetar la precisión de la moneda en la que está la factura). El match de las líneas de producto que usan el impuesto considera tanto el impuesto directo (`tax in record.tax_ids`) como su `group_tax_id`: `record.tax_ids` trae el impuesto tal como lo eligió el usuario, que para un `percent` hijo de un `amount_type = 'group'` es el grupo, no el hijo -- sin este segundo criterio la base salía en 0 para esos hijos, sin romper el cuadre del asiento (ver "Requirement" de este mismo bloque, punto 3, que ancla la contrapartida al resto). Para impuestos `fixed`/`division`/`group`, y para las líneas base, se mantiene `amount_currency / rate` como antes. Esto evita que el % del impuesto visible en el asiento diverja de la base real de las líneas de producto (ver `l10n_ve_accountant/tests/test_multi_currency_rounding.py`, tests 15-22, 26 y 27).
 3. Durante `_sync_dynamic_lines`, ya con el recompute del core aplicado (`account.move._distribute_invoice_real_portion`): recorre las líneas de impuesto y, para las de un impuesto `fixed`/`division`/`group`, fija `balance = amount_currency / rate` redondeado (ruta real de cálculo para esos tipos). Para impuestos `amount_type = 'percent'` este paso hace `continue` explícito y NO toca el balance -- **no son idempotentes** entre sí: `amount_currency / rate` divide por una tasa pequeña (VEF hacia la moneda del documento), lo que amplifica el redondeo de 2 decimales de `amount_currency` a un error de varios bolívares en VEF (confirmado empíricamente con precios a 6 decimales y cantidades no enteras, `l10n_ve_accountant/tests/test_multi_currency_rounding.py::test_24_distribute_invoice_real_portion_would_diverge_without_the_skip`); si este paso recalculara el balance de esas líneas, revertiría el cálculo VEF-nativo del paso 2. Luego ancla la contrapartida (las líneas de término de pago si existen; si no, el resto de líneas sin `tax_repartition_line_id`) a `-actual_non_pt`, donde `actual_non_pt` es la suma REAL de los balances de todas las líneas que no son de término de pago, COGS, ni sección/subsección/nota (`line_section`/`line_subsection`/`line_note`, excluidas para no violar el `CHECK` de líneas no contables) tal como quedaron después del recompute — NO una conversión directa del total del documento. El ajuste se acumula en `real_portion_amount` e incrementa `real_portion_count`.
 
@@ -225,6 +309,12 @@ Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_
 
 - **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total de esas líneas en la unidad de redondeo
 - **THEN** la diferencia se reparte entre las líneas de producto (`_apply_product_real_portion`) y, al sincronizar las líneas dinámicas, la contrapartida se ancla a la suma real de las líneas no-PT resultante
+
+#### Scenario: Restablecer a borrador tras editar la tasa del día no recalcula las líneas de producto
+
+- **GIVEN** una factura en divisa confirmada con una tasa y luego la tasa de su fecha editada
+- **WHEN** se restablece a borrador y `_apply_product_real_portion` compara los balances con la conversión esperada
+- **THEN** la conversión esperada usa `invoice_currency_rate`, la diferencia es solo de redondeo y no se reescribe ninguna línea de producto ni la contrapartida
 
 #### Scenario: Cambio de fecha a una fecha con la misma tasa vigente no descuadra el asiento (ticket 15089)
 

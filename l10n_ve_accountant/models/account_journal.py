@@ -135,6 +135,7 @@ class AccountJournal(models.Model):
                 domain = [
                     ('is_purchase_international', '=', True),
                     ('id', '!=', record.id),
+                    ('company_id', '=', record.company_id)
                 ]
 
                 if self.search_count(domain) > 0:
