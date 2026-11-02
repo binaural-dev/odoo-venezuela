@@ -542,8 +542,7 @@ class AccountMove(models.Model):
         for move in self:
             if move.debit_origin_id or move.reversed_entry_id:
                 continue
-            if move._get_order_rate_date():
-                # Rate Date bloqueada en la de la orden: no sigue a la fecha de la factura.
+            if move._is_rate_date_locked():
                 continue
             if move.invoice_date_display and move.is_sale_document(include_receipts=True):
                 move.invoice_date = move.invoice_date_display
@@ -1156,20 +1155,20 @@ class AccountMove(models.Model):
             is_sale=False,
         )
 
-    def _get_order_rate_date(self):
-        """Hook: fecha de tasa de la orden de origen cuando el ajuste de la compania
-        "usar la tasa de la orden en la factura" aplica a este documento; False si no.
-        Lo implementan ventas y compras, cada uno solo para su tipo de documento."""
+    def _is_rate_date_locked(self):
+        """Hook: True si la Rate Date esta bloqueada por la configuracion (la factura usa la
+        fecha de tasa de su orden) y no debe seguir a la fecha de la factura. Ventas la
+        implementa para sus facturas."""
         self.ensure_one()
         return False
 
     def _get_rate_date(self):
-        """Fecha con la que se busca la tasa: la de la orden si el ajuste aplica; si no, la
-        Rate Date en facturas y la fecha contable en asientos."""
+        """Fecha con la que se busca la tasa: la Rate Date en facturas (la fecha contable de
+        respaldo) y la fecha contable en asientos, cuyo invoice_date solo trae el "hoy"."""
         self.ensure_one()
         if self.move_type == "entry":
             return self.date
-        return self._get_order_rate_date() or self.invoice_date or self.date
+        return self.invoice_date or self.date
 
     @api.model
     def _compute_rate_for_documents(self, documents, is_sale):
@@ -1180,14 +1179,6 @@ class AccountMove(models.Model):
 
         for move in documents:
             if move.manually_set_rate and move.foreign_rate:
-                continue
-            if (
-                move.state == "posted"
-                and move.move_type != "entry"
-                and move.foreign_rate
-            ):
-                # Un documento publicado conserva su tasa: cambiar el ajuste de la compania
-                # (que dispara el recalculo) no puede reescribir facturas ya contabilizadas.
                 continue
             # "Rate Date" (invoice_date) drives the rate for every invoice,
             # purchases included. An entry's invoice_date is just the default

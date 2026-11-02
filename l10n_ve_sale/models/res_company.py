@@ -48,17 +48,3 @@ class ResCompany(models.Model):
         ),
         default=False,
     )
-
-    def write(self, vals):
-        res = super().write(vals)
-        if "use_invoice_rate_from_sale_order" in vals:
-            # Activar o desactivar el ajuste recalcula solo las facturas de cliente en borrador
-            # que vienen de una orden; el resto de los documentos no se toca.
-            self.env["account.move"].search([
-                ("company_id", "in", self.ids),
-                ("move_type", "=", "out_invoice"),
-                ("state", "=", "draft"),
-                ("posted_before", "=", False),
-                ("invoice_line_ids.sale_line_ids", "!=", False),
-            ])._compute_rate()
-        return res
