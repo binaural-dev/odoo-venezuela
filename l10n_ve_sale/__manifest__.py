@@ -14,6 +14,7 @@
         "l10n_ve_base",
         "sale",
         "l10n_ve_rate",
+        "l10n_ve_accountant",
         "l10n_ve_contact",
         "l10n_ve_invoice",
         "l10n_ve_filter_partner",
