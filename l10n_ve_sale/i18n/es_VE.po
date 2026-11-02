@@ -640,3 +640,12 @@ msgstr "{}. Solo tiene {} unidades de {} exigidas."
 #: model:ir.model.fields.selection,name:l10n_ve_sale.selection__sale_order__invoice_status__partially_billed
 msgid "Partially billed"
 msgstr "Parcialmente facturado"
+
+#. module: l10n_ve_sale
+#: model_terms:ir.ui.view,arch_db:l10n_ve_sale.view_account_move_form_l10n_ve_sale_order_rate
+msgid ""
+"This document uses the exchange rate of its sale order: the Rate Date is locked\n"
+"                    and the rate will not be recalculated when the invoice date changes."
+msgstr ""
+"Este documento usa la tasa de su orden de venta: la fecha de tasa está bloqueada y la tasa "
+"no se recalculará al cambiar la fecha de la factura."
