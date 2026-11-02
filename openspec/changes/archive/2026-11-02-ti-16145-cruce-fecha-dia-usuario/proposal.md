@@ -39,8 +39,13 @@ siguiente existiera, el cierre pasaría pero el cruce quedaría con la fecha con
 
 - **Módulo tocado:** `l10n_ve_pos` (19.0.1.28.1 → 19.0.1.28.2).
 - **Despliegue:** `-u l10n_ve_pos` no es necesario (solo Python); basta reiniciar el servicio.
-  Una sesión que quedó trabada en "Control de cierre" cierra después del despliegue con el cruce
-  en el día local de su `stop_at`.
+- **Sesión que quedó trabada en "Control de cierre":** después del despliegue se cierra desde el
+  backend (botón "Cerrar sesión" de la sesión), que conserva su `stop_at`: el cruce queda en el
+  día local de ese `stop_at`. Si se reintenta desde el popup de cierre del PdV,
+  `update_closing_control_state_session` reescribe `stop_at` con la hora del reintento y el cruce
+  toma ese día. En los dos casos el asiento principal de la sesión lo fecha el core con el día del
+  reintento (`context_today`), así que contabilidad debe revisar las fechas del cruce (queda en
+  borrador) y del asiento de la sesión antes de publicarlos.
 - **Zona horaria:** se usa la del usuario que cierra (`tz` del contexto o del usuario), como el
   resto de la localización desde el ticket 16058. Un usuario sin zona horaria sigue en UTC.
 - **Fuera de alcance:** cargar la tasa automáticamente para fines de semana o feriados.

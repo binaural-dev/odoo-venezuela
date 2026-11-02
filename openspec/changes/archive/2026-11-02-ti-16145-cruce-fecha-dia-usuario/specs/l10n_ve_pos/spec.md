@@ -7,7 +7,7 @@
 #### Scenario: Cierre a las 8:30 pm de Caracas con un método que no identifica cliente
 
 - **WHEN** la sesión se cierra con `stop_at` a las 00:30 UTC del día siguiente y solo hay tasa del día del usuario
-- **THEN** el cross move del método se crea con la fecha del día del usuario y el cierre no se detiene por falta de tasa
+- **THEN** el cross move del método se crea con la fecha del día del usuario, sin pedir la tasa del día UTC
 
 #### Scenario: Pago registrado a las 8:30 pm de Caracas con un método que identifica cliente
 

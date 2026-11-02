@@ -377,16 +377,21 @@ class TestPosSessionAccountingBase(TransactionCase):
     # ------------------------------------------------------------------
     @classmethod
     def _create_rate_of_day(cls, rate):
-        """VEF rate dated today, the date of the moves these tests create.
+        """VEF rate dated the user's today, the date of the moves these tests create.
 
         ``l10n_ve_rate`` only accepts the rate of the move's exact date, so a
         test that creates moves without one stops on "There is no rate
         assigned". Pass a value different from the sale rate, so the moves
         that keep the order's rate are still told apart from the day's one.
+
+        The user's day, not the UTC one (``fields.Date.today()``): the core
+        and the cross move date their moves with ``context_today``, so in a
+        database whose user has a time zone (America/Caracas) the two days
+        differ from 8 pm on and the moves would not find this rate.
         """
         cls.env["res.currency.rate"].create(
             {
-                "name": fields.Date.today(),
+                "name": fields.Date.context_today(cls.env.user),
                 "currency_id": cls.foreign_currency.id,
                 "company_id": cls.company.id,
                 "rate": rate,
