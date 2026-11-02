@@ -9,6 +9,29 @@ class AccountMove(models.Model):
     convert_currency_from_sale_order = fields.Boolean(
         related="company_id.convert_currency_from_sale_order",
     )
+    use_invoice_rate_from_sale_order = fields.Boolean(
+        related="company_id.use_invoice_rate_from_sale_order",
+    )
+
+    @api.depends("company_id.use_invoice_rate_from_sale_order")
+    def _compute_rate(self):
+        """Activar o desactivar el ajuste recalcula la tasa
+        de los borradores; los documentos publicados la conservan."""
+        super()._compute_rate()
+
+    def _get_order_rate_date(self):
+        """Facturas de cliente de UNA sola orden con "usar la tasa de la orden en la factura"
+        activo: la fecha de tasa es la de la orden."""
+        self.ensure_one()
+        if (
+            self.move_type != "out_invoice"
+            or not self.company_id.use_invoice_rate_from_sale_order
+        ):
+            return super()._get_order_rate_date()
+        orders = self.invoice_line_ids.sale_line_ids.order_id
+        if len(orders) != 1:
+            return super()._get_order_rate_date()
+        return orders.foreign_rate_date or orders._l10n_ve_rate_date()
 
     def _get_sale_conversion_pricelist_rule(self, line):
         """Regla de tarifa que pisaria la conversion de esta linea, si la hay.
