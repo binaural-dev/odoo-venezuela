@@ -173,3 +173,95 @@ class TestPosSessionCloseTzBoundary(TestPosSessionAccountingBase):
         moves = self._cross_moves()
         self.assertEqual(len(moves), 1)
         self.assertEqual(moves.date, CARACAS_DAY)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_pos", "l10n_ve_pos_tz_boundary", "l10n_ve_pos_tz_conversion")
+class TestPosSessionConversionDate(TestPosSessionAccountingBase):
+    """Conversiones del cierre con un Datetime UTC (``stop_at``, ``payment_date``).
+
+    ``res.currency._convert`` toma la ultima tasa con fecha menor o igual: con un Datetime
+    de las 00:30 UTC del dia siguiente y la tasa de manana ya publicada, convertia con
+    esa y no con la del dia del usuario (el dia de los asientos del cierre).
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        Rate = cls.env["res.currency.rate"]
+        Rate.search(
+            [
+                ("currency_id", "=", cls.foreign_currency.id),
+                ("company_id", "=", cls.company.id),
+                ("name", ">=", CARACAS_DAY),
+            ]
+        ).unlink()
+        for day, rate in ((CARACAS_DAY, 40.0), (UTC_DAY, 50.0)):  # la de manana ya esta publicada
+            Rate.create(
+                {
+                    "name": day,
+                    "currency_id": cls.foreign_currency.id,
+                    "company_id": cls.company.id,
+                    "rate": rate,
+                }
+            )
+
+    def _new_session(self):
+        return (
+            self.env["pos.session"]
+            .with_context(tz=CARACAS_TZ)
+            .with_company(self.company)
+            .create({"config_id": self.config.id, "user_id": self.env.ref("base.user_admin").id})
+        )
+
+    def _converted_at(self, session, amount, day):
+        return session.currency_id._convert(
+            amount, session.company_id.currency_id, session.company_id, day, round=False
+        )
+
+    def _assert_user_day_rate(self, session, actual, amount=100.0):
+        expected = self._converted_at(session, amount, CARACAS_DAY)
+        at_utc_day = self._converted_at(session, amount, UTC_DAY)
+        self.assertNotAlmostEqual(expected, at_utc_day, places=6, msg="las tasas de los dos dias deben diferir")
+        self.assertAlmostEqual(
+            actual,
+            expected,
+            places=6,
+            msg="convirtio con la tasa de manana (dia UTC) en vez de la del dia del usuario",
+        )
+
+    def test_amount_converter_datetime_uses_user_day(self):
+        with freeze_time(FROZEN_UTC_NOW):
+            session = self._new_session()
+            actual = session._amount_converter(100.0, fields.Datetime.now(), False)
+        self._assert_user_day_rate(session, actual)
+
+    def test_amount_converter_date_is_untouched(self):
+        """Una fecha (no Datetime) ya es el dia que quiere quien llama: no se toca."""
+        with freeze_time(FROZEN_UTC_NOW):
+            session = self._new_session()
+            actual = session._amount_converter(100.0, UTC_DAY, False)
+        self.assertAlmostEqual(actual, self._converted_at(session, 100.0, UTC_DAY), places=6)
+
+    def test_update_amounts_with_payment_date_uses_user_day(self):
+        """El core acumula el cierre con ``_update_amounts(..., payment.payment_date)``."""
+        with freeze_time(FROZEN_UTC_NOW):
+            session = self._new_session()
+            amounts = session._update_amounts(
+                {"amount": 0.0, "amount_converted": 0.0},
+                {"amount": 100.0},
+                fields.Datetime.now(),
+                round=False,
+            )
+        self._assert_user_day_rate(session, amounts["amount_converted"])
+
+    def test_statement_line_amount_values_use_user_day(self):
+        """El extracto de un diario en otra moneda se convierte con ``stop_at`` (UTC)."""
+        journal = self.env["account.journal"].create(
+            {"name": "TZ Company Currency Journal", "type": "general", "code": "TZCB", "company_id": self.company.id}
+        )
+        with freeze_time(FROZEN_UTC_NOW):
+            session = self._new_session()
+            session.stop_at = fields.Datetime.now()
+            values = session._prepare_statement_line_amount_values(journal, 100.0)
+        self.assertAlmostEqual(values["amount_currency"], 100.0, places=6)
+        self._assert_user_day_rate(session, values["amount"])

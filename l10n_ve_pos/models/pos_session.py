@@ -2,6 +2,7 @@ from odoo import models, fields, api, _, Command
 from odoo.tools import float_is_zero, float_compare
 from odoo.osv.expression import AND, OR
 from odoo.exceptions import UserError, ValidationError
+import datetime
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -952,6 +953,39 @@ class PosSession(models.Model):
                         )
 
         return data
+
+    def _to_user_date(self, value):
+        """Un Datetime (``stop_at``, ``payment_date``, ``date_order``) esta en UTC: se
+        pasa a la fecha del usuario. ``res.currency._convert`` compara su fecha con la
+        tasa, y a las 8 pm de Caracas el Datetime ya es del dia siguiente: con la tasa
+        de manana publicada convertiria con esa y no con la del dia de los asientos del
+        cierre (``fields.Date.context_today``). Una fecha o un valor vacio no se tocan."""
+        if isinstance(value, datetime.datetime):
+            return fields.Date.context_today(self, value)
+        return value
+
+    def _amount_converter(self, amount, date, round):
+        """Convierte a la moneda de la compania con la tasa del dia del usuario cuando
+        ``date`` es un Datetime. El core lo llama con ``stop_at`` y ``payment.payment_date``
+        (``_update_amounts``, cierre de efectivo) y los modulos de PdV con ``date_order``."""
+        return super()._amount_converter(amount, self._to_user_date(date), round)
+
+    def _prepare_statement_line_amount_values(self, journal, amount):
+        """El core convierte el extracto al diario con ``self.stop_at`` (UTC): se usa el dia
+        del usuario, el mismo del asiento.
+
+        KEEP IN SYNC WITH: point_of_sale ``pos.session._prepare_statement_line_amount_values``.
+        """
+        journal_currency = journal.currency_id or self.company_id.currency_id
+        if journal_currency == self.currency_id:
+            return {"amount": amount}
+        return {
+            "amount": self.currency_id._convert(
+                amount, journal_currency, self.company_id, self._to_user_date(self.stop_at)
+            ),
+            "amount_currency": amount,
+            "foreign_currency_id": self.currency_id.id,
+        }
 
     def _update_amounts(
         self, old_amounts, amounts_to_add, date, round=True, force_company_currency=False
