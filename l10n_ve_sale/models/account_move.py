@@ -13,12 +13,6 @@ class AccountMove(models.Model):
         related="company_id.use_invoice_rate_from_sale_order",
     )
 
-    @api.depends("company_id.use_invoice_rate_from_sale_order")
-    def _compute_rate(self):
-        """Activar o desactivar el ajuste recalcula la tasa
-        de los borradores; los documentos publicados la conservan."""
-        super()._compute_rate()
-
     def _get_order_rate_date(self):
         """Facturas de cliente de UNA sola orden con "usar la tasa de la orden en la factura"
         activo: la fecha de tasa es la de la orden."""

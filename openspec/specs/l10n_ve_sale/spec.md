@@ -6,7 +6,7 @@ Adapta el flujo de ventas (`sale.order`, `sale.order.line`, `sale.report`) a la 
 
 ## Requirements
 
-### Requirement: Moneda alterna y tasa por defecto en la orden
+### Requirement: Moneda alterna y tasa inicial en la orden
 
 Toda orden de venta (`sale.order`) DEBE (MUST) inicializar `foreign_currency_id` con la moneda alterna de la compañía (`foreign_currency_id` de `res.company`, de `l10n_ve_rate`) y los campos `foreign_rate` y `foreign_inverse_rate` con el resultado de `compute_rate` de `res.currency.rate` a la fecha de tasa de la orden (`_l10n_ve_rate_date()`, ver el requisito de recálculo). Los campos de tasa NO TIENEN (MUST NOT) un `default=` propio: lo fija siempre `_compute_rate`, de modo que una orden creada por código con fecha pasada obedece a la configuración y no a la tasa de hoy. Ticket #16148.
 
@@ -22,7 +22,7 @@ Toda orden de venta (`sale.order`) DEBE (MUST) inicializar `foreign_currency_id`
 
 ### Requirement: Recálculo de tasa condicionado por configuración
 
-El cómputo `_compute_rate` de la orden DEBE (MUST) buscar `foreign_rate` y `foreign_inverse_rate` (vía `compute_rate` de `l10n_ve_rate`) con la fecha de `_l10n_ve_rate_date()`: la de `date_order` si la compañía tiene `update_sale_order_rate_using_date_order` activo; la de **creación** de la orden (hoy si aún no se guarda) si está desactivado. Ambas se pasan al día del usuario (`user_local_date`). Mientras la orden sea cotización (`draft`/`sent`) el cómputo corre cuando cambian `foreign_currency_id` o `date_order`; una orden aprobada con tasa conserva tasa y `foreign_rate_date`. NO recalcula cuando (a) la orden tiene `manually_set_rate` activo o (b) proviene del sitio web (`website_id`). `foreign_rate_date` guarda la fecha usada y es la que heredan las líneas y la factura. Los campos `foreign_rate` y `foreign_inverse_rate` van ocultos con `force_save` en el formulario para que el onchange de `date_order` los recalcule antes de guardar. Ticket #16148.
+El cómputo `_compute_rate` de la orden DEBE (MUST) buscar `foreign_rate` y `foreign_inverse_rate` (vía `compute_rate` de `l10n_ve_rate`) con la fecha de `_l10n_ve_rate_date()`: la de `date_order` si la compañía tiene `update_sale_order_rate_using_date_order` activo; la de **creación** de la orden (hoy si aún no se guarda) si está desactivado. Ambas se pasan al día del usuario (`context_timestamp`, que usa la zona del contexto o la del usuario). Mientras la orden sea cotización (`draft`/`sent`) el cómputo corre cuando cambian `foreign_currency_id` o `date_order`; una orden aprobada con tasa conserva tasa y `foreign_rate_date`. NO recalcula cuando (a) la orden tiene `manually_set_rate` activo o (b) proviene del sitio web (`website_id`), siempre que ya tenga tasa: si nace sin tasa se calcula. `foreign_rate_date` guarda la fecha usada y es la que heredan las líneas y la factura. Los campos `foreign_rate` y `foreign_inverse_rate` van ocultos con `force_save` en el formulario para que el onchange de `date_order` los recalcule antes de guardar. Ticket #16148.
 
 #### Scenario: Ajuste activo y cambio de fecha en la cotización
 
@@ -46,7 +46,7 @@ El cómputo `_compute_rate` de la orden DEBE (MUST) buscar `foreign_rate` y `for
 
 ### Requirement: Confirmar respeta la fecha de la orden
 
-`_prepare_confirmation_values` DEBE (MUST) conservar la `date_order` que ya tiene la orden en vez de reescribirla con la fecha de confirmación del core; solo si faltara la asigna con el día del usuario (`user_local_date`). Ticket #16148.
+`_prepare_confirmation_values` DEBE (MUST) conservar la `date_order` que ya tiene la orden en vez de reescribirla con la fecha de confirmación del core; `action_confirm` solo asigna `date_order` (instante actual) si faltara. Consecuencia a tener en cuenta: `sale_stock` calcula la fecha límite de entrega como `date_order + plazo`, de modo que una cotización antigua confirmada hoy genera entregas con fecha planificada en el pasado. Ticket #16148.
 
 #### Scenario: Confirmación de una orden con fecha elegida
 
@@ -185,7 +185,7 @@ La acción `action_confirm` DEBE (MUST) rechazar con error la confirmación de u
 
 ### Requirement: Confirmación requiere tasa de moneda alterna
 
-Al confirmar (`action_confirm`), si la orden tiene moneda alterna (`foreign_currency_id`), no tiene `manually_set_rate` activo, y `foreign_rate` es cero, el sistema DEBE (MUST) invocar `compute_rate` con `raise_if_not_found=True`, bloqueando la confirmación con un `UserError` en vez de dejar pasar la orden con `foreign_rate` en cero. Desde el ticket 15923 `compute_rate` lanza ese error por defecto, de modo que también los defaults y el `_compute_rate` de la orden fallan sin tasa; aquí se mantiene el argumento explícito por claridad.
+Al confirmar (`action_confirm`), si la orden tiene moneda alterna (`foreign_currency_id`), no tiene `manually_set_rate` activo, y `foreign_rate` es cero, el sistema DEBE (MUST) invocar `compute_rate` con `raise_if_not_found=True`, bloqueando la confirmación con un `UserError` en vez de dejar pasar la orden con `foreign_rate` en cero. Desde el ticket 15923 `compute_rate` lanza ese error por defecto, de modo que también el `_compute_rate` de la orden falla sin tasa; aquí se mantiene el argumento explícito por claridad.
 
 #### Scenario: Confirmación sin tasa configurada
 
@@ -428,7 +428,7 @@ El formulario de `sale.order` NO DEBE (MUST NOT) incluir la página `foreign_cur
 
 ### Requirement: La fecha de la tasa de la orden es el día del usuario
 
-La tasa de la orden (`_compute_rate`, `create`, la tasa del precio de línea y la fecha de factura generada desde la orden) DEBE (MUST) tomar la fecha del usuario: `_l10n_ve_rate_date()` convierte `date_order` o `create_date` (Datetime en UTC) con `user_local_date`, que usa la zona del contexto o, si falta, la del usuario, nunca `date_order.date()` ni `fields.Date.today()`. El chequeo de facturas vencidas del cliente DEBE (MUST) usar también el «hoy» del usuario.
+La tasa de la orden (`_compute_rate`, `create`, la tasa del precio de línea y la fecha de factura generada desde la orden) DEBE (MUST) tomar la fecha del usuario: `_l10n_ve_rate_date()` convierte `date_order` o `create_date` (Datetime en UTC) con `fields.Datetime.context_timestamp`, que usa la zona del contexto o, si falta, la del usuario, nunca `date_order.date()` ni `fields.Date.today()`. El chequeo de facturas vencidas del cliente DEBE (MUST) usar también el «hoy» del usuario.
 
 #### Scenario: Orden creada a las 8:30 pm en Caracas
 

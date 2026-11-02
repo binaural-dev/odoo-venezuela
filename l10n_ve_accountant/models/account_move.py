@@ -818,8 +818,8 @@ class AccountMove(models.Model):
         amounts in company currency.
 
         The web client does not send an unchanged date on its own (it only
-        sends what the user changed, and the form view does not carry
-        ``foreign_rate``), so this guards against any other caller (RPC,
+        sends what the user changed; ``foreign_rate`` travels hidden with
+        ``force_save``), so this guards against any other caller (RPC,
         imports, other modules).
 
         Scope and limits:
