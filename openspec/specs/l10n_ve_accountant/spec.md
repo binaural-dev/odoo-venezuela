@@ -17,7 +17,7 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha de tasa del documento: `invoice_date` ("Rate Date") para todas las facturas, ventas y compras por igual, con `date` como respaldo si está vacía; los asientos (`entry`) usan siempre `date`, porque su `invoice_date` solo trae el "hoy" por defecto; si ninguna está definida usa la fecha actual del usuario (`context_today`). La regla es la misma para todos los tipos de documento: `_compute_rate_for_documents` recibe solo los documentos, sin distinguir ventas de compras. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, porque `date` es el respaldo cuando `invoice_date` está vacía: editar únicamente `date` en un documento sin `invoice_date` DEBE (MUST) recalcular la tasa, mientras que en un documento con `invoice_date` (por ejemplo una compra) cambiar solo `date` NO DEBE (MUST NOT) moverla. `foreign_rate` y `foreign_inverse_rate` NO TIENEN (MUST NOT) un `default=` propio: se calculan siempre con la fecha del documento, incluso en la creación (`create`) de cualquier tipo, `in_invoice` incluido. Los documentos con `manually_set_rate` activo y con tasa ya fijada quedan excluidos del recálculo; uno marcado manual sin tasa se calcula. Un documento contabilizado (`posted`, no asiento) con tasa conserva la tasa aunque cambie una dependencia (por ejemplo el ajuste de la compañía). Ticket #16148. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
 
 #### Scenario: Factura de venta
 
@@ -29,10 +29,10 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 - **WHEN** se edita únicamente `date` (sin tocar `invoice_date`) en un documento que no es de venta (por ejemplo `in_invoice`), sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`, en vez de quedar congelados con la tasa de la fecha anterior
 
-#### Scenario: Factura de proveedor recién creada
+#### Scenario: Factura de proveedor o de cliente creada con fecha pasada
 
-- **WHEN** se crea un documento `in_invoice`
-- **THEN** la creación no dispara el recálculo de tasa y el documento conserva la tasa por defecto de la fecha actual
+- **WHEN** se crea un documento `in_invoice` u `out_invoice` (por código o desde el formulario) con `invoice_date` pasada y sin tasa manual
+- **THEN** el documento toma la tasa de esa fecha y no la de hoy
 
 #### Scenario: Tasa fijada manualmente
 
@@ -882,3 +882,54 @@ formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15
 
 - **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
 - **THEN** se lanza un error de validación antes de crear ningún pago
+
+### Requirement: Las fechas de tasa de facturas, asientos y pagos son las del usuario
+
+Todo cálculo de tasa o conversión de `account.move` y `account.payment` que use una fecha de respaldo (`invoice_date`, `date` o `l10n_ve_conversion_date` vacíos) DEBE (MUST) usar `fields.Date.context_today`, nunca `fields.Date.today()`. Las facturas, asientos y pagos creados sin fecha explícita ya toman su fecha de `invoice_date_display` / `date`, que usan `context_today`, y DEBEN (MUST) seguir haciéndolo.
+
+#### Scenario: Factura, asiento o pago a las 8:30 pm en Caracas
+
+- **WHEN** se crea una factura de venta o compra, un asiento o un pago sin fecha explícita a las 00:30 UTC del día siguiente, con tasa del día del usuario y no del día UTC
+- **THEN** el documento toma la tasa del día del usuario y no se lanza error de tasa
+
+#### Scenario: Asiento con fecha contable distinta de hoy
+
+- **WHEN** se crea un asiento (`entry`) con `date` pasada o futura, hay tasa para esa fecha y no la hay para el día de hoy
+- **THEN** el asiento toma la tasa de su `date`; la consulta de tasa del `create` usa `date` en los asientos y `invoice_date` (o el «hoy» del usuario) en los demás documentos
+
+### Requirement: Los campos de tasa viajan en el formulario de la factura
+
+El formulario de `account.move` DEBE (MUST) incluir `foreign_rate` y `foreign_inverse_rate` ocultos (`invisible="1"`) con `force_save="1"`, para que el onchange de `invoice_date` / `invoice_date_display` los recalcule en el formulario y lo calculado sea lo que se guarda. Ticket #16148.
+
+#### Scenario: Cambio de la fecha en el formulario
+
+- **WHEN** se cambia la fecha de una factura (nueva o guardada en borrador) desde el formulario
+- **THEN** el formulario ya muestra la tasa de esa fecha y al guardar se persiste esa misma tasa
+
+#### Scenario: Borrador que vuelve a su fecha original
+
+- **WHEN** en un borrador ya guardado la fecha se cambia y se devuelve a la original dentro del mismo formulario
+- **THEN** la tasa vuelve a la que el documento ya tenía y no se recalcula con la tasa actual del día
+
+### Requirement: Tasa de la orden en la factura y fecha de tasa bloqueada
+
+`account.move` DEBE (MUST) exponer el gancho `_get_order_rate_date()` (por defecto falso) que ventas y compras implementan solo para su tipo de documento: cuando el ajuste de la compañía "usar la tasa de la orden en la factura" aplica y la factura proviene de exactamente una orden, devuelve la fecha de tasa de la orden. `_get_rate_date()` DEBE (MUST) preferirla sobre `invoice_date` (los asientos siguen usando `date`). Con ese gancho activo, la Rate Date (`invoice_date`) NO DEBE (MUST NOT) moverse con la fecha de la factura (`_onchange_invoice_date_display` no la copia) y la tasa no se recalcula al cambiarla. Los notas de crédito y débito no se ven afectadas. Los ajustes son por compañía y se evalúan con la compañía del documento.
+
+#### Scenario: Ajuste desactivado
+
+- **WHEN** el ajuste del tipo de documento no está activo
+- **THEN** la tasa sigue a `invoice_date` y se recalcula si esta cambia
+
+#### Scenario: Ajuste activo
+
+- **WHEN** el ajuste está activo y se cambia la fecha de la factura
+- **THEN** la tasa sigue siendo la de la orden
+
+### Requirement: Fechas de tasa en el día del usuario también por código
+
+El helper `user_local_date` (`l10n_ve_accountant/rate_dates.py`) DEBE (MUST) convertir un Datetime en UTC al día del usuario con la zona de `env.context['tz']`, o la del usuario del entorno si el contexto no la trae, y solo caer en UTC si ninguna existe; sin Datetime devuelve el "hoy" del usuario con la misma regla. Ventas y compras lo usan para la fecha de tasa de sus órdenes.
+
+#### Scenario: Orden creada por código a las 8 pm de Caracas
+
+- **WHEN** el Datetime es 01:00 UTC y el contexto no trae zona pero el usuario tiene `America/Caracas`
+- **THEN** el día es el anterior (día de Caracas) y no el día UTC
