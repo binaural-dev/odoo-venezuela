@@ -85,9 +85,12 @@
         t-inherit="l10n_ve_accountant.TaxVesTotalsField" 
         t-inherit-mode="extension" 
         owl="1">
+        <!-- The IGTF amounts of this block (foreign_igtf_*) are in the company currency (VES).
+             When the document is already in that currency this block shows the alternate
+             currency and no IGTF amount exists in it, so the IGTF rows are hidden. -->
         
         <xpath expr="//t[@t-foreach='totals.subtotals']" position="after">
-            <t t-if="totals.igtf.apply_igtf">
+            <t t-if="!showForeign and totals.igtf.apply_igtf">
                 <tr>
                     <td class="o_td_label">
                         <label class="o_form_label o_tax_total_label">BI IGTF</label>
@@ -114,7 +117,7 @@
         </xpath>
 
         <xpath expr="//tbody" position="inside">
-            <t t-if="totals.igtf.igtf_show">
+            <t t-if="!showForeign and totals.igtf.igtf_show">
                 
                 <tr>
                     <td class="o_td_label">
@@ -130,7 +133,7 @@
                     </td>
                 </tr>
             </t>
-            <tr t-if="totals.igtf.igtf_show">
+            <tr t-if="!showForeign and totals.igtf.igtf_show">
                 <td class="o_td_label">
                     <label class="o_form_label o_tax_total_label">Total con IGTF(sugerido)</label>
                 </td>
@@ -142,7 +145,7 @@
                     />
                 </td>
             </tr>
-            <tr t-if="totals.igtf.apply_igtf ">
+            <tr t-if="!showForeign and totals.igtf.apply_igtf">
                 <td class="o_td_label">
                     <label class="o_form_label o_tax_total_label">Total with IGTF</label>
                 </td>
