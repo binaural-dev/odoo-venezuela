@@ -481,8 +481,8 @@ class SaleOrder(models.Model):
         invoice_vals = super()._prepare_invoice()
         company = self.company_id or self.env.company
         if company.use_invoice_rate_from_sale_order:
-            # El bloqueo de la fecha de tasa lo da account.move._get_order_rate_date, que
-            # sigue al ajuste vigente de la compania (no se marca la factura).
+            # La Rate Date queda bloqueada en la vista y en el onchange por
+            # account.move._is_rate_date_locked (no se marca la factura).
             # En esta localizacion invoice_date es la fecha de la TASA; la
             # fecha visible del documento (y la que determina la fecha
             # contable) es invoice_date_display -- ver

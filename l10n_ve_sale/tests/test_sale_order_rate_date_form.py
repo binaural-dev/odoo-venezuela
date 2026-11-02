@@ -200,7 +200,7 @@ class TestSaleOrderRateDateForm(TransactionCase):
         # fecha de tasa bloqueada aunque se cambie la fecha de la factura.
         self.company.use_invoice_rate_from_sale_order = True
         order, invoice = self._invoice_from_past_order()
-        self.assertEqual(invoice._get_order_rate_date(), self.past)
+        self.assertTrue(invoice._is_rate_date_locked())
         self.assertFalse(invoice.manually_set_rate)  # el bloqueo sigue al ajuste, no a una marca
         self.assertEqual(invoice.invoice_date, self.past)
         order_rate = self._expected(self.past)
@@ -222,7 +222,7 @@ class TestSaleOrderRateDateForm(TransactionCase):
     def test_invoice_without_order_rate_setting_follows_its_date(self):
         self.company.use_invoice_rate_from_sale_order = False
         order, invoice = self._invoice_from_past_order()
-        self.assertFalse(invoice._get_order_rate_date())
+        self.assertFalse(invoice._is_rate_date_locked())
         with Form(invoice) as form:
             self.assertFalse(form.use_invoice_rate_from_sale_order)
             form.invoice_date_display = self.past_next
@@ -230,21 +230,22 @@ class TestSaleOrderRateDateForm(TransactionCase):
         expected = self._expected(self.past_next)
         self.assertAlmostEqual(invoice.foreign_rate, expected["foreign_rate"], places=6)
 
-    def test_toggling_order_rate_setting_allows_recompute(self):
-        # El ajuste gobierna en cada momento: sin marcar la factura, activarlo o
-        # desactivarlo despues permite que la tasa se recalcule.
+    def test_toggling_order_rate_setting_does_not_recalculate(self):
+        # La fecha tasa lo decide todo: activar o desactivar el ajuste no recalcula nada; solo
+        # cambia lo que pasa al editar la fecha desde entonces.
         self.company.use_invoice_rate_from_sale_order = False
         order, invoice = self._invoice_from_past_order()
         self._set_invoice_date(invoice, self.past_next)
-        own = self._expected(self.past_next)
-        self.assertAlmostEqual(invoice.foreign_rate, own["foreign_rate"], places=6)
+        own = self._expected(self.past_next)["foreign_rate"]
         self.company.use_invoice_rate_from_sale_order = True
-        order_rate = self._expected(self.past)
-        self.assertTrue(invoice._get_order_rate_date())
-        self.assertAlmostEqual(invoice.foreign_rate, order_rate["foreign_rate"], places=6)
+        self.assertAlmostEqual(invoice.foreign_rate, own, places=6)
+        self.assertTrue(invoice._is_rate_date_locked())
         self.company.use_invoice_rate_from_sale_order = False
-        self.assertFalse(invoice._get_order_rate_date())
-        self.assertAlmostEqual(invoice.foreign_rate, own["foreign_rate"], places=6)
+        self.assertAlmostEqual(invoice.foreign_rate, own, places=6)
+        self._set_invoice_date(invoice, self.past)
+        self.assertAlmostEqual(
+            invoice.foreign_rate, self._expected(self.past)["foreign_rate"], places=6
+        )
 
     def test_toggling_setting_does_not_rewrite_posted_invoice(self):
         self.company.use_invoice_rate_from_sale_order = False
@@ -385,4 +386,4 @@ class TestSaleOrderRateDateForm(TransactionCase):
         self.company.use_invoice_rate_from_sale_order = False
         self.company.use_invoice_rate_from_purchase_order = True
         order, invoice = self._invoice_from_past_order()
-        self.assertFalse(invoice._get_order_rate_date())
+        self.assertFalse(invoice._is_rate_date_locked())
