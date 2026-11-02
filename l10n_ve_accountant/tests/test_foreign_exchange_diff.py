@@ -6,6 +6,7 @@ from lxml import etree
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
+from odoo.tools.date_utils import end_of
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -216,7 +217,12 @@ class TestForeignExchangeDiff(TransactionCase):
         currency = currency or self.currency_vef
         journal = self.bank_journal_usd if currency == self.currency_usd else self.bank_journal
         amount = move.amount_total if amount is None else amount
-        self._ensure_usd_rate(date or self.settlement_date, self.today)
+        # Los asientos de diferencia de cambio no se fechan el dia del pago: el core mueve a
+        # fin de mes la fecha de un asiento (no de venta) de un mes anterior al actual, y
+        # `compute_rate` lanza error si ese dia no tiene tasa. Pasa cuando hoy esta en los primeros
+        # dias de un mes y las fechas del escenario (hoy - 10/20 dias) caen en el mes anterior.
+        payment_date = date or self.settlement_date
+        self._ensure_usd_rate(payment_date, end_of(payment_date, "month"), self.today)
         payment = self.env["account.payment"].with_company(self.company).create({
             "amount": amount,
             "date": date or self.settlement_date,
