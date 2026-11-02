@@ -17,6 +17,10 @@
                     options="{&quot;always_reload&quot;: True, 'no_quick_create': True}" />
                 <field name="manually_set_rate" invisible="1"/>
                 <field name="foreign_rate_date" invisible="1"/>
+                <!-- Ocultos con force_save para que el compute corra en el onchange de date_order
+                     (form, antes de guardar). -->
+                <field name="foreign_rate" invisible="1" force_save="1"/>
+                <field name="foreign_inverse_rate" invisible="1" force_save="1"/>
             </xpath>
             <xpath expr="//field[@name='partner_id']" position="after">
                 <field name="vat" />

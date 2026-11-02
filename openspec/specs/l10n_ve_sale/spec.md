@@ -8,7 +8,7 @@ Adapta el flujo de ventas (`sale.order`, `sale.order.line`, `sale.report`) a la 
 
 ### Requirement: Moneda alterna y tasa por defecto en la orden
 
-Toda orden de venta (`sale.order`) DEBE (MUST) inicializar `foreign_currency_id` con la moneda alterna de la compañía (`foreign_currency_id` de `res.company`, de `l10n_ve_rate`) y los campos `foreign_rate` y `foreign_inverse_rate` con el resultado de `compute_rate` de `res.currency.rate` a la fecha de la orden (o la fecha actual si no hay fecha). Los defaults de tasa (`default_rate` y `default_inverse_rate`) usan la moneda alterna de la compañía y, si esta no está configurada, recurren al bolívar (`base.VEF`) como moneda de respaldo; en ese caso `foreign_currency_id` queda vacío.
+Toda orden de venta (`sale.order`) DEBE (MUST) inicializar `foreign_currency_id` con la moneda alterna de la compañía (`foreign_currency_id` de `res.company`, de `l10n_ve_rate`) y los campos `foreign_rate` y `foreign_inverse_rate` con el resultado de `compute_rate` de `res.currency.rate` a la fecha de tasa de la orden (`_l10n_ve_rate_date()`, ver el requisito de recálculo). Los campos de tasa NO TIENEN (MUST NOT) un `default=` propio: lo fija siempre `_compute_rate`, de modo que una orden creada por código con fecha pasada obedece a la configuración y no a la tasa de hoy. Ticket #16148.
 
 #### Scenario: Creación de una orden con moneda alterna configurada
 
@@ -22,22 +22,36 @@ Toda orden de venta (`sale.order`) DEBE (MUST) inicializar `foreign_currency_id`
 
 ### Requirement: Recálculo de tasa condicionado por configuración
 
-El cómputo `_compute_rate` de la orden DEBE (MUST) recalcular `foreign_rate` y `foreign_inverse_rate` (vía `compute_rate` de `l10n_ve_rate`) cuando cambian `foreign_currency_id` o `date_order`, EXCEPTO cuando: (a) la orden tiene `manually_set_rate` activo, (b) la orden proviene del sitio web (`website_id` establecido), o (c) la compañía tiene `update_sale_order_rate_using_date_order` desactivado y la tasa ya es distinta de cero. El flag `update_sale_order_rate_using_date_order` es configurable por compañía desde ajustes (related en `res.config.settings` con `readonly=False`).
+El cómputo `_compute_rate` de la orden DEBE (MUST) buscar `foreign_rate` y `foreign_inverse_rate` (vía `compute_rate` de `l10n_ve_rate`) con la fecha de `_l10n_ve_rate_date()`: la de `date_order` si la compañía tiene `update_sale_order_rate_using_date_order` activo; la de **creación** de la orden (hoy si aún no se guarda) si está desactivado. Ambas se pasan al día del usuario (`user_local_date`). Mientras la orden sea cotización (`draft`/`sent`) el cómputo corre cuando cambian `foreign_currency_id` o `date_order`; una orden aprobada con tasa conserva tasa y `foreign_rate_date`. NO recalcula cuando (a) la orden tiene `manually_set_rate` activo o (b) proviene del sitio web (`website_id`). `foreign_rate_date` guarda la fecha usada y es la que heredan las líneas y la factura. Los campos `foreign_rate` y `foreign_inverse_rate` van ocultos con `force_save` en el formulario para que el onchange de `date_order` los recalcule antes de guardar. Ticket #16148.
 
-#### Scenario: Cambio de fecha con actualización habilitada
+#### Scenario: Ajuste activo y cambio de fecha en la cotización
 
-- **WHEN** cambia `date_order` de una orden sin tasa manual y la compañía tiene `update_sale_order_rate_using_date_order` activo
-- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva fecha
+- **WHEN** cambia `date_order` de una cotización sin tasa manual y el ajuste está activo
+- **THEN** la tasa se recalcula con la nueva fecha y `foreign_rate_date` es esa fecha
 
-#### Scenario: Cambio de fecha con actualización deshabilitada y tasa ya fijada
+#### Scenario: Ajuste desactivado
 
-- **WHEN** cambia `date_order` y la compañía tiene `update_sale_order_rate_using_date_order` desactivado con `foreign_rate` distinto de cero
-- **THEN** la tasa de la orden no se modifica
+- **WHEN** el ajuste está desactivado y la orden se crea con una `date_order` distinta de hoy, o se cambia después
+- **THEN** la tasa es la del día de creación de la orden y no se mueve
+
+#### Scenario: Orden aprobada
+
+- **WHEN** se aprueba la orden o se intenta recalcular una orden aprobada con tasa
+- **THEN** la tasa y `foreign_rate_date` se conservan
 
 #### Scenario: Orden con tasa manual
 
 - **WHEN** la orden tiene `manually_set_rate` activo
 - **THEN** el recálculo automático no toca sus tasas
+
+### Requirement: Confirmar respeta la fecha de la orden
+
+`_prepare_confirmation_values` DEBE (MUST) conservar la `date_order` que ya tiene la orden en vez de reescribirla con la fecha de confirmación del core; solo si faltara la asigna con el día del usuario (`user_local_date`). Ticket #16148.
+
+#### Scenario: Confirmación de una orden con fecha elegida
+
+- **WHEN** se confirma una orden con `date_order` pasada
+- **THEN** `date_order` y la tasa de la orden no cambian
 
 ### Requirement: Tasa inversa al editar la tasa manualmente
 
@@ -69,17 +83,22 @@ El sistema DEBE (MUST) dejar constancia en el chatter de la orden cuando la tasa
 
 ### Requirement: Traslado de la tasa de la orden a la factura
 
-Al preparar la factura desde la orden (`_prepare_invoice`), el sistema DEBE (MUST) copiar `foreign_rate` y `foreign_inverse_rate` de la orden a la factura, y marcar la factura con `manually_set_rate` cuando la orden lo tiene activo o la compañía tiene activo `use_invoice_rate_from_sale_order` (configurable desde ajustes). El método `_update_invoices_rate` DEBE (MUST) sincronizar las tasas de las facturas de la orden solo cuando `use_invoice_rate_from_sale_order` está activo.
+Al preparar la factura desde la orden (`_prepare_invoice`), el sistema DEBE (MUST) copiar `manually_set_rate` y las tasas de la orden a la factura y, cuando la compañía tiene activo `use_invoice_rate_from_sale_order` (configurable desde ajustes), pasar como `invoice_date` (Rate Date) la `foreign_rate_date` de la orden. NO DEBE (MUST NOT) marcar la factura con `manually_set_rate` por ese ajuste: el bloqueo sigue al ajuste vigente mediante `account.move._get_order_rate_date`, que solo actúa en facturas de cliente (`out_invoice`) de una sola orden. El ajuste por compañía rige en cada momento: activarlo o desactivarlo recalcula la tasa de las facturas en borrador (`_compute_rate` depende del ajuste); las publicadas no cambian. Con el ajuste activo la vista bloquea la Rate Date y muestra un aviso arriba ("This document uses the exchange rate of its sale order: the Rate Date is locked and the rate will not be recalculated when the invoice date changes"). Ticket #16148.
 
 #### Scenario: Compañía que usa la tasa de la orden
 
-- **WHEN** la compañía tiene `use_invoice_rate_from_sale_order` activo y se factura una orden
-- **THEN** la factura se crea con las tasas de la orden y con `manually_set_rate` activo, de modo que la factura no recalcula la tasa a su propia fecha
+- **WHEN** el ajuste está activo y se factura una orden
+- **THEN** la factura toma la tasa de la fecha de tasa de la orden, aunque se cambie la fecha de la factura, y el formulario muestra el aviso con la Rate Date en solo lectura
 
-#### Scenario: Sincronización con el flag desactivado
+#### Scenario: Compañía que no la usa
 
-- **WHEN** se invoca `_update_invoices_rate` y la compañía no tiene `use_invoice_rate_from_sale_order` activo
-- **THEN** las facturas de la orden no se modifican
+- **WHEN** el ajuste está desactivado
+- **THEN** la factura calcula su tasa con su propia fecha y se recalcula si esta cambia; el aviso no se muestra
+
+#### Scenario: Ajuste de compras sobre facturas de cliente
+
+- **WHEN** solo `use_invoice_rate_from_purchase_order` está activo
+- **THEN** las facturas de cliente no se ven afectadas
 
 ### Requirement: Impuesto único por línea de orden
 
@@ -409,7 +428,7 @@ El formulario de `sale.order` NO DEBE (MUST NOT) incluir la página `foreign_cur
 
 ### Requirement: La fecha de la tasa de la orden es el día del usuario
 
-La tasa de la orden (`_compute_rate`, `create`, `default_rate`/`default_inverse_rate`, la tasa del precio de línea y la fecha de factura generada desde la orden) DEBE (MUST) tomar la fecha del usuario: `_l10n_ve_rate_date()` convierte `date_order` (Datetime en UTC) a la fecha local con `fields.Datetime.context_timestamp` (o usa `fields.Date.context_today` si no hay fecha), nunca `date_order.date()` ni `fields.Date.today()`; los defaults de tasa usan `fields.Date.context_today`. El chequeo de facturas vencidas del cliente DEBE (MUST) usar también el «hoy» del usuario.
+La tasa de la orden (`_compute_rate`, `create`, la tasa del precio de línea y la fecha de factura generada desde la orden) DEBE (MUST) tomar la fecha del usuario: `_l10n_ve_rate_date()` convierte `date_order` o `create_date` (Datetime en UTC) con `user_local_date`, que usa la zona del contexto o, si falta, la del usuario, nunca `date_order.date()` ni `fields.Date.today()`. El chequeo de facturas vencidas del cliente DEBE (MUST) usar también el «hoy» del usuario.
 
 #### Scenario: Orden creada a las 8:30 pm en Caracas
 

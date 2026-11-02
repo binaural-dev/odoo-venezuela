@@ -11,3 +11,6 @@ from . import test_action_confirm_requires_rate
 from . import test_no_foreign_currency_page
 from . import test_consolidated_invoices
 from . import test_alternate_totals_block
+from . import test_server_date_vs_user_tz
+from . import test_sale_order_rate_tz
+from . import test_sale_order_rate_date_form
