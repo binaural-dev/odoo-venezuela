@@ -81,7 +81,7 @@ class TestSaleOrderRateDateForm(TransactionCase):
         values = {
             "use_invoice_rate_from_sale_order": form.use_invoice_rate_from_sale_order,
             "move_type": form.move_type,
-            "invoice_origin": form.invoice_origin,
+            "sale_order_count": form.sale_order_count,
         }
         return " ".join(nodes[0].text.split()), safe_eval(nodes[0].get("invisible"), values)
 
@@ -301,6 +301,30 @@ class TestSaleOrderRateDateForm(TransactionCase):
             form.partner_id = self.partner
             _text, hidden = self._banner(form)
         self.assertTrue(hidden)
+
+    def test_lock_follows_linked_order_not_typed_origin(self):
+        # El aviso y el bloqueo salen de la configuracion y de la orden realmente vinculada
+        # (sale_order_count), no del texto de invoice_origin.
+        self.company.use_invoice_rate_from_sale_order = True
+        with Form(self.env["account.move"].with_context(default_move_type="out_invoice")) as form:
+            form.partner_id = self.partner
+            _text, hidden = self._banner(form)
+            self.assertTrue(hidden)
+            self.assertEqual(form.sale_order_count, 0)
+        expr = self._rate_date_readonly_expr("out_invoice")
+        self.assertIn("sale_order_count == 1", expr)
+        self.assertNotIn("invoice_origin", expr)
+
+    def test_invoice_from_manual_order_is_not_marked_manual(self):
+        # manually_set_rate no viaja a la factura: la tasa de la factura sale de la configuracion
+        for use in (True, False):
+            self.company.use_invoice_rate_from_sale_order = use
+            order = self._new_order_with_line(self.past)
+            order.write({"manually_set_rate": True, "foreign_rate": 77.0})
+            order.action_confirm()
+            invoice = order._create_invoices()
+            self.assertFalse(invoice.manually_set_rate)
+            self.assertNotEqual(invoice.foreign_rate, 77.0)
 
     def test_every_setting_combination_from_the_form(self):
         # Orden creada hoy con fecha pasada, aprobada y facturada con otra fecha
