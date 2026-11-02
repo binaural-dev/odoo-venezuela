@@ -1,17 +1,20 @@
 from odoo.tests import TransactionCase, tagged
+
+from .common import RateSeedMixin
 from odoo import fields, Command
 from odoo.exceptions import UserError
 from unittest.mock import patch
 
 
 @tagged("post_install", "-at_install", "l10n_ve_invoice")
-class TestReportPrintRestriction(TransactionCase):
+class TestReportPrintRestriction(RateSeedMixin, TransactionCase):
 
     def setUp(self):
         super().setUp()
         self.company = self.env.user.company_id
         self.company.currency_id = self.env.ref('base.VEF')
         self.company.foreign_currency_id = self.env.ref('base.USD')
+        self._seed_foreign_rates(fields.Date.today())
 
         self.account_receivable = self.env['account.account'].create({
             'name': 'Receivable', 'code': '1111111',
