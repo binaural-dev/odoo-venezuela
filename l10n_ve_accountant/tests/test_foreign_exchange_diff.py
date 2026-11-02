@@ -6,6 +6,7 @@ from lxml import etree
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests import TransactionCase, tagged
 from odoo import fields
+from odoo.tools import date_utils
 import logging
 
 _logger = logging.getLogger(__name__)
@@ -216,7 +217,10 @@ class TestForeignExchangeDiff(TransactionCase):
         currency = currency or self.currency_vef
         journal = self.bank_journal_usd if currency == self.currency_usd else self.bank_journal
         amount = move.amount_total if amount is None else amount
-        self._ensure_usd_rate(date or self.settlement_date, self.today)
+        # La diferencia cambiaria nativa se asienta el ultimo dia del mes del pago
+        # y tambien necesita la tasa de esa fecha exacta.
+        payment_date = date or self.settlement_date
+        self._ensure_usd_rate(payment_date, date_utils.end_of(payment_date, "month"), self.today)
         payment = self.env["account.payment"].with_company(self.company).create({
             "amount": amount,
             "date": date or self.settlement_date,
