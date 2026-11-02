@@ -46,7 +46,7 @@ El cómputo `_compute_rate` de la orden DEBE (MUST) buscar `foreign_rate` y `for
 
 ### Requirement: Confirmar respeta la fecha de la orden
 
-`_prepare_confirmation_values` DEBE (MUST) conservar la `date_order` que ya tiene la orden en vez de reescribirla con la fecha de confirmación del core; `action_confirm` solo asigna `date_order` (instante actual) si faltara. Consecuencia a tener en cuenta: `sale_stock` calcula la fecha límite de entrega como `date_order + plazo`, de modo que una cotización antigua confirmada hoy genera entregas con fecha planificada en el pasado. Ticket #16148.
+`_prepare_confirmation_values` DEBE (MUST) conservar la `date_order` que ya tiene la orden en vez de reescribirla con la fecha de confirmación del core; `date_order` es obligatoria (nace con el instante de creación y la fecha de tasa se toma del día del usuario al leerla), por lo que no hay respaldo que asignar. Consecuencia a tener en cuenta: `sale_stock` calcula la fecha límite de entrega como `date_order + plazo`, de modo que una cotización antigua confirmada hoy genera entregas con fecha planificada en el pasado. Ticket #16148.
 
 #### Scenario: Confirmación de una orden con fecha elegida
 
@@ -83,7 +83,7 @@ El sistema DEBE (MUST) dejar constancia en el chatter de la orden cuando la tasa
 
 ### Requirement: Traslado de la tasa de la orden a la factura
 
-Al preparar la factura desde la orden (`_prepare_invoice`), el sistema DEBE (MUST) copiar `manually_set_rate` y las tasas de la orden a la factura y, cuando la compañía tiene activo `use_invoice_rate_from_sale_order` (configurable desde ajustes), pasar como `invoice_date` (Rate Date) la `foreign_rate_date` de la orden. NO DEBE (MUST NOT) marcar la factura con `manually_set_rate` por ese ajuste: el bloqueo sigue al ajuste vigente mediante `account.move._get_order_rate_date`, que solo actúa en facturas de cliente (`out_invoice`) de una sola orden. El ajuste por compañía rige en cada momento: activarlo o desactivarlo recalcula la tasa de las facturas en borrador (`_compute_rate` depende del ajuste); las publicadas no cambian. Con el ajuste activo la vista bloquea la Rate Date y muestra un aviso arriba ("This document uses the exchange rate of its sale order: the Rate Date is locked and the rate will not be recalculated when the invoice date changes"). Ticket #16148.
+Al preparar la factura desde la orden (`_prepare_invoice`), el sistema, cuando la compañía tiene activo `use_invoice_rate_from_sale_order` (configurable desde ajustes), DEBE (MUST) pasar como `invoice_date` (Rate Date) la `foreign_rate_date` de la orden. NO DEBE (MUST NOT) copiar `manually_set_rate` ni las tasas de la orden a la factura ni marcarla como manual: la tasa de la factura sale solo de la configuración; el bloqueo sigue al ajuste vigente mediante `account.move._get_order_rate_date`, que solo actúa en facturas de cliente (`out_invoice`) de una sola orden. El ajuste por compañía rige en cada momento: activarlo o desactivarlo recalcula la tasa de las facturas en borrador (`_compute_rate` depende del ajuste); las publicadas no cambian. Con el ajuste activo la vista (que decide con el ajuste, el tipo de documento y el contador `sale_order_count` del core, es decir, con la orden realmente vinculada por las líneas) bloquea la Rate Date y muestra un aviso arriba ("This document uses the exchange rate of its sale order: the Rate Date is locked and the rate will not be recalculated when the invoice date changes"). Ticket #16148.
 
 #### Scenario: Compañía que usa la tasa de la orden
 
