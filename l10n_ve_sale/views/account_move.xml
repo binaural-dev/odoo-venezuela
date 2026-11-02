@@ -9,14 +9,15 @@
                  (ver account.move._get_order_rate_date). -->
             <xpath expr="//header" position="after">
                 <field name="use_invoice_rate_from_sale_order" invisible="1" />
+                <field name="sale_order_count" invisible="1" />
                 <div class="alert alert-info mb-0" role="alert"
-                     invisible="not use_invoice_rate_from_sale_order or move_type != 'out_invoice' or not invoice_origin or ',' in invoice_origin">
+                     invisible="not use_invoice_rate_from_sale_order or move_type != 'out_invoice' or sale_order_count != 1">
                     This document uses the exchange rate of its sale order: the Rate Date is locked
                     and the rate will not be recalculated when the invoice date changes.
                 </div>
             </xpath>
             <xpath expr="//field[@name='invoice_date']" position="attributes">
-                <attribute name="readonly">state != 'draft' or reversed_entry_id or debit_origin_id or (use_invoice_rate_from_sale_order and move_type == 'out_invoice' and invoice_origin and ',' not in invoice_origin)</attribute>
+                <attribute name="readonly">state != 'draft' or reversed_entry_id or debit_origin_id or (use_invoice_rate_from_sale_order and move_type == 'out_invoice' and sale_order_count == 1)</attribute>
             </xpath>
         </field>
     </record>
