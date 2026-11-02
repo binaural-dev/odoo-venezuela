@@ -6,7 +6,7 @@
         <field name="arch" type="xml">
             <!-- "Usar la tasa de la orden en la factura" (ajuste de la compania): la factura de
                  cliente de una sola orden usa la tasa de la orden, con la Rate Date bloqueada
-                 (ver account.move._get_order_rate_date). -->
+                 (la Rate Date se fija al crear la factura desde la orden). -->
             <xpath expr="//header" position="after">
                 <field name="use_invoice_rate_from_sale_order" invisible="1" />
                 <field name="sale_order_count" invisible="1" />

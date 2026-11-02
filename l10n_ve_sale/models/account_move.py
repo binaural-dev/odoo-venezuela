@@ -13,19 +13,15 @@ class AccountMove(models.Model):
         related="company_id.use_invoice_rate_from_sale_order",
     )
 
-    def _get_order_rate_date(self):
-        """Facturas de cliente de UNA sola orden con "usar la tasa de la orden en la factura"
-        activo: la fecha de tasa es la de la orden."""
+    def _is_rate_date_locked(self):
+        """Factura de cliente de una sola orden con "usar la tasa de la orden en la factura"
+        activo: la Rate Date queda en la de la orden y no sigue a la fecha de la factura."""
         self.ensure_one()
-        if (
-            self.move_type != "out_invoice"
-            or not self.company_id.use_invoice_rate_from_sale_order
-        ):
-            return super()._get_order_rate_date()
-        orders = self.invoice_line_ids.sale_line_ids.order_id
-        if len(orders) != 1:
-            return super()._get_order_rate_date()
-        return orders.foreign_rate_date or orders._l10n_ve_rate_date()
+        return (
+            self.move_type == "out_invoice"
+            and self.company_id.use_invoice_rate_from_sale_order
+            and self.sale_order_count == 1
+        ) or super()._is_rate_date_locked()
 
     def _get_sale_conversion_pricelist_rule(self, line):
         """Regla de tarifa que pisaria la conversion de esta linea, si la hay.
