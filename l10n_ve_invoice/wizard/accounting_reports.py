@@ -912,8 +912,21 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ] and move.state in ["cancel"]:
             return "03-ANU"
 
+    def _get_book_order(self):
+        """Orden de los documentos en el libro.
+
+        invoice_date_display es Date: sin desempate, las facturas de un mismo
+        día salen en el orden físico de la tabla, que cambia cada vez que se
+        modifica una factura. En el libro de ventas se desempata por la
+        fecha-hora de registro (invoice_date_display_datetime) y luego por id;
+        el libro de compras no cambia.
+        """
+        if self.report == "sale":
+            return "invoice_date_display asc, invoice_date_display_datetime asc, id asc"
+        return "invoice_date_display asc"
+
     def search_moves(self):
-        order = "invoice_date_display asc"
+        order = self._get_book_order()
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
