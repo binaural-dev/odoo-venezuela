@@ -325,6 +325,36 @@ class TestSaleOrderRateDateForm(TransactionCase):
                     msg="update=%s use=%s" % (update, use),
                 )
 
+    def test_toggling_setting_leaves_unrelated_documents_alone(self):
+        # Solo se recalculan las facturas de cliente en borrador que vienen de una orden: un
+        # asiento y una factura sin orden conservan la tasa que tengan. (El asiento no tiene
+        # formulario de captura de tasa: se crea por codigo.)
+        entry = self.env["account.move"].create({"move_type": "entry"})
+        entry.foreign_rate = 777.0
+        with Form(self.env["account.move"].with_context(default_move_type="out_invoice")) as form:
+            form.partner_id = self.partner
+            form.invoice_date_display = self.past
+        free_invoice = form.save()
+        free_invoice.foreign_rate = 555.0
+        self.company.use_invoice_rate_from_sale_order = True
+        self.company.use_invoice_rate_from_sale_order = False
+        self.assertEqual(entry.foreign_rate, 777.0)
+        self.assertEqual(free_invoice.foreign_rate, 555.0)
+
+    def test_manual_order_without_rate_gets_one(self):
+        # El check manual va oculto: lo fijan integraciones y codigo. Una orden marcada manual
+        # que nace sin tasa la calcula; con tasa, la respeta.
+        order = self.env["sale.order"].create(
+            {"partner_id": self.partner.id, "manually_set_rate": True}
+        )
+        self.assertAlmostEqual(
+            order.foreign_rate, self._expected(self.today)["foreign_rate"], places=6
+        )
+        order = self.env["sale.order"].create(
+            {"partner_id": self.partner.id, "manually_set_rate": True, "foreign_rate": 77.0}
+        )
+        self.assertEqual(order.foreign_rate, 77.0)
+
     def test_purchase_setting_does_not_act_on_sale_invoices(self):
         if "use_invoice_rate_from_purchase_order" not in self.company._fields:
             self.skipTest("binaural_purchase no esta instalado")

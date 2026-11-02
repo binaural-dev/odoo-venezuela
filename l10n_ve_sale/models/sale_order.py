@@ -6,8 +6,6 @@ from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.tools.float_utils import float_is_zero
 
-from odoo.addons.l10n_ve_accountant.rate_dates import user_local_date
-
 _logger = logging.getLogger(__name__)
 
 
@@ -67,10 +65,8 @@ class SaleOrder(models.Model):
         copy=False,
         help=(
             "Date whose exchange rate is used for this order's alternate "
-            "currency amounts. It is not date_order: the core rewrites "
-            "date_order with the confirmation date, and when the rate is "
-            "frozen ('Update sale order rate using date order' disabled) this "
-            "field keeps the date the rate was actually taken from. It is the "
+            "currency amounts: date_order when 'Update sale order rate using "
+            "date order' is enabled, the creation date otherwise. It is the "
             "date passed to the invoice so both convert with the same rate."
         ),
     )
@@ -369,9 +365,10 @@ class SaleOrder(models.Model):
         """
         self.ensure_one()
         company = self.company_id or self.env.company
-        if company.update_sale_order_rate_using_date_order:
-            return user_local_date(self, self.date_order)
-        return user_local_date(self, self.create_date)
+        moment = self.date_order if company.update_sale_order_rate_using_date_order else self.create_date
+        if moment:
+            return fields.Datetime.context_timestamp(self, moment).date()
+        return fields.Date.context_today(self)
 
     @api.depends("foreign_currency_id", "date_order")
     def _compute_rate(self):
@@ -394,7 +391,7 @@ class SaleOrder(models.Model):
                 sale.manually_set_rate
                 or "website_id" in sale._fields
                 and sale.website_id
-            ):
+            ) and sale.foreign_rate:
                 # La tasa viene fijada de fuera; se deja constancia de la fecha
                 # solo si aun no hay ninguna, para no pisar la original.
                 if not sale.foreign_rate_date:
@@ -635,13 +632,9 @@ class SaleOrder(models.Model):
 
     def _prepare_confirmation_values(self):
         """El core reescribe date_order con la fecha de confirmacion; aqui se respeta la que
-        ya tiene la orden (la que eligio el usuario) y solo se asigna, con la fecha del
-        usuario, si falta."""
+        ya tiene la orden (la que eligio el usuario). Si faltara, action_confirm la asigna."""
         values = super()._prepare_confirmation_values()
-        if all(self.mapped("date_order")):
-            values.pop("date_order", None)
-        else:
-            values["date_order"] = fields.Datetime.to_datetime(user_local_date(self))
+        values.pop("date_order", None)
         return values
 
     def action_confirm(self):
@@ -704,6 +697,8 @@ class SaleOrder(models.Model):
                     order.foreign_currency_id.id, rate_date, raise_if_not_found=True
                 )
 
+        # date_order es obligatoria, pero una orden creada por codigo podria no traerla.
+        self.filtered(lambda order: not order.date_order).date_order = fields.Datetime.now()
         res = super().action_confirm()
         for sale in self:
             picking = sale.picking_ids
