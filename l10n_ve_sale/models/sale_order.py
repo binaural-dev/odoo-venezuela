@@ -480,10 +480,6 @@ class SaleOrder(models.Model):
     def _prepare_invoice(self):
         invoice_vals = super()._prepare_invoice()
         company = self.company_id or self.env.company
-        invoice_vals["manually_set_rate"] = self.manually_set_rate
-        invoice_vals["foreign_rate"] = self.foreign_rate
-        invoice_vals["foreign_inverse_rate"] = self.foreign_inverse_rate
-
         if company.use_invoice_rate_from_sale_order:
             # El bloqueo de la fecha de tasa lo da account.move._get_order_rate_date, que
             # sigue al ajuste vigente de la compania (no se marca la factura).
@@ -632,7 +628,8 @@ class SaleOrder(models.Model):
 
     def _prepare_confirmation_values(self):
         """El core reescribe date_order con la fecha de confirmacion; aqui se respeta la que
-        ya tiene la orden (la que eligio el usuario). Si faltara, action_confirm la asigna."""
+        ya tiene la orden (la que eligio el usuario). date_order es obligatoria: nace con el
+        instante de creacion y la fecha de tasa se toma del dia del usuario al leerla."""
         values = super()._prepare_confirmation_values()
         values.pop("date_order", None)
         return values
@@ -697,8 +694,6 @@ class SaleOrder(models.Model):
                     order.foreign_currency_id.id, rate_date, raise_if_not_found=True
                 )
 
-        # date_order es obligatoria, pero una orden creada por codigo podria no traerla.
-        self.filtered(lambda order: not order.date_order).date_order = fields.Datetime.now()
         res = super().action_confirm()
         for sale in self:
             picking = sale.picking_ids
