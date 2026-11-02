@@ -790,6 +790,64 @@ class AccountMove(models.Model):
 
         return moves
 
+    RATE_DATE_FIELDS = ("invoice_date", "invoice_date_display", "date")
+
+    def _drop_unchanged_rate_dates(self, vals):
+        """
+        Remove from ``vals`` the date fields that would not change anything on
+        documents that were already confirmed once (``posted_before``).
+
+        Why: ``foreign_rate`` / ``foreign_inverse_rate`` (``_compute_rate``,
+        which depends on ``invoice_date`` and ``date``) and core's
+        ``invoice_currency_rate`` (which depends on ``invoice_date``,
+        ``taxable_supply_date``, ``currency_id`` and ``company_id``) are stored
+        computed fields. Odoo recomputes them every time one of their
+        dependencies is *written*, even when the value written is the one it
+        already has. So ``move.write({'invoice_date': move.invoice_date})`` on
+        a document reset to draft replaces the rates it was confirmed with by
+        the rate of that date *as it is today*, which may have been edited
+        after confirming: the alternate-currency columns stop matching the
+        amounts in company currency.
+
+        The web client does not send an unchanged date on its own (it only
+        sends what the user changed; ``foreign_rate`` travels hidden with
+        ``force_save``), so this guards against any other caller (RPC,
+        imports, other modules).
+
+        Scope and limits:
+        - Only the date fields in ``RATE_DATE_FIELDS``. Writing the same
+          ``currency_id``, ``company_id`` or ``taxable_supply_date`` still
+          recomputes ``invoice_currency_rate``.
+        - Only when every record of the recordset has ``posted_before``; in a
+          mixed batch nothing is dropped. A draft never confirmed keeps
+          recomputing as before.
+        - A date that really changes is never dropped, so the rates follow it.
+        - Nothing is dropped if any record is ``posted``: core keeps raising
+          its read-only error there. It does not look at ``manually_set_rate``.
+        """
+        keys = [f for f in self.RATE_DATE_FIELDS if f in vals]
+        if (
+            not keys
+            or not self
+            or not all(self.mapped("posted_before"))
+            or any(move.state == "posted" for move in self)
+        ):
+            return vals
+        vals = dict(vals)
+        for fname in keys:
+            new_value = self._fields[fname].convert_to_cache(vals[fname], self)
+            if all(move[fname] == new_value for move in self):
+                del vals[fname]
+        return vals
+
+    def _clear_transient_rate_caches(self):
+        """Forget the per-transaction "already done" marks, as a new web
+        request would start without them."""
+        cache = self.env.cr.cache
+        for move in self:
+            cache.pop(("_real_portion_distributed", move.id), None)
+        cache.pop("_dynamic_lines_in_progress", None)
+
     def write(self, vals):
         """
         computes the foreign debit and foreign credit of the line_ids fields (journal entries) when

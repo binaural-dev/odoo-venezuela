@@ -913,7 +913,7 @@ El formulario de `account.move` DEBE (MUST) incluir `foreign_rate` y `foreign_in
 
 ### Requirement: Tasa de la orden en la factura y fecha de tasa bloqueada
 
-`account.move` DEBE (MUST) exponer el gancho `_get_order_rate_date()` (por defecto falso) que ventas y compras implementan solo para su tipo de documento: cuando el ajuste de la compañía "usar la tasa de la orden en la factura" aplica y la factura proviene de exactamente una orden, devuelve la fecha de tasa de la orden. `_get_rate_date()` DEBE (MUST) preferirla sobre `invoice_date` (los asientos siguen usando `date`). Con ese gancho activo, la Rate Date (`invoice_date`) NO DEBE (MUST NOT) moverse con la fecha de la factura (`_onchange_invoice_date_display` no la copia) y la tasa no se recalcula al cambiarla. Los notas de crédito y débito no se ven afectadas. Los ajustes son por compañía y se evalúan con la compañía del documento.
+`account.move` DEBE (MUST) exponer el gancho `_get_order_rate_date()` (por defecto falso) que ventas y compras implementan solo para su tipo de documento: cuando el ajuste de la compañía "usar la tasa de la orden en la factura" aplica y la factura proviene de exactamente una orden, devuelve la fecha de tasa de la orden. `_get_rate_date()` DEBE (MUST) preferirla sobre `invoice_date` (los asientos siguen usando `date`). Con ese gancho activo, la Rate Date (`invoice_date`) NO DEBE (MUST NOT) moverse con la fecha de la factura (`_onchange_invoice_date_display` no la copia) y la tasa no se recalcula al cambiarla. Las notas de crédito y débito no se ven afectadas. Limitación: la vista decide el bloqueo y el aviso con `invoice_origin` (no vacío y sin coma) porque no se permiten campos nuevos, mientras que el código exige exactamente una orden vinculada por las líneas; una factura manual con un `invoice_origin` escrito a mano puede mostrar el bloqueo sin que se use la tasa de una orden. Los ajustes son por compañía y se evalúan con la compañía del documento.
 
 #### Scenario: Ajuste desactivado
 
@@ -924,12 +924,3 @@ El formulario de `account.move` DEBE (MUST) incluir `foreign_rate` y `foreign_in
 
 - **WHEN** el ajuste está activo y se cambia la fecha de la factura
 - **THEN** la tasa sigue siendo la de la orden
-
-### Requirement: Fechas de tasa en el día del usuario también por código
-
-El helper `user_local_date` (`l10n_ve_accountant/rate_dates.py`) DEBE (MUST) convertir un Datetime en UTC al día del usuario con la zona de `env.context['tz']`, o la del usuario del entorno si el contexto no la trae, y solo caer en UTC si ninguna existe; sin Datetime devuelve el "hoy" del usuario con la misma regla. Ventas y compras lo usan para la fecha de tasa de sus órdenes.
-
-#### Scenario: Orden creada por código a las 8 pm de Caracas
-
-- **WHEN** el Datetime es 01:00 UTC y el contexto no trae zona pero el usuario tiene `America/Caracas`
-- **THEN** el día es el anterior (día de Caracas) y no el día UTC

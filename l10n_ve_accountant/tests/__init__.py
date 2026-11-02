@@ -18,4 +18,3 @@ from . import test_reversal_foreign_rate
 from . import test_invoice_price_unit_pricelist
 from . import test_partner_id_domain
 from . import test_move_rate_date_form
-from . import test_rate_dates
