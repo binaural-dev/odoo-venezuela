@@ -127,7 +127,17 @@ class TestAlternateTotalsBlock(TransactionCase):
         for widget in ("account-tax-totals-field", "account-tax-ves-totals-field"):
             self.assertTrue(arch.xpath(f"//field[@name='tax_totals'][@widget='{widget}']"), widget)
         ves = arch.xpath("//field[@name='tax_totals'][@widget='account-tax-ves-totals-field']")[0]
-        self.assertNotIn("currency_id", (ves.getparent().get("invisible") or ""))
+        # Ningun ancestro puede ocultar el bloque cuando el documento esta en la moneda de la
+        # compania con moneda alterna configurada (company_currency_id y foreign_currency_id).
+        for ancestor in ves.iterancestors():
+            condition = ancestor.get("invisible") or ""
+            if "currency_id" in condition:
+                self.assertIn("foreign_currency_id", condition)
+        group = ves.xpath("ancestor::group[contains(@class, 'o_ve_invoice_totals')]")[0]
+        self.assertEqual(
+            group.get("invisible"),
+            "currency_id == company_currency_id and not foreign_currency_id",
+        )
         self.assertFalse(arch.xpath("//page[@name='foreign_currency']"))
 
     def test_alternate_block_has_no_residual_amount(self):
