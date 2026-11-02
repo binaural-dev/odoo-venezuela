@@ -701,9 +701,9 @@ En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el 
 
 #### Scenario: Línea de IVA con alícuota 0
 
-- **GIVEN** un comprobante de retención de IVA con una línea (p. ej. agregada a una consolidada con "Agregar una línea") cuya alícuota es 0 o está vacía
-- **WHEN** se emite el comprobante
-- **THEN** se lanza un error de validación: no existe retención de IVA con alícuota 0 (no hay IVA que retener), y la línea no se omite de los chequeos de duplicidad
+- **GIVEN** un comprobante de retención de IVA al que el usuario agrega una línea con "Agregar una línea"
+- **WHEN** la factura elegida no tiene IVA, o el usuario escribe alícuota 0 en la línea
+- **THEN** no se crea una línea con alícuota 0: si la factura no tiene IVA se limpia la factura y se avisa, y si el usuario escribe 0 la línea vuelve a la alícuota de la factura y se avisa. No existe retención de IVA con alícuota 0 (no hay IVA que retener) y una línea así escondería la factura de los chequeos de duplicidad
 
 #### Scenario: Comprobantes de terceros distintos sobre la misma factura
 
