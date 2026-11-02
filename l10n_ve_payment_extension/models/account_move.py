@@ -217,10 +217,10 @@ class AccountMoveRetention(models.Model):
         module = "l10n_ve_payment_extension"
         # type -> (lines field, name, form view suffix, list view suffix). Without explicit
         # views Odoo opens the first account.retention form it finds (not
-        # necessarily the one of this retention type). ISLR has no list view.
+        # necessarily the one of this retention type).
         config = {
             'iva': ('retention_iva_line_ids', _('IVA Retentions'), 'iva', 'iva'),
-            'islr': ('retention_islr_line_ids', _('ISLR Retentions'), 'islr', None),
+            'islr': ('retention_islr_line_ids', _('ISLR Retentions'), 'islr', 'islr'),
             'municipal': ('retention_municipal_line_ids', _('Municipal Retentions'), 'municipal', 'municipal'),
         }
         if ret_type not in config:
@@ -230,6 +230,11 @@ class AccountMoveRetention(models.Model):
         if not retentions:
             return
 
+        # Same defaults as the menus, so "New" from the list creates the right type.
+        context = {
+            'default_type': 'out_invoice' if self.is_sale_document(include_receipts=True) else 'in_invoice',
+            'default_type_retention': ret_type,
+        }
         form_id = self.env.ref(f"{module}.view_retention_{form_suffix}_form_{module}").id
         if len(retentions) == 1:
             return {
@@ -238,15 +243,17 @@ class AccountMoveRetention(models.Model):
                 'res_model': 'account.retention',
                 'views': [(form_id, 'form')],
                 'res_id': retentions.id,
+                'context': context,
                 'target': 'current',
             }
-        list_id = self.env.ref(f"{module}.view_retention_{list_suffix}_list_{module}").id if list_suffix else False
+        list_id = self.env.ref(f"{module}.view_retention_{list_suffix}_list_{module}").id
         return {
             'name': action_name,
             'type': 'ir.actions.act_window',
             'res_model': 'account.retention',
             'views': [(list_id, 'list'), (form_id, 'form')],
             'domain': [('id', 'in', retentions.ids)],
+            'context': context,
             'target': 'current',
         }
 

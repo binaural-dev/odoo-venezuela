@@ -695,9 +695,15 @@ En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el 
 
 #### Scenario: Diferenciador vacío no actúa como comodín
 
-- **GIVEN** dos comprobantes del mismo tipo y partner sobre la misma factura, donde el diferenciador de uno está vacío (alícuota 0, sin concepto de pago o sin actividad económica) y el del otro tiene valor
+- **GIVEN** dos comprobantes del mismo tipo y partner sobre la misma factura, donde el diferenciador de uno está vacío (sin concepto de pago o sin actividad económica) y el del otro tiene valor
 - **WHEN** se emite cualquiera de ellos
 - **THEN** no se lanza el error de duplicidad, en ningún sentido; el vacío se trata como un valor más y solo bloquea contra otro comprobante igualmente vacío
+
+#### Scenario: Línea de IVA con alícuota 0
+
+- **GIVEN** un comprobante de retención de IVA con una línea (p. ej. agregada a una consolidada con "Agregar una línea") cuya alícuota es 0 o está vacía
+- **WHEN** se emite el comprobante
+- **THEN** se lanza un error de validación: no existe retención de IVA con alícuota 0 (no hay IVA que retener), y la línea no se omite de los chequeos de duplicidad
 
 #### Scenario: Comprobantes de terceros distintos sobre la misma factura
 

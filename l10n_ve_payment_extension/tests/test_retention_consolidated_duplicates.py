@@ -1,12 +1,14 @@
 import logging
 
 from odoo import Command, fields
-from odoo.exceptions import UserError
-from odoo.tests import tagged
+from odoo.exceptions import UserError, ValidationError
+from odoo.tests import Form, tagged
 
 from .test_withholding_common_VEF import RetentionTestCommon
 
 _logger = logging.getLogger(__name__)
+
+IVA_FORM_VIEW = "l10n_ve_payment_extension.view_retention_iva_form_l10n_ve_payment_extension"
 
 
 @tagged("post_install", "-at_install", "retention_consolidated_duplicates")
@@ -25,13 +27,15 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
         inv.action_post()
         return inv
 
-    def _line_command(self, inv, **extra):
+    def _line_command(self, inv, type_retention=None, **extra):
         vals = {
             "move_id": inv.id, "payment_concept_id": self.concept_one.id,
             "invoice_type": "in_invoice", "name": "Test",
             "invoice_amount": inv.amount_untaxed, "invoice_total": inv.amount_total,
             "retention_amount": 15.0,
         }
+        if type_retention == "iva":
+            vals["aliquot"] = 16.0  # an IVA line without aliquot is never created
         vals.update(extra)
         return Command.create(vals)
 
@@ -42,7 +46,7 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
             "company_id": self.company.id,
             "partner_id": (partner or self.partner_pnr_75).id,
             "date": fields.Date.today(), "date_accounting": fields.Date.today(),
-            "retention_line_ids": [self._line_command(inv, **line_extra) for inv in invoices],
+            "retention_line_ids": [self._line_command(inv, type_retention, **line_extra) for inv in invoices],
         })
 
     def _create_activity(self, name, aliquot):
@@ -111,12 +115,11 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
                     self.assertIn(other.display_name, str(e.exception))
 
     def test_check_blank_differentiator_is_not_a_wildcard(self):
-        """Un diferenciador vacío (alícuota 0, sin concepto o actividad) es
+        """Un diferenciador vacío (sin concepto o actividad) es
         un valor más: no bloquea contra otro distinto, en ningún sentido,
         pero sí contra otro igualmente vacío."""
         activity = self._create_activity("C15531", 5.0)
         cases = {
-            "iva": ({"aliquot": 0.0}, {"aliquot": 16.0}),
             "islr": ({"payment_concept_id": False}, {"payment_concept_id": self.concept_one.id}),
             "municipal": ({"economic_activity_id": False}, {"economic_activity_id": activity.id}),
         }
@@ -133,6 +136,83 @@ class TestRetentionConsolidatedDuplicates(RetentionTestCommon):
                 with self.assertRaises(UserError) as e:
                     self._create_retention(type_retention, inv, **blank)._check_duplicate_invoices_all_states()
                 self.assertIn(other.display_name, str(e.exception))
+
+    def _post_iva_invoice(self):
+        inv = self._create_invoice_reten_iva(
+            500, self.partner_pnr_75, "in_invoice", self.purchase_journal,
+        )
+        self._prepare_invoice_for_retention(inv)
+        inv.action_post()
+        return inv
+
+    def _new_iva_retention_form(self):
+        return Form(
+            self.env["account.retention"].with_context(
+                default_type="in_invoice", default_type_retention="iva",
+            ),
+            view=IVA_FORM_VIEW,
+        )
+
+    def test_iva_line_added_from_form_gets_the_invoice_aliquot(self):
+        """"Agregar una línea" con una factura con IVA: la línea nace con la
+        alícuota real de la factura, nunca en 0."""
+        inv = self._post_iva_invoice()
+        other = self._post_iva_invoice()
+        retention = self._create_retention("iva", other)
+        with Form(retention, view=IVA_FORM_VIEW) as retention_form:
+            with retention_form.retention_line_ids.new() as line:
+                line.move_id = inv
+        retention = retention_form.save()
+        added = retention.retention_line_ids.filtered(lambda l: l.move_id == inv)
+        self.assertEqual(len(added), 1)
+        self.assertEqual(added.aliquot, 16.0)
+
+    def test_iva_line_without_aliquot_is_not_created(self):
+        """No existe retención de IVA con alícuota 0: desde el formulario, una
+        factura sin IVA no genera línea."""
+        inv_ok = self._post_iva_invoice()
+        inv_no_tax = self._post_invoice()  # factura ISLR: sin impuesto IVA
+        retention = self._create_retention("iva", inv_ok)
+        with Form(retention, view=IVA_FORM_VIEW) as retention_form:
+            with retention_form.retention_line_ids.new() as line:
+                line.move_id = inv_no_tax
+        retention = retention_form.save()
+        self.assertEqual(retention.retention_line_ids.move_id, inv_ok)
+
+    def test_iva_line_manual_zero_aliquot_is_reverted(self):
+        """Si el usuario escribe alícuota 0 en la línea, vuelve a la alícuota
+        de la factura en vez de guardarse en 0."""
+        inv = self._post_iva_invoice()
+        other = self._post_iva_invoice()
+        retention = self._create_retention("iva", other)
+        with Form(retention, view=IVA_FORM_VIEW) as retention_form:
+            with retention_form.retention_line_ids.new() as line:
+                line.move_id = inv
+                line.aliquot = 0.0
+        retention = retention_form.save()
+        added = retention.retention_line_ids.filtered(lambda l: l.move_id == inv)
+        self.assertEqual(added.aliquot, 16.0)
+
+    def test_iva_consolidating_with_add_a_line_keeps_blocking_duplicates(self):
+        """Flujo del ticket #16055, todo desde el formulario: la factura B se
+        trae a la consolidada A con "Agregar una línea" (incluso si el usuario
+        deja la alícuota en 0) mientras su individual sigue en borrador."""
+        inv_a = self._post_iva_invoice()
+        inv_b = self._post_iva_invoice()
+        ret_a = self._create_retention("iva", inv_a)
+        ret_b = self._create_retention("iva", inv_b)
+
+        with Form(ret_a, view=IVA_FORM_VIEW) as form_a:
+            with form_a.retention_line_ids.new() as line:
+                line.move_id = inv_b
+                line.aliquot = 0.0
+        ret_a = form_a.save()
+        self.assertEqual(ret_a.retention_line_ids.move_id, inv_a | inv_b)
+        self.assertTrue(all(ret_a.retention_line_ids.mapped("aliquot")))
+
+        with self.assertRaises(UserError) as e:
+            ret_a.action_post()
+        self.assertIn(ret_b.display_name, str(e.exception))
 
     def test_check_ignores_cancelled_other_type_and_same_retention(self):
         inv = self._post_invoice()
