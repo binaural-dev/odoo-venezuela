@@ -7,7 +7,7 @@
     "author": "binaural-dev",
     "website": "https://binauraldev.com/",
     "category": "Base",
-    "version": "1.0",
+    "version": "19.0.1.0.0",
     # any module necessary for this one to work correctly
     "depends": ["l10n_ve_base"],
     "data": [],

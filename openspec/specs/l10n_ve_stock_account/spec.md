@@ -17,7 +17,7 @@ El sistema DEBE (MUST) proveer el modelo `transfer.reason` con las razones carga
 
 ### Requirement: Razones de traslado permitidas según la operación
 
-El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`) DEBE (MUST) limitar las razones seleccionables según la operación: salida con venta ofrece `sale` (asignada por defecto solo si el traslado aún no tiene razón) y `export`, o solo `self_consumption` si es donación; salida sin venta ofrece `self_consumption`, `other_causes`, `repair_improvement` y `external_storage`; interno ofrece `consignment`, `transfer` y `other_causes`, forzando `consignment` y `is_consignment_readonly` cuando el almacén del destino es de consignación. Si la razón asignada no está entre las permitidas, se reemplaza por la primera permitida. Cuando no se calculó ninguna razón permitida —caso de las entradas (`incoming`) y de cualquier otro código de operación— el campo DEBE (MUST) quedar con TODAS las razones del catálogo, no vacío.
+El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`) DEBE (MUST) limitar las razones seleccionables según la operación: salida con venta ofrece `sale` (asignada por defecto solo si el traslado aún no tiene razón) y `export`, o solo `self_consumption` si es donación; salida sin venta ofrece `self_consumption`, `other_causes`, `repair_improvement` y `external_storage`; interno ofrece `consignment`, `transfer` y `other_causes`, forzando `consignment` y `is_consignment_readonly` cuando el almacén del destino es de consignación; si el destino no es de consignación y el traslado no tiene una razón permitida, se asigna la razón interna por defecto de la compañía (`internal_transfer_reason_id`) o, si no hay, `transfer`, nunca `consignment` por posición. Si la razón asignada no está entre las permitidas, se reemplaza por la primera permitida. Cuando no se calculó ninguna razón permitida —caso de las entradas (`incoming`) y de cualquier otro código de operación— el campo DEBE (MUST) quedar con TODAS las razones del catálogo, no vacío.
 
 #### Scenario: Despacho de una venta
 
@@ -28,6 +28,11 @@ El campo `allowed_reason_ids` de `stock.picking` (`_compute_allowed_reason_ids`)
 
 - **WHEN** el destino de un traslado interno pertenece al almacén de consignación
 - **THEN** la razón se fija en consignación y queda de solo lectura
+
+#### Scenario: Traslado interno sin razón ni razón por defecto en la compañía
+
+- **WHEN** un traslado interno, creado a mano o como paso 2 o 3 de una recepción, no tiene razón, la compañía no tiene razón interna por defecto y el destino no es de consignación
+- **THEN** la razón queda en traslado entre almacenes (`transfer`) y el traslado no se marca como consignación
 
 #### Scenario: Recepción de mercancía
 

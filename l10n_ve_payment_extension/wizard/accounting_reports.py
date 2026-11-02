@@ -221,6 +221,10 @@ class WizardAccountingReports(models.TransientModel):
         ]
         return domain
 
+    def _filter_retention_moves(self, moves):
+        """Hook para módulos que segmentan el libro (p.ej. binaural_operative)."""
+        return moves
+
     def search_moves(self):
         res_moves = super().search_moves()
 

@@ -274,3 +274,71 @@ class TestProductProductComputeQuantitiesForReport(TransactionCase):
     @unittest.skip("_compute_quantities_dict_for_report depends on location_final_id removed in Odoo 19")
     def test_compute_quantities_dict_for_report_zero(self):
         pass
+
+
+@tagged("post_install", "-at_install", "l10n_ve_stock")
+class TestProductProductWriteGuards(TransactionCase):
+    def setUp(self):
+        super().setUp()
+        self.product = self.env["product.product"].create({
+            "name": "Write Guards Product",
+            "type": "consu",
+            "is_storable": True,
+            "default_code": "WG-001",
+            "list_price": 10,
+        })
+
+    def test_write_same_default_code_with_moves_is_allowed(self):
+        warehouse = self.env["stock.warehouse"].search([], limit=1)
+        self.env["stock.quant"]._update_available_quantity(
+            self.product, warehouse.lot_stock_id, 1.0
+        )
+        move = self.env["stock.move"].create({
+            "product_id": self.product.id,
+            "product_uom_qty": 1.0,
+            "product_uom": self.product.uom_id.id,
+            "location_id": warehouse.lot_stock_id.id,
+            "location_dest_id": self.env.ref("stock.stock_location_customers").id,
+        })
+        move._action_confirm()
+        move.quantity = 1.0
+        move.picked = True
+        move._action_done()
+        self.product.write({"default_code": "WG-001"})
+        self.assertEqual(self.product.default_code, "WG-001")
+
+    def test_write_list_price_is_validated(self):
+        with self.assertRaises(ValidationError):
+            self.product.write({"list_price": 0})
+
+    def test_write_list_price_skipped_in_install_mode(self):
+        self.product.with_context(install_mode=True).write({"list_price": 0})
+        self.assertEqual(self.product.list_price, 0)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_stock")
+class TestProductProductReportQuantitiesFilters(TransactionCase):
+    def test_report_with_dates_and_filters(self):
+        warehouse = self.env["stock.warehouse"].search([], limit=1)
+        product = self.env["product.product"].create({
+            "name": "Report Filters Product",
+            "type": "consu",
+            "is_storable": True,
+        })
+        self.env["stock.quant"]._update_available_quantity(product, warehouse.lot_stock_id, 4.0)
+        res = product.with_context(location=warehouse.lot_stock_id.id)._compute_quantities_dict_for_report(
+            lot_id=None,
+            owner_id=None,
+            package_id=None,
+            from_date=datetime.now() - timedelta(days=2),
+            to_date=datetime.now() - timedelta(days=1),
+        )
+        self.assertEqual(res[product.id]["incoming_qty"], 0.0)
+        self.assertEqual(res[product.id]["qty_available"], 4.0)
+
+    def test_report_for_unsaved_product(self):
+        product = self.env["product.product"].new({"name": "Unsaved Product"})
+        res = product._compute_quantities_dict_for_report(
+            lot_id=False, owner_id=False, package_id=False,
+        )
+        self.assertEqual(res[product.id]["qty_available"], 0.0)

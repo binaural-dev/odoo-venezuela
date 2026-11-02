@@ -2,7 +2,7 @@
 <templates id="template" xml:space="preserve">
     <t t-name="PaymentScreenStatus" t-inherit="point_of_sale.PaymentScreenStatus" t-inherit-mode="extension" owl="1">
         <xpath expr="//div[hasclass('payment-status-container')]" position="after">
-            <div t-if="isIgtf" class="d-flex flex-column fs-6 pt-3 border-top text-dark">
+            <div t-if="isIgtf" class="d-flex flex-column fs-4 pt-3 border-top text-dark">
                 <div class="d-flex justify-content-between gap-2">
                     <span class="label text-muted">BI IGTF</span>
                     <span class="amount" t-esc="biAmount"/>
@@ -17,7 +17,10 @@
                 </div>
                 <div class="d-flex justify-content-between gap-2 pt-2 mt-2 border-top fs-3 fw-bolder">
                     <span class="label">TOTAL a Pagar con IGTF:</span>
-                    <span class="amount" t-esc="totalWithIgtfAmount"/>
+                    <span class="d-flex flex-column align-items-end">
+                        <span class="amount" t-esc="totalWithIgtfAmount"/>
+                        <span class="amount fs-3 fw-bolder text-primary" t-esc="foreignTotalWithIgtfAmount"/>
+                    </span>
                 </div>
             </div>
         </xpath>

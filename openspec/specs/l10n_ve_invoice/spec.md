@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Núcleo de facturación fiscal venezolana: asigna y controla el número de control (`correlative`) de las facturas, gestiona series de facturación y diarios de contingencia/débito, agrega las validaciones fiscales de confirmación (impuesto por línea, precio distinto de cero, máximo de productos), la forma libre de impresión y los libros fiscales de compras y ventas en Excel (`wizard.accounting.reports`). Extiende `account.move`, `account.journal`, `account.debit.note`, `ir.actions.report`, `res.company` y `res.config.settings`. Depende de `l10n_ve_accountant` (de donde consume `invoice_date_display`, `vat`, `tax_totals` extendido y la configuración de alícuotas por compañía), `l10n_ve_rate`, `l10n_ve_base`, `l10n_ve_contact`, `od_journal_sequence` y `account_debit_note`. El módulo `l10n_ve_igtf` extiende sus libros fiscales.
+Núcleo de facturación fiscal venezolana: asigna y controla el número de control (`correlative`) de las facturas, gestiona series de facturación y diarios de contingencia/débito, agrega las validaciones fiscales de confirmación (impuesto por línea, precio distinto de cero, máximo de productos, Notas de Crédito contra su factura origen), la forma libre de impresión y los libros fiscales de compras y ventas en Excel (`wizard.accounting.reports`). Extiende `account.move`, `account.journal`, `account.debit.note`, `ir.actions.report`, `res.company` y `res.config.settings`. Depende de `l10n_ve_accountant` (de donde consume `invoice_date_display`, `vat`, `tax_totals` extendido y la configuración de alícuotas por compañía), `l10n_ve_rate`, `l10n_ve_base`, `l10n_ve_contact`, `od_journal_sequence` y `account_debit_note`. El módulo `l10n_ve_igtf` extiende sus libros fiscales.
 
 ## Requirements
 
@@ -197,6 +197,102 @@ El sistema DEBE (MUST) impedir agregar a facturas de venta más líneas que el m
 - **WHEN** un usuario agrega más productos que el máximo configurado en una factura de venta
 - **THEN** se lanza un error indicando el máximo de productos permitido
 
+### Requirement: Validación de la Nota de Crédito contra su factura origen al publicar
+
+Al publicar (`_post`) una Nota de Crédito (`out_refund`/`in_refund`) con `reversed_entry_id`, el sistema DEBE (MUST) validar sus líneas de producto contra las de la factura que revierte (`_check_refund_against_origin`); la validación NO se ejecuta al crear ni al editar el borrador. Un producto Almacenable o Consumible que la factura origen no tenga se rechaza; un producto de tipo Servicio ajeno al origen (conceptos financieros como pronto pago, descuento comercial o diferencial cambiario) se permite, sujeto al tope total del requirement siguiente; toda línea de producto sin `product_id` se rechaza. Secciones, subsecciones y notas se ignoran. Una Nota de Crédito sin `reversed_entry_id` no se valida.
+
+#### Scenario: Producto presente en la factura origen
+
+- **WHEN** se publica una Nota de Crédito cuyas líneas de producto son un subconjunto de los productos de su factura origen, dentro de los montos facturados
+- **THEN** la Nota de Crédito se publica sin error
+
+#### Scenario: Producto Almacenable/Consumible ajeno al origen
+
+- **WHEN** se publica una Nota de Crédito con un producto Almacenable o Consumible que la factura origen nunca facturó
+- **THEN** se lanza un error de validación indicando el producto y la factura origen
+
+#### Scenario: Servicio ajeno al origen
+
+- **WHEN** se publica una Nota de Crédito con un producto de tipo Servicio que la factura origen nunca facturó, sin superar el total facturado
+- **THEN** la Nota de Crédito se publica sin error
+
+#### Scenario: Línea sin producto
+
+- **WHEN** se publica una Nota de Crédito con una línea de producto sin `product_id`
+- **THEN** se lanza un error de validación pidiendo un producto en cada línea
+
+#### Scenario: Edición del borrador
+
+- **WHEN** se edita una línea de una Nota de Crédito en borrador dejándola fuera de lo permitido (producto ajeno o monto excedido)
+- **THEN** la edición se guarda y el error se lanza al intentar publicarla
+
+### Requirement: Monto acreditado contra la factura origen, contando las Notas de Crédito publicadas
+
+Al publicar una Nota de Crédito con `reversed_entry_id`, el sistema DEBE (MUST) impedir que, para cada producto presente en el origen, lo acreditado por ella más lo acreditado por las demás Notas de Crédito del mismo tipo contra el mismo origen que estén **publicadas o se publiquen en la misma operación** supere lo facturado por ese producto en el origen; y, cuando la Nota de Crédito incluya servicios ajenos al origen, que el total acreditado (productos del origen, servicios ajenos y demás Notas de Crédito publicadas) supere el total facturado. Las Notas de Crédito en borrador que no se están publicando no cuentan. La comparación usa la precisión de redondeo de la moneda del documento.
+
+#### Scenario: Nota de Crédito que excede lo facturado por sí sola
+
+- **WHEN** una Nota de Crédito acredita por un producto más de lo facturado por ese producto en el origen
+- **THEN** se lanza un error de validación indicando el producto, los montos y la factura origen
+
+#### Scenario: Segunda Nota de Crédito que, sumada a una publicada, excede el origen
+
+- **WHEN** ya existe una Nota de Crédito publicada contra el origen y se publica otra cuyo monto, sumado al ya acreditado, supera lo facturado
+- **THEN** se lanza un error de validación indicando el monto ya acreditado por otras Notas de Crédito
+
+#### Scenario: Dos Notas de Crédito publicadas en la misma operación
+
+- **WHEN** se publican juntas dos Notas de Crédito contra el mismo origen que, sumadas, superan lo facturado
+- **THEN** se lanza un error de validación
+
+#### Scenario: Borrador olvidado
+
+- **WHEN** existe una Nota de Crédito en borrador que por sí sola excede el origen y se publica otra que respeta el tope
+- **THEN** la segunda se publica sin error; el borrador solo se valida cuando se intente publicar
+
+#### Scenario: Servicio ajeno que excede el total facturado
+
+- **WHEN** una Nota de Crédito con un servicio ajeno al origen hace que el total acreditado supere el total facturado
+- **THEN** se lanza un error de validación indicando los montos y la factura origen
+
+#### Scenario: Diferencia de redondeo
+
+- **WHEN** el acumulado difiere de lo facturado solo por un arrastre menor a la precisión de la moneda
+- **THEN** la Nota de Crédito se publica sin error
+
+### Requirement: Borrador editable desde el asistente de reversión
+
+El asistente "Nota de Crédito" > "Revertir" (`account.move.reversal.refund_moves`) DEBE (MUST) poder crear el borrador de la Nota de Crédito con las cantidades completas de la factura aunque, sumado a Notas de Crédito ya publicadas, exceda lo facturado, para que el usuario lo reduzca antes de publicar (Odoo 17+ no tiene botón de reembolso parcial).
+
+#### Scenario: Segunda Nota de Crédito parcial sobre la misma factura
+
+- **WHEN** una factura ya tiene una Nota de Crédito parcial publicada y el usuario usa "Revertir" de nuevo
+- **THEN** se crea el borrador con las cantidades completas de la factura, sin error
+
+#### Scenario: Borrador publicado sin reducir
+
+- **WHEN** el usuario publica ese borrador sin reducir cantidades ni montos
+- **THEN** se lanza el error de validación de monto acreditado
+
+#### Scenario: Borrador reducido
+
+- **WHEN** el usuario reduce la cantidad del borrador de modo que el acumulado no supere lo facturado y lo publica
+- **THEN** la Nota de Crédito se publica sin error
+
+### Requirement: Exención de la validación por registro
+
+La validación DEBE (MUST) consultar por cada Nota de Crédito `_l10n_ve_skip_refund_origin_validation()`, que por defecto devuelve verdadero solo si la clave de contexto `l10n_ve_skip_refund_origin_validation` está activa **al publicar** (no basta con haberla usado al crear). Los módulos que generan Notas de Crédito con un producto propio PUEDEN (MAY) sobrescribirlo para eximirlas por un campo guardado (p. ej. `l10n_ve_donation` con `is_donation`). La clave de contexto es de uso interno, no se expone en la UI.
+
+#### Scenario: Clave de contexto activa al publicar
+
+- **WHEN** una Nota de Crédito con un producto ajeno al origen se publica con el contexto `l10n_ve_skip_refund_origin_validation=True`
+- **THEN** la validación de producto y monto no se ejecuta
+
+#### Scenario: Clave de contexto solo al crear
+
+- **WHEN** la Nota de Crédito se creó con la clave de contexto pero se publica en una llamada posterior sin ella, y ningún módulo la exime por el hook
+- **THEN** la validación se ejecuta al publicar
+
 ### Requirement: Fecha de factura no posterior a la fecha contable en compras
 
 La configuración `block_invoice_display_date_upper_than_date` (modelo `res.company`, Ajustes de facturación) DEBE (MUST) estar **encendida por defecto** (`default=True`) y en todas las compañías existentes (migración `19.0.1.0.25`). Con ella encendida, el sistema DEBE impedir en documentos de compra (facturas, notas y recibos de proveedor) que `invoice_date_display` sea mayor que la fecha contable `date`, es decir, que la fecha contable sea menor que la fecha de la factura (constraint `_check_invoice_date_display_purchases`).
@@ -208,53 +304,43 @@ La opción de apagarla existe solo por criterio del consultor, para ajustes o ca
 - **WHEN** se guarda una factura de proveedor con fecha contable anterior a su fecha de factura y la configuración encendida
 - **THEN** se lanza un error "The invoice date cannot be greater than the accounting date."
 
-#### Scenario: Fecha contable posterior a hoy
+### Requirement: Solo documentos contables confirmados se imprimen
 
-- **WHEN** se guarda un documento de compra con fecha contable mayor a la fecha actual (`context_today`) y la configuración encendida
-- **THEN** se lanza un error "The accounting date cannot be greater than today."
-
-#### Scenario: Fecha contable igual o posterior
-
-- **WHEN** se guarda una factura de proveedor con fecha contable igual o posterior a su fecha de factura
-- **THEN** el documento se guarda y se puede confirmar
-
-#### Scenario: Edición posterior de las fechas
-
-- **WHEN** se edita `date` o `invoice_date_display` de una factura de proveedor existente dejando la fecha contable por debajo de la fecha de factura
-- **THEN** se lanza el mismo error (el control es una constraint, no solo un onchange)
-
-#### Scenario: Configuración apagada por el consultor
-
-- **WHEN** la compañía tiene la configuración apagada
-- **THEN** no se valida la relación entre ambas fechas en compras
-
-#### Scenario: Compañía nueva o migrada
-
-- **WHEN** se crea una compañía nueva o se actualiza el módulo a `19.0.1.0.25`
-- **THEN** la configuración queda encendida
-
-#### Scenario: Documentos de venta
-
-- **WHEN** se guarda una factura de cliente con fecha contable anterior a su fecha de factura
-- **THEN** no se lanza este error
-
-### Requirement: Solo documentos confirmados se imprimen
-
-`ir.actions.report` DEBE (MUST) filtrar las impresiones (PDF y HTML) de `account.move` a documentos en estado `posted` y las de `sale.order` a órdenes no borrador, lanzando un error cuando ningún documento seleccionado cumple la condición.
+`ir.actions.report` DEBE (MUST) filtrar las impresiones (PDF y HTML) de `account.move` a documentos en estado `posted`, lanzando un error cuando ningún documento seleccionado cumple la condición. La restricción NO DEBE (MUST NOT) aplicarse a otros modelos: en particular `sale.order`, cuyas cotizaciones se imprimen y se envían por correo estando en borrador.
 
 #### Scenario: Imprimir factura en borrador
 
 - **WHEN** se solicita el PDF de una factura no publicada
 - **THEN** se lanza un error indicando que solo se imprimen documentos publicados
 
+#### Scenario: Imprimir o enviar una cotización en borrador
+
+- **WHEN** se solicita el reporte de una orden de venta en estado `draft` (por el botón Imprimir o por el adjunto que genera el diálogo de envío de correo)
+- **THEN** el reporte se genera normalmente, sin restricción alguna
+
 ### Requirement: Registro de la fecha-hora de emisión
 
-Al crear o modificar `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora actual, y limpiarlo cuando la fecha se vacía.
+Al crear un documento o al cambiar su `invoice_date_display`, el sistema DEBE (MUST) almacenar en `invoice_date_display_datetime` esa fecha combinada con la hora local actual, y limpiarlo cuando la fecha se vacía. Día y hora DEBEN (MUST) salir de la misma zona horaria: la del contexto o la del usuario, la misma que usa `context_today` para el default de `invoice_date_display`. Si el documento se crea sin fecha se toma la de hoy en esa zona horaria. El valor se guarda en UTC, como todo `Datetime`, de modo que al mostrarlo en hora local el día coincide con `invoice_date_display`. Un `write()` que no cambia `invoice_date_display` NO DEBE (MUST NOT) cambiar la hora. Al instalar el módulo, el `post_init_hook` completa los documentos sin fecha-hora con el mismo cálculo, en la zona horaria de la compañía (`America/Caracas` si no tiene).
 
 #### Scenario: Establecer la fecha de factura
 
 - **WHEN** se crea una factura con `invoice_date_display`
-- **THEN** `invoice_date_display_datetime` queda con esa fecha y la hora del momento del registro
+- **THEN** `invoice_date_display_datetime` queda con esa fecha y la hora local del momento del registro
+
+#### Scenario: Registro después de las 20:00 en Venezuela
+
+- **WHEN** un usuario con zona horaria `America/Caracas` registra una factura el 14/09 a las 22:30 (15/09 02:30 UTC)
+- **THEN** `invoice_date_display_datetime` muestra 14/09 22:30 en hora local, no 13/09
+
+#### Scenario: Fecha retroactiva
+
+- **WHEN** ese mismo usuario registra una factura con fecha 10/09
+- **THEN** `invoice_date_display_datetime` muestra 10/09 22:30 en hora local
+
+#### Scenario: Registros guardados con el día anterior
+
+- **WHEN** se actualiza el módulo a `19.0.1.0.27` y hay documentos cuyo `invoice_date_display_datetime`, en la zona horaria de su compañía (`America/Caracas` si no tiene), cae en un día distinto de `invoice_date_display`
+- **THEN** se les pone el día de `invoice_date_display` conservando la hora local, y el resto de los documentos no se toca
 
 ### Requirement: Período fiscal según tipo de contribuyente
 

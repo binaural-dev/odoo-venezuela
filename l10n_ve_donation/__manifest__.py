@@ -1,6 +1,6 @@
 {
     "name": "Venezuela - Donaciones",
-    "version": "19.0.2.0.5",
+    "version": "19.0.2.0.6",
     "category": "Accounting/Accounting",
     "summary": "Venezuela - Donaciones",
     "author": "",
@@ -11,6 +11,7 @@
         "l10n_ve_invoice",
         "l10n_ve_sale",
         "l10n_ve_stock_account",
+        "stock_account",
         "account_asset",
     ],
     "data": [
