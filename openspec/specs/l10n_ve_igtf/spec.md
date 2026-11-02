@@ -424,3 +424,26 @@ El campo `keep_alter_value_vef` de los pagos DEBE (MUST) inicializarse con `reva
 
 - **WHEN** el asiento del pago tiene más de una línea sobre cuentas por cobrar/pagar o corrientes
 - **THEN** la clasificación devuelve como contrapartida solo la última de esas líneas
+
+### Requirement: Las conversiones sin fecha usan el día del usuario
+
+`l10n_ve_igtf.utils._convert_to_company_currency` y `_convert_to_external_currency` DEBEN (MUST) usar `fields.Date.context_today` cuando no reciben fecha, no `fields.Date.today()`.
+
+#### Scenario: Conversión sin fecha
+
+- **WHEN** se convierte un monto sin pasar fecha
+- **THEN** la conversión usa el día del usuario
+
+### Requirement: El segundo bloque de totales no muestra IGTF cuando el documento está en la moneda de la compañía
+
+Los montos `foreign_igtf_*` de `tax_totals` están en la moneda de la compañía (VES); no existe ningún monto IGTF en la moneda alterna. Con el documento en la moneda de la compañía el widget `account-tax-ves-totals-field` muestra la moneda alterna, por lo que sus filas de IGTF (BI IGTF, IGTF, IGTF sugerido, Total con IGTF) NO DEBEN (MUST NOT) mostrarse: repetirían en VES lo que ya muestra el bloque nativo. Con el documento en otra moneda el bloque sigue mostrándolas en VES, y el bloque nativo las muestra en la moneda del documento.
+
+#### Scenario: Factura en la moneda de la compañía
+
+- **WHEN** se abre una factura en VEF con IGTF sugerido o aplicado
+- **THEN** el segundo bloque (moneda alterna) no muestra filas de IGTF
+
+#### Scenario: Factura en otra moneda
+
+- **WHEN** se abre una factura en una moneda distinta a la de la compañía con IGTF sugerido o aplicado
+- **THEN** el bloque nativo muestra el IGTF en la moneda del documento y el segundo bloque lo muestra en VES
