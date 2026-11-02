@@ -454,6 +454,48 @@ class TestAccountingReports(TransactionCase):
         self.assertIn(m1.id, moves.ids)
         self.assertIn(m2.id, moves.ids)
 
+    def _post_sale_invoice(self, correlative):
+        move = self._create_move(
+            "out_invoice", self.journal_sale, [self.tax_sale_16.id],
+            correlative=correlative,
+        )
+        move.with_context(move_action_post_alert=True).action_post()
+        return move
+
+    def test_search_moves_sale_same_day_edited_after_post(self):
+        """Las facturas de un mismo día modificadas después de publicarse
+        (pago, digitalización) no se van al final del libro de ventas."""
+        invoices = self.env["account.move"]
+        for i in range(1, 7):
+            invoices |= self._post_sale_invoice(f"00-{i:08d}")
+        # Postgres guarda la versión nueva de cada fila modificada al final de
+        # la tabla: sin desempate, estas tres saldrían de últimas.
+        (invoices[0] | invoices[2] | invoices[4]).write({"ref": "pagada"})
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        moves = self._create_wizard("sale").search_moves() & invoices
+        self.assertEqual(moves.ids, invoices.ids)
+
+    def test_search_moves_sale_same_day_by_registration_time(self):
+        """Dentro del día, el libro de ventas sigue la fecha-hora de registro."""
+        first, second, third = (
+            self._post_sale_invoice(f"00-{i:08d}") for i in range(1, 4)
+        )
+        today = fields.Datetime.now().replace(hour=12, minute=0, second=0)
+        first.invoice_date_display_datetime = today + timedelta(hours=2)
+        second.invoice_date_display_datetime = today
+        third.invoice_date_display_datetime = today + timedelta(hours=1)
+
+        moves = self._create_wizard("sale").search_moves() & (first | second | third)
+        self.assertEqual(moves.ids, (second | third | first).ids)
+
+    def test_book_order_purchase_unchanged(self):
+        self.assertEqual(
+            self._create_wizard("purchase")._get_book_order(),
+            "invoice_date_display asc",
+        )
+
     # ============================================================
     # Phase 4: _determinate_amount_taxeds
     # ============================================================

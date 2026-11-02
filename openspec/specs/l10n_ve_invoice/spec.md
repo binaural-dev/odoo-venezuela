@@ -451,12 +451,17 @@ El campo `next_installment_date` DEBE (MUST) calcularse como el menor `date_matu
 
 ### Requirement: Dominio de los libros fiscales
 
-El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de las compañías del alcance del libro (`report_company_ids`, ver «Alcance del libro con sucursales nativas») con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por correlativo en ventas y por fecha de documento en compras; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
+El wizard `wizard.accounting.reports` DEBE (MUST) seleccionar para el libro los documentos de las compañías del alcance del libro (`report_company_ids`, ver «Alcance del libro con sucursales nativas») con estado `posted` o `cancel`, `correlative` asignado (distinto de `/` y de vacío), fecha contable dentro del rango solicitado, y tipo según el libro (`out_invoice`/`out_refund` para ventas; `in_invoice`/`in_refund`/`in_debit` para compras), ordenados por fecha de documento (`invoice_date_display`); en ventas, los documentos de un mismo día se desempatan por fecha-hora de registro (`invoice_date_display_datetime`) y luego por `id`, de modo que el orden es estable entre generaciones aunque las facturas se modifiquen después de publicarse; `l10n_ve_iot_mf` usa el mismo criterio; cuando todas las columnas internacionales están ocultas por configuración, el libro de compras excluye los diarios internacionales.
 
 #### Scenario: Generación del libro de ventas
 
 - **WHEN** se genera el libro de ventas de un período
 - **THEN** solo aparecen documentos de venta publicados o anulados con número de control dentro del rango de fechas
+
+#### Scenario: Varias facturas de venta del mismo día
+
+- **WHEN** se genera el libro de ventas y hay varias facturas con la misma fecha de documento, algunas modificadas después de publicarse (pago, digitalización)
+- **THEN** salen ordenadas por la fecha-hora en que se registraron y luego por `id`, y el orden se repite igual en cada generación
 
 ### Requirement: Alcance del libro con sucursales nativas
 
