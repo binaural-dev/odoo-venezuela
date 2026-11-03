@@ -89,6 +89,15 @@ msgstr ""
 "por defecto de Punto de Venta configurada."
 
 #. module: l10n_ve_pos_igtf
+#. odoo-python
+#: code:addons/l10n_ve_pos_igtf/models/pos_payment.py:0
+#, python-format
+msgid "Company %(company)s has no default POS receivable account configured."
+msgstr ""
+"La compañía %(company)s no tiene una cuenta por cobrar por defecto de "
+"Punto de Venta configurada."
+
+#. module: l10n_ve_pos_igtf
 #: model:ir.model,name:l10n_ve_pos_igtf.model_pos_config
 msgid "Point of Sale Configuration"
 msgstr "Configuración del TPV"

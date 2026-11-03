@@ -22,20 +22,33 @@ class PosPayment(models.Model):
         res["foreign_igtf_amount"] = payment.foreign_igtf_amount
         return res
 
-    def _get_pos_receivable_account(self, accounting_partner, company):
+    def _get_pos_receivable_account(self, accounting_partner, order):
         """Return the receivable account to use for a POS payment line.
 
-        Falls back to the company's default POS receivable account when the
-        partner has no ``property_account_receivable_id`` set in ``company``
-        (e.g. a contact created on the fly from the POS). Without this
-        fallback, ``_create_payment_moves`` tried to create an
-        ``account.move.line`` with an empty ``account_id``, which PostgreSQL
-        rejected via the ``account_move_line_check_accountable_required_fields``
-        check constraint, aborting the whole transaction with a generic error.
+        The partner's own ``property_account_receivable_id`` is preferred
+        first. When that is empty (e.g. a contact created on the fly from
+        the POS), the account already used on the invoice's own receivable
+        line (``order.account_move``) is used instead, so the payment
+        reconciles against the invoice; falling back straight to the
+        company's generic POS receivable account put the payment and the
+        invoice on different accounts, leaving the invoice unreconciled even
+        though it had been fully paid. The company's default POS receivable
+        account is only used as a last resort.
+
+        Without any of these fallbacks, ``_create_payment_moves`` tried to
+        create an ``account.move.line`` with an empty ``account_id``, which
+        PostgreSQL rejected via the
+        ``account_move_line_check_accountable_required_fields`` check
+        constraint, aborting the whole transaction with a generic error.
         """
+        company = order.company_id
         account = accounting_partner.with_company(
             company
         ).property_account_receivable_id
+        if not account:
+            account = order.account_move.line_ids.filtered(
+                lambda line: line.account_id.account_type == "asset_receivable"
+            ).account_id[:1]
         if not account:
             account = company.account_default_pos_receivable_account_id
         if not account:
@@ -104,7 +117,7 @@ class PosPayment(models.Model):
                     add_credit_line_vals = pos_session._credit_amounts(
                         {
                             "account_id": self._get_pos_receivable_account(
-                                accounting_partner, order.company_id
+                                accounting_partner, order
                             ).id,
                             "partner_id": accounting_partner.id,
                             "move_id": payment_move.id,
@@ -140,7 +153,7 @@ class PosPayment(models.Model):
                 credit_line_vals = pos_session._credit_amounts(
                     {
                         "account_id": self._get_pos_receivable_account(
-                            accounting_partner, order.company_id
+                            accounting_partner, order
                         ).id,
                         "partner_id": accounting_partner.id,
                         "move_id": payment_move.id,
@@ -169,6 +182,14 @@ class PosPayment(models.Model):
             else:
                 reversed_move_receivable_account_id = (
                     self.company_id.account_default_pos_receivable_account_id.id
+                )
+            if not reversed_move_receivable_account_id:
+                raise UserError(
+                    _(
+                        "Company %(company)s has no default POS receivable "
+                        "account configured.",
+                        company=order.company_id.display_name,
+                    )
                 )
             debit_line_vals = pos_session._debit_amounts(
                 {

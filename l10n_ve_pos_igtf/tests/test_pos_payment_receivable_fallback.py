@@ -124,10 +124,15 @@ class TestPosPaymentReceivableFallback(TestPoSCommon):
         data["igtf_amount"] = 0
         return order_data
 
-    def test_payment_falls_back_to_company_default_receivable_account(self):
-        """Si el partner no tiene cuenta por cobrar propia, se debe usar la
-        cuenta por cobrar por defecto de la compañía en vez de abortar la
-        transacción."""
+    def test_payment_falls_back_to_invoice_receivable_account(self):
+        """Si el partner no tiene cuenta por cobrar propia, la línea de
+        crédito del pago debe usar la misma cuenta por cobrar que ya tiene
+        la factura que se está pagando, para que ambas concilien. Usar en
+        cambio la cuenta por cobrar por defecto de la compañía
+        (account_default_pos_receivable_account_id) dejaba el pago
+        acreditado en una cuenta distinta a la de la factura, que entonces
+        quedaba sin conciliar aunque estuviera completamente pagada
+        (hallazgo de validación en staging del ticket 15968)."""
         self.open_new_session()
         order_data = self._add_foreign_ui_fields(
             self.create_ui_order_data(
@@ -143,22 +148,28 @@ class TestPosPaymentReceivableFallback(TestPoSCommon):
             lambda o: o.partner_id == self.pos_customer_no_account
         )
         self.assertTrue(order, "La orden debió crearse e invoicearse sin error.")
+        invoice_receivable_account = order.account_move.line_ids.filtered(
+            lambda l: l.account_id.account_type == "asset_receivable"
+        ).account_id
+        self.assertTrue(
+            invoice_receivable_account,
+            "La factura debió quedar con una cuenta por cobrar propia.",
+        )
         payment_move = order.payment_ids.account_move_id
         self.assertTrue(payment_move)
         receivable_line = payment_move.line_ids.filtered(
-            lambda l: l.account_id == self.pos_receivable_account
+            lambda l: l.account_id == invoice_receivable_account
         )
         self.assertTrue(
             receivable_line,
-            "La línea de crédito del pago debió usar la cuenta por cobrar "
-            "por defecto de la compañía "
-            "(account_default_pos_receivable_account_id).",
+            "La línea de crédito del pago debió usar la misma cuenta por "
+            "cobrar que la factura, para que ambas concilien.",
         )
 
     def test_payment_without_any_receivable_account_raises_user_error(self):
-        """Si tampoco hay cuenta por cobrar por defecto en la compañía, debe
-        mostrarse un UserError claro en vez de dejar que PostgreSQL aborte la
-        transacción con un mensaje genérico."""
+        """Si tampoco hay cuenta por cobrar en la factura ni por defecto en
+        la compañía, debe mostrarse un UserError claro en vez de dejar que
+        PostgreSQL aborte la transacción con un mensaje genérico."""
         self.open_new_session()
         self.company.account_default_pos_receivable_account_id = False
 
