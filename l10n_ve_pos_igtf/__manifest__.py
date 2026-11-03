@@ -6,7 +6,7 @@
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "19.0.1.5.0",
+    "version": "19.0.1.5.1",
     "depends": [
         "base",
         "l10n_ve_pos",

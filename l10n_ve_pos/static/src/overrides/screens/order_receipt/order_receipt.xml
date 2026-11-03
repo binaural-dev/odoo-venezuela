@@ -10,5 +10,9 @@
         </xpath>
         <xpath expr="//div[hasclass('pos-receipt-taxes')]" position="replace">
         </xpath>
+        <xpath expr="//div[hasclass('paymentlines')]/t[@t-esc='line.payment_method_id.name']" position="after">
+            <t t-set="tenderText" t-value="formatTenderAmount(line)"/>
+            <span t-if="tenderText" class="pos-receipt-tender-amount"> (<t t-esc="tenderText"/>)</span>
+        </xpath>
     </t>
 </templates>

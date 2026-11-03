@@ -75,6 +75,33 @@ patch(PaymentScreenStatus.prototype, {
     return this.props.order;
   },
 
+  // Línea seleccionada en una moneda de cobro (p. ej. EUR): el restante
+  // también en esa moneda, con las mismas tasas que la línea
+  // (PosPayment._getTenderRates), para cobrar lo que falta en euros. null si
+  // la línea seleccionada no tiene moneda de cobro.
+  get tenderRemaining() {
+    const _paymentWatch = this.props?.order?.payment_ids;
+    const order = this.props?.order;
+    const line = order?.getSelectedPaymentline?.();
+    const currency = line?.getTenderCurrency?.();
+    if (!currency) {
+      return null;
+    }
+    const sign = Number(order.totalDue ?? 0) < 0 ? -1 : 1;
+    const remaining = order._convertAtRate(
+      sign * (Number(order.remainingDue ?? 0) || 0),
+      line._getTenderRates(currency).toTender,
+      currency
+    );
+    return {
+      currencyName: currency.name,
+      text: this.env.utils.formatCurrencyById(
+        currency.isPositive(remaining) ? remaining : 0,
+        currency.id
+      ),
+    };
+  },
+
   // Odoo 19 native bug: isRemaining usa `remainingDue > 0` para reembolsos,
   // que es falso cuando el reembolso quedó cubierto (remainingDue=0).
   // Para un reembolso con pago completo, debe mostrar "Cambio" no

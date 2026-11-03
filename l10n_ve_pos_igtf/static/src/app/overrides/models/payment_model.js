@@ -62,6 +62,33 @@ patch(PosPayment.prototype, {
     }
     return super.set_foreign_amount(...arguments);
   },
+  // La orden se factura y tiene contexto IGTF: el método de esta línea genera
+  // IGTF o ya hay deuda IGTF acumulada (con cualquier método). Misma condición
+  // que set_foreign_amount.
+  _hasIgtfContext() {
+    const order = this.pos_order_id;
+    const method = this.payment_method_id;
+    const hasIgtfContext =
+      Boolean(method?.apply_igtf) ||
+      (typeof order?._igtfRoundLocal === "function" &&
+        order._igtfRoundLocal(order.igtf_amount || 0) !== 0);
+    return Boolean(
+      order?.to_invoice && hasIgtfContext && typeof order._igtfBaseState === "function"
+    );
+  },
+  // Restante antes de esta línea para la moneda de cobro (EUR...,
+  // l10n_ve_pos setTenderAmount): en contexto IGTF, el mismo que usa el ajuste
+  // de set_foreign_amount, base de factura pendiente + deuda IGTF, SIN el IGTF
+  // que esta línea generará. Si lo tecleado lo cubre, la línea vale ese monto
+  // exacto (más el excedente), sin ida y vuelta de conversión.
+  _getLocalDueBefore() {
+    if (this._hasIgtfContext()) {
+      const order = this.pos_order_id;
+      const { sign, remainingBase, unpaidIgtf } = order._igtfBaseState(this);
+      return order._igtfRoundLocal(sign * (remainingBase + unpaidIgtf));
+    }
+    return super._getLocalDueBefore(...arguments);
+  },
   init_from_JSON(json) {
     super.init_from_JSON(...arguments);
     this.include_igtf = json.include_igtf || false;
