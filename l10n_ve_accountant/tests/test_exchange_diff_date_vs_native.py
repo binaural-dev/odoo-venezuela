@@ -1,4 +1,6 @@
 from datetime import date
+from types import SimpleNamespace
+from unittest.mock import patch
 
 from odoo import Command
 from odoo.tests import Form, TransactionCase, tagged
@@ -29,6 +31,7 @@ class TestExchangeDiffDateVsNative(ForeignExchangeDiffMixin, TransactionCase):
             "type_tax_use": "purchase",
         })
         self.product.supplier_taxes_id = [Command.set(self.purchase_tax.ids)]
+        self.product.taxes_id = [Command.set(self.zero_tax.ids)]
         self._set_usd_rate(D_BILL, BILL_RATE)
         for d, _usd, rate in PAYMENTS:
             self._set_usd_rate(d, rate)
@@ -36,8 +39,8 @@ class TestExchangeDiffDateVsNative(ForeignExchangeDiffMixin, TransactionCase):
         self._set_usd_rate(date(2026, 9, 30), 804.81)
         self._set_usd_rate(date(2026, 10, 31), 875.65)
 
-    def _make_bill(self, currency=None, price=3248.0):
-        with Form(self.env["account.move"].with_context(default_move_type="in_invoice")) as f:
+    def _make_bill(self, currency=None, price=3248.0, move_type="in_invoice"):
+        with Form(self.env["account.move"].with_context(default_move_type=move_type)) as f:
             f.partner_id = self.partner
             f.invoice_date = D_BILL
             f.currency_id = currency or self.currency_usd
@@ -45,7 +48,7 @@ class TestExchangeDiffDateVsNative(ForeignExchangeDiffMixin, TransactionCase):
                 line.product_id = self.product
                 line.price_unit = price
         bill = f.save()
-        bill.action_post()
+        bill.with_context(move_action_post_alert=True).action_post()
         return bill
 
     def _pay(self, bill, pay_date, usd):
@@ -58,33 +61,37 @@ class TestExchangeDiffDateVsNative(ForeignExchangeDiffMixin, TransactionCase):
         f.record.action_create_payments()
 
     def _cambio_dates(self, bill):
-        payable = bill.line_ids.filtered(lambda l: l.account_type == "liability_payable")
-        partials = payable.matched_debit_ids
+        """(fecha del pago, fecha del CAMBIO nativo, debe Bs, debe alterno,
+        es asiento alterno) por cada partial, en orden de conciliacion."""
+        account_type = "liability_payable" if bill.move_type == "in_invoice" else "asset_receivable"
+        line = bill.line_ids.filtered(lambda l: l.account_type == account_type)
         out = []
-        for p in partials.sorted("id"):
+        for p in (line.matched_debit_ids | line.matched_credit_ids).sorted("id"):
             em = p.exchange_move_id
-            pay_date = p.debit_move_id.date
             out.append((
-                pay_date, em.date if em else None,
+                max(p.debit_move_id.date, p.credit_move_id.date),
+                em.date if em else None,
                 sum(em.line_ids.mapped("debit")) if em else 0.0,
                 sum(em.line_ids.mapped("foreign_debit")) if em else 0.0,
                 em.l10n_ve_exchange_foreign_diff_entry if em else None,
             ))
-        # entradas standalone alternas sin exchange nativo
-        return out, payable
+        return out
 
-    def _scenario(self, toggle, redo_day, ves_bill=False):
+    def _scenario(self, toggle, redo_day, ves_bill=False, move_type="in_invoice"):
         """redo_day=None: cada pago se registra el dia de su fecha.
         redo_day=fecha: todos se registran 'hoy'=redo_day (re-conciliacion)."""
         self.company.l10n_ve_use_foreign_exchange_diff = toggle
         self._setup_purchase()
         with freeze_time(f"{D_BILL} 12:00:00"):
-            bill = self._make_bill(self.currency_vef, 2592962.85) if ves_bill else self._make_bill()
+            bill = (
+                self._make_bill(self.currency_vef, 2592962.85, move_type)
+                if ves_bill else self._make_bill(move_type=move_type)
+            )
         for d, usd, _r in PAYMENTS:
             today = redo_day or d
             with freeze_time(f"{today} 12:00:00"):
                 self._pay(bill, d, usd)
-        res, payable = self._cambio_dates(bill)
+        res = self._cambio_dates(bill)
         standalone = self.env["account.move"].search([
             ("l10n_ve_exchange_foreign_source_move_id", "=", bill.id)], order="id")
         res = res + [("standalone", m.date, sum(m.line_ids.mapped("foreign_debit"))) for m in standalone]
@@ -125,3 +132,59 @@ class TestExchangeDiffDateVsNative(ForeignExchangeDiffMixin, TransactionCase):
                 with freeze_time(f"{redo or pay_date} 12:00:00"):
                     expected = self._core_date(pay_date)
                 self.assertEqual(entry_date, expected, f"pago {pay_date}, re-conciliacion {redo}")
+
+    def test_alt_standalone_entry_dated_like_native_customer_invoice(self):
+        """Lado cliente (cuenta por cobrar): misma regla que en proveedor."""
+        for redo in (None, date(2026, 10, 27)):
+            res = self._scenario(True, redo, ves_bill=True, move_type="out_invoice")
+            standalone = [r for r in res if r[0] == "standalone"]
+            self.assertEqual(len(standalone), 3)
+            for (pay_date, *_r), (_tag, entry_date, _amt) in zip(
+                [r for r in res if r[0] != "standalone"], standalone
+            ):
+                with freeze_time(f"{redo or pay_date} 12:00:00"):
+                    expected = self._core_date(pay_date)
+                self.assertEqual(entry_date, expected, f"pago {pay_date}, re-conciliacion {redo}")
+
+    # ── Ramas de `_get_alt_exchange_date` ──
+
+    def _fake_lines(self, raw_debit, raw_credit):
+        return (
+            SimpleNamespace(date=raw_debit, company_id=self.company),
+            SimpleNamespace(date=raw_credit, company_id=self.company),
+        )
+
+    def test_alt_exchange_date_prefers_core_move_date(self):
+        debit, credit = self._fake_lines(date(2026, 9, 3), date(2026, 9, 1))
+        core_values = {"move_values": {"date": date(2026, 9, 15)}}
+        self.assertEqual(
+            self.env["account.move.line"]._get_alt_exchange_date(debit, credit, core_values),
+            date(2026, 9, 15),
+        )
+
+    def test_alt_exchange_date_applies_journal_rule_when_core_built_none(self):
+        """Sin asiento del core: regla del diario (diario CAMBIO nuevo, sin
+        numeracion previa: fecha pasada de un mes anterior -> fin de ese mes)."""
+        debit, credit = self._fake_lines(date(2026, 9, 3), date(2026, 9, 1))
+        with freeze_time("2026-10-27 12:00:00"):
+            result = self.env["account.move.line"]._get_alt_exchange_date(debit, credit, {})
+        self.assertEqual(result, date(2026, 9, 30))
+        self.assertNotEqual(result, date(2026, 9, 3), "no debe quedar la fecha cruda")
+
+    def test_alt_exchange_date_keeps_raw_date_without_exchange_journal(self):
+        debit, credit = self._fake_lines(date(2026, 9, 3), date(2026, 9, 1))
+        no_journal = lambda self, company: self.env["account.journal"]  # noqa: E731
+        with patch.object(self.env.registry["account.move.line"], "_get_exchange_journal", no_journal):
+            result = self.env["account.move.line"]._get_alt_exchange_date(debit, credit, {})
+        self.assertEqual(result, date(2026, 9, 3))
+
+    def test_alt_exchange_date_respects_lock_date(self):
+        """Con fecha de bloqueo, la regla del diario empuja la fecha fuera del
+        periodo bloqueado (igual que lo haria para el asiento nativo)."""
+        self.company.hard_lock_date = date(2026, 9, 30)
+        debit, credit = self._fake_lines(date(2026, 9, 3), date(2026, 9, 1))
+        with freeze_time("2026-10-27 12:00:00"):
+            result = self.env["account.move.line"]._get_alt_exchange_date(debit, credit, {})
+        self.assertGreater(result, date(2026, 9, 30))
+        with freeze_time("2026-10-27 12:00:00"):
+            self.assertEqual(result, self._core_date(date(2026, 9, 3)))
