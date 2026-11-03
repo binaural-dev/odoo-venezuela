@@ -63,6 +63,21 @@ class PosConfig(models.Model):
             )
             config.update(rate_values)
 
+    @api.constrains("payment_method_ids", "journal_id", "currency_id")
+    def _check_tender_currency_methods_currency(self):
+        """Una moneda de cobro (``pos.payment.method.tender_currency_id``) solo
+        en una caja en la moneda de la compañía: sus tasas
+        (``tender_currency_rates``) son contra esa moneda, y en una caja en
+        otra moneda se aplicarían a montos en la moneda de la caja. Ver también
+        ``pos.payment.method._check_tender_currency``.
+        """
+        for config in self:
+            if config.currency_id == config.company_id.currency_id:
+                continue
+            tender_methods = config.payment_method_ids.filtered("tender_currency_id")
+            if tender_methods:
+                raise ValidationError(tender_methods._tender_currency_in_foreign_pos_message())
+
     @api.depends("payment_method_ids.tender_currency_id")
     def _compute_tender_currency_rates(self):
         """Tasas de las monedas de cobro (``pos.payment.method.tender_currency_id``)
@@ -73,9 +88,15 @@ class PosConfig(models.Model):
         carga entero en cada apertura (``pos.load.mixin._last_server_date_to_load``
         no lo filtra por ``write_date``): el PdV recibe siempre la tasa del día.
         Sin tasa del día, ambas valen 0 y la conversión no es posible.
+
+        Las tasas son contra la moneda de la COMPAÑÍA de la caja
+        (``compute_rate`` busca las de ``env.company``, de ahí el
+        ``with_company``): solo valen como "moneda de cobro → caja" porque una
+        caja con métodos en moneda de cobro está en la moneda de la compañía
+        (``_check_tender_currency_methods_currency``).
         """
-        rate = self.env["res.currency.rate"]
         for config in self:
+            rate = self.env["res.currency.rate"].with_company(config.company_id)
             rates = {}
             for currency in config.payment_method_ids.tender_currency_id:
                 values = rate.compute_rate(

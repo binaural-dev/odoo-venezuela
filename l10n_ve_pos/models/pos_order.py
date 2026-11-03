@@ -118,7 +118,6 @@ class PosOrder(models.Model):
         rate = order._get_payment_foreign_rate()
         if payments_without_rate and rate:
             payments_without_rate.write({"foreign_rate": rate})
-        order._set_payment_tender_values()
         return res
 
     def _set_payment_tender_values(self):
@@ -129,19 +128,35 @@ class PosOrder(models.Model):
         ``PosPayment.serializeForORM``: llega ``tender_amount`` (un campo del
         registro en el PdV) pero no la moneda, que es la del método. Un pago sin
         ``tender_amount`` (PdV con un bundle anterior, pago creado en el
-        backend) lo toma de su monto a la tasa de la caja.
+        backend con ``pos.make.payment``) lo toma de su monto: ver
+        ``_get_payment_tender_amount``.
         """
         self.ensure_one()
-        config = self.config_id
         for payment in self.payment_ids.filtered("payment_method_id.tender_currency_id"):
             currency = payment.payment_method_id.tender_currency_id
             vals = {}
             if payment.tender_currency_id != currency:
                 vals["tender_currency_id"] = currency.id
             if not payment.tender_amount and payment.amount:
-                vals["tender_amount"] = config._convert(payment.amount, self.currency_id, currency)
+                vals["tender_amount"] = self._get_payment_tender_amount(payment, currency)
             if vals:
                 payment.write(vals)
+
+    def _get_payment_tender_amount(self, payment, currency):
+        """``payment.amount`` (moneda de la caja) en la moneda de cobro
+        ``currency``. En un reembolso, a la tasa con la que se cobraron en esa
+        moneda los pagos de la orden original (``get_refund_tender_rates``),
+        igual que el PdV: se devuelven los mismos euros. Si no, a la tasa del
+        día de la caja (``pos.config._convert``)."""
+        self.ensure_one()
+        refund_rate = (
+            self.get_refund_tender_rates(self.refunded_order_id.ids).get(currency.id)
+            if self.refunded_order_id
+            else 0.0
+        )
+        if refund_rate:
+            return currency.round(payment.amount / refund_rate)
+        return self.config_id._convert(payment.amount, self.currency_id, currency)
 
     def _get_payment_foreign_rate(self):
         """Main → foreign multiplier the payments of this order are valued at:
@@ -157,7 +172,12 @@ class PosOrder(models.Model):
     def _process_saved_order(self, draft):
         # Before super: it marks the order paid and creates the payment moves
         # and the invoice, which read the foreign amounts. Runs for the POS
-        # sync and for the backend return wizard (pos.make.payment).
+        # sync (after ``_process_payment_lines``) and for the backend payment
+        # wizard (pos.make.payment, which never goes through
+        # ``_process_payment_lines``): both paths get the tender currency of
+        # their payments here, before their signs are aligned.
+        for order in self:
+            order._set_payment_tender_values()
         self._align_foreign_signs()
         return super()._process_saved_order(draft)
 

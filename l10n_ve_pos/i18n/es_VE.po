@@ -1231,3 +1231,15 @@ msgstr "Moneda en la que pagó el cliente, cuando es distinta a la del Punto de 
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment__tender_amount
 msgid "Amount the customer paid, in the tender currency."
 msgstr "Monto que pagó el cliente, en la moneda de cobro."
+
+#. module: l10n_ve_pos
+#. odoo-python
+#: code:addons/l10n_ve_pos/models/pos_payment_method.py:0
+msgid ""
+"The payment method %(method)s is collected in %(currency)s and is used in a "
+"Point of Sale whose currency is not the company currency. A tender currency "
+"is only supported in a Point of Sale in the company currency."
+msgstr ""
+"El método de pago %(method)s se cobra en %(currency)s y se usa en un Punto "
+"de Venta cuya moneda no es la de la compañía. La moneda de cobro solo se "
+"admite en un Punto de Venta en la moneda de la compañía."
