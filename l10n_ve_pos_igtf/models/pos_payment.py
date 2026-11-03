@@ -41,10 +41,9 @@ class PosPayment(models.Model):
         if not account:
             raise UserError(
                 _(
-                    "El cliente %(partner)s no tiene cuenta por cobrar "
-                    "configurada en la compañía %(company)s, y la compañía "
-                    "tampoco tiene una cuenta por cobrar por defecto de Punto "
-                    "de Venta configurada.",
+                    "Customer %(partner)s has no receivable account "
+                    "configured in company %(company)s, and the company has "
+                    "no default POS receivable account configured either.",
                     partner=accounting_partner.display_name,
                     company=company.display_name,
                 )
