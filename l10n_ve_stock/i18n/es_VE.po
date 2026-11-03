@@ -19,7 +19,7 @@ msgstr ""
 #. odoo-python
 #: code:addons/l10n_ve_stock/models/stock_picking.py:0
 #, python-format
-msgid "%s%s"
+msgid "%(name)s%(serial)s"
 msgstr ""
 
 #. module: l10n_ve_stock
@@ -397,7 +397,7 @@ msgstr ""
 #, python-format
 msgid ""
 "Insufficient stock:\n"
-"%s\n"
+"%(items)s\n"
 "\n"
 "Adjust quantitys or request stock for this location."
 msgstr ""

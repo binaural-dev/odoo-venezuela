@@ -1,5 +1,6 @@
 {
     "name": "Venezuela - Inventario/Contabilidad",
+    "description": "Guías de despacho y facturación desde inventario para Venezuela",
     "summary": """
         Inventario/Contabilidad para la localización en Venezuela
     """,
@@ -7,7 +8,7 @@
     "author": "binaural-dev",
     "website": "https://www.binauraldev.com",
     "category": "Stock Account",
-    "version": "17.0.0.2.4",
+    "version": "17.0.0.2.5",
     "depends": [
         "l10n_ve_stock",
         "l10n_ve_invoice",
@@ -18,7 +19,6 @@
     "data": [
         "security/res_groups.xml",
         "security/ir.model.access.csv",
-        "security/res_groups.xml",
         "data/dispatch_guide_paperformat.xml",
         "data/ir_cron.xml",
         "data/ir_sequence.xml",
