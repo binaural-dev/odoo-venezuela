@@ -10,5 +10,4 @@
 
 ## 3. Verificación manual
 
-- [ ] 3.1 En la BD del cliente: confirmar el reinicio de la secuencia del diario CAMBIO (nombre `CAMBIO/2026/0001` anual vs `CAMBIO/2026/09/0001` mensual).
-- [ ] 3.2 Decisión funcional sobre R1 (ver proposal).
+- [ ] 3.1 Informar al consultor: R1 no es obligatorio y el comportamiento observado es el del core (ver proposal).

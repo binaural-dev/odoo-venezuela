@@ -25,11 +25,20 @@ el 27 oct, y el ticket pide (R1) fecharlos el día de cada pago.
    (`journal.with_context(move_date=...).accounting_date`), así nativo y alterno
    de una misma conciliación se fechan igual.
 
-## Fuera de alcance / decisión funcional pendiente
+## Criterio de aceptación del ticket vs. comportamiento del código
 
-R1 (cada CAMBIO con la fecha de su pago aun en re-conciliación tardía) no se
-cumple, ni en el nativo ni en el alterno. Cumplirlo implica saltarse la regla de
-secuencia del core y afectaría también al diferencial nativo.
+El ticket cita un "R1" (fechar cada CAMBIO el día de su pago). **R1 no es un
+requisito obligatorio**: es una deducción del consultor de pruebas, producto de
+desconocer cómo fecha el core sus asientos de diferencial. El código original
+tiene sus condiciones (`journal.accounting_date`) y se respeta. Este change **no**
+busca cumplir R1: solo iguala el comportamiento del diferencial alterno con el
+nativo. El criterio de aceptación del ticket NO corresponde con lo que el código
+hace hoy (ni el nativo ni el alterno), y el revisor debe tenerlo presente.
+
+Tampoco debe tomarse la numeración/secuencia del diario CAMBIO como causa de un
+defecto a corregir: fue una hipótesis para explicar la fecha observada, no
+verificada en la BD del cliente, y el comportamiento del core que la origina es
+el esperado.
 
 ## Impacto
 
