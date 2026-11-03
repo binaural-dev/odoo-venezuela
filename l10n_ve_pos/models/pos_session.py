@@ -130,8 +130,16 @@ class PosSession(models.Model):
 
         - ``split_transactions=True``  → one move per ``pos.payment``.
         - ``split_transactions=False`` → one move per payment method and
-          session, netting every payment of that method. A zero net creates
-          nothing.
+          session with up to two legs: the incoming payments (``amount > 0``)
+          netted together and the outgoing ones (``amount < 0``) netted
+          together, each with its own pair of lines (see
+          ``_create_combined_cross_move``). Netting sales and refunds into a
+          single pair broke when they were valued at different rates: the net
+          in the session currency and the net in the foreign/tender currency
+          could end up with opposite signs (a line rejected by
+          ``account_move_line_check_amount_currency_balance_sign``), or the
+          first one at zero with the others not (nothing crossed). Only when
+          the three nets are zero is nothing created.
 
         This is the single entry point for both granularities. It replaces a
         two-trigger design where the combine path fired from inside
@@ -187,26 +195,98 @@ class PosSession(models.Model):
                         )
                     continue
 
-                amount = sum(method_payments.mapped("amount"))
-                if float_is_zero(amount, precision_rounding=session.currency_id.rounding):
-                    continue
-                session._create_cross_move_for(
+                session._create_combined_cross_move(
                     payment_method,
-                    amount=amount,
-                    foreign_amount=sum(method_payments.mapped("foreign_amount")),
+                    session._get_combined_cross_legs(payment_method, method_payments),
                     # The operative rate is a session-level setting, so every
                     # payment being netted here already shares it. Read it off
                     # a payment rather than off ``config_id.foreign_rate``:
                     # the config value can be edited after the session opened,
                     # while the payments carry the rate actually applied.
                     foreign_rate=method_payments[0].foreign_rate,
-                    # No partner, matching the native combined account.payment.
-                    partner=session.env["res.partner"],
                     date=session.stop_at or fields.Datetime.now(),
                     ref=session._cross_move_ref(),
                     use_suspense=use_suspense,
-                    **session._get_cross_currency_amount_kwargs(payment_method, method_payments),
                 )
+
+    def _get_combined_cross_legs(self, payment_method, payments, amount_of=None,
+                                 foreign_amount_of=None):
+        """Legs of the combined cross move of ``payment_method``: the incoming
+        payments (``amount > 0``) netted together and the outgoing ones
+        (``amount < 0``) netted together, each one only if it has payments.
+
+        Every payment of a leg has the same sign in every currency
+        (``pos.order._align_foreign_signs``), so each leg is coherent on its
+        own, whatever rate each payment was valued at.
+
+        ``amount_of`` / ``foreign_amount_of`` read a payment's amount in the
+        currency of the move lines and in the foreign currency (by default
+        ``amount`` and ``foreign_amount``); ``binaural_pos_multicurrency``
+        passes its conversions for a PoS in another currency.
+
+        :return: list of ``{"amount", "foreign_amount"[, "currency_amount"]}``
+            (``currency_amount`` only for a method with a tender currency, see
+            ``_get_cross_currency_amount_kwargs``).
+        """
+        amount_of = amount_of or (lambda payment: payment.amount)
+        foreign_amount_of = foreign_amount_of or (lambda payment: payment.foreign_amount)
+        legs = []
+        for sign in (1, -1):
+            leg_payments = payments.filtered(lambda p: sign * amount_of(p) > 0)
+            if not leg_payments:
+                continue
+            legs.append({
+                "amount": sum(amount_of(p) for p in leg_payments),
+                "foreign_amount": sum(foreign_amount_of(p) for p in leg_payments),
+                **self._get_cross_currency_amount_kwargs(payment_method, leg_payments),
+            })
+        return legs
+
+    def _create_combined_cross_move(self, payment_method, legs, foreign_rate, date, ref,
+                                    use_suspense=False):
+        """One cross move for every payment of ``payment_method`` in the
+        session (combine granularity), with one pair of lines per leg of
+        ``_get_combined_cross_legs`` (incoming / outgoing), each built exactly
+        like the move of a single payment (``_get_cross_move_line_vals``,
+        ``use_suspense`` inversion included).
+
+        Nothing is created when the nets of the legs are all zero in the
+        currency of the move lines, the foreign currency and the tender
+        currency: there is nothing to cross. A zero net in the first one with
+        euros or dollars left still crosses them to the real journal.
+
+        No partner on the move or its lines, matching the native combined
+        ``account.payment``.
+        """
+        self.ensure_one()
+        if not legs or self._cross_legs_net_is_zero(payment_method, legs):
+            return self.env["account.move"]
+        partner = self.env["res.partner"]
+        line_vals = []
+        for leg in legs:
+            line_vals += self._get_cross_move_line_vals(
+                payment_method, leg["amount"], leg["foreign_amount"], foreign_rate, partner,
+                use_suspense=use_suspense, currency_amount=leg.get("currency_amount"),
+            )
+        self._check_cross_move_line_accounts(payment_method, line_vals)
+        return self._create_cross_move(payment_method, line_vals, foreign_rate, date, ref, partner)
+
+    def _cross_legs_net_is_zero(self, payment_method, legs):
+        """Whether the legs net to zero in the currency of the move lines
+        (the company's), the foreign currency and the tender currency."""
+        nets = [
+            (sum(leg["amount"] for leg in legs), self.company_id.currency_id),
+            (sum(leg["foreign_amount"] for leg in legs), self.foreign_currency_id),
+        ]
+        if payment_method.tender_currency_id:
+            nets.append((
+                sum(leg.get("currency_amount") or 0.0 for leg in legs),
+                payment_method.tender_currency_id,
+            ))
+        return all(
+            float_is_zero(amount, precision_rounding=currency.rounding if currency else 0.01)
+            for amount, currency in nets
+        )
 
     def _get_cross_currency_amount_kwargs(self, payment_method, payments):
         """``{"currency_amount": ...}`` para un método con moneda de cobro, ``{}``
@@ -458,12 +538,16 @@ class PosSession(models.Model):
         - diario en la alterna: ``foreign_amount``;
         - diario en la moneda de cobro del método (``tender_currency_id``): lo
           cobrado en esa moneda, ``currency_amount``. Sin esto, la línea de la
-          caja en EUR llevaba los Bs como si fueran euros;
+          caja en EUR llevaba los Bs como si fueran euros. Un llamador que no
+          lo pasa (un módulo con la firma anterior) recibe la conversión de
+          ``amount`` a la tasa del día de la caja (``pos.config._convert``);
         - si no (diario en la moneda de la compañía): ``amount``.
         """
         if line_currency == self.foreign_currency_id:
             return foreign_amount
-        if currency_amount is not None and line_currency == payment_method.tender_currency_id:
+        if line_currency == payment_method.tender_currency_id:
+            if currency_amount is None:
+                return self.config_id._convert(amount, self.currency_id, line_currency)
             return currency_amount
         return amount
 
@@ -660,10 +744,9 @@ class PosSession(models.Model):
         ``cross_journal`` line (see ``_get_cross_real_amount_currency``).
 
         The sign of ``amount`` picks the direction: incoming for sales,
-        outgoing for change/refunds. Under combine granularity ``amount`` is
-        already the net of the method's payments, so a session whose refunds
-        outweigh its sales yields a single outgoing move — the branch the
-        legacy combine path never had.
+        outgoing for change/refunds. The combine granularity does not come
+        through here: ``_create_combined_cross_move`` builds one move with an
+        incoming and an outgoing leg (``_get_cross_move_line_vals`` for each).
 
         ``use_suspense=True`` (cash sales and ``binaural_pos_close``'s plain
         cash in/out) clears ``journal_id.suspense_account_id`` instead of
@@ -685,6 +768,22 @@ class PosSession(models.Model):
         call to the *incoming* builder credits suspense and debits
         ``cross_journal``.
         """
+        line_vals = self._get_cross_move_line_vals(
+            payment_method, amount, foreign_amount, foreign_rate, partner,
+            use_suspense=use_suspense, currency_amount=currency_amount,
+        )
+        self._check_cross_move_line_accounts(payment_method, line_vals)
+        return self._create_cross_move(
+            payment_method, line_vals, foreign_rate, date, ref, partner
+        )
+
+    def _get_cross_move_line_vals(
+        self, payment_method, amount, foreign_amount, foreign_rate, partner,
+        use_suspense=False, currency_amount=None,
+    ):
+        """The pair of lines that crosses ``amount`` (one payment, or one leg
+        of a combined move), with the direction picked by its sign and the
+        ``use_suspense`` inversion explained in ``_create_cross_move_for``."""
         is_outgoing = amount < 0
         call_amount, call_foreign_amount = amount, foreign_amount
         call_currency_amount = currency_amount
@@ -698,26 +797,28 @@ class PosSession(models.Model):
             if is_outgoing
             else self._line_vals_move_cross_incoming
         )
-        line_vals = line_builder(
+        return line_builder(
             payment_method, call_amount, call_foreign_amount, foreign_rate, partner,
             use_suspense=use_suspense, currency_amount=call_currency_amount,
         )
-        if not all(command[2]["account_id"] for command in line_vals):
-            raise UserError(
-                _(
-                    "The cross move of the payment method %(method)s cannot be created "
-                    "because these accounts are not set:\n%(accounts)s\n"
-                    "Set them in the journal configuration and try again.",
-                    method=payment_method.name,
-                    accounts="\n".join(
-                        f"- {account}"
-                        for account in self._get_cross_move_missing_accounts(payment_method)
-                        or [_("an account of the move lines")]
-                    ),
-                )
+
+    def _check_cross_move_line_accounts(self, payment_method, line_vals):
+        """Readable error instead of a NULL ``account_id`` violation when an
+        account of the cross move of ``payment_method`` is not set."""
+        if all(command[2]["account_id"] for command in line_vals):
+            return
+        raise UserError(
+            _(
+                "The cross move of the payment method %(method)s cannot be created "
+                "because these accounts are not set:\n%(accounts)s\n"
+                "Set them in the journal configuration and try again.",
+                method=payment_method.name,
+                accounts="\n".join(
+                    f"- {account}"
+                    for account in self._get_cross_move_missing_accounts(payment_method)
+                    or [_("an account of the move lines")]
+                ),
             )
-        return self._create_cross_move(
-            payment_method, line_vals, foreign_rate, date, ref, partner
         )
 
     def _create_cross_move(
