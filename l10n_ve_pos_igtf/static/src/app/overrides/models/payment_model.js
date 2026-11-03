@@ -2,6 +2,10 @@
 
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
+// _getLocalDueBefore extiende el de l10n_ve_pos (moneda de cobro) con super:
+// este parche debe aplicarse después. En el bundle lo asegura el orden de
+// dependencias; en Hoot, el orden de importación.
+import "@l10n_ve_pos/overrides/models/payment_model";
 
 patch(PosPayment.prototype, {
   setup(_defaultObj, options) {

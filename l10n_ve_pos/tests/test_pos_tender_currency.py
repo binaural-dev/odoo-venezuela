@@ -6,28 +6,39 @@ conversión (``pos.config._get_pos_conversion_rate``) conoce su tasa del día,
 cada pago guarda lo cobrado en esa moneda (``tender_amount``) y el cruce al
 diario real en esa moneda lleva ese monto como ``amount_currency``.
 
-En este fixture la compañía está en USD y la alterna es VEF (ver
-``TestPosSessionAccountingBase``); la tercera moneda es EUR.
+Las pruebas corren en dos compañías (ver ``TestPosSessionAccountingBase``):
+
+- ``TestPosTenderCurrency``: la del fixture de siempre, en USD con VEF de
+  alterna;
+- ``TestPosTenderCurrencyBsCompany``: el escenario real, la compañía en Bs con
+  USD de alterna.
+
+En las dos la tercera moneda es EUR.
 """
 
-from odoo import fields
+from unittest.mock import patch
+
+from odoo import Command, fields
 from odoo.exceptions import ValidationError
 from odoo.tests import tagged
 
 from .test_pos_session_accounting_common import TestPosSessionAccountingBase
 
-# 1 EUR = 1,16 USD (company_rate EUR = 1 / 1,16).
-USD_PER_EUR = 1.16
-
 
 @tagged("post_install", "-at_install", "l10n_ve_pos", "tender_currency")
 class TestPosTenderCurrency(TestPosSessionAccountingBase):
+    # Moneda de la compañía por EUR (1 EUR = 1,16 USD).
+    EUR_RATE = 1.16
+    # `rate` de la alterna del día (alterna por unidad de la compañía) y tasa
+    # de los pagos (multiplicador compañía → alterna de `_create_paid_order`).
+    FOREIGN_RATE_OF_DAY = 40.0
+    PAYMENT_FOREIGN_RATE = 36.5
+
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        # compute_rate (l10n_ve_rate) busca las tasas de env.company.
-        cls.env = cls.env(context=dict(cls.env.context, allowed_company_ids=[cls.company.id]))
-        cls._create_rate_of_day(40.0)
+        cls.local = cls.company.currency_id
+        cls._create_rate_of_day(cls.FOREIGN_RATE_OF_DAY)
         cls.eur = cls.env.ref("base.EUR")
         cls.eur.active = True
         cls.env["res.currency.rate"].create(
@@ -35,9 +46,12 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
                 "name": fields.Date.context_today(cls.env.user),
                 "currency_id": cls.eur.id,
                 "company_id": cls.company.id,
-                "rate": 1 / USD_PER_EUR,
+                "rate": 1 / cls.EUR_RATE,
             }
         )
+        # 100 € y 50 € en la moneda de la compañía, a la tasa del día.
+        cls.eur_100_local = cls.local.round(100 * cls.EUR_RATE)
+        cls.eur_50_local = cls.local.round(50 * cls.EUR_RATE)
         Account = cls.env["account.account"]
         Journal = cls.env["account.journal"]
 
@@ -85,12 +99,12 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
             {"name": "T Cruce EUR", "type": "general", "code": "TCE86", "company_id": cls.company.id}
         )
 
-        # Caja en la moneda de la compañía (USD): diarios sin moneda.
+        # Caja en la moneda de la compañía: diarios sin moneda.
         cls.account_transit = account("T Metodo EUR", "100087T", "asset_cash")
         cls.account_transit_suspense = account("T Transitoria metodo EUR", "190087T")
         base_cash_journal = Journal.create(
             {
-                "name": "T Efectivo USD", "type": "cash", "code": "TEC86",
+                "name": "T Efectivo local", "type": "cash", "code": "TEC86",
                 "company_id": cls.company.id, "default_account_id": cls.account_cash.id,
             }
         )
@@ -105,7 +119,7 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         transit_bank_journal = bank_journal("T Banco EUR (transitorio)", "TEB86", cls.account_transit_bank)
         Method = cls.env["pos.payment.method"]
         cls.base_cash_method = Method.create(
-            {"name": "T Efectivo USD", "company_id": cls.company.id, "journal_id": base_cash_journal.id}
+            {"name": "T Efectivo local", "company_id": cls.company.id, "journal_id": base_cash_journal.id}
         )
         method_vals = {
             "company_id": cls.company.id,
@@ -124,7 +138,7 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         )
         cls.usd_config = cls.env["pos.config"].create(
             {
-                "name": "T Caja USD con EUR",
+                "name": "T Caja local con EUR",
                 "company_id": cls.company.id,
                 "journal_id": Journal.create(
                     {"name": "T Ventas PdV", "type": "sale", "code": "TSJ86", "company_id": cls.company.id}
@@ -143,14 +157,63 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
             {"config_id": self.usd_config.id, "user_id": self.env.ref("base.user_admin").id}
         )
 
-    def _eur_order(self, session, amount, tender_amount, foreign_rate=36.5, name="OL/EUR"):
+    def _eur_order(self, session, amount, tender_amount, foreign_rate=None, name="OL/EUR"):
         order = self._create_paid_order(
             session, method=self.eur_method, amount=amount, tax_amount=0.0,
-            foreign_rate=foreign_rate, name=name,
+            foreign_rate=foreign_rate or self.PAYMENT_FOREIGN_RATE, name=name,
         )
         order.payment_ids.write({"tender_amount": tender_amount})
         order._set_payment_tender_values()
+        order._align_foreign_signs()
         return order
+
+    def _draft_order(self, session, amount, name="OL/EUR/DRAFT"):
+        """Orden sin pagos de un producto por ``amount``, sin impuesto (la que
+        se cobra desde el backend con ``pos.make.payment``)."""
+        return self.env["pos.order"].create(
+            {
+                "company_id": self.company.id,
+                "session_id": session.id,
+                "partner_id": self.company.partner_id.id,
+                "pricelist_id": self.company.partner_id.property_product_pricelist.id,
+                "foreign_amount_total": amount * self.PAYMENT_FOREIGN_RATE,
+                "foreign_currency_rate": self.PAYMENT_FOREIGN_RATE,
+                "lines": [
+                    Command.create(
+                        {
+                            "name": name,
+                            "product_id": self.product.id,
+                            "price_unit": amount,
+                            "qty": 1.0,
+                            "price_subtotal": amount,
+                            "price_subtotal_incl": amount,
+                            "tax_ids": [Command.clear()],
+                        }
+                    )
+                ],
+                "amount_total": amount,
+                "amount_tax": 0.0,
+                "amount_paid": 0.0,
+                "amount_return": 0.0,
+                "last_order_preparation_change": "{}",
+            }
+        )
+
+    def _pay_from_backend(self, order, method, amount=None):
+        """``pos.make.payment`` (cobro o reembolso desde el backend). El
+        albarán no es parte de la prueba: la compañía del fixture no tiene
+        el almacén completo."""
+        wizard_vals = {"payment_method_id": method.id}
+        if amount is not None:
+            wizard_vals["amount"] = amount
+        wizard = (
+            self.env["pos.make.payment"]
+            .with_context(active_id=order.id)
+            .create(wizard_vals)
+        )
+        with patch.object(type(order), "_create_order_picking", lambda self: None):
+            wizard.check()
+        return order.payment_ids.filtered(lambda p: p.payment_method_id == method)
 
     def _cross_moves(self):
         return self.env["account.move"].search(
@@ -162,20 +225,38 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
     # ------------------------------------------------------------------
     def test_config_exposes_the_rates_of_the_tender_currency(self):
         rates = self.usd_config.tender_currency_rates[str(self.eur.id)]
-        self.assertAlmostEqual(rates["foreign_rate"], USD_PER_EUR, places=9)
-        self.assertAlmostEqual(rates["foreign_inverse_rate"], 1 / USD_PER_EUR, places=9)
+        self.assertAlmostEqual(rates["foreign_rate"], self.EUR_RATE, places=6)
+        self.assertAlmostEqual(rates["foreign_inverse_rate"], 1 / self.EUR_RATE, places=9)
+
+    def test_rates_are_the_ones_of_the_company_of_the_pos(self):
+        """``compute_rate`` busca las tasas de ``env.company``: el compute las
+        pide con la compañía de la caja, sin depender de la compañía activa del
+        usuario (aquí, la principal, sin tasa de EUR para hoy)."""
+        self.assertNotEqual(self.env.company, self.company)
+        config = self.usd_config.with_company(self.env.company)
+        config.invalidate_recordset(["tender_currency_rates"])
+        self.assertAlmostEqual(
+            config.tender_currency_rates[str(self.eur.id)]["foreign_rate"], self.EUR_RATE, places=6
+        )
 
     def test_conversion_between_pos_currency_and_tender_currency(self):
         config = self.usd_config
-        usd = config.currency_id
-        self.assertAlmostEqual(config._get_pos_conversion_rate(self.eur, usd), USD_PER_EUR, places=9)
-        self.assertAlmostEqual(config._get_pos_conversion_rate(usd, self.eur), 1 / USD_PER_EUR, places=9)
-        self.assertEqual(config._convert(100.0, self.eur, usd), 116.0)
-        self.assertEqual(config._convert(116.0, usd, self.eur), 100.0)
+        local = config.currency_id
+        self.assertAlmostEqual(config._get_pos_conversion_rate(self.eur, local), self.EUR_RATE, places=6)
+        self.assertAlmostEqual(
+            config._get_pos_conversion_rate(local, self.eur), 1 / self.EUR_RATE, places=9
+        )
+        self.assertEqual(config._convert(100.0, self.eur, local), self.eur_100_local)
+        self.assertEqual(config._convert(self.eur_100_local, local, self.eur), 100.0)
 
     def test_tender_to_foreign_goes_through_the_pos_currency_without_rounding_the_rate(self):
-        config = self.usd_config
-        expected = USD_PER_EUR * config.foreign_inverse_rate
+        # La tasa alterna de la caja (``_compute_rate``) sale de la compañía activa.
+        config = self.usd_config.with_company(self.company)
+        config.invalidate_recordset(["foreign_rate", "foreign_inverse_rate"])
+        self.assertTrue(config.foreign_inverse_rate)
+        expected = config.tender_currency_rates[str(self.eur.id)]["foreign_rate"] * (
+            config.foreign_inverse_rate
+        )
         self.assertAlmostEqual(
             config._get_pos_conversion_rate(self.eur, self.foreign_currency), expected, places=12
         )
@@ -186,12 +267,12 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
 
     def test_main_foreign_pair_is_unchanged(self):
         config = self.usd_config
-        usd = config.currency_id
+        local = config.currency_id
         self.assertEqual(
-            config._get_pos_conversion_rate(usd, self.foreign_currency), config.foreign_inverse_rate
+            config._get_pos_conversion_rate(local, self.foreign_currency), config.foreign_inverse_rate
         )
         self.assertEqual(
-            config._get_pos_conversion_rate(self.foreign_currency, usd), config.foreign_rate
+            config._get_pos_conversion_rate(self.foreign_currency, local), config.foreign_rate
         )
 
     def test_unknown_currency_has_no_rate(self):
@@ -209,7 +290,7 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         self.assertEqual(self.usd_config._convert(100.0, self.eur, self.usd_config.currency_id), 0.0)
 
     # ------------------------------------------------------------------
-    # Validaciones del método
+    # Validaciones del método y de la caja
     # ------------------------------------------------------------------
     def test_tender_currency_must_be_a_third_currency(self):
         for currency in (self.company.currency_id, self.foreign_currency):
@@ -237,33 +318,167 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         with self.assertRaises(ValidationError):
             self.usd_config._check_tender_cash_methods_order()
 
+    def test_tender_currency_only_in_a_pos_in_the_company_currency(self):
+        """Las tasas de la moneda de cobro son contra la moneda de la
+        compañía: una caja en otra moneda (aquí ``config``, con el diario de
+        ventas en la alterna) no acepta métodos con moneda de cobro, ni al
+        agregarlos a la caja ni al ponerle la moneda a un método de la caja."""
+        self.assertNotEqual(self.config.currency_id, self.company.currency_id)
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.config.payment_method_ids |= self.eur_bank_method
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self.split_bank_method.write(
+                {
+                    "is_foreign_currency": False,
+                    "tender_currency_id": self.eur.id,
+                    "cross_journal": self.eur_journal.id,
+                }
+            )
+        # En la caja en la moneda de la compañía, sí.
+        self.assertEqual(self.usd_config.currency_id, self.company.currency_id)
+        self.assertIn(self.eur_method, self.usd_config.payment_method_ids)
+
     # ------------------------------------------------------------------
     # Pagos
     # ------------------------------------------------------------------
     def test_payment_gets_the_tender_currency_of_its_method(self):
         session = self._new_session()
-        order = self._eur_order(session, amount=116.0, tender_amount=100.0)
+        order = self._eur_order(session, amount=self.eur_100_local, tender_amount=100.0)
         payment = order.payment_ids
         self.assertEqual(payment.tender_currency_id, self.eur)
         self.assertEqual(payment.tender_amount, 100.0)
 
     def test_payment_without_tender_amount_takes_its_conversion(self):
         session = self._new_session()
-        order = self._eur_order(session, amount=116.0, tender_amount=0.0)
+        order = self._eur_order(session, amount=self.eur_100_local, tender_amount=0.0)
         self.assertEqual(order.payment_ids.tender_amount, 100.0)
 
     def test_tender_amount_takes_the_sign_of_the_amount(self):
         session = self._new_session()
-        order = self._eur_order(session, amount=-116.0, tender_amount=100.0)
-        order._align_foreign_signs()
+        order = self._eur_order(session, amount=-self.eur_100_local, tender_amount=100.0)
         self.assertEqual(order.payment_ids.tender_amount, -100.0)
 
     def test_refund_tender_rate_is_the_rate_the_euros_were_collected_at(self):
         session = self._new_session()
-        order = self._eur_order(session, amount=116.0, tender_amount=100.0)
+        order = self._eur_order(session, amount=self.eur_100_local, tender_amount=100.0)
         rates = self.env["pos.order"].get_refund_tender_rates(order.ids)
-        self.assertAlmostEqual(rates[self.eur.id], 1.16, places=9)
+        self.assertAlmostEqual(rates[self.eur.id], self.eur_100_local / 100.0, places=9)
         self.assertEqual(self.env["pos.order"].get_refund_tender_rates([]), {})
+
+    def _sync_payload(self, session, uuid, payments):
+        local = self.eur_100_local + self.eur_50_local
+        return {
+            "id": False,
+            "name": f"Order/{uuid}",
+            "uuid": uuid,
+            "access_token": f"token-{uuid}",
+            "session_id": session.id,
+            "company_id": self.company.id,
+            "config_id": self.usd_config.id,
+            "currency_id": self.local.id,
+            "pricelist_id": self.company.partner_id.property_product_pricelist.id,
+            "partner_id": False,
+            "date_order": False,
+            "state": "draft",
+            "amount_total": local,
+            "amount_tax": 0.0,
+            "amount_paid": 0.0,
+            "amount_return": 0.0,
+            "foreign_amount_total": local * self.PAYMENT_FOREIGN_RATE,
+            "foreign_currency_rate": self.PAYMENT_FOREIGN_RATE,
+            "lines": [
+                [0, 0, {
+                    "name": f"OL/{uuid}",
+                    "uuid": f"line-{uuid}",
+                    "product_id": self.product.id,
+                    "price_unit": local,
+                    "discount": 0.0,
+                    "qty": 1.0,
+                    "price_subtotal": local,
+                    "price_subtotal_incl": local,
+                    "tax_ids": [(6, 0, [])],
+                }],
+            ],
+            "payment_ids": [
+                [0, 0, dict(
+                    {
+                        "name": f"Payment {index}",
+                        "uuid": f"payment-{uuid}-{index}",
+                        "payment_method_id": self.eur_method.id,
+                        "payment_date": fields.Datetime.now(),
+                        "foreign_rate": self.PAYMENT_FOREIGN_RATE,
+                    },
+                    **payment,
+                )]
+                for index, payment in enumerate(payments)
+            ],
+            "last_order_preparation_change": "{}",
+        }
+
+    def test_sync_from_ui_sets_the_tender_currency_of_the_payments(self):
+        """La sincronización real del PdV (``sync_from_ui`` →
+        ``_process_payment_lines`` → ``_process_saved_order``), sin llamar a
+        mano a ``_set_payment_tender_values``: el PdV manda ``tender_amount``
+        y no la moneda, que el servidor toma del método. Un pago de un bundle
+        anterior (sin ``tender_amount``) recibe su conversión."""
+        session = self._new_session()
+        payload = self._sync_payload(session, "86066-sync", [
+            {
+                "amount": self.eur_100_local,
+                "foreign_amount": self.eur_100_local * self.PAYMENT_FOREIGN_RATE,
+                "tender_amount": 100.0,
+            },
+            {
+                "amount": self.eur_50_local,
+                "foreign_amount": self.eur_50_local * self.PAYMENT_FOREIGN_RATE,
+            },
+        ])
+
+        self.env["pos.order"].sync_from_ui([payload])
+
+        order = self.env["pos.order"].search([("uuid", "=", "86066-sync")])
+        self.assertEqual(len(order.payment_ids), 2)
+        self.assertEqual(order.payment_ids.tender_currency_id, self.eur)
+        self.assertEqual(
+            sorted(order.payment_ids.mapped("tender_amount")), [50.0, 100.0]
+        )
+
+    def test_backend_payment_wizard_sets_the_tender_values(self):
+        """``pos.make.payment`` no pasa por ``_process_payment_lines``: el pago
+        en € queda con su moneda y su monto en € igual (``_process_saved_order``)."""
+        session = self._new_session()
+        order = self._draft_order(session, self.eur_100_local)
+
+        payment = self._pay_from_backend(order, self.eur_method)
+
+        self.assertEqual(order.state, "paid")
+        self.assertEqual(payment.amount, self.eur_100_local)
+        self.assertEqual(payment.tender_currency_id, self.eur)
+        self.assertEqual(payment.tender_amount, 100.0)
+
+    def test_backend_refund_returns_the_euros_at_the_original_rate(self):
+        """Un reembolso desde el backend devuelve los euros a la tasa con la
+        que se cobraron (``get_refund_tender_rates``), no a la del día, igual
+        que el PdV: la venta se cobró a 80 € por ``eur_100_local``."""
+        session = self._new_session()
+        sale = self._draft_order(session, self.eur_100_local, name="OL/EUR/SALE")
+        sale.payment_ids.unlink()
+        sale.add_payment({
+            "pos_order_id": sale.id,
+            "amount": self.eur_100_local,
+            "payment_method_id": self.eur_method.id,
+            "tender_amount": 80.0,
+        })
+        with patch.object(type(sale), "_create_order_picking", lambda self: None):
+            sale._process_saved_order(False)
+        self.assertEqual(sale.payment_ids.tender_amount, 80.0)
+
+        refund = sale._refund()
+        payment = self._pay_from_backend(refund, self.eur_method)
+
+        self.assertEqual(payment.amount, -self.eur_100_local)
+        self.assertEqual(payment.tender_currency_id, self.eur)
+        self.assertEqual(payment.tender_amount, -80.0)
 
     # ------------------------------------------------------------------
     # Carga al PdV
@@ -283,41 +498,60 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
     # ------------------------------------------------------------------
     # Cruce al diario real en la moneda de cobro
     # ------------------------------------------------------------------
+    def _eur_legs(self, move=None):
+        """Líneas de la transitoria de la caja real en EUR (cruce de efectivo,
+        ``use_suspense``) y de la transitoria del método."""
+        moves = move or self._cross_moves()
+        return (
+            moves.line_ids.filtered(lambda l: l.account_id == self.account_eur_suspense),
+            moves.line_ids.filtered(lambda l: l.account_id == self.account_transit_suspense),
+        )
+
+    def assertCoherentSigns(self, lines):
+        """Cada línea con ``amount_currency`` y saldo del mismo signo (lo que
+        exige ``account_move_line_check_amount_currency_balance_sign``), también
+        en la alterna (``foreign_debit``/``foreign_credit`` van del lado del
+        saldo)."""
+        for line in lines:
+            self.assertGreaterEqual(line.amount_currency * line.balance, 0.0, line.name)
+            if line.debit:
+                self.assertFalse(line.foreign_credit)
+            if line.credit:
+                self.assertFalse(line.foreign_debit)
+
     def test_cash_sale_cross_move_carries_the_euros_on_the_eur_journal(self):
         session = self._new_session().with_company(self.company)
-        order = self._eur_order(session, amount=116.0, tender_amount=100.0)
+        order = self._eur_order(session, amount=self.eur_100_local, tender_amount=100.0)
         payment = order.payment_ids
 
         session._validate_cross_move()
 
         move = self._cross_moves()
         self.assertEqual(len(move), 1)
-        eur_leg = move.line_ids.filtered(lambda l: l.account_id == self.account_eur_suspense)
-        transit_leg = move.line_ids.filtered(lambda l: l.account_id == self.account_transit_suspense)
+        eur_leg, transit_leg = self._eur_legs(move)
         self.assertEqual(eur_leg.currency_id, self.eur)
-        self.assertAlmostEqual(eur_leg.credit, 116.0, places=2)
+        self.assertAlmostEqual(eur_leg.credit, self.eur_100_local, places=2)
         self.assertAlmostEqual(eur_leg.amount_currency, -100.0, places=2)
         self.assertAlmostEqual(eur_leg.foreign_credit, payment.foreign_amount, places=2)
-        self.assertAlmostEqual(transit_leg.debit, 116.0, places=2)
+        self.assertAlmostEqual(transit_leg.debit, self.eur_100_local, places=2)
         self.assertAlmostEqual(transit_leg.foreign_debit, payment.foreign_amount, places=2)
 
     def test_split_cash_sale_crosses_each_payment_with_its_euros(self):
         self.eur_method.split_transactions = True
         session = self._new_session().with_company(self.company)
-        self._eur_order(session, amount=116.0, tender_amount=100.0, name="OL/EUR/1")
-        self._eur_order(session, amount=58.0, tender_amount=50.0, name="OL/EUR/2")
+        self._eur_order(session, amount=self.eur_100_local, tender_amount=100.0, name="OL/EUR/1")
+        self._eur_order(session, amount=self.eur_50_local, tender_amount=50.0, name="OL/EUR/2")
 
         session._validate_cross_move()
 
-        eur_legs = self._cross_moves().line_ids.filtered(
-            lambda l: l.account_id == self.account_eur_suspense
-        )
+        eur_legs, _transit = self._eur_legs()
         self.assertEqual(sorted(eur_legs.mapped("amount_currency")), [-100.0, -50.0])
 
     def test_bank_method_in_tender_currency_lands_on_the_real_eur_account(self):
         session = self._new_session().with_company(self.company)
         order = self._create_paid_order(
-            session, method=self.eur_bank_method, amount=116.0, tax_amount=0.0, name="OL/EUR/BANK"
+            session, method=self.eur_bank_method, amount=self.eur_100_local, tax_amount=0.0,
+            foreign_rate=self.PAYMENT_FOREIGN_RATE, name="OL/EUR/BANK",
         )
         order.payment_ids.write({"tender_amount": 100.0})
         order._set_payment_tender_values()
@@ -329,9 +563,9 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
             lambda l: l.account_id == self.account_transit_bank
         )
         self.assertEqual(eur_leg.currency_id, self.eur)
-        self.assertAlmostEqual(eur_leg.debit, 116.0, places=2)
+        self.assertAlmostEqual(eur_leg.debit, self.eur_100_local, places=2)
         self.assertAlmostEqual(eur_leg.amount_currency, 100.0, places=2)
-        self.assertAlmostEqual(transit_leg.credit, 116.0, places=2)
+        self.assertAlmostEqual(transit_leg.credit, self.eur_100_local, places=2)
 
     def test_methods_without_tender_currency_keep_their_cross_move(self):
         """La moneda de cobro solo se pasa a los cruces de sus métodos: un
@@ -344,3 +578,95 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
             session._get_cross_currency_amount_kwargs(self.eur_method, self.env["pos.payment"]),
             {"currency_amount": 0.0},
         )
+
+    def test_cross_without_the_euros_converts_the_amount_at_the_rate_of_the_day(self):
+        """Un llamador que no pasa ``currency_amount`` (un módulo con la firma
+        anterior de ``_create_cross_move_for``) no pone la moneda de la caja
+        como euros en el diario en EUR: la convierte a la tasa del día."""
+        session = self._new_session().with_company(self.company)
+
+        move = session._create_cross_move_for(
+            self.eur_method,
+            amount=self.eur_100_local,
+            foreign_amount=self.eur_100_local * self.PAYMENT_FOREIGN_RATE,
+            foreign_rate=self.PAYMENT_FOREIGN_RATE,
+            partner=self.env["res.partner"],
+            date=fields.Datetime.now(),
+            ref="sin currency_amount",
+            use_suspense=True,
+        )
+
+        eur_leg, _transit = self._eur_legs(move)
+        self.assertAlmostEqual(eur_leg.amount_currency, -100.0, places=2)
+
+    # ------------------------------------------------------------------
+    # Cruce combinado: entradas y salidas en dos patas (hallazgo 6)
+    # ------------------------------------------------------------------
+    def test_combine_sale_and_refund_at_another_rate_cross_in_two_legs(self):
+        """Venta de 20 € a 50 (1.000) y reembolso de 25 € a 30 (−750): el neto
+        en la moneda de la caja (+250) y en euros (−5) tienen signos opuestos.
+        Un solo par de líneas con los netos violaba
+        ``account_move_line_check_amount_currency_balance_sign`` y tumbaba el
+        cierre. Ahora es UN asiento con una pata de entradas y otra de
+        salidas, cada línea con signos coherentes, y la caja real en EUR
+        recibe el neto de los euros."""
+        session = self._new_session().with_company(self.company)
+        self._eur_order(session, amount=1000.0, tender_amount=20.0, name="OL/EUR/SALE")
+        self._eur_order(session, amount=-750.0, tender_amount=25.0, name="OL/EUR/REFUND")
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1, "un asiento por método y sesión")
+        self.assertEqual(len(move.line_ids), 4, "dos líneas por pata")
+        self.assertCoherentSigns(move.line_ids)
+        eur_legs, transit_legs = self._eur_legs(move)
+        self.assertEqual(sorted(eur_legs.mapped("amount_currency")), [-20.0, 25.0])
+        self.assertAlmostEqual(sum(eur_legs.mapped("balance")), -250.0, places=2)
+        self.assertAlmostEqual(sum(eur_legs.mapped("amount_currency")), 5.0, places=2)
+        self.assertAlmostEqual(sum(transit_legs.mapped("balance")), 250.0, places=2)
+
+    def test_combine_zero_local_net_still_crosses_the_euros(self):
+        """Neto 0 en la moneda de la caja con euros de diferencia: antes no se
+        creaba el cruce y esos euros nunca llegaban al diario real."""
+        session = self._new_session().with_company(self.company)
+        self._eur_order(session, amount=1000.0, tender_amount=20.0, name="OL/EUR/SALE")
+        self._eur_order(session, amount=-1000.0, tender_amount=25.0, name="OL/EUR/REFUND")
+
+        session._validate_cross_move()
+
+        move = self._cross_moves()
+        self.assertEqual(len(move), 1)
+        self.assertCoherentSigns(move.line_ids)
+        eur_legs, _transit = self._eur_legs(move)
+        self.assertAlmostEqual(sum(eur_legs.mapped("balance")), 0.0, places=2)
+        self.assertAlmostEqual(sum(eur_legs.mapped("amount_currency")), 5.0, places=2)
+
+    def test_combine_all_nets_zero_creates_nothing(self):
+        """Solo cuando los netos en la caja, la alterna y los euros dan todos
+        cero no se crea el cruce."""
+        session = self._new_session().with_company(self.company)
+        self._eur_order(session, amount=1000.0, tender_amount=20.0, name="OL/EUR/SALE")
+        self._eur_order(session, amount=-1000.0, tender_amount=20.0, name="OL/EUR/REFUND")
+
+        session._validate_cross_move()
+
+        self.assertFalse(self._cross_moves())
+
+
+@tagged("post_install", "-at_install", "l10n_ve_pos", "tender_currency")
+class TestPosTenderCurrencyBsCompany(TestPosTenderCurrency):
+    """El escenario real: la compañía en Bs (VEF) con USD de alterna y EUR de
+    tercera moneda, con las tasas de la base de prueba de la tarea
+    (860,4321 Bs/$ y 1.003,8765 Bs/€). Corre todas las pruebas de arriba."""
+
+    # El cargador de pruebas de Odoo 19 solo toma los métodos definidos en la
+    # propia clase, salvo con esta marca.
+    allow_inherited_tests_method = True
+
+    company_currency_name = "VEF"
+    foreign_currency_name = "USD"
+    EUR_RATE = 1003.8765
+    # `rate` de USD en la compañía en Bs: dólares por bolívar.
+    FOREIGN_RATE_OF_DAY = 1 / 860.4321
+    PAYMENT_FOREIGN_RATE = 1 / 860.4321
