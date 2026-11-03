@@ -1,0 +1,82 @@
+## Why
+
+Tarea https://binaural.odoo.com/odoo/action-341/86066 (proyecto Integra 3.0, hito "Mejoras Vertical
+Ventas 4to Trimestre"): "El POS no convierte con la tasa del euro el pago en Efectivo EUR: toma el
+monto como dólares". Al cobrar con un método "Efectivo EUR" el PdV toma la cifra tecleada como
+dólares, la línea sale con "$", la venta queda con saldo pendiente y los asientos cuadran en Bs y en
+USD pero con el monto equivocado.
+
+El motivo es que el PdV solo conoce dos monedas además de la suya:
+
+1. `pos.config._get_pos_conversion_rate` y su espejo `pos_order.js::_getPosConversionRate` solo
+   convierten moneda de la caja ↔ alterna; cualquier otro par devuelve 0.
+2. `is_foreign_currency` significa "la alterna de la compañía" (USD): un método "Efectivo EUR"
+   marcado así cobra con la tasa del USD y el formato del USD.
+3. El core exige que el diario del método esté en la moneda de la caja o sin moneda
+   (`pos.config._check_currencies`), así que no hay de dónde sacar el EUR.
+4. El cruce al diario real (`_line_vals_move_cross_incoming/_outgoing`) pone `amount_currency` en la
+   alterna solo si el diario real está en la alterna; con una Caja EUR pondría los Bs como euros.
+5. `res.currency` solo carga la moneda de la compañía, la de la caja y la alterna, y se cachea por
+   `write_date`: una tercera moneda no llegaría o llegaría vieja.
+
+Decisiones con el usuario (2026-11-02, opciones recomendadas del plan): la moneda de cobro vive en
+`l10n_ve_pos` (no en `binaural_pos_multicurrency`), se declara con un campo explícito en el método, el
+cajón en esa moneda es un modelo nuevo en `binaural_pos_close`, el reembolso devuelve la moneda de
+cobro a la tasa con la que se cobró y el vuelto sigue en la moneda de la caja. Primero la caja en la
+moneda de la compañía; la caja en otra moneda (`binaural_pos_multicurrency`) se aborda después.
+
+## What Changes
+
+- **Moneda de cobro del método** (`pos.payment.method.tender_currency_id`, "Tercera moneda de
+  cobro"): una moneda distinta de la de la compañía y de la alterna. Validaciones: no se combina con
+  `is_foreign_currency` ni con un método de crédito, y el `cross_journal` debe estar en esa moneda.
+  El diario del método sigue siendo el transitorio en la moneda de la caja.
+- **Motor de conversión**: `pos.config.tender_currency_rates` (Json calculado) trae la tasa del día de
+  cada moneda de cobro con `res.currency.rate.compute_rate`, con la misma orientación que
+  `foreign_rate` / `foreign_inverse_rate` (moneda → caja la GRANDE, caja → moneda la CHICA).
+  `_get_pos_conversion_rate` y `_getPosConversionRate` convierten con ellas cuando un lado es una
+  moneda de cobro: `(from → caja) × (caja → to)`, sin redondear la tasa. Los pares de siempre siguen
+  la regla de siempre. Sin tasa del día devuelve 0.
+- **Carga al PdV**: el loader de `res.currency` incluye las monedas de cobro y `res.currency` se
+  carga siempre entero (sin el filtro por `write_date`).
+- **Pago** (`pos.payment.tender_currency_id` / `tender_amount`, los mismos campos que ya tenía
+  `binaural_pos_multicurrency`): lo cobrado en la moneda de cobro. En el PdV, `PosPayment` gana
+  `getTenderCurrency`, `setTenderAmount` (si lo tecleado cubre lo adeudado, la línea vale
+  exactamente el restante más el excedente convertido, como `set_foreign_amount`) y los ganchos
+  `_getLocalDueBefore`, `_getTenderDue` y `_getPartialTenderLocalAmount`. La pantalla de pago propone
+  lo adeudado en esa moneda, el teclado trabaja en ella, la línea se ve "€ X / Bs Y", el panel de
+  estado muestra el restante en esa moneda y el recibo el monto cobrado junto al método. Sin tasa del
+  día la línea no se agrega y se avisa.
+- **Servidor**: `_process_payment_lines` completa la moneda del método (la orden serializa sus pagos
+  anidados sin `serializeForORM`) y, si falta, el monto a la tasa de la caja; `_align_foreign_signs`
+  alinea el signo de `tender_amount`; `get_refund_tender_rates` da la tasa de los cobros originales
+  para el reembolso.
+- **Cruce**: un método con moneda de cobro cruza como uno en divisa (`_is_cross_move_eligible`), y la
+  línea del diario real en esa moneda lleva `amount_currency` = lo cobrado en ella
+  (`currency_amount` en `_create_cross_move_for`). Solo se pasa para esos métodos, así un override
+  con la firma anterior sigue funcionando con los demás.
+- **Apertura**: el primer método de efectivo de la caja no puede ser uno en moneda de cobro (ahí van
+  el vuelto y el arqueo del core).
+- **`l10n_ve_pos_igtf`**: `_getLocalDueBefore` toma el mismo restante que su ajuste de
+  `set_foreign_amount` (base de factura pendiente + deuda IGTF).
+
+## Non-goals
+
+- Caja en otra moneda con métodos en una tercera moneda (`binaural_pos_multicurrency` los bloquea
+  por ahora).
+- Vuelto en la moneda de cobro: el vuelto sale del primer efectivo, en la moneda de la caja.
+- Código fiscal del pago en EUR en la máquina fiscal (`l10n_ve_pos_mf`): configuración del
+  implementador.
+- Columnas en EUR en los reportes de pagos y de detalle de ventas.
+
+## Impact
+
+- **Módulos:** `l10n_ve_pos` 19.0.1.28.2 → 19.0.1.29.0 (campo nuevo: `-u l10n_ve_pos`),
+  `l10n_ve_pos_igtf` 19.0.1.5.0 → 19.0.1.5.1 (solo JS).
+- **integra-addons (mismo despliegue):** `binaural_pos_multicurrency` hereda la moneda de cobro de
+  `l10n_ve_pos`, `binaural_pos_close` agrega el cajón en la moneda de cobro y
+  `binaural_pos_close_multicurrency` acepta el argumento nuevo del cruce.
+- **Configuración del método "Efectivo EUR":** diario transitorio sin moneda, "Tercera moneda de
+  cobro" = EUR, Diario de cruce = la caja real en EUR (con sus transitorias y sus cuentas de pago) y
+  diario de la cuenta de cruce. Quitar `is_foreign_currency` si estaba marcado. Tasa del día del EUR
+  cargada.
