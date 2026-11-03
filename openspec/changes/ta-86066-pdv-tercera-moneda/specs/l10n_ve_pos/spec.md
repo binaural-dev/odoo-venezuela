@@ -2,7 +2,7 @@
 
 ### Requirement: Método de pago en una tercera moneda de cobro
 
-Un método de pago DEBE (MUST) poder declararse en una tercera moneda de cobro (`tender_currency_id`), distinta de la moneda de la compañía y de la alterna. No DEBE (MUST) combinarse con `is_foreign_currency` ni con un método de crédito, y su diario de cruce DEBE (MUST) estar en esa moneda.
+Un método de pago DEBE (MUST) poder declararse en una tercera moneda de cobro (`tender_currency_id`), distinta de la moneda de la compañía y de la alterna. No DEBE (MUST) combinarse con `is_foreign_currency` ni con un método de crédito, su diario de cruce DEBE (MUST) estar en esa moneda y solo DEBE (MUST) usarse en cajas en la moneda de la compañía, porque sus tasas son contra esa moneda.
 
 #### Scenario: Moneda de cobro igual a la de la compañía o a la alterna
 
@@ -17,6 +17,11 @@ Un método de pago DEBE (MUST) poder declararse en una tercera moneda de cobro (
 #### Scenario: Diario de cruce en otra moneda
 
 - **WHEN** el diario de cruce de un método con moneda de cobro no está en esa moneda
+- **THEN** se rechaza con un error de validación
+
+#### Scenario: Caja en otra moneda
+
+- **WHEN** se agrega un método con moneda de cobro a una caja cuya moneda no es la de la compañía, o se le pone la moneda de cobro a un método de esa caja
 - **THEN** se rechaza con un error de validación
 
 ### Requirement: Conversión con la tasa del día de la moneda de cobro
@@ -71,6 +76,20 @@ Al pagar con un método con moneda de cobro, el PdV DEBE (MUST) proponer lo adeu
 - **WHEN** se agrega una línea del método en EUR
 - **THEN** la línea muestra "€ X / Bs Y" y el recibo muestra los euros junto al nombre del método
 
+### Requirement: Cobro desde el backend en la moneda de cobro
+
+Un pago con un método con moneda de cobro registrado desde el backend (`pos.make.payment`) DEBE (MUST) quedar con la moneda del método y su monto en esa moneda, igual que uno sincronizado desde el PdV: a la tasa del día de la caja, o en un reembolso a la tasa con la que se cobraron los pagos originales en esa moneda.
+
+#### Scenario: Cobro de una orden desde el backend
+
+- **WHEN** se cobra desde el backend una orden de 100.387,65 Bs con el método en EUR, a 1.003,8765 Bs/€
+- **THEN** el pago queda con moneda EUR y 100 €, y su cajón y su cruce los cuentan
+
+#### Scenario: Reembolso desde el backend
+
+- **WHEN** la venta se cobró con 80 € y se reembolsa entera desde el backend con el método en EUR
+- **THEN** el pago del reembolso queda en −80 €, aunque la tasa del día sea otra
+
 ### Requirement: Reembolso a la tasa con la que se cobró la moneda de cobro
 
 El reembolso de una orden pagada en una moneda de cobro DEBE (MUST) convertir esa moneda con la tasa con la que se cobraron los pagos originales en ella (`get_refund_tender_rates`), no con la del día.
@@ -94,6 +113,11 @@ Un método con moneda de cobro y sus dos diarios de cruce DEBE (MUST) cruzar com
 - **WHEN** se cruza un método en la alterna
 - **THEN** su cruce no cambia y no recibe el argumento nuevo
 
+#### Scenario: Llamador sin el monto en la moneda de cobro
+
+- **WHEN** un módulo crea el cruce de un método con moneda de cobro sin pasar `currency_amount`
+- **THEN** la línea del diario real lleva la conversión del monto a la tasa del día de la caja, no el monto en la moneda de la caja
+
 ### Requirement: El efectivo de la caja es el de su moneda
 
 La apertura de una sesión DEBE (MUST) rechazarse si el primer método de efectivo de la caja tiene moneda de cobro: en ese método el core registra el vuelto y el arqueo.
@@ -102,3 +126,34 @@ La apertura de una sesión DEBE (MUST) rechazarse si el primer método de efecti
 
 - **WHEN** el método en EUR es el primer método de efectivo de la caja
 - **THEN** no se puede abrir la sesión y el mensaje pide moverlo después del efectivo de la caja
+
+## MODIFIED Requirements
+
+### Requirement: Granularidad del cross move según split_transactions
+
+La granularidad de los cross moves DEBE (MUST) seguir el flag nativo `split_transactions` del método: verdadero, un asiento por cada `pos.payment` (con su orden y pago en la referencia); falso, un único asiento por método y sesión con una pata de entradas y otra de salidas, cada una con el neto de sus pagos, y ninguno si los netos en la caja, la alterna y la moneda de cobro son todos cero. Si el partner de un pago es de otra compañía, se omite del encabezado.
+
+#### Scenario: Método identificando cliente
+
+- **WHEN** el método tiene `split_transactions` activo y la sesión registró tres pagos con él
+- **THEN** se crean tres asientos borrador, cada uno con la referencia de su pago
+
+#### Scenario: Neto cero combinado
+
+- **WHEN** el método no divide transacciones y las ventas y devoluciones del método se anulan entre sí en la caja, en la alterna y en la moneda de cobro
+- **THEN** no se crea ningún asiento para ese método
+
+#### Scenario: Venta y devolución en divisa a tasas distintas
+
+- **WHEN** el método no divide transacciones y la sesión tiene una venta de 40 a 50 por unidad y una devolución de 60 a 10 (neto −20 en la caja y +1.400 en la alterna)
+- **THEN** se crea un asiento con dos pares de líneas, la venta y la devolución, cada línea con saldo y `amount_currency` del mismo signo, y el diario real recibe −20 y +1.400
+
+#### Scenario: Venta y reembolso en euros a tasas distintas
+
+- **WHEN** el método en EUR no divide transacciones y la sesión tiene una venta de 20 € por 1.000 Bs y un reembolso de 25 € por 750 Bs
+- **THEN** se crea un asiento con dos pares de líneas y la caja real en EUR recibe −250 Bs con +5 € en `amount_currency`, sin que el cierre choque con `account_move_line_check_amount_currency_balance_sign`
+
+#### Scenario: Neto cero en la caja con divisas de diferencia
+
+- **WHEN** las ventas y reembolsos del método suman cero en la caja pero no en la alterna o en euros
+- **THEN** se crea el asiento y la diferencia en esa moneda pasa al diario real

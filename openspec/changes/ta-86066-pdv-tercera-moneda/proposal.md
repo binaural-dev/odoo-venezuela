@@ -29,10 +29,13 @@ moneda de la compañía; la caja en otra moneda (`binaural_pos_multicurrency`) s
 
 - **Moneda de cobro del método** (`pos.payment.method.tender_currency_id`, "Tercera moneda de
   cobro"): una moneda distinta de la de la compañía y de la alterna. Validaciones: no se combina con
-  `is_foreign_currency` ni con un método de crédito, y el `cross_journal` debe estar en esa moneda.
-  El diario del método sigue siendo el transitorio en la moneda de la caja.
+  `is_foreign_currency` ni con un método de crédito, el `cross_journal` debe estar en esa moneda y
+  solo se usa en cajas en la moneda de la compañía (restricción en `pos.config` y en el método): sus
+  tasas son contra la moneda de la compañía. El diario del método sigue siendo el transitorio en la
+  moneda de la caja.
 - **Motor de conversión**: `pos.config.tender_currency_rates` (Json calculado) trae la tasa del día de
-  cada moneda de cobro con `res.currency.rate.compute_rate`, con la misma orientación que
+  cada moneda de cobro con `res.currency.rate.compute_rate` de la compañía de la caja
+  (`with_company`), con la misma orientación que
   `foreign_rate` / `foreign_inverse_rate` (moneda → caja la GRANDE, caja → moneda la CHICA).
   `_get_pos_conversion_rate` y `_getPosConversionRate` convierten con ellas cuando un lado es una
   moneda de cobro: `(from → caja) × (caja → to)`, sin redondear la tasa. Los pares de siempre siguen
@@ -46,15 +49,26 @@ moneda de la compañía; la caja en otra moneda (`binaural_pos_multicurrency`) s
   `_getLocalDueBefore`, `_getTenderDue` y `_getPartialTenderLocalAmount`. La pantalla de pago propone
   lo adeudado en esa moneda, el teclado trabaja en ella, la línea se ve "€ X / Bs Y", el panel de
   estado muestra el restante en esa moneda y el recibo el monto cobrado junto al método. Sin tasa del
-  día la línea no se agrega y se avisa.
-- **Servidor**: `_process_payment_lines` completa la moneda del método (la orden serializa sus pagos
-  anidados sin `serializeForORM`) y, si falta, el monto a la tasa de la caja; `_align_foreign_signs`
-  alinea el signo de `tender_amount`; `get_refund_tender_rates` da la tasa de los cobros originales
-  para el reembolso.
+  día la línea no se agrega y se avisa. La línea de pago (`payment_line.xml`) envuelve el bloque de
+  siempre en la rama de la moneda de cobro (`t-if getTenderCurrency()` / `t-else`) y conserva el
+  `t-if` de `is_foreign_currency`, que es el ancla de `binaural_pos_multicurrency`.
+- **Servidor**: `_process_saved_order` (lo usan la sincronización del PdV y el asistente de pago del
+  backend, `pos.make.payment`) completa la moneda del método (la orden serializa sus pagos anidados
+  sin `serializeForORM`) y, si falta, el monto: a la tasa de la caja, o en un reembolso a la de los
+  cobros originales; `_align_foreign_signs` alinea el signo de `tender_amount`;
+  `get_refund_tender_rates` da la tasa de los cobros originales para el reembolso. La vista de
+  `pos.payment` muestra la moneda y el monto cobrados.
 - **Cruce**: un método con moneda de cobro cruza como uno en divisa (`_is_cross_move_eligible`), y la
   línea del diario real en esa moneda lleva `amount_currency` = lo cobrado en ella
   (`currency_amount` en `_create_cross_move_for`). Solo se pasa para esos métodos, así un override
-  con la firma anterior sigue funcionando con los demás.
+  con la firma anterior sigue funcionando con los demás; si un llamador no lo pasa, se convierte el
+  monto a la tasa del día de la caja.
+- **Cruce combinado en dos patas** (revisión, 2026-11-03): con `split_transactions` apagado sigue
+  siendo un asiento por método y sesión, pero con una pata de entradas y otra de salidas, cada una
+  neteada por separado (`_get_combined_cross_legs`, `_create_combined_cross_move`). Con un solo neto,
+  una venta de hoy y un reembolso a una tasa vieja dejaban el neto en Bs y el de la alterna o los
+  euros con signos opuestos (el cierre chocaba con `account_move_line_check_amount_currency_balance_sign`),
+  y un neto 0 en Bs con divisas de diferencia no cruzaba nada. Aplica también al USD de siempre.
 - **Apertura**: el primer método de efectivo de la caja no puede ser uno en moneda de cobro (ahí van
   el vuelto y el arqueo del core).
 - **`l10n_ve_pos_igtf`**: `_getLocalDueBefore` toma el mismo restante que su ajuste de
@@ -62,8 +76,7 @@ moneda de la compañía; la caja en otra moneda (`binaural_pos_multicurrency`) s
 
 ## Non-goals
 
-- Caja en otra moneda con métodos en una tercera moneda (`binaural_pos_multicurrency` los bloquea
-  por ahora).
+- Caja en otra moneda con métodos en una tercera moneda (`l10n_ve_pos` los bloquea).
 - Vuelto en la moneda de cobro: el vuelto sale del primer efectivo, en la moneda de la caja.
 - Código fiscal del pago en EUR en la máquina fiscal (`l10n_ve_pos_mf`): configuración del
   implementador.
@@ -71,8 +84,20 @@ moneda de la compañía; la caja en otra moneda (`binaural_pos_multicurrency`) s
 
 ## Impact
 
-- **Módulos:** `l10n_ve_pos` 19.0.1.28.2 → 19.0.1.29.0 (campo nuevo: `-u l10n_ve_pos`),
-  `l10n_ve_pos_igtf` 19.0.1.5.0 → 19.0.1.5.1 (solo JS).
+- **Módulos:** `l10n_ve_pos` 19.0.1.28.2 → 19.0.1.29.1 (campo nuevo: `-u l10n_ve_pos`),
+  `l10n_ve_pos_igtf` 19.0.1.5.0 → 19.0.1.5.2 (solo JS y su bundle de pruebas Hoot).
+- **Despliegue:** odoo-venezuela primero e integra-addons después, en la misma ventana, con
+  `-u l10n_ve_pos,l10n_ve_pos_igtf,binaural_pos_multicurrency,binaural_pos_close,binaural_pos_close_multicurrency`.
+  Con odoo-venezuela solo, el PdV sigue funcionando con el `binaural_pos_multicurrency` anterior
+  (probado), pero no hay que configurar la moneda de cobro hasta actualizar integra-addons. Al revés no
+  se puede.
+- **Cruces combinados:** una sesión con ventas y reembolsos del mismo método crea ahora un asiento de
+  cuatro líneas (entradas y salidas) en vez de dos con el neto; el neto que pasa a cada cuenta es el
+  mismo.
+- **PR abierto odoo-venezuela#1529** (tasa del día de Venezuela al facturar): toca
+  `l10n_ve_pos/models/pos_order.py` (`_prepare_invoice_vals`), `pos_payment.py`
+  (`_create_payment_moves`) y `tests/__init__.py`. Hunks distintos a los de este cambio, salvo el final
+  de `tests/__init__.py`; el que se mezcle segundo resuelve ese conflicto y la versión del manifiesto.
 - **integra-addons (mismo despliegue):** `binaural_pos_multicurrency` hereda la moneda de cobro de
   `l10n_ve_pos`, `binaural_pos_close` agrega el cajón en la moneda de cobro y
   `binaural_pos_close_multicurrency` acepta el argumento nuevo del cruce.
