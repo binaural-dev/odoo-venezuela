@@ -11,13 +11,8 @@ import logging
 _logger = logging.getLogger(__name__)
 
 
-@tagged("post_install", "-at_install", "l10n_ve_foreign_exchange_diff")
-class TestForeignExchangeDiff(TransactionCase):
-    """Alternate-currency amounts injected into Odoo's native exchange
-    difference entry, and the standalone entry when only the alternate
-    currency differs. Covers amounts, signs, posted state, and the
-    reconciliation-break/reversal flow for both cases.
-    """
+class ForeignExchangeDiffMixin:
+    """setUp y helpers de tasas compartidos por los tests del diferencial alterno."""
 
     def setUp(self):
         super().setUp()
@@ -169,7 +164,10 @@ class TestForeignExchangeDiff(TransactionCase):
         cambia ese dia".
         """
         auto_dates = self.__dict__.setdefault("_auto_rate_dates", set())
-        for date in dates:
+        # Core dates its exchange entries with `journal.accounting_date`, which
+        # can land on the month end: that day needs a rate too (same as native).
+        month_ends = {fields.Date.end_of(d, "month") for d in dates}
+        for date in sorted(set(dates) | month_ends):
             exists = self.Rate.search_count([
                 ("name", "=", date),
                 ("currency_id", "=", self.currency_usd.id),
@@ -185,6 +183,15 @@ class TestForeignExchangeDiff(TransactionCase):
             if previous:
                 self._set_usd_rate(date, previous.inverse_company_rate)
                 auto_dates.add(date)
+
+
+@tagged("post_install", "-at_install", "l10n_ve_foreign_exchange_diff")
+class TestForeignExchangeDiff(ForeignExchangeDiffMixin, TransactionCase):
+    """Alternate-currency amounts injected into Odoo's native exchange
+    difference entry, and the standalone entry when only the alternate
+    currency differs. Covers amounts, signs, posted state, and the
+    reconciliation-break/reversal flow for both cases.
+    """
 
     def _create_invoice(self, amount=100.0, currency=None, booking_ves_per_usd=None):
         # Doesn't force `foreign_inverse_rate` manually: as long as the
@@ -522,6 +529,7 @@ class TestForeignExchangeDiff(TransactionCase):
             "journal_id": self.bank_journal_usd.id,
             "payment_method_line_id": self.bank_journal_usd.inbound_payment_method_line_ids[:1].id,
         })
+        self._ensure_usd_rate(settlement_2)
         payment_2.action_post()
         payment_line_2 = payment_2.move_id.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
         (receivable_line + payment_line_2).reconcile()
