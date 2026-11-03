@@ -2716,3 +2716,174 @@ class TestAccountMoveApiCalls(TransactionCase):
         igtf_line = next(t for t in local if t["codigoTotalImp"] == "IGTF")
         self.assertEqual(igtf_line["alicuotaImp"], "2.0")
 
+    # ------------------------------------------------------------------
+    # _check_tfhka_payment_required(): modo de pago contado/credito
+    # (port de binaural_unidigital._check_unidigital_payment_required)
+    # ------------------------------------------------------------------
+
+    def test_194_check_tfhka_payment_required_cash_blocks_unpaid(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            invoice._check_tfhka_payment_required()
+
+        # Las notas de credito quedan fuera de esta validacion: deben poder
+        # digitalizarse aunque la factura asociada no este pagada.
+        credit_note = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}],
+            move_type="out_refund",
+            reversed_entry_id=invoice,
+        )
+        credit_note._check_tfhka_payment_required()
+
+    def test_195_check_tfhka_payment_required_cash_allows_paid(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "paid"
+        invoice._check_tfhka_payment_required()
+
+    def test_196_check_tfhka_payment_required_cash_allows_in_payment(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "in_payment"
+        invoice._check_tfhka_payment_required()
+
+    def test_197_check_tfhka_payment_required_cash_allows_reversed(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice.payment_state = "reversed"
+        invoice._check_tfhka_payment_required()
+
+    def test_198_check_tfhka_payment_required_credit_mode_ignores_payment(self):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "credit"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice._check_tfhka_payment_required()
+
+    def test_199_check_tfhka_payment_required_noop_without_payment_first_mode(self):
+        self.company.digitalization_with_payment_tfhka = False
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        invoice._check_tfhka_payment_required()
+
+    @patch('odoo.addons.l10n_ve_invoice_digital.services.tfhka_client.TfhkaApiClient._request', side_effect=mock_api)
+    def test_200_generate_document_digital_cash_blocks_unpaid(self, mock_call):
+        self.company.digitalization_with_payment_tfhka = True
+        self.company.payment_mode_tfhka = "cash"
+        invoice = self._create_invoice(
+            products=[{"product_id": self.product.id, "price_unit": 1, "tax_ids": [self.tax_iva16.id]}]
+        )
+        with self.assertRaises(ValidationError):
+            invoice.generate_document_digital()
+        mock_call.assert_not_called()
+        self.assertFalse(invoice.is_digitalized)
+
+
+    def _fake_move_with_igtf(self, igtf, multi_currency=False):
+        groups = {"Subtotal": [
+            {"tax_group_name": "IVA 16%", "tax_group_base_amount": 1000.0, "tax_group_amount": 160.0},
+        ]}
+        foreign_groups = {"Subtotal": [
+            {"tax_group_name": "IVA 16%", "tax_group_base_amount": 25.0, "tax_group_amount": 4.0},
+        ]}
+        return type("FakeMove", (), {
+            "__iter__": lambda self: iter([self]),
+            "company_id": self.company,
+            "multi_currency_invoice": multi_currency,
+            "show_payment_box": False,
+            "foreign_rate": 40.0,
+            "invoice_line_ids": self.env["account.move.line"],
+            "tax_totals": {
+                "subtotal": 1000.0,
+                "amount_untaxed": 1000.0,
+                "amount_total": 1160.0,
+                "amount_total_igtf": 1160.0 + igtf["igtf_amount"],
+                "foreign_subtotal": 25.0,
+                "foreign_amount_untaxed": 25.0,
+                "foreign_amount_total": 29.0,
+                "foreign_amount_total_igtf": 29.0 + igtf["foreign_igtf_amount"],
+                "groups_by_subtotal": groups,
+                "groups_by_foreign_subtotal": foreign_groups,
+                "igtf": dict(igtf, apply_igtf=True, name="3.0 %"),
+            },
+        })()
+
+    def test_201_prepare_totals_igtf_ves_company_in_bolivares(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 400.0,
+            "igtf_amount": 12.0,
+            "foreign_igtf_base_amount": 10.0,
+            "foreign_igtf_amount": 0.3,
+        })
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertFalse(foreign_totals)
+        igtf_line = next(
+            (t for t in totals["impuestosSubtotal"] if t["codigoTotalImp"] == "IGTF"), None
+        )
+        self.assertTrue(igtf_line, "el IGTF debe viajar en impuestosSubtotal sin multimoneda")
+        self.assertEqual(igtf_line["baseImponibleImp"], "400.0")
+        self.assertEqual(igtf_line["valorTotalImp"], "12.0")
+
+    def test_202_prepare_totals_igtf_ves_company_multi_currency(self):
+        self._force_company_currency(self.company, self.currency_vef)
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 400.0,
+            "igtf_amount": 12.0,
+            "foreign_igtf_base_amount": 10.0,
+            "foreign_igtf_amount": 0.3,
+        }, multi_currency=True)
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertEqual(foreign_totals["totalIGTF"], "0.3")
+        self.assertEqual(foreign_totals["totalIGTF_VES"], "12.0")
+
+    def test_203_prepare_totals_igtf_usd_company(self):
+        fake = self._fake_move_with_igtf({
+            "igtf_base_amount": 10.0,
+            "igtf_amount": 0.3,
+            "foreign_igtf_base_amount": 400.0,
+            "foreign_igtf_amount": 12.0,
+        })
+        fake.tax_totals.update({
+            "subtotal": 25.0,
+            "amount_untaxed": 25.0,
+            "amount_total": 29.0,
+            "amount_total_igtf": 29.3,
+            "foreign_subtotal": 1000.0,
+            "foreign_amount_untaxed": 1000.0,
+            "foreign_amount_total": 1160.0,
+            "foreign_amount_total_igtf": 1172.0,
+            "groups_by_subtotal": fake.tax_totals["groups_by_foreign_subtotal"],
+            "groups_by_foreign_subtotal": fake.tax_totals["groups_by_subtotal"],
+        })
+
+        totals, foreign_totals = self.env["tfhka.document.service"]._prepare_totals(fake)
+
+        self.assertEqual(totals["totalIGTF"], "12.0")
+        self.assertEqual(totals["totalIGTF_VES"], "12.0")
+        self.assertEqual(foreign_totals["totalIGTF"], "0.3")
+        self.assertEqual(foreign_totals["totalIGTF_VES"], "12.0")
