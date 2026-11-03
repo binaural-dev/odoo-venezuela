@@ -690,10 +690,19 @@ class AccountMoveLine(models.Model):
         if not debit_line or not credit_line or not (res or {}).get('partial_values'):
             return res
 
-        # Reuse core's own exchange-move date, or `max(debit, credit)` if
-        # it built none -- never "today" (wrong rate for past partials).
+        # Reuse core's own exchange-move date. If it built none, apply the
+        # SAME rule core uses for its own entry (`journal.accounting_date`,
+        # which keeps the exchange journal's sequence/lock dates coherent)
+        # over `max(debit, credit)` -- never "today" (wrong rate for past
+        # partials) and never the raw date, or this standalone entry would
+        # be dated differently from the native one in the same reconciliation.
         # Ver openspec: design-notes.md § _prepare_reconciliation_single_partial
-        exchange_date = exchange_values.get('move_values', {}).get('date') or max(debit_line.date, credit_line.date)
+        exchange_date = exchange_values.get('move_values', {}).get('date')
+        if not exchange_date:
+            exchange_date = max(debit_line.date, credit_line.date)
+            exchange_journal = self._get_exchange_journal(debit_line.company_id)
+            if exchange_journal:
+                exchange_date = exchange_journal.with_context(move_date=exchange_date).accounting_date
 
         # Prefer the invoice side as rate source (core's own convention);
         # fall back to the earlier-dated side when neither is an invoice.
