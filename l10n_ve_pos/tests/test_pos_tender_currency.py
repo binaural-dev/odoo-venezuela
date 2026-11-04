@@ -567,7 +567,7 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         self.assertEqual(order.state, "paid")
         self.assertEqual(order.payment_ids.tender_currency_id, self.eur)
         self.assertEqual(order.payment_ids.tender_amount, 0.0)
-        self.assertIn("without exchange rate of the day for EUR", logs.output[0])
+        self.assertIn("converted to 0 EUR (no exchange rate of the day for EUR?)", logs.output[0])
 
     # ------------------------------------------------------------------
     # Carga al PdV

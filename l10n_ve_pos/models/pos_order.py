@@ -144,16 +144,18 @@ class PosOrder(models.Model):
             if not payment.tender_amount and payment.amount:
                 vals["tender_amount"] = self._get_payment_tender_amount(payment, currency)
                 if not vals["tender_amount"]:
-                    # Sin tasa del día (ni de los cobros originales, en un
-                    # reembolso). La sincronización no se bloquea: el PdV y el
-                    # cobro desde el backend (``pos.make.payment``) ya lo
-                    # impiden antes, así que solo llega aquí una orden de un
-                    # bundle anterior o encolada sin conexión.
+                    # Casi siempre, sin tasa del día (ni de los cobros
+                    # originales, en un reembolso); también un monto de
+                    # céntimos que redondea a 0. La sincronización no se
+                    # bloquea: el PdV y el cobro desde el backend
+                    # (``pos.make.payment``) ya impiden cobrar sin tasa, así
+                    # que solo llega aquí una orden de un bundle anterior o
+                    # encolada sin conexión.
                     _logger.warning(
-                        "Payment %s of order %s: %s %s without exchange rate of the day for "
-                        "%s, its tender amount is left at 0.",
+                        "Payment %s of order %s: %s %s converted to 0 %s (no exchange rate of "
+                        "the day for %s?), its tender amount is left at 0.",
                         payment.id, self.name, payment.amount, self.currency_id.name,
-                        currency.name,
+                        currency.name, currency.name,
                     )
             if vals:
                 payment.write(vals)
