@@ -207,6 +207,9 @@ class TestStockPickingApiCalls(TransactionCase):
             "location_dest_id": location_dest,
             "picking_type_id": picking_type.id,
             "is_dispatch_guide": True,
+            "transfer_reason_id": self.env.ref(
+                "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses"
+            ).id,
         }
         if partner is not False:
             vals["partner_id"] = (partner or self.customer).id
@@ -583,6 +586,29 @@ class TestStockPickingApiCalls(TransactionCase):
 
         guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
         self.assertEqual(guide["motivoTraslado"], self.transfer_reason_sale.name)
+
+    def test_check_transfer_reason_missing_raises(self):
+        """A guide without a reason for transfer must not reach TFHKA, which
+        rejects ``motivoTraslado: false`` with HTTP 400. A receipt is used
+        because no reason is auto-assigned to it."""
+        picking = self.create_picking(picking_type=self.picking_type_in)
+        picking.transfer_reason_id = False
+        with self.assertRaises(UserError):
+            self.DispatchGuideService._check_transfer_reason(picking)
+
+    def test_check_transfer_reason_other_causes_without_text_raises(self):
+        picking = self.create_picking()
+        picking.transfer_reason_id = self.transfer_reason_other_causes.id
+        picking.other_causes_transfer_reason = "  "
+        with self.assertRaises(UserError):
+            self.DispatchGuideService._check_transfer_reason(picking)
+
+    def test_check_transfer_reason_ok(self):
+        picking = self.create_picking()
+        picking.transfer_reason_id = self.transfer_reason_sale.id
+        self.DispatchGuideService._check_transfer_reason(picking)
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertIsInstance(guide["motivoTraslado"], str)
 
     @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
     def test_prepare_dispatch_guide_with_shipping_weight(self, mock_call):

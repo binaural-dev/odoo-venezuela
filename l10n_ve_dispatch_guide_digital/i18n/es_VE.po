@@ -165,3 +165,17 @@ msgstr ""
 #: model:ir.model,name:l10n_ve_dispatch_guide_digital.model_stock_picking
 msgid "Transfer"
 msgstr "Transferir "
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/services/tfhka_dispatch_guide_service.py:0
+#, python-format
+msgid "Enter the reason for transfer for other causes on dispatch guide %s."
+msgstr "Indique el motivo del traslado por otras causas en la guía de despacho %s."
+
+#. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/services/tfhka_dispatch_guide_service.py:0
+#, python-format
+msgid "Set the reason for transfer on dispatch guide %s."
+msgstr "Indique el motivo de traslado en la guía de despacho %s."
