@@ -19,7 +19,7 @@ En las dos la tercera moneda es EUR.
 from unittest.mock import patch
 
 from odoo import Command, fields
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests import tagged
 
 from .test_pos_session_accounting_common import TestPosSessionAccountingBase
@@ -215,6 +215,24 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
             wizard.check()
         return order.payment_ids.filtered(lambda p: p.payment_method_id == method)
 
+    def _paid_eur_sale(self, session, amount, tender_amount, name):
+        """Venta cobrada en € a la tasa ``amount / tender_amount`` (no la del
+        día), procesada como en el backend."""
+        sale = self._draft_order(session, amount, name=name)
+        sale.add_payment({
+            "pos_order_id": sale.id,
+            "amount": amount,
+            "payment_method_id": self.eur_method.id,
+            "tender_amount": tender_amount,
+        })
+        with patch.object(type(sale), "_create_order_picking", lambda self: None):
+            sale._process_saved_order(False)
+        return sale
+
+    def _drop_eur_rate_of_the_day(self):
+        self.env["res.currency.rate"].search([("currency_id", "=", self.eur.id)]).unlink()
+        self.usd_config.invalidate_recordset(["tender_currency_rates"])
+
     def _cross_moves(self):
         return self.env["account.move"].search(
             [("journal_id", "=", self.cross_account_journal.id), ("company_id", "=", self.company.id)]
@@ -303,12 +321,26 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
 
     def test_cross_journal_must_be_in_the_tender_currency(self):
         self.assertNotEqual(self.bank_journal.currency_id, self.eur)
-        with self.assertRaises(ValidationError):
-            self.split_bank_method.write(
+        with self.assertRaisesRegex(ValidationError, "must be in"):
+            self.eur_method.cross_journal = self.bank_journal
+
+    def test_tender_currency_requires_both_cross_journals(self):
+        """Sin sus dos diarios de cruce, ``_is_cross_move_eligible`` omitiría
+        en silencio el cruce y los euros nunca llegarían a la caja real."""
+        for missing in ("cross_journal", "cross_account_journal"):
+            with (
+                self.subTest(missing=missing),
+                self.assertRaisesRegex(ValidationError, "Cross Account Journal"),
+                self.env.cr.savepoint(),
+            ):
+                self.eur_method.write({missing: False})
+        with self.assertRaisesRegex(ValidationError, "Cross Account Journal"):
+            self.env["pos.payment.method"].create(
                 {
-                    "is_foreign_currency": False,
+                    "name": "T EUR sin cruce",
+                    "company_id": self.company.id,
+                    "journal_id": self.eur_method.journal_id.id,
                     "tender_currency_id": self.eur.id,
-                    "cross_journal": self.bank_journal.id,
                 }
             )
 
@@ -461,16 +493,7 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         que se cobraron (``get_refund_tender_rates``), no a la del día, igual
         que el PdV: la venta se cobró a 80 € por ``eur_100_local``."""
         session = self._new_session()
-        sale = self._draft_order(session, self.eur_100_local, name="OL/EUR/SALE")
-        sale.payment_ids.unlink()
-        sale.add_payment({
-            "pos_order_id": sale.id,
-            "amount": self.eur_100_local,
-            "payment_method_id": self.eur_method.id,
-            "tender_amount": 80.0,
-        })
-        with patch.object(type(sale), "_create_order_picking", lambda self: None):
-            sale._process_saved_order(False)
+        sale = self._paid_eur_sale(session, self.eur_100_local, 80.0, "OL/EUR/SALE")
         self.assertEqual(sale.payment_ids.tender_amount, 80.0)
 
         refund = sale._refund()
@@ -479,6 +502,72 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         self.assertEqual(payment.amount, -self.eur_100_local)
         self.assertEqual(payment.tender_currency_id, self.eur)
         self.assertEqual(payment.tender_amount, -80.0)
+
+    def test_backend_refund_of_two_sales_takes_the_rate_of_both(self):
+        """Un reembolso con líneas de dos ventas cobradas en € a tasas
+        distintas (80 € por ``eur_100_local`` y 50 € por ``eur_50_local``)
+        devuelve los 130 € a la tasa de las dos, como el PdV con
+        ``originOrderIds``, no solo a la de la primera
+        (``refunded_order_id``), que daría 120 €. El PdV no puede armarlo
+        (``sync_from_ui`` del core rechaza un reembolso de varias órdenes):
+        se arma aquí moviendo las líneas con el ORM."""
+        session = self._new_session()
+        sale_1 = self._paid_eur_sale(session, self.eur_100_local, 80.0, "OL/EUR/S1")
+        sale_2 = self._paid_eur_sale(session, self.eur_50_local, 50.0, "OL/EUR/S2")
+        refund = sale_1._refund()
+        other_refund = sale_2._refund()
+        other_refund.lines.order_id = refund
+        refund.amount_total += other_refund.amount_total
+        self.assertEqual(refund.lines.refunded_orderline_id.order_id, sale_1 | sale_2)
+        self.assertEqual(refund.refunded_order_id, sale_1)
+
+        payment = self._pay_from_backend(refund, self.eur_method, amount=refund.amount_total)
+
+        self.assertAlmostEqual(payment.amount, -(self.eur_100_local + self.eur_50_local), places=2)
+        self.assertEqual(payment.tender_amount, -130.0)
+
+    def test_backend_payment_without_rate_of_the_day_is_refused(self):
+        """Hallazgo A1: sin tasa del día del EUR, el PdV no agrega la línea;
+        el cobro desde el backend tampoco se acepta (si no, quedaría un pago
+        con 0 € en el cajón y en el cruce)."""
+        session = self._new_session()
+        order = self._draft_order(session, self.eur_100_local)
+        self._drop_eur_rate_of_the_day()
+
+        with self.assertRaisesRegex(UserError, "no exchange rate of the day for EUR"):
+            self._pay_from_backend(order, self.eur_method)
+
+        self.assertFalse(order.payment_ids)
+        self.assertEqual(order.state, "draft")
+        # Los demás métodos se cobran igual.
+        self._pay_from_backend(order, self.base_cash_method)
+        self.assertEqual(order.state, "paid")
+
+    def test_sync_without_rate_of_the_day_is_not_blocked(self):
+        """Una orden de un bundle anterior (sin ``tender_amount``) que llega
+        sin tasa del día del EUR se sincroniza igual, con 0 € y un aviso en el
+        log: el bloqueo es del PdV y del cobro desde el backend."""
+        session = self._new_session()
+        self._drop_eur_rate_of_the_day()
+        local = self.eur_100_local + self.eur_50_local
+        payload = self._sync_payload(session, "86066-norate", [
+            {"amount": local, "foreign_amount": local * self.PAYMENT_FOREIGN_RATE},
+        ])
+        payload.update({"state": "paid", "amount_paid": local})
+
+        Order = type(self.env["pos.order"])
+        with (
+            self.assertLogs("odoo.addons.l10n_ve_pos.models.pos_order", "WARNING") as logs,
+            # El albarán no es parte de la prueba (ver ``_pay_from_backend``).
+            patch.object(Order, "_create_order_picking", lambda self: None),
+        ):
+            self.env["pos.order"].sync_from_ui([payload])
+
+        order = self.env["pos.order"].search([("uuid", "=", "86066-norate")])
+        self.assertEqual(order.state, "paid")
+        self.assertEqual(order.payment_ids.tender_currency_id, self.eur)
+        self.assertEqual(order.payment_ids.tender_amount, 0.0)
+        self.assertIn("without exchange rate of the day for EUR", logs.output[0])
 
     # ------------------------------------------------------------------
     # Carga al PdV
@@ -625,6 +714,30 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         self.assertAlmostEqual(sum(eur_legs.mapped("balance")), -250.0, places=2)
         self.assertAlmostEqual(sum(eur_legs.mapped("amount_currency")), 5.0, places=2)
         self.assertAlmostEqual(sum(transit_legs.mapped("balance")), 250.0, places=2)
+
+    def test_combine_each_leg_carries_the_rate_of_its_payments(self):
+        """Hallazgo S7: las líneas de la pata de salidas se arman con la tasa
+        de sus pagos (la del reembolso, la de su venta original), no con la de
+        la venta del día. Es informativa: la línea guardada toma la del asiento
+        (``account.move.line.foreign_rate`` es un related de
+        ``l10n_ve_accountant``) y sus montos alternos son los de sus pagos."""
+        refund_rate = self.PAYMENT_FOREIGN_RATE * 2
+        session = self._new_session().with_company(self.company)
+        self._eur_order(session, amount=1000.0, tender_amount=20.0, name="OL/EUR/SALE")
+        self._eur_order(
+            session, amount=-750.0, tender_amount=25.0, foreign_rate=refund_rate,
+            name="OL/EUR/REFUND",
+        )
+        Session = type(session)
+
+        with patch.object(
+            Session, "_get_cross_move_line_vals", autospec=True,
+            side_effect=Session._get_cross_move_line_vals,
+        ) as line_vals:
+            session._validate_cross_move()
+
+        rate_by_amount = {call.args[2]: call.args[4] for call in line_vals.call_args_list}
+        self.assertEqual(rate_by_amount, {1000.0: self.PAYMENT_FOREIGN_RATE, -750.0: refund_rate})
 
     def test_combine_zero_local_net_still_crosses_the_euros(self):
         """Neto 0 en la moneda de la caja con euros de diferencia: antes no se

@@ -1,8 +1,17 @@
 import { test, expect, describe } from "@odoo/hoot";
+import { allowTranslations, patchWithCleanup } from "@web/../tests/web_test_helpers";
+import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
+import { localization } from "@web/core/l10n/localization";
 import { PosOrder } from "@point_of_sale/app/models/pos_order";
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
+import { PaymentScreen } from "@point_of_sale/app/screens/payment_screen/payment_screen";
+import { PaymentScreenStatus } from "@point_of_sale/app/screens/payment_screen/payment_status/payment_status";
+import { OrderReceipt } from "@point_of_sale/app/screens/receipt_screen/receipt/order_receipt";
 import "@l10n_ve_pos/overrides/models/pos_order";
 import "@l10n_ve_pos/overrides/models/payment_model";
+import "@l10n_ve_pos/overrides/screens/payment_screen/payment_screen";
+import "@l10n_ve_pos/overrides/screens/payment_status/payment_status";
+import "@l10n_ve_pos/overrides/screens/order_receipt/order_receipt";
 import { makeCurrency } from "./utils";
 
 // Método de pago en una tercera moneda (moneda de cobro, p. ej. EUR) en una
@@ -21,10 +30,10 @@ function makeOrderThis(props = {}) {
     return order;
 }
 
-const withId = (id) => ({ id, ...makeCurrency(0.01) });
-const VEF = withId(2);
-const USD = withId(1);
-const EUR = withId(126);
+const withId = (id, name) => ({ id, name, ...makeCurrency(0.01) });
+const VEF = withId(2, "VEF");
+const USD = withId(1, "USD");
+const EUR = withId(126, "EUR");
 
 function makeEngineOrder({ eurRate = BS_PER_EUR } = {}) {
     return makeOrderThis({
@@ -185,5 +194,162 @@ describe("l10n_ve_pos moneda de cobro de la línea", () => {
         };
         PosPayment.prototype._recomputeTenderFromLocal.call(line);
         expect(line.tender_amount).toBe(8.47);
+    });
+});
+
+describe("l10n_ve_pos moneda de cobro de un pago guardado", () => {
+    // Un pago sincronizado trae su `tender_currency_id`: al reimprimir un
+    // recibo viejo salen los euros cobrados aunque el método haya cambiado.
+    test("prefiere la moneda guardada en el pago a la actual del método", () => {
+        const order = makeEngineOrder();
+        const GBP = withId(3, "GBP");
+        const line = {
+            pos_order_id: order,
+            tender_currency_id: EUR,
+            payment_method_id: { tender_currency_id: GBP },
+        };
+        expect(PosPayment.prototype.getTenderCurrency.call(line)).toBe(EUR);
+    });
+
+    test("un método al que se le quitó la moneda no borra la del pago", () => {
+        const order = makeEngineOrder();
+        const line = {
+            pos_order_id: order,
+            tender_currency_id: EUR,
+            payment_method_id: { tender_currency_id: false },
+        };
+        expect(PosPayment.prototype.getTenderCurrency.call(line)).toBe(EUR);
+    });
+
+    test("una línea nueva, sin moneda guardada, toma la del método", () => {
+        const order = makeEngineOrder();
+        const line = { pos_order_id: order, payment_method_id: { tender_currency_id: EUR } };
+        expect(PosPayment.prototype.getTenderCurrency.call(line)).toBe(EUR);
+    });
+});
+
+// ---- Pantalla de pago: sin tasa del día no se cobra en la moneda de cobro ----
+
+function makeAddLineScreen({ eurRate }) {
+    const calls = { deleted: [], dialogs: [], buffer: [] };
+    const method = { id: 80, name: "Efectivo EUR", type: "cash", tender_currency_id: EUR };
+    const line = {
+        uuid: "eur-line",
+        amount: 8500,
+        payment_method_id: method,
+        getTenderCurrency: () => EUR,
+        getTenderAmount: () => 8.47,
+    };
+    const order = makeOrderThis({
+        currency: VEF,
+        config: makeEngineOrder({ eurRate }).config,
+        remainingDue: 8500,
+        payment_ids: [],
+        addPaymentline(paymentMethod) {
+            this.payment_ids.push(line);
+            return { status: true, data: line };
+        },
+        // l10n_ve_pos_igtf, si su parche está cargado en la suite.
+        update_igtf() {},
+    });
+    const screen = {
+        pos: { paymentTerminalInProgress: false },
+        currentOrder: order,
+        paymentLines: [],
+        selectedPaymentLine: line,
+        makeAnimation() {},
+        render() {},
+        numberBuffer: { set: (value) => calls.buffer.push(value) },
+        dialog: { add: (component, props) => calls.dialogs.push({ component, props }) },
+        env: { utils: { formatCurrencyById: (amount, id) => `${id}:${amount}` } },
+        deletePaymentLine: (uuid) => calls.deleted.push(uuid),
+    };
+    return { screen, method, calls };
+}
+
+describe("l10n_ve_pos addNewPaymentLine con moneda de cobro", () => {
+    test("sin tasa del día del EUR quita la línea y avisa", async () => {
+        allowTranslations();
+        const { screen, method, calls } = makeAddLineScreen({ eurRate: 0 });
+        const result = await PaymentScreen.prototype.addNewPaymentLine.call(screen, method);
+        expect(result).toBe(false);
+        expect(calls.deleted).toEqual(["eur-line"]);
+        expect(calls.dialogs.length).toBe(1);
+        expect(calls.dialogs[0].component).toBe(AlertDialog);
+        const body = String(calls.dialogs[0].props.body);
+        expect(body).toInclude("EUR");
+        expect(body).toInclude("Efectivo EUR");
+    });
+
+    test("con tasa del día la línea queda y el teclado muestra los euros", async () => {
+        const { screen, method, calls } = makeAddLineScreen({ eurRate: BS_PER_EUR });
+        const result = await PaymentScreen.prototype.addNewPaymentLine.call(screen, method);
+        expect(result).toBe(true);
+        expect(calls.deleted).toEqual([]);
+        expect(calls.dialogs).toEqual([]);
+        expect(calls.buffer.at(-1)).toBe("126:8.47");
+    });
+});
+
+// ---- Panel de estado y recibo ----
+
+function tenderRemaining(order) {
+    const getter = Object.getOwnPropertyDescriptor(
+        PaymentScreenStatus.prototype,
+        "tenderRemaining"
+    ).get;
+    return getter.call({
+        props: { order },
+        env: { utils: { formatCurrencyById: (amount, id) => `${id}:${amount}` } },
+    });
+}
+
+function makeStatusOrder({ totalDue, remainingDue, currency = EUR }) {
+    const line = {
+        getTenderCurrency: () => currency,
+        _getTenderRates: () => ({ toTender: 1 / BS_PER_EUR, toLocal: BS_PER_EUR }),
+    };
+    return {
+        totalDue,
+        remainingDue,
+        getSelectedPaymentline: () => line,
+        _convertAtRate: (v, r, c) => (!v || !r ? 0 : c.round(v * r)),
+    };
+}
+
+describe("l10n_ve_pos restante en la moneda de cobro", () => {
+    test("el restante de la caja convertido a euros", () => {
+        const tender = tenderRemaining(makeStatusOrder({ totalDue: 8500, remainingDue: 8500 }));
+        expect(tender).toEqual({ currencyName: "EUR", text: "126:8.47" });
+    });
+
+    test("en un reembolso, el restante en positivo", () => {
+        const tender = tenderRemaining(makeStatusOrder({ totalDue: -8500, remainingDue: -8500 }));
+        expect(tender.text).toBe("126:8.47");
+    });
+
+    test("pagado de más, el restante es 0", () => {
+        const tender = tenderRemaining(makeStatusOrder({ totalDue: 8500, remainingDue: -100 }));
+        expect(tender.text).toBe("126:0");
+    });
+
+    test("sin moneda de cobro en la línea seleccionada, nada", () => {
+        expect(tenderRemaining(makeStatusOrder({ totalDue: 1, remainingDue: 1, currency: null }))).toBe(null);
+    });
+});
+
+describe("l10n_ve_pos monto cobrado en el recibo", () => {
+    const format = (line) => OrderReceipt.prototype.formatTenderAmount.call({}, line);
+
+    test("un pago sin moneda de cobro no muestra nada", () => {
+        expect(format({ getTenderCurrency: () => null })).toBe("");
+        expect(format(undefined)).toBe("");
+    });
+
+    test("un pago en euros muestra lo cobrado en euros", () => {
+        // formatCurrency lee la localización (separadores de es_VE).
+        patchWithCleanup(localization, { decimalPoint: ",", thousandsSep: ".", grouping: [3, 0] });
+        const text = format({ getTenderCurrency: () => EUR, getTenderAmount: () => 1008.47 });
+        expect(text).toInclude("1.008,47");
     });
 });

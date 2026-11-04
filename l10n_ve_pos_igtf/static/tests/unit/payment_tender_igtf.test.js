@@ -70,3 +70,41 @@ describe("l10n_ve_pos_igtf: restante para la moneda de cobro", () => {
         expect(line._getLocalDueBefore()).toBe(30);
     });
 });
+
+// set_foreign_amount usa la misma condición (hasIgtfContext) que
+// _getLocalDueBefore: si lo tecleado en la alterna cubre el restante con IGTF,
+// el monto local es ese restante exacto más el excedente convertido.
+describe("l10n_ve_pos_igtf: set_foreign_amount en contexto IGTF", () => {
+    const BS_PER_USD = 36.5;
+
+    function makeForeignLine() {
+        const order = makeOrder({ base: { sign: 1, remainingBase: 100, unpaidIgtf: 3 } });
+        Object.assign(order, {
+            localToForeign: (amount) => round2(amount / BS_PER_USD),
+            foreignToLocal: (amount) => round2(amount * BS_PER_USD),
+            roundForeignMoney: round2,
+        });
+        return makeLine({
+            pos_order_id: order,
+            payment_method_id: { apply_igtf: true },
+            amount: 0,
+            foreign_amount: 0,
+        });
+    }
+
+    test("lo tecleado cubre el restante: el local exacto", () => {
+        const line = makeForeignLine();
+        // 103 Bs = 2,82 $.
+        line.set_foreign_amount(2.82);
+        expect(line.amount).toBe(103);
+        expect(line.foreign_amount).toBe(2.82);
+    });
+
+    test("pagado de más: el restante más el excedente convertido", () => {
+        const line = makeForeignLine();
+        line.set_foreign_amount(3);
+        // 0,18 $ de excedente = 6,57 Bs.
+        expect(line.amount).toBe(109.57);
+        expect(line.foreign_amount).toBe(3);
+    });
+});
