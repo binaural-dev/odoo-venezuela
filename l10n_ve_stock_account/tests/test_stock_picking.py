@@ -5,6 +5,8 @@ from odoo.exceptions import UserError
 from odoo.tests import tagged
 import logging
 
+from lxml import etree
+
 _logger = logging.getLogger(__name__)
 
 
@@ -415,3 +417,16 @@ class TestStockPickingInvoice(TransactionCase):
 
         self.assertFalse(picking.guide_number, "Un picking de devolución no debería generar número de guía.")
         _logger.info("test_08_return_picking_no_guide_number --- successfully.")
+
+    def test_09_other_causes_text_required_on_any_operation(self):
+        """The "Other causes" text is required whenever it is shown, not only
+        on deliveries: a pick or internal transfer validated without it sends
+        ``motivoTraslado: false`` to the digital dispatch guide provider."""
+        info = self.env["stock.picking"].get_view(view_type="form")
+        doc = etree.fromstring(info["arch"])
+        fields_ = doc.xpath(
+            "//field[@name='other_causes_transfer_reason' and not(@invisible='1')]"
+        )
+        self.assertTrue(fields_)
+        for field in fields_:
+            self.assertEqual(field.get("required"), "show_other_causes_transfer_reason")

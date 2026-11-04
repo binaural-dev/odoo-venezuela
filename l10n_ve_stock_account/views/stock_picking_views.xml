@@ -78,7 +78,7 @@
                     name="other_causes_transfer_reason"
                     invisible="not show_other_causes_transfer_reason"
                     readonly="state == 'done' or is_consignment_readonly"
-                    required="operation_code == 'outgoing' and show_other_causes_transfer_reason" />
+                    required="show_other_causes_transfer_reason" />
                 <field name="allowed_reason_ids" invisible="1" />
                 <field name="is_donation" invisible="1" />
                 <field name="dispatch_guide_controls" invisible="1" />
