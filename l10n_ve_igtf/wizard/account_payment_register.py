@@ -53,10 +53,6 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         compute='_compute_available_journal_ids',
     )
     last_computed_amount = fields.Float()
-    # Amount typed by the user, paid to the invoices, and the amount of the payment
-    # once the IGTF is added on top of it.
-    igtf_base_amount = fields.Float()
-    last_igtf_gross_amount = fields.Float()
 
     def get_moves(self):
         return self.env["l10n_ve_igtf.utils"].get_moves_from_context()
@@ -76,59 +72,34 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                 
             elif wizard.can_edit_wizard:
                 if wizard.amount != wizard.last_computed_amount:
-                    wizard._apply_igtf_to_typed_amount()
+                    wizard._compute_igtf_of_amount()
                 else:
                     batch_result = wizard._get_batches()[0]
-                    base_amount = wizard._get_total_amount_in_wizard_currency_to_full_reconcile(
+                    wizard.amount = wizard._get_total_amount_in_wizard_currency_to_full_reconcile(
                         batch_result, early_payment_discount=False
-                    )[0]or 0.0
-
-                    total_igtf_amount = 0.0
-                    for invoice in wizard.get_moves():
-                        if wizard.is_igtf:
-                            total_igtf_amount += self.calculate_igtf_for_payment(
-                                invoice, base_amount, wizard.currency_id, wizard.payment_date,
-                            )
-
-                    wizard.amount = base_amount + total_igtf_amount
-                    wizard.igtf_amount = total_igtf_amount
-                    wizard.igtf_to_show = total_igtf_amount
-                    wizard.amount_without_difference = base_amount
+                    )[0] or 0.0
+                    wizard._compute_igtf_of_amount()
                     # Only the amount proposed here is remembered: an amount typed by the user
                     # must not match it on a later recompute (changing the date, journal or rate,
                     # or when creating the payment), or the IGTF would be taken from the whole
                     # residual of the invoice instead of from the amount paid.
                     wizard.last_computed_amount = wizard.amount
 
-    def _apply_igtf_to_typed_amount(self):
-        """The amount typed by the user is what is paid to the invoices: the IGTF is
-        added on top of it, as when the amount proposed for the whole residual is
-        kept, so the payment is the same whether it is made before or after the
-        payments in other currencies."""
+    def _compute_igtf_of_amount(self):
+        """The amount of the wizard is what is paid to the invoices and is never
+        changed here: the IGTF is computed from it and added on top of it as a
+        separate line of the payment when the payment is created."""
         self.ensure_one()
-        currency = self.currency_id
-        is_gross = self.last_igtf_gross_amount and not float_compare(
-            self.amount, self.last_igtf_gross_amount, precision_rounding=currency.rounding
-        )
-        # The amount already has the IGTF of a previous recompute (onchange loop, change
-        # of date or journal, or creation of the payment): it is taken again from the base.
-        base_amount = self.igtf_base_amount if is_gross else self.amount
-
         total_igtf_amount = 0.0
         if self.is_igtf:
             for invoice in self.get_moves():
                 total_igtf_amount += self.calculate_igtf_for_payment(
-                    invoice, base_amount, currency, self.payment_date,
+                    invoice, self.amount, self.currency_id, self.payment_date,
                 )
         total_igtf_amount = abs(total_igtf_amount)
-
         self.igtf_amount = total_igtf_amount
         self.igtf_to_show = total_igtf_amount
-        self.amount_without_difference = base_amount
-        if self.is_igtf or is_gross:
-            self.amount = currency.round(base_amount + total_igtf_amount)
-            self.igtf_base_amount = base_amount
-            self.last_igtf_gross_amount = self.amount
+        self.amount_without_difference = self.amount
 
     @api.depends('can_edit_wizard', 'amount', 'payment_date', 'is_igtf','amount_without_difference')
     def _compute_payment_difference(self):
@@ -143,8 +114,8 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             total_residual = wizard._get_total_amount_in_wizard_currency_to_full_reconcile(
                 batch_result, early_payment_discount=False
             )[0]
-            expected_amount = total_residual + wizard.igtf_to_show
-            raw_difference = expected_amount - wizard.amount
+            # The IGTF is not part of the amount of the wizard, it is added on top of it.
+            raw_difference = total_residual - wizard.amount
             if abs(raw_difference) < currency.rounding:
                 wizard.payment_difference = 0.0
             else:
@@ -176,7 +147,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             diff = payment.amount - payment.last_computed_amount
             if float_is_zero(diff, precision_rounding=payment.currency_id.rounding):
                 continue
-            payment._apply_igtf_to_typed_amount()
+            payment._compute_igtf_of_amount()
 
     def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, payment_date):
         return self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
@@ -257,17 +228,28 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
                     create.payment_date,
                 )
                 total_igtf_amount += igtf_for_invoice
-            base_abs = abs(source_amount)
-            final_amount_with_igtf = (base_abs + total_igtf_amount) 
-            
-            wizard_values['source_amount'] = final_amount_with_igtf
-            wizard_values['source_amount_currency'] = final_amount_with_igtf
+            igtf_as_residual = self._igtf_as_residual(
+                wizard_values['payment_type'], wizard_values['partner_type'],
+            ) and total_igtf_amount > 0.0
+            if not igtf_as_residual:
+                base_abs = abs(source_amount)
+                final_amount_with_igtf = (base_abs + total_igtf_amount)
+
+                wizard_values['source_amount'] = final_amount_with_igtf
+                wizard_values['source_amount_currency'] = final_amount_with_igtf
+            wizard_values['igtf_as_residual'] = igtf_as_residual
             wizard_values['igtf_amount'] = total_igtf_amount
             wizard_values['payment_from_wizard'] = True
             wizard_values['igtf_percentage'] = create.igtf_percentage
             wizard_values['is_igtf_on_foreign_exchange'] = create.is_igtf_on_foreign_exchange
 
         return wizard_values
+
+    @api.model
+    def _igtf_as_residual(self, payment_type, partner_type):
+        """The IGTF of a customer payment is left as a residual of the customer instead of
+        being added to the amount received."""
+        return payment_type == "inbound" and partner_type == "customer"
 
     def _create_payment_vals_from_wizard(self, batch_result):
         """
@@ -276,7 +258,18 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
         """
         payment_vals = super()._create_payment_vals_from_wizard(batch_result)
         lines = batch_result['lines']
+        igtf_as_residual = False
+        if self.is_igtf and self.igtf_amount > 0.0:
+            if self._igtf_as_residual(payment_vals.get("payment_type"), payment_vals.get("partner_type")):
+                # The payment is the amount of the wizard: the IGTF is charged to the customer
+                # as an open receivable of the payment entry, to be paid apart.
+                igtf_as_residual = True
+            else:
+                # The IGTF is paid on top of the amount paid to the bills: the payment
+                # (liquidity line) is the amount of the wizard plus the IGTF line.
+                payment_vals["amount"] = self.currency_id.round(self.amount + self.igtf_amount)
         payment_vals.update({
+            "igtf_as_residual": igtf_as_residual,
             "igtf_amount": self.igtf_amount,
             "payment_from_wizard": True,
             "igtf_percentage": self.igtf_percentage,
@@ -309,6 +302,7 @@ class AccountPaymentRegisterIgtf(models.TransientModel):
             'currency_id': batch_values['source_currency_id'],
             'partner_id': batch_values['partner_id'],
             'igtf_amount': batch_values.get('igtf_amount', 0.0),
+            'igtf_as_residual': batch_values.get('igtf_as_residual', False),
             'payment_from_wizard': True,
             'igtf_percentage': batch_values.get('igtf_percentage', self.igtf_percentage),
             'is_igtf_on_foreign_exchange': batch_values.get('is_igtf_on_foreign_exchange', False),

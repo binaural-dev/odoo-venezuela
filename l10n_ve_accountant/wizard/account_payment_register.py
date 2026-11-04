@@ -45,10 +45,15 @@ class AccountPaymentRegister(models.TransientModel):
 
     def default_get(self, fields):
         res = super().default_get(fields)
-        active_id = self.env.context.get('active_id')
-        if active_id:
-            move = self.env['account.move'].browse(active_id)
-            res['foreign_total_billed_vef'] = move.foreign_amount_residual
+        context = self.env.context
+        moves = self.env['account.move']
+        if context.get('active_model') == 'account.move.line' and context.get('active_ids'):
+            # Register payment of journal items: the active_id is the id of a journal item.
+            moves = self.env['account.move.line'].browse(context['active_ids']).move_id
+        elif context.get('active_id'):
+            moves = self.env['account.move'].browse(context['active_id'])
+        if len(moves) == 1:
+            res['foreign_total_billed_vef'] = moves.foreign_amount_residual
         return res
 
     @api.depends("foreign_currency_id", "payment_date")

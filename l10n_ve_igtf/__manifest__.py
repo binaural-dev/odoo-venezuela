@@ -32,7 +32,7 @@ Cambios en UI / Modelos impactados
     "author": "Binauraldev",
     "website": "https://binauraldev.com/",
     "category": "Accounting/Accounting",
-    "version": "17.0.1.0.5",
+    "version": "17.0.1.0.6",
         "depends": [
         "base",
         "l10n_ve_accountant",

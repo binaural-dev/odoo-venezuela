@@ -189,8 +189,11 @@ class TestIGTFSalePaymentFields(IGTFTestCommonSaleBook):
         self.assertEqual(payment.invoices_origin_ids, invoice)
         self.assertEqual(payment.payment_type, 'inbound')
         self.assertEqual(payment.partner_type, 'customer')
+        self.assertAlmostEqual(payment.amount, 1000.0, 2)
 
-        self.assertEqual(len(payment.move_id.line_ids), 3)
+        # Liquidity, receivable paid to the invoice, IGTF to collect from the customer and IGTF.
+        self.assertEqual(len(payment.move_id.line_ids), 4)
+        self.assertAlmostEqual(payment.move_id.line_ids.filtered('is_igtf_residual').amount_currency, 30.0, 2)
         td = sum(payment.move_id.line_ids.mapped('debit'))
         tc = sum(payment.move_id.line_ids.mapped('credit'))
         self.assertAlmostEqual(td, tc, 2)

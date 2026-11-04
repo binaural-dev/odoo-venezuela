@@ -31,6 +31,13 @@ class AccountPaymentIgtf(models.Model):
 
     payment_from_wizard = fields.Boolean()
 
+    igtf_as_residual = fields.Boolean(
+        string="IGTF as Residual",
+        help="The IGTF is not part of the amount of the payment: it is charged to the customer "
+        "as an open receivable of the payment entry, to be paid apart.",
+        copy=False,
+    )
+
     invoices_origin_ids = fields.Many2many('account.move', string='Invoices Origin')
 
     @api.depends("partner_id")
@@ -54,28 +61,126 @@ class AccountPaymentIgtf(models.Model):
 
             if rec.payment_from_wizard:
                 move_ids = rec.invoices_origin_ids
+                igtf_as_residual = False
                 if rec.igtf_percentage and rec.igtf_amount > 0.0:
                     is_international = any(
                         m.journal_id.is_purchase_international for m in move_ids
                     ) or rec.journal_id.is_purchase_international
                     if not is_international:
-                        rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
-                if rec.igtf_amount <= 0.0:
+                        if rec.igtf_as_residual:
+                            igtf_as_residual = True
+                        else:
+                            rec._create_igtf_moves_in_payments(vals, write_off_line_vals)
+                # With the IGTF left as a residual of the customer, the amount of the payment is
+                # the amount paid to the invoices, as in a payment without IGTF.
+                if rec.igtf_amount <= 0.0 or igtf_as_residual:
                     total_base_residual = abs(sum(rec.invoices_origin_ids.mapped('amount_residual_signed')))
                     if write_off_line_vals:
                         rec._fix_writeoff_balance(vals, write_off_line_vals)
                     else:
                         fechas_lista = set(rec.invoices_origin_ids.mapped('invoice_date'))
                         vals0_bal = vals[0].get('debit', 0.0) - vals[0].get('credit', 0.0)
-                        if abs(total_base_residual) - abs(vals0_bal) <= 0.1 and len(fechas_lista) == 1 and rec.date in fechas_lista:
+                        # Only a rounding difference with the residual of the invoices is adjusted:
+                        # a payment greater than the residual keeps its amount (the rest is left open).
+                        if abs(abs(total_base_residual) - abs(vals0_bal)) <= 0.1 and len(fechas_lista) == 1 and rec.date in fechas_lista:
                             if rec.partner_type == "customer":
                                 vals[0].update({"debit": total_base_residual, "credit": 0.0})
                                 vals[1].update({"debit": 0.0, "credit": total_base_residual})
                             else:
                                 vals[0].update({"debit": 0.0, "credit": total_base_residual})
                                 vals[1].update({"debit": total_base_residual, "credit": 0.0})
+                if igtf_as_residual:
+                    rec._append_igtf_residual_vals(vals)
 
             return vals
+
+    def _append_igtf_residual_vals(self, vals):
+        """Charge the IGTF to the customer inside the payment entry: a receivable line left
+        open (paid apart, as a residual of the customer) and the IGTF line. Both lines have
+        the same amount, so the amount of the payment and the amount paid to the invoices
+        stay as typed in the wizard."""
+        self.ensure_one()
+        if self.env.context.get("from_pos", False):
+            return vals
+        igtf_account = self.company_id.customer_account_igtf_id
+        if not igtf_account:
+            raise UserError(_('Igtf Account in must be assigned in companies settings'))
+        if any(line.get("account_id") == igtf_account.id for line in vals):
+            return vals
+
+        currency = self.currency_id
+        company_currency = self.company_id.currency_id
+        amount_currency = currency.round(abs(self.igtf_amount))
+        if currency.is_zero(amount_currency):
+            return vals
+
+        # Same rate as the liquidity line, so the IGTF in company currency follows the payment.
+        liquidity = vals[0]
+        liquidity_balance = abs(liquidity.get("debit", 0.0) - liquidity.get("credit", 0.0))
+        liquidity_amount_currency = abs(liquidity.get("amount_currency", 0.0))
+        if currency == company_currency:
+            balance = amount_currency
+        elif liquidity_amount_currency:
+            balance = company_currency.round(liquidity_balance * amount_currency / liquidity_amount_currency)
+        else:
+            balance = company_currency.round(currency._convert(
+                amount_currency, company_currency, self.company_id, self.date,
+            ))
+
+        common = {
+            "currency_id": currency.id,
+            "partner_id": self.partner_id.id,
+            "date_maturity": self.date,
+        }
+        vals.append({
+            **common,
+            "name": _("IGTF to collect"),
+            "account_id": self.destination_account_id.id,
+            "amount_currency": amount_currency,
+            "debit": balance,
+            "credit": 0.0,
+            "is_igtf_residual": True,
+        })
+        vals.append({
+            **common,
+            "name": "IGTF",
+            "account_id": igtf_account.id,
+            "amount_currency": -amount_currency,
+            "debit": 0.0,
+            "credit": balance,
+        })
+        return vals
+
+    def _get_igtf_residual_lines(self):
+        self.ensure_one()
+        igtf_account = self.company_id.customer_account_igtf_id
+        return self.move_id.line_ids.filtered(
+            lambda line: line.is_igtf_residual or line.account_id == igtf_account
+        )
+
+    def _seek_for_lines(self):
+        """The receivable of the IGTF charged to the customer is not the counterpart of the
+        payment (the one paid to the invoices): it is dispatched with the write-off lines."""
+        liquidity_lines, counterpart_lines, writeoff_lines = super()._seek_for_lines()
+        residual_lines = counterpart_lines.filtered("is_igtf_residual")
+        if residual_lines and counterpart_lines - residual_lines:
+            counterpart_lines -= residual_lines
+            writeoff_lines |= residual_lines
+        return liquidity_lines, counterpart_lines, writeoff_lines
+
+    def _synchronize_to_moves(self, changed_fields):
+        # The IGTF lines are built again from the payment, as the liquidity and counterpart
+        # lines: drop them first so they are not kept as a write-off of the payment.
+        if not self.env.context.get("skip_account_move_synchronization") and any(
+            field_name in changed_fields for field_name in self._get_trigger_fields_to_synchronize()
+        ):
+            for pay in self.filtered("igtf_as_residual"):
+                igtf_lines = pay._get_igtf_residual_lines()
+                if igtf_lines:
+                    pay.move_id.with_context(
+                        skip_account_move_synchronization=True, skip_invoice_sync=True,
+                    ).write({"line_ids": [Command.delete(line.id) for line in igtf_lines]})
+        return super()._synchronize_to_moves(changed_fields)
 
     def calculate_igtf_for_payment(self, invoice, amount_payment, payment_currency, payment_date, base=False):
         return self.env["l10n_ve_igtf.utils"].calculate_igtf_for_payment(
