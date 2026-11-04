@@ -117,8 +117,68 @@
       `account_move_line_check_amount_currency_balance_sign`. La tasa del € del 03-nov se devolvió a
       1.003,8765.
 
-## 6. Cierre
+## 6. Segunda revisión del `code-reviewer` (2026-11-03, aprobar con cambios menores)
 
-- [ ] 6.1 Segunda revisión con `code-reviewer` de Binaural antes de los PRs
-- [ ] 6.2 Archivar el change y volcarlo en `openspec/specs/l10n_ve_pos/spec.md` y
+- [x] 6.1 Revisión hecha, sin bloqueantes. Decisiones del usuario: corregir A1, A2, A3, S1, S4 y S7–S13;
+      solo documentar S3 y S5; S2 y S6 fuera (los dos repos se despliegan siempre juntos).
+- [x] 6.2 A1: `pos.make.payment.check` (`wizard/pos_make_payment.py`) rechaza un método con moneda de
+      cobro sin tasa del día de esa moneda, con el mismo aviso del PdV. La sincronización no se bloquea:
+      `_set_payment_tender_values` deja un `_logger.warning` si la conversión da 0.
+- [x] 6.3 A2: "Conversión centralizada…", "Cross moves de compensación…" y "Monedas cargadas al PdV…"
+      pasan a `## MODIFIED Requirements` con su texto ajustado (todos los requirements del delta por
+      debajo de 500 caracteres) y los escenarios de la spec base.
+- [x] 6.4 A3: `es_VE.po` regenerado con `odoo i18n export -l es_VE` sobre `pos_test_86066` actualizada. El
+      export cambiaba entradas ajenas (traducciones distintas en la base, referencias viejas), así que
+      se dejan solo las de la tarea: el texto de la base de la rama queda igual y las nuestras van en el
+      orden y con el corte del exportador (polib, 78 columnas), más las referencias nuevas de
+      `pos.make.payment` en "Display Name" e "ID". `msgfmt -c` sin errores.
+- [x] 6.5 S4: `getTenderCurrency` prefiere la `tender_currency_id` guardada en el pago.
+- [x] 6.6 S7: cada pata del cruce combinado arma sus líneas con la tasa de sus pagos. Es informativa: la
+      `foreign_rate` de la línea guardada es un related del asiento (`l10n_ve_accountant`), así que el
+      valor por pata no se guarda.
+- [x] 6.7 S8: un método con moneda de cobro exige sus dos diarios de cruce (y su traducción).
+- [x] 6.8 S9: `l10n_ve_pos_igtf` usa una sola condición (`hasIgtfContext`, función del módulo) en
+      `set_foreign_amount` y `_getLocalDueBefore`. Es función y no método para que los `this` hechos a
+      mano de las pruebas de `l10n_ve_pos` sigan funcionando con el parche cargado.
+- [x] 6.9 S12: `_get_payment_tender_amount` toma las órdenes originales de todas las líneas. Hoy es una
+      defensa: `sync_from_ui` del core rechaza un reembolso de varias órdenes ("Solo puede reembolsar
+      productos de la misma orden"), así que el reembolso de dos ventas solo se arma por código.
+- [x] 6.10 S13: `proposal.md` corregido sobre el PR #1529 (no toca manifiestos; qué archivos toca).
+- [x] 6.11 Pruebas Python nuevas: cobro desde el backend sin tasa del día rechazado (y en Bs sí);
+      sincronización sin tasa del día no bloqueada, con el aviso en el log; reembolso con líneas de dos
+      ventas a la tasa de las dos; cada pata con la tasa de sus pagos; los dos diarios de cruce
+      obligatorios. `odoo -c <conf> -d pos_t86066_ve -u l10n_ve_pos --test-tags /l10n_ve_pos
+      --stop-after-init --no-http` → 246 tests, 0 fallos (68 de la moneda de cobro, en las dos
+      compañías). `l10n_ve_pos_igtf` (`-d pos_t86066_igtf -u l10n_ve_pos,l10n_ve_pos_igtf
+      --test-tags /l10n_ve_pos_igtf`) → 13 tests, 0 fallos.
+- [x] 6.12 S11: `l10n_ve_pos_self_order` en una base nueva (`-d pos_t86066_so -i l10n_ve_pos_self_order
+      --test-tags /l10n_ve_pos_self_order`) → 95 tests, 0 fallos; `l10n_ve_pos_mf` (`-d pos_t86066_mf
+      -i l10n_ve_pos_mf --test-tags /l10n_ve_pos_mf`) → 5 tests, 0 fallos (no tiene pruebas Hoot).
+- [x] 6.13 Hoot (S10): sin tasa del día `addNewPaymentLine` quita la línea y avisa (espías sobre
+      `deletePaymentLine` y el diálogo), restante en la moneda de cobro (`tenderRemaining`), monto en el
+      recibo (`formatTenderAmount`, con la localización de es_VE), moneda guardada del pago (S4) y
+      `set_foreign_amount` de IGTF. Chrome headless por CDP (`hoot_cdp.mjs`,
+      `/web/tests?headless&filter=…&debug=assets`): `@l10n_ve_pos/` en `pos_test_86066` → 125 pasan y
+      los mismos 18 fallos previos (`partner_list_searched_vat`, `pos_order_line_discount`), 26 de
+      `payment_tender` en verde; `@l10n_ve_pos_igtf/` en `pos_t86066_igtf` → 6 en verde; `@l10n_ve_pos/`
+      en `pos_t86066_igtf` (con el parche de IGTF cargado) → el mismo 125 / 18;
+      `@l10n_ve_pos_self_order/` en `pos_test_86066` → en verde (S11).
+- [x] 6.14 E2E en `pos_test_86066`, caja 78, por JSON-RPC contra el servidor con las llamadas del PdV y
+      del botón "Pago" (script `e2e_86066.py`). Sin tasa del día del EUR (la del 03-nov movida al 05-nov
+      y la del 02-nov a 1.100 Bs/€, restauradas al final): sesión 00124, apertura con +2 € → 2.200 Bs
+      con su cruce de 2 €; entrada de 10 € → 11.000 Bs con su cruce de −10 €; cobro desde el backend en
+      EUR rechazado ("No hay tasa del día para EUR: no se puede usar el método de pago Efectivo EUR
+      86066…") y la orden sin pagos, cobrada luego en Bs; cierre (`close_session_from_ui`) contando
+      151,29 € contra 152,29 € → pérdida de 1 € = 1.100 Bs con su cruce de −1 €. Con las tasas
+      normales: sesión 00125, venta de 8,47 €; reembolso de la orden 268 (24,29 € a 1.399,75 Bs/€)
+      cobrado desde el backend en EUR → −24,29 € (a la tasa del día habrían sido −33,87 €); cierre con
+      el cruce del EUR en dos patas (8.500 Bs / −8,47 € / $9,88 y 34.000 Bs / +24,29 €), cada línea
+      con la `foreign_rate` del encabezado. El reembolso de dos ventas no se pudo probar de punta a
+      punta: el core lo rechaza.
+- [x] 6.15 Precommit de los cinco módulos en verde.
+
+## 7. Cierre
+
+- [ ] 7.1 Tercera revisión con `code-reviewer` de Binaural antes de los PRs
+- [ ] 7.2 Archivar el change y volcarlo en `openspec/specs/l10n_ve_pos/spec.md` y
       `openspec/specs/l10n_ve_pos_igtf/spec.md`

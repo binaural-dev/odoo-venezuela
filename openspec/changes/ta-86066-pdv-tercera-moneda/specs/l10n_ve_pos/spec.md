@@ -2,7 +2,7 @@
 
 ### Requirement: Método de pago en una tercera moneda de cobro
 
-Un método de pago DEBE (MUST) poder declararse en una tercera moneda de cobro (`tender_currency_id`), distinta de la moneda de la compañía y de la alterna. No DEBE (MUST) combinarse con `is_foreign_currency` ni con un método de crédito, su diario de cruce DEBE (MUST) estar en esa moneda y solo DEBE (MUST) usarse en cajas en la moneda de la compañía, porque sus tasas son contra esa moneda.
+Un método de pago DEBE (MUST) poder declararse en una tercera moneda de cobro (`tender_currency_id`), distinta de la moneda de la compañía y de la alterna. No DEBE (MUST) combinarse con `is_foreign_currency` ni con un método de crédito, DEBE (MUST) tener sus dos diarios de cruce, el real en esa moneda, y solo DEBE (MUST) usarse en cajas en la moneda de la compañía, porque sus tasas son contra esa moneda.
 
 #### Scenario: Moneda de cobro igual a la de la compañía o a la alterna
 
@@ -18,6 +18,11 @@ Un método de pago DEBE (MUST) poder declararse en una tercera moneda de cobro (
 
 - **WHEN** el diario de cruce de un método con moneda de cobro no está en esa moneda
 - **THEN** se rechaza con un error de validación
+
+#### Scenario: Método sin diarios de cruce
+
+- **WHEN** a un método con moneda de cobro le falta el diario de cruce o el diario de la cuenta de cruce
+- **THEN** se rechaza con un error de validación: sin ellos el cruce se omitiría y los euros no llegarían a la caja real
 
 #### Scenario: Caja en otra moneda
 
@@ -76,9 +81,14 @@ Al pagar con un método con moneda de cobro, el PdV DEBE (MUST) proponer lo adeu
 - **WHEN** se agrega una línea del método en EUR
 - **THEN** la línea muestra "€ X / Bs Y" y el recibo muestra los euros junto al nombre del método
 
+#### Scenario: Recibo de un pago anterior a un cambio del método
+
+- **WHEN** después de cobrar en EUR se cambia o se quita la moneda de cobro del método y se reimprime el recibo
+- **THEN** el recibo muestra la moneda y el monto con que se cobró, guardados en el pago
+
 ### Requirement: Cobro desde el backend en la moneda de cobro
 
-Un pago con un método con moneda de cobro registrado desde el backend (`pos.make.payment`) DEBE (MUST) quedar con la moneda del método y su monto en esa moneda, igual que uno sincronizado desde el PdV: a la tasa del día de la caja, o en un reembolso a la tasa con la que se cobraron los pagos originales en esa moneda.
+Un pago con un método con moneda de cobro registrado desde el backend (`pos.make.payment`) DEBE (MUST) quedar con la moneda del método y su monto en esa moneda, igual que uno sincronizado desde el PdV: a la tasa del día de la caja, o en un reembolso a la de los cobros originales. Sin tasa del día de esa moneda, el cobro desde el backend DEBE (MUST) rechazarse con el aviso del PdV.
 
 #### Scenario: Cobro de una orden desde el backend
 
@@ -90,14 +100,34 @@ Un pago con un método con moneda de cobro registrado desde el backend (`pos.mak
 - **WHEN** la venta se cobró con 80 € y se reembolsa entera desde el backend con el método en EUR
 - **THEN** el pago del reembolso queda en −80 €, aunque la tasa del día sea otra
 
+#### Scenario: Cobro desde el backend sin tasa del día
+
+- **WHEN** el EUR no tiene tasa del día y se cobra desde el backend una orden con el método en EUR
+- **THEN** se rechaza con el mismo aviso del PdV y la orden sigue sin pagos; los demás métodos se cobran igual
+
+#### Scenario: Orden sincronizada sin tasa del día
+
+- **WHEN** llega al servidor una orden de un PdV con un bundle anterior, pagada en EUR sin `tender_amount` y sin tasa del día del EUR
+- **THEN** se sincroniza igual, con 0 € en el pago y un aviso en el log del servidor
+
 ### Requirement: Reembolso a la tasa con la que se cobró la moneda de cobro
 
-El reembolso de una orden pagada en una moneda de cobro DEBE (MUST) convertir esa moneda con la tasa con la que se cobraron los pagos originales en ella (`get_refund_tender_rates`), no con la del día.
+El reembolso de una orden pagada en una moneda de cobro DEBE (MUST) convertir esa moneda con la tasa con la que se cobraron en ella los pagos de las órdenes originales de todas sus líneas (`get_refund_tender_rates`), no con la del día, en el PdV y en el backend.
+
+#### Scenario: Reembolso desde el backend de una venta de otro día
+
+- **WHEN** una venta se cobró con 24,29 € a 1.399,75 Bs/€ y hoy el € vale 1.003,8765 Bs, y su reembolso se paga desde el backend con el método en EUR
+- **THEN** el pago del reembolso queda en −24,29 € y no en −33,87 €
 
 #### Scenario: Reembolso de un pago en euros
 
 - **WHEN** la venta original se cobró a 1.000 Bs/€ y hoy el € vale 1.003,8765 Bs
 - **THEN** reembolsar 8.000 Bs con el método en EUR devuelve 8 €
+
+#### Scenario: Reembolso con líneas de dos ventas
+
+- **WHEN** un reembolso armado fuera del PdV (`sync_from_ui` del core rechaza uno de varias órdenes) tiene líneas de dos ventas cobradas con 80 € y con 50 € a tasas distintas, y se paga entero desde el backend con el método en EUR
+- **THEN** devuelve 130 €, a la tasa de las dos ventas, y no 120 € a la de la primera
 
 ### Requirement: El cruce de la moneda de cobro lleva lo cobrado en esa moneda
 
@@ -157,3 +187,70 @@ La granularidad de los cross moves DEBE (MUST) seguir el flag nativo `split_tran
 
 - **WHEN** las ventas y reembolsos del método suman cero en la caja pero no en la alterna o en euros
 - **THEN** se crea el asiento y la diferencia en esa moneda pasa al diario real
+
+#### Scenario: Tasa de cada pata
+
+- **WHEN** el reembolso de la sesión se valoró a la tasa de su venta original y la venta a la del día
+- **THEN** las líneas de cada pata se arman con la tasa de sus pagos; es informativa, porque la línea guardada toma la del asiento y sus montos alternos son los de sus pagos
+
+### Requirement: Conversión centralizada con tasa completa y redondeo solo del resultado
+
+La conversión del PdV DEBE (MUST) multiplicar el monto por la tasa cruda sin redondear y redondear solo el resultado con `to_currency.round()`: principal → alterna con `foreign_inverse_rate`, alterna → principal con `foreign_rate` y, con una moneda de cobro, las tasas de `tender_currency_rates`. Misma moneda devuelve el monto; sin tasa, `0.0`. El contrato está en espejo en `pos.config._convert` y en `PosOrder._convert` del frontend.
+
+#### Scenario: Conversión de bolívares a divisa
+
+- **WHEN** se convierte un monto en moneda principal hacia la moneda alterna
+- **THEN** el resultado es `monto * foreign_inverse_rate` redondeado con el redondeo de la moneda alterna
+
+#### Scenario: Sin tasa configurada
+
+- **WHEN** ninguna de las dos monedas involucradas es la alterna ni una moneda de cobro de la caja, o la tasa operativa es cero
+- **THEN** la conversión devuelve `0.0` (y el frontend registra una advertencia en consola una sola vez)
+
+#### Scenario: Caja sin tasa del día
+
+- **WHEN** `pos.config._compute_rate` se calcula un día sin tasa cargada para la moneda alterna
+- **THEN** llama a `compute_rate` con `raise_if_not_found=False` y no lanza error (la configuración de la caja sigue accesible, aunque `l10n_ve_rate.compute_rate` lance `UserError` por defecto)
+
+#### Scenario: Bolívares y una moneda de cobro
+
+- **WHEN** se convierte entre la moneda principal y una moneda de cobro de los métodos de la caja con tasa del día
+- **THEN** la conversión no da `0.0`: usa la tasa de esa moneda en `tender_currency_rates`
+
+### Requirement: Cross moves de compensación para métodos en divisa
+
+Al cerrar la sesión (`_validate_cross_move`), por cada método que pase `_is_cross_move_eligible` (`is_foreign_currency` o una moneda de cobro, tipo distinto de `pay_later`, sus dos diarios de cruce y una transitoria resoluble), el sistema DEBE (MUST) crear en `cross_account_journal` asientos en borrador que pasan el saldo de la transitoria del método a la cuenta real del `cross_journal`, con `foreign_debit`/`foreign_credit`, `not_foreign_recalculate` y una `ref` de sesión, orden o pago.
+
+#### Scenario: Método en divisa completo
+
+- **WHEN** se cierra una sesión con pagos de un método `is_foreign_currency` con ambos diarios configurados
+- **THEN** se crean asientos borrador en `cross_account_journal` que acreditan la cuenta transitoria y debitan la cuenta real del `cross_journal` (o a la inversa para montos negativos), sin `name`: lo asigna el diario al contabilizar
+
+#### Scenario: Configuración incompleta
+
+- **WHEN** al método le falta `cross_account_journal` o `cross_journal`
+- **THEN** no se crea ningún cross move para ese método y el cierre no falla (un método con moneda de cobro no se puede guardar así)
+
+#### Scenario: Cuentas del cruce
+
+- **WHEN** se arma el cruce de un método
+- **THEN** la transitoria es la que resuelve `_get_cross_transitory_account` (efectivo: `journal_id.default_account_id`; el resto: `outstanding_account_id` o la del diario; en ambos, como último recurso, la cuenta por cobrar del PdV de la compañía) y la real la `payment_account_id` de las líneas de pago entrantes o salientes del `cross_journal`, según el signo; con `use_suspense=True` el asiento va entre las cuentas transitorias de los dos diarios, con el sentido invertido
+
+#### Scenario: Método con moneda de cobro
+
+- **WHEN** se cierra una sesión con pagos de un método con moneda de cobro y sus dos diarios
+- **THEN** su cruce se crea como el de un método en divisa y la línea del diario real lleva como `amount_currency` lo cobrado en esa moneda
+
+### Requirement: Monedas cargadas al PdV restringidas y ordenadas
+
+El loader de `res.currency` DEBE (MUST) restringir las monedas enviadas al PdV a la moneda de la compañía, la de la caja, la alterna y las monedas de cobro de sus métodos (`_load_pos_data_domain`), exponer `inverse_rate` entre los campos y devolver la lista con la moneda de la compañía en primera posición (`_load_pos_data_read`).
+
+#### Scenario: Compañía con moneda alterna
+
+- **WHEN** se abre una caja de una compañía con moneda alterna configurada
+- **THEN** al frontend llegan únicamente esas monedas, con la de la compañía primero
+
+#### Scenario: Caja con un método en una moneda de cobro
+
+- **WHEN** la caja tiene un método con moneda de cobro EUR
+- **THEN** el EUR también llega al frontend, después de la moneda de la compañía
