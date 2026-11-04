@@ -119,7 +119,11 @@
 
             <!-- Second totals block: VES when the invoice is in another currency; the
                  alternate currency when it is in the company currency. Hidden only when
-                 both apply: company currency and no alternate currency configured. -->
+                 both apply: company currency and no alternate currency configured.
+                 It does not show amount_residual_company: that value is in the company currency
+                 and does not match the alternate amounts of tax_totals nor necessarily the
+                 document currency (e.g. EUR document: alternate block in USD,
+                 amount_residual_company in VEF, amount_residual in EUR). -->
             <xpath expr="//page[@name='invoice_tab']//group[hasclass('oe_invoice_lines_tab')]" position="after">
                 <group col="12" class="overflow-hidden o_ve_invoice_totals" invisible="currency_id == company_currency_id and not foreign_currency_id">
                     <group colspan="8">
