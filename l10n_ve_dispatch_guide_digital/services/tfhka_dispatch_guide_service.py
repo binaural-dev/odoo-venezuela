@@ -175,65 +175,98 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                 return "Inmediato"
 
     def _prepare_detail_lines(self, picking):
+        """Líneas de mercancía de la guía.
+
+        Se decide movimiento por movimiento: si el movimiento viene de una
+        línea de venta (``sale_line_id``) se reportan el precio, descuento e
+        IVA cotizados; si no (traslado de inventario), los montos van en 0.
+
+        Antes se exigía además ``transfer_reason_id.code == "sale"``, pero ese
+        motivo solo se asigna solo a las salidas: en una entrega de varios
+        pasos la guía de la recolección (WH/PICK) viene de la venta con motivo
+        "Traslado entre almacenes" y salía en cero (ticket 16109).
+        """
         item_details = []
         line_number = 1
         for record in picking:
-            if record.sale_id and record.transfer_reason_id.code == "sale":
-                for move_line in record.move_ids:
-                    sale_line = move_line.sale_line_id
-
-                    tax_mapping = {
-                        0.0: "E",
-                        8.0: "R",
-                        16.0: "G",
-                        31.0: "A",
-                    }
-                    taxes = sale_line.tax_ids.filtered(lambda t: t.amount)
-                    tax_rate = taxes[0].amount if taxes else 0.0
-
-                    # 17.0 comparaba solo con "VEF": una compañía en "VES" caía
-                    # en la rama de divisa y reportaba foreign_price por error.
-                    if record.sale_id.currency_id.name in VES_CURRENCY_NAMES:
-                        unit_price = round(sale_line.price_unit, 2)
-                    else:
-                        unit_price = round(sale_line.foreign_price, 2)
-
-                    item_price = round(unit_price * move_line.quantity, 2)
-                    # tax_ids puede traer varios impuestos: .amount sobre el
-                    # recordset completo revienta. Se usa la alícuota ya resuelta.
-                    vat = round(item_price * tax_rate / 100, 2)
-                    total_item_value = round(item_price + vat, 2)
-
-                    item_details.append({
-                        "numeroLinea": str(line_number),
-                        "codigoPLU": sale_line.product_id.barcode or sale_line.product_id.default_code or "",
-                        "indicadorBienoServicio": "2" if sale_line.product_id.type == 'service' else "1",
-                        "descripcion": sale_line.product_id.name,
-                        "cantidad": str(move_line.quantity),
-                        "precioUnitario": str(unit_price),
-                        "precioItem": str(item_price),
-                        "codigoImpuesto": tax_mapping[tax_rate],
-                        "tasaIVA": str(round(tax_rate, 2)),
-                        "valorIVA": str(vat),
-                        "valorTotalItem": str(total_item_value),
-                    })
-                    line_number += 1
-            else:
-                for line in record.move_ids:
-                    item_details.append({
-                        "numeroLinea": str(line_number),
-                        "codigoPLU": line.product_id.barcode or line.product_id.default_code or "",
-                        "indicadorBienoServicio": "2" if line.product_id.type == 'service' else "1",
-                        "descripcion": line.product_id.name,
-                        "cantidad": str(line.product_uom_qty),
+            for move in record.move_ids:
+                if move.sale_line_id:
+                    item = self._prepare_sale_detail_line(move)
+                else:
+                    item = {
+                        "codigoPLU": move.product_id.barcode or move.product_id.default_code or "",
+                        "indicadorBienoServicio": "2" if move.product_id.type == 'service' else "1",
+                        "descripcion": move.product_id.name,
+                        "cantidad": str(move.product_uom_qty),
                         "precioUnitario": "0",
                         "precioItem": "0",
                         "tasaIVA": "0",
                         "valorIVA": "0",
                         "valorTotalItem": "0",
-                    })
-                    line_number += 1
+                    }
+                item_details.append({"numeroLinea": str(line_number), **item})
+                line_number += 1
         return item_details
+
+    def _prepare_sale_detail_line(self, move):
+        """Línea con los montos cotizados en la venta, sobre la cantidad
+        efectivamente movida (``move.quantity``) para no sobre-reportar en una
+        entrega parcial."""
+        sale_line = move.sale_line_id
+        product = sale_line.product_id
+
+        tax_mapping = {
+            0.0: "E",
+            8.0: "R",
+            16.0: "G",
+            31.0: "A",
+        }
+        # tax_ids puede traer varios impuestos: .amount sobre el recordset
+        # completo revienta. Se usa la primera alícuota distinta de cero.
+        taxes = sale_line.tax_ids.filtered(lambda t: t.amount)
+        tax_rate = taxes[0].amount if taxes else 0.0
+        tax_code = tax_mapping.get(tax_rate)
+        if tax_code is None:
+            raise TfhkaDataError(
+                _(
+                    "The tax rate %(rate)s%% on product '%(product)s' is not supported "
+                    "by TFHKA digitalization (allowed rates: 0, 8, 16, 31)."
+                )
+                % {"rate": tax_rate, "product": product.display_name}
+            )
+
+        # 17.0 comparaba solo con "VEF": una compañía en "VES" caía en la rama
+        # de divisa y reportaba foreign_price por error.
+        if sale_line.order_id.currency_id.name in VES_CURRENCY_NAMES:
+            base_price = sale_line.price_unit
+        else:
+            base_price = sale_line.foreign_price
+
+        quantity = move.quantity
+        discount_factor = (sale_line.discount or 0.0) / 100.0
+        unit_price = round(base_price, 2)
+        unit_price_discount = round(base_price * (1 - discount_factor), 2)
+        price_before_discount = round(base_price * quantity, 2)
+        discount_amount = round(base_price * discount_factor * quantity, 2)
+        item_price = round(price_before_discount - discount_amount, 2)
+        vat = round(item_price * tax_rate / 100, 2)
+        total_item_value = round(item_price + vat, 2)
+
+        return {
+            "codigoPLU": product.barcode or product.default_code or "",
+            "indicadorBienoServicio": "2" if product.type == 'service' else "1",
+            "descripcion": product.name,
+            "cantidad": str(quantity),
+            "precioUnitario": str(unit_price),
+            "precioUnitarioDescuento": str(unit_price_discount),
+            "descuentoMonto": str(discount_amount),
+            "precioItem": str(item_price),
+            "precioAntesDescuento": str(price_before_discount),
+            "codigoImpuesto": tax_code,
+            "tasaIVA": str(round(tax_rate, 2)),
+            "valorIVA": str(vat),
+            "valorTotalItem": str(total_item_value),
+        }
 
     def _prepare_dispatch_guide(self, picking):
         for record in picking:

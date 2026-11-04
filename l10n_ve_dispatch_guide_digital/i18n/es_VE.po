@@ -268,6 +268,16 @@ msgid "The dispatch guide is missing transport data: %s"
 msgstr "A la guía de despacho le faltan datos de transporte: %s"
 
 #. module: l10n_ve_dispatch_guide_digital
+#. odoo-python
+#: code:addons/l10n_ve_dispatch_guide_digital/services/tfhka_dispatch_guide_service.py:0
+msgid ""
+"The tax rate %(rate)s%% on product '%(product)s' is not supported by TFHKA "
+"digitalization (allowed rates: 0, 8, 16, 31)."
+msgstr ""
+"La tasa de impuesto %(rate)s%% en el producto '%(product)s' no está "
+"soportada por la digitalización TFHKA (tasas permitidas: 0, 8, 16, 31)."
+
+#. module: l10n_ve_dispatch_guide_digital
 #: model_terms:ir.ui.view,arch_db:l10n_ve_dispatch_guide_digital.view_res_config_settings_inherit_tfhka_transport
 msgid ""
 "Outgoing dispatch guides need driver, driver ID number and vehicle plate to "
