@@ -88,6 +88,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
 
     def generate_document_data(self, picking, document_number, document_type):
         self._check_transport_data(picking)
+        self._check_transfer_reason(picking)
         document_identification = self._prepare_identification(picking, document_type, document_number)
         buyer = self._get_fiscal_party(picking)
         details_items = self._prepare_detail_lines(picking)
@@ -175,16 +176,16 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                 return "Inmediato"
 
     def _prepare_detail_lines(self, picking):
-        """Líneas de mercancía de la guía.
+        """Merchandise lines of the dispatch guide.
 
-        Se decide movimiento por movimiento: si el movimiento viene de una
-        línea de venta (``sale_line_id``) se reportan el precio, descuento e
-        IVA cotizados; si no (traslado de inventario), los montos van en 0.
+        Decided move by move: a move coming from a sale order line
+        (``sale_line_id``) reports the quoted price, discount and VAT; any
+        other move (inventory transfer) is zero-valued.
 
-        Antes se exigía además ``transfer_reason_id.code == "sale"``, pero ese
-        motivo solo se asigna solo a las salidas: en una entrega de varios
-        pasos la guía de la recolección (WH/PICK) viene de la venta con motivo
-        "Traslado entre almacenes" y salía en cero (ticket 16109).
+        The transfer reason is not used for this: the "Sale" reason is only
+        set on deliveries, so in a multi-step delivery the pick guide
+        (WH/PICK) comes from the sale with the "Transfer between warehouses"
+        reason and used to be sent with zero amounts (ticket 16109).
         """
         item_details = []
         line_number = 1
@@ -209,9 +210,14 @@ class TfhkaDispatchGuideService(models.AbstractModel):
         return item_details
 
     def _prepare_sale_detail_line(self, move):
-        """Línea con los montos cotizados en la venta, sobre la cantidad
-        efectivamente movida (``move.quantity``) para no sobre-reportar en una
-        entrega parcial."""
+        """Line with the amounts quoted on the sale, over the quantity
+        actually moved (``move.quantity``) so a partial delivery does not
+        over-report.
+
+        ``tax_ids`` may hold several taxes and reading ``.amount`` on the
+        whole recordset fails, so the first non-zero rate is used. The price
+        is in bolivars when the order currency is VES/VEF, otherwise the
+        foreign price is reported."""
         sale_line = move.sale_line_id
         product = sale_line.product_id
 
@@ -221,8 +227,6 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             16.0: "G",
             31.0: "A",
         }
-        # tax_ids puede traer varios impuestos: .amount sobre el recordset
-        # completo revienta. Se usa la primera alícuota distinta de cero.
         taxes = sale_line.tax_ids.filtered(lambda t: t.amount)
         tax_rate = taxes[0].amount if taxes else 0.0
         tax_code = tax_mapping.get(tax_rate)
@@ -235,8 +239,6 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                 % {"rate": tax_rate, "product": product.display_name}
             )
 
-        # 17.0 comparaba solo con "VEF": una compañía en "VES" caía en la rama
-        # de divisa y reportaba foreign_price por error.
         if sale_line.order_id.currency_id.name in VES_CURRENCY_NAMES:
             base_price = sale_line.price_unit
         else:
@@ -285,10 +287,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             product_origin = "Nacional e Importado" if len(product_origin_set) > 1 else (product_origin_set.pop() if product_origin_set else "Sin origen definido")
             weight = f"{record.shipping_weight:.2f} {record.weight_uom_name}" if record.shipping_weight else "Sin peso"
             description = re.sub(r'<.*?>', '', str(record.note)) if record.note else "Sin descripción"
-            if record.transfer_reason_id.code == "other_causes":
-                transfer_reason = record.other_causes_transfer_reason
-            else:
-                transfer_reason = record.transfer_reason_id.name
+            transfer_reason = self._get_transfer_reason(record)
 
             dispatch_guide = {
                 "esGuiaDespacho": "1",
@@ -300,6 +299,27 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             }
             dispatch_guide.update(self._prepare_transport_data(record))
             return dispatch_guide
+
+    def _get_transfer_reason(self, picking):
+        """Text sent as ``motivoTraslado``: the free text when the reason is
+        "Other causes", otherwise the reason name. Empty string when missing."""
+        if picking.transfer_reason_id.code == "other_causes":
+            return (picking.other_causes_transfer_reason or "").strip()
+        return picking.transfer_reason_id.name or ""
+
+    def _check_transfer_reason(self, picking):
+        """TFHKA requires ``motivoTraslado`` as a string and rejects the whole
+        document (HTTP 400, code 203) when it is missing. The reason is only
+        mandatory on internal transfers, so a delivery or pick can reach this
+        point without one; stop it here as a fixable Data Error instead."""
+        if not self._get_transfer_reason(picking):
+            if picking.transfer_reason_id.code == "other_causes":
+                message = _(
+                    "Enter the reason for transfer for other causes on dispatch guide %s."
+                )
+            else:
+                message = _("Set the reason for transfer on dispatch guide %s.")
+            raise TfhkaDataError(message % picking.name)
 
     def _prepare_additional_information(self, picking):
         additional_information = []
