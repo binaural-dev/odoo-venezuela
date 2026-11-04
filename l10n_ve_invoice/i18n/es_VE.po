@@ -234,6 +234,48 @@ msgid "Auto Select Debit Note Journal"
 msgstr ""
 
 #. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__vendor_bill_accounting_date_on_registration
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__vendor_bill_accounting_date_on_registration
+msgid "Keep Registration Date as Vendor Bill Accounting Date"
+msgstr "Mantener la fecha de registro como fecha contable de facturas de proveedor"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_res_company__vendor_bill_accounting_date_on_registration
+#: model:ir.model.fields,help:l10n_ve_invoice.field_res_config_settings__vendor_bill_accounting_date_on_registration
+msgid ""
+"When enabled, the accounting date of vendor bills is set to the registration date. It is not automatically filled with the last day of the journal period and it does not change when the invoice date or the journal changes. The user can still edit it manually."
+msgstr ""
+"Cuando está activado, la fecha contable de las facturas de proveedor se fija en la fecha de registro. No se llena automáticamente con el último día del período del diario y no cambia al cambiar la fecha de la factura ni el diario. El usuario puede editarla manualmente."
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
+msgid ""
+"<span>Vendor bill accounting date is set to the registration date. It is not filled with the last day of the journal period and it does not change when the invoice date or the journal changes.</span>"
+msgstr ""
+"<span>La fecha contable de la factura de proveedor se fija en la fecha de registro. No se llena con el último día del período del diario y no cambia al cambiar la fecha de la factura ni el diario.</span>"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_company__sync_vendor_bill_accounting_date_with_invoice_date
+#: model:ir.model.fields,field_description:l10n_ve_invoice.field_res_config_settings__sync_vendor_bill_accounting_date_with_invoice_date
+msgid "Sync Vendor Bill Accounting Date with Invoice Date"
+msgstr "Sincronizar la fecha contable de facturas de proveedor con la fecha de la factura"
+
+#. module: l10n_ve_invoice
+#: model:ir.model.fields,help:l10n_ve_invoice.field_res_company__sync_vendor_bill_accounting_date_with_invoice_date
+#: model:ir.model.fields,help:l10n_ve_invoice.field_res_config_settings__sync_vendor_bill_accounting_date_with_invoice_date
+msgid ""
+"When enabled (requires keeping the registration date), changing the invoice date in the form sets the accounting date to the same date. It does not act through ORM writes, it does not act if the date violates a lock date, and changing the journal never modifies the accounting date."
+msgstr ""
+"Cuando está activado (requiere mantener la fecha de registro), al cambiar la fecha de la factura en el formulario la fecha contable toma esa misma fecha. No actúa por escrituras ORM, no actúa si la fecha viola un bloqueo y el cambio de diario nunca modifica la fecha contable."
+
+#. module: l10n_ve_invoice
+#: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.view_res_config_settings_l10n_ve_invoice
+msgid ""
+"<span>Changing the invoice date in the form sets the accounting date to the same date. The journal change never modifies it.</span>"
+msgstr ""
+"<span>Al cambiar la fecha de la factura en el formulario, la fecha contable toma esa misma fecha. El cambio de diario nunca la modifica.</span>"
+
+#. module: l10n_ve_invoice
 #: model_terms:ir.ui.view,arch_db:l10n_ve_invoice.report_freeform_document
 msgid "BORRADOR"
 msgstr ""
