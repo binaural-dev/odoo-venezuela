@@ -39,6 +39,20 @@ class AccountMove(models.Model):
     )
 
   
+
+    def _l10n_ve_allows_future_date(self):
+        """The IGTF debit note is generated automatically from a payment, so
+        it may skip the date guard when the caller requests it."""
+        self.ensure_one()
+        return bool(
+            super()._l10n_ve_allows_future_date()
+            or (
+                self.l10n_ve_igtf_note_debit_origin
+                and self.origin_payment_to_pay_igtf
+                and self.debit_origin_id
+            )
+        )
+
     def prepare_igtf_payment_debit_note(self, igtf_amount_company_curr, invoice, payment):
 
         self.ensure_one()
@@ -107,7 +121,10 @@ class AccountMove(models.Model):
                 "tax_ids": [(6, 0, product_taxes.ids)],
             })],
         })
-        debit_note.with_context(move_action_post_alert=True).action_post()
+        debit_note.with_context(
+            move_action_post_alert=True,
+            l10n_ve_skip_future_date_check=True,
+        ).action_post()
         return debit_note
 
    
@@ -439,6 +456,7 @@ class AccountMove(models.Model):
         'debit_note_ids.amount_total_signed',
     )
     def compute_bi_igtf(self):
+        """Base imponible de IGTF (modo `debit_note`); busca los parciales contra TODAS las cuotas."""
         # 100% opt-in: las compañías en modo 'inline' (o cualquier modo
         # distinto de 'debit_note') delegan enteramente en la implementación
         # base de `l10n_ve_igtf`, sin ninguna diferencia de comportamiento.
@@ -509,12 +527,12 @@ class AccountMove(models.Model):
                     amount_base_payment = 0.0
                     if bank_line and partner_line:
 
-                        factura_line = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
+                        factura_lines = rec.line_ids.filtered(lambda l: l.account_id.id == target_account.id)
 
                         partial = self.env['account.partial.reconcile'].search([
                             '|',
-                            '&', ('debit_move_id', '=', factura_line.id), ('credit_move_id', '=', partner_line.ids),
-                            '&', ('debit_move_id', '=', partner_line.ids), ('credit_move_id', '=', factura_line.id)
+                            '&', ('debit_move_id', 'in', factura_lines.ids), ('credit_move_id', 'in', partner_line.ids),
+                            '&', ('debit_move_id', 'in', partner_line.ids), ('credit_move_id', 'in', factura_lines.ids),
                         ])
                         bank_amount = abs(bank_line[0].amount_currency)
                         bank_amount_balance = abs(bank_line[0].balance)
@@ -630,8 +648,11 @@ class AccountMove(models.Model):
             )[:1]
 
             vef = self.env.ref("base.VEF", raise_if_not_found=False) or self.env["res.currency"]
-            is_vef_direct_payment = (
-                payment_move.currency_id == vef and not payment_move.origin_payment_advanced_payment_id
+            is_vef_direct_payment = bool(
+                payment_move
+                and payment_move.currency_id == vef
+                and not payment_move.origin_payment_advanced_payment_id
+                and not payment_move._is_advance_cross()
             )
 
             if payment_move and not is_vef_direct_payment:
@@ -740,7 +761,7 @@ class AccountMove(models.Model):
         line.remove_move_reconcile()
         if counterpart_move.origin_payment_advanced_payment_id:
             advance_payment = counterpart_move.origin_payment_advanced_payment_id
-            counterpart_move.button_draft()
+            counterpart_move.with_context(move_action_cancel_advance_payment=True).button_draft()
             counterpart_move.write({'origin_payment_advanced_payment_id': False})
             counterpart_move.with_context(
                 move_action_cancel_advance_payment=True

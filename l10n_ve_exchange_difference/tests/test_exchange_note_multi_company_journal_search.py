@@ -74,6 +74,9 @@ class TestExchangeNoteMultiCompanyJournalSearch(TransactionCase):
             "tax_group_id": cls.tax_group_b.id,
         })
         cls.company_b.write({
+            # Company without journal/chart: this test is not about the
+            # alternate exchange difference, which needs that config.
+            "l10n_ve_use_foreign_exchange_diff": False,
             "income_currency_exchange_account_id": cls.exchange_gain_account_b.id,
             "expense_currency_exchange_account_id": cls.exchange_loss_account_b.id,
             "exent_aliquot_sale": cls.exempt_tax_b.id,

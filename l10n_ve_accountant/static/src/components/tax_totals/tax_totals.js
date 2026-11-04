@@ -85,16 +85,9 @@ patch(TaxTotalsComponent.prototype, {
   },
 });
 
-Object.defineProperty(TaxTotalsComponent.prototype, "readonly", {
-  get() {
-    return true;
-  },
-  configurable: true,
-});
-
 class TaxForeignTotalsComponent extends TaxTotalsComponent {
   get readonly() {
-    return true;
+    return this.props.readonly;
   }
 }
 TaxForeignTotalsComponent.template = "l10n_ve_accountant.TaxForeignTotalsField";
@@ -102,7 +95,7 @@ TaxForeignTotalsComponent.props = { ...standardFieldProps };
 
 class TaxVesTotalsComponent extends TaxTotalsComponent {
   get readonly() {
-    return true;
+    return this.props.readonly;
   }
 }
 TaxVesTotalsComponent.template = "l10n_ve_accountant.TaxVesTotalsField";

@@ -20,7 +20,8 @@ class ResCompany(models.Model):
     l10n_ve_exchange_note_product_id = fields.Many2one(
         'product.product',
         string='Customer Invoice Exchange Difference Note Product',
-        domain=[('type', '=', 'service')],
+        domain="[('type', '=', 'service'), ('taxes_id', 'in', [exent_aliquot_sale]),"
+               " ('supplier_taxes_id', 'in', [exent_aliquot_purchase])]",
         help="Product used as the line of exchange difference Debit/Credit "
              "Notes for CUSTOMER invoices. Must be a service, its income "
              "and expense accounts must be the company's exchange "

@@ -40,6 +40,18 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="col-12 col-lg-6 o_setting_box">
+                            <div class="o_setting_left_pane">
+                                <field name="use_parent_retention_sequence" readonly="not company_parent_id"/>
+                                <field name="company_parent_id" invisible="1"/>
+                            </div>
+                            <div class="o_setting_right_pane">
+                                <label for="use_parent_retention_sequence" string="Use the parent company retention sequence" />
+                                <div class="text-muted">
+                                    <p>When enabled, the IVA, ISLR and municipal retention voucher numbers of this branch use the parent company correlative instead of an independent sequence. Only applies if the branch shares the parent company's tax ID.</p>
+                                </div>
+                            </div>
+                        </div>
                         <!-- Diarios de Retención -->
                         <separator string="Retention Journals" role="section"/>
                         <setting name="retention_journals_settings">

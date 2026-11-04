@@ -83,3 +83,31 @@
 - [x] 7.3 Test que ejercita el método real
       `_check_l10n_ve_exchange_debit_journal_sequences` (no solo su query
       interna) para justificar el `.sudo()` de 3.1
+
+## 8. Ajuste post-implementación (tarea 82677)
+
+- [x] 8.1 `domain` de `l10n_ve_exchange_note_product_id` (`res_company.py`)
+      ahora filtra por tipo Servicio + impuesto exento de venta
+      (`exent_aliquot_sale`) + impuesto exento de compra
+      (`exent_aliquot_purchase`) -- declarado como STRING para poder
+      referenciar esos dos campos de la propia compañía (Odoo solo evalúa
+      esa forma del lado del cliente)
+- [x] 8.2 Help de `res.partner.l10n_ve_exchange_allow_note` simplificado;
+      `i18n/es_VE.po` actualizado con el nuevo `msgid`/`msgstr`
+- [x] 8.3 Test nuevo `test_exchange_note_product_domain.py`: filtra
+      correctamente con ambos impuestos configurados, y no muestra ningún
+      producto si falta cualquiera de los dos (venta o compra)
+
+## 9. Fix de revisión (`pastor-binaural`, mismo PR de la sección 8)
+
+- [x] 9.1 El `domain` de 8.1 solo estaba declarado en
+      `res.company.l10n_ve_exchange_note_product_id` -- el selector real
+      (`res.config.settings`, Ajustes) es un `related` sin `domain` propio,
+      y Odoo 19 no propaga un `domain` string a un related
+      (`_related_domain`, `odoo/orm/fields_relational.py`). Fix: mismo
+      `domain` string declarado explícito en `res_config_settings.py`
+- [x] 9.2 Test nuevo `test_config_settings_domain_matches_company`: el
+      `domain` de `res.config.settings` existe y coincide con el de
+      `res.company`
+- [x] 9.3 Suite completa corrida contra Odoo real (93 tests, 0 fallas,
+      cobertura de `res_config_settings.py` 100%)

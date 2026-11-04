@@ -191,7 +191,7 @@ class TestRetentionIslrWizard(RetentionTestCommon):
             "date_end": date.today(),
         })
         domain = wiz._get_domain(current_company_id=self.company)
-        self.assertIn(("company_id", "=", self.company.id), domain)
+        self.assertIn(("company_id", "in", [self.company.id]), domain)
 
     def test_04_get_retention_ids(self):
         ret = self._create_islr_retention()

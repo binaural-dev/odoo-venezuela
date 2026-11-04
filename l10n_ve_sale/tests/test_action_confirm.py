@@ -1,3 +1,4 @@
+from odoo import fields
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
 
@@ -8,6 +9,19 @@ class TestActionConfirmServiceProducts(TransactionCase):
     def setUp(self):
         super().setUp()
         self.company = self.env.company
+        # Sin tasa del día la orden no se crea (compute_rate lanza UserError)
+        currency = self.company.foreign_currency_id or self.env.ref('base.VEF')
+        if not self.env['res.currency.rate'].search_count([
+            ('currency_id', '=', currency.id),
+            ('company_id', '=', self.company.id),
+            ('name', '=', fields.Date.today()),
+        ]):
+            self.env['res.currency.rate'].create({
+                'currency_id': currency.id,
+                'company_id': self.company.id,
+                'name': fields.Date.today(),
+                'inverse_company_rate': 50.0,
+            })
         self.partner = self.env['res.partner'].create({'name': 'Test Partner'})
         self.service_product = self.env['product.product'].create({
             'name': 'Service Product',

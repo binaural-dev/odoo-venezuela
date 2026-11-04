@@ -3,7 +3,7 @@
         <!-- XPath para insertar los nuevos datos dentro del div 'order-summary' -->
         <xpath expr="//div[hasclass('order-summary')]" position="inside">
             <!-- Wrapper to align left and right content -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;text-align:left;font-size: 80%">
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; width: 100%;text-align:left;font-size: 95%">
                 <!-- Left side -->
                 <div class="left-side" style="flex: 1;">
                     <div class="rate_bcv">

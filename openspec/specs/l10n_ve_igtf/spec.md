@@ -162,7 +162,7 @@ Al generar las líneas del pago (`_prepare_move_line_default_vals`), un pago cre
 
 ### Requirement: Ajuste de balances en pagos del wizard sin IGTF
 
-Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` es cero o negativo, `_prepare_move_line_default_vals` DEBE (MUST) forzar la cuadratura contra el residual real de las facturas origen: cuando el pago trae líneas de write-off y el asiento tiene al menos tres líneas, `_fix_writeoff_balance` fija el balance de la contrapartida (`vals[1]`) en el negativo del residual firmado de las facturas origen (`-amount_residual_signed`), recalcula su `amount_currency` desde ese balance y absorbe la diferencia en la línea de write-off (`vals[2]`); cuando no hay write-off, y siempre que la diferencia entre ese residual y el balance de la línea de liquidez no supere 0,1, todas las facturas origen tengan la misma fecha de documento y esa fecha coincida con la del pago, fija los balances de las dos primeras líneas en ±`amount_residual_signed` según el `partner_type`.
+Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` es cero o negativo, `_prepare_move_line_default_vals` DEBE (MUST) forzar la cuadratura contra el residual real de las facturas origen: cuando el pago trae líneas de write-off y el asiento tiene al menos tres líneas, `_fix_writeoff_balance` fija el balance de la contrapartida (`vals[1]`) en el negativo del residual firmado de las facturas origen (`-amount_residual_signed`), recalcula su `amount_currency` desde ese balance y absorbe la diferencia en la línea de write-off (`vals[2]`); cuando no hay write-off, y siempre que la diferencia entre ese residual y el balance de la línea de liquidez no supere 0,1, todas las facturas origen tengan la misma fecha de documento y esa fecha coincida con la del pago, fija los balances de las dos primeras líneas en ±`amount_residual_signed` según el `payment_type` (liquidez positiva y contrapartida negativa en pagos `inbound`; al revés en `outbound`), de modo que el balance conserve el signo de `amount_currency` también al pagar notas de crédito (NC de cliente = pago `outbound`, NC de proveedor = pago `inbound`).
 
 #### Scenario: Pago con write-off sin IGTF
 
@@ -172,7 +172,17 @@ Para un pago creado desde el wizard (`payment_from_wizard`) cuyo `igtf_amount` e
 #### Scenario: Pago exacto en la fecha de la factura
 
 - **WHEN** un pago sin IGTF ni write-off cancela una única factura cuya fecha de documento es la del pago y la diferencia de conversión es menor o igual a 0,1
-- **THEN** los balances de liquidez y contrapartida se fijan en el residual de la factura con los signos correspondientes al tipo de partner
+- **THEN** los balances de liquidez y contrapartida se fijan en el residual de la factura con los signos correspondientes al tipo de pago
+
+#### Scenario: Reembolso de una nota de crédito de cliente sin IGTF
+
+- **WHEN** se paga desde el wizard, en un diario sin IGTF, una nota de crédito de cliente cuya fecha es la del pago (pago `outbound` con `partner_type` cliente)
+- **THEN** la línea de liquidez queda al haber y la contrapartida al debe, y en cada línea `balance` y `amount_currency` conservan el mismo signo, por lo que el asiento no viola `account_move_line_check_amount_currency_balance_sign`
+
+#### Scenario: Reembolso de una nota de crédito de proveedor
+
+- **WHEN** se paga desde el wizard una nota de crédito de proveedor cuya fecha es la del pago (pago `inbound` con `partner_type` proveedor)
+- **THEN** la línea de liquidez queda al debe y la contrapartida al haber, con `balance` y `amount_currency` del mismo signo
 
 ### Requirement: Base imponible del IGTF acumulada en la factura
 
@@ -244,10 +254,18 @@ Las facturas publicadas con estado de pago `not_paid` o `partial` DEBEN (MUST) e
 
 Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una línea cuyo asiento es de anticipo: `is_advance_move`, con `origin_payment_advanced_payment_id`, o cuyo pago origen tiene `is_advance_payment`), el sistema DEBE (MUST) crear un asiento de cruce ("CRUCE DE ANTICIPO") en el diario `advance_payment_igtf_journal_id` de la compañía activa, con una línea en la cuenta de anticipo y su contrapartida en la cuenta por cobrar/pagar de la factura por el mínimo entre el residual de la factura y el anticipo disponible según el widget, fechado en la fecha de conversión del widget (o en la fecha del pago cuando el pago tiene `keep_alter_value_vef`), publicarlo y conciliarlo doblemente: las líneas de anticipo contra el pago original y las líneas por cobrar/pagar contra la factura (`_reconcile_move_with_payment_difference`). DEBE (MUST) agregar la línea "IGTF" solo cuando el diario del pago es IGTF, el partner aplica IGTF según `_check_igtf_apply_improved`, el diario de la factura no es de compra internacional y el IGTF calculado con `calculate_igtf_for_payment` es mayor que cero; en ese caso, si el anticipo disponible alcanza, la base aplicada se incrementa con el IGTF convertido a la moneda del documento.
 
+Como esta conciliación se arma a mano sobre `account.move` propios (nunca un `account.payment` real), `_reconcile_move_with_payment_difference` DEBE (MUST), justo después de conciliar las líneas por cobrar/pagar, forzar el recálculo perezoso (`env.add_to_compute`) de `payment_state` en la factura -- sin esto, `payment_state` puede quedar con el valor que tenía ANTES del cruce (ej. `partial` aunque `amount_residual` ya diera 0.0) en vez de recalcularse a `paid`, porque el flujo no pasa por el camino estándar de pagos que dispara ese recálculo de forma natural.
+
 #### Scenario: Aplicación de anticipo simple
 
 - **WHEN** se aplica un anticipo sin IGTF a una factura con saldo
 - **THEN** se crea y publica un asiento de cruce por el monto aplicado y la factura queda conciliada por esa porción
+
+#### Scenario: Cruce de anticipo que salda la factura actualiza payment_state
+
+- **GIVEN** una factura con residual pendiente
+- **WHEN** se aplica un anticipo que salda la factura por completo (`_reconcile_move_with_payment_difference`)
+- **THEN** `payment_state` de la factura queda en `paid`, no en el valor que tenía antes del cruce
 
 #### Scenario: Anticipo con IGTF
 
@@ -284,6 +302,12 @@ Al aplicar un anticipo desde el widget (`js_assign_outstanding_line` sobre una l
 
 - **WHEN** se desaplica un pago en VEF cuyo asiento no proviene de un cruce de anticipo
 - **THEN** no se altera el asiento del pago y la conciliación se elimina por el flujo nativo
+
+#### Scenario: Desconciliar un cruce de anticipo actualiza payment_state
+
+- **GIVEN** una factura conciliada por completo (o parcialmente) contra un cruce de anticipo
+- **WHEN** se desconcilia ese cruce (`js_remove_outstanding_partial` / `cancel_advance_payment_transaction`, que delega en `account.partial.reconcile.unlink()`)
+- **THEN** `payment_state` de la factura vuelve a `not_paid`, no queda congelado en `paid`/`partial`
 
 ### Requirement: Reaplicación de anticipo con IGTF cierra sin residuo
 
@@ -366,7 +390,7 @@ Tras crear pagos con IGTF desde el wizard (`_create_payments`), cuando el monto 
 
 ### Requirement: Columna IGTF en los libros fiscales
 
-El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoice` con un grupo/columna "IGTF" que muestra el `foreign_igtf_amount` de `tax_totals` de cada documento cuando su `alter_bi_igtf` es mayor que cero (0 en caso contrario), con signo negativo únicamente en las notas de crédito (`out_refund` en el libro de ventas, `in_refund` en el de compras); los flags `not_show_igtf_sale_order` / `not_show_igtf_purchase_order` de la compañía suprimen el grupo de columnas IGTF del Excel.
+El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoice` con un grupo/columna "IGTF" que muestra el `foreign_igtf_amount` de `tax_totals` de cada documento cuando su `alter_bi_igtf` es mayor que cero (0 en caso contrario), con signo negativo únicamente en las notas de crédito (`out_refund` en el libro de ventas, `in_refund` en el de compras); los flags `not_show_igtf_sale_order` / `not_show_igtf_purchase_order` de la compañía del wizard (`company_id`, no la del entorno) suprimen el grupo de columnas IGTF del Excel.
 
 #### Scenario: Factura con IGTF en el libro de ventas
 
@@ -375,7 +399,7 @@ El módulo DEBE (MUST) extender los libros de ventas y compras de `l10n_ve_invoi
 
 #### Scenario: Columna oculta
 
-- **WHEN** la compañía activa `not_show_igtf_sale_order`
+- **WHEN** la compañía del wizard tiene `not_show_igtf_sale_order`
 - **THEN** el libro de ventas se genera sin el grupo de columnas IGTF
 
 ### Requirement: Revalorización de pagos en VEF configurable
@@ -400,3 +424,12 @@ El campo `keep_alter_value_vef` de los pagos DEBE (MUST) inicializarse con `reva
 
 - **WHEN** el asiento del pago tiene más de una línea sobre cuentas por cobrar/pagar o corrientes
 - **THEN** la clasificación devuelve como contrapartida solo la última de esas líneas
+
+### Requirement: Las conversiones sin fecha usan el día del usuario
+
+`l10n_ve_igtf.utils._convert_to_company_currency` y `_convert_to_external_currency` DEBEN (MUST) usar `fields.Date.context_today` cuando no reciben fecha, no `fields.Date.today()`.
+
+#### Scenario: Conversión sin fecha
+
+- **WHEN** se convierte un monto sin pasar fecha
+- **THEN** la conversión usa el día del usuario

@@ -22,7 +22,7 @@ El comprobante `account.retention` DEBE (MUST) tener un tipo de retención (`typ
 
 ### Requirement: Numeración automática de comprobantes
 
-En `create` el sistema DEBE (MUST) ejecutar `_set_sequence` sobre todo comprobante sin `number` —sin distinguir tipo ni flujo, por lo que también numera los comprobantes de cliente— asignando un correlativo con formato `AAAAMM` (año y mes de `date_accounting`) seguido del siguiente valor de la secuencia de la compañía activa: `retention.iva.control.number` con padding 8 para IVA (resultando 14 dígitos) y `retention.islr.control.number` con padding 5 para ISLR; el correlativo se guarda en `number` y `name`. Además, `action_post` vuelve a invocar `_set_sequence` solo para los comprobantes de proveedor (`in_invoice`, `in_refund`, `in_debit`). La secuencia se crea automáticamente si no existe, pero para municipal la búsqueda usa el código `retention.municipal.control.number` mientras la creación registra la secuencia con el código `retention.iva.control.number` y padding 5, por lo que la búsqueda nunca la reencuentra y cada numeración municipal crea una secuencia nueva que arranca de su primer valor.
+En `create` el sistema DEBE (MUST) ejecutar `_set_sequence` sobre todo comprobante sin `number` —sin distinguir tipo ni flujo, por lo que también numera los comprobantes de cliente— asignando un correlativo con formato `AAAAMM` (año y mes de `date_accounting`) seguido del siguiente valor de la secuencia de la compañía activa (o de su empresa matriz, según el requisito «Correlativo de retenciones compartido con la empresa matriz»): `retention.iva.control.number` con padding 8 para IVA (resultando 14 dígitos) y `retention.islr.control.number` con padding 5 para ISLR; el correlativo se guarda en `number` y `name`. Además, `action_post` vuelve a invocar `_set_sequence` solo para los comprobantes de proveedor (`in_invoice`, `in_refund`, `in_debit`). La secuencia se crea automáticamente si no existe, pero para municipal la búsqueda usa el código `retention.municipal.control.number` mientras la creación registra la secuencia con el código `retention.iva.control.number` y padding 5, por lo que la búsqueda nunca la reencuentra y cada numeración municipal crea una secuencia nueva que arranca de su primer valor.
 
 #### Scenario: Comprobante IVA de proveedor sin número
 
@@ -38,6 +38,30 @@ En `create` el sistema DEBE (MUST) ejecutar `_set_sequence` sobre todo comproban
 
 - **WHEN** se numeran dos comprobantes municipales en una compañía sin secuencia municipal previa
 - **THEN** cada uno crea una secuencia nueva registrada con el código de IVA y ambos reciben el mismo valor inicial de secuencia
+
+### Requirement: Correlativo de retenciones compartido con la empresa matriz
+
+`res.company` DEBE (MUST) exponer el booleano `use_parent_retention_sequence` (por defecto `False`), editable desde Ajustes > Localización Venezuela > «Payment Extension Settings» > «General Configuration» y visible solo cuando la compañía activa tiene `parent_id` (sucursal nativa de Odoo). `get_sequence_retention` DEBE (MUST) resolver la compañía dueña de la secuencia con `_get_retention_sequence_company`: devuelve la empresa matriz (`root_id`) únicamente si la compañía activa tiene `parent_id`, el booleano está activo y su RIF (`vat`) es no vacío e igual al de la matriz; en cualquier otro caso devuelve la compañía activa (comportamiento nativo: una secuencia propia por compañía). La búsqueda y la eventual creación de `retention.<tipo>.control.number` usan esa compañía, por lo que aplica por igual a IVA, ISLR y municipal; cuando la dueña es la matriz la secuencia se lee con `sudo()` para no depender de las compañías permitidas del usuario. La secuencia municipal por subsidiaria analítica de `binaural_subsidiary_payment_extension` conserva su prioridad y no se modifica.
+
+#### Scenario: Valor por defecto conserva la numeración propia
+
+- **WHEN** una sucursal con `use_parent_retention_sequence` en `False` emite un comprobante de retención
+- **THEN** el número sale de la secuencia de la propia sucursal, como antes del cambio
+
+#### Scenario: Sucursal que comparte el correlativo de la matriz
+
+- **WHEN** una sucursal con el booleano activo y el mismo RIF que la matriz emite comprobantes y la secuencia de la matriz va en 8786
+- **THEN** los comprobantes reciben 8786 y 8787 de la secuencia de la matriz y no se crea ninguna secuencia para la sucursal
+
+#### Scenario: RIF distinto al de la matriz
+
+- **WHEN** la sucursal tiene el booleano activo pero un RIF distinto al de la matriz
+- **THEN** usa su propia secuencia
+
+#### Scenario: Compañía sin empresa matriz
+
+- **WHEN** una compañía sin `parent_id` tiene el booleano activo
+- **THEN** el valor se ignora y usa su propia secuencia
 
 ### Requirement: Formato de 14 dígitos del número de comprobante IVA
 
@@ -448,6 +472,28 @@ El sistema DEBE (MUST) impedir pasar a borrador o cancelar un pago marcado con `
 - **WHEN** se intenta eliminar desde la factura la conciliación de un pago de retención
 - **THEN** se lanza un `UserError` indicando que debe cancelarse el comprobante
 
+### Requirement: Un pago real bloquea el borrador solo si la factura tiene retenciones
+
+`_check_retention_paid_lock`, compartida por `button_draft`, `button_cancel` y `action_recalculate_retentions` de las facturas de proveedor, DEBE (MUST) lanzar un `UserError` cuando la factura tiene un pago real conciliado (cualquiera que no sea `is_retention`) **y** al menos una retención emitida (`state == "emitted"`) o en resync (`draft` con `payment_ids`); las de borrador sin pagos y las canceladas no cuentan (`retention_islr_line_ids`, `retention_iva_line_ids` o `retention_municipal_line_ids`), porque en ese caso las retenciones tendrían que desmontarse y reconstruirse. En una factura sin retenciones emitidas ni en resync la guarda NO DEBE (MUST NOT) bloquear: un pago normal conciliado no impide restablecer a borrador, cancelar ni recalcular.
+
+#### Scenario: Pago real sobre una factura con retención
+
+- **GIVEN** una factura de proveedor con una retención emitida y un pago real conciliado
+- **WHEN** se intenta restablecerla a borrador, cancelarla o recalcular sus retenciones
+- **THEN** se lanza un `UserError` indicando que tiene un pago real aplicado
+
+#### Scenario: Pago real con la retención en resync
+
+- **GIVEN** una factura de proveedor cuya retención quedó en borrador con sus pagos (a medio resincronizar) y un pago real conciliado
+- **WHEN** se pulsa "Recalcular retenciones"
+- **THEN** se lanza un `UserError` indicando que tiene un pago real aplicado
+
+#### Scenario: Pago real sobre una factura sin retenciones
+
+- **GIVEN** una factura de proveedor confirmada, sin retenciones, con un pago normal conciliado
+- **WHEN** se restablece a borrador
+- **THEN** el cambio de estado se permite
+
 ### Requirement: Cancelación del comprobante revierte sus pagos
 
 `action_cancel` DEBE (MUST): desconciliar los apuntes conciliados de los pagos del comprobante, pasarlos a borrador y cancelarlos (con `bypass_retention_lock`), desmarcarlos como retención y desvincularlos, limpiar los números de comprobante en las facturas y dejar el comprobante en estado `cancel` sin pagos asociados.
@@ -628,3 +674,77 @@ Al escribir `condition_withholding_id` en `res.company`, el sistema DEBE (MUST) 
 
 - **WHEN** se escribe la condición de retención en una compañía sin partner asociado
 - **THEN** la escritura se completa sin propagar el valor
+
+### Requirement: Los montos de una línea de retención de IVA de proveedor deben ser de solo lectura
+
+El sistema SHALL mostrar `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` como campos de solo lectura (con su valor preservado al guardar, vía `force_save`) en cada línea de `account.retention.line` cuando la retención (`account.retention.type`) sea de proveedor (`in_invoice`, `in_refund` o `in_debit`).
+
+Para retenciones de cliente (`out_invoice`, `out_refund`, `out_debit`) estos campos SHALL permanecer editables, sujeto solo a las reglas de `state` ya existentes.
+
+#### Scenario: Retención de proveedor
+
+- **GIVEN** una retención de IVA con `type = 'in_invoice'`
+- **WHEN** se abre su formulario
+- **THEN** `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` de cada línea SHALL aparecer de solo lectura
+
+#### Scenario: Retención de cliente
+
+- **GIVEN** una retención de IVA con `type = 'out_invoice'`
+- **WHEN** se abre su formulario
+- **THEN** `invoice_total`, `invoice_amount`, `iva_amount` y `retention_amount` de cada línea SHALL seguir siendo editables (según el estado de la retención)
+
+### Requirement: Una factura no puede estar en dos comprobantes de retención del mismo tipo, partner y diferenciador al emitir
+
+Al ejecutar `action_post`, el sistema DEBE (MUST) llamar a `_check_duplicate_invoices_all_states` ANTES de las validaciones específicas de `_check_duplicate_retention_lines`. Si alguna factura del comprobante ya figura en otro comprobante en estado `draft` o `emitted` con el mismo `type_retention`, el mismo `partner_id` y el mismo diferenciador, DEBE (MUST) lanzar un `UserError` (mensaje en inglés con traducción al español en `i18n/es_VE.po`) indicando la factura, el otro comprobante y su estado. El diferenciador es: IVA, la alícuota (`aliquot`); ISLR, el concepto de pago (`payment_concept_id`); municipal, la actividad económica (`economic_activity_id`). Los comprobantes `cancel` y los de otro `type_retention` NO bloquean. El sistema NO cancela ni elimina automáticamente ningún borrador: dos borradores sobre la misma factura pueden coexistir hasta que se intente emitir alguno.
+
+La misma factura PUEDE (MAY) estar en varios comprobantes del mismo tipo y partner cuando el diferenciador es distinto (por ejemplo, ISLR de conceptos distintos o IVA de alícuotas distintas). El duplicado se detecta en la primera emisión, aun cuando el otro comprobante siga en borrador (caso de la factura consolidada en otro comprobante, ticket #15531). Comprobantes de distinto partner sobre la misma factura (facturación a cuenta de terceros, ta #65929) NO se bloquean entre sí por este control; entre ellos siguen aplicando las reglas de `_check_duplicate_retention_lines` (ISLR por base acumulada por concepto, IVA por alícuota, municipal por actividad). En particular, el IVA de terceros a la misma alícuota sigue bloqueado por `_check_iva_duplicate_lines` (preexistente, #1303) cuando el otro comprobante ya está emitido.
+
+Decisión de diseño (responsable de la vertical, por exigencia de la gerencia): el bloqueo aplica solo con misma factura, mismo tipo de retención, mismo partner y mismo diferenciador.
+
+En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el bloqueo deja una nota en el chatter del comprobante y `action_post` devuelve `False`, igual que el resto de las validaciones.
+
+#### Scenario: Factura consolidada en otro comprobante
+
+- **GIVEN** la factura B en la retención A (consolidada) y en su retención individual B en borrador, con el mismo diferenciador
+- **WHEN** se emite A, o luego B
+- **THEN** se lanza un `UserError` que nombra el otro comprobante y su estado
+
+#### Scenario: Misma factura con distinto diferenciador
+
+- **GIVEN** dos comprobantes del mismo tipo y partner sobre la misma factura, con alícuota (IVA), concepto (ISLR) o actividad (municipal) distintos
+- **WHEN** se emite cualquiera de ellos
+- **THEN** no se lanza el error de duplicidad
+
+#### Scenario: Comprobantes de terceros distintos sobre la misma factura
+
+- **GIVEN** dos comprobantes del mismo tipo con partners distintos sobre la misma factura
+- **WHEN** se emite cualquiera de ellos
+- **THEN** no se lanza el error de duplicidad por factura (sí aplican las reglas por concepto/alícuota/actividad contra los ya emitidos)
+
+#### Scenario: Comprobante cancelado o de otro tipo
+
+- **WHEN** la otra retención con la misma factura está `cancel`, o es de otro `type_retention`
+- **THEN** no se lanza el error de duplicidad
+
+### Requirement: Retenciones de IVA en los libros fiscales según el alcance del libro
+
+El módulo DEBE (MUST) extender `wizard.accounting.reports` para que las retenciones de IVA emitidas (`account.retention` en estado `emitted`, tipo `iva`) se seleccionen para las compañías del alcance del libro (`report_company_ids`) y no solo para la compañía activa, de modo que el libro consolidado incluya las retenciones de la matriz y de sus sucursales del mismo RIF y que el total de retenciones del resumen se calcule sobre ese mismo conjunto.
+
+#### Scenario: Retención de una sucursal en el libro consolidado
+
+- **WHEN** se genera el libro de ventas con alcance consolidado y una sucursal tiene una retención de IVA emitida en el período
+- **THEN** la retención aparece en el libro y en el total de retenciones del resumen
+
+#### Scenario: Libro solo de la matriz
+
+- **WHEN** el alcance es `main` y la retención pertenece a una sucursal
+- **THEN** la retención no aparece en el libro
+
+### Requirement: Fechas por defecto de los wizards y respaldo de la línea de retención
+
+Las fechas por defecto de los wizards de retención IVA e ISLR DEBEN (MUST) evaluarse al abrir el wizard con `fields.Date.context_today`, no al importar el módulo (`date.today()` quedaba fijo hasta reiniciar el servidor). El respaldo de fecha de la línea de retención DEBE (MUST) usar `context_today`.
+
+#### Scenario: Wizard abierto un mes después de arrancar el servidor
+
+- **WHEN** se abre el wizard de retención IVA o ISLR
+- **THEN** el rango por defecto es el del mes actual del usuario

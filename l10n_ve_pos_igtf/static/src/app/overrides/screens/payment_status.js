@@ -16,6 +16,9 @@ patch(PaymentScreenStatus.prototype, {
   get totalWithIgtfAmount() {
     return this.env.utils.formatCurrency(this.props.order.get_total_with_igtf())
   },
+  get foreignTotalWithIgtfAmount() {
+    return this.env.utils.formatForeignCurrency(this.props.order.get_foreign_total_with_igtf())
+  },
   get isIgtf() {
     return Array.from(this.props.order.payment_ids || []).some(
       (payment_line) => payment_line.payment_method_id?.apply_igtf

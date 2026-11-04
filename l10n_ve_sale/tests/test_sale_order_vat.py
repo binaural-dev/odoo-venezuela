@@ -1,3 +1,4 @@
+from odoo import fields
 from odoo.tests.common import TransactionCase
 from odoo.tests import tagged
 
@@ -7,6 +8,20 @@ class TestSaleOrderVat(TransactionCase):
 
     def setUp(self):
         super().setUp()
+        # Sin tasa del día la orden no se crea (compute_rate lanza UserError)
+        company = self.env.company
+        currency = company.foreign_currency_id or self.env.ref("base.VEF")
+        if not self.env["res.currency.rate"].search_count([
+            ("currency_id", "=", currency.id),
+            ("company_id", "=", company.id),
+            ("name", "=", fields.Date.today()),
+        ]):
+            self.env["res.currency.rate"].create({
+                "currency_id": currency.id,
+                "company_id": company.id,
+                "name": fields.Date.today(),
+                "inverse_company_rate": 50.0,
+            })
         self.partner_no_vat = self.env["res.partner"].create({
             "name": "Partner Sin VAT",
         })

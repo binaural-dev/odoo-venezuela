@@ -86,6 +86,20 @@ class ResCompany(models.Model):
         ),
     )
 
+    use_parent_retention_sequence = fields.Boolean(
+        string="Use the parent company retention sequence",
+        default=False,
+        help=(
+            "Only for branches (companies with a parent company). When"
+            " enabled, the IVA, ISLR and municipal retention voucher numbers"
+            " of this branch are taken from the parent company sequences"
+            " instead of creating independent ones, so every branch sharing"
+            " the same tax ID uses a single correlative. Ignored if the tax"
+            " ID (VAT) differs from the parent company's. Disabled by"
+            " default: each branch keeps its own sequence."
+        ),
+    )
+
     def write(self, vals):
         if "condition_withholding_id" in vals:
             for company in self:

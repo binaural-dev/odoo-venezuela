@@ -180,11 +180,15 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
     # ------------------------------------------------------------------
     # Rule 1: cross-retention duplicate prevention
     # ------------------------------------------------------------------
-    def test_cross_retention_iva_duplicate_aliquot_blocks_on_emitted(self):
-        """Two separate retentions on the same invoice/aliquot: the first one
-        posts fine, the second (same invoice, same real tax rate) must be
-        rejected once the first is already 'emitted', naming the first
-        retention."""
+    def test_same_partner_iva_duplicate_invoice_blocks_before_aliquot_check(self):
+        """Two separate retentions of the SAME partner on the same invoice:
+        ti-15531's _check_duplicate_invoices_all_states runs before the
+        per-aliquot check (_check_iva_duplicate_lines) and rejects the
+        second retention outright, regardless of aliquot, once the first is
+        already 'emitted' - naming the first retention. This no longer
+        exercises _check_iva_duplicate_lines; see
+        test_cross_retention_third_party_iva_duplicate_aliquot_blocks_on_emitted
+        for that."""
         invoice = self._create_out_invoice_with_lines([(self.product_iva, 100.0)])
 
         line_vals = {
@@ -205,26 +209,78 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         self.assertEqual(retention_1.state, "emitted")
 
         retention_2 = self._make_iva_customer_retention([dict(line_vals)], number="01234567891235")
-        with self.assertRaises(ValidationError) as e:
+        # The by-invoice duplicate check (ti-15531) runs before the per-aliquot one.
+        with self.assertRaises(UserError) as e:
             retention_2.action_post()
         msg = str(e.exception)
-        self.assertIn("was already retained at the same tax", msg)
+        self.assertIn("is already included in retention", msg)
         self.assertIn(retention_1.display_name, msg)
 
         _logger.info(
-            "========= test_cross_retention_iva_duplicate_aliquot_blocks_on_emitted passed ========="
+            "========= test_same_partner_iva_duplicate_invoice_blocks_before_aliquot_check passed ========="
+        )
+
+    def test_cross_retention_third_party_iva_duplicate_aliquot_blocks_on_emitted(self):
+        """Third-party invoicing (ta #65929): two retentions of DIFFERENT
+        partners over the same invoice bypass the by-invoice check
+        (ti-15531), so the per-aliquot cross-retention rule
+        (_check_iva_duplicate_lines) is the one that must reject the second
+        retention once the first is already 'emitted', naming it."""
+        invoice = self._create_in_invoice_with_lines([(self.product_iva, 100.0)])
+        self.assertEqual(invoice.state, "posted")
+        other_partner = self.partner_pnr_75.copy({"name": "Third party 2", "vat": "J-00000002-0"})
+
+        line_vals = {
+            "move_id": invoice.id,
+            "name": "Iva Retention",
+            "invoice_type": "in_invoice",
+            "aliquot": 16.0,
+            "iva_amount": 16.0,
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": invoice.amount_untaxed,
+            "retention_amount": float_round(invoice.amount_untaxed * 0.75 * 0.16, precision_rounding=0.01),
+            "foreign_invoice_amount": invoice.amount_untaxed,
+            "foreign_retention_amount": float_round(invoice.amount_untaxed * 0.75 * 0.16, precision_rounding=0.01),
+            "foreign_currency_rate": 1.0,
+        }
+        retention_1 = self.env["account.retention"].create({
+            "type_retention": "iva", "type": "in_invoice", "is_third_party_retention": True,
+            "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
+            "date": fields.Date.today(), "date_accounting": fields.Date.today(),
+            "number": "01234567891234",
+            "retention_line_ids": [Command.create(line_vals)],
+        })
+        retention_1.action_post()
+        self.assertEqual(retention_1.state, "emitted")
+
+        retention_2 = self.env["account.retention"].create({
+            "type_retention": "iva", "type": "in_invoice", "is_third_party_retention": True,
+            "company_id": self.company.id, "partner_id": other_partner.id,
+            "date": fields.Date.today(), "date_accounting": fields.Date.today(),
+            "number": "01234567891235",
+            "retention_line_ids": [Command.create(dict(line_vals))],
+        })
+        with self.assertRaises(ValidationError) as e:
+            retention_2.action_post()
+        msg = str(e.exception)
+        self.assertIn("already retained at the same tax rate", msg)
+        self.assertIn(retention_1.display_name, msg)
+
+        _logger.info(
+            "========= test_cross_retention_third_party_iva_duplicate_aliquot_blocks_on_emitted passed ========="
         )
 
     def test_cross_retention_iva_two_drafts_do_not_block_each_other(self):
         """Two DRAFT retentions referencing the same invoice/aliquot must
         coexist without raising - the conflict is only checked at post
         time against already-emitted retentions."""
-        invoice = self._create_out_invoice_with_lines([(self.product_iva, 100.0)])
+        invoice = self._create_in_invoice_with_lines([(self.product_iva, 100.0)])
+        self.assertEqual(invoice.state, "posted")
 
         line_vals = {
             "move_id": invoice.id,
             "name": "Iva Retention",
-            "invoice_type": "out_invoice",
+            "invoice_type": "in_invoice",
             "aliquot": 16.0,
             "iva_amount": 16.0,
             "invoice_total": invoice.amount_total,
@@ -243,11 +299,13 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "========= test_cross_retention_iva_two_drafts_do_not_block_each_other passed ========="
         )
 
-    def test_cross_retention_islr_concept_base_exceeded_blocks_on_emitted(self):
-        """ISLR: once retention_1 already retained the full base (500) for
-        (invoice, concept_one), a second retention declaring even a small
-        extra amount for the same (invoice, concept) must be rejected,
-        naming the first retention."""
+    def test_same_partner_islr_duplicate_invoice_blocks_before_concept_check(self):
+        """ISLR, SAME partner: ti-15531's by-invoice check rejects the second
+        retention on the same invoice outright, before the per-concept base
+        comparison (_check_islr_concept_amounts) is ever reached - naming the
+        first retention. See
+        test_cross_retention_third_party_islr_concept_base_exceeded_blocks_on_emitted
+        for a case that actually exercises that per-concept rule."""
         invoice = self._create_out_invoice_with_lines([(self.product_islr_one, 500.0)])
 
         line_1 = {
@@ -268,14 +326,66 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
         line_2 = dict(line_1, invoice_amount=1.0, retention_amount=0.03,
                       foreign_invoice_amount=1.0, foreign_retention_amount=0.03)
         retention_2 = self._make_islr_customer_retention([line_2], number="01234567891235")
-        with self.assertRaises(ValidationError) as e:
+        # The by-invoice duplicate check (ti-15531) runs before the per-concept one.
+        with self.assertRaises(UserError) as e:
             retention_2.action_post()
         msg = str(e.exception)
-        self.assertIn("exceeds the actual base billed under that", msg)
+        self.assertIn("is already included in retention", msg)
         self.assertIn(retention_1.display_name, msg)
 
         _logger.info(
-            "========= test_cross_retention_islr_concept_base_exceeded_blocks_on_emitted passed ========="
+            "========= test_same_partner_islr_duplicate_invoice_blocks_before_concept_check passed ========="
+        )
+
+    def test_cross_retention_third_party_islr_concept_base_exceeded_blocks_on_emitted(self):
+        """Third-party invoicing (ta #65929), ISLR: two retentions of
+        DIFFERENT partners bypass the by-invoice check, so once retention_1
+        (partner A) already retained the full base (500) for (invoice,
+        concept_one), retention_2 (partner B) declaring even a small extra
+        amount for the same (invoice, concept) must be rejected by
+        _check_islr_concept_amounts, naming retention_1 - end to end through
+        action_post, exercising the same cross-retention branch ti-14548
+        introduced."""
+        invoice = self._create_in_invoice_with_lines([(self.product_islr_one, 500.0)])
+        self.assertEqual(invoice.state, "posted")
+        other_partner = self.partner_pnr_75.copy({"name": "Third party 2", "vat": "J-00000002-0"})
+
+        line_1 = {
+            "move_id": invoice.id,
+            "name": "ISLR Retention",
+            "invoice_type": "in_invoice",
+            "payment_concept_id": self.concept_one.id,
+            "invoice_total": invoice.amount_total,
+            "invoice_amount": 500.0,
+            "retention_amount": 15.0,
+            "foreign_invoice_amount": 500.0,
+            "foreign_retention_amount": 15.0,
+        }
+        retention_1 = self.env["account.retention"].create({
+            "type_retention": "islr", "type": "in_invoice", "is_third_party_retention": True,
+            "company_id": self.company.id, "partner_id": self.partner_pnr_75.id,
+            "date": fields.Date.today(), "date_accounting": fields.Date.today(),
+            "retention_line_ids": [Command.create(line_1)],
+        })
+        retention_1.action_post()
+        self.assertEqual(retention_1.state, "emitted")
+
+        line_2 = dict(line_1, invoice_amount=1.0, retention_amount=0.03,
+                      foreign_invoice_amount=1.0, foreign_retention_amount=0.03)
+        retention_2 = self.env["account.retention"].create({
+            "type_retention": "islr", "type": "in_invoice", "is_third_party_retention": True,
+            "company_id": self.company.id, "partner_id": other_partner.id,
+            "date": fields.Date.today(), "date_accounting": fields.Date.today(),
+            "retention_line_ids": [Command.create(line_2)],
+        })
+        with self.assertRaises(ValidationError) as e:
+            retention_2.action_post()
+        msg = str(e.exception)
+        self.assertIn("exceeds the actual base billed", msg)
+        self.assertIn(retention_1.display_name, msg)
+
+        _logger.info(
+            "========= test_cross_retention_third_party_islr_concept_base_exceeded_blocks_on_emitted passed ========="
         )
 
     def test_islr_single_concept_line_accepts_whole_invoice_base_on_post(self):
@@ -309,10 +419,13 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "========= test_islr_single_concept_line_accepts_whole_invoice_base_on_post passed ========="
         )
 
-    def test_cross_retention_municipal_duplicate_activity_blocks_on_emitted(self):
-        """Municipal: same (invoice, economic_activity) retained by two
-        different retentions - the second must be rejected once the first
-        is emitted."""
+    def test_same_partner_municipal_duplicate_invoice_blocks_before_activity_check(self):
+        """Municipal, SAME partner: ti-15531's by-invoice check rejects the
+        second retention on the same invoice outright, before the
+        per-activity comparison (_check_municipal_duplicate_lines) is ever
+        reached. See
+        test_cross_retention_third_party_municipal_duplicate_activity_blocks_on_emitted
+        for a case that actually exercises that per-activity rule."""
         country = self.env["res.country"].search([("code", "=", "TC14548")], limit=1) or \
             self.env["res.country"].create({"name": "Test Country 14548", "code": "TC14548"})
         state = self.env["res.country.state"].search([("code", "=", "TS14548")], limit=1) or \
@@ -373,14 +486,94 @@ class TestRetentionTi14548Rules(RetentionTestCommon):
             "date_accounting": fields.Date.today(),
             "retention_line_ids": [Command.create(dict(line_vals))],
         })
-        with self.assertRaises(ValidationError) as e:
+        # The by-invoice duplicate check (ti-15531) runs before the per-activity one.
+        with self.assertRaises(UserError) as e:
             retention_2.action_post()
         msg = str(e.exception)
-        self.assertIn("was already retained for the same", msg)
+        self.assertIn("is already included in retention", msg)
         self.assertIn(retention_1.display_name, msg)
 
         _logger.info(
-            "========= test_cross_retention_municipal_duplicate_activity_blocks_on_emitted passed ========="
+            "========= test_same_partner_municipal_duplicate_invoice_blocks_before_activity_check passed ========="
+        )
+
+    def test_cross_retention_third_party_municipal_duplicate_activity_blocks_on_emitted(self):
+        """Third-party invoicing (ta #65929), Municipal: two retentions of
+        DIFFERENT partners over the same invoice bypass the by-invoice
+        check, so the per-activity cross-retention rule
+        (_check_municipal_duplicate_lines) is the one that must reject the
+        second retention once the first is already 'emitted', naming it."""
+        country = self.env["res.country"].search([("code", "=", "TC14548")], limit=1) or \
+            self.env["res.country"].create({"name": "Test Country 14548", "code": "TC14548"})
+        state = self.env["res.country.state"].search([("code", "=", "TS14548")], limit=1) or \
+            self.env["res.country.state"].create(
+                {"name": "Test State 14548", "code": "TS14548", "country_id": country.id}
+            )
+        municipality = self.env["res.country.municipality"].search(
+            [("code", "=", "MUN-14548")], limit=1
+        ) or self.env["res.country.municipality"].create({
+            "name": "Test Municipality 14548", "code": "MUN-14548",
+            "country_id": country.id, "state_id": [(6, 0, [state.id])],
+        })
+        branch = self.env["economic.branch"].search([("name", "=", "Branch 14548")], limit=1) or \
+            self.env["economic.branch"].create({"name": "Branch 14548", "status": "active"})
+        activity = self.env["economic.activity"].search(
+            [("name", "=", "Activity 14548")], limit=1
+        ) or self.env["economic.activity"].create({
+            "name": "Activity 14548", "aliquot": 5.0,
+            "municipality_id": municipality.id, "branch_id": branch.id,
+            "description": "Test", "minimum_monthly": 0, "minimum_annual": 0,
+        })
+
+        invoice = self._create_invoice_reten_iva(
+            amount=200, partner=self.partner_pnr_75, out_invoice="in_invoice",
+            journal=self.purchase_journal,
+        )
+        invoice.write({"foreign_rate": 1.0, "foreign_inverse_rate": 1.0})
+        invoice.action_post()
+        other_partner = self.partner_pnr_75.copy({"name": "Third party 2", "vat": "J-00000002-0"})
+
+        line_vals = {
+            "move_id": invoice.id,
+            "economic_activity_id": activity.id,
+            "aliquot": activity.aliquot,
+            "invoice_total": 200.0,
+            "invoice_amount": 200.0,
+            "retention_amount": 10.0,
+            "foreign_invoice_amount": 200.0,
+            "foreign_retention_amount": 10.0,
+        }
+        retention_1 = self.env["account.retention"].create({
+            "type_retention": "municipal",
+            "type": "in_invoice",
+            "is_third_party_retention": True,
+            "company_id": self.company.id,
+            "partner_id": self.partner_pnr_75.id,
+            "date": fields.Date.today(),
+            "date_accounting": fields.Date.today(),
+            "retention_line_ids": [Command.create(line_vals)],
+        })
+        retention_1.action_post()
+        self.assertEqual(retention_1.state, "emitted")
+
+        retention_2 = self.env["account.retention"].create({
+            "type_retention": "municipal",
+            "type": "in_invoice",
+            "is_third_party_retention": True,
+            "company_id": self.company.id,
+            "partner_id": other_partner.id,
+            "date": fields.Date.today(),
+            "date_accounting": fields.Date.today(),
+            "retention_line_ids": [Command.create(dict(line_vals))],
+        })
+        with self.assertRaises(ValidationError) as e:
+            retention_2.action_post()
+        msg = str(e.exception)
+        self.assertIn("already retained for the same", msg)
+        self.assertIn(retention_1.display_name, msg)
+
+        _logger.info(
+            "========= test_cross_retention_third_party_municipal_duplicate_activity_blocks_on_emitted passed ========="
         )
 
     # ------------------------------------------------------------------

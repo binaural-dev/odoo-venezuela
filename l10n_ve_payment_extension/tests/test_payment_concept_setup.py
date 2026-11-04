@@ -2,6 +2,7 @@ from odoo.tests import tagged
 from odoo import fields, Command
 from odoo.exceptions import UserError, ValidationError
 from datetime import date, timedelta
+from .rate_helper import seed_foreign_rates_between
 from .test_withholding_common_VEF import RetentionTestCommon
 import logging
 
@@ -318,6 +319,10 @@ class TestAccountingReportsExtraBranches(RetentionTestCommon):
         # the invoice date back too: this test only cares that a retention
         # dated outside the wizard's report window is excluded, not about the
         # accounting-date-vs-invoice-date relationship.
+        today = fields.Date.today()
+        seed_foreign_rates_between(
+            self.env, fields.Date.subtract(today, days=95), fields.Date.subtract(today, days=1)
+        )
         inv.invoice_date_display = fields.Date.subtract(fields.Date.today(), days=90)
         retention.write({"date_accounting": fields.Date.subtract(fields.Date.today(), days=60)})
         values = wizard.get_retention_iva_values(inv.id)

@@ -196,3 +196,28 @@ class TestIgtfNoteDebitMulticurrency(IGTFTestCommon):
             invoice.debit_note_ids.filtered(lambda dn: dn.l10n_ve_igtf_note_debit_origin),
             "Un diario sin IGTF no debe generar Nota de Débito.",
         )
+
+    def test_invoice_with_two_installments_computes_bi_igtf(self):
+        """Factura con DOS cuotas por cobrar pagada vía diario IGTF en modo
+        'debit_note'. `compute_bi_igtf` (y su variante de este módulo) buscaba
+        los parciales con `factura_line.id` asumiendo UNA sola línea por
+        cobrar y reventaba con `Expected singleton`."""
+        term = self.env["account.payment.term"].create({
+            "name": "50/50 (test IGTF ND)",
+            "line_ids": [
+                (0, 0, {"value": "percent", "value_amount": 50.0, "delay_type": "days_after", "nb_days": 0}),
+                (0, 0, {"value": "percent", "value_amount": 50.0, "delay_type": "days_after", "nb_days": 30}),
+            ],
+        })
+        invoice = self._create_invoice_usd(1000.00)
+        with Form(invoice) as form:
+            form.invoice_payment_term_id = term
+        invoice.with_context(move_action_post_alert=True).action_post()
+        receivable = invoice.line_ids.filtered(lambda l: l.account_type == "asset_receivable")
+        self.assertEqual(len(receivable), 2, "Setup: la factura debía quedar con dos cuotas")
+
+        payment = self._register_payment(invoice, self.bank_journal_usd, 600.00)
+
+        self.assertEqual(payment.state, "paid")
+        self.assertGreater(invoice.bi_igtf, 0.0)
+        self.assertGreaterEqual(invoice.foreign_bi_igtf, 0.0)
