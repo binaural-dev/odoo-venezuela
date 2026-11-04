@@ -57,3 +57,56 @@ class TestResPartnerEmailDuplicate(TransactionCase):
                 "name": "Partner 3",
                 "email": "test_duplicate@example.com",
             })
+
+    def test_05_decision_uses_company_id_param_not_active_company(self):
+        """La decision debe tomarse por la compañia recibida en
+        ``company_id``, no por ``self.env.company`` (bug corregido).
+
+        La compañia ACTIVA si digitaliza con TFHKA, pero el ``company_id``
+        pasado explicitamente es de otra compañia que NO digitaliza: la
+        validacion debe seguir aplicando para esa compañia, sin importar cual
+        sea la activa. Antes, al mirar solo ``self.env.company``, un usuario
+        con la compañia TFHKA activa podia colar duplicados que en realidad
+        pertenecen a otra compañia.
+
+        ``existing_partner`` debe pertenecer realmente a ``other_company``
+        (``company_id``) y el chequeo debe hacerse desde un partner DISTINTO:
+        el dominio de ``check_duplicate_email`` siempre excluye a ``self``
+        (ver ``l10n_ve_contact``), así que validar "contra sí mismo" nunca
+        encontraría nada sin importar el bug.
+        """
+        other_company = self.env["res.company"].create({
+            "name": "Otra Compañia (no TFHKA)",
+            "invoice_digital_tfhka": False,
+            "validate_user_creation_by_company": True,
+        })
+        existing_partner = self.env["res.partner"].create({
+            "name": "Partner de Otra Compania",
+            "email": "otra_compania@example.com",
+            "company_id": other_company.id,
+        })
+        checking_partner = self.env["res.partner"].create({
+            "name": "Partner que valida",
+            "email": "unrelated@example.com",
+        })
+        with self.assertRaises(ValidationError):
+            checking_partner.check_duplicate_email(
+                existing_partner.email, company_id=other_company.id
+            )
+
+    def test_06_decision_skips_validation_for_tfhka_company_id_param(self):
+        """A la inversa: la compañia ACTIVA no digitaliza, pero el
+        ``company_id`` recibido si lo hace -- la validacion debe omitirse
+        para esa compañia (antes, al mirar solo ``self.env.company``,
+        igual se validaba porque la activa no era TFHKA)."""
+        self.env.company.invoice_digital_tfhka = False
+        tfhka_company = self.env["res.company"].create({
+            "name": "Compañia TFHKA",
+            "invoice_digital_tfhka": True,
+            "validate_user_creation_by_company": True,
+        })
+        self.assertIsNone(
+            self.partner_1.check_duplicate_email(
+                "test_duplicate@example.com", company_id=tfhka_company.id
+            )
+        )
