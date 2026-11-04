@@ -6,7 +6,7 @@ from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
 
-@tagged("post_install", "-at_install", "l10n_ve_sale")
+@tagged("post_install", "-at_install", "l10n_ve_sale", "l10n_ve_sale_alternate_totals")
 class TestSaleOrderAlternateTotalsBlock(TransactionCase):
     """La orden de venta muestra el segundo bloque de totales: VES si la orden
     esta en otra moneda, moneda de referencia si esta en la de la compania."""
@@ -66,3 +66,11 @@ class TestSaleOrderAlternateTotalsBlock(TransactionCase):
         self.assertTrue(arch.xpath("//group[@name='sale_total']/field[@widget='account-tax-ves-totals-field']"))
         self.assertTrue(arch.xpath("//group[@name='sale_total']/field[@widget='account-tax-totals-field']"))
         self.assertFalse(arch.xpath("//page[@name='foreign_currency']"))
+
+    def test_form_hides_widget_for_company_currency_without_reference_currency(self):
+        arch = etree.fromstring(self.env["sale.order"].get_view(view_type="form")["arch"])
+        widget = arch.xpath("//group[@name='sale_total']/field[@widget='account-tax-ves-totals-field']")[0]
+        self.assertEqual(
+            widget.get("invisible"),
+            "currency_id == company_currency_id and not foreign_currency_id",
+        )
