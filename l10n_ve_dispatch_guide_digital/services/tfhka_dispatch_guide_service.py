@@ -64,6 +64,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
         return self.generate_document_data(picking, document_number, DOCUMENT_TYPE)
 
     def generate_document_data(self, picking, document_number, document_type):
+        self._check_transfer_reason(picking)
         document_identification = self._prepare_identification(picking, document_type, document_number)
         buyer = self._get_fiscal_party(picking)
         details_items = self._prepare_detail_lines(picking)
@@ -212,10 +213,7 @@ class TfhkaDispatchGuideService(models.AbstractModel):
             product_origin = "Nacional e Importado" if len(product_origin_set) > 1 else (product_origin_set.pop() if product_origin_set else "Sin origen definido")
             weight = f"{record.shipping_weight:.2f} {record.weight_uom_name}" if record.shipping_weight else "Sin peso"
             description = re.sub(r'<.*?>', '', str(record.note)) if record.note else "Sin descripción"
-            if record.transfer_reason_id.code == "other_causes":
-                transfer_reason = record.other_causes_transfer_reason
-            else:
-                transfer_reason = record.transfer_reason_id.name
+            transfer_reason = self._get_transfer_reason(record)
 
             return {
                 "esGuiaDespacho": "1",
@@ -225,6 +223,27 @@ class TfhkaDispatchGuideService(models.AbstractModel):
                 "origenProducto": product_origin,
                 "pesoOVolumenTotal": weight,
             }
+
+    def _get_transfer_reason(self, picking):
+        """Text sent as ``motivoTraslado``: the free text when the reason is
+        "Other causes", otherwise the reason name. Empty string when missing."""
+        if picking.transfer_reason_id.code == "other_causes":
+            return (picking.other_causes_transfer_reason or "").strip()
+        return picking.transfer_reason_id.name or ""
+
+    def _check_transfer_reason(self, picking):
+        """TFHKA requires ``motivoTraslado`` as a string and rejects the whole
+        document (HTTP 400, code 203) when it is missing. The reason is only
+        mandatory on internal transfers, and "Other causes" does not force its
+        free text, so stop the guide here with a clear message instead."""
+        if not self._get_transfer_reason(picking):
+            if picking.transfer_reason_id.code == "other_causes":
+                message = _(
+                    "Enter the reason for transfer for other causes on dispatch guide %s."
+                )
+            else:
+                message = _("Set the reason for transfer on dispatch guide %s.")
+            raise UserError(message % picking.name)
 
     def _prepare_additional_information(self, picking):
         additional_information = []
