@@ -68,6 +68,11 @@ class IGTFUtils(models.AbstractModel):
 
     @api.model
     def get_moves_from_context(self):
+        context = self.env.context
+        # Register payment of journal items (e.g. the IGTF left as a residual of the customer):
+        # the active_id is the id of a journal item, not of a journal entry.
+        if context.get("active_model") == "account.move.line" and context.get("active_ids"):
+            return set(self.env["account.move.line"].browse(context["active_ids"]).mapped("move_id"))
 
         ids=self.env.context.get("active_id") or self.env.context.get("active_ids")
         if isinstance(ids, int):

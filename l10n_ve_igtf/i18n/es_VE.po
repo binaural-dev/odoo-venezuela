@@ -337,3 +337,37 @@ msgstr ""
 msgid "subtotal with igtf"
 msgstr "Subtotal con IGTF"
 
+
+#. module: l10n_ve_igtf
+#. odoo-python
+#: code:addons/l10n_ve_igtf/models/account_payment.py:0
+msgid "IGTF to collect"
+msgstr "IGTF por cobrar"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_payment__igtf_as_residual
+msgid "IGTF as Residual"
+msgstr "IGTF como residual"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_payment__igtf_as_residual
+msgid ""
+"The IGTF is not part of the amount of the payment: it is charged to the "
+"customer as an open receivable of the payment entry, to be paid apart."
+msgstr ""
+"El IGTF no forma parte del importe del pago: se carga al cliente como una "
+"cuenta por cobrar abierta en el asiento del pago, para cancelarse aparte."
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,field_description:l10n_ve_igtf.field_account_move_line__is_igtf_residual
+msgid "IGTF Residual"
+msgstr "Residual de IGTF"
+
+#. module: l10n_ve_igtf
+#: model:ir.model.fields,help:l10n_ve_igtf.field_account_move_line__is_igtf_residual
+msgid ""
+"Receivable of the customer for the IGTF of a payment in foreign currency. It"
+" is left open to be paid apart from the invoices."
+msgstr ""
+"Cuenta por cobrar al cliente por el IGTF de un pago en divisas. Queda "
+"abierta para cancelarse aparte de las facturas."
