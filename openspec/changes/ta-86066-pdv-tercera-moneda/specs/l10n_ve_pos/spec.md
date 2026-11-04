@@ -224,12 +224,17 @@ Al cerrar la sesión (`_validate_cross_move`), por cada método que pase `_is_cr
 #### Scenario: Método en divisa completo
 
 - **WHEN** se cierra una sesión con pagos de un método `is_foreign_currency` con ambos diarios configurados
-- **THEN** se crean asientos borrador en `cross_account_journal` que acreditan la cuenta transitoria y debitan la cuenta real del `cross_journal` (o a la inversa para montos negativos), sin `name`: lo asigna el diario al contabilizar
+- **THEN** se crean asientos borrador en `cross_account_journal` que acreditan la cuenta transitoria y debitan la cuenta real del `cross_journal` (o a la inversa para montos negativos), con la tasa del pago y `foreign_currency_id` también en el encabezado, sin `name`: lo asigna el diario al contabilizar
 
 #### Scenario: Configuración incompleta
 
 - **WHEN** al método le falta `cross_account_journal` o `cross_journal`
 - **THEN** no se crea ningún cross move para ese método y el cierre no falla (un método con moneda de cobro no se puede guardar así)
+
+#### Scenario: Cuentas faltantes
+
+- **WHEN** a un método con sus dos diarios le falta alguna cuenta que usa su cruce
+- **THEN** la sesión no abre (change `l10n-ve-pos-cross-move-accounts-check`); en una sesión abierta antes, al cerrar, una transitoria que falte omite el cruce con un aviso en el log y una cuenta de las líneas de pago que falte da un error legible
 
 #### Scenario: Cuentas del cruce
 

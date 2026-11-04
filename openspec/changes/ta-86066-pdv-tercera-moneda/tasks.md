@@ -177,8 +177,22 @@
       punta: el core lo rechaza.
 - [x] 6.15 Precommit de los cinco módulos en verde.
 
-## 7. Cierre
+## 7. Tercera revisión del `code-reviewer` (2026-11-04, aprobar con cambios menores)
 
-- [ ] 7.1 Tercera revisión con `code-reviewer` de Binaural antes de los PRs
-- [ ] 7.2 Archivar el change y volcarlo en `openspec/specs/l10n_ve_pos/spec.md` y
+- [x] 7.1 Revisión hecha, sin bloqueantes; de la segunda revisión, todo resuelto salvo S1 (parcial, por el
+      hallazgo 1, que es de `binaural_pos_close`). El usuario aprueba corregir 1 a 4 y dejar fuera 5
+      (reembolso en € sin tasa del día: se bloquea en el PdV y en el backend, coherente) y 6 (moneda del
+      método solo en líneas no sincronizadas: arriesga las órdenes en borrador ya sincronizadas).
+- [x] 7.2 Sugerencia 2: el MODIFIED "Cross moves de compensación" recupera en escenarios la tasa y la
+      moneda alterna del encabezado y las cuentas faltantes (change `l10n-ve-pos-cross-move-accounts-check`).
+- [x] 7.3 Sugerencia 4: el aviso del log dice que el monto se convirtió a 0 (también un reembolso de
+      céntimos que redondea a 0). `odoo -c <conf> -d pos_t86066_ve --test-tags
+      /l10n_ve_pos:TestPosTenderCurrency,/l10n_ve_pos:TestPosTenderCurrencyBsCompany --stop-after-init
+      --no-http` → 68 tests, 0 fallos.
+- [x] 7.4 Sugerencia 3: el aviso de despliegue suma el "(Bs X)" del recibo de las cajas en otra moneda y que
+      sin tasa del día tampoco se reembolsa en €.
+
+## 8. Cierre
+
+- [x] 8.1 Archivar el change y volcarlo en `openspec/specs/l10n_ve_pos/spec.md` y
       `openspec/specs/l10n_ve_pos_igtf/spec.md`
