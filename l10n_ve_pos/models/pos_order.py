@@ -1,4 +1,8 @@
+import logging
+
 from odoo import api, fields, models
+
+_logger = logging.getLogger(__name__)
 
 
 class PosOrder(models.Model):
@@ -139,19 +143,39 @@ class PosOrder(models.Model):
                 vals["tender_currency_id"] = currency.id
             if not payment.tender_amount and payment.amount:
                 vals["tender_amount"] = self._get_payment_tender_amount(payment, currency)
+                if not vals["tender_amount"]:
+                    # Sin tasa del día (ni de los cobros originales, en un
+                    # reembolso). La sincronización no se bloquea: el PdV y el
+                    # cobro desde el backend (``pos.make.payment``) ya lo
+                    # impiden antes, así que solo llega aquí una orden de un
+                    # bundle anterior o encolada sin conexión.
+                    _logger.warning(
+                        "Payment %s of order %s: %s %s without exchange rate of the day for "
+                        "%s, its tender amount is left at 0.",
+                        payment.id, self.name, payment.amount, self.currency_id.name,
+                        currency.name,
+                    )
             if vals:
                 payment.write(vals)
 
     def _get_payment_tender_amount(self, payment, currency):
         """``payment.amount`` (moneda de la caja) en la moneda de cobro
         ``currency``. En un reembolso, a la tasa con la que se cobraron en esa
-        moneda los pagos de la orden original (``get_refund_tender_rates``),
+        moneda los pagos de las órdenes originales (``get_refund_tender_rates``),
         igual que el PdV: se devuelven los mismos euros. Si no, a la tasa del
-        día de la caja (``pos.config._convert``)."""
+        día de la caja (``pos.config._convert``).
+
+        Las órdenes originales son las de todas las líneas reembolsadas, como
+        el ``originOrderIds`` del PdV, y no ``refunded_order_id``, que es solo
+        la primera (``_compute_refund_related_fields`` del core). Hoy un
+        reembolso tiene una sola orden original (``sync_from_ui`` del core
+        rechaza uno de varias), así que es una defensa para uno armado por
+        código."""
         self.ensure_one()
+        original_orders = self.lines.refunded_orderline_id.order_id
         refund_rate = (
-            self.get_refund_tender_rates(self.refunded_order_id.ids).get(currency.id)
-            if self.refunded_order_id
+            self.get_refund_tender_rates(original_orders.ids).get(currency.id)
+            if original_orders
             else 0.0
         )
         if refund_rate:

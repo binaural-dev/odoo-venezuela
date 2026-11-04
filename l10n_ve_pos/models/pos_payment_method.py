@@ -24,13 +24,16 @@ class PosPaymentMethod(models.Model):
     cross_journal = fields.Many2one("account.journal", domain=[("type", "in", ("bank", "cash"))])
 
     @api.constrains(
-        "tender_currency_id", "is_foreign_currency", "journal_id", "cross_journal", "company_id",
-        "config_ids",
+        "tender_currency_id", "is_foreign_currency", "journal_id", "cross_journal",
+        "cross_account_journal", "company_id", "config_ids",
     )
     def _check_tender_currency(self):
         """Un método en una tercera moneda no es el de la moneda de la caja ni
         el de la alterna: cada uno tiene su propio flujo (``is_foreign_currency``
-        para la alterna). Su diario real (``cross_journal``) lleva esa moneda,
+        para la alterna). Sus dos diarios de cruce son obligatorios: su diario
+        es el transitorio en la moneda de la caja y los euros solo llegan a la
+        caja real con el cruce (``_is_cross_move_eligible`` omite en silencio un
+        método sin ellos). Su diario real (``cross_journal``) lleva esa moneda,
         porque el cruce le pone ``amount_currency`` en ella. Y solo se usa en
         cajas en la moneda de la compañía (ver
         ``pos.config._check_tender_currency_methods_currency``).
@@ -61,7 +64,14 @@ class PosPaymentMethod(models.Model):
                     "tender currency.",
                     method=method.name,
                 ))
-            if method.cross_journal and method.cross_journal.currency_id != currency:
+            if not (method.cross_journal and method.cross_account_journal):
+                raise ValidationError(_(
+                    "The payment method %(method)s is collected in %(currency)s: set its Cross "
+                    "Journal (the real journal in %(currency)s) and its Cross Account Journal.",
+                    method=method.name,
+                    currency=currency.name,
+                ))
+            if method.cross_journal.currency_id != currency:
                 raise ValidationError(_(
                     "The cross journal %(journal)s of the payment method %(method)s must be in "
                     "%(currency)s, its tender currency.",

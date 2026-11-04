@@ -198,11 +198,12 @@ class PosSession(models.Model):
                 session._create_combined_cross_move(
                     payment_method,
                     session._get_combined_cross_legs(payment_method, method_payments),
-                    # The operative rate is a session-level setting, so every
-                    # payment being netted here already shares it. Read it off
-                    # a payment rather than off ``config_id.foreign_rate``:
-                    # the config value can be edited after the session opened,
-                    # while the payments carry the rate actually applied.
+                    # Rate of the move header. Read it off a payment rather
+                    # than off ``config_id.foreign_rate``: the config value can
+                    # be edited after the session opened, while the payments
+                    # carry the rate actually applied. Each leg's lines carry
+                    # the rate of their own payments (a refund keeps the one of
+                    # its original sale), see ``_get_combined_cross_legs``.
                     foreign_rate=method_payments[0].foreign_rate,
                     date=session.stop_at or fields.Datetime.now(),
                     ref=session._cross_move_ref(),
@@ -224,9 +225,15 @@ class PosSession(models.Model):
         ``amount`` and ``foreign_amount``); ``binaural_pos_multicurrency``
         passes its conversions for a PoS in another currency.
 
-        :return: list of ``{"amount", "foreign_amount"[, "currency_amount"]}``
-            (``currency_amount`` only for a method with a tender currency, see
-            ``_get_cross_currency_amount_kwargs``).
+        Each leg carries the rate of its first payment (``foreign_rate``):
+        the refunds of a session are valued at the rate of their original
+        sales (``pos.order._get_payment_foreign_rate``), not at the one of the
+        sales of the day. The lines are not recomputed from it
+        (``not_foreign_recalculate``): it is informative.
+
+        :return: list of ``{"amount", "foreign_amount", "foreign_rate"[,
+            "currency_amount"]}`` (``currency_amount`` only for a method with a
+            tender currency, see ``_get_cross_currency_amount_kwargs``).
         """
         amount_of = amount_of or (lambda payment: payment.amount)
         foreign_amount_of = foreign_amount_of or (lambda payment: payment.foreign_amount)
@@ -238,6 +245,7 @@ class PosSession(models.Model):
             legs.append({
                 "amount": sum(amount_of(p) for p in leg_payments),
                 "foreign_amount": sum(foreign_amount_of(p) for p in leg_payments),
+                "foreign_rate": leg_payments[0].foreign_rate,
                 **self._get_cross_currency_amount_kwargs(payment_method, leg_payments),
             })
         return legs
@@ -248,7 +256,8 @@ class PosSession(models.Model):
         session (combine granularity), with one pair of lines per leg of
         ``_get_combined_cross_legs`` (incoming / outgoing), each built exactly
         like the move of a single payment (``_get_cross_move_line_vals``,
-        ``use_suspense`` inversion included).
+        ``use_suspense`` inversion included) with the rate of its leg (or
+        ``foreign_rate``, the one of the header, if the leg has none).
 
         Nothing is created when the nets of the legs are all zero in the
         currency of the move lines, the foreign currency and the tender
@@ -265,7 +274,8 @@ class PosSession(models.Model):
         line_vals = []
         for leg in legs:
             line_vals += self._get_cross_move_line_vals(
-                payment_method, leg["amount"], leg["foreign_amount"], foreign_rate, partner,
+                payment_method, leg["amount"], leg["foreign_amount"],
+                leg.get("foreign_rate") or foreign_rate, partner,
                 use_suspense=use_suspense, currency_amount=leg.get("currency_amount"),
             )
         self._check_cross_move_line_accounts(payment_method, line_vals)

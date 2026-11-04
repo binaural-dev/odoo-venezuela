@@ -48,9 +48,13 @@ patch(PosPayment.prototype, {
     // de la compañía en una caja en otra moneda) y los ganchos _getTenderDue /
     // _getPartialTenderLocalAmount.
 
+    // Un pago ya guardado conserva la moneda con la que se cobró
+    // (pos.payment.tender_currency_id), aunque después cambie la del método:
+    // al reimprimir un recibo viejo salen los euros que se cobraron. Una línea
+    // nueva aún no la tiene y toma la del método.
     getTenderCurrency() {
         const order = this.pos_order_id;
-        const currency = this.payment_method_id?.tender_currency_id;
+        const currency = this.tender_currency_id || this.payment_method_id?.tender_currency_id;
         if (!order || !currency) {
             return null;
         }
