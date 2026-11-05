@@ -846,15 +846,15 @@ msgstr "El producto '%s' no tiene suficiente stock en el almacén"
 #. odoo-python
 #: code:addons/l10n_ve_pos/controllers/controller.py:0
 #, python-format
-msgid "The product's '%s' You do not have enough stock in the warehouse %s"
-msgstr "El producto '%s' no tiene suficiente stock en el almacén '%s'"
+msgid "The product's '%(product)s' You do not have enough stock in the warehouse %(warehouse)s"
+msgstr "El producto '%(product)s' no tiene suficiente stock en el almacén '%(warehouse)s'"
 
 #. module: l10n_ve_pos
 #. odoo-python
 #: code:addons/l10n_ve_pos/controllers/controller.py:0
 #, python-format
-msgid "The product's '%s' not available in stock warehouse %s"
-msgstr "Los productos '%s' no están disponibles en el almacén %s"
+msgid "The product's '%(products)s' not available in stock warehouse %(warehouse)s"
+msgstr "Los productos '%(products)s' no están disponibles en el almacén %(warehouse)s"
 
 #. module: l10n_ve_pos
 #: model:ir.model.fields,help:l10n_ve_pos.field_pos_payment__foreign_rate
