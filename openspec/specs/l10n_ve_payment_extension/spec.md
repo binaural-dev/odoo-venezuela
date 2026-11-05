@@ -727,6 +727,16 @@ En acciones automatizadas/cron (`automated_action`/`cron_id` en el contexto) el 
 - **WHEN** la factura elegida no tiene IVA, o el usuario escribe alícuota 0 en la línea
 - **THEN** no se crea una línea con alícuota 0: si la factura no tiene IVA se limpia la factura y se avisa, y si el usuario escribe 0 la línea vuelve a la alícuota de la factura y se avisa. No existe retención de IVA con alícuota 0 (no hay IVA que retener) y una línea así escondería la factura de los chequeos de duplicidad
 
+#### Scenario: Aprobar una retención de IVA con una línea de alícuota 0
+- **GIVEN** una retención de IVA en borrador con una línea de alícuota 0 (creada por cualquier vía)
+- **WHEN** el usuario pulsa Aprobar (`action_post`)
+- **THEN** se muestra un error claro con las facturas afectadas y la retención no se emite; la línea no se ignora (no existe retención de IVA al 0%). En acciones automatizadas o cron se deja nota en el chatter y se devuelve `False`. ISLR y municipal no se ven afectados
+
+#### Scenario: Facturas ofrecidas por "Agregar una línea" en una retención de IVA
+- **GIVEN** una retención de IVA en borrador (nueva, reabierta, o creada al confirmar la factura)
+- **WHEN** se abre el formulario
+- **THEN** `available_invoice_ids` es un campo computado, no almacenado, que se recalcula al abrir: las facturas publicadas del cliente con IVA, saldo pendiente, sin comprobante de IVA y sin línea de retención de IVA en borrador o emitida de otra retención. Las facturas de las líneas de la propia retención siempre se incluyen (no se las quita la línea ni el número de comprobante que Odoo les asigna al crearla). En retenciones de terceros son las facturas de sus propias líneas. ISLR y municipal siguen usando `allowed_lines_move_ids`, y una retención ya emitida no ofrece facturas
+
 #### Scenario: Comprobantes de terceros distintos sobre la misma factura
 
 - **GIVEN** dos comprobantes del mismo tipo con partners distintos sobre la misma factura
