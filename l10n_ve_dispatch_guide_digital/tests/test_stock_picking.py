@@ -5,6 +5,10 @@ from odoo.exceptions import UserError
 from odoo.tests import Form, TransactionCase, tagged
 from unittest.mock import patch
 
+from odoo.addons.l10n_ve_invoice_digital.services.tfhka_service_base import (
+    TfhkaDataError,
+)
+
 _logger = logging.getLogger(__name__)
 
 
@@ -212,6 +216,9 @@ class TestStockPickingApiCalls(TransactionCase):
             "location_dest_id": location_dest,
             "picking_type_id": picking_type.id,
             "is_dispatch_guide": True,
+            "transfer_reason_id": self.env.ref(
+                "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses"
+            ).id,
         }
         if partner is not False:
             vals["partner_id"] = (partner or self.customer).id
@@ -521,6 +528,83 @@ class TestStockPickingApiCalls(TransactionCase):
         self.assertEqual(item["tasaIVA"], "0.0")
         self.assertEqual(item["precioUnitario"], str(expected_unit_price))
 
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_prepare_detail_lines_sale_with_transfer_reason_keeps_amounts(self, mock_call):
+        """Ticket 16109: the pick guide (multi-step delivery) must carry the
+        sale amounts."""
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 2,
+                    "price_unit": 5500,
+                    "tax_ids": [Command.set([self.tax_iva16.id])],
+                    "name": "Sale line",
+                }
+            ],
+            currency=self.currency_vef,
+        )
+        picking.transfer_reason_id = self.env.ref(
+            "l10n_ve_stock_account.transfer_reason_transfer_between_warehouses"
+        )
+        self.validate_picking(picking)
+
+        items = self.DispatchGuideService._prepare_detail_lines(picking)
+        self.assertEqual(len(items), 1)
+        item = items[0]
+        self.assertEqual(item["precioUnitario"], "5500.0")
+        self.assertEqual(item["precioItem"], "11000.0")
+        self.assertEqual(item["valorIVA"], "1760.0")
+        self.assertEqual(item["valorTotalItem"], "12760.0")
+        self.assertEqual(item["codigoImpuesto"], "G")
+
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_prepare_detail_lines_sale_applies_discount(self, mock_call):
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 4,
+                    "price_unit": 100,
+                    "tax_ids": [Command.set([self.tax_iva16.id])],
+                    "name": "Discounted line",
+                }
+            ],
+            currency=self.currency_vef,
+        )
+        order.order_line.filtered("product_id").discount = 10
+        self.validate_picking(picking)
+
+        item = self.DispatchGuideService._prepare_detail_lines(picking)[0]
+        self.assertEqual(item["precioUnitario"], "100.0")
+        self.assertEqual(item["precioUnitarioDescuento"], "90.0")
+        self.assertEqual(item["precioAntesDescuento"], "400.0")
+        self.assertEqual(item["descuentoMonto"], "40.0")
+        self.assertEqual(item["precioItem"], "360.0")
+        self.assertEqual(item["valorIVA"], "57.6")
+        self.assertEqual(item["valorTotalItem"], "417.6")
+
+    @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
+    def test_prepare_detail_lines_sale_partial_uses_moved_quantity(self, mock_call):
+        order, picking = self.create_sale_dispatch_guide(
+            order_lines=[
+                {
+                    "product_id": self.product_storable.id,
+                    "product_uom_qty": 5,
+                    "price_unit": 10,
+                    "tax_ids": [Command.clear()],
+                    "name": "Entrega parcial",
+                }
+            ],
+            currency=self.currency_vef,
+        )
+        picking.move_ids.quantity = 2
+
+        item = self.DispatchGuideService._prepare_detail_lines(picking)[0]
+        self.assertEqual(item["cantidad"], "2.0")
+        self.assertEqual(item["precioItem"], "20.0")
+        self.assertEqual(item["valorTotalItem"], "20.0")
+
     # ==================================================================
     # _prepare_dispatch_guide
     # ==================================================================
@@ -597,6 +681,29 @@ class TestStockPickingApiCalls(TransactionCase):
 
         guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
         self.assertEqual(guide["motivoTraslado"], self.transfer_reason_sale.name)
+
+    def test_check_transfer_reason_missing_raises_data_error(self):
+        """A guide without a reason for transfer must not reach TFHKA, which
+        rejects ``motivoTraslado: false`` with HTTP 400. A receipt is used
+        because no reason is auto-assigned to it."""
+        picking = self.create_picking(picking_type=self.picking_type_in)
+        picking.transfer_reason_id = False
+        with self.assertRaises(TfhkaDataError):
+            self.DispatchGuideService._check_transfer_reason(picking)
+
+    def test_check_transfer_reason_other_causes_without_text_raises(self):
+        picking = self.create_picking()
+        picking.transfer_reason_id = self.transfer_reason_other_causes.id
+        picking.other_causes_transfer_reason = "  "
+        with self.assertRaises(TfhkaDataError):
+            self.DispatchGuideService._check_transfer_reason(picking)
+
+    def test_check_transfer_reason_ok(self):
+        picking = self.create_picking()
+        picking.transfer_reason_id = self.transfer_reason_sale.id
+        self.DispatchGuideService._check_transfer_reason(picking)
+        guide = self.DispatchGuideService._prepare_dispatch_guide(picking)
+        self.assertIsInstance(guide["motivoTraslado"], str)
 
     @patch(TFHKA_REQUEST_PATCH, side_effect=mock_api)
     def test_prepare_dispatch_guide_with_shipping_weight(self, mock_call):
