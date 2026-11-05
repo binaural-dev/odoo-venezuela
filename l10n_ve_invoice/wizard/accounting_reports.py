@@ -4,7 +4,7 @@ from io import BytesIO
 
 import xlsxwriter
 from dateutil.relativedelta import relativedelta
-from odoo import fields, models, _
+from odoo import api, fields, models, _
 from odoo.exceptions import UserError
 from xlsxwriter import utility
 import re
@@ -50,6 +50,100 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
     )
 
     company_id = fields.Many2one("res.company", default=_default_company_id)
+
+    def _default_branch_scope(self):
+        return "all" if self._get_same_vat_branches(self.env.company) else "main"
+
+    has_branches = fields.Boolean(
+        string="Has branches",
+        compute="_compute_has_branches",
+    )
+    branch_scope = fields.Selection(
+        [
+            ("all", "Consolidated (main company and branches)"),
+            ("main", "Main company only (excluding branches)"),
+            ("branch", "A specific branch"),
+        ],
+        string="Scope",
+        required=True,
+        default=_default_branch_scope,
+        help="Companies whose documents are included in the book. Branches are "
+        "only considered when they share the RIF of the main company.",
+    )
+    branch_company_id = fields.Many2one(
+        "res.company",
+        string="Branch",
+        domain="[('parent_id', 'child_of', company_id), ('id', '!=', company_id)]",
+    )
+    report_company_ids = fields.Many2many(
+        "res.company",
+        string="Companies in the report",
+        compute="_compute_report_company_ids",
+    )
+
+    @api.model
+    def _get_same_vat_branches(self, company):
+        """Branches (descendants) of ``company`` that share its RIF.
+
+        A branch without its own RIF is the same taxpayer as its parent.
+        """
+        company = company.sudo()
+        descendants = self.env["res.company"].sudo().search(
+            [("id", "child_of", company.id), ("id", "!=", company.id)]
+        )
+        vat = (company.vat or "").replace("-", "").replace(" ", "").upper()
+        return descendants.filtered(
+            lambda c: not c.vat or c.vat.replace("-", "").replace(" ", "").upper() == vat
+        )
+
+    @api.depends("company_id")
+    def _compute_has_branches(self):
+        for wizard in self:
+            wizard.has_branches = bool(
+                wizard.company_id and self._get_same_vat_branches(wizard.company_id)
+            )
+
+    @api.depends("company_id", "branch_scope", "branch_company_id")
+    def _compute_report_company_ids(self):
+        for wizard in self:
+            company = wizard.company_id
+            if not company:
+                wizard.report_company_ids = False
+                continue
+            scope = wizard.branch_scope if wizard.has_branches else "main"
+            if scope == "all":
+                companies = company | self._get_same_vat_branches(company)
+            elif scope == "branch" and wizard.branch_company_id:
+                companies = wizard.branch_company_id
+            else:
+                companies = company
+            # Only the companies the user can actually access: the book can
+            # be generated with a superuser environment (download controller).
+            user = wizard.create_uid or self.env.user
+            wizard.report_company_ids = companies & user.sudo().company_ids
+
+    @api.constrains("branch_scope", "branch_company_id", "company_id")
+    def _check_branch_company(self):
+        for wizard in self:
+            if wizard.branch_scope != "branch":
+                continue
+            if not wizard.branch_company_id:
+                raise UserError(_("Select the branch to generate the book for."))
+            if wizard.branch_company_id not in self._get_same_vat_branches(wizard.company_id):
+                raise UserError(
+                    _("The branch must belong to the company and share its RIF.")
+                )
+
+    def _get_header_company(self):
+        """Company printed in the header of the book.
+
+        The main company for the consolidated book, the branch itself when the
+        book is for one branch only.
+        """
+        self.ensure_one()
+        if self.has_branches and self.branch_scope == "branch" and self.branch_company_id:
+            return self.branch_company_id
+        return self.company_id
 
     def _default_currency_system(self):
         return True if self.env.company.currency_id.id == self.env.ref("base.VEF").id else False
@@ -711,7 +805,7 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         search_domain = []
         is_purchase = self.report == "purchase"
 
-        search_domain += [("company_id", "=", self.company_id.id)]
+        search_domain += [("company_id", "in", self.report_company_ids.ids)]
 
         move_type = (
             ["out_invoice", "out_refund"]
@@ -761,12 +855,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
     def download_sales_book(self):
         self.ensure_one()
-        url = "/web/download_sales_book?company_id=%s" % self.company_id.id
+        url = "/web/download_sales_book?wizard_id=%s" % self.id
         return {"type": "ir.actions.act_url", "url": url, "target": "self"}
 
     def download_purchases_book(self):
         self.ensure_one()
-        url = "/web/download_purchase_book?company_id=%s" % self.company_id.id
+        url = "/web/download_purchase_book?wizard_id=%s" % self.id
         return {"type": "ir.actions.act_url", "url": url, "target": "self"}
 
     def _format_date(self, date):
@@ -818,8 +912,21 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ] and move.state in ["cancel"]:
             return "03-ANU"
 
+    def _get_book_order(self):
+        """Orden de los documentos en el libro.
+
+        invoice_date_display es Date: sin desempate, las facturas de un mismo
+        día salen en el orden físico de la tabla, que cambia cada vez que se
+        modifica una factura. En el libro de ventas se desempata por la
+        fecha-hora de registro (invoice_date_display_datetime) y luego por id;
+        el libro de compras no cambia.
+        """
+        if self.report == "sale":
+            return "invoice_date_display asc, invoice_date_display_datetime asc, id asc"
+        return "invoice_date_display asc"
+
     def search_moves(self):
-        order = "invoice_date_display asc" if self.report == "purchase" else "correlative asc"
+        order = self._get_book_order()
         env = self.env
         move_model = env["account.move"]
         domain = self._get_domain()
@@ -918,21 +1025,30 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         ]
     
     def convert_currency_to_float(self, currency_str):
-  
+        # El importe llega formateado por Odoo. El simbolo de moneda y el monto
+        # van separados por un espacio (normal, no-separable \xa0 o salto de
+        # linea), en cualquiera de los dos ordenes segun la posicion del simbolo:
+        #   "Bs.\xa01.234,56"  (simbolo antes, es_VE: punto miles, coma decimal)
+        #   "100.00\xa0Bs.F"   (simbolo despues, Bs.F: punto decimal)
+        # Nos quedamos SOLO con los tokens que contienen digitos, para descartar
+        # el simbolo COMPLETO (incluido su punto, como en "Bs."/"Bs.F", que si no
+        # se cuela como un punto suelto y rompe el float). NO se debe partir por
+        # \xa0 y quedarse con un lado fijo: falla segun donde vaya el simbolo.
         if not currency_str:
             return 0.0
-        
-        cleaned_str = str(currency_str).strip()
-       
-        if '\xa0' in cleaned_str:
-            cleaned_str = cleaned_str.split('\xa0', 1)[0]
-        
-        numeric_part = re.sub(r'[^\d,\.-]', '', cleaned_str)
-        
-        if '.' in numeric_part and ',' in numeric_part:
-            numeric_part = numeric_part.replace('.', '')
-        
-        final_value = numeric_part.replace(',', '.')
+
+        tokens = re.split(r"\s+", str(currency_str).strip())
+        numeric_part = "".join(
+            re.sub(r"[^\d,\.-]", "", token)
+            for token in tokens
+            if any(char.isdigit() for char in token)
+        )
+
+        if "." in numeric_part and "," in numeric_part:
+            # Ambos separadores presentes (es_VE): el punto es de miles -> fuera.
+            numeric_part = numeric_part.replace(".", "")
+
+        final_value = numeric_part.replace(",", ".")
 
         try:
             return float(final_value)
@@ -945,6 +1061,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             return 0.0
 
     def _determinate_amount_taxeds(self, move):
+        # Memoizacion por asiento durante UNA generacion del libro. El libro
+        # llama este metodo ~1 vez por asiento en el cuerpo y ~16 veces por
+        # asiento en el resumen (una por linea de resumen), asi que sin cache el
+        # calculo se repite ~17 veces por asiento. El cache vive en el contexto
+        # (los recordsets no admiten atributos por __slots__) y lo siembran los
+        # entrypoints generate_sales_book/generate_purchases_book. El resultado
+        # solo depende del asiento (los parametros del wizard son fijos durante
+        # la generacion), asi que la clave es move.id.
+        cache = self.env.context.get("_ve_book_amounts_cache")
+        if cache is not None and move.id in cache:
+            return cache[move.id]
         is_posted = move.state == "posted"
 
         if not is_posted:
@@ -981,6 +1108,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                         "amount_extend_aliquot_no_deductible": 0.0,
                     }
                 )
+            if cache is not None:
+                cache[move.id] = fields_in_zero
             return fields_in_zero
 
         is_credit_note = move.move_type in ["out_refund", "in_refund"]
@@ -998,13 +1127,21 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
         tax_base_extend_aliquot = 0.0
         amount_extend_aliquot = 0.0
 
-        base_key = "formatted_base_amount_currency_ves"
-        tax_key = "formatted_tax_amount_currency_ves"
+        # Se leen los importes CRUDOS (floats) que el core ya calculo, no los
+        # string formateados (`formatted_*_currency_ves`). Esos los arma
+        # `formatLang` con el idioma del USUARIO que dispara el reporte, asi que
+        # con un usuario en ingles el decimal es punto y re-parsear saldria mal
+        # EN SILENCIO (importes /1000). `base_amount`/`tax_amount` son el valor
+        # en VES: es justo lo que l10n_ve_accountant formatea a
+        # `formatted_*_currency_ves` (models/account_tax.py:213-222, :273-282,
+        # :328-337). Ademas evita formatear + re-parsear ~80k veces por libro.
+        base_key = "base_amount"
+        tax_key = "tax_amount"
 
         # Sumar totales generales
         if tax_totals:
-            amount_untaxed = self.convert_currency_to_float(tax_totals.get(base_key, ''))
-            amount_taxed = self.convert_currency_to_float(tax_totals.get(tax_key, ''))
+            amount_untaxed = tax_totals.get(base_key, 0.0)
+            amount_taxed = tax_totals.get(tax_key, 0.0)
             if is_credit_note:
                 amount_untaxed *= -1
                 amount_taxed *= -1
@@ -1061,8 +1198,8 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
             for subtotal in tax_totals["subtotals"]:
                 for group in subtotal.get("tax_groups", []):
                     group_id = group.get("id")
-                    base = self.convert_currency_to_float(group.get(base_key,''))
-                    tax = self.convert_currency_to_float(group.get(tax_key,''))
+                    base = group.get(base_key, 0.0)
+                    tax = group.get(tax_key, 0.0)
                     if is_credit_note:
                         base *= -1
                         tax *= -1
@@ -1189,11 +1326,14 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         tax_result['amount_import_international'] = amount_import_international
 
+        if cache is not None:
+            cache[move.id] = tax_result
         return tax_result
 
-    def generate_sales_book(self, company_id):
+    def generate_sales_book(self, company_id=None):
+        if company_id:
+            self.company_id = company_id
 
-        self.company_id = company_id
         sale_book_lines = self.parse_sale_book_data()
         file = BytesIO()
 
@@ -1220,12 +1360,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         worksheet.merge_range(
             "C1:M1",
-            f"{self.company_id.name} - {self.company_id.vat}",
+            f"{self._get_header_company().name} - {self._get_header_company().vat}",
             workbook.add_format({"bold": True, "center_across": True, "font_size": 18, "locked": True}),
         )
         worksheet.merge_range(
             "C2:M2",
-            f"Direccion:  {self.company_id.street}",
+            f"Direccion:  {self._get_header_company().street}",
             cell_bold,
         )
         worksheet.merge_range("C3:M3", "Libro de Ventas", cell_bold)
@@ -1327,8 +1467,10 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
      
         return flat_fields
 
-    def generate_purchases_book(self, company_id):
-        self.company_id = company_id
+    def generate_purchases_book(self, company_id=None):
+        if company_id:
+            self.company_id = company_id
+
         purchase_book_lines = self.parse_purchase_book_data()
         file = BytesIO()
 
@@ -1362,12 +1504,12 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
 
         worksheet.merge_range(
             "C1:M1",
-            f"{self.company_id.name} - {self.company_id.vat}",
+            f"{self._get_header_company().name} - {self._get_header_company().vat}",
             workbook.add_format({"bold": True, "center_across": True, "font_size": 18, "locked": True}),
         ) 
         worksheet.merge_range(
             "C2:M2",
-            f"Direccion:  {self.company_id.street}",
+            f"Direccion:  {self._get_header_company().street}",
             cell_bold,
         )
         worksheet.merge_range("C3:M3", "Libro de Compras", cell_bold)
@@ -1490,45 +1632,17 @@ class WizardAccountingReportsBinauralInvoice(models.TransientModel):
                 total_line = idx_line + 2
                 worksheet.write(row_resume, idx_line + 2, line, cell_formats.get("number"))
 
-            if not is_purchase:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
-
+            if resume.get("total"):
+                first_row = index_to_start + 5
+                for col in range(2, 8):
+                    col_letter = chr(ord("A") + col)
                     worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
+                        row_resume,
+                        col,
+                        f"=SUM({col_letter}{first_row}:{col_letter}{row_resume})",
+                        cell_formats.get("number"),
                     )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
-
-            else:
-                if resume.get("total"):
-                    total_c_formula = f"=SUM(C{index_to_start + 5}:C{row_resume})"
-                    total_d_formula = f"=SUM(D{index_to_start + 5}:D{row_resume})"
-                    total_e_formula = f"=SUM(E{index_to_start + 5}:E{row_resume})"
-                    total_f_formula = f"=SUM(F{index_to_start + 5}:F{row_resume})"
-
-                    worksheet.write_formula(
-                        row_resume, 2, total_c_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 3, total_d_formula, cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 4, total_e_formula,cell_formats.get("number")
-                    )
-                    worksheet.write_formula(
-                        row_resume, 5, total_f_formula,cell_formats.get("number")
-                    )
+                continue
 
             values = resume.get("values", [0, 0, 0, 0])
             base_total_neto = (values[0] if len(values) > 0 else 0) + (values[2] if len(values) > 2 else 0)

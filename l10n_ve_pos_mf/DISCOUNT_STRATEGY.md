@@ -82,7 +82,19 @@ Strategy A is **not** propagated to Notas de Crédito / Débito. NC/ND retain th
 - **Math**: Total printed by the fiscal printer matches what Odoo computes for an equivalent line-discount situation. Eliminates the "tax discrepancy" complaint.
 - **Ticket readability**: The single line `DESC. GLOBAL 15% = 15.00` preserves audit visibility.
 - **Overwrite policy**: A newly assigned global discount always overwrites the discount on every positive line (reset to 0% then set to the flat global rate). It does **not** compose with any pre-existing per-line discount or with a previously applied global discount. This avoids uneven rates between lines added before vs. after a global discount is set (previously caused "split"/unequal discounts when a new line was added and the global discount was reassigned).
-- **No new fiscal commands introduced** — still uses only `!`, `iXX`, `3`, `1XX`, `2XX`, `101`, `199`. No `p-` per-line or negative-priced items. Compatible with the existing printer firmware.
+- **Fiscal commands used**: `!`, `iXX`, `3`, `1XX`, `2XX`, `101`, `199`, plus
+  `q-` per item (see below). No `p-` and no negative-priced items.
+  - **Update (ticket #15105):** an item may now be followed by a `q-<amount>`
+    sent before the subtotal (`3`), which discounts that item
+    (`TfhkaDriver._appendItemDiscount`, used by `printInvoice` and
+    `printCreditNote`; HKA protocol manual V8.5.0, pages 27, 34-35 and 37).
+    It is only emitted when the POS sets `discount_amount` on the line, which
+    today happens solely for lines billed at the fiscal minimum of 0,01
+    (`N x 0,01` with `q-` `(N - 1) x 0,01`), so the machine prints the real
+    quantity. Verified on a physical machine in 2doce. Strategy A itself is
+    unchanged: regular line and global discounts are still baked into the net
+    unit price, and no `q-` is sent for them.
+    Spec: `openspec/changes/l10n-ve-pos-mf-full-discount-min-price/`.
 - **No firmware-specific assumptions** beyond what was already working.
 
 ## What was tried before (and discarded)

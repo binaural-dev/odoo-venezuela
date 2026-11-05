@@ -1,13 +1,35 @@
 import logging
+import re
 
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
 from odoo.fields import Domain
 from odoo.tools.safe_eval import safe_eval
+from .res_company import INTERNAL_TRANSFER_REASON_CODES
 from datetime import date, datetime, timedelta
 import calendar
 
 _logger = logging.getLogger(__name__)
+
+# Campos de transporte que exige la compañía cuando activa
+# "Require Transport Data".
+TRANSPORT_REQUIRED_FIELDS = (
+    "transport_driver_name",
+    "transport_driver_vat",
+    "transport_vehicle_plate",
+)
+TRANSPORT_PLATE_FIELDS = ("transport_vehicle_plate", "transport_trailer_plate")
+# Prefijos de cédula/RIF que identifican una empresa, un ente publico o un
+# consejo comunal (no una persona): no tiene sentido como conductor.
+TRANSPORT_DRIVER_VAT_COMPANY_PREFIXES = ("J", "G", "C")
+# Grados de la licencia de conducir venezolana.
+DRIVER_LICENSE_TYPES = [
+    ("1", "1st Degree"),
+    ("2", "2nd Degree"),
+    ("3", "3rd Degree"),
+    ("4", "4th Degree"),
+    ("5", "5th Degree"),
+]
 
 class StockPicking(models.Model):
     _inherit = "stock.picking"
@@ -61,6 +83,29 @@ class StockPicking(models.Model):
 
     document = fields.Selection(related="sale_id.document")
 
+    dispatch_note_invoice_names = fields.Char(
+        string="Sale Invoices",
+        compute="_compute_dispatch_note_invoice_names",
+        help="Invoice numbers of the related sale order, shown in the dispatch note.",
+    )
+
+    @api.depends(
+        "sale_id.invoice_ids.name",
+        "sale_id.invoice_ids.state",
+        "sale_id.invoice_ids.move_type",
+    )
+    def _compute_dispatch_note_invoice_names(self):
+        # Solo facturas de venta publicadas y numeradas: un borrador (o una
+        # factura sin numero asignado) se llama "/" y una nota de credito no
+        # es la factura que ampara el despacho.
+        for picking in self:
+            invoices = picking.sale_id.invoice_ids.filtered(
+                lambda move: move.state == "posted"
+                and move.move_type == "out_invoice"
+                and move.name not in (False, "/")
+            )
+            picking.dispatch_note_invoice_names = ", ".join(invoices.mapped("name"))
+
     transfer_reason_id = fields.Many2one(
         "transfer.reason",
         string="Reason for Transfer",
@@ -94,7 +139,31 @@ class StockPicking(models.Model):
         store=True,
     )
     partner_required = fields.Boolean(compute='_compute_partner_required', store=True)
-    
+
+    # Datos de transporte de la guía de despacho. Son una copia fija (la guía
+    # es un documento fiscal): se escriben a mano o los copia
+    # l10n_ve_stock_account_fleet al elegir un vehículo de Flota.
+    transport_driver_name = fields.Char(string="Driver", copy=False, tracking=True)
+    transport_driver_vat = fields.Char(string="Driver ID Number", copy=False, tracking=True)
+    transport_driver_license_type = fields.Selection(
+        DRIVER_LICENSE_TYPES, string="Driver License Type", copy=False, tracking=True
+    )
+    transport_driver_contact = fields.Char(string="Driver Contact", copy=False, tracking=True)
+    transport_vehicle_type = fields.Char(string="Vehicle Type", copy=False, tracking=True)
+    transport_vehicle_number = fields.Char(string="Transport Number", copy=False, tracking=True)
+    transport_vehicle_brand = fields.Char(string="Vehicle Brand", copy=False, tracking=True)
+    transport_vehicle_model = fields.Char(string="Vehicle Model", copy=False, tracking=True)
+    transport_vehicle_plate = fields.Char(string="Vehicle Plate", copy=False, tracking=True)
+    transport_trailer_plate = fields.Char(string="Trailer Plate", copy=False, tracking=True)
+    transport_data_source = fields.Selection(related="company_id.transport_data_source")
+    # Overridden by l10n_ve_stock_account_fleet: True cuando los datos de
+    # vehículo provienen de un vehículo/batea de Flota ya elegido, para
+    # bloquear solo esas guías y no todas las que usan la fuente 'fleet'
+    # (p. ej. un transportista externo sin ficha en Flota). Solo se usa en
+    # las vistas para bloquear los campos de VEHÍCULO: el conductor del día
+    # siempre debe poder corregirse a mano, aunque haya un vehículo elegido.
+    transport_data_locked = fields.Boolean(compute="_compute_transport_data_locked")
+
     is_consignment = fields.Boolean(compute="_compute_is_consignment", store=True)
     is_consignment_readonly = fields.Boolean(default=False)
 
@@ -1101,7 +1170,10 @@ class StockPicking(models.Model):
                 if external_storage:
                     allowed_reason_ids.append(external_storage.id)
                 
-            # Internal
+            # Internal. Mantener en sincronia con INTERNAL_TRANSFER_REASON_CODES
+            # (res_company.py): el motivo por defecto de la compania solo puede
+            # ser uno de los que se permiten aqui (test_field_domain_matches_
+            # allowed_reasons_for_internal lo verifica).
             elif picking.operation_code == "internal":
                 consignment_reason = reasons.get("consignment")
                 transfer_between_warehouses_reason = reasons.get(
@@ -1129,6 +1201,16 @@ class StockPicking(models.Model):
                     picking.is_consignment_readonly = True
                 else:
                     picking.is_consignment_readonly = False
+                    # Sin una razon valida, el respaldo generico de abajo tomaba la
+                    # primera permitida (consignacion) en almacenes que no lo son:
+                    # se usa la de la compania o, si no hay, traslado entre almacenes.
+                    if picking.transfer_reason_id.id not in allowed_reason_ids:
+                        default_reason = picking._get_default_internal_transfer_reason(
+                            picking.picking_type_id, picking.company_id, picking.location_dest_id
+                        )
+                        picking.transfer_reason_id = (
+                            default_reason or transfer_between_warehouses_reason
+                        )
 
             # Force update of transfer_reason_id field to avoid inconsistencies
             if allowed_reason_ids:
@@ -1305,15 +1387,42 @@ class StockPicking(models.Model):
         for picking in self:
             picking._assign_partner_from_location()
 
+    def _get_default_internal_transfer_reason(self, picking_type, company, location_dest):
+        """Company default reason for a new internal picking, or an empty recordset.
+
+        Empty when the picking is not internal, when the configured reason is
+        not one of those allowed for internal pickings, or when the destination
+        is a consignation warehouse (which forces the consignment reason).
+        """
+        reason = self.env["transfer.reason"]
+        if picking_type.code != "internal":
+            return reason
+        candidate = (company or picking_type.company_id).internal_transfer_reason_id
+        warehouse = location_dest.warehouse_id
+        if candidate.code in INTERNAL_TRANSFER_REASON_CODES and not (
+            warehouse and warehouse.is_consignation_warehouse
+        ):
+            return candidate
+        return reason
+
+    @api.onchange("picking_type_id")
+    def _onchange_picking_type_id_default_internal_transfer_reason(self):
+        """Prefill the company's default reason for internal transfers (only if still empty)."""
+        if self.picking_type_id and not self.transfer_reason_id:
+            self.transfer_reason_id = self._get_default_internal_transfer_reason(
+                self.picking_type_id, self.company_id, self.location_dest_id
+            )
+
     def button_validate(self):
-        '''Override to set the state_guide_dispatch to 'emited' when the transfer reason is 'transfer_between_warehouses' 
+        '''Override to set the state_guide_dispatch to 'emited' when the transfer reason is 'transfer_between_warehouses'
         and the operational_code is internal
         '''
+        self._check_transport_data()
         for picking in self:
             if picking.operation_code == 'internal' and picking.transfer_reason_id.id == self.env.ref('l10n_ve_stock_account.transfer_reason_transfer_between_warehouses').id:
                 picking.state_guide_dispatch = 'emited'
         return super(StockPicking, self).button_validate()
-    
+
     def _assign_partner_from_location(self):
         """Set partner_id from the destination location when required."""
         for picking in self:
@@ -1324,11 +1433,27 @@ class StockPicking(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        vals_list = [self._transport_normalize_vals(dict(vals)) for vals in vals_list]
+        for vals in vals_list:
+            if vals.get("picking_type_id") and not vals.get("transfer_reason_id"):
+                picking_type = self.env["stock.picking.type"].browse(vals["picking_type_id"])
+                company = self.env["res.company"].browse(
+                    vals.get("company_id") or picking_type.company_id.id or self.env.company.id
+                )
+                location_dest = self.env["stock.location"].browse(
+                    vals.get("location_dest_id") or picking_type.default_location_dest_id.id
+                )
+                reason = self._get_default_internal_transfer_reason(
+                    picking_type, company, location_dest
+                )
+                if reason:
+                    vals["transfer_reason_id"] = reason.id
         records = super().create(vals_list)
         records._assign_partner_from_location()
         return records
 
     def write(self, vals):
+        vals = self._transport_normalize_vals(dict(vals))
         res = super().write(vals)
         for picking in self:
             if picking.partner_required:
@@ -1337,4 +1462,70 @@ class StockPicking(models.Model):
                     'is_consignment', 'is_dispatch_guide', 'partner_required']):
                     picking._assign_partner_from_location()
         return res
+
+    # === TRANSPORT DATA ===#
+
+    @api.depends("transport_data_source")
+    def _compute_transport_data_locked(self):
+        # Sin l10n_ve_stock_account_fleet no hay fuente distinta de 'manual':
+        # los datos de transporte nunca están bloqueados.
+        for picking in self:
+            picking.transport_data_locked = False
+
+    @api.model
+    def _transport_normalize_vals(self, vals):
+        """Placas y cédula en mayúsculas, sin espacios, puntos ni guiones."""
+        for fname in TRANSPORT_PLATE_FIELDS:
+            if vals.get(fname):
+                vals[fname] = re.sub(r"[\s-]", "", vals[fname]).upper()
+        if vals.get("transport_driver_vat"):
+            vals["transport_driver_vat"] = re.sub(
+                r"[\s.-]", "", vals["transport_driver_vat"]
+            ).upper()
+        return vals
+
+    @api.constrains("transport_driver_vat")
+    def _check_transport_driver_vat_is_not_company(self):
+        for picking in self:
+            vat = picking.transport_driver_vat
+            if vat and vat[0] in TRANSPORT_DRIVER_VAT_COMPANY_PREFIXES:
+                raise ValidationError(
+                    _(
+                        "The driver's ID number '%s' belongs to a company, "
+                        "government entity or communal council (prefix '%s'), "
+                        "not a person."
+                    )
+                    % (vat, vat[0])
+                )
+
+    def _must_check_transport_data(self):
+        """True si es una guía de despacho de salida (no recepción) y la
+        compañía exige los datos de transporte."""
+        self.ensure_one()
+        return (
+            self.is_dispatch_guide
+            and self.picking_type_id.code != "incoming"
+            and self.company_id.transport_data_required
+        )
+
+    def _get_transport_missing_fields(self):
+        """Etiquetas (traducidas) de los datos obligatorios que faltan."""
+        self.ensure_one()
+        return [
+            self._fields[fname]._description_string(self.env)
+            for fname in TRANSPORT_REQUIRED_FIELDS
+            if not self[fname]
+        ]
+
+    def _check_transport_data(self):
+        errors = []
+        for picking in self.filtered(lambda p: p._must_check_transport_data()):
+            missing = picking._get_transport_missing_fields()
+            if missing:
+                errors.append("%s: %s" % (picking.name, ", ".join(missing)))
+        if errors:
+            raise UserError(
+                _("The following dispatch guides are missing transport data:\n%s")
+                % "\n".join(errors)
+            )
             

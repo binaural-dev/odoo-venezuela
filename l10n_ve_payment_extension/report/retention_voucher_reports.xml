@@ -1,5 +1,19 @@
 <odoo>
   <data>
+        <record id="paper_format_retention_municipal_voucher" model="report.paperformat">
+            <field name="name">paperformat.retention.municipal.voucher</field>
+            <field name="default" eval="False"/>
+            <field name="format">A4</field>
+            <field name="orientation">Portrait</field>
+            <field name="margin_top">10</field>
+            <field name="margin_right">10</field>
+            <field name="margin_bottom">10</field>
+            <field name="margin_left">10</field>
+            <field name="header_line" eval="False"/>
+            <field name="header_spacing">20</field>
+            <field name="dpi">90</field>
+        </record>
+
         <record id="retention_voucher_action" model="ir.actions.report">
             <field name="name">Retention Voucher</field>
             <field name="model">account.retention</field>

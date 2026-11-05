@@ -1,10 +1,11 @@
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 import json
 import logging
 import calendar
+import pytz
 from odoo import api, fields, models, _
 from odoo.exceptions import ValidationError, UserError
-from odoo.tools import format_date, float_compare
+from odoo.tools import format_date, float_compare, float_round, float_is_zero
 
 _logger = logging.getLogger(__name__)
 
@@ -67,9 +68,6 @@ class AccountMove(models.Model):
     @api.constrains("invoice_date_display", "date")
     def _check_invoice_date_display_purchases(self):
         for move in self:
-            _logger.warning(
-                f"Checking invoice_date_display constraint for move {move.id} with move_type {move.move_type} and company setting block_invoice_display_date_upper_than_date {move.company_id.block_invoice_display_date_upper_than_date}"
-            )
             if (
                 move.is_purchase_document(include_receipts=True)
                 and move.company_id.block_invoice_display_date_upper_than_date
@@ -83,6 +81,10 @@ class AccountMove(models.Model):
                         _(
                             "The invoice date cannot be greater than the accounting date."
                         )
+                    )
+                if move.date and move.date > fields.Date.context_today(move):
+                    raise ValidationError(
+                        _("The accounting date cannot be greater than today.")
                     )
 
     import_file_number_purchase_international = fields.Char(
@@ -173,10 +175,30 @@ class AccountMove(models.Model):
                         _("An invoice cannot have a line with a price of zero")
                     )
 
-    @api.constrains("invoice_line_ids")
+    def _l10n_ve_skip_refund_origin_validation(self):
+        """Hook: whether this credit note is exempt from
+        `_check_refund_against_origin()`.
+
+        By default only the `l10n_ve_skip_refund_origin_validation`
+        context key exempts it. Modules whose credit notes carry a stored
+        marker of their own (e.g. `is_donation`) should override this and
+        rely on that field instead: the check now runs at posting time,
+        which may be a separate call (a manual post from the UI) where
+        the context key set at creation is long gone.
+        """
+        self.ensure_one()
+        return bool(self.env.context.get("l10n_ve_skip_refund_origin_validation"))
+
     def _check_refund_against_origin(self):
         """Restrict a credit note (out_refund/in_refund) to the products
         and amounts already present on the invoice it reverses.
+
+        Runs from `_post()`, not as an `@api.constrains`: the standard
+        "Credit Note > Reverse" wizard copies the whole origin invoice
+        into a draft the user is expected to edit (reduce quantities)
+        before posting. Validating at create time rejected that draft
+        outright as soon as a previous credit note existed, leaving no
+        way to issue a second partial credit note from the UI.
 
         Ticket #13965: a credit note must not introduce a product the
         original invoice never had, nor credit more than what was
@@ -190,14 +212,13 @@ class AccountMove(models.Model):
         the original invoice) must opt out explicitly with the
         `l10n_ve_skip_refund_origin_validation` context key -- this is
         NOT exposed in the UI, only meant for internal server-side use by
-        those modules.
+        those modules (see `_l10n_ve_skip_refund_origin_validation()`).
         """
-        if self.env.context.get("l10n_ve_skip_refund_origin_validation"):
-            return
-
         product_line_types = ("line_section", "line_subsection", "line_note")
         for move in self:
             if move.move_type not in ("out_refund", "in_refund"):
+                continue
+            if move._l10n_ve_skip_refund_origin_validation():
                 continue
             origin = move.reversed_entry_id
             if not origin:
@@ -211,18 +232,20 @@ class AccountMove(models.Model):
                     origin_totals.get(line.product_id.id, 0.0) + line.price_subtotal
                 )
 
-            # Other credit notes against this same origin (draft or
-            # posted, but not cancelled) -- their amounts count against
-            # the origin's total too. Counting drafts closes the gap
-            # where two never-posted credit notes could each individually
-            # fit under the cap and only exceed it once both are posted,
-            # at which point this constrains would no longer re-trigger.
+            # Other credit notes against this same origin that are
+            # already posted, or being posted in this same batch -- their
+            # amounts count against the origin's total too. Drafts left
+            # aside are ignored on purpose: a forgotten draft must not
+            # block posting a valid credit note, and it will be checked
+            # itself whenever it gets posted.
             sibling_refunds = self.env["account.move"].search(
                 [
                     ("reversed_entry_id", "=", origin.id),
                     ("move_type", "=", move.move_type),
-                    ("state", "!=", "cancel"),
                     ("id", "!=", move.id),
+                    "|",
+                    ("state", "=", "posted"),
+                    ("id", "in", self.ids),
                 ]
             )
             refund_totals = {}
@@ -322,7 +345,115 @@ class AccountMove(models.Model):
                         max=origin_total_all,
                     ))
 
+    @api.constrains("date", "invoice_date_display")
+    def _check_note_accounting_date(self):
+        """The accounting date of a credit/debit note cannot be earlier than
+        its own document date (`invoice_date_display`), which in turn cannot be
+        earlier than the one of its origin (`_l10n_ve_check_note_date`,
+        `_check_dates_not_in_future`). Checked on save so that editing `date`
+        directly (list multi-edit, quick edit, RPC) cannot go around it."""
+        for move in self:
+            if not (move.reversed_entry_id or move.debit_origin_id):
+                continue
+            if not move.is_invoice(include_receipts=True):
+                continue
+            if move.date and move.invoice_date_display and move.date < move.invoice_date_display:
+                label = move.fields_get(["invoice_date_display"])["invoice_date_display"]["string"]
+                raise ValidationError(
+                    _(
+                        "The accounting date (%(date)s) of a note cannot be earlier "
+                        "than its %(field)s (%(value)s).",
+                        date=format_date(self.env, move.date),
+                        field=label,
+                        value=format_date(self.env, move.invoice_date_display),
+                    )
+                )
+
+    def _l10n_ve_allows_future_date(self):
+        """Whether this document may skip the date checks of
+        `_check_dates_not_in_future` when the caller asks for it through the
+        context `l10n_ve_skip_future_date_check`. The context alone is never
+        enough (it can be sent through RPC): the document must also identify
+        itself as one of the automatic notes dated after a payment, which the
+        modules that generate them declare by overriding this method."""
+        self.ensure_one()
+        return False
+
+    def _check_dates_not_in_future(self):
+        """Block posting if the invoice date is after today (or, for notes, before
+        the origin's date) or the rate date
+        is after the invoice date. Accounting date is not validated."""
+        skip_requested = self.env.context.get("l10n_ve_skip_future_date_check")
+        today = fields.Date.context_today(self)
+        labels = {
+            name: desc["string"]
+            for name, desc in self.fields_get(
+                ["invoice_date", "invoice_date_display"]
+            ).items()
+        }
+        for move in self:
+            if not move.is_invoice(include_receipts=True):
+                continue
+            if skip_requested and move._l10n_ve_allows_future_date():
+                continue
+            display_date = move.invoice_date_display
+            if display_date and display_date > today:
+                raise ValidationError(
+                    _(
+                        "%(document)s: %(field)s (%(value)s) cannot be later than "
+                        "today (%(today)s) to confirm this document.",
+                        document=move.display_name,
+                        field=labels["invoice_date_display"],
+                        value=format_date(self.env, display_date),
+                        today=format_date(self.env, today),
+                    )
+                )
+            origin = move.reversed_entry_id or move.debit_origin_id
+            if origin and origin.is_invoice(include_receipts=True):
+                if display_date:
+                    origin._l10n_ve_check_note_date(display_date)
+                origin_rate_date = origin.invoice_date or origin.invoice_date_display
+                # Automatic notes (exchange difference) carry the payment's rate date.
+                if (
+                    move.invoice_date
+                    and origin_rate_date
+                    and move.invoice_date != origin_rate_date
+                    and not move._l10n_ve_allows_future_date()
+                ):
+                    raise ValidationError(
+                        _(
+                            "%(document)s: %(field)s (%(value)s) must be equal to the one of the "
+                            "original document %(origin)s (%(origin_date)s).",
+                            document=move.display_name,
+                            field=labels["invoice_date"],
+                            value=format_date(self.env, move.invoice_date),
+                            origin=origin.display_name,
+                            origin_date=format_date(self.env, origin_rate_date),
+                        )
+                    )
+            limit = display_date or today
+            if move.invoice_date and move.invoice_date > limit:
+                raise ValidationError(
+                    _(
+                        "%(document)s: %(field)s (%(value)s) cannot be later than "
+                        "%(limit_field)s (%(limit)s) to confirm this "
+                        "document.",
+                        document=move.display_name,
+                        field=labels["invoice_date"],
+                        value=format_date(self.env, move.invoice_date),
+                        limit_field=labels["invoice_date_display"],
+                        limit=format_date(self.env, limit),
+                    )
+                )
+
+    def action_validate_moves_with_confirmation(self):
+        """The list/kanban action "Confirm Entries" posts through `_post`
+        without going through `action_post`: validate the same dates first."""
+        self.filtered(lambda m: m.state == "draft" and m.line_ids)._check_dates_not_in_future()
+        return super().action_validate_moves_with_confirmation()
+
     def action_post(self):
+        self._check_dates_not_in_future()
 
         for record in self:
             if record.move_type in (
@@ -346,26 +477,70 @@ class AccountMove(models.Model):
                         )
         return super().action_post()
 
+    @api.depends("invoice_line_ids.discount_fixed", "company_id.discount_type")
+    def _compute_company_currency_line_totals(self):
+        """discount_fixed lines force native `discount` (%) to 0, so the
+        base computation gets price_unit/discount_amount wrong for them.
+        Patches just those entries with the exact equivalent %.
+        """
+        super()._compute_company_currency_line_totals()
+        precision = self.env['decimal.precision'].precision_get('Product Price')
+        for move in self:
+            fixed_lines = move.line_ids.filtered(
+                lambda l: l.display_type == 'product' and l._uses_discount_fixed()
+            )
+            if not fixed_lines:
+                continue
+            totals = move.company_currency_line_totals or {}
+            cc = move.company_currency_id
+            for line in fixed_lines:
+                entry = totals.get(str(line.id))
+                if not entry:
+                    continue
+                subtotal = entry['subtotal']
+                discount_percent = line._get_exact_discount_percentage()
+                denominator = line.quantity * (1 - discount_percent / 100.0)
+                price_unit = (
+                    float_round(subtotal / denominator, precision_digits=precision)
+                    if not float_is_zero(denominator, precision_digits=precision)
+                    else 0.0
+                )
+                entry['price_unit'] = price_unit
+                entry['discount_amount'] = cc.round(price_unit * line.quantity - subtotal)
+                entry['discount_type'] = 'amount'
+            move.company_currency_line_totals = totals
+
+    @api.model
+    def _get_invoice_date_display_datetime(self, date_value):
+        """Fecha de la factura con la hora local actual, en UTC naive.
+
+        Día y hora salen de la misma zona horaria (la del contexto o la del
+        usuario), la misma que usa ``context_today`` para el default de
+        ``invoice_date_display``. Sin fecha se toma la de hoy. No se puede
+        hacer ``fields.Datetime.now().replace(day=...)``: mezcla la fecha local
+        con la hora UTC y, desde las 20:00 en UTC-4, el valor queda en el día
+        anterior (HD #15954).
+        """
+        date_value = fields.Date.to_date(date_value) or fields.Date.context_today(self)
+        now_local = fields.Datetime.context_timestamp(self, fields.Datetime.now())
+        local_dt = self.env.tz.localize(datetime.combine(date_value, now_local.time()))
+        return local_dt.astimezone(pytz.utc).replace(tzinfo=None)
+
     @api.model_create_multi
     def create(self, vals_list):
-        now = fields.Datetime.now()
         for vals in vals_list:
             if vals.get("invoice_date_display"):
-                date_part = fields.Date.to_date(vals["invoice_date_display"])
-                vals["invoice_date_display_datetime"] = now.replace(
-                    year=date_part.year, month=date_part.month, day=date_part.day
+                vals["invoice_date_display_datetime"] = (
+                    self._get_invoice_date_display_datetime(vals["invoice_date_display"])
                 )
-            elif "invoice_date_display" in vals and not vals.get(
-                "invoice_date_display"
-            ):
+            elif "invoice_date_display" in vals and not vals.get("invoice_date_display"):
                 vals["invoice_date_display_datetime"] = False
         moves = super().create(vals_list)
 
         for move in moves:
             if move.invoice_date_display and not move.invoice_date_display_datetime:
-                date_part = move.invoice_date_display
-                move.invoice_date_display_datetime = now.replace(
-                    year=date_part.year, month=date_part.month, day=date_part.day
+                move.invoice_date_display_datetime = (
+                    self._get_invoice_date_display_datetime(move.invoice_date_display)
                 )
 
         for move in moves:
@@ -407,21 +582,39 @@ class AccountMove(models.Model):
                         )
                     )
 
-            if (
-                move.correlative
-                and not move.is_contingency
-                and move.move_type in ("out_invoice", "out_refund")
-            ):
-                repeated_moves = AccountMove.search(
-                    [
-                        ("id", "!=", move.id),
-                        ("company_id", "=", move.company_id.id),
-                        ("correlative", "=", move.correlative),
-                        ("state", "=", "posted"),
-                        ("move_type", "in", ("out_invoice", "out_refund")),
-                    ],
-                    limit=1,
-                )
+            if move.correlative and not move.is_contingency:
+                base_domain = [
+                    ("id", "!=", move.id),
+                    ("company_id", "=", move.company_id.id),
+                    ("correlative", "=", move.correlative),
+                    ("state", "=", "posted"),
+                ]
+
+                if move.move_type in ("out_invoice", "out_refund"):
+                    repeated_moves = AccountMove.search(
+                        base_domain
+                        + [("move_type", "in", ("out_invoice", "out_refund"))],
+                        limit=1,
+                    )
+                elif move.move_type in ("in_invoice", "in_refund"):
+                    # Unlike sales, the control number of a vendor bill is
+                    # assigned by the vendor's own numbering, so uniqueness
+                    # is scoped per vendor, not company-wide.
+                    repeated_moves = AccountMove.search(
+                        base_domain
+                        + [
+                            ("move_type", "in", ("in_invoice", "in_refund")),
+                            (
+                                "commercial_partner_id",
+                                "=",
+                                move.commercial_partner_id.id,
+                            ),
+                        ],
+                        limit=1,
+                    )
+                else:
+                    repeated_moves = AccountMove
+
                 if repeated_moves:
                     raise ValidationError(
                         _(
@@ -538,6 +731,7 @@ class AccountMove(models.Model):
         if not draft_moves:
             return self
 
+        draft_moves._check_refund_against_origin()
         res = super(AccountMove, draft_moves)._post(soft)
 
         for move in res:
@@ -625,15 +819,25 @@ class AccountMove(models.Model):
         return action
 
     def write(self, vals):
+        changed = self.browse()
         if vals.get("invoice_date_display"):
-            date_part = fields.Date.to_date(vals["invoice_date_display"])
-            now = fields.Datetime.now()
-            vals["invoice_date_display_datetime"] = now.replace(
-                year=date_part.year, month=date_part.month, day=date_part.day
-            )
+            # Solo se renueva la hora de los documentos cuya fecha cambia.
+            new_date = fields.Date.to_date(vals["invoice_date_display"])
+            changed = self.filtered(lambda m: m.invoice_date_display != new_date)
+            if changed:
+                new_datetime = self._get_invoice_date_display_datetime(new_date)
+                if changed == self:
+                    vals = dict(vals, invoice_date_display_datetime=new_datetime)
+                    changed = self.browse()
         elif "invoice_date_display" in vals and not vals.get("invoice_date_display"):
             vals["invoice_date_display_datetime"] = False
         res = super().write(vals)
+        if changed:
+            # Lote mixto: el lote pasa una sola vez por la cadena de write() y
+            # después se escribe solo la hora de los que cambiaron de fecha.
+            super(AccountMove, changed).write(
+                {"invoice_date_display_datetime": new_datetime}
+            )
         for move in self:
             if move.is_purchase_international and move.declaration_unique_of_customs:
                 if move.correlative != move.declaration_unique_of_customs:

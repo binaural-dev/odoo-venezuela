@@ -1,5 +1,5 @@
-from odoo.tests import tagged, TransactionCase
 from odoo import Command
+from odoo.tests import tagged, TransactionCase
 
 
 @tagged("post_install", "-at_install")
@@ -55,9 +55,13 @@ class TestIgtfNoteDebitService(TransactionCase):
             "is_debit": True,
             "company_id": cls.company.id,
         })
-        cls.bank_journal = cls.env["account.journal"].search(
-            [("type", "in", ("bank", "cash")), ("company_id", "=", cls.company.id)], limit=1
+        bank_journals = cls.env["account.journal"].search(
+            [("type", "in", ("bank", "cash")), ("company_id", "=", cls.company.id)]
         )
+        for journal in bank_journals.filtered("default_account_id"):
+            journal.inbound_payment_method_line_ids.payment_account_id = journal.default_account_id
+            journal.outbound_payment_method_line_ids.payment_account_id = journal.default_account_id
+        cls.bank_journal = bank_journals[:1]
 
         income_account = cls.env["account.account"].search(
             [("account_type", "=", "income"), ("company_ids", "in", cls.company.id)], limit=1
@@ -141,6 +145,21 @@ class TestIgtfNoteDebitService(TransactionCase):
         # La factura original no debe haber sido tocada por este flujo.
         self.assertFalse(self.invoice.debit_origin_id)
         self.assertIn(debit_note, self.invoice.debit_note_ids)
+
+    def test_generated_debit_note_may_skip_future_date_guard(self):
+        """The skip context is honored only for the automatic IGTF note."""
+        self.company.write({
+            "igtf_note_debit_mode": "debit_note",
+            "igtf_note_debit_product_id": self.igtf_product.id,
+        })
+        self.invoice.with_context(move_action_post_alert=True).action_post()
+        payment = self.payment.copy()
+        payment.action_post()
+
+        debit_note = self.invoice.prepare_igtf_payment_debit_note(3.0, self.invoice, payment)
+
+        self.assertTrue(debit_note._l10n_ve_allows_future_date())
+        self.assertFalse(self.invoice._l10n_ve_allows_future_date())
 
     def test_debit_note_requires_product_configured(self):
         with self.assertRaises(Exception):

@@ -1,4 +1,4 @@
-from odoo import api, fields, models
+from odoo import api, models
 from odoo.tools import float_compare
 import logging
 _logger = logging.getLogger(__name__)
@@ -22,28 +22,23 @@ class ProductProduct(models.Model):
     def _load_pos_data_read(self, records, config):
         """Odoo 19 loader contract:
 
-        * Convert ``lst_price`` to the PoS config currency when it differs
-          from the company currency.
-        * Propagate the PoS warehouse context so ``free_qty`` /
-          ``qty_available`` are computed against the right warehouse.
+        * ``lst_price`` is NOT converted here: the core already converts it
+          to the PoS config currency (``_convert_pos_data_currency``). The
+          Odoo 17 conversion kept here converted it twice.
+        * Compute ``free_qty`` / ``qty_available`` in the source location of
+          the PoS operation type (and its children), the stock
+          ``pos.config.check_stock_availability`` ("Cantidad en 0") checks:
+          the grid shows what the PoS can sell. The O17 ``warehouse`` key was
+          ignored by ``stock`` and the quantity summed every warehouse; the
+          whole warehouse would miss a source location outside of it. Do not
+          add ``warehouse_id`` too: ``stock`` intersects both.
         * Enrich the payload with the full ``categ`` object and a boolean
           ``image_128`` flag (matches the legacy Odoo 17 contract).
         """
-        warehouse_id = config.picking_type_id.warehouse_id.id
-        records = records.with_context(warehouse=warehouse_id)
+        location = config.picking_type_id.default_location_src_id
+        if location:
+            records = records.with_context(location=location.id)
         res = super()._load_pos_data_read(records, config) or []
-
-        company_currency = config.company_id.currency_id
-        pos_currency = config.currency_id
-        if pos_currency != company_currency:
-            today = fields.Date.today()
-            for product in res:
-                product['lst_price'] = company_currency._convert(
-                    product['lst_price'],
-                    pos_currency,
-                    config.company_id,
-                    today,
-                )
 
         categ_records = self.env['product.category']._load_pos_data_read(
             self.env['product.category'].search([]),

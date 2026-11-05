@@ -32,7 +32,7 @@ class AccountRetention(models.Model):
         default=lambda self: self.env.company.foreign_currency_id.id,
     )
     base_currency_is_vef = fields.Boolean(
-        default=lambda self: self.env.company.currency_id == self.env.ref("base.VEF"),
+        default=lambda self: self.env.company.currency_id.is_venezuelan_bolivar(),
     )
 
     is_third_party_retention = fields.Boolean(
@@ -127,6 +127,20 @@ class AccountRetention(models.Model):
         "retention line",
         help="Retentions",
         copy=False,
+    )
+
+    retention_resync_pending = fields.Boolean(
+        string="Retention Resync Pending",
+        related="retention_line_ids.move_id.retention_resync_pending",
+        readonly=True,
+        help=(
+            "True when this retention's invoice has some retention whose"
+            " declared base/amount no longer matches what would be"
+            " recalculated from the invoice's current data (see"
+            " account.move.retention_resync_pending). Note: for a"
+            " retention grouping several invoices, this only reflects the"
+            " first one."
+        ),
     )
 
     code_visible = fields.Boolean(related="company_id.code_visible")
@@ -469,7 +483,7 @@ class AccountRetention(models.Model):
         self.ensure_one()
         self.write({"state": "draft"})
         if self.payment_ids:
-            self.payment_ids.action_draft()
+            self._unreconcile_and_draft_payments(self.payment_ids)
 
     def action_post(self):
         """
@@ -484,6 +498,15 @@ class AccountRetention(models.Model):
         # constraint it's about to trigger on write() a few lines below.
         today = fields.Date.context_today(self)
         is_automated = self.env.context.get('automated_action') or self.env.context.get('cron_id')
+
+        for retention in self:
+            try:
+                retention._check_duplicate_invoices_all_states()
+            except UserError as e:
+                if is_automated:
+                    retention.message_post(body=str(e))
+                    return False
+                raise
 
         for retention in self:
             retention._check_duplicate_retention_lines()
@@ -598,10 +621,13 @@ class AccountRetention(models.Model):
           (move_id, economic_activity_id) combination must not repeat - in
           this retention or in any other emitted retention.
 
-        Only other retentions already in state 'emitted' are considered -
-        two drafts referencing the same invoice/differentiator can coexist
-        harmlessly as long as only one of them ever gets confirmed; the
-        conflict only matters once one side is already final.
+        Only other retentions already in state 'emitted' are considered here.
+        Note that action_post() first runs _check_duplicate_invoices_all_states,
+        which blocks any other draft/emitted retention of the same type and
+        partner over the same invoice with the same differentiator (aliquot,
+        payment concept or economic activity), so a conflict in this
+        cross-retention branch can only come from retentions of different
+        partners (third-party invoicing).
 
         Applies to any legal document/retention type - client
         (out_invoice/out_refund/out_debit) and supplier
@@ -896,6 +922,26 @@ class AccountRetention(models.Model):
             "target": "new",
         }
 
+    def action_print_retention_voucher_pdf(self):
+        """Download the PDF voucher of an emitted retention (IVA, ISLR or municipal).
+
+        For municipal retentions the delivery date is set on the first print,
+        like the XLSX button does, so both vouchers show the same date.
+        """
+        self.ensure_one()
+        if self.state != "emitted":
+            raise UserError(_("Only emitted retention vouchers can be downloaded."))
+        if self.type_retention == "municipal" and not self.date_emision:
+            self.write({"date_emision": fields.Date.today()})
+            self.flush_recordset(["date_emision"])
+        # report_action keeps the caller's active_model: opened from an invoice it
+        # is account.move, and l10n_ve_invoice would read these ids as invoices.
+        return self.env.ref(
+            "l10n_ve_payment_extension.retention_voucher_action"
+        ).with_context(
+            active_model="account.retention", active_id=self.id, active_ids=self.ids
+        ).report_action(self, config=False)
+
     def _set_sequence(self):
         for retention in self.filtered(lambda r: not r.number):
             # Dispatch through get_sequence_<type>_retention() rather than
@@ -937,6 +983,27 @@ class AccountRetention(models.Model):
         )
 
     @api.model
+    def _get_retention_sequence_company(self):
+        """Company whose retention sequences must be used.
+
+        A branch (company with a parent) flagged with
+        `use_parent_retention_sequence` shares the correlative of its
+        parent company, as long as both share the same tax ID. Otherwise
+        the current company keeps its own sequences (native behavior).
+        """
+        company = self.env.company
+        root = company.root_id
+        if (
+            company.parent_id
+            and company.use_parent_retention_sequence
+            and root != company
+            and company.vat
+            and company.vat == root.vat
+        ):
+            return root
+        return company
+
+    @api.model
     def get_sequence_retention(self, type_retention):
         """Get (or create) the ir.sequence for a given retention type.
 
@@ -945,23 +1012,30 @@ class AccountRetention(models.Model):
         entry in that selection to get its own sequence automatically.
         """
         code = f"retention.{type_retention}.control.number"
-        sequence = self.env["ir.sequence"].with_context(active_test=False).search(
+        company = self._get_retention_sequence_company()
+        IrSequence = self.env["ir.sequence"]
+        if company != self.env.company:
+            # The parent company is not necessarily in the user's allowed
+            # companies, and the ir.sequence multi-company rule would hide
+            # its sequence.
+            IrSequence = IrSequence.sudo()
+        sequence = IrSequence.with_context(active_test=False).search(
             [
                 ("code", "=", code),
-                ("company_id", "=", self.env.company.id),
+                ("company_id", "=", company.id),
             ],
             order="id asc",
             limit=1,
         )
         if not sequence:
             padding_by_type = {"iva": 8, "islr": 5, "municipal": 5}
-            sequence = self.env["ir.sequence"].create(
+            sequence = IrSequence.create(
                 {
                     "name": _("Numero de control retenciones %s")
                     % type_retention.upper(),
                     "code": code,
                     "padding": padding_by_type.get(type_retention, 5),
-                    "company_id": self.env.company.id,
+                    "company_id": company.id,
                     "implementation": "no_gap",
                 }
             )
@@ -989,6 +1063,36 @@ class AccountRetention(models.Model):
                 elif rec.type_retention == 'municipal' and invoice.municipal_voucher_number:
                     invoice.municipal_voucher_number = False
 
+    def _unreconcile_and_draft_payments(self, payments):
+        """
+        Undo any reconciliation held by the move lines of `payments` and
+        reset each payment to draft, in an idempotent way: safe to call
+        even when there is nothing reconciled (remove_move_reconcile() is a
+        no-op in that case) or a payment is already in 'draft' (e.g. after
+        a previous draft-by-resync, needed so action_cancel() can still
+        operate on it afterwards).
+
+        Unlike the filter this replaces (`l.reconciled`), this does NOT
+        restrict to fully-reconciled lines - partially reconciled lines
+        must be unreconciled too, remove_move_reconcile() already handles
+        that correctly either way.
+        """
+        if not payments:
+            return
+
+        # The payment guard (bypass_retention_lock) is the CALLER's
+        # decision, not this helper's: action_cancel()/the resync flow pass
+        # it in the context, while a plain action_draft() on an emitted
+        # retention must keep being blocked by account.payment.action_draft().
+        payments = payments.with_env(self.env)
+        lines = payments.mapped("move_id.line_ids")
+        if lines:
+            lines.with_context(force_delete=True).remove_move_reconcile()
+
+        for payment in payments:
+            if payment.state != 'draft':
+                payment.action_draft()
+
     def action_cancel(self):
         for rec in self:
             if rec.state == 'cancel':
@@ -997,11 +1101,8 @@ class AccountRetention(models.Model):
             if rec.payment_ids:
                 ctx = dict(self.env.context, bypass_retention_lock=True,force_delete=True)
 
-                reconciled_lines = rec.payment_ids.mapped("move_id.line_ids").filtered(lambda l: l.reconciled)
-                if reconciled_lines:
-                    reconciled_lines.with_context(ctx).remove_move_reconcile()
+                rec.with_context(ctx)._unreconcile_and_draft_payments(rec.payment_ids)
 
-                rec.payment_ids.with_context(ctx).action_draft()
                 rec.payment_ids.with_context(ctx).action_cancel()
                 rec.payment_ids.with_context(ctx).write({'retention_id': False, 'is_retention': False, 'payment_type_retention': False, 'retention_ref': False})
 
@@ -1310,6 +1411,30 @@ class AccountRetention(models.Model):
                 )
 
     @api.model
+    def _prepare_islr_line_vals(self, move, concept_id, base_amount, invoice_type, payment=None):
+        """
+        Builds the vals for a single ISLR account.retention.line out of a
+        (concept_id, base_amount, invoice_line_id) tuple as produced by
+        account.move._get_payment_concepts_from_invoice().
+
+        Shared by default_get() (new retention created from the invoice's
+        "Retención ISLR" button, where there is no payment yet - `payment`
+        stays None, preserving the original behavior) and by account.move's
+        resync rebuild (account_move.py, _resync_retention()), which passes
+        the retention's existing payment so the recreated line stays linked
+        to it, as the original one was.
+        """
+        vals = {
+            'move_id': move.id,
+            'payment_concept_id': int(concept_id),
+            'invoice_type': str(invoice_type),
+            'invoice_amount': base_amount,
+        }
+        if payment:
+            vals['payment_id'] = payment.id
+        return vals
+
+    @api.model
     def default_get(self, fields_list):
         res = super(AccountRetention, self).default_get(fields_list)
 
@@ -1319,30 +1444,23 @@ class AccountRetention(models.Model):
         multi = self.env.context.get('multi',False)
 
         if islr_lines_data and move_id and not multi:
+            move = self.env['account.move'].browse(move_id)
             line_commands = []
             for line_data in islr_lines_data:
                 concept_id, base_amount, invoice_line_id = line_data
-                line_vals = {
-                    'move_id': move_id,
-                    'payment_concept_id': concept_id,
-                    'invoice_type': str(ret_type),
-                    'invoice_amount': base_amount,
-                }
-                line_commands.append(Command.create(line_vals))
+                line_commands.append(Command.create(
+                    self._prepare_islr_line_vals(move, concept_id, base_amount, ret_type)
+                ))
             res['retention_line_ids'] = line_commands
 
         elif multi:
             line_commands = []
             for line_data in islr_lines_data:
                 concept_id, base_amount, invoice_line_id = line_data
-                actual_move_id = self.env['account.move.line'].browse(invoice_line_id).move_id.id
-                line_vals = {
-                    'move_id': actual_move_id,
-                    'payment_concept_id': int(concept_id),
-                    'invoice_type': str(ret_type),
-                    'invoice_amount': base_amount,
-                 }
-                line_commands.append(Command.create(line_vals))
+                actual_move = self.env['account.move.line'].browse(invoice_line_id).move_id
+                line_commands.append(Command.create(
+                    self._prepare_islr_line_vals(actual_move, concept_id, base_amount, ret_type)
+                ))
             res['retention_line_ids'] = line_commands
 
         return res
@@ -1517,3 +1635,54 @@ class AccountRetention(models.Model):
             res["keep_alter_value_vef"] = True
 
         return res
+
+    def _check_duplicate_invoices_all_states(self):
+        """
+        Block posting when another draft/emitted retention of the same type
+        and partner already retains the same invoice with the same
+        differentiator: IVA same aliquot, ISLR same payment concept,
+        municipal same economic activity. The same invoice with a different
+        differentiator is allowed in several retentions.
+        """
+        differentiator_by_type = {
+            'iva': 'aliquot',
+            'islr': 'payment_concept_id',
+            'municipal': 'economic_activity_id',
+        }
+        for retention in self:
+            differentiator = differentiator_by_type.get(retention.type_retention)
+            duplicate_line = self.env['account.retention.line']
+            for line in retention.retention_line_ids.filtered('move_id'):
+                domain = [
+                    ('retention_id.state', 'in', ['draft', 'emitted']),
+                    ('retention_id.type_retention', '=', retention.type_retention),
+                    ('retention_id', '!=', retention.id),
+                    # Third-party invoicing can legitimately generate several
+                    # vouchers (one per third party) over the same invoice.
+                    ('retention_id.partner_id', '=', retention.partner_id.id),
+                    ('move_id', '=', line.move_id.id),
+                ]
+                if differentiator:
+                    value = line[differentiator]
+                    domain.append((differentiator, '=', getattr(value, 'id', value)))
+                duplicate_line = self.env['account.retention.line'].search(domain, limit=1)
+                if duplicate_line:
+                    break
+
+            if duplicate_line:
+                other_ret = duplicate_line.retention_id
+                state_field = other_ret._fields['state']
+                state_label = dict(state_field._description_selection(self.env)).get(
+                    other_ret.state, other_ret.state
+                )
+
+                raise UserError(self.env._(
+                    "This retention cannot be posted.\n\n"
+                    "The invoice '%(invoice)s' is already included in retention '%(other_ret)s' "
+                    "(%(field_name)s: %(state_val)s).\n\n"
+                    "Cancel retention '%(other_ret)s' or remove the invoice from one of the two retentions.",
+                    invoice=duplicate_line.move_id.display_name,
+                    other_ret=other_ret.display_name,
+                    field_name=state_field._description_string(self.env),
+                    state_val=state_label,
+                ))

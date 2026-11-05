@@ -379,6 +379,33 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("sale")
         self.assertEqual(wizard.convert_currency_to_float("ABC"), 0.0)
 
+    def test_convert_currency_to_float_symbol_before_nbsp(self):
+        """Formato real de Odoo: simbolo antes + espacio no-separable (\\xa0).
+        Antes se partia por \\xa0 y se quedaba con "Bs." -> 0.0 en todo importe."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa0876,18"), 876.18)
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa00,00"), 0.0)
+
+    def test_convert_currency_to_float_thousands(self):
+        """Punto de miles + coma decimal (es_VE)."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("Bs.\xa02.382,11"), 2382.11)
+        self.assertEqual(
+            wizard.convert_currency_to_float("Bs.\xa013.836,97"), 13836.97
+        )
+
+    def test_convert_currency_to_float_symbol_after(self):
+        """Robustez: simbolo despues del monto tambien se parsea bien."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("1.234,56\xa0Bs."), 1234.56)
+
+    def test_convert_currency_to_float_symbol_after_dot_decimal(self):
+        """Simbolo despues con decimal de punto (Bs.F): el punto pegado al
+        simbolo NO debe colarse como decimal suelto y romper el parseo."""
+        wizard = self._create_wizard("sale")
+        self.assertEqual(wizard.convert_currency_to_float("100.00\xa0Bs.F"), 100.00)
+        self.assertEqual(wizard.convert_currency_to_float("16.00\xa0Bs.F"), 16.00)
+
     # ============================================================
     # Phase 3: Domain & search
     # ============================================================
@@ -387,7 +414,7 @@ class TestAccountingReports(TransactionCase):
         today = fields.Date.today()
         wizard = self._create_wizard("sale", date_from=today, date_to=today)
         domain = wizard._get_domain()
-        self.assertIn(("company_id", "=", self.company.id), domain)
+        self.assertIn(("company_id", "in", [self.company.id]), domain)
         self.assertIn(("date", ">=", today), domain)
         self.assertIn(("date", "<=", today), domain)
         self.assertIn(("correlative", "not in", ["/", False]), domain)
@@ -426,6 +453,48 @@ class TestAccountingReports(TransactionCase):
         moves = wizard.search_moves()
         self.assertIn(m1.id, moves.ids)
         self.assertIn(m2.id, moves.ids)
+
+    def _post_sale_invoice(self, correlative):
+        move = self._create_move(
+            "out_invoice", self.journal_sale, [self.tax_sale_16.id],
+            correlative=correlative,
+        )
+        move.with_context(move_action_post_alert=True).action_post()
+        return move
+
+    def test_search_moves_sale_same_day_edited_after_post(self):
+        """Las facturas de un mismo día modificadas después de publicarse
+        (pago, digitalización) no se van al final del libro de ventas."""
+        invoices = self.env["account.move"]
+        for i in range(1, 7):
+            invoices |= self._post_sale_invoice(f"00-{i:08d}")
+        # Postgres guarda la versión nueva de cada fila modificada al final de
+        # la tabla: sin desempate, estas tres saldrían de últimas.
+        (invoices[0] | invoices[2] | invoices[4]).write({"ref": "pagada"})
+        self.env.flush_all()
+        self.env.invalidate_all()
+
+        moves = self._create_wizard("sale").search_moves() & invoices
+        self.assertEqual(moves.ids, invoices.ids)
+
+    def test_search_moves_sale_same_day_by_registration_time(self):
+        """Dentro del día, el libro de ventas sigue la fecha-hora de registro."""
+        first, second, third = (
+            self._post_sale_invoice(f"00-{i:08d}") for i in range(1, 4)
+        )
+        today = fields.Datetime.now().replace(hour=12, minute=0, second=0)
+        first.invoice_date_display_datetime = today + timedelta(hours=2)
+        second.invoice_date_display_datetime = today
+        third.invoice_date_display_datetime = today + timedelta(hours=1)
+
+        moves = self._create_wizard("sale").search_moves() & (first | second | third)
+        self.assertEqual(moves.ids, (second | third | first).ids)
+
+    def test_book_order_purchase_unchanged(self):
+        self.assertEqual(
+            self._create_wizard("purchase")._get_book_order(),
+            "invoice_date_display asc",
+        )
 
     # ============================================================
     # Phase 4: _determinate_amount_taxeds
@@ -669,6 +738,84 @@ class TestAccountingReports(TransactionCase):
         result = wizard._determinate_resume_books(moves, "exempt_aliquot")
         self.assertEqual(len(result), 4)
 
+    def _check_resume_total_row_has_net_formulas(self, report, journal, taxes):
+        today = fields.Date.today()
+        # La fila "alícuota general" solo se llena si el impuesto está configurado en la compañía
+        self.company.write({
+            "general_aliquot_sale" if report == "sale" else "general_aliquot_purchase": taxes[0]
+        })
+        move = self._create_move(
+            "out_invoice" if report == "sale" else "in_invoice",
+            journal, taxes, correlative="RT001"
+        )
+        # El contexto evita el wizard de alerta que l10n_ve_accountant abre al publicar ventas
+        move.with_context(move_action_post_alert=True).action_post()
+        self.assertEqual(move.state, "posted")
+        wizard = self._create_wizard(report, date_from=today, date_to=today)
+        writes = []
+        formulas = {}
+        values = {}
+
+        class FakeWorksheet:
+            def merge_range(self, *args, **kwargs):
+                pass
+
+            def write(self, row, col, value, *args, **kwargs):
+                writes.append((row, col, "value"))
+                values[(row, col)] = value
+
+            def write_formula(self, row, col, formula, *args, **kwargs):
+                writes.append((row, col, "formula"))
+                formulas[(row, col)] = formula
+
+        index_to_start = 0
+        wizard.generate_book_resume(
+            FakeWorksheet(), index_to_start, None, {"number": None}
+        )
+        total_row = max(row for row, _col in formulas)
+        first_row = index_to_start + 5
+        # Columnas C..H (2..7): incluida "Total Neto" (G, H)
+        self.assertEqual(
+            sorted(col for row, col in formulas if row == total_row), [2, 3, 4, 5, 6, 7]
+        )
+        for col, letter in zip(range(2, 8), "CDEFGH"):
+            self.assertEqual(
+                formulas[(total_row, col)],
+                f"=SUM({letter}{first_row}:{letter}{total_row})",
+            )
+            # Ninguna escritura posterior pisa la fórmula de la celda
+            cell_writes = [kind for r, c, kind in writes if (r, c) == (total_row, col)]
+            self.assertEqual(cell_writes[-1], "formula")
+
+        # Evalúa los =SUM contra los valores escritos (filas Excel first_row..total_row)
+        data_rows = range(first_row - 1, total_row)
+        totals = {
+            col: sum(values.get((row, col), 0) for row in data_rows)
+            for col in range(2, 8)
+        }
+        # Total Neto (G, H) = base/débito de las dos primeras alícuotas (C+E, D+F)
+        for row in data_rows:
+            self.assertAlmostEqual(
+                values[(row, 6)], values[(row, 2)] + values[(row, 4)]
+            )
+            self.assertAlmostEqual(
+                values[(row, 7)], values[(row, 3)] + values[(row, 5)]
+            )
+        self.assertAlmostEqual(totals[6], totals[2] + totals[4])
+        self.assertAlmostEqual(totals[7], totals[3] + totals[5])
+        # El bug dejaba el Total Neto de la fila total en 0
+        self.assertTrue(totals[6] or totals[7])
+
+    def test_resume_sale_total_row_net_columns_are_sums(self):
+        self._check_resume_total_row_has_net_formulas(
+            "sale", self.journal_sale, [self.tax_sale_16.id]
+        )
+
+    def test_resume_purchase_total_row_net_columns_are_sums(self):
+        self._check_resume_total_row_has_net_formulas(
+            "purchase", self.journal_purchase, [self.tax_purchase_16.id]
+        )
+
     def test_resume_books_general_aliquot(self):
         today = fields.Date.today()
         self._create_posted_move(
@@ -761,6 +908,7 @@ class TestAccountingReports(TransactionCase):
             "out_invoice", self.journal_sale, [self.tax_sale_16.id],
             correlative="R006",
             invoice_date_display=today - timedelta(days=90),
+            invoice_date=today - timedelta(days=90),
         )
         wizard = self._create_wizard("sale", date_from=today, date_to=today)
         moves = wizard.search_moves()
@@ -904,7 +1052,7 @@ class TestAccountingReports(TransactionCase):
         wizard = self._create_wizard("purchase", date_from=today, date_to=today)
         action = wizard.generate_report()
         self.assertEqual(action["type"], "ir.actions.act_url")
-        self.assertIn("company_id", action["url"])
+        self.assertIn("wizard_id=%s" % wizard.id, action["url"])
 
     def test_download_sales_book_url(self):
         wizard = self._create_wizard("sale")

@@ -17,17 +17,27 @@ Los asientos (`account.move`), pagos (`account.payment`) y el wizard de registro
 
 ### Requirement: Cálculo automático de la tasa según la fecha del documento
 
-El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha del documento: para documentos de venta usa `invoice_date` y para el resto (compras, asientos) usa `date`; si la fecha no está definida usa la fecha actual. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, precisamente porque el propio método lee uno u otro campo según el tipo de documento: si dependiera solo de `invoice_date`, editar únicamente `date` en un documento de compra (o cualquier documento que no sea de venta) nunca dispararía el recompute, dejando `foreign_rate`/`foreign_inverse_rate` obsoletos respecto a la fecha realmente usada para buscarlos. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo.
+El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada `account.move` invocando `res.currency.rate.compute_rate` sobre la moneda alterna del documento (`foreign_currency_id`) con la fecha de tasa del documento: `invoice_date` ("Rate Date") para todas las facturas, ventas y compras por igual, con `date` como respaldo si está vacía; los asientos (`entry`) usan siempre `date`, porque su `invoice_date` solo trae el "hoy" por defecto; si ninguna está definida usa la fecha actual del usuario (`context_today`). La regla es la misma para todos los tipos de documento: `_compute_rate_for_documents` recibe solo los documentos, sin distinguir ventas de compras. El recálculo (`_compute_rate`) DEBE (MUST) depender tanto de `invoice_date` como de `date`, porque `date` es el respaldo cuando `invoice_date` está vacía: editar únicamente `date` en un documento sin `invoice_date` DEBE (MUST) recalcular la tasa, mientras que en un documento con `invoice_date` (por ejemplo una compra) cambiar solo `date` NO DEBE (MUST NOT) moverla. En la creación del asiento se omite para los documentos `in_invoice`, que conservan la tasa por defecto calculada a la fecha de hoy. Los documentos con `manually_set_rate` activo quedan excluidos del recálculo. `compute_rate` busca la tasa únicamente en la fecha exacta del documento (sin usar la más cercana, anterior ni posterior): si esa fecha no tiene tasa cargada, la creación o contabilización del documento se bloquea con un `UserError` que indica la moneda y la fecha.
 
 #### Scenario: Factura de venta
 
 - **WHEN** se establece o cambia la fecha de factura de un documento de venta sin tasa manual
 - **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a esa fecha
 
+#### Scenario: Factura de compra con la fecha de tasa editada
+
+- **WHEN** se edita `invoice_date` (Rate Date) en un documento de compra (`in_invoice`) sin tasa manual, incluso restablecido a borrador desde el formulario
+- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a esa fecha, igual que en una factura de venta, y al guardar el formulario queda esa tasa
+
 #### Scenario: Factura de compra con solo la fecha contable editada
 
-- **WHEN** se edita únicamente `date` (sin tocar `invoice_date`) en un documento que no es de venta (por ejemplo `in_invoice`), sin tasa manual
-- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`, en vez de quedar congelados con la tasa de la fecha anterior
+- **WHEN** se edita únicamente `date` (sin tocar `invoice_date`) en un documento de compra con `invoice_date` definida, sin tasa manual
+- **THEN** `foreign_rate` y `foreign_inverse_rate` conservan la tasa de `invoice_date`
+
+#### Scenario: Asiento sin fecha de tasa con solo la fecha contable editada
+
+- **WHEN** se edita `date` en un asiento (`entry`), o en un documento sin `invoice_date`, sin tasa manual
+- **THEN** `foreign_rate` y `foreign_inverse_rate` se recalculan con la tasa vigente a la nueva `date`
 
 #### Scenario: Factura de proveedor recién creada
 
@@ -38,6 +48,90 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 
 - **WHEN** un documento tiene `manually_set_rate` en verdadero
 - **THEN** el recálculo automático no modifica su tasa
+
+#### Scenario: Documento con fecha sin tasa cargada
+
+- **WHEN** se crea o contabiliza un documento cuya fecha de tasa no tiene registro de tasa para la moneda alterna, aunque existan tasas de otras fechas
+- **THEN** se lanza un `UserError` "There is no rate assigned for <moneda> on <fecha>" y, una vez cargada la tasa de esa fecha, el mismo documento se contabiliza con ella
+
+#### Scenario: Cambio de la tasa después de contabilizar
+
+- **WHEN** se modifica el registro de tasa de la fecha de un documento ya contabilizado y luego se recalcula y cancela el documento
+- **THEN** el asiento sigue cuadrado (débito igual a crédito)
+
+### Requirement: Restablecer a borrador conserva la tasa de confirmación
+
+La tasa que muestra el documento (`move_currency_to_company_currency_rate`) DEBE (MUST) salir de la tasa guardada en él (`invoice_currency_rate`, o `foreign_rate` cuando el documento está en la moneda de la compañía) y solo usar la tasa vigente de la fecha cuando el documento no tiene ninguna guardada. Editar después el registro de tasa del día de un documento ya contabilizado NO DEBE (MUST NOT) cambiar la tasa mostrada, `foreign_rate`, `foreign_inverse_rate` ni `invoice_currency_rate`, y restablecer ese documento a borrador DEBE (MUST) conservarlas junto con los importes de todas sus líneas (ventas, impuestos y cuenta por cobrar), de modo que el histórico de la tasa no se pierde y el asiento no se descuadra.
+
+`foreign_rate` y `foreign_inverse_rate` (`_compute_rate`, que depende de `invoice_date` y `date`) e `invoice_currency_rate` (campo del core, que depende de `invoice_date`, `taxable_supply_date`, `currency_id` y `company_id`) son campos calculados guardados, y Odoo los recalcula cada vez que se **escribe** una de sus dependencias, aunque el valor escrito sea el que ya tenía. Para que un documento que ya se confirmó (`posted_before`) conserve sus tasas, el sistema DEBE (MUST):
+
+1. Comparar en `_apply_product_real_portion` (al sincronizar el borrador) contra `invoice_currency_rate`, no contra la tasa vigente de la fecha.
+2. Descartar, mediante `_drop_unchanged_rate_dates` invocado al inicio de `write` de `account.move`, las escrituras de `invoice_date`, `invoice_date_display` y `date` cuyo valor es igual al actual, siempre que **todos** los documentos escritos tengan `posted_before` y ninguno esté `posted` (en un lote mixto no se descarta nada; sobre un documento `posted` el core sigue lanzando su error de campos de solo lectura). Así una escritura que no cambia la fecha (RPC, importación u otro módulo) no recalcula las tres tasas.
+
+Límites de esa protección, tal como los implementa el código:
+
+- Solo cubre esas tres fechas: escribir el mismo `currency_id`, `company_id` o `taxable_supply_date` sigue recalculando `invoice_currency_rate`.
+- Una fecha que sí cambia nunca se descarta y las tasas la siguen; un borrador que nunca se confirmó (`posted_before` falso) sigue recalculando como siempre.
+- No distingue `manually_set_rate`: aplica también a esos documentos. Un documento `posted` queda fuera de la protección, así que escribirle la misma fecha sigue lanzando el error de campos de solo lectura del core.
+- El cliente web solo envía los campos que el usuario cambió y la vista del formulario de la factura no incluye `foreign_rate`, por lo que guardar el formulario no escribe la tasa alterna; la protección del punto 2 es para los demás llamadores.
+
+#### Scenario: Restablecer a borrador tras editar la tasa del día
+
+- **GIVEN** una factura en USD confirmada con la tasa 884,75 y luego la tasa de ese mismo día editada a 900
+- **WHEN** se restablece la factura a borrador
+- **THEN** el cambio de estado se permite, el asiento queda balanceado y todas sus líneas conservan los importes calculados con 884,75
+
+#### Scenario: Restablecer a borrador con un pago conciliado o una nota de crédito
+
+- **GIVEN** una factura confirmada con la tasa 884,75, con un pago conciliado (o una nota de crédito aplicada) y la tasa de ese día editada después a 900
+- **WHEN** se restablece la factura a borrador
+- **THEN** el cambio de estado se permite y las tasas y los balances de todas sus líneas siguen siendo los de la confirmación
+
+#### Scenario: Factura de proveedor con pago normal conciliado
+
+- **GIVEN** una factura de proveedor confirmada, sin retenciones, con un pago normal conciliado y la tasa de ese día editada después
+- **WHEN** se restablece a borrador
+- **THEN** el cambio de estado se permite y las tasas y los balances siguen siendo los de la confirmación (el bloqueo por pago real de `l10n_ve_payment_extension` solo aplica a facturas con retenciones)
+
+#### Scenario: Volver a confirmar tras restablecer a borrador
+
+- **GIVEN** la factura del escenario anterior, ya en borrador
+- **WHEN** se confirma de nuevo
+- **THEN** `foreign_rate`, `foreign_inverse_rate`, `invoice_currency_rate` y los balances siguen siendo los de la primera confirmación
+
+#### Scenario: Guardar el formulario del borrador
+
+- **GIVEN** una factura restablecida a borrador tras editar la tasa de su día
+- **WHEN** en el formulario se cambia la fecha del documento y se devuelve a la original antes de guardar
+- **THEN** `foreign_rate` y `foreign_inverse_rate` siguen siendo los de la confirmación y la fecha de tasa queda en la original
+
+#### Scenario: Escritura de la misma fecha en un borrador ya confirmado antes
+
+- **GIVEN** una factura restablecida a borrador tras editar la tasa de su día
+- **WHEN** se escribe `invoice_date` y `date` con los valores que ya tienen
+- **THEN** las escrituras se descartan y las tres tasas no cambian
+
+#### Scenario: Cambio real de fecha
+
+- **GIVEN** una factura restablecida a borrador, y una tasa registrada para el día anterior
+- **WHEN** se escribe `invoice_date` con el día anterior
+- **THEN** `foreign_rate` y la tasa mostrada pasan a la tasa de ese día
+
+#### Scenario: Borrador que nunca se confirmó
+
+- **GIVEN** una factura en borrador con `posted_before` falso y la tasa de su día editada
+- **WHEN** se escribe `invoice_date` con el mismo valor
+- **THEN** `foreign_rate` se recalcula con la tasa vigente
+
+#### Scenario: Tasa mostrada de un documento contabilizado
+
+- **WHEN** se abre una factura contabilizada cuya tasa del día se editó después de confirmarla
+- **THEN** el formulario muestra la tasa con la que se confirmó y no la tasa vigente
+
+#### Scenario: Factura en la moneda de la compañía
+
+- **WHEN** se restablece a borrador una factura en la moneda de la compañía tras editar la tasa de su día
+- **THEN** sus columnas de la moneda alterna (`foreign_debit`, `foreign_credit`, `foreign_balance`) y su `foreign_rate` no cambian
 
 ### Requirement: Prohibición de tasas negativas o cero
 
@@ -66,6 +160,46 @@ Al crear un `account.move` de tipo `out_refund` o `in_refund` con `reversed_entr
 
 - **WHEN** se crea una nota de débito con `debit_origin_id`
 - **THEN** su tasa no se copia del documento de origen
+
+### Requirement: Fechas de la Nota de Crédito respecto a su documento origen
+
+Al crear una Nota de Crédito con `account.move.reversal` (`_prepare_default_reversal`) sobre un documento facturable (`is_invoice(include_receipts=True)`), de cliente o de proveedor, el sistema DEBE (MUST):
+
+- Tomar `invoice_date` (fecha de tasa) siempre del documento origen, nunca del wizard.
+- Tomar `invoice_date_display` y `date` de la fecha del wizard, que por defecto es hoy (`fields.Date.context_today`) y es editable.
+- Validar con `account.move._l10n_ve_check_note_date` que esa fecha no sea anterior a `invoice_date_display` del origen (con `date` como resguardo) ni posterior a hoy; `reverse_moves` lanza `ValidationError` en caso contrario.
+- Emitirse contra UNA sola factura: `default_get` y `reverse_moves` lanzan `UserError` cuando reciben más de un documento facturable.
+
+Ticket #15594.
+
+#### Scenario: Nota de Crédito con fecha entre el origen y hoy
+
+- **WHEN** se revierte una factura con una fecha de wizard entre la de la factura y hoy
+- **THEN** la nota queda con `invoice_date_display` y `date` iguales a esa fecha e `invoice_date` igual al de la factura
+
+#### Scenario: Fecha por defecto del wizard
+
+- **WHEN** se abre el wizard de reversión
+- **THEN** `date` es hoy según la zona horaria del usuario
+
+#### Scenario: Fecha anterior al origen o futura
+
+- **WHEN** la fecha del wizard es anterior a la del origen o posterior a hoy
+- **THEN** `reverse_moves` lanza `ValidationError`
+
+#### Scenario: Wizard sobre varias facturas
+
+- **WHEN** se abre o ejecuta el wizard de reversión con más de una factura seleccionada
+- **THEN** se lanza `UserError`
+
+### Requirement: Fecha de tasa de la nota bloqueada en el formulario
+
+En el formulario de `account.move`, `invoice_date` (fecha de tasa) DEBE (MUST) ser de solo lectura cuando `reversed_entry_id` o `debit_origin_id` están definidos, además de la regla previa de solo lectura fuera de borrador. `invoice_date_display` permanece editable en borrador.
+
+#### Scenario: Edición de las fechas de una nota
+
+- **WHEN** un usuario abre en borrador una nota con `reversed_entry_id` o `debit_origin_id`
+- **THEN** la fecha de tasa no es editable y la fecha del documento sí
 
 ### Requirement: Trazabilidad del cambio manual de tasa
 
@@ -163,7 +297,7 @@ Al sincronizar las líneas dinámicas de una factura **en borrador** (`_distribu
 
 Para facturas en moneda distinta a la de la compañía, el sistema DEBE (MUST) corregir las diferencias de redondeo introducidas por el redondeo línea a línea, en dos pasos independientes que corren en etapas distintas del ciclo de sincronización:
 
-1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa cruda del documento (`currency_id._convert` a la fecha de factura), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
+1. Durante `_sync_invoice` (`account.move.line._apply_product_real_portion`), sobre las líneas de producto en moneda foránea: compara la suma de sus balances con la conversión de la suma de `amount_currency` a la tasa guardada del documento (`invoice_currency_rate`; solo si el documento no la tiene cae a `currency_id._convert` a la fecha de factura, nunca a la tasa vigente de esa fecha si esta se editó después de contabilizar), y si difieren reparte esa diferencia entre las líneas de producto proporcionalmente a su balance (`_adjust_product_distribution`).
 2. Durante `_sync_tax_lines` (bloque "Fix multi-currency rounding" de `account.move`), tras calcular `tax_results` con el motor estándar de impuestos: el balance de cada línea de impuesto cuyo repartition line pertenece a un impuesto `amount_type = 'percent'` se recalcula NATIVAMENTE en VEF, sumando el `balance` fresco (ya calculado en este mismo ciclo, NO el campo `record.balance` desactualizado) de las líneas de producto que usan ese impuesto y aplicando `% del impuesto x factor_percent de la línea de reparto`; `amount_currency` se deriva multiplicando ese balance por `move.invoice_currency_rate` y redondeando con `move.currency_id` (la moneda del documento, NO la de la compañía -- VEF es el monto "maestro" para `balance`, pero `amount_currency` debe respetar la precisión de la moneda en la que está la factura). El match de las líneas de producto que usan el impuesto considera tanto el impuesto directo (`tax in record.tax_ids`) como su `group_tax_id`: `record.tax_ids` trae el impuesto tal como lo eligió el usuario, que para un `percent` hijo de un `amount_type = 'group'` es el grupo, no el hijo -- sin este segundo criterio la base salía en 0 para esos hijos, sin romper el cuadre del asiento (ver "Requirement" de este mismo bloque, punto 3, que ancla la contrapartida al resto). Para impuestos `fixed`/`division`/`group`, y para las líneas base, se mantiene `amount_currency / rate` como antes. Esto evita que el % del impuesto visible en el asiento diverja de la base real de las líneas de producto (ver `l10n_ve_accountant/tests/test_multi_currency_rounding.py`, tests 15-22, 26 y 27).
 3. Durante `_sync_dynamic_lines`, ya con el recompute del core aplicado (`account.move._distribute_invoice_real_portion`): recorre las líneas de impuesto y, para las de un impuesto `fixed`/`division`/`group`, fija `balance = amount_currency / rate` redondeado (ruta real de cálculo para esos tipos). Para impuestos `amount_type = 'percent'` este paso hace `continue` explícito y NO toca el balance -- **no son idempotentes** entre sí: `amount_currency / rate` divide por una tasa pequeña (VEF hacia la moneda del documento), lo que amplifica el redondeo de 2 decimales de `amount_currency` a un error de varios bolívares en VEF (confirmado empíricamente con precios a 6 decimales y cantidades no enteras, `l10n_ve_accountant/tests/test_multi_currency_rounding.py::test_24_distribute_invoice_real_portion_would_diverge_without_the_skip`); si este paso recalculara el balance de esas líneas, revertiría el cálculo VEF-nativo del paso 2. Luego ancla la contrapartida (las líneas de término de pago si existen; si no, el resto de líneas sin `tax_repartition_line_id`) a `-actual_non_pt`, donde `actual_non_pt` es la suma REAL de los balances de todas las líneas que no son de término de pago, COGS, ni sección/subsección/nota (`line_section`/`line_subsection`/`line_note`, excluidas para no violar el `CHECK` de líneas no contables) tal como quedaron después del recompute — NO una conversión directa del total del documento. El ajuste se acumula en `real_portion_amount` e incrementa `real_portion_count`.
 
@@ -175,6 +309,12 @@ Este tercer paso NO recalcula ni fuerza un total "esperado" a partir de `amount_
 
 - **WHEN** la suma de balances redondeados de las líneas de producto difiere de la conversión redondeada del total de esas líneas en la unidad de redondeo
 - **THEN** la diferencia se reparte entre las líneas de producto (`_apply_product_real_portion`) y, al sincronizar las líneas dinámicas, la contrapartida se ancla a la suma real de las líneas no-PT resultante
+
+#### Scenario: Restablecer a borrador tras editar la tasa del día no recalcula las líneas de producto
+
+- **GIVEN** una factura en divisa confirmada con una tasa y luego la tasa de su fecha editada
+- **WHEN** se restablece a borrador y `_apply_product_real_portion` compara los balances con la conversión esperada
+- **THEN** la conversión esperada usa `invoice_currency_rate`, la diferencia es solo de redondeo y no se reescribe ninguna línea de producto ni la contrapartida
 
 #### Scenario: Cambio de fecha a una fecha con la misma tasa vigente no descuadra el asiento (ticket 15089)
 
@@ -222,6 +362,80 @@ El documento (`record`) sobre el que se calcula este resumen DEBE (MUST) derivar
 - **AND** `formatted_total_discount` de A permanece el float `0.0` (sin descuento), no el string formateado que tendría si hubiera heredado el descuento de B
 
 (`_compute_tax_totals` de `account.move`, `l10n_ve_accountant/models/account_move.py`, delega directo a `super()` sin fijar `active_id`/`active_model` por registro -- ese `with_context()` por registro causaba un `RecursionError` real en cadenas de `super()` profundas al conciliar pagos; la prioridad de `base_lines` sobre el contexto de arriba es lo que hace seguro quitarlo. Cubierto por `l10n_ve_accountant/tests/test_coverage_gaps.py::test_39b_tax_totals_record_derived_from_base_lines_ignores_stale_active_id`.)
+
+### Requirement: Edición manual del resumen de impuestos (`tax_totals`) vía lápiz
+
+Cuando el usuario pertenece al grupo `l10n_ve_accountant.group_fiscal_config_support`, el formulario de factura DEBE (MUST) permitir editar manualmente el monto de un grupo de impuesto directamente en el widget `tax_totals`, mientras la factura está en borrador (`state == 'draft'`) -- con el mismo ícono de lápiz (`fa fa-pencil`) que el widget nativo de Odoo junto al monto editable, no solo el click habilitado sin esa señal visual. Usuarios fuera de ese grupo NO DEBEN (SHALL NOT) poder aplicar el cambio aunque lo intenten por escritura directa (no solo oculto en la vista): `_inverse_tax_totals` DEBE (MUST) rechazar la escritura con un `UserError` del lado servidor.
+
+El lápiz DEBE (MUST) estar oculto para los usuarios fuera del grupo en los dos widgets de totales presentes en el formulario de factura: el nativo (`account-tax-totals-field`, pestaña principal) y el de VES (`account-tax-ves-totals-field`). Los dos comparten la condición `not can_edit_tax_totals` en su `readonly`, de modo que un usuario sin el grupo nunca ve el lápiz ni recibe el error de permiso recién al guardar.
+
+`tax_totals_edit_tolerance` DEBE (MUST) estar entre 0 y 1 (constraint de `res.company`); fuera de ese rango se rechaza el guardado.
+
+La edición SOLO DEBE (MUST) aplicarse si el delta entre el monto calculado y el editado no supera `company_id.tax_totals_edit_tolerance` (configurable por compañía, default 0,03 en la moneda del documento); fuera de esa tolerancia el sistema DEBE (MUST) rechazar la escritura con un `UserError` que indique la diferencia y la tolerancia permitida, aunque el usuario sí pertenezca al grupo.
+
+Toda edición que efectivamente se aplique (delta distinto de cero y dentro de tolerancia) DEBE (MUST) dejar un rastro de auditoría en el chatter de la factura (`message_post`), consolidado en un único mensaje por guardado aunque hayan cambiado varios grupos de impuesto a la vez, indicando el usuario que hizo el cambio y, por cada grupo afectado, el monto anterior y el nuevo.
+
+La edición manual escribe directamente sobre `amount_currency`/`balance` de la línea de impuesto, sin tocar ninguna línea base/producto -- por eso el sistema DEBE (MUST) resincronizar también el lado de moneda alterna (`foreign_balance`/`foreign_debit`/`foreign_credit`) de esa misma línea de impuesto y de la línea `payment_term` que la cuadra (`_sync_tax_lines`/`_round_mode`, rama `'reapply_tax_lines'` -- ver el requirement "Corrección de redondeo multi-moneda (porción real)"), para que el asiento no quede descuadrado en moneda alterna tras la edición. Esa resincronización NO DEBE (SHALL NOT) recalcular el lado de moneda de la compañía (`balance`) a partir de las líneas base, ya que eso descartaría silenciosamente la edición manual recién validada por la tolerancia.
+
+Core escribe `tax_totals` dos veces por cada `write()` de la factura: una transitoria, dentro de `_sync_dynamic_lines` (antes de que las líneas de impuesto terminen de resincronizarse contra el nuevo estado de las líneas base), y la real, después. Core marca la pasada transitoria con `_disable_recursion(..., 'skip_invoice_sync')`, y su propio `_inverse_tax_totals` ya respeta ese guard; `_inverse_tax_totals` de este módulo DEBE (MUST) respetarlo también, delegando directo a `super()` sin validar ni auditar durante esa pasada -- de lo contrario cualquier edición normal de línea (no el lápiz) puede disparar ahí un `UserError` espurio de tolerancia, y una edición real del lápiz deja dos mensajes de chatter por un solo guardado.
+
+`_sync_dynamic_lines` DEBE (MUST) ejecutar `_distribute_final_real_portion`/`_distribute_foreign_pt_residual` solo mientras no haya ya una ejecución en curso para el mismo move en la pila actual (guarda de reentrancia, liberada en `finally`), porque ambos métodos escriben campos (`foreign_balance`, `balance` de línea de impuesto) cuyo propio write/inverse reentra `_sync_dynamic_lines`. Esta guarda es un endurecimiento defensivo: en el escenario de prueba cubierto (dos líneas de producto, tres cuotas de payment_term) la reentrada observada es real pero de profundidad acotada (3-6 niveles) y converge sola incluso sin la guarda -- NO reproduce el `RecursionError` real reportado en producción (que supera 150 frames e involucra módulos enterprise/integra-addons fuera de este escenario mínimo). Esta guarda NO DEBE (MUST NOT) presentarse como una corrección confirmada de ese incidente; queda pendiente reproducirlo con el escenario completo antes de cerrar ese hallazgo.
+
+#### Scenario: Edición dentro de tolerancia se aplica y queda auditada
+
+- **GIVEN** un usuario del grupo `group_fiscal_config_support` editando una factura en borrador
+- **WHEN** edita el monto de un grupo de impuesto con un delta dentro de `tax_totals_edit_tolerance`
+- **THEN** la línea de impuesto queda con el nuevo monto, y el chatter de la factura registra un mensaje con el usuario, el grupo afectado y el monto anterior y el nuevo (`test_56_tax_totals_edit_within_company_tolerance_succeeds`, `test_60_tax_totals_edit_logs_chatter_message`)
+
+#### Scenario: Usuario con el grupo de soporte fiscal
+
+- **GIVEN** un usuario en `group_fiscal_config_support` y una factura de proveedor en borrador
+- **WHEN** edita el monto de un grupo de impuesto dentro de la tolerancia
+- **THEN** `can_edit_tax_totals` es verdadero y la edición se aplica (`test_58b`)
+
+#### Scenario: Usuario sin el grupo de soporte fiscal
+
+- **GIVEN** un usuario fuera de `group_fiscal_config_support`
+- **WHEN** abre el formulario o intenta escribir `tax_totals`
+- **THEN** `can_edit_tax_totals` es falso, el `readonly` de los dos widgets de totales (nativo y VES) incluye `not can_edit_tax_totals`, y la escritura se rechaza con `UserError` sin modificar la línea de impuesto (`test_58`, `test_58c`)
+
+#### Scenario: Edición fuera de tolerancia se rechaza
+
+- **WHEN** el delta editado supera `tax_totals_edit_tolerance`
+- **THEN** el sistema rechaza la escritura con un `UserError`, aunque el usuario pertenezca al grupo (`test_57_tax_totals_edit_beyond_company_tolerance_blocked`)
+
+#### Scenario: Usuario sin el grupo no puede editar ni por escritura directa
+
+- **WHEN** un usuario fuera de `group_fiscal_config_support` intenta aplicar el mismo cambio
+- **THEN** el sistema lo rechaza con un `UserError`, incluso si el intento no pasa por el widget (`test_58_tax_totals_edit_denied_for_user_without_fiscal_support_group`)
+
+#### Scenario: La edición resincroniza el lado de moneda alterna y la línea de payment_term
+
+- **GIVEN** una compañía con `currency_id` VEF y `foreign_currency_id` USD, y una factura en USD
+- **WHEN** se edita el monto de un grupo de impuesto dentro de tolerancia
+- **THEN** `foreign_balance` de la línea de impuesto y de la línea `payment_term` se recalculan a partir del nuevo monto, el total de `foreign_debit` sigue igualando al de `foreign_credit` en toda la factura, y `balance` (moneda de la compañía) permanece exactamente el que dejó la edición manual (`test_59_tax_totals_edit_resyncs_foreign_balance_and_payment_term`)
+
+#### Scenario: Un guardado normal que reenvía tax_totals ya recalculado no se bloquea
+
+- **GIVEN** una factura en borrador donde el usuario edita una línea de producto (no el lápiz de `tax_totals`)
+- **WHEN** el mismo `write()` incluye también el `tax_totals` ya recalculado del lado cliente (como hace el webclient en cualquier guardado donde el widget cambió)
+- **THEN** el guardado no lanza `UserError` y el impuesto final refleja la edición real de la línea (`test_61_normal_line_edit_with_tax_totals_in_vals_does_not_raise`)
+
+#### Scenario: La guarda de reentrancia de _sync_dynamic_lines no rompe un guardado normal multi-línea/multi-cuota
+
+- **GIVEN** una factura en borrador con dos líneas de producto y tres cuotas de `payment_term`
+- **WHEN** se edita `price_unit` de una línea de producto
+- **THEN** el guardado no lanza `RecursionError`, el asiento queda cuadrado, el número de cuotas de `payment_term` no cambia y `foreign_debit`/`foreign_credit` quedan consistentes en todas las líneas (`test_62_sync_dynamic_lines_reentrancy_guard_does_not_break_normal_save`)
+
+### Requirement: Las líneas con impuesto porcentual incluido calculan base e impuesto por línea
+
+Para toda factura en borrador, en cualquiera de los dos modos de redondeo, la base de cada línea de producto cuyos impuestos sean todos porcentuales, con precio incluido y sin `include_base_amount` DEBE (MUST) calcularse a partir de su propio precio (`_fix_price_included_base_per_line`). El impuesto de esa línea DEBE (MUST) ser el precio incluido menos su base, de modo que la suma de base e impuesto de cada línea sea exactamente su precio y el total del documento coincida con el tipeado. Dos líneas idénticas DEBEN (MUST) registrar los mismos montos, y el resumen `tax_totals` DEBE (MUST) leer el impuesto de las líneas posteadas también en `round_globally` cuando existan estos impuestos.
+
+#### Scenario: Dos líneas idénticas con IVA 16% incluido en `round_globally` y `round_per_line`
+
+- **GIVEN** una factura de proveedor en USD con dos líneas de 12,95 USD, IVA 16% incluido en el precio
+- **WHEN** se publica la factura en cualquiera de los dos modos de redondeo
+- **THEN** ambas líneas registran la misma base (11,16 USD), el impuesto es 3,58 USD y `amount_total` es 25,90 USD (`test_33`)
 
 ### Requirement: base_amount por grupo de impuesto coincide con el balance real
 
@@ -391,14 +605,94 @@ Al crear un diario o cambiar su tipo, los usuarios sin el grupo `l10n_ve_account
 - **WHEN** un usuario sin el grupo de soporte crea un diario de tipo venta
 - **THEN** se lanza un error de permisos y el diario no se crea
 
+### Requirement: Cuenta bancaria obligatoria en diarios tipo banco
+
+Todo diario de tipo `bank` DEBE (MUST) tener `default_account_id` ("Cuenta Bancaria") asignado (constraint `_check_default_account_id_required_for_bank` de `account.journal`). Esto es independiente de la propagación a los métodos de pago (ver el siguiente requirement): un diario banco sin esta cuenta no se puede guardar bajo ninguna circunstancia.
+
+#### Scenario: Diario banco sin cuenta bancaria
+
+- **WHEN** se crea o guarda un diario de tipo `bank` sin `default_account_id`
+- **THEN** se lanza un error "Bank journals require a default account (Bank Account)."
+
+### Requirement: Propagación automática de la cuenta bancaria a los métodos de pago
+
+Cuando un diario de tipo `bank` tiene `default_account_id` asignado, esa cuenta DEBE (MUST) propagarse automáticamente a `payment_account_id` en todas sus líneas de método de pago (entrantes y salientes) que no tengan ya una cuenta propia (`_fill_payment_account_id_from_default` de `account.journal`), sin intervención manual del usuario. Esto aplica tanto a las líneas generadas por el compute nativo de Odoo al crear/editar el diario, como a líneas de método de pago agregadas manualmente después, vía el `default` de `payment_account_id` en `account.payment.method.line` (`_default_payment_account_id`, usa el contexto `default_journal_id`).
+
+Editar `default_account_id` en un diario ya guardado con líneas de método de pago adicionales (más allá de las nativas) NO DEBE (MUST NOT) desvincular ni eliminar esas líneas extra, ni los pagos que ya las usan -- la propagación solo rellena cuentas vacías, nunca reconstruye las líneas desde cero.
+
+#### Scenario: Creación del diario en una sola llamada API
+
+- **WHEN** se crea un diario de tipo `bank` con `default_account_id` ya en los valores, sin pasar por ningún onchange
+- **THEN** todas las líneas de método de pago generadas (entrantes y salientes) toman esa cuenta en `payment_account_id`
+
+#### Scenario: Línea de método de pago agregada manualmente
+
+- **WHEN** se crea una `account.payment.method.line` para un diario `bank` existente (con el contexto `default_journal_id` del diario)
+- **THEN** la línea toma `default_account_id` del diario como su `payment_account_id`, sin que el usuario la configure a mano
+
+#### Scenario: Edición de la cuenta bancaria no borra líneas extra
+
+- **WHEN** se edita `default_account_id` en un diario `bank` ya guardado que tiene una línea de método de pago agregada manualmente (además de las nativas)
+- **THEN** esa línea extra sigue existiendo, vinculada al mismo diario, con su nombre intacto
+
+#### Scenario: Diario no bancario no hereda cuenta
+
+- **WHEN** se crea una línea de método de pago para un diario de tipo distinto a `bank` (ej. `cash`)
+- **THEN** `payment_account_id` queda vacío, sin tomar ninguna cuenta por defecto
+
 ### Requirement: Métodos de pago bancarios con cuenta obligatoria
 
-Todo método de pago (entrante o saliente) de un diario de tipo `bank` DEBE (MUST) tener `payment_account_id` asignada (constraint `_check_payment_method_line_accounts`), salvo durante la carga de plantillas contables o instalación.
+Todo método de pago (entrante o saliente) de un diario de tipo `bank` DEBE (MUST) tener `payment_account_id` asignada. Esto se garantiza con dos constraints independientes, salvo durante la carga de plantillas contables o instalación:
 
-#### Scenario: Método sin cuenta
+- `_check_payment_method_line_accounts` de `account.journal` -- se dispara cuando cambia la relación o two2many `inbound_payment_method_line_ids`/`outbound_payment_method_line_ids` del diario (ej. al guardar el diario con líneas sin cuenta, o al vaciar la colección de un lado).
+- `_check_payment_account_id_required_for_bank` de `account.payment.method.line` -- se dispara al escribir directamente sobre la línea, camino que el constrains del diario NO cubre (Odoo no reevalúa un constrains sobre un campo o2m cuando se edita un campo propio del registro hijo). Su propio `create()` rellena `payment_account_id` desde `default_account_id` del diario ANTES de validar, para que este constrains pueda ser estricto sin romper la creación de diarios banco por ningún camino (compute nativo, `_auto_link_payment_methods`, payment providers).
 
-- **WHEN** se guarda un diario bancario con una línea de método de pago sin cuenta
+Un diario `bank` también DEBE (MUST) tener al menos una línea de método de pago entrante y una saliente.
+
+#### Scenario: Diario sin líneas entrantes o salientes
+
+- **WHEN** se vacía `inbound_payment_method_line_ids` o `outbound_payment_method_line_ids` de un diario `bank` ya guardado
+- **THEN** se lanza un error indicando que el diario debe tener al menos un método de pago de ese lado
+
+#### Scenario: Ninguna línea tiene cuenta
+
+- **WHEN** se guarda un diario bancario donde ninguna línea de método de pago (entrante ni saliente) tiene cuenta
 - **THEN** se lanza un error "All payment methods must have an assigned account."
+
+#### Scenario: Una línea con cuenta y otra sin
+
+- **WHEN** un diario bancario tiene una línea con cuenta asignada y otra sin, del mismo lado (entrante o saliente)
+- **THEN** se lanza el mismo error -- el constrains falla si CUALQUIER línea carece de cuenta, no solo cuando todas carecen
+
+#### Scenario: Escritura directa sobre la línea
+
+- **WHEN** se escribe `payment_account_id = False` directamente sobre una línea de un diario `bank`, sin pasar por el campo o2m del diario
+- **THEN** se lanza un error "must have an assigned account" (vía el constrains propio de `account.payment.method.line`)
+
+#### Scenario: Diario de caja no se ve afectado
+
+- **WHEN** se crea o edita un diario de tipo `cash` con líneas de método de pago sin cuenta
+- **THEN** no se lanza ningún error -- ambos constraints están acotados a `type == 'bank'`
+
+### Requirement: Bloqueo de confirmación de pagos de banco sin cuenta contable
+
+Un `account.payment` cuyo diario es de tipo `bank` y cuya línea de método de pago (`payment_method_line_id`) no tiene `payment_account_id` NO DEBE (MUST NOT) poder confirmarse (`action_post`), ni quedar con un asiento contable generado usando una cuenta genérica distinta a la configurada.
+
+El core de Odoo, al confirmar un pago sin `outstanding_account_id`, normalmente cae en un fallback silencioso (`company.transfer_account_id` o una cuenta del chart template) cuando la app completa de Contabilidad no está instalada, o directamente omite ese fallback -- dejando el pago confirmado sin asiento y sin error -- cuando sí está instalada. `_get_outstanding_account` (override de `account.payment`) DEBE (MUST) deshabilitar ese fallback para diarios `bank` sin cuenta en su línea, dejando `outstanding_account_id` en `False`; `action_post` (override de `account.payment`) DEBE (MUST) rechazar la confirmación en ese caso con un error explícito, antes de intentar generar el asiento.
+
+#### Scenario: Pago correctamente configurado
+
+- **WHEN** se confirma un pago cuyo diario `bank` y método de pago tienen cuenta asignada
+- **THEN** el pago genera su asiento contable normalmente
+
+#### Scenario: Línea sin cuenta, app de Contabilidad no instalada
+
+- **WHEN** se crea y confirma un pago contra una línea de método de pago de un diario `bank` sin `payment_account_id` (incluso si la compañía tiene `transfer_account_id` configurado, que en otro caso habría sido usado en silencio)
+- **THEN** el pago se crea con `outstanding_account_id` en `False`, y `action_post` lanza un error explícito en vez de confirmar sin asiento
+
+### Requirement: Migración de diarios banco existentes sin cuenta
+
+Al actualizar el módulo, los diarios de tipo `bank` ya existentes cuyas líneas de método de pago no tengan `payment_account_id` DEBEN (MUST) recibir automáticamente la cuenta de `default_account_id` del propio diario (migración `19.0.1.0.28`, idempotente), para no quedar bloqueados por los constraints de este documento apenas se actualice el sistema. Los diarios que tampoco tengan `default_account_id` configurado quedan registrados en el log del servidor, sin bloquear la migración.
 
 ### Requirement: Un único diario de compra internacional
 
@@ -502,7 +796,7 @@ Cuando `company.tax_calculation_rounding_method` es `round_per_line`, el sistema
 
 Esta misma corrección DEBE (MUST) aplicarse también al resumen que alimenta el widget de totales y el reporte impreso: `account.tax._get_tax_totals_summary` (vía `_fix_tax_amount_for_round_per_line`) DEBE (MUST) sobrescribir `tax_amount`/`tax_amount_currency` (y los de cada subtotal/grupo de impuesto) desde las líneas de impuesto reales ya posteadas cuando el modo es `round_per_line`, en lugar de dejar el cálculo independiente que hace el motor del core sobre `base_lines` (que sigue sumando bases y redondeando una sola vez, sin importar el modo) -- de lo contrario la factura mostrada al cliente y el asiento contable divergirían en el mismo caso que este requirement corrige. Esto aplica en cualquier dirección de documento (`out_invoice`, `in_invoice`, `out_refund`, `in_refund`), independientemente del signo de `direction_sign`.
 
-Las líneas de signo mixto bajo un mismo impuesto (un ajuste o descuento global negativo junto a líneas positivas) DEBEN (MUST) sumarse con su propio signo, no con su valor absoluto.
+Ninguna línea de producto puede tener monto negativo (ni siquiera para representar un descuento): las líneas que comparten un impuesto son siempre positivas y su contribución por línea se suma tal cual.
 
 Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo sobre un borrador todavía no guardado), el sistema NO DEBE (SHALL NOT) aplicar esta corrección: no existe ningún asiento real que igualar todavía, y `record.line_ids` puede reflejar el estado de un paso de onchange ANTERIOR (ej. el usuario cambió la moneda del documento y luego el precio de una línea, dentro del mismo borrador sin guardar entre medio) en vez del precio actual. Sin este resguardo, el `tax_amount` recién calculado por el core para el precio actual quedaría pisado por el monto obsoleto de esas líneas, congelando el widget de totales en un valor que no corresponde a lo que el usuario está viendo en pantalla.
 
@@ -525,11 +819,11 @@ Cuando `record` es un registro virtual (`NewId`, típico de un onchange en vivo 
 - **WHEN** se lee `amount_tax`/`tax_totals` (lo que muestra el formulario y el reporte impreso) de una factura de venta (`out_invoice`), una de compra (`in_invoice`) o una nota de crédito (`out_refund`)
 - **THEN** el monto coincide con la suma de `balance`/`amount_currency` de las líneas de impuesto reales ya posteadas, en las tres direcciones (`test_43`/`test_44`/`test_45` de `test_multi_currency_rounding.py`)
 
-#### Scenario: Líneas de signo mixto bajo el mismo impuesto
+#### Scenario: Dos líneas positivas bajo el mismo impuesto en ambos modos
 
-- **GIVEN** una factura con una línea positiva y una negativa (ajuste o descuento global) bajo el mismo impuesto, en `round_per_line`
-- **WHEN** se calcula el impuesto por línea antes de sumar
-- **THEN** la contribución de cada línea se suma con su propio signo, sin tomar el valor absoluto de la línea negativa
+- **GIVEN** una factura con dos líneas positivas bajo el mismo impuesto
+- **WHEN** se calcula el impuesto en `round_per_line` y en `round_globally`
+- **THEN** cada modo coincide con su propia fórmula esperada (`test_31b_two_lines_same_tax_both_rounding_modes`)
 
 ### Requirement: Un impuesto encadenado (`include_base_amount`) suma su propio monto a la base del siguiente impuesto de la misma línea
 
@@ -557,11 +851,138 @@ El sistema DEBE (MUST) corregir el redondeo por línea (`round_per_line`) única
 - **WHEN** se compara el resultado entre `round_per_line` y `round_globally`
 - **THEN** el resultado es idéntico en ambos modos
 
-### Requirement: `round_per_line` es la configuración esperada para compañías venezolanas (hallazgo de configuración, no implementado)
+### Requirement: Una compañía nueva nace con `round_per_line`; una compañía ya existente al instalar/actualizar el módulo NO se migra
 
-La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El default de Odoo 19 es `round_globally`, y este módulo NO fuerza `round_per_line` en ningún dato de instalación (`data/res_company_data.xml` no toca `tax_calculation_rounding_method`). Esto queda documentado como hallazgo pendiente de decisión de negocio (forzarlo vía dato de instalación, o documentarlo como paso manual de configuración post-instalación), NO como un cambio de código de este cierre.
+La normativa de máquinas fiscales de Venezuela exige el método de redondeo por línea. El sistema DEBE (MUST) usar `'round_per_line'` como valor por defecto de `tax_calculation_rounding_method` en `res.company` (sobreescribiendo el default `'round_globally'` heredado de `account`) para cualquier compañía CREADA después de instalar/actualizar `l10n_ve_accountant`.
 
-#### Scenario: Compañía venezolana recién instalada
+Este default NO DEBE (SHALL NOT) migrar retroactivamente compañías que ya existían al momento de instalar o actualizar el módulo: la columna ya fue poblada por `account` antes de que este default cargue en el registro, y una actualización de módulo no re-ejecuta el default sobre filas existentes. Este alcance -- solo compañías nuevas, sin migración retroactiva de las existentes -- es una decisión de negocio: por petición de los superiores, el encargado de la vertical (Saul Ortega) mantiene este alcance, no es un gap pendiente de resolver.
 
-- **WHEN** se crea o instala una compañía con la localización venezolana
-- **THEN** `tax_calculation_rounding_method` queda en `round_globally` (el default de Odoo), no en `round_per_line`, y ningún dato de instalación lo corrige automáticamente
+#### Scenario: Compañía nueva creada con el módulo ya instalado
+
+- **GIVEN** `l10n_ve_accountant` instalado
+- **WHEN** se crea una nueva `res.company` sin declarar `tax_calculation_rounding_method` explícitamente
+- **THEN** su `tax_calculation_rounding_method` SHALL ser `'round_per_line'`
+
+#### Scenario: Compañía ya existente al instalar o actualizar el módulo
+
+- **GIVEN** una compañía ya existente con `tax_calculation_rounding_method = 'round_globally'`
+- **WHEN** se instala o actualiza `l10n_ve_accountant`
+- **THEN** su valor SHALL permanecer sin cambios (`round_globally`), sin ninguna migración automática
+
+### Requirement: Desglose por línea de factura en moneda de la compañía
+
+El sistema DEBE (MUST) exponer, por cada línea de producto de una factura, un desglose en la moneda de la compañía (`account.move.company_currency_line_totals`, JSON indexado por id de línea) con precio unitario, cantidad, subtotal sin impuesto, subtotal con impuesto, monto de impuesto, monto y tipo de descuento, e impuestos aplicados (id, nombre, si el impuesto está incluido en el precio). El subtotal y el monto de impuesto de cada línea DEBEN (MUST) reconciliar exactamente con el `balance` real posteado en el asiento -- nunca una conversión de moneda independiente que pueda diferir del asiento por redondeo.
+
+Cuando varias líneas comparten un mismo impuesto, su monto de impuesto DEBE (MUST) repartirse proporcionalmente al `balance` de cada línea, sin perder ni inventar ninguna unidad de la moneda. Los impuestos de tipo `group` DEBEN (MUST) resolverse por su jerarquía completa de impuestos hijos, no solo por coincidencia directa con `tax_ids` de la línea.
+
+#### Scenario: Factura en moneda distinta a la de la compañía
+
+- **WHEN** se crea una factura en USD o EUR con líneas de producto e impuestos
+- **THEN** `company_currency_line_totals` contiene, para cada línea, los montos equivalentes en la moneda de la compañía, y la suma de esos montos coincide exactamente con los `balance` de las líneas de producto e impuesto del asiento
+
+#### Scenario: Varias líneas bajo el mismo impuesto
+
+- **WHEN** tres o más líneas de producto comparten la misma tasa de impuesto
+- **THEN** el monto de impuesto de cada línea es proporcional a su propio `balance`, y la suma de los montos por línea coincide exactamente con el `balance` de la línea de impuesto del asiento
+
+#### Scenario: Impuesto de tipo grupo
+
+- **WHEN** una línea lleva un impuesto compuesto (`amount_type='group'`) con varios impuestos hijos
+- **THEN** el monto de impuesto de la línea incluye la suma de todos los impuestos hijos del grupo, no se descarta
+
+### Requirement: El widget de pagos no falla con registros sin guardar
+
+`_get_all_reconciled_invoice_partials` DEBE (MUST) devolver el resultado del núcleo sin consultar los asientos de diferencial en moneda alterna cuando el registro no tiene id de base de datos (`self._origin.id` vacío, por ejemplo un `account.move` nuevo en el formulario).
+
+#### Scenario: Factura nueva sin guardar
+
+- **WHEN** se evalúa el widget de pagos de un `account.move` aún sin guardar
+- **THEN** no se lanza ningún error y no se agrega ninguna fila sintética
+
+### Requirement: Sin página "Foreign currency" ni grupo de visibilidad en la factura
+
+El formulario de `account.move` NO DEBE (MUST NOT) incluir la página `foreign_currency` ni el widget `account-tax-foreign-totals-field`, y el grupo `l10n_ve_accountant.group_foreign_currency_view_accountant` NO DEBE (MUST NOT) existir (eliminados por ti-83943: la página era invisible en la práctica y el grupo solo gobernaba su visibilidad). Los montos y la tasa alternos siguen disponibles en las líneas, en las vistas de lista y en `tax_totals` (claves `*_foreign_currency`), que no dependen de esa página. El widget `account-tax-foreign-totals-field` permanece registrado en el frontend pero ningún formulario lo usa.
+
+#### Scenario: Formulario de factura con moneda alterna configurada
+
+- **WHEN** se obtiene el formulario de `account.move` en una compañía con `foreign_currency_id`
+- **THEN** no existe `//page[@name='foreign_currency']` ni el widget `account-tax-foreign-totals-field`, y el grupo no existe (`test_no_foreign_currency_page`)
+
+### Requirement: El descuento de una línea de factura pasa por `_get_effective_discount_percent()`
+
+`account.move.line._get_effective_discount_percent()` DEBE (MUST) devolver el porcentaje de descuento que realmente se aplica a la línea (por defecto `discount or 0.0`) y ser la única fuente que lean el cálculo de impuestos de la línea (override de `account.tax._prepare_base_line_for_taxes_computation`, que asigna `discount` solo cuando el registro es un `account.move.line`), `_compute_foreign_subtotal`, `company_currency_line_totals`, `detailed_amounts` y la reconstrucción del apunte de las líneas con impuesto de precio incluido (`_price_included_split`). Un módulo que descuenta a través de un campo propio DEBE (MUST) extender solo este método. Sin ninguna extensión el comportamiento es idéntico al de leer `discount`. `l10n_ve_deductible` lo extiende; `discount_fixed` de `l10n_ve_invoice` mantiene su propio override.
+
+#### Scenario: Módulo con descuento propio
+
+- **WHEN** un módulo extiende `_get_effective_discount_percent()` para devolver su porcentaje en una línea con `discount = 0`
+- **THEN** el subtotal, el total, el apunte, el subtotal en moneda alterna, el desglose en moneda de la compañía y el detalle de importes de esa línea usan ese porcentaje
+
+### Requirement: `_sync_tax_lines` resincroniza los apuntes cuando cambian los campos de `_get_base_line_sync_extra_fields()`
+
+`account.move._get_base_line_sync_extra_fields()` DEBE (MUST) devolver los campos de línea de factura, además de los de agrupación, cuyo cambio obliga a `_sync_tax_lines` a resincronizar los apuntes (por defecto `price_unit`, `quantity` y `discount`). Un módulo que altera los importes de la línea con un campo propio DEBE (MUST) añadirlo extendiendo este método; de lo contrario, cambiar solo ese campo en una factura guardada no actualizaría los apuntes.
+
+#### Scenario: Cambia solo el campo propio de un módulo
+
+- **WHEN** en una factura guardada cambia únicamente el campo que un módulo añadió a `_get_base_line_sync_extra_fields()`
+- **THEN** los apuntes de las líneas de producto se resincronizan con el nuevo importe
+
+### Requirement: No se puede confirmar un pago con importe cero
+
+`account.payment.action_post` DEBE (MUST) lanzar `UserError` cuando algún pago a confirmar tiene importe cero (según la precisión de su moneda), antes de generar o publicar el asiento.
+
+#### Scenario: Confirmar un pago con importe 0.0
+
+- **WHEN** se confirma desde la vista de pagos un pago cuyo importe es 0.0
+- **THEN** se lanza un `UserError` y el pago permanece en borrador
+
+#### Scenario: Confirmar un pago con importe mayor a cero
+
+- **WHEN** se confirma un pago con importe mayor a cero
+- **THEN** el pago se confirma con normalidad
+
+#### Scenario: Registrar pago por wizard en divisa cuyo importe convertido redondea a 0.0
+
+- **GIVEN** una factura en Bs cuyo saldo, convertido a USD, es menor a 0,01 USD
+- **WHEN** se registra el pago con `account.payment.register` en un diario USD con IGTF
+- **THEN** se lanza un `UserError` que indica la moneda y que el importe convertido es menor a la unidad mínima
+- **AND** no se crea ni concilia ningún pago, y la factura conserva su saldo
+
+#### Scenario: Cierre de sesión POS con neto cero
+
+- **WHEN** el cierre de sesión POS crea el pago agrupado de un método de banco cuyo neto es 0 (contexto `from_pos`)
+- **THEN** la guarda no aplica y la sesión puede cerrarse
+### Requirement: Un pago no puede tener fecha futura
+
+La fecha de un pago (`account.payment.date`) y la fecha del asistente de registrar pago
+(`account.payment.register.payment_date`) NO PUEDEN (MUST NOT) ser posteriores a `fields.Date.context_today` (zona
+horaria del usuario). La validación es una constraint de guardado, de modo que aplica al crear y al escribir desde el
+formulario de pagos, desde el asistente y desde cualquier otro flujo. Ticket #15682.
+
+#### Scenario: Pago con fecha de hoy o pasada
+
+- **WHEN** se crea un pago con fecha de hoy o anterior
+- **THEN** se crea con normalidad
+
+#### Scenario: Pago con fecha futura desde el formulario
+
+- **WHEN** se crea un pago con fecha posterior a hoy, o se cambia la fecha de un pago existente a una fecha posterior a hoy
+- **THEN** se lanza un error de validación y no se guarda
+
+#### Scenario: Asistente de registrar pago con fecha futura
+
+- **WHEN** se abre el asistente de registrar pago y se fija una fecha posterior a hoy
+- **THEN** se lanza un error de validación antes de crear ningún pago
+
+### Requirement: Las fechas de tasa de facturas, asientos y pagos son las del usuario
+
+Todo cálculo de tasa o conversión de `account.move` y `account.payment` que use una fecha de respaldo (`invoice_date`, `date` o `l10n_ve_conversion_date` vacíos) DEBE (MUST) usar `fields.Date.context_today`, nunca `fields.Date.today()`. Las facturas, asientos y pagos creados sin fecha explícita ya toman su fecha de `invoice_date_display` / `date`, que usan `context_today`, y DEBEN (MUST) seguir haciéndolo.
+
+#### Scenario: Factura, asiento o pago a las 8:30 pm en Caracas
+
+- **WHEN** se crea una factura de venta o compra, un asiento o un pago sin fecha explícita a las 00:30 UTC del día siguiente, con tasa del día del usuario y no del día UTC
+- **THEN** el documento toma la tasa del día del usuario y no se lanza error de tasa
+
+#### Scenario: Asiento con fecha contable distinta de hoy
+
+- **WHEN** se crea un asiento (`entry`) con `date` pasada o futura, hay tasa para esa fecha y no la hay para el día de hoy
+- **THEN** el asiento toma la tasa de su `date`; la consulta de tasa del `create` usa `date` en los asientos y `invoice_date` (o el «hoy» del usuario) en los demás documentos

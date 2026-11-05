@@ -129,10 +129,12 @@ class AccountTax(models.Model):
             return
         if isinstance(record.id, api.NewId):
             return
-        if company.tax_calculation_rounding_method != 'round_per_line':
-            return
         real_tax_lines = record.line_ids.filtered(lambda l: l.display_type == 'tax')
         if not real_tax_lines:
+            return
+        if company.tax_calculation_rounding_method != 'round_per_line' and not any(
+            t.price_include and not t.include_base_amount for t in real_tax_lines.tax_line_id
+        ):
             return
 
         cc = company.currency_id
@@ -479,6 +481,16 @@ class AccountTax(models.Model):
                 )
         return res
     
+    @api.model
+    def _prepare_base_line_for_taxes_computation(self, record, **kwargs):
+        """The discount of an invoice line is its effective discount, so a
+        module that discounts through a field of its own only extends
+        `_get_effective_discount_percent()`."""
+        res = super()._prepare_base_line_for_taxes_computation(record, **kwargs)
+        if record and not isinstance(record, dict) and record._name == "account.move.line":
+            res["discount"] = record._get_effective_discount_percent()
+        return res
+
     @api.model
     def _prepare_foreign_base_line_for_taxes_computation(self, record, **kwargs):
         """ Convert any representation of a business object ('record') into a base line being a python

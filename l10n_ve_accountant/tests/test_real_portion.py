@@ -173,14 +173,56 @@ class TestRealPortion(TransactionCase):
             })
 
     def _assert_balances(self, move, label=""):
-        """Verifica que la suma de debitos = suma de creditos"""
+        """Verifica que la suma de debitos = suma de creditos, y que
+        company_currency_line_totals (si aplica) cuadra con line_ids.balance.
+
+        Llamada en las ~40 pruebas de este archivo: cualquier factura o
+        asiento que pase por aqui queda tambien verificado contra el nuevo
+        campo, sin tener que tocar cada test uno por uno.
+        """
         td = sum(move.line_ids.mapped('debit'))
         tc = sum(move.line_ids.mapped('credit'))
         self.assertAlmostEqual(
             td, tc, places=2,
             msg=f"{label}: Debit {td} != Credit {tc}"
         )
+        self._assert_company_currency_line_totals(move, label)
         return td, tc
+
+    def _assert_company_currency_line_totals(self, move, label=""):
+        """company_currency_line_totals debe cuadrar exacto con
+        line_ids.balance: |subtotal| == |balance| linea por linea (no un
+        agregado -- eso no detecta un reparto invertido que igual cuadra
+        en la suma), y suma de |tax_amount| == suma de |balance| de las
+        lineas de impuesto. Solo lineas 'product': 'cogs' no es una linea
+        de factura (ver _compute_company_currency_line_totals). No-op en
+        asientos que no son factura (el campo no aplica ahi).
+        """
+        if not move.is_invoice(include_receipts=True):
+            return
+        product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
+        if not product_lines:
+            return
+
+        totals = move.company_currency_line_totals or {}
+        for line in product_lines:
+            self.assertIn(
+                str(line.id), totals,
+                f"{label}: falta company_currency_line_totals para la linea {line.id}"
+            )
+            self.assertAlmostEqual(
+                abs(totals[str(line.id)]['subtotal']), abs(line.balance), places=2,
+                msg=f"{label}: |subtotal| de la linea {line.id} != |balance|"
+            )
+
+        tax_lines = move.line_ids.filtered('tax_repartition_line_id')
+        sum_tax_amount = sum(abs(t['tax_amount']) for t in totals.values())
+        sum_tax_balance = sum(abs(l.balance) for l in tax_lines)
+        self.assertAlmostEqual(
+            sum_tax_amount, sum_tax_balance, places=2,
+            msg=f"{label}: suma de |tax_amount| ({sum_tax_amount}) != suma de "
+                f"|balance| de lineas de impuesto ({sum_tax_balance})"
+        )
 
     def _assert_foreign_squares(self, move, label=""):
         """Verifica que foreign_debit total = foreign_credit total"""
@@ -2085,56 +2127,67 @@ class TestRealPortion(TransactionCase):
                 f"no la de date (1000/50 = 20). Obtenido: {line.foreign_price}"
         )
 
-    def test_33_price_unit_ves_uses_document_date(self):
-        """price_unit_ves debe convertir con _convert() a la fecha del
-           documento.
+    def test_33_company_currency_line_totals_matches_balance(self):
+        """company_currency_line_totals debe salir de la misma base que usa
+        el motor de impuestos para postear el asiento (_get_rounded_base_
+        and_tax_lines): la suma de 'subtotal' de cada linea de producto
+        debe coincidir con la suma de balance de esas lineas, y la suma de
+        'tax_amount' con el balance de la linea de impuesto -- no una
+        conversion independiente que pueda arrastrar centavos de redondeo
+        distintos a los del asiento.
 
-           REVERSION: el codigo anterior dividia entre line.currency_id.rate,
-           que es la tasa del contexto (hoy), no la de la fecha de la factura.
-           Con una factura fechada en el pasado y otra tasa vigente ese dia,
-           ambos caminos dan resultados distintos.
+        REVERSION: el field removido price_unit_ves convertia con
+        _convert() de forma independiente del balance, asi que podia
+        diferir del asiento por el redondeo que
+        _apply_product_real_portion corrige.
         """
-        self._set_usd_rate(50.0)
-        past_date = fields.Date.today() - timedelta(days=30)
-        self.env["res.currency.rate"].create({
-            "name": past_date,
-            "currency_id": self.currency_usd.id,
-            "inverse_company_rate": 25.0,
-            "company_id": self.company.id,
-        })
+        self._set_usd_rate(37.6543)
 
         invoice = self.env["account.move"].create({
             "move_type": "out_invoice",
             "partner_id": self.partner.id,
             "journal_id": self.sale_journal.id,
             "currency_id": self.currency_usd.id,
-            "date": past_date,
-            "invoice_date": past_date,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
             "invoice_line_ids": [
                 Command.create({
                     "product_id": self.product.id,
-                    "quantity": 1.0,
-                    "price_unit": 100.00,
+                    "quantity": 3.0,
+                    "price_unit": 13.3333,
                     "account_id": self.acc_inc.id,
-                    "tax_ids": [(5, 0, 0)],
+                    "tax_ids": [(6, 0, self.tax_16.ids)],
                 }),
             ],
         })
 
-        line = invoice.invoice_line_ids
-        # 100 USD a la tasa de past_date (25) = 2500 VEF, no 5000
-        self.assertAlmostEqual(
-            line.price_unit_ves, 2500.0, places=2,
-            msg=f"price_unit_ves = {line.price_unit_ves}. Debe usar la tasa de "
-                f"la fecha del documento (2500), no la de hoy (5000)"
-        )
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        tax_line = invoice.line_ids.filtered(lambda l: l.tax_repartition_line_id)
+        totals = invoice.company_currency_line_totals.get(str(line.id))
+        self.assertIsNotNone(totals)
 
-    def test_34_price_unit_ves_recomputes_when_date_changes(self):
-        """La fecha entra en _convert(), asi que debe estar declarada en el
-           @api.depends de _compute_price_unit_ves: mover la fecha de un
-           borrador tiene que recalcular price_unit_ves (igual que
-           test_26 para foreign_price).
-        """
+        self.assertAlmostEqual(
+            totals['subtotal'], abs(line.balance), places=2,
+            msg="El subtotal en moneda de la compañia debe coincidir con el "
+                "balance de la linea de producto del asiento"
+        )
+        self.assertAlmostEqual(
+            totals['tax_amount'], abs(sum(tax_line.mapped('balance'))), places=2,
+            msg="El tax_amount de la linea debe coincidir con el balance de "
+                "la linea de impuesto del asiento"
+        )
+        self.assertAlmostEqual(
+            totals['subtotal_taxed'] - totals['subtotal'], totals['tax_amount'],
+            places=2,
+        )
+        self.assertEqual(totals['quantity'], 3.0)
+
+    def test_34_company_currency_line_totals_recomputes_when_date_changes(self):
+        """La fecha entra en el motor de impuestos via invoice_currency_rate,
+        asi que debe estar declarada (indirectamente, via line_ids.balance)
+        en el @api.depends de _compute_company_currency_line_totals: mover
+        la fecha de un borrador tiene que recalcular el JSON (igual que
+        test_26 para foreign_price)."""
         self._set_usd_rate(50.0)
 
         past_date = fields.Date.today() - timedelta(days=30)
@@ -2165,7 +2218,8 @@ class TestRealPortion(TransactionCase):
 
         line = invoice.invoice_line_ids
         # 100 USD a tasa 50 = 5000 VEF
-        self.assertAlmostEqual(line.price_unit_ves, 5000.0, places=2)
+        totals = invoice.company_currency_line_totals.get(str(line.id))
+        self.assertAlmostEqual(totals['subtotal'], 5000.0, places=2)
 
         # Se mueve la fecha a una con tasa 25 -> 100 * 25 = 2500 VEF
         invoice.write({
@@ -2173,11 +2227,389 @@ class TestRealPortion(TransactionCase):
             "date": past_date,
         })
 
+        totals = invoice.company_currency_line_totals.get(str(line.id))
         self.assertAlmostEqual(
-            line.price_unit_ves, 2500.0, places=2,
-            msg=f"price_unit_ves no se recalculo al cambiar la fecha "
-                f"(esperado 2500, obtenido {line.price_unit_ves})"
+            totals['subtotal'], 2500.0, places=2,
+            msg=f"company_currency_line_totals no se recalculo al cambiar "
+                f"la fecha (esperado 2500, obtenido {totals['subtotal']})"
         )
+
+    def test_34b_company_currency_line_totals_prorates_shared_tax(self):
+        """Dos lineas de producto distintas comparten la misma tasa (16%),
+        asi que el asiento tiene una unica linea de impuesto agregada. El
+        'tax_amount' de cada linea del JSON debe repartir esa unica linea
+        de impuesto sin perder ni duplicar centavos: la suma de
+        'tax_amount' de ambas debe coincidir exactamente con el balance de
+        la linea de impuesto, y la suma de 'subtotal' con la suma de
+        balance de ambas lineas de producto.
+        """
+        self._set_usd_rate(37.6543)
+
+        invoice = self.env["account.move"].create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 3.0,
+                    "price_unit": 13.3333,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, self.tax_16.ids)],
+                }),
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 2.0,
+                    "price_unit": 7.777,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, self.tax_16.ids)],
+                }),
+            ],
+        })
+
+        product_lines = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        tax_line = invoice.line_ids.filtered(lambda l: l.tax_repartition_line_id)
+        self.assertEqual(len(tax_line), 1, "Ambas lineas comparten la misma tasa: una sola linea de impuesto")
+
+        totals_by_line = [
+            invoice.company_currency_line_totals.get(str(line.id)) for line in product_lines
+        ]
+        self.assertTrue(all(totals_by_line))
+
+        sum_subtotal = sum(t['subtotal'] for t in totals_by_line)
+        sum_tax = sum(t['tax_amount'] for t in totals_by_line)
+
+        self.assertAlmostEqual(
+            sum_subtotal, abs(sum(product_lines.mapped('balance'))), places=2
+        )
+        self.assertAlmostEqual(
+            sum_tax, abs(tax_line.balance), places=2,
+            msg="La suma del tax_amount de las lineas debe cuadrar exacto "
+                "con el balance de la unica linea de impuesto compartida"
+        )
+
+    def test_34c_company_currency_line_totals_many_lines_mixed_taxes_and_precision(self):
+        """10 lineas de producto repartidas en 3 tasas distintas (16%, 8%,
+        exento), con precios unitarios y descuentos no redondos (division
+        no entera). Verifica que la reconciliacion con line_ids.balance se
+        sostiene cuando hay varias tasas simultaneas -- no solo una
+        compartida por todas (test_34b) -- y que price_unit conserva la
+        precision de 'Product Price' (6 decimales) en vez de truncarse a
+        la precision de la moneda (VEF, 2 decimales).
+        """
+        self._set_usd_rate(97.531)
+
+        specs = [
+            (1.0, 33.333333, 0.0, self.tax_16),
+            (2.0, 47.777, 5.0, self.tax_16),
+            (3.0, 19.999, 12.5, self.tax_16),
+            (1.5, 88.111, 0.0, self.tax_16),
+            (4.0, 12.345, 8.25, self.tax_8),
+            (2.0, 60.606, 0.0, self.tax_8),
+            (5.0, 9.87, 15.0, self.tax_8),
+            (1.0, 150.001, 0.0, self.tax_0),
+            (3.0, 24.242, 10.0, self.tax_0),
+            (2.5, 40.4, 0.0, self.tax_0),
+        ]
+        lines = [
+            Command.create({
+                "product_id": self.product.id,
+                "quantity": qty,
+                "price_unit": price,
+                "discount": discount,
+                "account_id": self.acc_inc.id,
+                "tax_ids": [(6, 0, [tax.id])],
+            })
+            for qty, price, discount, tax in specs
+        ]
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": lines,
+        })
+        self._assert_balances(invoice, "test_34c")
+
+        product_lines = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        self.assertEqual(len(product_lines), 10)
+        totals = invoice.company_currency_line_totals
+
+        # Por cada tasa por separado: la suma de tax_amount de las lineas
+        # que la llevan debe cuadrar con el balance de esa tasa en el
+        # asiento -- no solo el agregado de las 10 lineas (eso ya lo
+        # cubre _assert_balances), sino cada grupo de tasa aislado.
+        for tax in (self.tax_16, self.tax_8, self.tax_0):
+            lines_with_tax = product_lines.filtered(lambda l: tax in l.tax_ids)
+            tax_line = invoice.line_ids.filtered(
+                lambda l: l.tax_repartition_line_id
+                and l.tax_repartition_line_id.tax_id == tax
+            )
+            sum_tax_amount = sum(
+                totals[str(l.id)]['tax_amount'] for l in lines_with_tax
+            )
+            expected = abs(sum(tax_line.mapped('balance'))) if tax_line else 0.0
+            self.assertAlmostEqual(
+                sum_tax_amount, expected, places=2,
+                msg=f"Tasa {tax.name}: suma de tax_amount ({sum_tax_amount}) "
+                    f"!= balance de su linea de impuesto ({expected})"
+            )
+
+        # price_unit no se trunca a la precision de VEF (2 decimales): con
+        # qty=3.0 y discount=12.5%, el denominador (2.625) no divide exacto
+        # y la cola decimal solo se conserva a precision "Product Price".
+        line_c = product_lines[2]  # (3.0, 19.999, 12.5, tax_16)
+        line_c_totals = totals[str(line_c.id)]
+        expected_price_unit = line_c_totals['subtotal'] / (3.0 * (1 - 12.5 / 100.0))
+        self.assertAlmostEqual(
+            line_c_totals['price_unit'], expected_price_unit, places=6,
+            msg="price_unit debe conservar precision 'Product Price', no truncarse antes"
+        )
+        self.assertNotAlmostEqual(
+            line_c_totals['price_unit'], round(expected_price_unit, 2), places=5,
+            msg="price_unit no deberia coincidir con el valor truncado a 2 "
+                "decimales (precision de VEF) -- si coincide, se esta "
+                "perdiendo la cola decimal"
+        )
+
+    def test_34d_company_currency_line_totals_with_price_included_tax(self):
+        """Con impuesto incluido en el precio (price_include_override=
+        'tax_included'), 'subtotal'/'tax_amount' deben seguir saliendo de
+        la base real (compute_all vía balance), no de dividir el precio
+        tal cual -- mismo caso que test_30 pero para este campo -- y el
+        'taxes' del JSON debe marcar price_include=True para ese impuesto.
+        """
+        self._set_usd_rate(50.0)
+
+        tax_incl = self._create_tax('IVA 16% incluido', 16.0)
+        tax_incl.price_include_override = 'tax_included'
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 116.00,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [tax_incl.id])],
+                }),
+            ],
+        })
+        self._assert_balances(invoice, "test_34d")
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        totals = invoice.company_currency_line_totals[str(line.id)]
+
+        # 116 USD (con IVA incluido) a tasa 50 = 5800 VEF total; base sin
+        # impuesto = 5800 / 1.16 = 5000 VEF; impuesto = 800 VEF.
+        self.assertAlmostEqual(totals['subtotal_taxed'], 5800.0, places=2)
+        self.assertAlmostEqual(totals['subtotal'], 5000.0, places=2)
+        self.assertAlmostEqual(totals['tax_amount'], 800.0, places=2)
+
+        self.assertEqual(len(totals['taxes']), 1)
+        self.assertEqual(totals['taxes'][0]['id'], tax_incl.id)
+        self.assertEqual(totals['taxes'][0]['name'], tax_incl.name)
+        self.assertTrue(totals['taxes'][0]['price_include'])
+
+    def test_34e_company_currency_line_totals_percent_discount(self):
+        """discount_type='percent' (default): discount_amount debe ser la
+        porcion en VEF que el descuento nativo (%) resta del bruto, y
+        discount_type debe reportar 'percent'.
+        """
+        self._set_usd_rate(50.0)
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 4.0,
+                    "price_unit": 25.5,
+                    "discount": 20.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(5, 0, 0)],
+                }),
+            ],
+        })
+        self._assert_balances(invoice, "test_34e")
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        totals = invoice.company_currency_line_totals[str(line.id)]
+
+        # Bruto: 25.5 * 4 * 50 = 5100 VEF; neto (20% de descuento): 4080 VEF
+        self.assertEqual(totals['discount_type'], 'percent')
+        self.assertAlmostEqual(totals['subtotal'], 4080.0, places=2)
+        self.assertAlmostEqual(totals['discount_amount'], 1020.0, places=2)
+        self.assertAlmostEqual(
+            totals['price_unit'] * totals['quantity'] - totals['discount_amount'],
+            totals['subtotal'], places=2,
+        )
+
+    def test_34f_company_currency_line_totals_eur_invoice(self):
+        """Todo lo cubierto en USD (test_33/34c/34d/34e) debe sostenerse
+        igual con una factura en EUR: 1 EUR = 55 VEF (setUp), tercera
+        moneda distinta de la 'foreign' (USD) configurada en la compania.
+        """
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_eur.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 2.0,
+                    "price_unit": 80.0,
+                    "discount": 10.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                }),
+            ],
+        })
+        self._assert_balances(invoice, "test_34g")
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        tax_line = invoice.line_ids.filtered(lambda l: l.tax_repartition_line_id)
+        totals = invoice.company_currency_line_totals[str(line.id)]
+
+        # Bruto: 80 * 2 * 55 = 8800 VEF; neto (10% desc.): 7920 VEF;
+        # IVA 16% sobre neto: 1267.2 VEF.
+        self.assertAlmostEqual(totals['subtotal'], abs(line.balance), places=2)
+        self.assertAlmostEqual(totals['subtotal'], 7920.0, places=2)
+        self.assertAlmostEqual(totals['discount_amount'], 880.0, places=2)
+        self.assertAlmostEqual(totals['tax_amount'], abs(tax_line.balance), places=2)
+        self.assertAlmostEqual(totals['tax_amount'], 1267.2, places=2)
+        self.assertEqual(totals['discount_type'], 'percent')
+        self.assertEqual(totals['taxes'][0]['id'], self.tax_16.id)
+
+    def test_34h_company_currency_line_totals_prorates_three_lines_exactly(self):
+        """REVERSION (hallazgo de code review): _prorate_company_currency_
+        amount aplicaba el ratio de cada linea contra `remaining_units`
+        (que se va achicando en cada iteracion) en vez del monto TOTAL fijo
+        -- con 3+ lineas bajo la misma tasa, el reparto se iba desviando en
+        cascada. Con bases 500/300/200 USD e IVA 16% simulado, el bug daba
+        80/24/56 en vez de 80/48/32. Aqui se verifica el valor exacto por
+        linea, no solo la suma del grupo (eso lo cubre test_34c, pero un
+        reparto invertido igual cuadra en el agregado).
+        """
+        self._set_usd_rate(1.0)  # tasa 1:1 para que los VEF calcen con los USD de la tasa
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": price,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [self.tax_16.id])],
+                })
+                for price in (500.0, 300.0, 200.0)
+            ],
+        })
+        self._assert_balances(invoice, "test_34h")
+
+        lines = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        lines_by_price = {round(l.price_unit): l for l in lines}
+        expected_tax = {500: 80.0, 300: 48.0, 200: 32.0}
+
+        for price, expected in expected_tax.items():
+            totals = invoice.company_currency_line_totals[str(lines_by_price[price].id)]
+            self.assertAlmostEqual(
+                totals['tax_amount'], expected, places=2,
+                msg=f"Linea de base {price}: tax_amount = {totals['tax_amount']}, esperado {expected}"
+            )
+
+    # `test_34i_negative_line_blocked_by_existing_invoice_constraint` fue
+    # relocado a `l10n_ve_invoice/tests/test_account_move.py` (PR
+    # #1344/#1417): su propio docstring documentaba que solo verificaba
+    # `l10n_ve_invoice._check_price_in_zero`, sin ejercitar nada de
+    # `company_currency_line_totals` (la derivacion de signo mencionada
+    # nunca se afirmaba). Misma causa que `test_31` en
+    # `test_multi_currency_rounding.py`: `l10n_ve_invoice` no esta
+    # garantizado instalado al testear solo `l10n_ve_accountant`.
+
+    def test_34j_company_currency_line_totals_group_tax_not_dropped(self):
+        """Con un impuesto amount_type='group' (IVA 16% + IGTF 3%, ambos
+        hijos), account.move.line.tax_ids conserva el GRUPO, y las lineas
+        de impuesto del asiento apuntan a los HIJOS -- no al grupo. Sin
+        aplanar la jerarquia, el match `tax in line.tax_ids` nunca
+        encuentra la linea de producto y todo el balance de esa tasa se
+        descarta en silencio (subtotal_taxed quedaria igual a subtotal).
+        """
+        self._set_usd_rate(50.0)
+
+        tax_igtf = self._create_tax('IGTF 3%', 3.0)
+        tax_group = self.env['account.tax'].with_company(self.company).create({
+            'name': 'IVA 16% + IGTF 3%', 'amount_type': 'group',
+            'type_tax_use': 'sale', 'company_id': self.company.id,
+            'children_tax_ids': [(6, 0, [self.tax_16.id, tax_igtf.id])],
+        })
+
+        invoice = self.env["account.move"].with_context(
+            check_move_validity=False,
+        ).create({
+            "move_type": "out_invoice",
+            "partner_id": self.partner.id,
+            "journal_id": self.sale_journal.id,
+            "currency_id": self.currency_usd.id,
+            "date": fields.Date.today(),
+            "invoice_date": fields.Date.today(),
+            "invoice_line_ids": [
+                Command.create({
+                    "product_id": self.product.id,
+                    "quantity": 1.0,
+                    "price_unit": 100.0,
+                    "account_id": self.acc_inc.id,
+                    "tax_ids": [(6, 0, [tax_group.id])],
+                }),
+            ],
+        })
+        self._assert_balances(invoice, "test_34j")
+
+        line = invoice.invoice_line_ids.filtered(lambda l: l.display_type == 'product')
+        totals = invoice.company_currency_line_totals[str(line.id)]
+
+        # 100 USD * 50 = 5000 VEF base; IVA 16% + IGTF 3% = 19% -> 950 VEF.
+        self.assertAlmostEqual(
+            totals['tax_amount'], 950.0, places=2,
+            msg="El impuesto de tipo 'group' se descarto en vez de repartirse"
+        )
+        self.assertAlmostEqual(totals['subtotal_taxed'], 5950.0, places=2)
 
     def test_35_invoice_date_change_same_rate_stays_balanced(self):
         """Ticket 15089: mover invoice_date_display a otra fecha CUYA TASA

@@ -1,0 +1,8 @@
+schema: spec-driven
+
+context: |
+  Módulo de localización venezolana para Odoo 19: IGTF, anticipos y el widget
+  de créditos pendientes de las facturas.
+
+  Acoplado a Odoo 19.0-20260710 (métodos internos del motor de conciliación:
+  _prepare_move_line_residual_amounts y _prepare_reconciliation_single_partial).

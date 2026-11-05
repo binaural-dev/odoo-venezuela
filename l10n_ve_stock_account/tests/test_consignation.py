@@ -3,7 +3,7 @@ import logging
 from unittest.mock import patch
 from odoo.tests import TransactionCase, tagged
 from odoo.exceptions import ValidationError
-from odoo import Command
+from odoo import Command, fields
 
 _logger = logging.getLogger(__name__)
 
@@ -139,6 +139,15 @@ class TestConsignationSaleOrder(TransactionCase):
         cls.company.write({
             "currency_id": cls.currency_vef.id,
             "foreign_currency_id": cls.currency_usd.id,
+        })
+        # sale.order.create() siempre compara contra la tasa vigente
+        # (l10n_ve_sale.models.sale_order.create()), y compute_rate() exige
+        # una tasa con fecha exacta desde que l10n_ve_rate empezo a exigirlo.
+        cls.env["res.currency.rate"].create({
+            "currency_id": cls.currency_usd.id,
+            "company_id": cls.company.id,
+            "name": fields.Date.today(),
+            "rate": 1.0 / 380.0,
         })
 
         cls.partner = cls.env["res.partner"].create({

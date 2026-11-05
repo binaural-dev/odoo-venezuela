@@ -52,7 +52,7 @@ class WizardAccountingReports(models.TransientModel):
 
         igtf_fields = []
 
-        if not self.env.company.not_show_igtf_sale_order:
+        if not self.company_id.not_show_igtf_sale_order:
             igtf_fields.append(
                 {"name": "Igtf", "field": "igtf", "format": "number"},
             )
@@ -70,7 +70,7 @@ class WizardAccountingReports(models.TransientModel):
 
         igtf_fields = []
 
-        if not self.env.company.not_show_igtf_purchase_order:
+        if not self.company_id.not_show_igtf_purchase_order:
             igtf_fields.append(
                 {"name": "Igtf", "field": "igtf", "format": "number"},
             )

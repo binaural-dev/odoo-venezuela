@@ -28,13 +28,14 @@ SHALL incluir una línea de producto configurada en la compañía.
 - **AND** la línea de la ND incluye `product_id = <producto configurado>`
 - **AND** la línea está conciliada contra el residual de la factura
 
-#### Scenario: Factura en VEF pagada con tasa distintos si hay otros movimientos
-
-- **GIVEN** una factura en moneda de compañía (VEF) pero con líneas cuya
-  conversión extranjera deja un residual de redondeo
-- **AND** el pago es en moneda extranjera
-- **WHEN** se concilia
-- **THEN** se genera ND por el redondeo (Odoo nativo también lo hace)
+> NOTA: el escenario que antes vivía acá ("Factura en VEF pagada con tasa
+> distintos si hay otros movimientos") asumía, sin verificarlo, que liquidar
+> una factura en moneda de COMPAÑÍA vía el asistente estándar de pago
+> siempre deja un residual de redondeo corregible. Verificado que es falso
+> para el flujo de monto por defecto -- ver el requirement "Una factura en
+> moneda de compañía pagada vía el asistente estándar no deja residual de
+> redondeo" en `openspec/specs/l10n_ve_exchange_difference/spec.md` (raíz)
+> para el comportamiento correcto documentado.
 
 ### Requirement: Una Nota de Crédito se emite cuando hay pérdida cambiaria
 
