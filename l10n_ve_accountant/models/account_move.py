@@ -469,7 +469,9 @@ class AccountMove(models.Model):
                 move.company_currency_line_totals = {}
                 continue
 
-            cc = move.company_currency_id
+            # Al instalar/actualizar, el related almacenado company_currency_id puede venir
+            # vacío en facturas existentes mientras se calcula esta columna nueva.
+            cc = move.company_currency_id or move.company_id.currency_id or self.env.company.currency_id
             product_lines = move.line_ids.filtered(lambda l: l.display_type == 'product')
             tax_lines = move.line_ids.filtered('tax_repartition_line_id')
 
