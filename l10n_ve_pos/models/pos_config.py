@@ -26,9 +26,11 @@ class PosConfig(models.Model):
     )
     tender_currency_rates = fields.Json(
         compute="_compute_tender_currency_rates",
-        help="Operative rates of the tender currencies of the payment methods of the PoS, by "
-        "currency id: foreign_rate (tender currency → PoS currency) and foreign_inverse_rate "
-        "(PoS currency → tender currency), same pair as foreign_rate / foreign_inverse_rate.",
+        help="Rates of the day of the tender currencies of the payment methods of the PoS against "
+        "the company currency, by currency id: foreign_rate (tender currency → company currency) "
+        "and foreign_inverse_rate (company currency → tender currency), same pair as "
+        "foreign_rate / foreign_inverse_rate. In a PoS in another currency they only tell whether "
+        "the currency has a rate of the day.",
     )
     pos_show_free_qty = fields.Boolean(related="company_id.pos_show_free_qty")
     sell_kit_from_another_store = fields.Boolean(default=False)
@@ -116,9 +118,11 @@ class PosConfig(models.Model):
 
         Las tasas son contra la moneda de la COMPAÑÍA de la caja
         (``compute_rate`` busca las de ``env.company``, de ahí el
-        ``with_company``): solo valen como "moneda de cobro → caja" porque una
-        caja con métodos en moneda de cobro está en la moneda de la compañía
-        (``_check_tender_currency_methods_currency``).
+        ``with_company``). En una caja en la moneda de la compañía son
+        "moneda de cobro → caja" y convierten (``_get_tender_conversion_rate``).
+        En una caja en otra moneda (``binaural_pos_multicurrency``) la
+        conversión es la nativa de Odoo y estas tasas solo dicen si la moneda
+        tiene tasa del día (``_has_tender_rate_of_the_day``).
         """
         for config in self:
             rate = self.env["res.currency.rate"].with_company(config.company_id)

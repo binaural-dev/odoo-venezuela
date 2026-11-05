@@ -609,19 +609,6 @@ msgid "Opening"
 msgstr "Apertura"
 
 #. module: l10n_ve_pos
-#: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__tender_currency_rates
-msgid ""
-"Operative rates of the tender currencies of the payment methods of the PoS, "
-"by currency id: foreign_rate (tender currency → PoS currency) and "
-"foreign_inverse_rate (PoS currency → tender currency), same pair as "
-"foreign_rate / foreign_inverse_rate."
-msgstr ""
-"Tasas operativas de las monedas de cobro de los métodos de pago del PdV, por"
-" id de moneda: foreign_rate (moneda de cobro → moneda del PdV) y "
-"foreign_inverse_rate (moneda del PdV → moneda de cobro), el mismo par que "
-"foreign_rate / foreign_inverse_rate."
-
-#. module: l10n_ve_pos
 #: model_terms:ir.ui.view,arch_db:l10n_ve_pos.res_config_settings_l10n_ve_pos
 msgid "POS Configuration"
 msgstr "Configuración del POS"
@@ -810,6 +797,21 @@ msgid ""
 msgstr ""
 "La tasa que se usará como factor para multiplicar la moneda alterna para los"
 " movimientos."
+
+#. module: l10n_ve_pos
+#: model:ir.model.fields,help:l10n_ve_pos.field_pos_config__tender_currency_rates
+msgid ""
+"Rates of the day of the tender currencies of the payment methods of the PoS "
+"against the company currency, by currency id: foreign_rate (tender currency "
+"→ company currency) and foreign_inverse_rate (company currency → tender "
+"currency), same pair as foreign_rate / foreign_inverse_rate. In a PoS in "
+"another currency they only tell whether the currency has a rate of the day."
+msgstr ""
+"Tasas del día de las monedas de cobro de los métodos de pago del PdV contra "
+"la moneda de la compañía, por id de moneda: foreign_rate (moneda de cobro → "
+"moneda de la compañía) y foreign_inverse_rate (moneda de la compañía → "
+"moneda de cobro), el mismo par que foreign_rate / foreign_inverse_rate. En "
+"un PdV en otra moneda solo indican si la moneda tiene tasa del día."
 
 #. module: l10n_ve_pos
 #. odoo-javascript
