@@ -590,6 +590,7 @@ El módulo DEBE (MUST) definir el grupo `l10n_ve_pos.group_authorized_discount_p
 
 - **WHEN** se actualiza `l10n_ve_pos` en una base con cajas creadas antes
 - **THEN** todas quedan con "Permitir crear productos" apagado hasta que se encienda en Ajustes
+
 ### Requirement: Stock actual al abrir la caja con "Mostrar solamente los productos disponibles"
 
 Con el flag activo, `pos.session.load_data` DEBE (MUST) cargar `product.template` y `product.product` sin el filtro por `write_date` de la carga incremental, porque un movimiento de stock no lo cambia: una sesión nueva o la entrada desde el backend traen el stock actual aunque la caja tenga caché. F5 con la sesión abierta no consulta al servidor: para eso lo recomendado es "Volver a cargar datos" → "Limitado".
@@ -608,3 +609,17 @@ Con el flag activo, `pos.session.load_data` DEBE (MUST) cargar `product.template
 
 - **WHEN** la compañía no activa el flag y la caja abre con caché
 - **THEN** la carga incremental conserva el filtro por `write_date` del core y solo reenvía los productos modificados
+
+### Requirement: El cross move se fecha en el día del usuario
+
+`_create_cross_move` DEBE (MUST) fechar el asiento en el día del usuario (`fields.Date.context_today`) cuando recibe un Datetime en UTC (`stop_at` de la sesión o `create_date` del pago), y no truncarlo al día UTC. Desde las 8 pm de Caracas el día UTC ya es el siguiente, todavía sin tasa, y `l10n_ve_accountant` detenía el cierre de la sesión.
+
+#### Scenario: Cierre a las 8:30 pm de Caracas con un método que no identifica cliente
+
+- **WHEN** la sesión se cierra con `stop_at` a las 00:30 UTC del día siguiente y solo hay tasa del día del usuario
+- **THEN** el cross move del método se crea con la fecha del día del usuario, sin pedir la tasa del día UTC
+
+#### Scenario: Pago registrado a las 8:30 pm de Caracas con un método que identifica cliente
+
+- **WHEN** el pago se registró a las 00:30 UTC del día siguiente y solo hay tasa del día del usuario
+- **THEN** el cross move de ese pago se crea con la fecha del día del usuario

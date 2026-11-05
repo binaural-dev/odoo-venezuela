@@ -6,6 +6,7 @@ import { AlertDialog } from "@web/core/confirmation_dialog/confirmation_dialog";
 import { _t } from "@web/core/l10n/translation";
 import { floatIsZero, roundPrecision as round_pr } from "@web/core/utils/numbers";
 import { LocalOrderHistory } from "../utils/LocalOrderHistory";
+import { PrintVerificationQueue } from "../utils/PrintVerificationQueue";
 
 /**
  * Hand-off del puerto COM entre la máquina fiscal (Web Serial) y procesos
@@ -20,6 +21,9 @@ import { LocalOrderHistory } from "../utils/LocalOrderHistory";
 const MF_PORT_HANDOFF_GRACE_MS = 1000;
 const MF_PORT_RECLAIM_MAX_ATTEMPTS = 3;
 const MF_PORT_RECLAIM_RETRY_DELAY_MS = 750;
+
+// Resolución en curso de los pedidos por verificar (una sola a la vez).
+let mfResolvingVerifications = null;
 
 /**
  * Override del PosStore para integrar la máquina fiscal vía Web Serial API.
@@ -345,6 +349,39 @@ patch(PosStore.prototype, {
   },
 
   /**
+   * Indica si el método tiene un código fiscal de divisa (20-24) sin
+   * apply_igtf. Con el Flag 50 en 00 la máquina rechaza el pago y anula la
+   * factura; con 01 cobra un IGTF que el PdV no cobró. Sin l10n_ve_pos_igtf,
+   * apply_igtf llega undefined y cuenta como inactivo. El código se lee igual
+   * que en TfhkaDriver._isDivisaPaymentMethod (solo los dígitos).
+   */
+  _mfIsForeignCodeWithoutIgtf(paymentMethod) {
+    const code = parseInt(
+      String(paymentMethod?.code_fiscal_printer || "").replace(/\D/g, ""),
+      10
+    );
+    return code >= 20 && code <= 24 && !paymentMethod.apply_igtf;
+  },
+
+  /**
+   * Primer pago de la orden que iría a la máquina con un código de divisa sin
+   * IGTF. Cuenta como el filtro de payment_lines de get_data_invoice: monto
+   * distinto de cero y con el signo del documento (positivo en factura,
+   * negativo en nota de crédito). #85447
+   */
+  _mfFindForeignCodeWithoutIgtfPayment(order) {
+    const isRefund = order.totalDue < 0 || this._mfGetRefundLines(order).length > 0;
+    return [...(order.payment_ids || [])].find((payment) => {
+      const amount = Number(payment.amount || 0);
+      const wrongSign = isRefund ? amount > 0 : amount < 0;
+      if (wrongSign || floatIsZero(amount, this.currency.decimal_places)) {
+        return false;
+      }
+      return this._mfIsForeignCodeWithoutIgtf(payment.payment_method_id);
+    });
+  },
+
+  /**
    * Construye el objeto de datos de la factura para enviar a la máquina fiscal
    * @param {Object} order - Orden del POS (registro pos.order del modelo 19)
    * @returns {Promise<Object>}
@@ -371,6 +408,25 @@ patch(PosStore.prototype, {
     }
 
     invoice["info"] = this.aditionalInfo(order);
+
+    // Se corta antes de hablar con la máquina: no sale FACTURA ANULADA ni se
+    // consume el número fiscal. Vale para la validación del pago y para la
+    // impresión de pedidos pendientes. #85447
+    const foreignWithoutIgtf = this._mfFindForeignCodeWithoutIgtfPayment(order);
+    if (foreignWithoutIgtf) {
+      const method = foreignWithoutIgtf.payment_method_id;
+      return {
+        valid: false,
+        message: _t(
+          "The payment method “%(method)s” has a foreign currency fiscal code " +
+            "(%(code)s) without IGTF, so the fiscal printer would void the invoice. " +
+            "The order stays pending. Ask the administrator to fix the payment method " +
+            "(local currency code 01-19 or “Apply IGTF”): it can only be changed " +
+            "with the register sessions closed.",
+          { method: method.name, code: method.code_fiscal_printer }
+        ),
+      };
+    }
 
     const refundLines = this._mfGetRefundLines(order);
     const hasRefundLines = refundLines.length > 0;
@@ -609,6 +665,134 @@ patch(PosStore.prototype, {
   },
 
   /**
+   * Marca la orden como "por verificar": la impresión no confirmó si la
+   * máquina emitió el documento. Se guarda en la orden (se sincroniza) y en
+   * la cola local que se resuelve antes de la siguiente impresión. #85447
+   */
+  _mfQueuePrintVerification(order, verification) {
+    order.mf_print_verification = verification;
+    PrintVerificationQueue.add(order.uuid, verification);
+  },
+
+  /**
+   * Resuelve con la máquina los pedidos que quedaron "por verificar". Se
+   * llama antes de imprimir cualquier documento, porque la verificación
+   * compara los contadores de la máquina con los de antes de esa impresión.
+   * Una sola resolución a la vez: una segunda llamada espera la que está en
+   * curso. #85447
+   *
+   * Por cada pedido, según la máquina:
+   * - impreso / no impreso: se aplica en el pedido y en el servidor;
+   * - no respondió: el pedido sigue en la cola y se devuelve false, para no
+   *   imprimir otro documento (su verificación dejaría de servir);
+   * - es otra máquina: sigue en la cola hasta que vuelva a conectarse la suya;
+   * - no se puede atribuir (o falló la verificación): sale de la cola, se
+   *   avisa y queda para revisión manual desde el backend (asistente del
+   *   pedido).
+   *
+   * @returns {Promise<boolean>} false si no se debe imprimir todavía
+   */
+  async _mfResolvePrintVerifications() {
+    if (!mfResolvingVerifications) {
+      mfResolvingVerifications = this._mfResolvePrintVerificationQueue()
+        .catch((error) => {
+          // Un error inesperado no debe frenar las ventas: los pedidos
+          // marcados siguen sin reimprimirse por su marca.
+          console.error("MF:: Error resolviendo los pedidos por verificar", error);
+          return true;
+        })
+        .finally(() => {
+          mfResolvingVerifications = null;
+        });
+    }
+    return mfResolvingVerifications;
+  },
+
+  async _mfResolvePrintVerificationQueue() {
+    const fiscalPrinter = this.getFiscalPrinter();
+    const entries = PrintVerificationQueue.getAll();
+    if (!entries.length || !fiscalPrinter?.isConnected || !fiscalPrinter.verifyDocument) {
+      return true;
+    }
+    for (const entry of entries) {
+      if (!entry.verification?.before) {
+        console.error("MF:: Entrada inválida en la cola de verificación, se descarta", entry);
+        PrintVerificationQueue.remove(entry.uuid);
+        continue;
+      }
+      let resolved = entry.resolved;
+      if (!resolved) {
+        let result;
+        try {
+          result = await fiscalPrinter.verifyDocument(entry.verification);
+        } catch (error) {
+          console.error("MF:: Falló la verificación de la impresión", entry.uuid, error);
+          result = { printed: null, reason: "unattributable" };
+        }
+        if (result?.printed !== true && result?.printed !== false) {
+          if (result?.reason === "no_response") {
+            return false;
+          }
+          if (result?.reason === "other_printer") {
+            continue;
+          }
+          PrintVerificationQueue.remove(entry.uuid);
+          this._mfShowError(
+            _t("Fiscal print to verify"),
+            _t(
+              "The fiscal printer could not confirm whether order %(order)s was printed. " +
+                "Check it on the fiscal printer and resolve it from the order in the backend.",
+              { order: this._mfOrderLabel(entry.uuid) }
+            )
+          );
+          continue;
+        }
+        resolved = {
+          printed: result.printed,
+          invoiceNumber: result.invoiceNumber || "",
+          serial: result.serial || "",
+          reportZ: result.reportZ || "",
+        };
+        PrintVerificationQueue.markResolved(entry.uuid, resolved);
+      }
+      if (await this._mfApplyPrintVerification(entry.uuid, resolved)) {
+        PrintVerificationQueue.remove(entry.uuid);
+      }
+    }
+    return true;
+  },
+
+  _mfOrderLabel(uuid) {
+    const order = this.models["pos.order"].getBy("uuid", uuid);
+    return order?.pos_reference || order?.name || uuid;
+  },
+
+  /**
+   * Aplica el resultado de la verificación a la orden local (si está
+   * cargada) y en el servidor. Devuelve false si el servidor no lo pudo
+   * guardar (sin conexión, o la orden aún no se sincronizó): la entrada
+   * queda con el resultado para reintentar sin volver a verificar.
+   */
+  async _mfApplyPrintVerification(uuid, resolved) {
+    const order = this.models["pos.order"].getBy("uuid", uuid);
+    if (order) {
+      if (resolved.printed && !order.mf_invoice_number) {
+        this.set_data_from_fiscal_machine(order, resolved);
+      }
+      order.mf_print_verification = false;
+    }
+    try {
+      return await this.data.call("pos.order", "mf_resolve_print_verification", [
+        uuid,
+        resolved,
+      ]);
+    } catch (error) {
+      console.warn("MF:: No se pudo guardar la verificación de la impresión", uuid, error);
+      return false;
+    }
+  },
+
+  /**
    * Envía la orden a la máquina fiscal
    * @param {Object} order
    * @returns {Promise<Object>}
@@ -623,6 +807,36 @@ patch(PosStore.prototype, {
           message:
             "Máquina fiscal no conectada. Haz clic en el botón de impresora para conectar.",
           printer_connection: false,
+        };
+      }
+
+      // Antes de emitir otro documento, resolver los que quedaron sin
+      // confirmar: su verificación compara contadores de la máquina. Puede
+      // ser esta misma orden, si se vuelve a validar después de que el
+      // servidor rechazó la sincronización. #85447
+      const canPrint = await this._mfResolvePrintVerifications();
+      if (order.mf_invoice_number) {
+        // Era esta orden y la máquina la emitió: no se reimprime.
+        return { valid: true, message: "", printer_connection: true };
+      }
+      if (order.mf_print_verification) {
+        throw {
+          valid: false,
+          message: _t(
+            "It is not known whether the fiscal printer printed this order, so it is not " +
+              "printed again: it stays pending until it is verified."
+          ),
+          printer_connection: true,
+        };
+      }
+      if (!canPrint) {
+        throw {
+          valid: false,
+          message: _t(
+            "The fiscal printer did not respond while verifying a previous order. " +
+              "This order was not printed and stays pending."
+          ),
+          printer_connection: true,
         };
       }
 
@@ -651,6 +865,11 @@ patch(PosStore.prototype, {
       }
 
       if (!response.success) {
+        if (response.printed === null && response.verification) {
+          // No se sabe si la máquina lo emitió: queda por verificar y no se
+          // debe volver a imprimir hasta resolverlo.
+          this._mfQueuePrintVerification(order, response.verification);
+        }
         throw {
           valid: false,
           message: response.error || "Error al imprimir en la máquina fiscal",

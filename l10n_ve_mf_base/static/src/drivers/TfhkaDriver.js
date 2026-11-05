@@ -49,6 +49,19 @@ export class TfhkaDriver {
     // TFHKA van de 116 a 140 según la misma tabla.
     static MAX_PRODUCT_DESC_LEN = 127;
 
+    // Campo de S1 con el número del último documento de cada tipo.
+    static DOCUMENT_NUMBER_FIELDS = {
+        invoice: "lastInvoiceNumber",
+        credit_note: "lastNCNumber",
+        debit_note: "lastDebtNoteNumber",
+    };
+
+    static DOCUMENT_PRINTED_MESSAGES = {
+        invoice: "Factura impresa correctamente",
+        credit_note: "Nota de crédito impresa correctamente",
+        debit_note: "Nota de débito impresa correctamente",
+    };
+
     constructor() {
         this.connection = new SerialConnection();
         this.isConnected = false;
@@ -58,6 +71,8 @@ export class TfhkaDriver {
         // Promesa de conexión en curso (mutex): serializa a los múltiples
         // llamadores de connect() (montaje, listener USB, click, reclaim).
         this._connecting = null;
+        // Pagos y cierre del documento en curso (ver `_printWithOutcome`).
+        this._documentTrack = null;
     }
 
     _isWaitingState(sts1) {
@@ -634,6 +649,17 @@ export class TfhkaDriver {
         return Number.isNaN(parsed) ? null : parsed;
     }
 
+    /**
+     * Como `_toCounter`, pero como texto: el "Subtotal de Ventas" de S1 trae
+     * 17 dígitos (céntimos), más de lo que un Number representa con exactitud.
+     * Se compara con BigInt (`_compareDocumentSnapshot`); como texto se puede
+     * serializar (JSON, localStorage, RPC).
+     */
+    _toDigitsCounter(value) {
+        const cleaned = String(value || "").replace(/[^0-9]/g, "");
+        return cleaned ? BigInt(cleaned).toString() : null;
+    }
+
     _parseS1Data(rawData) {
         if (!rawData) {
             return null;
@@ -656,6 +682,10 @@ export class TfhkaDriver {
         const shortFormat = fields.length <= 15;
         const parsed = {
             cashierNumber: fields[0] || "",
+            // Base acumulada de las facturas válidas del día (sin IVA). Las
+            // anuladas y las notas de crédito no la mueven (medido en una
+            // HKA80). Mismo campo en los dos formatos de S1 del manual.
+            salesSubtotal: this._toDigitsCounter(fields[1]),
             lastInvoiceNumber: null,
             lastDebtNoteNumber: null,
             lastNCNumber: null,
@@ -685,8 +715,16 @@ export class TfhkaDriver {
         return parsed;
     }
 
-    async _readS1Data() {
-        const response = await this.sendCommand("S1", 5000, false);
+    /**
+     * @param {Object} [options]
+     * @param {boolean} [options.resend=true] - Reenviar S1 si no hay respuesta
+     *   (comportamiento de siempre). La foto previa a un documento lo pide una
+     *   sola vez para no demorar la venta si la máquina no responde.
+     */
+    async _readS1Data({ resend = true } = {}) {
+        const response = await this.sendCommand("S1", 5000, false, false, {
+            resendOnNoResponse: resend,
+        });
         if (!response.success) {
             return { success: false, data: null, error: response.error || "No se pudo leer S1" };
         }
@@ -1472,8 +1510,20 @@ export class TfhkaDriver {
     async _sendDocumentCommand(command, ledger, config, skipFlush = true) {
         const baseDelta = this._commandBaseDelta(command, config);
         const isPayment = this._isPartialPaymentCommand(command);
+        // Para `_printWithOutcome`: desde el primer pago el documento queda
+        // comprometido, y el ACK del "199" es el cierre. Cuenta todo comando
+        // "2XX…" o "1XX" (pagos y cierre; ningún ítem, descuento, línea
+        // informativa ni "3" empieza así), y se marca antes de enviarlo.
+        const track = this._documentTrack;
+        if (track && /^[12]\d\d/.test(command)) {
+            track.paymentSent = true;
+        }
         if (baseDelta === null && !isPayment) {
-            return this.sendCommand(command, null, false, skipFlush);
+            const result = await this.sendCommand(command, null, false, skipFlush);
+            if (track && command === "199" && result.success) {
+                track.closeAcked = true;
+            }
+            return result;
         }
 
         for (let attempt = 0; attempt < this.retryAttempts; attempt++) {
@@ -1537,13 +1587,302 @@ export class TfhkaDriver {
         };
     }
 
+    // ============================================================================
+    // RESULTADO VERIFICADO DEL DOCUMENTO FISCAL
+    // ============================================================================
+
+    /**
+     * Imprime una factura fiscal. Ver `_printWithOutcome`.
+     * @param {Object} orderData - Datos de la orden del POS
+     * @param {Object} flag21Config - Configuración de formato numérico según flag 21
+     * @returns {Promise<Object>}
+     */
+    async printInvoice(orderData, flag21Config = null) {
+        return this._printWithOutcome(
+            "invoice",
+            () => this._printInvoiceDocument(orderData, flag21Config),
+            (response) => ({
+                ...response,
+                global_discount_amount: Number(orderData?.global_discount_amount || 0),
+                global_discount_rate: Number(orderData?.global_discount_rate || 0),
+                global_clamped: Boolean(orderData?.global_clamped),
+            })
+        );
+    }
+
+    /**
+     * Imprime una nota de crédito fiscal. Ver `_printWithOutcome`.
+     * @param {Object} orderData - Datos de la orden
+     * @returns {Promise<Object>}
+     */
+    async printCreditNote(orderData) {
+        return this._printWithOutcome("credit_note", () => this._printCreditNoteDocument(orderData));
+    }
+
+    /**
+     * Imprime una nota de débito fiscal. Ver `_printWithOutcome`.
+     * @param {Object} orderData - Datos de la orden
+     * @returns {Promise<Object>}
+     */
+    async printDebitNote(orderData) {
+        return this._printWithOutcome("debit_note", () => this._printDebitNoteDocument(orderData));
+    }
+
+    /**
+     * Imprime un documento y, si la impresión reporta un error, averigua con
+     * la máquina qué quedó emitido. Medido en una HKA80 (tarea 85447):
+     *
+     * - Desde el primer pago el documento queda comprometido: S1 ya lo cuenta
+     *   y ni el "7" ni un reinicio lo anulan, la máquina lo termina válido.
+     * - Sin pagos, el "7" o un reinicio lo anulan: sale "FACTURA ANULADA" y
+     *   también se consume el número.
+     * - El "Subtotal de Ventas" de S1 solo sube con una factura válida.
+     *
+     * Antes de abrir el documento se toma una foto de S1. Si la impresión
+     * falla sin haber enviado ningún pago, el documento no se emitió (o sale
+     * anulado) y no se consulta nada más. Si ya se envió un pago, se compara
+     * la foto con S1 al terminar (`_documentOutcome`). Un resultado exitoso
+     * se devuelve tal cual. Si la máquina no está en reposo al empezar o S1
+     * no responde, no hay foto y el resultado es el de siempre.
+     *
+     * Con la máquina muda, la consulta agrega hasta ~10 s (10 lecturas de
+     * estado) a la falla antes de devolver `printed: null`.
+     *
+     * @param {string} docType - "invoice" | "credit_note" | "debit_note"
+     * @param {Function} print - Secuencia de impresión del documento
+     * @param {Function} [decorate] - Completa una respuesta exitosa recuperada
+     * @returns {Promise<Object>} El resultado de `print`, o:
+     *   - `{ success: true, printed: true, recovered: true, ... }`: el
+     *     documento quedó válido aunque la impresión reportó un error;
+     *   - `{ success: false, printed: false, ... }`: no se emitió o salió
+     *     anulado, se puede volver a imprimir;
+     *   - `{ success: false, printed: null, reason, verification, ... }`: no
+     *     se pudo saber. NO se debe volver a imprimir: hay que llamar a
+     *     `verifyDocument(verification)` antes de imprimir otro documento.
+     *     `reason`: "no_response" (la máquina no respondió el estado o S1:
+     *     se puede reintentar), "other_printer" (S1 es de otra máquina) o
+     *     "unattributable" (se emitió algo más, los contadores no cuadran o
+     *     S1 vino sin el contador del documento: solo se resuelve a mano).
+     */
+    async _printWithOutcome(docType, print, decorate = (response) => response) {
+        const snapshot = this.isConnected ? await this._readDocumentSnapshot(docType) : null;
+        this._documentTrack = { paymentSent: false, closeAcked: false };
+        try {
+            const result = await print();
+            if (result.success || !snapshot) {
+                return result;
+            }
+            if (!this._documentTrack.paymentSent) {
+                // Sin pagos el documento no pudo quedar comprometido: no se
+                // abrió, o sale anulado (con el "7" de la secuencia, o al
+                // empezar la próxima impresión o al reiniciar la máquina).
+                return { ...result, printed: false };
+            }
+            const verification = { docType, before: snapshot, ...this._documentTrack };
+            console.warn("TfhkaDriver:: la impresión reportó un error, verificando con la máquina:", result.error);
+            const outcome = await this._documentOutcome(verification);
+            return this._outcomeResponse(outcome, verification, result, decorate);
+        } finally {
+            this._documentTrack = null;
+        }
+    }
+
+    /**
+     * Resuelve un documento que quedó sin confirmar (`printed: null`).
+     * Hay que llamarlo antes de imprimir cualquier otro documento en la
+     * máquina: compara S1 con la foto tomada antes de esa impresión. Si el
+     * documento sigue abierto, lo termina con "7".
+     *
+     * @param {Object} verification - El `verification` de esa respuesta
+     * @returns {Promise<Object>} Igual que `_printWithOutcome`
+     */
+    async verifyDocument(verification) {
+        if (!this.isConnected) {
+            return {
+                success: false,
+                data: "",
+                error: "Impresora no conectada",
+                printed: null,
+                reason: "no_response",
+                verification,
+            };
+        }
+        // Se llama antes de cada impresión mientras haya algo por verificar:
+        // con la máquina muda no se espera tanto como justo después de una
+        // falla (ahí puede estar reiniciando), para no demorar cada venta.
+        const outcome = await this._documentOutcome(verification, { statusAttempts: 3 });
+        return this._outcomeResponse(outcome, verification, { success: false, data: "", error: "" });
+    }
+
+    /**
+     * Foto de los contadores de S1 antes de abrir un documento.
+     * @returns {Promise<Object|null>} null si la máquina no está en reposo o
+     *   S1 no responde (se lee una sola vez para no demorar la venta)
+     */
+    async _readDocumentSnapshot(docType) {
+        const status = await this.getStatus();
+        if (!status || !this._isWaitingState(status.raw?.sts1)) {
+            return null;
+        }
+        const s1 = await this._readS1Data({ resend: false });
+        if (!s1.success) {
+            return null;
+        }
+        const number = s1.data[TfhkaDriver.DOCUMENT_NUMBER_FIELDS[docType]];
+        if (!Number.isInteger(number)) {
+            return null;
+        }
+        return {
+            number,
+            salesSubtotal: s1.data.salesSubtotal ?? null,
+            dailyClosureCounter: s1.data.dailyClosureCounter,
+            serial: s1.data.registeredMachineNumber || "",
+        };
+    }
+
+    /**
+     * Lee el estado, reintentando solo mientras la máquina no responde (por
+     * ejemplo, mientras arranca). Cada consulta sin respuesta tarda ~1 s.
+     * @param {number} [attempts=10] - Consultas como máximo
+     * @returns {Promise<Object|null>}
+     */
+    async _readStatusWhenAvailable(attempts = 10) {
+        for (let attempt = 0; attempt < attempts; attempt++) {
+            const status = await this.getStatus();
+            if (status) {
+                return status;
+            }
+            await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
+        }
+        return null;
+    }
+
+    /**
+     * Averigua con la máquina qué quedó emitido después de un documento que
+     * reportó un error. S1 se puede leer en cualquier estado y ya cuenta un
+     * documento comprometido aunque siga abierto, así que no hace falta
+     * esperar a que la máquina quede en reposo.
+     * @returns {Promise<Object>} `{ printed: true|false|null, reason?, s1 }`
+     */
+    async _documentOutcome(verification, { statusAttempts = 10 } = {}) {
+        let status = await this._readStatusWhenAvailable(statusAttempts);
+        if (!status) {
+            return { printed: null, reason: "no_response", s1: null };
+        }
+        // Después de un "7" la máquina sigue un momento en 0x61 mientras
+        // imprime: se le da tiempo antes de tratarlo como documento abierto,
+        // para no mandar otro "7" (o el "199" de respaldo) a mitad de eso.
+        for (let attempt = 0; attempt < 4 && this._isTransactionState(status.raw?.sts1); attempt++) {
+            await new Promise((resolve) => setTimeout(resolve, this.retryDelay));
+            status = (await this.getStatus()) || status;
+        }
+        if (this._isTransactionState(status.raw?.sts1)) {
+            // Quedó abierto: "7" lo anula si no hubo pagos y lo termina como
+            // válido si los hubo. Lo que haya pasado se mide con S1.
+            await this.abortTransaction();
+        }
+        const s1 = await this._readS1Data();
+        if (!s1.success) {
+            return { printed: null, reason: "no_response", s1: null };
+        }
+        return { ...this._compareDocumentSnapshot(verification, s1.data), s1: s1.data };
+    }
+
+    /**
+     * Compara la foto previa con S1 actual. Ante una contradicción (por
+     * ejemplo, el "199" aceptado sin que avance el número) no concluye: un
+     * "no impreso" equivocado lleva a reimprimir.
+     * @returns {Object} `{ printed: true }` emitido y válido; `{ printed:
+     *   false }` no se emitió o salió anulado; `{ printed: null, reason }` no
+     *   se puede saber (ver `_printWithOutcome`)
+     */
+    _compareDocumentSnapshot({ docType, before, paymentSent, closeAcked }, s1) {
+        if (!paymentSent) {
+            // Sin ningún pago el documento no pudo quedar comprometido.
+            return { printed: false };
+        }
+        if (before.serial && s1.registeredMachineNumber && before.serial !== s1.registeredMachineNumber) {
+            // Otra máquina: sus contadores no dicen nada de este documento.
+            return { printed: null, reason: "other_printer" };
+        }
+        const numberAfter = s1[TfhkaDriver.DOCUMENT_NUMBER_FIELDS[docType]];
+        if (!Number.isInteger(numberAfter)) {
+            // S1 respondió, pero sin el contador del documento: esperar a que
+            // la máquina responda no lo arregla, así que va a revisión manual
+            // y no frena las impresiones siguientes.
+            return { printed: null, reason: "unattributable" };
+        }
+        if (numberAfter === before.number) {
+            return closeAcked ? { printed: null, reason: "unattributable" } : { printed: false };
+        }
+        if (numberAfter !== before.number + 1) {
+            // Se emitió algo más en la máquina: no se puede atribuir.
+            return { printed: null, reason: "unattributable" };
+        }
+        const sameDay = before.dailyClosureCounter === s1.dailyClosureCounter;
+        if (docType === "invoice" && sameDay && before.salesSubtotal != null && s1.salesSubtotal != null) {
+            const subtotalBefore = BigInt(before.salesSubtotal);
+            const subtotalAfter = BigInt(s1.salesSubtotal);
+            if (subtotalAfter > subtotalBefore) {
+                return { printed: true };
+            }
+            if (subtotalAfter === subtotalBefore && !closeAcked) {
+                return { printed: false };
+            }
+            return { printed: null, reason: "unattributable" };
+        }
+        return closeAcked ? { printed: true } : { printed: null, reason: "unattributable" };
+    }
+
+    _outcomeResponse(outcome, verification, result, decorate = (response) => response) {
+        if (outcome.printed === true) {
+            const docType = verification.docType;
+            const number = outcome.s1[TfhkaDriver.DOCUMENT_NUMBER_FIELDS[docType]];
+            console.warn("TfhkaDriver:: la máquina emitió el documento", number, "aunque se reportó:", result.error);
+            // El Z del documento es el que estaba en curso al abrirlo (la
+            // foto): si se verifica después de un cierre Z, el de S1 ya es otro.
+            const closures = verification.before?.dailyClosureCounter;
+            const s1 = Number.isInteger(closures) ? { ...outcome.s1, dailyClosureCounter: closures } : outcome.s1;
+            return decorate({
+                ...this._buildFiscalResponse(TfhkaDriver.DOCUMENT_PRINTED_MESSAGES[docType], number, s1),
+                printed: true,
+                recovered: true,
+                recovered_error: result.error,
+            });
+        }
+        if (outcome.printed === false) {
+            return { ...result, printed: false };
+        }
+        const reason = outcome.reason || "unattributable";
+        console.error("TfhkaDriver:: no se pudo confirmar si se emitió el documento", reason, verification);
+        // `_t` devuelve un texto diferido: se arma con parámetros, sin
+        // convertirlo aquí (no siempre hay traducciones cargadas).
+        const error = result.error
+            ? _t(
+                  "The fiscal printer did not confirm whether the document was printed. Do not print it again until it is verified. Detail: %(error)s",
+                  { error: result.error }
+              )
+            : _t(
+                  "The fiscal printer did not confirm whether the document was printed. Do not print it again until it is verified."
+              );
+        return {
+            success: false,
+            data: "",
+            error,
+            original_error: result.error,
+            printed: null,
+            reason,
+            verification,
+        };
+    }
+
     /**
      * Imprime una factura fiscal (secuencia completa TFHKA)
      * @param {Object} orderData - Datos de la orden del POS
      * @param {Object} flag21Config - Configuración de formato numérico según flag 21
      * @returns {Promise<Object>} - { success: boolean, data: string, error: string }
      */
-    async printInvoice(orderData, flag21Config = null) {
+    async _printInvoiceDocument(orderData, flag21Config = null) {
         if (!this.isConnected) {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
@@ -1759,7 +2098,7 @@ export class TfhkaDriver {
      * @param {Object} orderData - Datos de la orden
      * @returns {Promise<Object>}
      */
-    async printCreditNote(orderData) {
+    async _printCreditNoteDocument(orderData) {
         if (!this.isConnected) {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
@@ -1961,7 +2300,7 @@ export class TfhkaDriver {
      * @param {Object} orderData - Datos de la orden
      * @returns {Promise<Object>}
      */
-    async printDebitNote(orderData) {
+    async _printDebitNoteDocument(orderData) {
         if (!this.isConnected) {
             return { success: false, data: "", error: "Impresora no conectada" };
         }
