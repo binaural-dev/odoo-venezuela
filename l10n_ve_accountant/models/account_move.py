@@ -598,19 +598,27 @@ class AccountMove(models.Model):
                     move.amount_untaxed,
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(move),
                 )
             else:
                 move.foreign_untaxed_total = move.tax_totals.get(
                     "base_amount_foreign_currency", 0
                 )
          
-    @api.depends('currency_id', 'invoice_date')
+    @api.depends('currency_id', 'invoice_date', 'invoice_currency_rate', 'foreign_rate')
     def _compute_move_currency_to_company_currency_rate(self):
         '''
-        Compute the move currency to company currency rate'''
+        Rate of the move currency read from the document's stored rate, so it
+        keeps the one it was confirmed with. Falls back to the rate of the date
+        when the document has none.'''
         for move in self:
             if move.currency_id == move.company_currency_id:
+                stored_rate = move.foreign_rate
+            else:
+                stored_rate = 1 / move.invoice_currency_rate if move.invoice_currency_rate else 0.0
+            if stored_rate:
+                move.move_currency_to_company_currency_rate = stored_rate
+            elif move.currency_id == move.company_currency_id:
                 move.move_currency_to_company_currency_rate = move.currency_id._get_conversion_rate(
                     from_currency=move.foreign_currency_id,
                     to_currency=move.company_currency_id,
@@ -639,7 +647,7 @@ class AccountMove(models.Model):
                     move.amount_total,
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(move),
                 )
                 move.foreign_debit = total
                 move.foreign_credit = total
@@ -775,9 +783,15 @@ class AccountMove(models.Model):
                 move.foreign_rate = move.reversed_entry_id.foreign_rate
                 move.foreign_inverse_rate = move.reversed_entry_id.foreign_inverse_rate
             Rate = self.env["res.currency.rate"]
-            rate_values = Rate.compute_rate(
-                move.foreign_currency_id.id, move.invoice_date or fields.Date.today()
-            )
+            # La tasa de un asiento (entry) es la de su fecha contable (`date`), como en
+            # _compute_rate_for_documents; invoice_date no es su fecha de tasa y trae el "hoy"
+            # por defecto, asi que un asiento con fecha pasada o futura fallaba si hoy no tenia
+            # tasa. Los demas documentos conservan invoice_date (o el hoy del usuario si falta).
+            if move.move_type == "entry":
+                rate_date = move.date or fields.Date.context_today(move)
+            else:
+                rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
+            rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
                 move.message_post(
@@ -849,9 +863,11 @@ class AccountMove(models.Model):
 
     def write(self, vals):
         """
-        computes the foreign debit and foreign credit of the line_ids fields (journal entries) when
-        the move is edited.
+        Drops date writes that change nothing on documents confirmed before
+        (see ``_drop_unchanged_rate_dates``), then records ``last_foreign_rate``
+        and posts the "rate updated" note when ``foreign_rate`` is edited by hand.
         """
+        vals = self._drop_unchanged_rate_dates(vals)
         # TODO: To be done for flexible integration
         if vals.get("foreign_rate", False):
             for move in self:
@@ -1151,20 +1167,10 @@ class AccountMove(models.Model):
         Compute the rate of the invoice using the compute_rate method of the res.currency.rate model.
 
         Depends on both dates because `_compute_rate_for_documents` reads
-        `invoice_date` for sale documents but `date` (accounting date) for
-        everything else (purchases, entries): without `date` here, editing
-        only the accounting date on a purchase document never re-triggers
-        this compute, leaving `foreign_rate`/`foreign_inverse_rate` stale
-        relative to the date actually used to look them up.
+        `invoice_date` ("Rate Date") for invoices and `date` (accounting
+        date) for entries, falling back to `date` when `invoice_date` is empty.
         """
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: m.is_sale_document(include_receipts=True)),
-            is_sale=True,
-        )
-        self._compute_rate_for_documents(
-            self.filtered(lambda m: not m.is_sale_document(include_receipts=True)),
-            is_sale=False,
-        )
+        self._compute_rate_for_documents(self)
 
     def _is_rate_date_locked(self):
         """Hook: True si la Rate Date esta bloqueada por la configuracion (la factura usa la
@@ -1182,9 +1188,9 @@ class AccountMove(models.Model):
         return self.invoice_date or self.date
 
     @api.model
-    def _compute_rate_for_documents(self, documents, is_sale):
+    def _compute_rate_for_documents(self, documents):
         """
-        Compute the rate for a set of documents (either sale invoices or purchase invoices/moves).
+        Compute the rate for a set of documents (sale or purchase invoices, entries).
         """
         Rate = self.env["res.currency.rate"]
 
@@ -2187,7 +2193,7 @@ class AccountMove(models.Model):
                     abs(move.amount_total),
                     fc,
                     move.company_id,
-                    move.invoice_date or fields.Date.today(),
+                    move.invoice_date or fields.Date.context_today(move),
                 )
                 total_debit = aggregate
                 total_credit = aggregate

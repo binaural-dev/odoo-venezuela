@@ -1,4 +1,5 @@
 from datetime import date, datetime, timedelta
+from odoo import fields
 from odoo.tests.common import TransactionCase, tagged
 from odoo.exceptions import ValidationError
 import logging
@@ -15,6 +16,7 @@ class TestFiscalLockDays(TransactionCase):
         self.company.lock_date_tax_validation = True
         self.company.tax_lock_date = date.today() + timedelta(days=15)  # Set lock date 15 days ahead of today for consistent test behavior.
         self.company.country_id = self.env.ref('base.ve')
+        self.company.account_fiscal_country_id = self.company.country_id
         self.partner = self.env['res.partner'].create({'name': 'Test Partner'})
         self.journal = self.env['account.journal'].create({
             'name': 'Diario de Ventas',
@@ -22,7 +24,11 @@ class TestFiscalLockDays(TransactionCase):
             'type': 'sale',
             'company_id': self.company.id,
         })
-        self.tax_group_iva16 = self.env["account.tax.group"].create({"name": "IVA 16%"})
+        self.tax_group_iva16 = self.env["account.tax.group"].create({
+            "name": "IVA 16%",
+            "company_id": self.company.id,
+            "country_id": self.company.country_id.id,
+        })
         self.tax_iva16 = self.env['account.tax'].create({
             'name': 'IVA 16%',
             'amount': 16,
@@ -47,10 +53,21 @@ class TestFiscalLockDays(TransactionCase):
 
         self.company.write(
             {
-                "currency_id": self.currency_usd.id,
-                "foreign_currency_id": self.currency_vef.id,  
+                "currency_id": self.currency_vef.id,
+                "foreign_currency_id": self.currency_usd.id,
             }
         )
+
+        # Moneda de la compania VEF y alterna USD: las facturas piden la tasa de la
+        # alterna del dia. La del usuario y la del servidor pueden ser dias distintos
+        # cerca de la medianoche, asi que se cargan ambas.
+        for rate_date in {date.today(), fields.Date.context_today(self.env.user)}:
+            self.env["res.currency.rate"].create({
+                "name": rate_date,
+                "currency_id": self.currency_usd.id,
+                "company_id": self.company.id,
+                "inverse_company_rate": 50.0,
+            })
 
         self.sale_order = self.env["sale.order"].create({
             "partner_id": self.partner.id,
@@ -70,14 +87,14 @@ class TestFiscalLockDays(TransactionCase):
         self.assertFalse(self.company.lock_date_tax_validation)
 
     def test_invoice_blocked_by_lock_date(self):
-        move = self.env['account.move'].create({
-            'move_type': 'out_invoice',
-            'partner_id': self.partner.id,
-            'journal_id': self.journal.id,
-            'company_id': self.company.id,
-        })
+        # create() ya valida el bloqueo fiscal, asi que la factura se rechaza al crearla.
         with self.assertRaises(ValidationError):
-            move._check_tax_lock_date()
+            self.env['account.move'].create({
+                'move_type': 'out_invoice',
+                'partner_id': self.partner.id,
+                'journal_id': self.journal.id,
+                'company_id': self.company.id,
+            })
 
     def test_invoice_allowed_when_lock_date_matches(self):
         # Set tax_lock_date to last day of previous fortnight

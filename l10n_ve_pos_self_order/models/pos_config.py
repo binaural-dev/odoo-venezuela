@@ -28,6 +28,10 @@ class PosConfig(models.Model):
         fields_list.append("foreign_currency_id")
         fields_list.append("foreign_rate")
         fields_list.append("foreign_inverse_rate")
+        # "Mostrar solamente los productos disponibles": la cuadrícula del
+        # Kiosko oculta las opciones de combo sin stock
+        # (static/src/overrides/self_order_service.js).
+        fields_list.append("pos_show_just_products_with_available_qty")
         return fields_list
 
     def _load_self_data_models(self):

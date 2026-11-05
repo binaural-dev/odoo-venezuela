@@ -380,9 +380,7 @@ class SaleOrder(models.Model):
         # Mientras la orden sea cotizacion la tasa sigue a _l10n_ve_rate_date (date_order o fecha
         # de creacion segun el ajuste de la compania); aprobada, se conserva.
         for sale in self:
-            # date_order es Datetime: si viene vacio, .date() reventaria antes
-            # de llegar al or, asi que se comprueba primero.
-            rate_date = sale.date_order.date() if sale.date_order else fields.Date.today()
+            rate_date = sale._l10n_ve_rate_date()
 
             # TODO(website): confirmar con el responsable de la vertical de
             # website/e-commerce si esta condicion sigue siendo necesaria y si
@@ -496,7 +494,7 @@ class SaleOrder(models.Model):
             # tasa (incluso si quedo congelada). Asi la factura convierte con
             # la misma tasa que la orden, via _convert(), sin heredar el rate.
             rate_date = self.foreign_rate_date or (
-                self.date_order.date() if self.date_order else False
+                self._l10n_ve_rate_date() if self.date_order else False
             )
             if rate_date:
                 invoice_vals["invoice_date"] = rate_date
@@ -510,7 +508,7 @@ class SaleOrder(models.Model):
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
                 sale.foreign_currency_id.id,
-                sale.date_order or fields.Date.today(),
+                sale._l10n_ve_rate_date(),
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
             if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:
@@ -567,7 +565,7 @@ class SaleOrder(models.Model):
             self.company_id.block_order_invoice_total_amount_overdue
         )
 
-        today_date = fields.Date.today()
+        today_date = fields.Date.context_today(self)
 
         invoice_ids = self.env["account.move"].search(
             [
@@ -691,7 +689,7 @@ class SaleOrder(models.Model):
                 and not order.manually_set_rate
                 and float_is_zero(order.foreign_rate, precision_rounding=order.currency_id.rounding)
             ):
-                rate_date = order.date_order.date() if order.date_order else fields.Date.today()
+                rate_date = order._l10n_ve_rate_date()
                 self.env["res.currency.rate"].compute_rate(
                     order.foreign_currency_id.id, rate_date, raise_if_not_found=True
                 )

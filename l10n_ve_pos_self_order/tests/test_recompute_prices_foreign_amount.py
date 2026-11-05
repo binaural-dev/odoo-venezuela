@@ -16,7 +16,7 @@ patches ``recompute_prices()`` to keep ``foreign_amount_total``/
 ``pos_self_order`` is installed.
 """
 
-from odoo import Command
+from odoo import Command, fields
 from odoo.tests import TransactionCase, tagged
 
 
@@ -42,6 +42,20 @@ class TestRecomputePricesForeignAmount(TransactionCase):
             vef.active = True
         cls.foreign_currency = vef
         cls.company.write({"foreign_currency_id": cls.foreign_currency.id})
+        # Tasas propias 1:1 de la compañía del test (Odoo prefiere las de la
+        # compañía a las globales) y esa compañía como la activa, que es con
+        # la que se convierte: el precio de catálogo en VEF es el mismo 100.0
+        # en una base nueva y en una con tasas USD/VEF globales.
+        cls.env = cls.env(context=dict(cls.env.context, allowed_company_ids=cls.company.ids))
+        for currency in (usd, vef):
+            cls.env["res.currency.rate"].create(
+                {
+                    "name": fields.Date.today(),
+                    "currency_id": currency.id,
+                    "company_id": cls.company.id,
+                    "rate": 1.0,
+                }
+            )
 
         Account = cls.env["account.account"]
         cls.account_income = Account.create(

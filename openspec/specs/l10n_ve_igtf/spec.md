@@ -424,3 +424,12 @@ El campo `keep_alter_value_vef` de los pagos DEBE (MUST) inicializarse con `reva
 
 - **WHEN** el asiento del pago tiene más de una línea sobre cuentas por cobrar/pagar o corrientes
 - **THEN** la clasificación devuelve como contrapartida solo la última de esas líneas
+
+### Requirement: Las conversiones sin fecha usan el día del usuario
+
+`l10n_ve_igtf.utils._convert_to_company_currency` y `_convert_to_external_currency` DEBEN (MUST) usar `fields.Date.context_today` cuando no reciben fecha, no `fields.Date.today()`.
+
+#### Scenario: Conversión sin fecha
+
+- **WHEN** se convierte un monto sin pasar fecha
+- **THEN** la conversión usa el día del usuario

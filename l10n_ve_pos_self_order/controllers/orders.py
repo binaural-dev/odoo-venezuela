@@ -184,7 +184,30 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
     Kiosk knows whether to ask the customer to complete a missing phone
     (``set_phone``, fill-only — never overwrites an existing one). All three
     routes are rate-limited per ``access_token`` (see module top).
+
+    The partner ``id`` goes back signed (``"<id>-<hmac>"``), the only form the
+    core Kiosk accepts as the order's ``partner_id`` (see
+    ``_ve_partner_payload``).
     """
+
+    def _ve_partner_payload(self, pos_config, partner):
+        """Datos del partner que las tres rutas devuelven al Kiosko, con el
+        ``id`` firmado.
+
+        En Odoo 19 el core del Kiosko solo acepta como ``partner_id`` de la
+        orden un id firmado (``pos.order._get_signed_self_partner_id``):
+        ``_check_pos_order`` lo valida con ``_get_self_partner_from_token`` y
+        descarta cualquier otro valor. Con el id numérico, ``process-order``
+        guardaba la orden sin cliente y el Kiosko pisaba su orden local con esa
+        respuesta, así que la factura y Megasoft se quedaban sin cédula. Se
+        firma igual que ``/pos-self-order/validate-partner`` del core.
+        """
+        payload = partner.read(["id", "name", "vat", "prefix_vat"], load=False)
+        for record in payload:
+            record["id"] = pos_config.env["pos.order"]._get_signed_self_partner_id(
+                pos_config, record["id"]
+            )
+        return payload
 
     def _ve_find_partner(self, pos_config, prefix_vat, vat):
         """Búsqueda determinista del partner por cédula/RIF (compartida por las
@@ -220,7 +243,7 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
             # NO ``phone`` here: the public route must not hand out phone
             # numbers to whoever probes cédulas. ``has_phone`` tells the Kiosk
             # whether to ask the customer to complete it.
-            "res.partner": partner.read(["id", "name", "vat", "prefix_vat"], load=False),
+            "res.partner": self._ve_partner_payload(pos_config, partner),
             "has_phone": bool(partner.phone),
             "error": False,
         }
@@ -276,7 +299,7 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
             if not partner.phone:
                 partner.phone = phone
             return {
-                "res.partner": partner.read(["id", "name", "vat", "prefix_vat"], load=False),
+                "res.partner": self._ve_partner_payload(pos_config, partner),
                 "error": False,
             }
 
@@ -325,7 +348,7 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         # company, mirroring how validate_partner creates with sudo().
         partner = partner_model.create(vals)
         return {
-            "res.partner": partner.read(["id", "name", "vat", "prefix_vat"], load=False),
+            "res.partner": self._ve_partner_payload(pos_config, partner),
             "error": False,
         }
 
@@ -360,7 +383,7 @@ class L10nVePosSelfOrderController(PosSelfOrderController):
         if not partner.phone:
             partner.phone = phone
         return {
-            "res.partner": partner.read(["id", "name", "vat", "prefix_vat"], load=False),
+            "res.partner": self._ve_partner_payload(pos_config, partner),
             "error": False,
         }
 

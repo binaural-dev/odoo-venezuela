@@ -39,8 +39,16 @@ class TestResPartnerPosSelfData(TransactionCase):
                 "payment_method_ids": [(6, 0, [])],
             }
         )
+        # l10n_ve_contact no deja repetir un RIF: el primero libre a partir de
+        # 12345678, para no chocar con los contactos de la base.
+        vat = 12345678
+        while cls.env["res.partner"].search_count(
+            [("prefix_vat", "=", "V"), ("vat", "=", str(vat))]
+        ):
+            vat += 1
+        cls.vat = str(vat)
         cls.partner = cls.env["res.partner"].create(
-            {"name": "Cliente Kiosko", "prefix_vat": "V", "vat": "12345678"}
+            {"name": "Cliente Kiosko", "prefix_vat": "V", "vat": cls.vat}
         )
 
     def test_read_includes_vat_and_prefix_vat(self):
@@ -50,7 +58,7 @@ class TestResPartnerPosSelfData(TransactionCase):
         self.assertTrue(result)
         record = result[0]
         self.assertEqual(record["id"], self.partner.id)
-        self.assertEqual(record["vat"], "12345678")
+        self.assertEqual(record["vat"], self.vat)
         self.assertEqual(record["prefix_vat"], "V")
 
     def test_read_empty_recordset_returns_empty(self):
