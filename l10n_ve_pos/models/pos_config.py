@@ -65,18 +65,43 @@ class PosConfig(models.Model):
 
     @api.constrains("payment_method_ids", "journal_id", "currency_id")
     def _check_tender_currency_methods_currency(self):
-        """Una moneda de cobro (``pos.payment.method.tender_currency_id``) solo
-        en una caja en la moneda de la compañía: sus tasas
-        (``tender_currency_rates``) son contra esa moneda, y en una caja en
-        otra moneda se aplicarían a montos en la moneda de la caja. Ver también
+        """Los métodos con moneda de cobro (``pos.payment.method.tender_currency_id``)
+        de cada caja tienen que poder usarse en ella
+        (``_get_tender_currency_error``). Ver también
         ``pos.payment.method._check_tender_currency``.
         """
         for config in self:
-            if config.currency_id == config.company_id.currency_id:
-                continue
-            tender_methods = config.payment_method_ids.filtered("tender_currency_id")
-            if tender_methods:
-                raise ValidationError(tender_methods._tender_currency_in_foreign_pos_message())
+            config._check_tender_currency_methods()
+
+    def _check_tender_currency_methods(self, methods=None):
+        """``ValidationError`` si alguno de los métodos con moneda de cobro de
+        la caja (o de ``methods``) no puede usarse en ella."""
+        self.ensure_one()
+        if methods is None:
+            methods = self.payment_method_ids
+        for method in methods.filtered("tender_currency_id"):
+            error = self._get_tender_currency_error(method)
+            if error:
+                raise ValidationError(error)
+
+    def _get_tender_currency_error(self, method):
+        """Mensaje de error si ``method`` (con moneda de cobro) no puede usarse
+        en esta caja, o ``None``.
+
+        Aquí solo en una caja en la moneda de la compañía: las tasas de la
+        moneda de cobro (``tender_currency_rates``) son contra esa moneda, y en
+        una caja en otra moneda se aplicarían a montos en la moneda de la caja.
+        ``binaural_pos_multicurrency`` extiende este gancho para esas cajas,
+        donde convierte con la tasa nativa de Odoo. En una caja en la moneda de
+        la compañía la alterna no es moneda de cobro: tiene su propio flujo
+        (``is_foreign_currency``).
+        """
+        self.ensure_one()
+        if self.currency_id != self.company_id.currency_id:
+            return method._tender_currency_in_foreign_pos_message()
+        if method.tender_currency_id == self.company_id.foreign_currency_id:
+            return method._tender_currency_not_third_message()
+        return None
 
     @api.depends("payment_method_ids.tender_currency_id")
     def _compute_tender_currency_rates(self):

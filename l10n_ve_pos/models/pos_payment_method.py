@@ -28,21 +28,20 @@ class PosPaymentMethod(models.Model):
         "cross_account_journal", "company_id", "config_ids",
     )
     def _check_tender_currency(self):
-        """Un método en una tercera moneda no es el de la moneda de la caja ni
-        el de la alterna: cada uno tiene su propio flujo (``is_foreign_currency``
-        para la alterna). Sus dos diarios de cruce son obligatorios: su diario
-        es el transitorio en la moneda de la caja y los euros solo llegan a la
-        caja real con el cruce (``_is_cross_move_eligible`` omite en silencio un
-        método sin ellos). Su diario real (``cross_journal``) lleva esa moneda,
-        porque el cruce le pone ``amount_currency`` en ella. Y solo se usa en
-        cajas en la moneda de la compañía (ver
-        ``pos.config._check_tender_currency_methods_currency``).
+        """Un método en una tercera moneda no es el de la moneda de la
+        compañía ni un método ``is_foreign_currency`` (el de la alterna, que
+        tiene su propio flujo). Sus dos diarios de cruce son obligatorios: su
+        diario es el transitorio en la moneda de la caja y los euros solo
+        llegan a la caja real con el cruce (``_is_cross_move_eligible`` omite en
+        silencio un método sin ellos). Su diario real (``cross_journal``) lleva
+        esa moneda, porque el cruce le pone ``amount_currency`` en ella.
+
+        Lo que depende de la caja (su moneda, la alterna) lo valida cada caja
+        del método (``pos.config._get_tender_currency_error``).
         """
         for method in self.filtered("tender_currency_id"):
             company = method.company_id
             currency = method.tender_currency_id
-            if any(config.currency_id != config.company_id.currency_id for config in method.config_ids):
-                raise ValidationError(method._tender_currency_in_foreign_pos_message())
             if method.is_foreign_currency:
                 raise ValidationError(_(
                     "The payment method %(method)s cannot be a foreign currency method and have a "
@@ -51,13 +50,8 @@ class PosPaymentMethod(models.Model):
                     method=method.name,
                     foreign=company.foreign_currency_id.name,
                 ))
-            if currency in (company.currency_id | company.foreign_currency_id):
-                raise ValidationError(_(
-                    "The tender currency of the payment method %(method)s must be a third "
-                    "currency: %(currency)s is the company currency or its foreign currency.",
-                    method=method.name,
-                    currency=currency.name,
-                ))
+            if currency == company.currency_id:
+                raise ValidationError(method._tender_currency_not_third_message())
             if method.type == "pay_later":
                 raise ValidationError(_(
                     "The payment method %(method)s is a customer account: it cannot have a "
@@ -79,6 +73,16 @@ class PosPaymentMethod(models.Model):
                     method=method.name,
                     currency=currency.name,
                 ))
+            for config in method.config_ids:
+                config._check_tender_currency_methods(method)
+
+    def _tender_currency_not_third_message(self):
+        return _(
+            "The tender currency of the payment method %(method)s must be a third "
+            "currency: %(currency)s is the company currency or its foreign currency.",
+            method=", ".join(self.mapped("name")),
+            currency=", ".join(self.tender_currency_id.mapped("name")),
+        )
 
     def _tender_currency_in_foreign_pos_message(self):
         return _(
