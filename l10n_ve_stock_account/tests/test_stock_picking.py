@@ -415,3 +415,104 @@ class TestStockPickingInvoice(TransactionCase):
 
         self.assertFalse(picking.guide_number, "Un picking de devolución no debería generar número de guía.")
         _logger.info("test_08_return_picking_no_guide_number --- successfully.")
+
+    def _get_transfer_reason_node(self):
+        """Return the outgoing `transfer_reason_id` node of the picking
+        form view (the one that is not the internal-transfer node)."""
+        from lxml import etree
+
+        arch = self.env["stock.picking"].get_view(
+            self.env.ref("stock.view_picking_form").id, "form"
+        )["arch"]
+        nodes = [
+            node
+            for node in etree.fromstring(arch).iter("field")
+            if node.get("name") == "transfer_reason_id"
+            and "outgoing" in (node.get("invisible") or "")
+        ]
+        self.assertEqual(len(nodes), 1)
+        return nodes[0]
+
+    def test_09_donation_sale_picking_gets_donation_reason(self):
+        """A delivery created from a donation sale order is flagged as a
+        donation and gets the 'Donation' transfer reason (existing
+        behavior must not change with the stored field)."""
+        order = self.create_sale_order()
+        order.is_donation = True
+        order.action_confirm()
+        picking = order.picking_ids
+        self.assertTrue(picking.is_donation)
+        donation_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_donation")
+        self.assertEqual(picking.allowed_reason_ids, donation_reason)
+        picking._compute_allowed_reason_ids()
+        self.assertEqual(picking.transfer_reason_id, donation_reason)
+
+    def test_10_transfer_reason_readonly_only_for_donation_with_sale(self):
+        """`transfer_reason_id` (outgoing) is read-only for a donation
+        picking that has a sale order, and editable for a donation
+        picking without one."""
+        from odoo.tools.safe_eval import safe_eval
+
+        node = self._get_transfer_reason_node()
+        readonly_expr = node.get("readonly")
+
+        def is_readonly(picking):
+            return bool(
+                safe_eval(
+                    readonly_expr,
+                    {
+                        "is_donation": picking.is_donation,
+                        "sale_id": picking.sale_id.id,
+                        "state": picking.state,
+                    },
+                )
+            )
+
+        order = self.create_sale_order()
+        order.is_donation = True
+        order.action_confirm()
+        self.assertTrue(is_readonly(order.picking_ids))
+
+        picking = self.create_picking()
+        picking.is_donation = True
+        self.assertFalse(picking.sale_id)
+        self.assertFalse(is_readonly(picking))
+        # A normal (non donation) outgoing picking stays editable too.
+        normal_picking = self.create_picking()
+        self.assertFalse(normal_picking.is_donation)
+        self.assertFalse(is_readonly(normal_picking))
+
+    def test_11_donation_without_sale_keeps_reason_editable(self):
+        """A donation picking without sale order keeps the outgoing
+        'without sale' reasons and the donation flag does not force the
+        'Donation' reason on it."""
+        picking = self.create_picking()
+        picking.is_donation = True
+        picking._compute_allowed_reason_ids()
+        donation_reason = self.env.ref("l10n_ve_stock_account.transfer_reason_donation")
+        self.assertNotIn(donation_reason, picking.allowed_reason_ids)
+        other_causes = self.env.ref("l10n_ve_stock_account.transfer_reason_other_causes")
+        picking.transfer_reason_id = other_causes
+        self.assertEqual(picking.transfer_reason_id, other_causes)
+
+    def test_12_get_new_picking_values_marks_donation_sale(self):
+        """`stock.move._get_new_picking_values` (used by the core to create
+        the picking) carries `is_donation=True` for the moves of a donation
+        sale order, and so does the resulting picking."""
+        order = self.create_sale_order()
+        order.is_donation = True
+        order.action_confirm()
+        picking = order.picking_ids
+        self.assertTrue(picking.is_donation)
+        self.assertTrue(picking.move_ids._get_new_picking_values().get("is_donation"))
+
+    def test_13_get_new_picking_values_does_not_mark_normal_sale(self):
+        """A normal sale order does not mark its picking, and moves without
+        a sale order are not marked either."""
+        order = self.create_sale_order()
+        order.action_confirm()
+        picking = order.picking_ids
+        self.assertFalse(picking.is_donation)
+        self.assertFalse(picking.move_ids._get_new_picking_values().get("is_donation"))
+        manual_picking = self.create_picking()
+        self.assertFalse(manual_picking.move_ids._get_new_picking_values().get("is_donation"))

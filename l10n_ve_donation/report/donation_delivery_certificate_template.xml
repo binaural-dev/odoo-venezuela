@@ -1,0 +1,120 @@
+<odoo>
+    <!-- Template for stock.picking (outgoing donation delivery, several products at once) -->
+    <template id="donation_delivery_certificate_template" name="Donation Certificate - Delivery">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.basic_layout">
+                    <div class="page">
+
+                        <!-- ===== HEADER (same style as the journal entry certificate) ===== -->
+                        <div class="container-fluid">
+                            <div class="row mb-3">
+                                <div class="col-12 d-flex align-items-center flex-wrap">
+                                    <div class="me-3 flex-shrink-0">
+                                        <img t-if="o.company_id.logo"
+                                            t-att-src="image_data_uri(o.company_id.logo)"
+                                            style="max-height:90pt; max-width:140px; min-width:80px;"
+                                            alt="Logo" />
+                                    </div>
+                                    <div>
+                                        <p class="m-0">
+                                            <span class="fw-bold">Company Name: </span>
+                                            <span t-out="o.company_id.name" />
+                                            <br />
+                                            <span class="fw-bold">Tax ID: </span>
+                                            <span t-out="o.company_id.vat or ''" />
+                                            <br />
+                                            <span class="fw-bold">Fiscal Address: </span>
+                                            <span t-out="o.company_id.street or ''" />
+                                            <t t-if="o.company_id.city">
+                                                <span t-out="', ' + o.company_id.city" />
+                                            </t>
+                                            <br />
+                                            <span class="fw-bold">Phone: </span>
+                                            <span t-out="o.company_id.phone or ''" />
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row mb-4">
+                                <div class="col-12 text-center">
+                                    <h3 style="font-weight: bold; text-transform: uppercase; letter-spacing: 1px;">
+                                        Donation Certificate
+                                    </h3>
+                                </div>
+                            </div>
+
+                            <!-- ===== DOCUMENT DATA ===== -->
+                            <div class="row mb-3">
+                                <div class="col-6">
+                                    <p class="m-0"><span class="fw-bold">Delivery No.: </span><span t-out="o.name" /></p>
+                                    <p class="m-0"><span class="fw-bold">Effective Date: </span><span t-field="o.date_done" /></p>
+                                </div>
+                            </div>
+
+                            <!-- ===== BENEFICIARY ===== -->
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <h5>Beneficiary Information</h5>
+                                    <p class="m-0">
+                                        <span class="fw-bold">Name / Company Name: </span>
+                                        <span t-out="o.partner_id.name or '__________________'" />
+                                    </p>
+                                    <p class="m-0">
+                                        <span class="fw-bold">Tax ID: </span>
+                                        <span t-out="((o.partner_id.prefix_vat or '') + '-' + o.partner_id.vat) if o.partner_id and o.partner_id.vat else '__________________'" />
+                                    </p>
+                                    <p class="m-0" t-if="o.donation_reason">
+                                        <span class="fw-bold">Reason: </span>
+                                        <span t-out="o.donation_reason" />
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- ===== GOODS DETAIL (shared table) ===== -->
+                            <div class="row mb-3">
+                                <div class="col-12">
+                                    <h5>Donation Detail</h5>
+                                    <t t-set="donation_line_data" t-value="o._get_donation_product_lines()" />
+                                    <t t-set="donation_grand_total" t-value="o._get_donation_grand_total()" />
+                                    <t t-set="donation_cost_currency" t-value="o.company_id.currency_id" />
+                                    <t t-call="l10n_ve_donation.donation_product_table" />
+                                </div>
+                            </div>
+
+                            <!-- ===== LEGAL TEXT ===== -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <p style="text-align: justify; line-height: 1.8; font-size: 12px;">
+                                        By means of this certificate, <strong><span t-out="o.company_id.name" /></strong>, Tax ID
+                                        <strong><span t-out="o.company_id.vat or ''" /></strong>, certifies having delivered to
+                                        <strong><span t-out="o.partner_id.name or '__________________'" /></strong> the goods described herein, as a
+                                        pure, simple and irrevocable donation, intended to further the objectives of the organization.
+                                    </p>
+                                </div>
+                            </div>
+
+                            <!-- ===== SIGNATURES ===== -->
+                            <div class="row mt-5 pt-5">
+                                <div class="col-6 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 6px; margin: 0 30px;">
+                                        <p class="m-0"><strong>Legal Representative of the Donor</strong></p>
+                                        <p class="m-0" style="font-size: 11px;">Name, Signature and Seal</p>
+                                    </div>
+                                </div>
+                                <div class="col-6 text-center">
+                                    <div style="border-top: 1px solid #000; padding-top: 6px; margin: 0 30px;">
+                                        <p class="m-0"><strong>Legal Representative of the Beneficiary</strong></p>
+                                        <p class="m-0" style="font-size: 11px;">Name, Signature and Seal</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+</odoo>

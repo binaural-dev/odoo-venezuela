@@ -2,4 +2,9 @@ from . import common
 from . import test_coverage_gaps
 from . import test_product_warehouse
 from . import test_stock_scrap
+from . import test_stock_location
+from . import test_stock_picking
+from . import test_stock_picking_type
+from . import test_stock_return_picking
+from . import test_stock_move
 from . import test_sale_account_move
