@@ -322,8 +322,10 @@ retenciones confundiría cualquier otro llamador legítimo con una retención.
 - **THEN** la reconciliación entra con el contexto
   `l10n_ve_exchange_is_retention_reconcile=True`
 - **AND** el sistema NO genera ninguna ND/NC de este módulo para ese pago
-- **AND** el diferencial cambiario de esa conciliación, si lo hay, sigue el
-  comportamiento nativo de Odoo (asiento genérico)
+- **AND** esa conciliación NO genera asiento de diferencial cambiario (se
+  concilia con `no_exchange_difference`); la única diferencia que se registra
+  es la de precisión entre monedas, como `write_off` del propio pago de
+  retención (ver `l10n_ve_payment_extension`)
 
 ### Requirement: Un flujo mixto permite decidir por cliente si se emite ND/NC o el asiento nativo
 
