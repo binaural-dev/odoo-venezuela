@@ -792,3 +792,19 @@ Los valores alternos `foreign_*` de las líneas de retención son heredados: no 
 - **WHEN** la retención difiere de lo adeudado por una cantidad menor o igual a `_retention_amount_tolerance()` en una factura en moneda extranjera
 - **THEN** la diferencia se trata como redondeo y se lleva a diferencial cambiario
 - **AND** una diferencia mayor (un paso más de la moneda de compañía) se trata como diferencia real
+
+### Requirement: El importe alterno del pago de una retención usa la fecha de tasa de su asiento
+
+El importe alterno (`foreign_amount`) de un pago de retención (`is_retention`) DEBE (MUST) calcularse con la misma fecha de tasa con la que se valoran las líneas de su asiento: la fecha de la factura retenida (`invoice_date`, o `date` si falta) cuando todas las líneas del pago pertenecen a una única factura, y no con `payment.date` (la fecha contable de la retención). Ambos lados DEBEN (MUST) compartir la misma regla (`account.payment._get_retention_foreign_rate_date`) para que no puedan diverger. Los pagos que no son retención conservan el cálculo por `payment.date`. La fecha contable del pago y de su asiento no cambia.
+
+#### Scenario: Tasa distinta entre la fecha de la factura y la fecha contable de la retención
+
+- **WHEN** se emite una retención (IVA, ISLR o municipal, de cliente o de proveedor; sobre factura, nota de crédito o nota de débito) en una fecha cuya tasa difiere de la tasa de la fecha de la factura retenida
+- **THEN** `foreign_amount` del pago es igual al monto alterno de cada línea del asiento, calculado con la tasa de la fecha de la factura
+- **AND** `payment.date` y la fecha del asiento siguen siendo la fecha contable de la retención
+
+#### Scenario: Pago que no es retención
+
+- **WHEN** el pago no es una retención (creado con el formulario del pago o con el asistente "Registrar pago")
+- **THEN** `foreign_amount` se calcula con `payment.date` como antes
+- **AND** coincide con el monto alterno de cada línea de su asiento
