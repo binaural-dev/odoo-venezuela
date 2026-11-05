@@ -49,4 +49,4 @@
 - [x] 5.1 Versión 19.0.1.29.1 → 19.0.1.30.0
 - [x] 5.2 `openspec validate ta-86066-tercera-moneda-caja-otra-moneda --strict`
 - [x] 5.3 Revisión de Binaural y decisión del usuario (05-nov)
-- [ ] 5.4 Archivar en el mismo PR
+- [x] 5.4 Archivar en el mismo PR (05-nov, aprobado por el usuario)
