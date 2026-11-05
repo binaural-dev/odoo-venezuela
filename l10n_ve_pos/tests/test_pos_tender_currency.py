@@ -370,6 +370,26 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
         self.assertEqual(self.usd_config.currency_id, self.company.currency_id)
         self.assertIn(self.eur_method, self.usd_config.payment_method_ids)
 
+    def test_foreign_currency_is_not_a_tender_currency_in_a_pos_in_the_company_currency(self):
+        """En la caja en la moneda de la compañía la alterna tiene su propio
+        flujo (``is_foreign_currency``): un método con la alterna como moneda
+        de cobro se rechaza al agregarlo a esa caja. Sin caja no se rechaza:
+        lo que depende de la caja lo valida cada caja
+        (``pos.config._get_tender_currency_error``), y una caja en otra moneda
+        (``binaural_pos_multicurrency``) puede cobrar en la alterna."""
+        method = self.env["pos.payment.method"].create(
+            {
+                "name": "T Efectivo en la alterna como moneda de cobro",
+                "company_id": self.company.id,
+                "journal_id": self.eur_bank_method.journal_id.id,
+                "tender_currency_id": self.foreign_currency.id,
+                "cross_journal": self.bank_journal.id,
+                "cross_account_journal": self.cross_account_journal.id,
+            }
+        )
+        with self.assertRaisesRegex(ValidationError, "third currency"):
+            self.usd_config.payment_method_ids |= method
+
     # ------------------------------------------------------------------
     # Pagos
     # ------------------------------------------------------------------
@@ -687,6 +707,106 @@ class TestPosTenderCurrency(TestPosSessionAccountingBase):
 
         eur_leg, _transit = self._eur_legs(move)
         self.assertAlmostEqual(eur_leg.amount_currency, -100.0, places=2)
+
+    def _method_with_journal_in_another_currency(self):
+        """Método en EUR cuyo diario (transitorio) está en la alterna, como el
+        de una caja en otra moneda (``binaural_pos_multicurrency``)."""
+        transit_suspense = self.env["account.account"].create(
+            {
+                "name": "T Transitoria del metodo en la alterna",
+                "code": "190089T",
+                "account_type": "asset_current",
+                "company_ids": [(6, 0, [self.company.id])],
+            }
+        )
+        journal = self.env["account.journal"].create(
+            {
+                "name": "T Efectivo EUR (transitorio en la alterna)",
+                "type": "cash",
+                "code": "TEA86",
+                "company_id": self.company.id,
+                "currency_id": self.foreign_currency.id,
+                "suspense_account_id": transit_suspense.id,
+            }
+        )
+        method = self.env["pos.payment.method"].create(
+            {
+                "name": "T Efectivo EUR con diario en la alterna",
+                "company_id": self.company.id,
+                "journal_id": journal.id,
+                "tender_currency_id": self.eur.id,
+                "cross_journal": self.eur_journal.id,
+                "cross_account_journal": self.cross_account_journal.id,
+            }
+        )
+        return method, transit_suspense
+
+    def test_cross_transitory_line_in_the_currency_of_the_method_journal(self):
+        """Con el diario del método en otra moneda, la transitoria recibió las
+        ventas en esa moneda: con ``transitory_amount_currency`` la línea del
+        cruce va en esa moneda, con ese monto, y la deja en cero también en
+        ella. Sin él, como siempre, en la moneda de la compañía. La línea del
+        diario real no cambia."""
+        method, transit_suspense = self._method_with_journal_in_another_currency()
+        session = self._new_session().with_company(self.company)
+        kwargs = {
+            "amount": self.eur_100_local,
+            "foreign_amount": 116.0,
+            "foreign_rate": self.PAYMENT_FOREIGN_RATE,
+            "partner": self.env["res.partner"],
+            "date": fields.Datetime.now(),
+            "ref": "transitoria en la moneda del diario",
+            "use_suspense": True,
+            "currency_amount": 100.0,
+        }
+
+        old_move = session._create_cross_move_for(method, **kwargs)
+        old_transit = old_move.line_ids.filtered(lambda l: l.account_id == transit_suspense)
+        self.assertEqual(old_transit.currency_id, self.company.currency_id)
+        self.assertAlmostEqual(old_transit.amount_currency, self.eur_100_local, places=2)
+
+        move = session._create_cross_move_for(method, transitory_amount_currency=116.0, **kwargs)
+
+        transit = move.line_ids.filtered(lambda l: l.account_id == transit_suspense)
+        self.assertEqual(transit.currency_id, self.foreign_currency)
+        self.assertAlmostEqual(transit.amount_currency, 116.0, places=2)
+        self.assertAlmostEqual(transit.debit, self.eur_100_local, places=2)
+        eur_leg, _transit = self._eur_legs(move)
+        self.assertAlmostEqual(eur_leg.amount_currency, -100.0, places=2)
+        self.assertAlmostEqual(eur_leg.credit, self.eur_100_local, places=2)
+        self.assertCoherentSigns(move.line_ids)
+
+    def test_combine_legs_in_the_currency_of_the_method_journal(self):
+        """El cruce combinado lleva en cada pata el monto en la moneda del
+        diario (``transitory_amount_of``) y no se crea si todos los netos,
+        también ese, son cero."""
+        method, transit_suspense = self._method_with_journal_in_another_currency()
+        session = self._new_session().with_company(self.company)
+        sale = self._eur_order(session, amount=self.eur_100_local, tender_amount=100.0, name="OL/1")
+        refund = self._eur_order(session, amount=-self.eur_50_local, tender_amount=50.0, name="OL/2")
+        payments = (sale | refund).payment_ids
+        in_journal_currency = {sale.payment_ids: 116.0, refund.payment_ids: -58.0}
+
+        legs = session._get_combined_cross_legs(
+            method, payments, transitory_amount_of=in_journal_currency.__getitem__
+        )
+
+        self.assertEqual([leg["transitory_amount_currency"] for leg in legs], [116.0, -58.0])
+        move = session._create_combined_cross_move(
+            method, legs, self.PAYMENT_FOREIGN_RATE, fields.Datetime.now(), "combinado",
+            use_suspense=True,
+        )
+        transit = move.line_ids.filtered(lambda l: l.account_id == transit_suspense)
+        self.assertEqual(transit.currency_id, self.foreign_currency)
+        self.assertEqual(sorted(transit.mapped("amount_currency")), [-58.0, 116.0])
+        self.assertCoherentSigns(move.line_ids)
+        self.assertFalse(
+            session._cross_legs_net_is_zero(
+                method,
+                [{"amount": 0.0, "foreign_amount": 0.0, "currency_amount": 0.0,
+                  "transitory_amount_currency": 0.01}],
+            )
+        )
 
     # ------------------------------------------------------------------
     # Cruce combinado: entradas y salidas en dos patas (hallazgo 6)
