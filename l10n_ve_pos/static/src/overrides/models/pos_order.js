@@ -169,12 +169,21 @@ patch(PosOrder.prototype, {
     // redondear la tasa; redondear solo el resultado con
     // to_currency.round() en _convert.
     //
+    // TERCERA MONEDA (moneda de cobro de un método, p. ej. EUR): sus tasas
+    // llegan en config.tender_currency_rates con la misma orientación
+    // (foreign_rate = EUR → caja, GRANDE; foreign_inverse_rate = caja → EUR,
+    // CHICO); ver _getTenderConversionRate. Los pares sin moneda de cobro
+    // siguen la regla de siempre (el lado que no es la alterna es la caja).
+    //
     // KEEP IN SYNC WITH:
     //   models/pos_config.py :: PosConfig._get_pos_conversion_rate
     const fromId = this._currencyId(fromCurrency);
     const toId = this._currencyId(toCurrency);
     if (fromId != null && toId != null && fromId === toId) {
       return 1;
+    }
+    if (this._isTenderCurrencyId(fromId) || this._isTenderCurrencyId(toId)) {
+      return this._getTenderConversionRate(fromId, toId);
     }
     const foreignId = this._currencyId(this._getForeignCurrencyRecord());
     if (!foreignId) {
@@ -199,6 +208,57 @@ patch(PosOrder.prototype, {
       return rate > 0 ? rate : 0;
     }
     return 0;
+  },
+
+  _getTenderCurrencyRates() {
+    return (this.config ?? this.pos?.config)?.tender_currency_rates || {};
+  },
+
+  _isTenderCurrencyId(currencyId) {
+    return currencyId != null && String(currencyId) in this._getTenderCurrencyRates();
+  },
+
+  // Tasa entre una moneda de cobro y la caja, la alterna u otra moneda de
+  // cobro: (from → caja) × (caja → to), sin redondear; 0 si un lado no tiene
+  // tasa (p. ej. sin tasa del día).
+  //
+  // KEEP IN SYNC WITH:
+  //   models/pos_config.py :: PosConfig._get_tender_conversion_rate
+  _getTenderConversionRate(fromId, toId) {
+    const fromRates = this._getPosCurrencyRatePair(fromId);
+    const toRates = this._getPosCurrencyRatePair(toId);
+    if (!fromRates || !toRates) {
+      return 0;
+    }
+    const rate = fromRates[0] * toRates[1];
+    return rate > 0 ? rate : 0;
+  },
+
+  // [moneda → caja, caja → moneda] con las tasas operativas de la caja, o null
+  // si la caja no conoce esa moneda.
+  //
+  // KEEP IN SYNC WITH:
+  //   models/pos_config.py :: PosConfig._get_pos_currency_rate_pair
+  _getPosCurrencyRatePair(currencyId) {
+    if (currencyId == null) {
+      return null;
+    }
+    const config = this.config ?? this.pos?.config;
+    const positive = (value) => {
+      const n = Number(value ?? 0);
+      return n > 0 ? n : 0;
+    };
+    if (currencyId === this._currencyId(this._getMainCurrency())) {
+      return [1, 1];
+    }
+    if (currencyId === this._currencyId(this._getForeignCurrencyRecord())) {
+      return [positive(config?.foreign_rate), positive(config?.foreign_inverse_rate)];
+    }
+    const rates = config?.tender_currency_rates?.[String(currencyId)];
+    if (rates) {
+      return [positive(rates.foreign_rate), positive(rates.foreign_inverse_rate)];
+    }
+    return null;
   },
 
   _resolveCurrencyRecord(currency) {
@@ -621,6 +681,16 @@ patch(PosOrder.prototype, {
   // unknown (non-refund order, or the original had no foreign payment).
   getRefundForeignRate() {
     const rate = Number(this.refund_foreign_rate);
+    return Number.isFinite(rate) && rate > 0 ? rate : 0;
+  },
+
+  // Igual que getRefundForeignRate, por moneda de cobro: moneda de la caja por
+  // unidad con la que se cobraron en esa moneda los pagos de la orden original
+  // (pos.order.get_refund_tender_rates, precargada por
+  // PaymentScreen._prefetchRefundForeignRate). 0 si no se conoce.
+  getRefundTenderRate(currency) {
+    const id = this._currencyId(currency);
+    const rate = Number(this.refund_tender_rates?.[String(id)]);
     return Number.isFinite(rate) && rate > 0 ? rate : 0;
   },
 
