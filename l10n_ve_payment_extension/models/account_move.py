@@ -11,6 +11,61 @@ _logger = logging.getLogger(__name__)
 class AccountMoveRetention(models.Model):
     _inherit = "account.move"
 
+    def _retention_excess_within_currency_precision(self, retention_amount_company_currency):
+        """Diferencia exacta a mandar a diferencial cambiario cuando
+        `retention_amount_company_currency` (VEF, ya sumado por todas las
+        lineas de esta factura) excede lo adeudado SOLO porque las dos
+        monedas no pueden expresar el mismo importe con la misma precision.
+
+        La retencion se calcula sobre el impuesto del asiento (VEF); lo
+        adeudado de la factura vive en su propia moneda con su propia
+        precision. Reconvertir el excedente de vuelta a la moneda de la
+        factura, con la tasa de LA FACTURA (`invoice_currency_rate`, nunca
+        la de compañia ni una tasa recalculada del dia), es la unica forma
+        de confirmar sin adivinar que ese excedente es redondeo: si al
+        reconvertir desaparece (redondea a cero en la moneda del documento),
+        la factura queda saldada en los terminos en que fue emitida y el
+        sobrante es un artefacto de precision. Si no desaparece, es un
+        exceso real y no se tolera.
+
+        Devuelve el excedente exacto en VEF cuando es tolerable, o None
+        cuando no hay excedente que tolerar (retencion normal, con exceso
+        real, o con faltante) o la factura esta en moneda de compañia (no
+        hay dos precisiones que reconciliar). Envoltorio de
+        `_retention_difference_within_currency_precision`, que ademas
+        reporta el faltante (diferencia negativa).
+        """
+        diff = self._retention_difference_within_currency_precision(
+            retention_amount_company_currency
+        )
+        return diff if diff and diff > 0 else None
+
+    def _retention_difference_within_currency_precision(self, retention_amount_company_currency):
+        """Diferencia CON SIGNO (retenido - adeudado, en VEF) cuando es
+        solo redondeo entre monedas, o None.
+
+        Positiva: la retencion excede lo adeudado (ver
+        `_retention_excess_within_currency_precision`). Negativa: la
+        retencion queda POR DEBAJO de lo adeudado y el faltante, expresado
+        en la moneda de la factura con la tasa del documento, redondea a
+        cero -la factura ya esta saldada en esa moneda, solo queda
+        polvo en VEF que, sin declararlo, deja la factura "pagada" pero sin
+        conciliar. Misma regla en ambos sentidos: la diferencia tiene que
+        desaparecer en la moneda de la factura; si no, es un monto real.
+        """
+        self.ensure_one()
+        company_currency = self.company_id.currency_id
+        diff = retention_amount_company_currency - abs(self.amount_residual_signed)
+        if company_currency.is_zero(diff):
+            return None
+        if self.currency_id == company_currency or not self.invoice_currency_rate:
+            return None
+        if not self.currency_id.is_zero(
+            self.currency_id.round(abs(diff) * self.invoice_currency_rate)
+        ):
+            return None
+        return diff
+
     base_currency_is_vef = fields.Boolean(
         compute="_compute_currency_fields",
     )
