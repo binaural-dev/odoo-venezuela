@@ -28,14 +28,25 @@
 - [x] 3.2 Python (`odoo -c <conf> -d <base> -u <módulos> --test-tags /<módulo> --stop-after-init --no-http`):
       `l10n_ve_pos` 252/252 (`pos_t86066_ve`), `l10n_ve_pos_igtf` 13/13 (`pos_t86066_igtf`),
       `l10n_ve_pos_self_order` 95/95 (`pos_t86066_so`), `l10n_ve_pos_mf` 5/5 (`pos_t86066_mf`)
-- [ ] 3.3 Hoot de `l10n_ve_pos`, `l10n_ve_pos_igtf` y `l10n_ve_pos_self_order` (JS sin cambios en este change)
+- [x] 3.3 Hoot (`hoot_cdp`, `/web/tests?headless&filter=…&debug=assets`, `pos_test_86066`): `@l10n_ve_pos` 146 pasan,
+      con los 18 fallos previos (`partner_list_searched_vat`, `pos_order_line_discount`); `@l10n_ve_pos_self_order` en
+      verde. IGTF: por decisión
+      del usuario (05-nov) no se corren pruebas de IGTF; en cajas en otra moneda no está contemplado
 - [x] 3.4 E2E en `pos_test_86066` por JSON-RPC y con el PdV en las cajas USD y EUR: ver el change de
       `binaural_pos_multicurrency` en integra-addons
 - [x] 3.5 Precommit (`scripts/precommit pos -m l10n_ve_pos,...`): pasa
 
-## 4. Cierre
+## 4. Revisión de Binaural (05-nov, solicitar cambios; el usuario aprueba la recomendación)
 
-- [x] 4.1 Versión 19.0.1.29.1 → 19.0.1.30.0
-- [x] 4.2 `openspec validate ta-86066-tercera-moneda-caja-otra-moneda --strict`
-- [ ] 4.3 Revisión de Binaural y decisión del usuario
-- [ ] 4.4 Archivar en el mismo PR
+- [x] 4.0.1 Sugerencia 5: redacción del riesgo de `transitory_amount_currency` en `design.md` (siempre llega a los
+      constructores de líneas, con `None` por defecto)
+- [x] 4.0.2 Sugerencia 6: ayuda y docstring de `tender_currency_rates` (tasas contra la moneda de la compañía; en
+      una caja en otra moneda solo indican si hay tasa del día); `es_VE.po` regenerado con el export de
+      `pos_test_86066` y la fusión solo de nuestra entrada (sale la ayuda vieja, entra la nueva)
+
+## 5. Cierre
+
+- [x] 5.1 Versión 19.0.1.29.1 → 19.0.1.30.0
+- [x] 5.2 `openspec validate ta-86066-tercera-moneda-caja-otra-moneda --strict`
+- [x] 5.3 Revisión de Binaural y decisión del usuario (05-nov)
+- [ ] 5.4 Archivar en el mismo PR

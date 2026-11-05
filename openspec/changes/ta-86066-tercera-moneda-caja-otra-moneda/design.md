@@ -27,6 +27,11 @@ la moneda de la compañía en el cruce.
 
 ## Riesgos
 
-- Un módulo que sobrescriba `_create_cross_move_for` o los constructores de líneas sin `**kwargs` recibe
-  `transitory_amount_currency` solo en una caja en otra moneda con un método con moneda de cobro. En el
-  repositorio solo lo sobrescribe `binaural_pos_close_multicurrency`, con `**kwargs`.
+- `transitory_amount_currency` sigue el patrón de `currency_amount`: `_create_cross_move_for` y
+  `_create_combined_cross_move` lo reciben solo si un llamador lo pasa (una caja en otra moneda con un
+  método con moneda de cobro), pero `_get_cross_move_line_vals` siempre se lo pasa a los constructores de
+  líneas (`_line_vals_move_cross_incoming` / `_outgoing`), con `None` por defecto. Un módulo que sobrescriba
+  esos constructores sin `**kwargs` dejaría de funcionar. En los repositorios no hay ninguno; el único
+  override del cruce es `_create_cross_move_for` de `binaural_pos_close_multicurrency`, con `**kwargs`.
+- La ayuda de `pos.config.tender_currency_rates` dice ahora que son tasas contra la moneda de la compañía y
+  que en una caja en otra moneda solo indican si hay tasa del día (traducción regenerada con el export).
