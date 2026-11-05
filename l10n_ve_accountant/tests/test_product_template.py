@@ -1,6 +1,6 @@
 import logging
 from odoo.tests import TransactionCase, tagged
-from odoo import fields
+from odoo import Command, fields
 from odoo.exceptions import UserError
 
 _logger = logging.getLogger(__name__)
@@ -574,6 +574,10 @@ class TestProductTemplate(TransactionCase):
             "type_tax_use": "purchase", "company_id": other_company.id,
             "tax_group_id": other_tax_group.id,
         })
+        # l10n_ve_stock restricts assigning a product to another company to this group
+        group = self.env.ref("l10n_ve_stock.group_edit_product_company", raise_if_not_found=False)
+        if group:
+            self.env.user.group_ids = [Command.link(group.id)]
         shared_product = self.env["product.template"].create({
             "name": "Test Shared Product",
             "type": "service",
