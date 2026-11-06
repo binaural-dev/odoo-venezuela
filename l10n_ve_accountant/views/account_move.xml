@@ -121,11 +121,15 @@
                 <attribute name="readonly">state != 'draft' or (move_type not in ('in_invoice', 'in_refund', 'in_receipt') and not quick_edit_mode) or not can_edit_tax_totals</attribute>
             </xpath>
 
-            <!-- ONLY VES SQUARE: it only adds something when the invoice is not already in VES;
-                 if currency_id == company_currency_id this box would duplicate the
-                 Subtotal/Total above, which is already in Bs. -->
+            <!-- Second totals block: VES when the invoice is in another currency; the
+                 alternate currency when it is in the company currency. Hidden only when
+                 both apply: company currency and no alternate currency configured.
+                 It does not show amount_residual_company: that value is in the company currency
+                 and does not match the alternate amounts of tax_totals nor necessarily the
+                 document currency (e.g. EUR document: alternate block in USD,
+                 amount_residual_company in VEF, amount_residual in EUR). -->
             <xpath expr="//page[@name='invoice_tab']//group[hasclass('oe_invoice_lines_tab')]" position="after">
-                <group col="12" class="overflow-hidden o_ve_invoice_totals" invisible="currency_id == company_currency_id">
+                <group col="12" class="overflow-hidden o_ve_invoice_totals" invisible="currency_id == company_currency_id and not foreign_currency_id">
                     <group colspan="8">
                     </group>
                     <group colspan="4">
@@ -138,10 +142,6 @@
                                 readonly="state != 'draft' or (move_type not in ('in_invoice', 'in_refund') and not quick_edit_mode) or not can_edit_tax_totals" />
                            
                             
-                        </group>
-                        <group
-                            class="oe_subtotal_footer px-4">
-                             <field name="amount_residual_company" readonly="1" force_save="1"  class="oe_subtotal_footer_separator" />
                         </group>
                             
                     </group>
