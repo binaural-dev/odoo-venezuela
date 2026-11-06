@@ -2,7 +2,7 @@
 
 import { PosPayment } from "@point_of_sale/app/models/pos_payment";
 import { patch } from "@web/core/utils/patch";
-import { GT, LT } from "@point_of_sale/app/utils/numbers";
+import { EQ, GT, LT } from "@point_of_sale/app/utils/numbers";
 import { roundPrecision } from "@web/core/utils/numbers";
 
 // Live patch for Odoo 19 PosPayment.
@@ -131,20 +131,43 @@ patch(PosPayment.prototype, {
         );
     },
 
+    // Monto en la caja de un cobro con excedente (supera lo adeudado): lo
+    // tecleado por la tasa, con el signo del restante (un reembolso tecleado
+    // sin "-" sigue siendo una salida). No se mide el excedente contra lo
+    // adeudado, que es el restante ya redondeado a la moneda de cobro:
+    // 18.560 Bs = 18,4685 € → 18,47 €; con 25 € el excedente sería 6,53 € (no
+    // 6,5315) y la línea valdría Bs 25.122,37 en vez de 25.123,91. El error
+    // llega a medio céntimo de la moneda de cobro, de menos o de más según el
+    // redondeo de lo adeudado. Tampoco deja céntimos pendientes: lo tecleado
+    // supera lo adeudado en al menos un céntimo y lo adeudado difiere del
+    // restante convertido en a lo sumo medio.
+    _getOverpaidTenderLocalAmount(currency, requested, tenderDue, localDueBefore, rates) {
+        const sign = localDueBefore < 0 ? -1 : 1;
+        return this.pos_order_id._convertAtRate(
+            sign * Math.abs(requested),
+            rates.toLocal,
+            this.pos_order_id._getMainCurrency()
+        );
+    },
+
     setTenderAmount(amount) {
-        // Mismo criterio que set_foreign_amount para la alterna: si lo tecleado
-        // cubre lo adeudado (comparado en la moneda de cobro, con su redondeo),
-        // el monto de la caja es EXACTAMENTE el restante más el excedente
-        // convertido, para que el ruido cambiario no deje un céntimo pendiente
-        // ni un vuelto fantasma. Si no lo cubre, la conversión de lo tecleado.
+        // Lo tecleado (redondeado a la moneda de cobro: el teclado no limita
+        // los decimales) se compara con lo adeudado en esa moneda:
+        // - igual (pago justo): la línea vale EXACTAMENTE el restante de la
+        //   caja, para que el ruido cambiario no deje un céntimo pendiente ni un
+        //   vuelto fantasma;
+        // - mayor (con excedente): _getOverpaidTenderLocalAmount;
+        // - menor (pago parcial): _getPartialTenderLocalAmount.
+        // Se compara en valor absoluto. En una venta, un negativo tecleado que
+        // no cubre lo adeudado queda en negativo (una salida, como en el core);
+        // si lo cubre, toma el signo del restante.
         const order = this.pos_order_id;
         const currency = this.getTenderCurrency();
-        const requested = Number(amount) || 0;
         if (!order || !currency) {
-            this.setAmount(requested);
+            this.setAmount(Number(amount) || 0);
             return;
         }
-        const posCurrency = order._getMainCurrency();
+        const requested = currency.round(Number(amount) || 0);
         const rates = this._getTenderRates(currency);
         const localDueBefore = this._getLocalDueBefore();
         const tenderDue = this._getTenderDue(currency, localDueBefore, rates);
@@ -154,15 +177,14 @@ patch(PosPayment.prototype, {
         const coversDue = !currency.isZero(tenderDue) && currency.comp(absRequested, absDue) !== LT;
 
         let localAmount;
-        if (coversDue) {
-            const overpayment = absRequested - absDue;
-            const sign = localDueBefore < 0 ? -1 : 1;
-            localAmount = currency.isPositive(overpayment)
-                ? localDueBefore +
-                  sign * order._convertAtRate(overpayment, rates.toLocal, posCurrency)
-                : localDueBefore;
-        } else {
+        if (!coversDue) {
             localAmount = this._getPartialTenderLocalAmount(
+                currency, requested, tenderDue, localDueBefore, rates
+            );
+        } else if (currency.comp(absRequested, absDue) === EQ) {
+            localAmount = localDueBefore;
+        } else {
+            localAmount = this._getOverpaidTenderLocalAmount(
                 currency, requested, tenderDue, localDueBefore, rates
             );
         }
