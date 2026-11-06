@@ -1,5 +1,9 @@
+import logging
+
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError
+
+_logger = logging.getLogger(__name__)
 
 
 def _apply_m2m_commands(current_ids, raw_value):
@@ -173,6 +177,23 @@ class ProductTemplate(models.Model):
                     vals[field_name] = list(vals.get(field_name) or []) + [
                         fields.Command.link(default_tax.id)
                     ]
+                elif not company.chart_template:
+                    # La compañía todavía no tiene plan de cuentas cargado
+                    # (base de CI recién creada, o un cliente nuevo
+                    # instalando la localización y un módulo que crea
+                    # productos en el mismo paso): no hay nada contra qué
+                    # validar todavía. Odoo core carga el plan real más
+                    # tarde (account/_register_hook ->
+                    # chart_template._post_load_data) y ahí asigna el
+                    # impuesto por defecto a los productos que quedaron sin
+                    # uno -- no tiene sentido bloquear toda la instalación
+                    # por una compañía que simplemente aún no se configuró.
+                    # Ref: PR binaural-dev/integra-addons#2946 (TA 83868).
+                    _logger.warning(
+                        "%s: no se asignó impuesto a %r porque la compañía "
+                        "%r todavía no tiene un plan de cuentas cargado.",
+                        label, vals.get('name') or '', company.display_name,
+                    )
                 else:
                     errors.append(
                         _("- %s: No tax is assigned and the company has no "
