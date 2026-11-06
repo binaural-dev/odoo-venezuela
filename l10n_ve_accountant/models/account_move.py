@@ -776,6 +776,7 @@ class AccountMove(models.Model):
         debit and foreign credit of the line_ids fields (journal entries) when the move is created.
         """
         moves = super().create(vals_list)
+        precision = self.env["decimal.precision"].precision_get("Tasa")
 
         for move in moves:
             move._compute_rate()
@@ -793,7 +794,9 @@ class AccountMove(models.Model):
                 rate_date = move.invoice_date or move.date or fields.Date.context_today(move)
             rate_values = Rate.compute_rate(move.foreign_currency_id.id, rate_date)
             last_foreign_rate = rate_values.get("foreign_rate", 0)
-            if move.manually_set_rate and move.foreign_rate != last_foreign_rate:
+            if move.manually_set_rate and float_compare(
+                move.foreign_rate, last_foreign_rate, precision_digits=precision
+            ):
                 move.message_post(
                     body=_(
                         "The rate has been updated from %(last_rate)s to %(rate)s ",
@@ -877,7 +880,11 @@ class AccountMove(models.Model):
             if (
                 vals.get("foreign_rate", False)
                 and move.manually_set_rate
-                and move.foreign_rate != move.last_foreign_rate
+                and float_compare(
+                    move.foreign_rate,
+                    move.last_foreign_rate,
+                    precision_digits=self.env["decimal.precision"].precision_get("Tasa"),
+                )
             ):
                 move.message_post(
                     body=_(
@@ -1172,6 +1179,12 @@ class AccountMove(models.Model):
         """
         self._compute_rate_for_documents(self)
 
+    def _has_foreign_rate(self):
+        """True si la tasa ya tiene un valor util (con la precision de "Tasa", no solo != 0)."""
+        self.ensure_one()
+        precision = self.env["decimal.precision"].precision_get("Tasa")
+        return not float_is_zero(self.foreign_rate, precision_digits=precision)
+
     def _is_rate_date_locked(self):
         """Hook: True si la Rate Date esta bloqueada por la configuracion (la factura usa la
         fecha de tasa de su orden) y no debe seguir a la fecha de la factura. Ventas la
@@ -1195,7 +1208,7 @@ class AccountMove(models.Model):
         Rate = self.env["res.currency.rate"]
 
         for move in documents:
-            if move.manually_set_rate and move.foreign_rate:
+            if move.manually_set_rate and move._has_foreign_rate():
                 continue
             # "Rate Date" (invoice_date) drives the rate for every invoice,
             # purchases included. An entry's invoice_date is just the default
@@ -1208,7 +1221,7 @@ class AccountMove(models.Model):
             if (
                 origin
                 and isinstance(move.id, api.NewId)
-                and origin.foreign_rate
+                and origin._has_foreign_rate()
                 and origin._get_rate_date() == rate_date
             ):
                 move.foreign_rate = origin.foreign_rate

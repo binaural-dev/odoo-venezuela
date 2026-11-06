@@ -4,7 +4,7 @@ import logging
 from lxml import etree
 from odoo import _, api, fields, models
 from odoo.exceptions import UserError, ValidationError
-from odoo.tools.float_utils import float_is_zero
+from odoo.tools.float_utils import float_compare, float_is_zero
 
 _logger = logging.getLogger(__name__)
 
@@ -353,6 +353,12 @@ class SaleOrder(models.Model):
         """
         self._compute_rate()
 
+    def _has_foreign_rate(self):
+        """True si la tasa ya tiene un valor util (con la precision de "Tasa", no solo != 0)."""
+        self.ensure_one()
+        precision = self.env["decimal.precision"].precision_get("Tasa")
+        return not float_is_zero(self.foreign_rate, precision_digits=precision)
+
     def _l10n_ve_rate_date(self):
         """
         Fecha local (tz del usuario) con la que se busca la tasa de la orden.
@@ -391,13 +397,13 @@ class SaleOrder(models.Model):
                 sale.manually_set_rate
                 or "website_id" in sale._fields
                 and sale.website_id
-            ) and sale.foreign_rate:
+            ) and sale._has_foreign_rate():
                 # La tasa viene fijada de fuera; se deja constancia de la fecha
                 # solo si aun no hay ninguna, para no pisar la original.
                 if not sale.foreign_rate_date:
                     sale.foreign_rate_date = rate_date
                 continue
-            if sale.state not in ("draft", "sent") and sale.foreign_rate:
+            if sale.state not in ("draft", "sent") and sale._has_foreign_rate():
                 # Orden aprobada: ya no se puede editar y su tasa no se mueve (el core
                 # reescribe date_order al confirmar). La fecha se sella la primera vez.
                 if not sale.foreign_rate_date:
@@ -504,6 +510,7 @@ class SaleOrder(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         res = super().create(vals_list)
+        precision = self.env["decimal.precision"].precision_get("Tasa")
         for sale in res:
             Rate = self.env["res.currency.rate"]
             rate_values = Rate.compute_rate(
@@ -511,7 +518,9 @@ class SaleOrder(models.Model):
                 sale._l10n_ve_rate_date(),
             )
             last_foreign_rate = rate_values.get("foreign_rate", 0)
-            if sale.manually_set_rate and sale.foreign_rate != last_foreign_rate:
+            if sale.manually_set_rate and float_compare(
+                sale.foreign_rate, last_foreign_rate, precision_digits=precision
+            ):
                 sale.message_post(
                     body=_(
                         "The rate has been updated from %(last_rate)s to %(rate)s ",
@@ -527,7 +536,11 @@ class SaleOrder(models.Model):
         if (
             vals.get("foreign_rate", False)
             and self.manually_set_rate
-            and self.foreign_rate != self.last_foreign_rate
+            and float_compare(
+                self.foreign_rate,
+                self.last_foreign_rate,
+                precision_digits=self.env["decimal.precision"].precision_get("Tasa"),
+            )
         ):
             self.message_post(
                 body=_(

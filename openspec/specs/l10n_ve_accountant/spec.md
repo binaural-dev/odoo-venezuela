@@ -49,6 +49,11 @@ El sistema DEBE (MUST) calcular `foreign_rate` y `foreign_inverse_rate` de cada 
 - **WHEN** un documento tiene `manually_set_rate` en verdadero
 - **THEN** el recálculo automático no modifica su tasa
 
+#### Scenario: Tasa manual sin valor útil
+
+- **WHEN** un documento tiene `manually_set_rate` en verdadero pero su `foreign_rate` es cero, o un residuo menor a la precisión `Tasa` (6 decimales)
+- **THEN** se trata como "sin tasa" y se calcula por la Rate Date; la comparación contra la tasa vigente para avisar un cambio manual usa esa misma precisión
+
 #### Scenario: Documento con fecha sin tasa cargada
 
 - **WHEN** se crea o contabiliza un documento cuya fecha de tasa no tiene registro de tasa para la moneda alterna, aunque existan tasas de otras fechas
