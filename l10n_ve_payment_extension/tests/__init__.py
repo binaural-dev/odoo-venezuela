@@ -48,3 +48,4 @@ from . import test_municipal_retention_pdf
 from . import test_accounting_reports_branches_moves
 from . import test_retention_voucher_buttons
 from . import test_retention_resync
+from . import test_retention_amount_tolerance

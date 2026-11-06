@@ -1182,6 +1182,17 @@ class AccountRetention(models.Model):
             ).js_assign_outstanding_line(lines[0].id)
 
     @api.model
+    def compute_iva_retention_amount(self, tax_amount, withholding_percentage):
+        """Monto de la retencion de IVA, en moneda de compania, para un monto de
+        impuesto y un porcentaje de retencion.
+
+        Es el UNICO lugar donde se calcula: lo usan `compute_retention_lines_data`,
+        la linea de retencion (`_apply_iva_tax_group_values`) y los portales, que
+        pasan su propio porcentaje. Si la regla de calculo cambia (redondeo, base,
+        retenciones indexadas o no indexadas) todos la siguen."""
+        return abs(tax_amount * (withholding_percentage / 100))
+
+    @api.model
     def compute_retention_lines_data(self, invoice_id, payment=None):
         """
         Computes the retention lines data for the given invoice.
@@ -1214,7 +1225,9 @@ class AccountRetention(models.Model):
             if not taxes:
                 continue
             tax = taxes[0]
-            retention_amount = abs(tax_group["tax_amount"] * (withholding_amount / 100))
+            retention_amount = self.compute_iva_retention_amount(
+                tax_group["tax_amount"], withholding_amount
+            )
             line_data = {
                 "name": _("Iva Retention"),
                 "invoice_type": invoice_id.move_type,
